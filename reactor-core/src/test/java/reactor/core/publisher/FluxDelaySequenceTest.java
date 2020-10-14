@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -103,7 +103,7 @@ public class FluxDelaySequenceTest {
 		            .verifyComplete();
 	}
 
-	@Ignore("delayElements test for local comparison run")
+	@Disabled("delayElements test for local comparison run")
 	@Test
 	public void delayElements() {
 		Flux<Tuple2<Long, Long>> test = Flux.interval(Duration.ofMillis(50))

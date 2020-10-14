@@ -18,7 +18,9 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.junit.Test;
+import org.assertj.core.api.Assertions;
+import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;

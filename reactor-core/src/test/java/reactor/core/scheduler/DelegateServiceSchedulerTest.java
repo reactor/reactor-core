@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.jupiter.api.Test;
 import com.pivovarit.function.ThrowingRunnable;
-import org.junit.Test;
 
 import reactor.core.Exceptions;
 import reactor.core.Scannable;

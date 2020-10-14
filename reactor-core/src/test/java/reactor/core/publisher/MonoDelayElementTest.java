@@ -24,11 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -114,7 +114,8 @@ public class MonoDelayElementTest {
 		assertThat(cancelled.get()).isTrue();
 	}
 
-	@Test(timeout = 5000L)
+	@Test
+	@Timeout(5)
 	public void emptyIsImmediate() {
 		Mono<String> source = Mono.<String>empty().log().hide();
 

@@ -18,7 +18,7 @@ package reactor.core;
 import java.util.Collections;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

@@ -15,11 +15,12 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxTakeLastOneTest {
 
@@ -41,11 +42,13 @@ public class FluxTakeLastOneTest {
 	                .verifyErrorMessage("test");
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void illegal() {
-		StepVerifier.create(Flux.empty()
-		                        .takeLast(-1))
-	                .verifyComplete();
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			StepVerifier.create(Flux.empty()
+					.takeLast(-1))
+					.verifyComplete();
+		});
 	}
 
 	@Test

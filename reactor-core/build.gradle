@@ -101,7 +101,6 @@ dependencies {
 	testImplementation "org.junit.platform:junit-platform-launcher"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-	testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 
 	testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 	// Testing
@@ -113,7 +112,6 @@ dependencies {
 	testImplementation "org.testng:testng:$testNgVersion"
 	testImplementation "org.mockito:mockito-core:$mockitoVersion"
 	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
-	testImplementation "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
 	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
 	testImplementation "com.pivovarit:throwing-function:$throwingFunctionVersion"
 	testImplementation "com.tngtech.archunit:archunit:0.12.0"
@@ -309,14 +307,14 @@ task testNG(type: Test, group: 'verification') {
 	}
 }
 
+tasks.withType(Test).all {
+	useJUnitPlatform()
+}
+
 blockHoundTest {
 	// Creates a JVM per test because the agent can be installed only once
 	forkEvery = 1
 	maxParallelForks = 1
-}
-
-tasks.withType(Test).all {
-  useJUnitPlatform()
 }
 
 //inherit basic test task + common configuration in root

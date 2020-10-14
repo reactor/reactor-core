@@ -16,23 +16,29 @@
 
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDefaultIfEmptyTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new MonoDefaultIfEmpty<>(null, 1);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new MonoDefaultIfEmpty<>(null, 1);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void valueNull() {
-		Mono.never().defaultIfEmpty(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.never().defaultIfEmpty(null);
+		});
 	}
 
 	@Test

@@ -21,7 +21,8 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -86,7 +87,8 @@ public class MonoZipTest {
 		               .block()).isEqualTo(3);
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void castCheck() {
 		Mono<String[]> mono = Mono.zip(a -> Arrays.copyOf(a, a.length, String[].class),
 				Mono.just("hello"),

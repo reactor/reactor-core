@@ -15,7 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -30,24 +30,31 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxGenerateTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void stateSupplierNull() {
-		Flux.generate(null, (s, o) -> s, s -> {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.generate(null, (s, o) -> s, s -> {
+			});
 		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void generatorNull() {
-		Flux.generate(() -> 1, null, s -> {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.generate(() -> 1, null, s -> {
+			});
 		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void stateConsumerNull() {
-		Flux.generate(() -> 1, (s, o) -> s, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.generate(() -> 1, (s, o) -> s, null);
+		});
 	}
 
 	@Test

@@ -32,7 +32,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -128,8 +129,7 @@ public class FluxSpecTests {
 		final Mono<Void> errorTap = stream.then();
 
 //		then: "it is available"
-		assertThatExceptionOfType(Exception.class)
-				.isThrownBy(errorTap::block);
+		assertThatExceptionOfType(Exception.class).isThrownBy(errorTap::block);
 	}
 
 	@Test
@@ -694,15 +694,14 @@ public class FluxSpecTests {
 
 //		when: "element at index 2 is requested"
 		Integer tap = s.elementAt(2)
-		               .block();
+				.block();
 
 //		then: "3 is emitted"
 		assertThat(tap).isEqualTo(3);
 
 //		when: "element with negative index is requested"
 //		then: "error is thrown"
-		assertThatExceptionOfType(IndexOutOfBoundsException.class)
-			.isThrownBy(() -> s.elementAt(-1));
+		assertThatExceptionOfType(IndexOutOfBoundsException.class).isThrownBy(() -> s.elementAt(-1));
 
 //		when: "element with index > number of values is requested"
 //		then: "error is thrown"
@@ -1083,7 +1082,8 @@ public class FluxSpecTests {
 		            .verifyComplete();
 	}
 
-	@Test(timeout = 10000L)
+	@Test
+	@Timeout(10)
 	public void collectFromMultipleThread1() throws Exception {
 		Sinks.Many<Integer> head = Sinks.many().multicast().onBackpressureBuffer();
 		AtomicInteger sum = new AtomicInteger();

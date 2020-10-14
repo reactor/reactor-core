@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -25,24 +25,33 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class FluxWithLatestFromTest {
 
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxWithLatestFrom<>(null, Flux.never(), (a, b) -> a);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxWithLatestFrom<>(null, Flux.never(), (a, b) -> a);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void otherNull() {
-		Flux.never()
-		    .withLatestFrom(null, (a, b) -> a);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.withLatestFrom(null, (a, b) -> a);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void combinerNull() {
-		Flux.never()
-		    .withLatestFrom(Flux.never(), null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.withLatestFrom(Flux.never(), null);
+		});
 	}
 
 	@Test

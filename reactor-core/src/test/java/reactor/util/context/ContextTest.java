@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Condition;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 

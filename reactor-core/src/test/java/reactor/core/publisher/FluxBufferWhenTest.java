@@ -33,7 +33,8 @@ import java.util.logging.Level;
 
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -695,7 +696,8 @@ public class FluxBufferWhenTest {
 					.verifyComplete();
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void cancelWinsOverDrain() {
 		Queue<List<Integer>> queue = Queues.<List<Integer>>small().get();
 		queue.offer(Arrays.asList(1, 2, 3));

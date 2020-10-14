@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;

@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;

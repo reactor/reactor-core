@@ -28,7 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;

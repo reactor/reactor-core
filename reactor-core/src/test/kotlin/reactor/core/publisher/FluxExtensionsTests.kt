@@ -17,8 +17,8 @@
 package reactor.core.publisher
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assert
-import org.junit.Test
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 import org.reactivestreams.Publisher
 import reactor.test.StepVerifier
 import reactor.test.test
@@ -139,7 +139,7 @@ class FluxExtensionsTests {
         fluxOnError.doOnError(IllegalStateException::class) {
             invoked = true
         }.subscribe()
-        Assert.assertTrue(invoked)
+        Assertions.assertTrue(invoked)
     }
 
     @Test

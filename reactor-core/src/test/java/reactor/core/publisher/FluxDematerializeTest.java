@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -30,7 +30,6 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, String> {
 

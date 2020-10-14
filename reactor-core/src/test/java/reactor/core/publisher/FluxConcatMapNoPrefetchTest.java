@@ -19,12 +19,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
-import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

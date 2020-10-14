@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;

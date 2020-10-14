@@ -18,8 +18,7 @@ package reactor.core.publisher;
 
 import java.util.List;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -27,14 +26,17 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 public class FluxRepeatPredicateTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void predicateNull() {
-		Flux.never()
-		    .repeat(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.repeat(null);
+		});
 	}
 
 	@Test

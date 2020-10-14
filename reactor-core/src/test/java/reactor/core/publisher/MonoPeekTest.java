@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Test;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
@@ -28,6 +28,7 @@ import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoPeekTest {
 
@@ -153,11 +154,13 @@ public class MonoPeekTest {
 		assertThat(ref.get()).isNull();
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void onMonoSuccessNullDoOnSuccess() {
 		Mono<String> mp = Mono.just("test");
-		mp.doOnSuccess(null)
-		  .subscribe();
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			mp.doOnSuccess(null)
+					.subscribe();
+		});
 	}
 
 	@Test

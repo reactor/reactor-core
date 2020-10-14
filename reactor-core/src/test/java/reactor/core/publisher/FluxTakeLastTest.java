@@ -17,22 +17,29 @@
 package reactor.core.publisher;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class FluxTakeLastTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxTakeLast<>(null, 1);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxTakeLast<>(null, 1);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void negativeNumber() {
-		Flux.never().takeLast(-1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never().takeLast(-1);
+		});
 	}
 
 	@Test

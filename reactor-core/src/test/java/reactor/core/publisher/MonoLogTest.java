@@ -1,6 +1,6 @@
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 
 import java.util.logging.Level;

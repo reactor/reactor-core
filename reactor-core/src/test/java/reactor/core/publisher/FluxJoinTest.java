@@ -19,8 +19,7 @@ package reactor.core.publisher;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;

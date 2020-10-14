@@ -17,7 +17,8 @@
 package reactor.core.publisher;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -95,7 +96,8 @@ public class MonoRepeatWhenEmptyTest {
         Assert.assertEquals(Arrays.asList(0L, 1L), iterations);
     }
 
-    @Test(timeout = 1000L)
+    @Test
+    @Timeout(1)
     public void gh2196_discardHandlerHang() {
         StepVerifier.create(Mono.empty()
                 .repeatWhenEmpty(f -> f.next())

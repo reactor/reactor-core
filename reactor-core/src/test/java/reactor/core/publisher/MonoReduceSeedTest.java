@@ -21,9 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.ReduceOperatorTest;
@@ -32,6 +31,7 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 
@@ -56,21 +56,27 @@ public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 		);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new MonoReduceSeed<>(null, () -> 1, (a, b) -> (Integer) b);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new MonoReduceSeed<>(null, () -> 1, (a, b) -> (Integer) b);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void supplierNull() {
-		Flux.never()
-		    .reduceWith(null, (a, b) -> b);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.reduceWith(null, (a, b) -> b);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void accumulatorNull() {
-		Flux.never()
-		    .reduceWith(() -> 1, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.reduceWith(() -> 1, null);
+		});
 	}
 
 	@Test

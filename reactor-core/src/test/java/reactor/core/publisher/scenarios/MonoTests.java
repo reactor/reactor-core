@@ -27,8 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
 import reactor.core.publisher.Flux;
@@ -43,6 +42,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -52,12 +52,6 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
  * @author Stephane Maldini
  */
 public class MonoTests {
-
-	@After
-	public void resetHooks() {
-		Hooks.resetOnEachOperator();
-		Hooks.resetOnLastOperator();
-	}
 
 	@Test
 	public void errorContinueOnMonoReduction() {
@@ -135,9 +129,11 @@ public class MonoTests {
 				is("foo"));
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void testDoOnEachSignalNullConsumer() {
-		Mono.just(1).doOnEach(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.just(1).doOnEach(null);
+		});
 	}
 
 	@Test

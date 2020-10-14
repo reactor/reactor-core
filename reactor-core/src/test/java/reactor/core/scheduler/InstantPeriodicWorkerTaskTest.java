@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.test.util.RaceTestUtils;

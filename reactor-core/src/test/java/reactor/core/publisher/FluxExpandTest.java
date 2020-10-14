@@ -25,7 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -294,7 +295,8 @@ public class FluxExpandTest {
 		);
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void depthFirst() {
 		Node root = createTest();
 
@@ -332,7 +334,8 @@ public class FluxExpandTest {
 		            .verify(Duration.ofSeconds(5));
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void breadthFirst() {
 		Node root = createTest();
 

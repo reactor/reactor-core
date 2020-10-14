@@ -19,20 +19,23 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxConcatIterableTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void arrayNull() {
-		Flux.concat((Iterable<? extends Publisher<?>>)null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.concat((Iterable<? extends Publisher<?>>) null);
+		});
 	}
 
 	final Publisher<Integer> source = Flux.range(1, 3);

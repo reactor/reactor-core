@@ -23,9 +23,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -67,27 +68,31 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void failPrefetch(){
-		Flux.never()
-		    .replay( -1);
+	@Test
+	public void failPrefetch() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never()
+					.replay(-1);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void failTime(){
-		Flux.never()
-		    .replay( Duration.ofDays(-1));
+	@Test
+	public void failTime() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never()
+					.replay(Duration.ofDays(-1));
+		});
 	}
 
 	VirtualTimeScheduler vts;
 
-	@Before
+	@BeforeEach
 	public void vtsStart() {
 		//delayElements (notably) now uses parallel() so VTS must be enabled everywhere
 		vts = VirtualTimeScheduler.getOrSet();
 	}
 
-	@After
+	@AfterEach
 	public void vtsStop() {
 		vts = null;
 		VirtualTimeScheduler.reset();
@@ -500,7 +505,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void cacheSingleSubscriberWithMultipleRequestsDoesntHang() {
 		List<Integer> listFromStream = Flux
 				.range(0, 1000)

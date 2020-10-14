@@ -23,21 +23,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
-import reactor.test.AutoDisposingRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import reactor.test.AutoDisposingExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class SchedulersHooksTest {
 
-	@Rule
-	public AutoDisposingRule afterTest = new AutoDisposingRule();
+	@RegisterExtension
+	public AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
-	@After
+	@AfterEach
 	public void resetAllHooks() {
 		Schedulers.resetOnScheduleHooks();
 	}

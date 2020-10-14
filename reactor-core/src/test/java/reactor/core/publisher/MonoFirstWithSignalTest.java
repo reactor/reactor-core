@@ -19,7 +19,8 @@ import java.time.Duration;
 import java.util.Arrays;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -28,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoFirstWithSignalTest {
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void allEmpty() {
 		Assert.assertNull(Mono.firstWithSignal(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))
@@ -36,7 +38,8 @@ public class MonoFirstWithSignalTest {
 		                      .block());
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void someEmpty() {
 		Assert.assertNull(Mono.firstWithSignal(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
 		                      .block());
@@ -65,7 +68,8 @@ public class MonoFirstWithSignalTest {
 		 .assertComplete();
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void allEmptyIterable() {
 		Assert.assertNull(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))
@@ -73,7 +77,8 @@ public class MonoFirstWithSignalTest {
 		                      .block());
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void someEmptyIterable() {
 		Assert.assertNull(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))))

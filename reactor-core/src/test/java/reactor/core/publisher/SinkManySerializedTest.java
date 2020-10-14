@@ -21,9 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
@@ -33,10 +32,8 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Timeout(5)
 public class SinkManySerializedTest {
-
-	@Rule
-	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void shouldNotThrowFromTryEmitNext() {

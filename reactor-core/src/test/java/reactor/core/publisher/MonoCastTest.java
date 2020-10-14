@@ -16,21 +16,25 @@
 
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoCastTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		Mono.just(1)
-		    .cast(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.just(1).cast(null);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull2() {
-		Mono.just(1)
-		    .ofType(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.just(1).ofType(null);
+		});
 	}
 
 	@Test

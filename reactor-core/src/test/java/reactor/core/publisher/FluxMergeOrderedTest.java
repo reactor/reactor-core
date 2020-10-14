@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;

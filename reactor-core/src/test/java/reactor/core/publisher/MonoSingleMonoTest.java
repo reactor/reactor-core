@@ -2,7 +2,7 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -43,7 +43,7 @@ public class MonoSingleMonoTest {
 	@Test
 	public void scanOperator(){
 	    MonoSingleMono<String> test = new MonoSingleMono<>(Mono.just("foo"));
-	    
+
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

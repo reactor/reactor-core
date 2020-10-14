@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -27,12 +27,15 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 
-	@Test(expected = IllegalArgumentException.class)
-	public void allNull(){
-		Flux.never().flatMap(null, null, null);
+	@Test
+	public void allNull() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never().flatMap(null, null, null);
+		});
 	}
 
 	@Override

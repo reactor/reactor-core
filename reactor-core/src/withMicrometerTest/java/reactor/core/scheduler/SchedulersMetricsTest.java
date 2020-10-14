@@ -15,39 +15,38 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import reactor.test.AutoDisposingRule;
+import reactor.test.AutoDisposingExtension;
 import reactor.util.Metrics;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
 import static reactor.core.scheduler.SchedulerMetricDecorator.TAG_SCHEDULER_ID;
 
-@RunWith(JUnitParamsRunner.class)
 public class SchedulersMetricsTest {
 
 
-	@Rule
-	public AutoDisposingRule afterTest = new AutoDisposingRule();
+	@RegisterExtension
+	public AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	private MeterRegistry registry;
 	private MeterRegistry previousRegistry;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		registry = new SimpleMeterRegistry();
 		previousRegistry = Metrics.MicrometerConfiguration.useRegistry(registry);
 		Schedulers.enableMetrics();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		Schedulers.disableMetrics();
 		registry.close();
@@ -185,7 +184,7 @@ public class SchedulersMetricsTest {
 	}
 
 	@SuppressWarnings("deprecation")
-	private Object[] metricsSchedulers() {
+	static Object[] metricsSchedulers() {
 		return new Object[] {
 				new Object[] {
 						(Supplier<Scheduler>) () -> Schedulers.newParallel("A", 1),
@@ -202,8 +201,8 @@ public class SchedulersMetricsTest {
 		};
 	}
 
-	@Test
-	@Parameters(method = "metricsSchedulers")
+	@ParameterizedTest
+	@MethodSource("metricsSchedulers")
     public void shouldReportExecutorMetrics(Supplier<Scheduler> schedulerSupplier, String type) {
 		Scheduler scheduler = afterTest.autoDispose(schedulerSupplier.get());
 		final int taskCount = 3;
@@ -227,8 +226,9 @@ public class SchedulersMetricsTest {
 		});
     }
 
-	@Parameters(method = "metricsSchedulers")
-	@Test(timeout = 10_000)
+	@ParameterizedTest
+	@MethodSource("metricsSchedulers")
+	@Timeout(10)
 	public void shouldReportExecutionTimes(Supplier<Scheduler> schedulerSupplier, String type) {
 	    Scheduler scheduler = afterTest.autoDispose(schedulerSupplier.get());
 	    final int taskCount = 3;

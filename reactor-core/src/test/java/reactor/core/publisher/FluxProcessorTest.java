@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -31,25 +31,32 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @SuppressWarnings("deprecation")
 public class FluxProcessorTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	@SuppressWarnings("unchecked")
-	public void failNullSubscriber(){
-		FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor.create())
-	                 .subscribe((Subscriber)null);
+	public void failNullSubscriber() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor.create())
+					.subscribe((Subscriber) null);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void failNullUpstream(){
-		FluxProcessor.wrap(null, UnicastProcessor.create());
+	@Test
+	public void failNullUpstream() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			FluxProcessor.wrap(null, UnicastProcessor.create());
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void failNullDownstream(){
-		FluxProcessor.wrap(UnicastProcessor.create(), null);
+	@Test
+	public void failNullDownstream() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			FluxProcessor.wrap(UnicastProcessor.create(), null);
+		});
 	}
 
 	@Test

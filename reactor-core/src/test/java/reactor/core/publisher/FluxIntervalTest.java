@@ -20,10 +20,10 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -38,12 +38,12 @@ public class FluxIntervalTest {
 
 	Scheduler exec;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		exec = Schedulers.newSingle("interval-test");
 	}
 
-	@After
+	@AfterEach
 	public void after() {
 		exec.dispose();
 	}

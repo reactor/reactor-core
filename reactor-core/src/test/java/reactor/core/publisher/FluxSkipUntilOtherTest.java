@@ -21,13 +21,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
@@ -69,15 +72,19 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullSource() {
-		new FluxSkipUntilOther<>(null, Flux.never());
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxSkipUntilOther<>(null, Flux.never());
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullOther() {
-		Flux.never()
-		    .skipUntilOther(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.skipUntilOther(null);
+		});
 	}
 
 	@Test

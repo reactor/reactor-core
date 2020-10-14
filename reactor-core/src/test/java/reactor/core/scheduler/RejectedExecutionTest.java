@@ -23,11 +23,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
@@ -45,8 +44,7 @@ import static org.junit.Assert.assertTrue;
 
 public class RejectedExecutionTest {
 
-	@Rule
-	public TestName testName = new TestName();
+	private TestInfo testInfo;
 
 	private BoundedScheduler scheduler;
 
@@ -58,7 +56,11 @@ public class RejectedExecutionTest {
 	private ConcurrentLinkedQueue<Long> onOperatorErrorData = new ConcurrentLinkedQueue<>();
 	private ConcurrentLinkedQueue<Throwable> onSchedulerHandleError = new ConcurrentLinkedQueue<>();
 
-	@Before
+	public RejectedExecutionTest(TestInfo testInfo) {
+		this.testInfo = testInfo;
+	}
+
+	@BeforeEach
 	public void setUp() {
 		scheduler = new BoundedScheduler(Schedulers.newSingle("bounded-single"));
 		Hooks.onNextDropped(o -> onNextDropped.add(o));
@@ -75,7 +77,7 @@ public class RejectedExecutionTest {
 		Schedulers.onHandleError((thread, t) -> onSchedulerHandleError.add(t));
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		scheduler.dispose();
 		onNexts.clear();
@@ -293,7 +295,7 @@ public class RejectedExecutionTest {
 						"Data dropped from onOperatorError should always be >= 1");
 
 		if (!onOperatorErrorData.isEmpty()) {
-			System.out.println(testName.getMethodName() + " legitimately has data dropped from onOperatorError: " + onOperatorErrorData);
+			System.out.println(testInfo.getDisplayName() + " legitimately has data dropped from onOperatorError: " + onOperatorErrorData);
 		}
 	}
 
@@ -327,7 +329,7 @@ public class RejectedExecutionTest {
 						"Data dropped from onOperatorError should always be >= elementCount");
 
 		if (!onOperatorErrorData.isEmpty()) {
-			System.out.println(testName.getMethodName() + " legitimately has data dropped from onOperatorError: " + onOperatorErrorData);
+			System.out.println(testInfo.getDisplayName() + " legitimately has data dropped from onOperatorError: " + onOperatorErrorData);
 		}
 
 	}

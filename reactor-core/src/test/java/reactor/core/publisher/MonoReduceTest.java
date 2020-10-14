@@ -22,8 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

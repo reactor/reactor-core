@@ -36,11 +36,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
@@ -73,7 +73,8 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
  */
 public class GuideTests {
 
-	@Test @SuppressWarnings("unchecked")
+	@Test
+	@SuppressWarnings("unchecked")
 	public void introFutureHell() {
 		CompletableFuture<List<String>> ids = ifhIds(); // <1>
 
@@ -1011,17 +1012,21 @@ assertThat(errorCount).hasValue(6); // <6>
 		           .single();
 	}
 
-	@Rule
-	public TestName testName = new TestName();
-
-	@Before
-	public void populateDebug() {
-		if (testName.getMethodName().equals("debuggingCommonStacktrace")) {
+	@BeforeEach
+	public void populateDebug(TestInfo testInfo) {
+		if (testInfo.getDisplayName().equals("debuggingCommonStacktrace()")) {
 			toDebug = scatterAndGather(urls());
 		}
-		else if (testName.getMethodName().startsWith("debuggingActivated")) {
+		else if (testInfo.getDisplayName().startsWith("debuggingActivated")) { // TODO better handled by JUnit5 tags
 			Hooks.onOperatorDebug();
 			toDebug = scatterAndGather(urls());
+		}
+	}
+
+	@AfterEach
+	public void removeHooks(TestInfo testInfo) {
+		if (testInfo.getDisplayName().startsWith("debuggingActivated")) {
+			Hooks.resetOnOperatorDebug();
 		}
 	}
 

@@ -15,25 +15,30 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSwitchIfEmptyTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxSwitchIfEmpty<>(null, Flux.never());
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxSwitchIfEmpty<>(null, Flux.never());
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void otherNull() {
-		Flux.never()
-		    .switchIfEmpty(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.switchIfEmpty(null);
+		});
 	}
 
 	@Test

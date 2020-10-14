@@ -19,7 +19,8 @@ package reactor.core.publisher;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;

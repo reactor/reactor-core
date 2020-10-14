@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;

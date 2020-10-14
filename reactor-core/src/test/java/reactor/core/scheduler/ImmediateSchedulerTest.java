@@ -18,8 +18,8 @@ package reactor.core.scheduler;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Test;
 import org.assertj.core.api.Assumptions;
-import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -63,6 +63,7 @@ public class ImmediateSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	@Test
 	public void restartSupport() {
 		//immediate is a bit weird: disposing doesn't make sense any more than restarting
 		Assumptions.assumeThat(false).as("immediate cannot be either disposed nor restarted").isFalse();

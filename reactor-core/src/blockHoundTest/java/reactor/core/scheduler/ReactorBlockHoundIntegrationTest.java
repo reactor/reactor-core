@@ -21,14 +21,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.blockhound.BlockHound;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.util.RaceTestUtils;
 
+@Timeout(5)
 public class ReactorBlockHoundIntegrationTest {
 
 	static {
@@ -37,9 +37,6 @@ public class ReactorBlockHoundIntegrationTest {
 		          .with(new ReactorBlockHoundIntegration())
 		          .install();
 	}
-
-	@Rule
-	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void shouldDetectBlockingCalls() {

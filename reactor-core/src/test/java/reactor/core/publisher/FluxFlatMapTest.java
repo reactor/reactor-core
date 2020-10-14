@@ -28,11 +28,10 @@ import java.util.function.Function;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -48,6 +47,7 @@ import reactor.test.util.TestLogger;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxFlatMapTest {
@@ -494,16 +494,20 @@ public class FluxFlatMapTest {
 		               .getPrefetch()).isEqualTo(Queues.XS_BUFFER_SIZE);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failMaxConcurrency() {
-		Flux.just(1, 2, 3)
-		    .flatMap(Flux::just, -1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.just(1, 2, 3)
+					.flatMap(Flux::just, -1);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failPrefetch() {
-		Flux.just(1, 2, 3)
-		    .flatMap(Flux::just, 128, -1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.just(1, 2, 3)
+					.flatMap(Flux::just, 128, -1);
+		});
 	}
 
 	@Test
@@ -1491,7 +1495,7 @@ public class FluxFlatMapTest {
     }
 
 	@Test
-	@Ignore
+	@Disabled
 	public void progressiveRequest() {
 		TestPublisher<Integer> tp = TestPublisher.create();
 		StepVerifier.create(tp.flux()

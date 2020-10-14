@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.data.Percentage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;

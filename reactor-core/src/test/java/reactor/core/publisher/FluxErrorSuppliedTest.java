@@ -35,13 +35,12 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.function.Supplier;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static reactor.core.publisher.Flux.just;
 
 public class FluxErrorSuppliedTest {
 

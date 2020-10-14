@@ -19,12 +19,9 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Publisher;
 
 import reactor.core.CorePublisher;
@@ -37,10 +34,8 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
+@Timeout(5)
 public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String, String> {
-
-	@Rule
-	public TestRule timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	abstract int implicitPrefetchValue();
 

@@ -30,8 +30,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -44,6 +44,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -57,7 +58,7 @@ public class FluxMergeSequentialTest {
 
 	final Function<Integer, Flux<Integer>> toRange = t -> Flux.range(t, 2);
 
-	@Before
+	@BeforeEach
 	public void before() {
 		ts = new AssertSubscriber<>();
 		tsBp = new AssertSubscriber<>(0L);
@@ -424,14 +425,18 @@ public class FluxMergeSequentialTest {
 		ts.assertError(RuntimeException.class);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testInvalidCapacityHint() {
-		Flux.just(1).flatMapSequential(toJust, 0, Queues.SMALL_BUFFER_SIZE);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.just(1).flatMapSequential(toJust, 0, Queues.SMALL_BUFFER_SIZE);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testInvalidMaxConcurrent() {
-		Flux.just(1).flatMapSequential(toJust, Queues.SMALL_BUFFER_SIZE, 0);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.just(1).flatMapSequential(toJust, Queues.SMALL_BUFFER_SIZE, 0);
+		});
 	}
 
 	@Test

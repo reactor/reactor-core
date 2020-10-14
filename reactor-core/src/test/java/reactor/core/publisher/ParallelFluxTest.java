@@ -36,8 +36,8 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -47,7 +47,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.AutoDisposingRule;
+import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -55,12 +55,13 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertTrue;
 
 public class ParallelFluxTest {
 
-	@Rule
-	public AutoDisposingRule afterTest = new AutoDisposingRule();
+	@RegisterExtension
+	public AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
 	public void sequentialMode() {
@@ -333,11 +334,13 @@ public class ParallelFluxTest {
 				.hasMessage("boom");
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void testDoOnEachSignalNullConsumer() {
-		Flux.just(1)
-		    .parallel()
-		    .doOnEach(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.just(1)
+					.parallel()
+					.doOnEach(null);
+		});
 	}
 
 	@Test

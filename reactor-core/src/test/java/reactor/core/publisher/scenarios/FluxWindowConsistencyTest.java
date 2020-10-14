@@ -22,15 +22,16 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.GroupedFlux;
 import reactor.core.publisher.Sinks;
 import reactor.test.subscriber.AssertSubscriber;
 
-import static org.junit.Assert.assertEquals;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxWindowConsistencyTest {
@@ -57,7 +58,7 @@ public class FluxWindowConsistencyTest {
 
 	private AtomicInteger mainTerminated = new AtomicInteger();
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		source = sourceProcessor.asFlux().doOnNext(i -> sourceCount.incrementAndGet());
 	}

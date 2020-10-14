@@ -1,10 +1,9 @@
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;

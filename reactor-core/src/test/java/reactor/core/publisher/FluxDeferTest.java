@@ -19,18 +19,21 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxDeferTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void supplierNull() {
-		Flux.<Integer>defer(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.<Integer>defer(null);
+		});
 	}
 
 	@Test

@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.junit.jupiter.api.Test;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
 
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;

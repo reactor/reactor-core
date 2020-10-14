@@ -23,8 +23,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 import static reactor.util.context.ContextTest.*;
@@ -33,7 +33,7 @@ public class ContextNTest {
 
 	ContextN c;
 
-	@Before
+	@BeforeEach
 	public void initContext() {
 		c = new ContextN(1, "A", 2, "B", 3, "C",
 			4, "D", 5, "E", 6, "F");

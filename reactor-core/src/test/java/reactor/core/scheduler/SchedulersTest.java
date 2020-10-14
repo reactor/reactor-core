@@ -36,11 +36,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.Assert;
-import org.junit.Test;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -104,7 +104,7 @@ public class SchedulersTest {
 	final static Condition<Scheduler> CACHED_SCHEDULER = new Condition<>(
 			s -> s instanceof Schedulers.CachedScheduler, "a cached scheduler");
 
-	@After
+	@AfterEach
 	public void resetSchedulers() {
 		Schedulers.resetFactory();
 		Schedulers.DECORATORS.clear();
@@ -572,8 +572,8 @@ public class SchedulersTest {
 		Assert.assertEquals(cachedTimerNew, Schedulers.newSingle("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory"s cached scheduler was shut down
-		Assertions.assertThatExceptionOfType(RejectedExecutionException.class)
-		          .isThrownBy(() -> cachedTimerOld.schedule(() -> {}));
+		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> cachedTimerOld.schedule(() -> {
+		}));
 		//independently created schedulers are still the programmer"s responsibility
 		Assert.assertNotNull(standaloneTimer.schedule(() -> {}));
 		//new factory = new alive cached scheduler
@@ -868,7 +868,8 @@ public class SchedulersTest {
 	}
 
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void parallelSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newParallel("work", 2);
 		try {
@@ -892,7 +893,8 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void singleSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newSingle("work");
 		try {
@@ -917,7 +919,8 @@ public class SchedulersTest {
 	}
 
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void elasticSchedulerThreadCheck() throws Exception{
 		@SuppressWarnings("deprecation")
 		Scheduler s = Schedulers.newElastic("work");
@@ -942,7 +945,8 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void boundedElasticSchedulerThreadCheck() throws Exception {
 		Scheduler s = Schedulers.newBoundedElastic(4, Integer.MAX_VALUE,"boundedElasticSchedulerThreadCheck");
 		try {
@@ -966,7 +970,8 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void executorThreadCheck() throws Exception{
 		ExecutorService es = Executors.newSingleThreadExecutor();
 		Scheduler s = Schedulers.fromExecutor(es::execute);
@@ -993,7 +998,8 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void executorThreadCheck2() throws Exception{
 		ExecutorService es = Executors.newSingleThreadExecutor();
 		Scheduler s = Schedulers.fromExecutor(es::execute, true);
@@ -1020,7 +1026,8 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void sharedSingleCheck() throws Exception{
 		Scheduler p = Schedulers.newParallel("shared");
 		Scheduler s = Schedulers.single(p);

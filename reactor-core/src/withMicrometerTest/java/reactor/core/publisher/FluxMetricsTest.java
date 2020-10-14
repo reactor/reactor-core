@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -48,14 +48,14 @@ public class FluxMetricsTest {
 	private MeterRegistry registry;
 	private MeterRegistry previousRegistry;
 
-	@Before
+	@BeforeEach
 	public void setupRegistry() {
 		registry = new SimpleMeterRegistry();
 		previousRegistry = Metrics.MicrometerConfiguration.useRegistry(registry);
 	}
 
-	@After
-	public void resetRegistry() {
+	@AfterEach
+	public void removeRegistry() {
 		registry.close();
 		Metrics.MicrometerConfiguration.useRegistry(previousRegistry);
 	}

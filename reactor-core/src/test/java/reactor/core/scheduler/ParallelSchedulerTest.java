@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.jupiter.api.Test;
 import com.pivovarit.function.ThrowingRunnable;
-import org.junit.Test;
 
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
@@ -32,6 +32,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Stephane Maldini
@@ -70,10 +71,11 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		assertThat(decorationCount).as("after 2nd schedule").hasValue(parallelismAndExpectedImplicitStart);
 	}
 
-
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void negativeParallelism() throws Exception {
-		Schedulers.newParallel("test", -1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Schedulers.newParallel("test", -1);
+		});
 	}
 
 	@Test
