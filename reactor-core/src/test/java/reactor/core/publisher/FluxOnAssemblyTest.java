@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -35,11 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FluxOnAssemblyTest {
-
-	@AfterEach
-	public void tearDown() {
-		Hooks.resetOnOperatorDebug();
-	}
 
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
