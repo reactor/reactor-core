@@ -148,8 +148,7 @@ public abstract class AbstractSchedulerTest {
 
 			assertThat(w.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);
-			CountDownLatch latch2 = shouldCheckDisposeTask() ? new CountDownLatch(1)
-					: null;
+			CountDownLatch latch2 = shouldCheckDisposeTask() ? new CountDownLatch(1) : null;
 
 			try {
 				Disposable d = w.schedule(() -> {
@@ -241,8 +240,7 @@ public abstract class AbstractSchedulerTest {
 
 			if (!shouldCheckDirectTimeScheduling()) {
 				assertThatExceptionOfType(RejectedExecutionException.class)
-						.isThrownBy(() -> s.schedule(() -> {
-						}, 10, TimeUnit.MILLISECONDS))
+						.isThrownBy(() -> s.schedule(() -> { }, 10, TimeUnit.MILLISECONDS))
 						.as("Scheduler marked as not supporting time scheduling")
 						.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 				return;
