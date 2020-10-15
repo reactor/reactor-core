@@ -51,7 +51,6 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@AfterEach
 	public void vtsStop() {
-		vts = null;
 		VirtualTimeScheduler.reset();
 	}
 

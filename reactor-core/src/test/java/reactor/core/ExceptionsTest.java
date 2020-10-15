@@ -39,19 +39,14 @@ import static reactor.core.Exceptions.*;
  */
 public class ExceptionsTest {
 
-	//used for two addThrowableXxx tests lower in the class
+	//used for two addThrowableXxx tests lower in the class. each test receiving a separate instance of ExceptionsTests,
+	//there is no need to reset it.
 	volatile @Nullable Throwable addThrowable;
 	static final AtomicReferenceFieldUpdater<ExceptionsTest, Throwable> ADD_THROWABLE =
 			AtomicReferenceFieldUpdater.newUpdater(ExceptionsTest.class, Throwable.class, "addThrowable");
 
-	@BeforeEach
-	public void resetAddThrowable() {
-		addThrowable = null;
-	}
-
 	@Test
 	public void bubble() throws Exception {
-
 		Throwable t = new Exception("test");
 
 		Throwable w = Exceptions.bubble(Exceptions.propagate(t));
@@ -61,7 +56,6 @@ public class ExceptionsTest {
 
 	@Test
 	public void nullBubble() throws Exception {
-
 		Throwable w = Exceptions.bubble(null);
 
 		assertTrue(Exceptions.unwrap(w) == w);
