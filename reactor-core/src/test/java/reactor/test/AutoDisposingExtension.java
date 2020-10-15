@@ -36,7 +36,6 @@ public class AutoDisposingExtension implements BeforeTestExecutionCallback, Afte
 
 	@Override
 	public void beforeTestExecution(ExtensionContext context) throws Exception {
-		System.out.println("HELLO  " + context.getRequiredTestClass());
 		toDispose = Disposables.composite();
 	}
 
