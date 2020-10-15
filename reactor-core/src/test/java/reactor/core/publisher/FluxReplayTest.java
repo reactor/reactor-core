@@ -41,6 +41,21 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
+	VirtualTimeScheduler vts;
+
+	@BeforeEach
+	public void vtsStart() {
+		//delayElements (notably) now uses parallel() so VTS must be enabled everywhere
+		vts = VirtualTimeScheduler.getOrSet();
+	}
+
+	@AfterEach
+	public void vtsStop() {
+		VirtualTimeScheduler.reset();
+	}
+
+	// === overrides to configure the abstract test ===
+
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.prefetch(Integer.MAX_VALUE)
@@ -63,6 +78,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
+	// === start of tests ===
+
 	@Test
 	public void failPrefetch() {
 		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
@@ -77,20 +94,6 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 			Flux.never()
 					.replay(Duration.ofDays(-1));
 		});
-	}
-
-	VirtualTimeScheduler vts;
-
-	@BeforeEach
-	public void vtsStart() {
-		//delayElements (notably) now uses parallel() so VTS must be enabled everywhere
-		vts = VirtualTimeScheduler.getOrSet();
-	}
-
-	@AfterEach
-	public void vtsStop() {
-		vts = null;
-		VirtualTimeScheduler.reset();
 	}
 
 	@Test

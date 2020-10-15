@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Mono;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertFalse;
@@ -38,9 +39,14 @@ import static reactor.core.Exceptions.*;
  */
 public class ExceptionsTest {
 
+	//used for two addThrowableXxx tests lower in the class. each test receiving a separate instance of ExceptionsTests,
+	//there is no need to reset it.
+	volatile @Nullable Throwable addThrowable;
+	static final AtomicReferenceFieldUpdater<ExceptionsTest, Throwable> ADD_THROWABLE =
+			AtomicReferenceFieldUpdater.newUpdater(ExceptionsTest.class, Throwable.class, "addThrowable");
+
 	@Test
 	public void bubble() throws Exception {
-
 		Throwable t = new Exception("test");
 
 		Throwable w = Exceptions.bubble(Exceptions.propagate(t));
@@ -50,7 +56,6 @@ public class ExceptionsTest {
 
 	@Test
 	public void nullBubble() throws Exception {
-
 		Throwable w = Exceptions.bubble(null);
 
 		assertTrue(Exceptions.unwrap(w) == w);
@@ -282,15 +287,6 @@ public class ExceptionsTest {
 	public void unwrapMultipleNotComposite() {
 		RuntimeException e1 = Exceptions.failWithCancel();
 		assertThat(Exceptions.unwrapMultiple(e1)).containsExactly(e1);
-	}
-
-	volatile Throwable addThrowable;
-	static final AtomicReferenceFieldUpdater<ExceptionsTest, Throwable> ADD_THROWABLE =
-			AtomicReferenceFieldUpdater.newUpdater(ExceptionsTest.class, Throwable.class, "addThrowable");
-
-	@BeforeEach
-	public void resetAddThrowable() {
-		addThrowable = null;
 	}
 
 	@Test
