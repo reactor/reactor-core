@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.assertj.core.api.Assertions;
@@ -998,6 +999,10 @@ assertThat(errorCount).hasValue(6); // <6>
 		probe.assertWasNotCancelled(); //<5>
 	}
 
+	//Note: the following static methods and fields are grouped here on purpose
+	//as they all relate to the same section of the reference guide (activating debug mode).
+	//some of these lines are copied verbatim in the reference guide, like the declaration of toDebug.
+
 	private Flux<String> urls() {
 		return Flux.range(1, 5)
 		           .map(i -> "https://www.mysite.io/quote" + i);
@@ -1014,18 +1019,17 @@ assertThat(errorCount).hasValue(6); // <6>
 
 	@BeforeEach
 	public void populateDebug(TestInfo testInfo) {
-		if (testInfo.getDisplayName().equals("debuggingCommonStacktrace()")) {
-			toDebug = scatterAndGather(urls());
-		}
-		else if (testInfo.getDisplayName().startsWith("debuggingActivated")) { // TODO better handled by JUnit5 tags
+		if (testInfo.getTags().contains("debugModeOn")) {
 			Hooks.onOperatorDebug();
+		}
+		if (testInfo.getTags().contains("debugInit")) {
 			toDebug = scatterAndGather(urls());
 		}
 	}
 
 	@AfterEach
 	public void removeHooks(TestInfo testInfo) {
-		if (testInfo.getDisplayName().startsWith("debuggingActivated")) {
+		if (testInfo.getTags().contains("debugModeOn")) {
 			Hooks.resetOnOperatorDebug();
 		}
 	}
@@ -1045,17 +1049,20 @@ assertThat(errorCount).hasValue(6); // <6>
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1011)\n");
+						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017)\n");
 			});
 		}
 	}
 
 	@Test
+	@Tag("debugInit")
 	public void debuggingCommonStacktrace() {
 		toDebug.subscribe(System.out::println, t -> printAndAssert(t, false));
 	}
 
 	@Test
+	@Tag("debugModeOn")
+	@Tag("debugInit")
 	public void debuggingActivated() {
 		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
 	}

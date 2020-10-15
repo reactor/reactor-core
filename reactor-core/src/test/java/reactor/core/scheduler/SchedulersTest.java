@@ -104,6 +104,8 @@ public class SchedulersTest {
 	final static Condition<Scheduler> CACHED_SCHEDULER = new Condition<>(
 			s -> s instanceof Schedulers.CachedScheduler, "a cached scheduler");
 
+	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
+
 	@AfterEach
 	public void resetSchedulers() {
 		Schedulers.resetFactory();
@@ -572,8 +574,7 @@ public class SchedulersTest {
 		Assert.assertEquals(cachedTimerNew, Schedulers.newSingle("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory"s cached scheduler was shut down
-		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> cachedTimerOld.schedule(() -> {
-		}));
+		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> cachedTimerOld.schedule(() -> { }));
 		//independently created schedulers are still the programmer"s responsibility
 		Assert.assertNotNull(standaloneTimer.schedule(() -> {}));
 		//new factory = new alive cached scheduler
@@ -661,7 +662,7 @@ public class SchedulersTest {
 		assertRejectingScheduler(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor()));
 	}
 
-	public void assertRejectingScheduler(Scheduler scheduler) {
+	private void assertRejectingScheduler(Scheduler scheduler) {
 		try {
 			Sinks.Many<String> p = Sinks.unsafe().many().multicast().directBestEffort();
 
@@ -690,10 +691,6 @@ public class SchedulersTest {
 			scheduler.dispose();
 		}
 	}
-
-	//private final int             BUFFER_SIZE     = 8;
-	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
-	private final int                        N               = 17;
 
 	@Test
 	public void testDispatch() throws Exception {
@@ -1267,41 +1264,6 @@ public class SchedulersTest {
 		}
 	}
 
-	final static class EmptyScheduler implements Scheduler {
-
-		boolean disposeCalled;
-
-		@Override
-		public void dispose() {
-			disposeCalled = true;
-		}
-
-		@Override
-		public Disposable schedule(Runnable task) {
-			return null;
-		}
-
-		@Override
-		public EmptyWorker createWorker() {
-			return new EmptyWorker();
-		}
-
-		static class EmptyWorker implements Worker {
-
-			boolean disposeCalled;
-
-			@Override
-			public Disposable schedule(Runnable task) {
-				return null;
-			}
-
-			@Override
-			public void dispose() {
-				disposeCalled = true;
-			}
-		}
-	}
-
 	@Test
 	public void testDirectSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
@@ -1459,6 +1421,43 @@ public class SchedulersTest {
 		}
 	}
 
+	// === utility classes ===
+
+	final static class EmptyScheduler implements Scheduler {
+
+		boolean disposeCalled;
+
+		@Override
+		public void dispose() {
+			disposeCalled = true;
+		}
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return null;
+		}
+
+		@Override
+		public EmptyWorker createWorker() {
+			return new EmptyWorker();
+		}
+
+		static class EmptyWorker implements Worker {
+
+			boolean disposeCalled;
+
+			@Override
+			public Disposable schedule(Runnable task) {
+				return null;
+			}
+
+			@Override
+			public void dispose() {
+				disposeCalled = true;
+			}
+		}
+	}
+
 	final static class TaskCheckingScheduledExecutor extends ScheduledThreadPoolExecutor implements AutoCloseable {
 
 		private final List<RunnableScheduledFuture<?>> tasks = new CopyOnWriteArrayList<>();
@@ -1514,14 +1513,6 @@ public class SchedulersTest {
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			return null;
 		}
-
-//		@Override
-//		public Disposable schedulePeriodically(Runnable task,
-//				long initialDelay,
-//				long period,
-//				TimeUnit unit) {
-//			return null;
-//		}
 
 		@Override
 		public EmptyTimedWorker createWorker() {
