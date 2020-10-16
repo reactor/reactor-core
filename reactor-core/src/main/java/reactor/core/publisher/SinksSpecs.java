@@ -5,15 +5,20 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.reactivestreams.Publisher;
+
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks.Empty;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.publisher.Sinks.One;
+import reactor.core.publisher.SinksSubscribers.EmptySubscriberAdapter;
+import reactor.core.publisher.SinksSubscribers.ManySubscriberAdapter;
+import reactor.core.publisher.SinksSubscribers.OneSubscriberAdapter;
 import reactor.core.scheduler.Scheduler;
 
 final class SinksSpecs {
 
-	static final Sinks.RootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
+	static final Sinks.RootUnsafeSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
 	static final Sinks.RootSpec DEFAULT_ROOT_SPEC = new RootSpecImpl(true);
 
 	abstract static class AbstractSerializedSink {
@@ -45,7 +50,7 @@ final class SinksSpecs {
 		}
 	}
 
-	static final class RootSpecImpl implements Sinks.RootSpec,
+	static final class RootSpecImpl implements Sinks.RootUnsafeSpec,
 	                                     Sinks.ManySpec,
 	                                     Sinks.MulticastSpec,
 	                                     Sinks.MulticastReplaySpec {
@@ -57,6 +62,27 @@ final class SinksSpecs {
 			this.serialized = serialized;
 			//there will only be as many instances of UnicastSpecImpl as there are RootSpecImpl instances (2)
 			this.unicastSpec = new UnicastSpecImpl(serialized);
+		}
+
+		@Override
+		public <T> Disposable connectMany(Publisher<T> source, Many<T> manySink) {
+			ManySubscriberAdapter<T> subscriber = new ManySubscriberAdapter<>(manySink);
+			source.subscribe(subscriber);
+			return subscriber;
+		}
+
+		@Override
+		public <T> Disposable connectEmpty(Publisher<Void> emptySource, Empty<T> emptySink) {
+			EmptySubscriberAdapter<T> subscriber = new EmptySubscriberAdapter<>(emptySink);
+			emptySource.subscribe(subscriber);
+			return subscriber;
+		}
+
+		@Override
+		public <T> Disposable connectOne(Mono<T> oneSource, One<T> oneSink) {
+			OneSubscriberAdapter<T> subscriber = new OneSubscriberAdapter<>(oneSink);
+			oneSource.subscribe(subscriber);
+			return subscriber;
 		}
 
 		<T, EMPTY extends Empty<T> & ContextHolder> Empty<T> wrapEmpty(EMPTY original) {

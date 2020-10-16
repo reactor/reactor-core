@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Queue;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.Disposable;
@@ -95,7 +96,7 @@ public final class Sinks {
 	 *
 	 * @return {@link RootSpec}
 	 */
-	public static RootSpec unsafe() {
+	public static RootUnsafeSpec unsafe() {
 		return SinksSpecs.UNSAFE_ROOT_SPEC;
 	}
 
@@ -284,6 +285,98 @@ public final class Sinks {
 		 * @return {@link ManySpec}
 		 */
 		ManySpec many();
+	}
+
+	interface RootUnsafeSpec extends RootSpec {
+
+		/**
+		 * Connect a {@link Sinks.Many} to an arbitrary {@link Publisher} of compatible type.
+		 * This is considered an unsafe operation because connecting implies adhering to some rules
+		 * and ceremony:
+		 * <ol>
+		 *   <li>
+		 *      one MUST NOT call the emit and tryEmit APIs on the sink
+		 *      <ul>
+		 *          <li>if the sink itself is unsafe (not serialized) this would result in undefined behavior</li>
+		 *          <li>if the sink is serialized, it might be ok but the source will trigger
+		 *          {@link Sinks.Many#emitNext(Object, EmitFailureHandler) calls to the emit API}, which might terminate
+		 *          the sink in case of concurrent access</li>
+		 *      </ul>
+		 *   </li>
+		 *   <li>one MUST NOT use this to connect a sink multiple times (new connections will cancel the previous subscription)</li>
+		 *   <li>this represents a virtual processor, the downstream of which is the sink's  {@link Many#asFlux()}</li>
+		 *   <li>once {@link Disposable#dispose()} is called, the sink can be reused normally</li>
+		 * </ol>
+		 * However, it is generally ok (and even preferable maybe) to connect an {@link Sinks#unsafe() unsafe sink}, as the parent
+		 * subscriber will ensure intrinsic serialization by respecting the Reactive Streams specification.
+		 *
+		 * @param source the source {@link Publisher} to connect to
+		 * @param manySink the {@link Sinks.Many} to feed
+		 * @param <T> the type of values transmitted from the source to the sink
+		 * @return a {@link Disposable} allowing to disconnect the sink from the source, cancelling the subscription to the source
+		 * @see org.reactivestreams.Processor
+		 */
+		<T> Disposable connectMany(Publisher<T> source, Sinks.Many<T> manySink);
+
+		/**
+		 * Connect a {@link Sinks.Empty} to an arbitrary {@link Void} {@link Publisher}.
+		 * This is considered an unsafe operation because connecting implies adhering to some rules
+		 * and ceremony:
+		 * <ol>
+		 *   <li>
+		 *      one MUST NOT call the emit and tryEmit APIs on the sink
+		 *      <ul>
+		 *          <li>if the sink itself is unsafe (not serialized) this can result in undefined behavior</li>
+		 *          <li>if the sink is serialized, it might be ok but the source will trigger
+		 *          {@link Sinks.Empty#emitEmpty(EmitFailureHandler) calls to the emit API}, which might terminate
+		 *          the sink in case of concurrent access
+		 *          </li>
+		 *      </ul>
+		 *   </li>
+		 *   <li>one MUST NOT use this to connect a sink multiple times (new connections will cancel the previous subscription)</li>
+		 *   <li>this represents a virtual processor, the downstream of which is the sink's {@link Empty#asMono()}</li>
+		 *   <li>once {@link Disposable#dispose()} is called, the sink can be reused normally</li>
+		 * </ol>
+		 * However, it is generally ok (and even preferable maybe) to connect an {@link Sinks#unsafe() unsafe sink}, as the parent
+		 * subscriber will ensure intrinsic serialization by respecting the Reactive Streams specification.
+		 *
+		 * @param source the source {@link Publisher} to connect to
+		 * @param emptySink the {@link Sinks.Empty} to feed
+		 * @param <T> the (ignored) type of the sink's {@link Empty#asMono() asMono() view}
+		 * @return a {@link Disposable} allowing to disconnect the sink from the source, cancelling the subscription to the source
+		 * @see org.reactivestreams.Processor
+		 */
+		<T> Disposable connectEmpty(Publisher<Void> source, Sinks.Empty<T> emptySink);
+
+		/**
+		 * Connect a {@link Sinks.One} to a {@link Mono} of compatible type.
+		 * This is considered an unsafe operation because connecting implies adhering to some rules
+		 * and ceremony:
+		 * <ol>
+		 *   <li>
+		 *      one MUST NOT call the emit and tryEmit APIs on the sink
+		 *      <ul>
+		 *          <li>if the sink itself is unsafe (not serialized) this can result in undefined behavior</li>
+		 *          <li>if the sink is serialized, it might be ok but the source will trigger
+		 *          {@link Sinks.One#emitValue(Object, EmitFailureHandler) calls to the emit API}, which might terminate
+		 *          the sink in case of concurrent access
+		 *          </li>
+		 *      </ul>
+		 *   </li>
+		 *   <li>one MUST NOT use this to connect a sink multiple times (new connections will cancel the previous subscription)</li>
+		 *   <li>this represents a virtual processor, the downstream of which is the sink's {@link Empty#asMono()}</li>
+		 *   <li>once {@link Disposable#dispose()} is called, the sink can be reused normally</li>
+		 * </ol>
+		 * However, it is generally ok (and even preferable maybe) to connect an {@link Sinks#unsafe() unsafe sink}, as the parent
+		 * subscriber will ensure intrinsic serialization by respecting the Reactive Streams specification.
+		 *
+		 * @param source the source {@link Mono} to connect to
+		 * @param oneSink the {@link Sinks.One} to feed
+		 * @param <T> the type of value transmitted from the source to the sink
+		 * @return a {@link Disposable} allowing to disconnect the sink from the source, cancelling the subscription to the source
+		 * @see org.reactivestreams.Processor
+		 */
+		<T> Disposable connectOne(Mono<T> source, Sinks.One<T> oneSink);
 	}
 
 	/**
