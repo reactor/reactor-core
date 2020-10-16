@@ -300,17 +300,21 @@ task loops(type: Test, group: 'verification') {
 	}
 }
 
-task testNG(type: Test, group: 'verification') {
-	useTestNG()
+task reactivestreamsTCK(type: Test, group: 'verification') {
 	include '**/*Verification.*'
 	doFirst {
-		println "Additional tests from `testNG` ($includes)"
+		println "Additional tests from `${name}` (${includes})"
 	}
 }
 
 tasks.withType(Test).all {
-	useJUnitPlatform()
+	if (it.name == "reactivestreamsTCK") {
+		useTestNG()
+	} else {
+		useJUnitPlatform()
+	}
 }
+
 
 blockHoundTest {
 	// Creates a JVM per test because the agent can be installed only once
@@ -319,12 +323,12 @@ blockHoundTest {
 }
 
 //inherit basic test task + common configuration in root
-//always depend on testNoMicrometer, skip testNG on Travis, skip loops when not releasing
+//always depend on testNoMicrometer, skip reactivestreamsTCK on Travis, skip loops when not releasing
 //note that this way the tasks can be run individually
 check {
 	dependsOn withMicrometerTest
 	if (!detectedCiServers.contains("TRAVIS")) {
-		dependsOn testNG
+		dependsOn reactivestreamsTCK
 	}
 	if (!version.endsWith('-SNAPSHOT') && !version.contains('-SNAPSHOT-')) { //neither classic nor customized snapshots
 		dependsOn loops
