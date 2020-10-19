@@ -287,7 +287,7 @@ public final class Sinks {
 		ManySpec many();
 	}
 
-	interface RootUnsafeSpec extends RootSpec {
+	public interface RootUnsafeSpec extends RootSpec {
 
 		/**
 		 * Connect a {@link Sinks.Many} to an arbitrary {@link Publisher} of compatible type.
