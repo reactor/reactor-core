@@ -27,7 +27,7 @@ buildscript {
 
 	dependencies {
 		// when updating this plugin, revisit pinning the version of the jcstress jar near line 356
-		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.5'
+		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.6'
 	}
 }
 
