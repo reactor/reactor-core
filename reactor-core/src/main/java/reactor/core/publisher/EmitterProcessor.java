@@ -334,7 +334,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 
 		if (highestServiceable != 0) {
-			consumer.accept(highestServiceable, highestWithoutDropping);
+			consumer.accept(highestWithoutDropping, highestServiceable);
 		}
 	}
 

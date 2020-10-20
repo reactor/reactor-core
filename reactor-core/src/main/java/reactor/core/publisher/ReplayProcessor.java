@@ -528,7 +528,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		FluxReplay.ReplaySubscription<T>[] subs = this.subscribers;
 		long highestServiceable = 0L;
 		long highestWithoutDropping = -1L;
-		long maxDiff = this.buffer.capacity();
+		long maxDiff = this.buffer.capacity(); //TODO check the logic here
 		for (FluxReplay.ReplaySubscription<T> sub : subs) {
 			long r = sub.requested();
 			if (sub.isCancelled()) {
@@ -549,7 +549,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		if (highestServiceable != 0) {
-			consumer.accept(highestServiceable, highestWithoutDropping);
+			consumer.accept(highestWithoutDropping, highestServiceable);
 		}
 	}
 

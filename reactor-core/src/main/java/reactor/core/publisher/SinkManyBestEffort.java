@@ -221,7 +221,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		}
 
 		if (highestServiceable != 0) {
-			requestRangeConsumer.accept(highestServiceable, highestWithoutDropping);
+			consumer.accept(highestWithoutDropping, highestServiceable);
 		}
 	}
 
