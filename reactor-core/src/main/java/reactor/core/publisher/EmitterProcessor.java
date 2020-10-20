@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -136,6 +137,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
+
+	@Nullable
+	volatile BiConsumer<Long, Long> requestRangeConsumer;
 
 	@SuppressWarnings("unused")
 	volatile int wip;
@@ -290,6 +294,48 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@Override
 	public int currentSubscriberCount() {
 		return subscribers.length;
+	}
+
+	@Override
+	@Nullable
+	public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+		BiConsumer<Long, Long> r = this.requestRangeConsumer;
+		this.requestRangeConsumer = requestRangeConsumer;
+		return r;
+	}
+
+	@Override
+	public synchronized void requestSnapshot() {
+		BiConsumer<Long, Long> consumer = requestRangeConsumer;
+		if (consumer == null) {
+			return;
+		}
+		FluxPublish.PubSubInner<T>[] subs = this.subscribers;
+		long highestServiceable = 0L;
+		long highestWithoutDropping = -1L;
+		long maxDiff = this.prefetch;
+		for (FluxPublish.PubSubInner<T> sub : subs) {
+			long r = sub.requested;
+			if (sub.isCancelled()) {
+				continue;
+			}
+			if (highestWithoutDropping == -1L) {
+				highestWithoutDropping = r;
+			}
+			else if (r < highestWithoutDropping) {
+				highestWithoutDropping = r;
+			}
+			if (highestServiceable < r) {
+				highestServiceable = r;
+			}
+		}
+		if (highestServiceable > highestWithoutDropping + maxDiff) {
+			highestServiceable = highestWithoutDropping + maxDiff;
+		}
+
+		if (highestServiceable != 0) {
+			consumer.accept(highestServiceable, highestWithoutDropping);
+		}
 	}
 
 	@Override
@@ -631,6 +677,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		void removeAndDrainParent() {
 			parent.remove(this);
 			parent.drain();
+		}
+
+		@Override
+		void notifyRequest(long totalRequestAfterDrain) {
+			if (totalRequestAfterDrain > 0) {
+				parent.requestSnapshot();
+			}
 		}
 	}
 

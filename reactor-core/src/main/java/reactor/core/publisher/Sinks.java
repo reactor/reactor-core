@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Queue;
+import java.util.function.BiConsumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -839,6 +840,40 @@ public final class Sinks {
 		 * @return the number of subscribers at the time of invocation
 		 */
 		int currentSubscriberCount();
+
+		/**
+		 * Add a best-effort handler of requests (or replace any existing one).
+		 * The provided {@link BiConsumer} will be notified when a new request is made,
+		 * covering for multicast cases by providing two numbers:
+		 * <ol>
+		 *     <li>the {@code lowestCommon} demand: the maximum number of {@link #tryEmitNext(Object) onNext emissions}
+		 *     until <i>some</i> subscriber(s) will stop immediately seeing the emitted elements.
+		 *     <li>the {@code highestServiceable} request: the maximum number of
+		 *     {@link #tryEmitNext(Object) onNext emissions} until <i>all</i> subscriber(s) are overflown.</li>
+		 * </ol>
+		 * Between these two numbers, each sink can apply a different strategy. For instance,
+		 * {@link MulticastSpec#onBackpressureBuffer()} buffers the extraneous elements until it reaches
+		 * a maximum difference, so {@code lowestCommon} is the lowest request and {@code highestServiceable}
+		 * is {@code lowestCommon} + buffer size (or the actual highest request if lower).
+		 * {@link MulticastSpec#directBestEffort()} on the other hand simply drops the extra elements from
+		 * the perspective of its slow subscribers: {@code highestServiceable} is always the greatest request
+		 * and {@code lowestCommon} is always the lowest.
+		 * <p>
+		 * These numbers are computed from a snapshot of the remaining requests of each subscriber
+		 * (in case of multicast) and thus could be atomically out of date by the time the consumer is invoked.
+		 * Use {@link #tryEmitNext(Object)} and check for {@link EmitResult#FAIL_OVERFLOW} to get
+		 * more guarantees about the delivery.
+		 *
+		 * @param requestRangeConsumer the new {@link BiConsumer} to deal with request notifications
+		 * @return the old requestRangeConsumer, or {@literal null} if none was set
+		 */
+		@Nullable
+		BiConsumer<Long, Long> setRequestHandler(@Nullable BiConsumer<Long, Long> requestRangeConsumer);
+
+		/**
+		 * MUST be mutually exclusive, either by synchronized or via work-stealing
+		 */
+		void requestSnapshot();
 
 		/**
 		 * Return a {@link Flux} view of this sink. Every call returns the same instance.

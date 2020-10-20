@@ -20,6 +20,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -153,7 +154,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	final Queue<T>            queue;
 	final Consumer<? super T> onOverflow;
 
-	volatile Disposable onTerminate;
+	volatile Disposable                                                    onTerminate;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<UnicastProcessor, Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
@@ -185,6 +186,9 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<UnicastProcessor> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(UnicastProcessor.class, "requested");
+
+	@Nullable
+	volatile BiConsumer<Long, Long> requestRangeConsumer;
 
 	boolean outputFused;
 
@@ -330,6 +334,26 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public int currentSubscriberCount() {
 		return hasDownstream ? 1 : 0;
+	}
+
+	@Override
+	@Nullable
+	public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+		BiConsumer<Long, Long> r = this.requestRangeConsumer;
+		this.requestRangeConsumer = requestRangeConsumer;
+		return r;
+	}
+
+	@Override
+	public synchronized void requestSnapshot() {
+		BiConsumer<Long, Long> consumer = requestRangeConsumer;
+		if (consumer == null) {
+			return;
+		}
+		long r = this.requested;
+		if (r > 0L && !cancelled) {
+			consumer.accept(r, r);
+		}
 	}
 
 	@Override
@@ -532,6 +556,8 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		if (Operators.validate(n)) {
 			Operators.addCap(REQUESTED, this, n);
 			drain(null);
+
+			requestSnapshot();
 		}
 	}
 

@@ -233,6 +233,11 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public void requestSnapshot() {
+		//NO-OP
+	}
+
+	@Override
 	protected boolean isIdentityProcessor() {
 		return true;
 	}

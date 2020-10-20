@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
@@ -42,6 +43,9 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 	}
 
 	volatile State state;
+
+	@Nullable
+	volatile BiConsumer<Long, Long> requestRangeConsumer;
 
 	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<UnicastManySinkNoBackpressure, State> STATE = AtomicReferenceFieldUpdater.newUpdater(
@@ -88,6 +92,8 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 	public void request(long n) {
 		if (Operators.validate(n)) {
 			Operators.addCap(REQUESTED, this, n);
+
+			requestSnapshot();
 		}
 	}
 
@@ -174,6 +180,26 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 				default:
 					throw new IllegalStateException();
 			}
+		}
+	}
+
+	@Nullable
+	@Override
+	public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+		BiConsumer<Long, Long> r = this.requestRangeConsumer;
+		this.requestRangeConsumer = requestRangeConsumer;
+		return r;
+	}
+
+	@Override
+	public synchronized void requestSnapshot() {
+		BiConsumer<Long, Long> consumer = requestRangeConsumer;
+		if (consumer == null) {
+			return;
+		}
+		long r = this.requested;
+		if (r > 0L && this.state != State.CANCELLED) {
+			consumer.accept(r, r);
 		}
 	}
 

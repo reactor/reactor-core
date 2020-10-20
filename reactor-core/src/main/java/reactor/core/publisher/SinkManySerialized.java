@@ -18,6 +18,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
@@ -100,6 +101,17 @@ final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
 				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}
 		}
+	}
+
+	@Override
+	@Nullable
+	public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+		return sink.setRequestHandler(requestRangeConsumer);
+	}
+
+	@Override
+	public void requestSnapshot() {
+		sink.requestSnapshot();
 	}
 
 	@Override

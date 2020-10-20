@@ -583,6 +583,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (Operators.validate(n)) {
 				Operators.addCapCancellable(REQUESTED, this, n);
 				drainParent();
+				notifyRequest(requested); //the request could have been partially served from parent's buffer
 			}
 		}
 
@@ -618,6 +619,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		abstract void drainParent();
 		abstract void removeAndDrainParent();
+		void notifyRequest(long totalRequestAfterDrain) {
+			//default NO-OP
+		}
 	}
 
 	static final class PublishInner<T> extends PubSubInner<T> {

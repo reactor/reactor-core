@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -309,6 +310,9 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			FluxReplay.ReplaySubscription[].class,
 			"subscribers");
 
+	@Nullable
+	volatile BiConsumer<Long, Long> requestRangeConsumer;
+
 	ReplayProcessor(FluxReplay.ReplayBuffer<T> buffer) {
 		this.buffer = buffer;
 		SUBSCRIBERS.lazySet(this, EMPTY);
@@ -508,6 +512,48 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	@Nullable
+	public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+		BiConsumer<Long, Long> r = this.requestRangeConsumer;
+		this.requestRangeConsumer = requestRangeConsumer;
+		return r;
+	}
+
+	@Override
+	public synchronized void requestSnapshot() {
+		BiConsumer<Long, Long> consumer = requestRangeConsumer;
+		if (consumer == null) {
+			return;
+		}
+		FluxReplay.ReplaySubscription<T>[] subs = this.subscribers;
+		long highestServiceable = 0L;
+		long highestWithoutDropping = -1L;
+		long maxDiff = this.buffer.capacity();
+		for (FluxReplay.ReplaySubscription<T> sub : subs) {
+			long r = sub.requested();
+			if (sub.isCancelled()) {
+				continue;
+			}
+			if (highestWithoutDropping == -1L) {
+				highestWithoutDropping = r;
+			}
+			else if (r < highestWithoutDropping) {
+				highestWithoutDropping = r;
+			}
+			if (highestServiceable < r) {
+				highestServiceable = r;
+			}
+		}
+		if (highestServiceable > highestWithoutDropping + maxDiff) {
+			highestServiceable = highestWithoutDropping + maxDiff;
+		}
+
+		if (highestServiceable != 0) {
+			consumer.accept(highestServiceable, highestWithoutDropping);
+		}
+	}
+
+	@Override
 	public Flux<T> asFlux() {
 		return this;
 	}
@@ -610,6 +656,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 					Operators.addCapCancellable(REQUESTED, this, n);
 				}
 				buffer.replay(this);
+
+				if (this.requested > 0L) {
+					parent.requestSnapshot();
+				}
 			}
 		}
 

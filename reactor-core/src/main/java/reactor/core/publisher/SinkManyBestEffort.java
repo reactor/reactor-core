@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import reactor.core.CoreSubscriber;
@@ -56,8 +57,11 @@ final class SinkManyBestEffort<T> extends Flux<T>
 
 	volatile     DirectInner<T>[]                                              subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyBestEffort, DirectInner[]>SUBSCRIBERS =
+	static final AtomicReferenceFieldUpdater<SinkManyBestEffort, DirectInner[]> SUBSCRIBERS =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyBestEffort.class, DirectInner[].class, "subscribers");
+
+	@Nullable
+	volatile BiConsumer<Long, Long> requestRangeConsumer;
 
 	SinkManyBestEffort(boolean allOrNothing) {
 		this.allOrNothing = allOrNothing;
@@ -183,6 +187,44 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		return subscribers.length;
 	}
 
+	@Nullable
+	@Override
+	public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+		BiConsumer<Long, Long> r = this.requestRangeConsumer;
+		this.requestRangeConsumer = requestRangeConsumer;
+		return r;
+	}
+
+	@Override
+	public synchronized void requestSnapshot() {
+		BiConsumer<Long, Long> consumer = requestRangeConsumer;
+		if (consumer == null) {
+			return;
+		}
+		DirectInner<T>[] subs = this.subscribers;
+		long highestServiceable = 0L;
+		long highestWithoutDropping = -1L;
+		for (DirectInner<T> sub : subs) {
+			long r = sub.requested;
+			if (sub.isCancelled()) {
+				continue;
+			}
+			if (highestWithoutDropping == -1L) {
+				highestWithoutDropping = r;
+			}
+			else if (r < highestWithoutDropping) {
+				highestWithoutDropping = r;
+			}
+			if (highestServiceable < r) {
+				highestServiceable = r;
+			}
+		}
+
+		if (highestServiceable != 0) {
+			requestRangeConsumer.accept(highestServiceable, highestWithoutDropping);
+		}
+	}
+
 	@Override
 	public Flux<T> asFlux() {
 		return this;
@@ -298,6 +340,8 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
+
+				parent.requestSnapshot();
 			}
 		}
 
@@ -380,7 +424,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 
 }
 
-//also used by DirectProcessor
+//also used by DirectProcessor, which shouldn't implement Sinks.Many
 interface DirectInnerContainer<T> {
 
 	/**
@@ -398,4 +442,6 @@ interface DirectInnerContainer<T> {
 	 * @param s the  {@link SinkManyBestEffort.DirectInner} to remove
 	 */
 	void remove(SinkManyBestEffort.DirectInner<T> s);
+
+	void requestSnapshot(); //compatible with Sinks.Many
 }

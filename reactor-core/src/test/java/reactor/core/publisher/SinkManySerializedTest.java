@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -141,6 +142,17 @@ public class SinkManySerializedTest {
 		@Override
 		public int currentSubscriberCount() {
 			return delegate.currentSubscriberCount();
+		}
+
+		@Nullable
+		@Override
+		public BiConsumer<Long, Long> setRequestHandler(BiConsumer<Long, Long> requestRangeConsumer) {
+			return delegate.setRequestHandler(requestRangeConsumer);
+		}
+
+		@Override
+		public void requestSnapshot() {
+			delegate.requestSnapshot();
 		}
 
 		@Override

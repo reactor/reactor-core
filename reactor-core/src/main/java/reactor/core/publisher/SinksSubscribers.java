@@ -17,11 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -31,13 +33,14 @@ final class SinksSubscribers {
 
 	private SinksSubscribers() {}
 
-	static abstract class AbstractSubscriberAdapter<T, SINK> implements CoreSubscriber<T>, Disposable {
+	static abstract class AbstractSubscriberAdapter<T, SINK>
+			implements CoreSubscriber<T>, Disposable, BiConsumer<Long, Long> {
 
 		final SINK sink;
 		final Context context;
 		final Sinks.EmitFailureHandler emitFailureHandler;
 
-		volatile Subscription                                                     s;
+		volatile Subscription                                                         s;
 		@SuppressWarnings("rawtypes")
 		static   AtomicReferenceFieldUpdater<AbstractSubscriberAdapter, Subscription> S
 				= AtomicReferenceFieldUpdater.newUpdater(AbstractSubscriberAdapter.class, Subscription.class, "s");
@@ -48,6 +51,10 @@ final class SinksSubscribers {
 			this.emitFailureHandler = Sinks.EmitFailureHandler.FAIL_FAST;
 		}
 
+		protected abstract void doneSubscribed();
+
+		protected abstract void doneDisposed();
+
 		@Override
 		public Context currentContext() {
 			return context;
@@ -56,7 +63,14 @@ final class SinksSubscribers {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				s.request(Long.MAX_VALUE);
+				doneSubscribed();
+			}
+		}
+
+		@Override
+		public void accept(Long lowestCommon, Long highestServiceable) {
+			if (!isDisposed()) {
+				s.request(highestServiceable);
 			}
 		}
 
@@ -67,11 +81,16 @@ final class SinksSubscribers {
 
 		@Override
 		public void dispose() {
-			Operators.terminate(S, this);
+			if (Operators.terminate(S, this)) {
+				doneDisposed();
+			}
 		}
 	}
 
 	static final class ManySubscriberAdapter<T> extends AbstractSubscriberAdapter<T, Sinks.Many<T>> {
+
+		@Nullable
+		BiConsumer<Long, Long> oldRequestHandler;
 
 		ManySubscriberAdapter(Sinks.Many<T> many) {
 			super(many);
@@ -99,6 +118,17 @@ final class SinksSubscribers {
 				return;
 			}
 			sink.emitComplete(emitFailureHandler);
+		}
+
+		@Override
+		protected void doneSubscribed() {
+			oldRequestHandler = sink.setRequestHandler(this);
+			sink.requestSnapshot();
+		}
+
+		@Override
+		protected void doneDisposed() {
+			sink.setRequestHandler(oldRequestHandler);
 		}
 	}
 
@@ -131,6 +161,12 @@ final class SinksSubscribers {
 			}
 			sink.emitEmpty(emitFailureHandler);
 		}
+
+		@Override
+		protected void doneSubscribed() { }
+
+		@Override
+		protected void doneDisposed() { }
 	}
 
 	/**
@@ -173,5 +209,11 @@ final class SinksSubscribers {
 			}
 			sink.emitEmpty(emitFailureHandler);
 		}
+
+		@Override
+		protected void doneSubscribed() { }
+
+		@Override
+		protected void doneDisposed() { }
 	}
 }
