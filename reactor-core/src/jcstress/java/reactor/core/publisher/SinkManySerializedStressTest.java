@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiConsumer;
 
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
@@ -137,6 +138,17 @@ public class SinkManySerializedStressTest {
 
 		@Override
 		public int currentSubscriberCount() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Nullable
+		@Override
+		public BiConsumer<Long, Long> setRequestHandler(@Nullable BiConsumer<Long, Long> requestRangeConsumer) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void requestSnapshot() {
 			throw new UnsupportedOperationException();
 		}
 
