@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.EmitterProcessor;
@@ -65,7 +64,7 @@ public class FluxSpecTests {
 		stream.subscribe(value2::set);
 
 //		then: "it is available in value 1 but value 2 has subscribed after dispatching"
-		assertThat(value.get()).isEqualTo("test");
+		assertThat(value).hasValue("test");
 		assertThat(value2.get()).isNullOrEmpty();
 	}
 
@@ -411,13 +410,13 @@ public class FluxSpecTests {
 		composable.onNext(1);
 
 //		then: "it is passed to the consumer"
-		assertThat(value.get()).isEqualTo(1);
+		assertThat(value).hasValue(1);
 
 //		when: "another value is accepted"
 		composable.onNext(2);
 
 //		then: "it too is passed to the consumer"
-		assertThat(value.get()).isEqualTo(2);
+		assertThat(value).hasValue(2);
 	}
 
 	@Test
@@ -455,7 +454,7 @@ public class FluxSpecTests {
 		d.onNext(Arrays.asList("a", "b", "c"));
 
 //		then: "its value is the last of the initial values"
-		assertThat(tap.get()).isEqualTo("c");
+		assertThat(tap).hasValue("c");
 	}
 
 	@Test
@@ -471,7 +470,7 @@ public class FluxSpecTests {
 		source.onNext(1);
 
 //		then: "the value is mapped"
-		assertThat(value.get()).isEqualTo(2);
+		assertThat(value).hasValue(2);
 	}
 
 	@Test
@@ -747,13 +746,13 @@ public class FluxSpecTests {
 		source.onNext(2);
 
 //		then: "it passes through"
-		assertThat(value.get()).isEqualTo(2);
+		assertThat(value).hasValue(2);
 
 //		when: "the source accepts an odd value"
 		source.onNext(3);
 
 //		then: "it is blocked by the filter"
-		assertThat(value.get()).isEqualTo(2);
+		assertThat(value).hasValue(2);
 
 //		when: "simple filter"
 		EmitterProcessor<Boolean> anotherSource = EmitterProcessor.create();
@@ -965,20 +964,20 @@ public class FluxSpecTests {
 		source.onNext(1);
 
 //		then: "the reduction is available"
-		assertThat(value.get()).isEqualTo(1);
+		assertThat(value).hasValue(1);
 
 //		when: "the second value is accepted"
 		source.onNext(2);
 
 //		then: "the updated reduction is available"
-		assertThat(value.get()).isEqualTo(2);
+		assertThat(value).hasValue(2);
 
 //		when: "use an initial value"
 		source.scan(4, new Reduction()).subscribe(value::set);
 		source.onNext(1);
 
 //		then: "the updated reduction is available"
-		assertThat(value.get()).isEqualTo(4);
+		assertThat(value).hasValue(4);
 	}
 
 	@Test
@@ -1111,7 +1110,7 @@ public class FluxSpecTests {
 
 		Flux.range(1, 1000).subscribe(head);
 		latch.await();
-		Assert.assertTrue(sum.get() == length);
+		assertThat(sum).hasValue(length);
 	}
 
 	static class Reduction implements BiFunction<Integer, Integer, Integer> {

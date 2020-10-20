@@ -208,8 +208,8 @@ public class MonoFilterWhenTest {
 		    .filterWhen(v -> Mono.just(true).hide())
 		    .subscribe(bs);
 
-		assertThat(onNextCount.get()).isEqualTo(1);
-		assertThat(endSignal.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(onNextCount).hasValue(1);
+		assertThat(endSignal).hasValue(SignalType.CANCEL);
 	}
 
 	@Test
@@ -240,8 +240,8 @@ public class MonoFilterWhenTest {
 		        .filterWhen(v -> Mono.just(true).hide())
 		        .subscribe(bs);
 
-		assertThat(onNextCount.get()).isEqualTo(1);
-		assertThat(endSignal.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(onNextCount).hasValue(1);
+		assertThat(endSignal).hasValue(SignalType.CANCEL);
 	}
 
 
@@ -266,7 +266,7 @@ public class MonoFilterWhenTest {
 		            .expectNext(1)
 		            .verifyComplete();
 
-		assertThat(cancelCount.get()).isEqualTo(1);
+		assertThat(cancelCount).hasValue(1);
 	}
 
 	@Test
@@ -286,7 +286,7 @@ public class MonoFilterWhenTest {
 		            .expectNext(3)
 		            .verifyComplete();
 
-		assertThat(cancelCount.get()).isEqualTo(0);
+		assertThat(cancelCount).hasValue(0);
 	}
 
 	@Test

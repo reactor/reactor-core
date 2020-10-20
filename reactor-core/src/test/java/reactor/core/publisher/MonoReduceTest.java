@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -36,7 +35,7 @@ import reactor.util.context.Context;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
@@ -137,8 +136,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
-		                                           .contains("forced failure")))
+		  .assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"))
 		  .assertNotComplete();
 	}
 
@@ -153,10 +151,9 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		    .subscribe(ts);
 
 		ts.assertNoValues()
-		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
-		                                           .contains("forced failure")))
-		  .assertNotComplete();
+				.assertError(RuntimeException.class)
+				.assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"))
+				.assertNotComplete();
 	}
 
 	@Test
@@ -190,8 +187,8 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 				    })
 		).blockLast();
 
-		assertEquals(10, count.get());
-		assertEquals(0, countNulls.get());
+		assertThat(count).hasValue(10);
+		assertThat(countNulls).hasValue(0);
 	}
 
 	private static String blockingOp(Integer x, Integer y) {

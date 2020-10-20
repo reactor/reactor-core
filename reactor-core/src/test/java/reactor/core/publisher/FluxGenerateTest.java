@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -280,7 +279,7 @@ public class FluxGenerateTest {
 		  .assertComplete()
 		  .assertNoError();
 
-		Assert.assertEquals(1, stateConsumer.get());
+		assertThat(stateConsumer).hasValue(1);
 	}
 
 	@Test

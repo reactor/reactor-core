@@ -19,12 +19,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler.Worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TimedSchedulerTest extends AbstractSchedulerTest {
 
@@ -45,18 +46,15 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
             CountDownLatch cdl = new CountDownLatch(1);
             
             w1.dispose();
-            
-            try {
+
+			assertThatExceptionOfType(Throwable.class).isThrownBy(() -> {
                 w1.schedule(() -> { });
-                Assert.fail("Failed to reject task");
-            } catch (Throwable ex) {
-                // ignoring
-            }
-            
+			});
+
             w2.schedule(cdl::countDown);
             
             if (!cdl.await(1, TimeUnit.SECONDS)) {
-                Assert.fail("Worker 2 didn't execute in time");
+                fail("Worker 2 didn't execute in time");
             }
             w2.dispose();
         } finally {
@@ -89,7 +87,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
 		        assertThat(c[i].isDisposed()).isTrue();
 	        }
             
-            Assert.assertEquals(0, counter.get());
+            assertThat(counter).hasValue(0);
         }
         finally {
 	        timer.dispose();

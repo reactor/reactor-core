@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -328,8 +327,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		source.onNext(1);
 		source.onNext(2);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 		source2.onNext(10);
@@ -363,8 +362,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 		source2.onNext(10);
@@ -380,8 +379,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 has subscribers?").isFalse();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -402,8 +401,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 
@@ -414,8 +413,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 has subscribers?").isFalse();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -436,8 +435,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 
@@ -455,8 +454,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 has subscribers?").isFalse();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -477,8 +476,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 
@@ -489,8 +488,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 has subscribers?").isFalse();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -512,8 +511,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 
@@ -524,8 +523,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 has subscribers?").isFalse();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -546,8 +545,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 no subscribers?").isTrue();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 
 		source1.onNext(1);
 
@@ -555,7 +554,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		source.onNext(2);
 
-		Assert.assertTrue("source2 no subscribers?", source2.hasDownstreams());
+		assertThat(source2.hasDownstreams()).as("source2 no subscribers?").isTrue();
 
 		source2.onNext(2);
 		source2.onComplete();
@@ -567,8 +566,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		assertThat(source1.hasDownstreams()).as("source1 has subscribers?").isFalse();
+		assertThat(source2.hasDownstreams()).as("source2 has subscribers?").isFalse();
 	}
 
 	@Test

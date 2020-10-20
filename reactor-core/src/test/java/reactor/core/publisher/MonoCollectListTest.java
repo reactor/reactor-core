@@ -226,7 +226,7 @@ public class MonoCollectListTest {
 			if (!extraneous.get()) {
 				LOGGER.info(""+subscriber.list);
 			}
-			assertThat(extraneous).as("released " + i).isTrue();
+			assertThat(extraneous).as("released %d", i).isTrue();
 		}
 		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
 	}
@@ -252,7 +252,7 @@ public class MonoCollectListTest {
 			RaceTestUtils.race(subscriber::cancel, subscriber::onComplete);
 
 			if (testSubscriber.values().isEmpty()) {
-				assertThat(resource).as("not completed and released " + i).isTrue();
+				assertThat(resource).as("not completed and released %d", i).isTrue();
 			}
 		}
 		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());

@@ -156,7 +156,7 @@ public class MonoProcessorTest {
 		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
 		mp.onError(new Exception("test"));
 
-		assertThat(invoked.get()).isEqualTo(1);
+		assertThat(invoked).hasValue(1);
 		assertThat(mp.isSuccess()).isFalse();
 		assertThat(mp.isError()).isTrue();
 	}
@@ -196,7 +196,7 @@ public class MonoProcessorTest {
 		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
 		mp.onNext("test");
 
-		assertThat(invoked.get()).isEqualTo(1);
+		assertThat(invoked).hasValue(1);
 		assertThat(mp.isSuccess()).isTrue();
 		assertThat(mp.isError()).isFalse();
 	}
@@ -505,7 +505,7 @@ public class MonoProcessorTest {
 		    .publishNext()
 		    .subscribe();
 
-		assertThat(cancelCounter.get()).isEqualTo(1);
+		assertThat(cancelCounter).hasValue(1);
 	}
 
 	@Test
@@ -516,7 +516,7 @@ public class MonoProcessorTest {
 		                                          .toProcessor();
 		monoProcessor.subscribe();
 
-		assertThat(cancelCounter.get()).isEqualTo(0);
+		assertThat(cancelCounter).hasValue(0);
 	}
 
 	@Test
@@ -608,13 +608,13 @@ public class MonoProcessorTest {
 		                             .toProcessor() //this actually subscribes
 		                             .filter(s -> s.length() < 4);
 
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 
 		coldToHot.block();
 		coldToHot.block();
 		coldToHot.block();
 
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 	}
 
 	@Test

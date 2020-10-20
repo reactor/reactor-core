@@ -148,7 +148,7 @@ public class Tuple7Test {
 		Object[] array = full.toArray();
 
 		for (int i = 0; i < array.length; i++) {
-			assertThat(full.get(i)).as("element " + i).isEqualTo(array[i]);
+			assertThat(full.get(i)).as("element at %d", i).isEqualTo(array[i]);
 		}
 	}
 

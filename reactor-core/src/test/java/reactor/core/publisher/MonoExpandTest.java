@@ -105,7 +105,7 @@ public class MonoExpandTest {
 
 			for (int j = 0; j <= i; j++) {
 				assertThat(list.get(j).intValue())
-						.as(tag + ", " + list)
+						.as("%s, %s", tag, list)
 						.isEqualTo(i - j);
 			}
 		}
@@ -128,7 +128,7 @@ public class MonoExpandTest {
 
 			for (int j = 0; j <= i; j++) {
 				assertThat(list.get(j).intValue())
-						.as(tag + ", " + list)
+						.as("%s, %s", tag, list)
 						.isEqualTo(i - j);
 			}
 		}

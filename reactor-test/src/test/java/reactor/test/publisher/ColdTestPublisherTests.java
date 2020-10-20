@@ -153,7 +153,7 @@ public class ColdTestPublisherTests {
 	             .emit("A", "B", "C")
 	             .error(new IllegalStateException("boom"));
 
-		assertThat(count.get()).isEqualTo(1);
+		assertThat(count).hasValue(1);
 	}
 
 	@Test

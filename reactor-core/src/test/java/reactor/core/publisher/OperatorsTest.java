@@ -354,7 +354,7 @@ public class OperatorsTest {
 
 		Operators.onNextDropped("foo", c);
 
-		assertThat(hookState.get()).isEqualTo("foo");
+		assertThat(hookState).hasValue("foo");
 	}
 
 	@Test

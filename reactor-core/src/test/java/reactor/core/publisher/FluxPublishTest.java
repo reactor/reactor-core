@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -430,7 +429,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0);
 	}
 
 	@Test
@@ -451,7 +450,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0L);
 	}
 
 	@Test
@@ -471,9 +470,9 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		e.onError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1, 2)
-		.assertError(RuntimeException.class)
-		  .assertErrorWith( x -> Assert.assertTrue(x.getMessage().contains("forced failure")))
-		.assertNotComplete();
+				.assertError(RuntimeException.class)
+				.assertErrorWith(x -> assertThat(x).hasMessageContaining("forced failure"))
+				.assertNotComplete();
 	}
 
 	@Test

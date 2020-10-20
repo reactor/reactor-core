@@ -63,7 +63,7 @@ public class MonoPeekTest {
 		mp.doOnTerminate(invoked::incrementAndGet)
 		  .subscribe();
 
-		assertThat(invoked.get()).isEqualTo(1);
+		assertThat(invoked).hasValue(1);
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class MonoPeekTest {
 		mp.doOnTerminate(invoked::incrementAndGet)
 		  .subscribe();
 
-		assertThat(invoked.get()).isEqualTo(1);
+		assertThat(invoked).hasValue(1);
 	}
 
 	@Test
@@ -99,7 +99,7 @@ public class MonoPeekTest {
 		            .expectNext("test")
 		            .verifyComplete();
 
-		assertThat(ref.get()).isEqualTo(123);
+		assertThat(ref).hasValue(123L);
 	}
 
 	@Test

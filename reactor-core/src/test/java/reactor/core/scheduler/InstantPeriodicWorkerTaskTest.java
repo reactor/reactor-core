@@ -28,7 +28,6 @@ import reactor.core.Disposables;
 import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class InstantPeriodicWorkerTaskTest {
     private static final RuntimeException exception = new RuntimeException();
@@ -204,8 +203,8 @@ public class InstantPeriodicWorkerTaskTest {
 
                 RaceTestUtils.race(r1, r2);
 
-                assertTrue(f1.isCancelled());
-                assertTrue(task.isDisposed());
+                assertThat(f1.isCancelled()).isTrue();
+                assertThat(task.isDisposed()).isTrue();
             }
         }
         finally {
@@ -229,8 +228,8 @@ public class InstantPeriodicWorkerTaskTest {
 
                 RaceTestUtils.race(r1, r2);
 
-                assertTrue(f1.isCancelled());
-                assertTrue(task.isDisposed());
+                assertThat(f1.isCancelled()).isTrue();
+                assertThat(task.isDisposed()).isTrue();
             }
         }
         finally {

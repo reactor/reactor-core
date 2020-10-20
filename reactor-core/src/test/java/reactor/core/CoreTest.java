@@ -21,8 +21,8 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import reactor.util.annotation.Nullable;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -56,13 +56,9 @@ public class CoreTest {
 	}
 
 	final void testUnsupported(Runnable r){
-		try{
+		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> {
 			r.run();
-			fail();
-		}
-		catch (UnsupportedOperationException uoe){
-			//IGNORE
-		}
+		});
 	}
 
 	static final class TestQueueSubscription implements Fuseable.QueueSubscription<Integer> {

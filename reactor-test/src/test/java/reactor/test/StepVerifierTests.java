@@ -835,7 +835,7 @@ public class StepVerifierTests {
 		Mono<String> flux = Mono.just("foo");
 
 		StepVerifier.create(flux)
-		            .consumeSubscriptionWith(s -> assertThat(s).isInstanceOf(Fuseable.QueueSubscription.class))
+		            .consumeSubscriptionWith(s -> assertThat(s).withFailMessage("Non-fuseable: %s", s.getClass()).isInstanceOf(Fuseable.QueueSubscription.class))
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verify();
@@ -847,7 +847,7 @@ public class StepVerifierTests {
 
 		StepVerifier.create(flux)
 		            .expectNext("foo")
-		            .consumeSubscriptionWith(s -> assertThat(s).isInstanceOf(Fuseable.QueueSubscription.class))
+		            .consumeSubscriptionWith(s -> assertThat(s).withFailMessage("Non-fuseable: %s", s.getClass()).isInstanceOf(Fuseable.QueueSubscription.class))
 		            .expectComplete()
 		            .verify();
 	}

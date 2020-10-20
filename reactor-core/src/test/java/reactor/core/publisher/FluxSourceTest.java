@@ -20,7 +20,6 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class FluxSourceTest {
 
@@ -37,7 +36,7 @@ public class FluxSourceTest {
 	@Test
 	public void empty() {
 		Flux<Integer> m = Flux.from(Mono.empty());
-		assertTrue(m == Flux.<Integer>empty());
+		assertThat(m).isSameAs(Flux.<Integer>empty());
 		StepVerifier.create(m)
 		            .verifyComplete();
 	}
@@ -45,7 +44,7 @@ public class FluxSourceTest {
 	@Test
 	public void just() {
 		Flux<Integer> m = Flux.from(Mono.just(1));
-		assertTrue(m instanceof FluxJust);
+		assertThat(m).isInstanceOf(FluxJust.class);
 		StepVerifier.create(m)
 		            .expectNext(1)
 		            .verifyComplete();
@@ -54,7 +53,7 @@ public class FluxSourceTest {
 	@Test
 	public void error() {
 		Flux<Integer> m = Flux.from(Mono.error(new Exception("test")));
-		assertTrue(m instanceof FluxError);
+		assertThat(m).isInstanceOf(FluxError.class);
 		StepVerifier.create(m)
 		            .verifyErrorMessage("test");
 	}
@@ -62,7 +61,7 @@ public class FluxSourceTest {
 	@Test
 	public void errorPropagate() {
 		Flux<Integer> m = Flux.from(Mono.error(new Error("test")));
-		assertTrue(m instanceof FluxError);
+		assertThat(m).isInstanceOf(FluxError.class);
 		StepVerifier.create(m)
 		            .verifyErrorMessage("test");
 	}

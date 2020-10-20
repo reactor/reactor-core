@@ -190,7 +190,7 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 			RaceTestUtils.race(sub::cancel, () -> sub.onNext(1));
 
 			testSubscriber.assertNoError();
-			assertThat(accumulatorCheck).as("no NPE due to onNext/cancel race in round " + i).isTrue();
+			assertThat(accumulatorCheck).as("no NPE due to onNext/cancel race in round %d", i).isTrue();
 		}
 	}
 

@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -79,7 +78,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	void assertRejected(StepVerifier.Step<String> step) {
 		try {
-			step.verifyErrorSatisfies(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException));
+			step.verifyErrorSatisfies(e -> assertThat(Exceptions.unwrap(e)).isInstanceOf(RejectedExecutionException.class));
 		}
 		catch (Exception e) {
 			assertThat(Exceptions.unwrap(e)).isInstanceOf(RejectedExecutionException.class);
@@ -90,7 +89,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		try {
 			step
 					.thenAwait()
-					.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException))
+					.consumeErrorWith(e -> assertThat(Exceptions.unwrap(e)).isInstanceOf(RejectedExecutionException.class))
 					.verify(Duration.ofMillis(1));
 		}
 		catch (Exception e) {
@@ -436,7 +435,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet)
 		                      .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()));
 
-		Assert.assertEquals(0, count.get());
+		assertThat(count).hasValue(0);
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -445,10 +444,10 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		if (!ts.await(Duration.ofSeconds(5))
 		       .isTerminated()) {
 			ts.cancel();
-			Assert.fail("AssertSubscriber timed out");
+			fail("AssertSubscriber timed out");
 		}
 
-		Assert.assertEquals(1, count.get());
+		assertThat(count).hasValue(1);
 	}
 
 	public void diamond() {
@@ -499,8 +498,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		  .assertComplete();
 
 		int s = clq.size();
-		Assert.assertTrue("More requests?" + clq, s == 1 || s == 2 || s == 3);
-		Assert.assertEquals((Long) (long) Queues.SMALL_BUFFER_SIZE, clq.poll());
+		assertThat(s == 1 || s == 2 || s == 3).as("More requests?").isTrue();
+		assertThat(clq.poll()).isEqualTo((Long) (long) Queues.SMALL_BUFFER_SIZE);
 	}
 
 	@Test

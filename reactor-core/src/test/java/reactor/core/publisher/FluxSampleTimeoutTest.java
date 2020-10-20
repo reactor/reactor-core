@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -68,9 +67,9 @@ public class FluxSampleTimeoutTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
-		Assert.assertFalse("sp3 has subscribers?", sp3.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers?").isFalse();
+		assertThat(sp2.hasDownstreams()).as("sp2 has subscribers?").isFalse();
+		assertThat(sp3.hasDownstreams()).as("sp3 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -91,8 +90,8 @@ public class FluxSampleTimeoutTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers?").isFalse();
+		assertThat(sp2.hasDownstreams()).as("sp2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -113,8 +112,8 @@ public class FluxSampleTimeoutTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers?").isFalse();
+		assertThat(sp2.hasDownstreams()).as("sp2 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -132,7 +131,7 @@ public class FluxSampleTimeoutTest {
 		  .assertError(NullPointerException.class)
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers?").isFalse();
 	}
 
 	@Test

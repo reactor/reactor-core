@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
@@ -213,8 +212,7 @@ public class FluxOnErrorResumeTest {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
-		                                           .contains("forced failure 2")));
+		  .assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure 2"));
 	}
 
 	@Test
@@ -241,7 +239,7 @@ public class FluxOnErrorResumeTest {
 
 		ts.assertNoValues()
 		  .assertNotComplete()
-		  .assertErrorWith(e -> Assert.assertSame(exception, e));
+		  .assertErrorWith(e -> assertThat(e).isSameAs(exception));
 	}
 
 	@Test

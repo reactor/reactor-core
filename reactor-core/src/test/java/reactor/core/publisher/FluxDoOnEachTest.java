@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,7 +45,7 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 public class FluxDoOnEachTest {
 
@@ -413,7 +412,7 @@ public class FluxDoOnEachTest {
 
 		//nominal error path (DownstreamException)
 		ts.assertErrorMessage("test");
-		Assert.assertEquals(1, state.intValue());
+		assertThat(state.intValue()).isEqualTo(1);
 	}
 
 	@ParameterizedTest
@@ -435,11 +434,11 @@ public class FluxDoOnEachTest {
 			    .filter(t -> true)
 			    .subscribe(ts);
 
-			fail();
+			fail("Exception expected");
 		}
 		catch (Exception e) {
-			Assert.assertTrue(Exceptions.unwrap(e) == err);
-			Assert.assertEquals(1, state.intValue());
+			assertThat(Exceptions.unwrap(e)).isSameAs(err);
+			assertThat(state.intValue()).isEqualTo(1);
 		}
 	}
 
@@ -495,7 +494,7 @@ public class FluxDoOnEachTest {
 		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals(sourceErrorMessage));
 		ts.assertErrorWith(e -> e.getMessage().equals("test"));
 
-		Assert.assertEquals(1, state.intValue());
+		assertThat(state.intValue()).isEqualTo(1);
 	}
 
 	@Test

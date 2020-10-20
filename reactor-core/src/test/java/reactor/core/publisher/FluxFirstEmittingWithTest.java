@@ -17,10 +17,11 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxFirstEmittingWithTest {
 
@@ -63,10 +64,10 @@ public class FluxFirstEmittingWithTest {
 		Flux<Integer> f = Flux.first(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstEmitting);
+		assertThat(f).isInstanceOf(FluxFirstEmitting.class);
 		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
-		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 3);
+		assertThat(s.array).isNotNull();
+		assertThat(s.array).hasSize(3);
 
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)
@@ -78,10 +79,10 @@ public class FluxFirstEmittingWithTest {
 		Flux<Integer> f = Flux.first(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstEmitting);
+		assertThat(f).isInstanceOf(FluxFirstEmitting.class);
 		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
-		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 2);
+		assertThat(s.array).isNotNull();
+		assertThat(s.array).hasSize(2);
 
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)

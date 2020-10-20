@@ -512,7 +512,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("cached value should expire")
 		            .verifyComplete();
 
-		assertThat(subCount.get()).isEqualTo(2);
+		assertThat(subCount).hasValue(2);
 	}
 
 	@Test
@@ -534,7 +534,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("second subscription uses cache")
 		            .verifyComplete();
 
-		assertThat(subCount.get()).isEqualTo(1);
+		assertThat(subCount).hasValue(1);
 	}
 
 
@@ -561,7 +561,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("cached value should expire")
 		            .verifyComplete();
 
-		assertThat(subCount.get()).isEqualTo(2);
+		assertThat(subCount).hasValue(2);
 	}
 
 	@Test
@@ -584,7 +584,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("second subscription uses cache")
 		            .verifyComplete();
 
-		assertThat(subCount.get()).isEqualTo(1);
+		assertThat(subCount).hasValue(1);
 	}
 
 	@Test
@@ -600,7 +600,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		d1.dispose();
 		d2.dispose();
 
-		assertThat(cancelled.get()).isEqualTo(0);
+		assertThat(cancelled).hasValue(0);
 	}
 
 	@Test
@@ -619,16 +619,16 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		d1.dispose();
 		d2.dispose();
 
-		assertThat(cancelled.get()).isEqualTo(0);
-		assertThat(subscribed.get()).isEqualTo(1);
+		assertThat(cancelled).hasValue(0);
+		assertThat(subscribed).hasValue(1);
 
 		StepVerifier.create(cached)
 		            .then(() -> source.emit(100))
 		            .expectNext(100)
 		            .verifyComplete();
 
-		assertThat(cancelled.get()).isEqualTo(0);
-		assertThat(subscribed.get()).isEqualTo(1);
+		assertThat(cancelled).hasValue(0);
+		assertThat(subscribed).hasValue(1);
 	}
 
 	@Test
@@ -643,7 +643,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 		d1.dispose();
 
-		assertThat(cancelled.get()).isEqualTo(0);
+		assertThat(cancelled).hasValue(0);
 	}
 
 	@Test
@@ -662,7 +662,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 			RaceTestUtils.race(cached::subscribe, cached::subscribe);
 		}
 
-		assertThat(count.get()).isEqualTo(500);
+		assertThat(count).hasValue(500);
 	}
 
 	@Test

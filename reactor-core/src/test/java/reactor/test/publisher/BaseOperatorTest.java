@@ -24,10 +24,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.junit.function.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -1102,12 +1102,12 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		});
 	}
 
-	private DynamicTest toDynamicTest(OperatorScenario<I, PI, O, PO> scenario, ThrowingRunnable runnable) {
+	private DynamicTest toDynamicTest(OperatorScenario<I, PI, O, PO> scenario, Executable runnable) {
 		return DynamicTest.dynamicTest(scenario.description(), () -> {
 			if (scenario.stack != null) {
 				System.out.println("\tat " + scenario.stack.getStackTrace()[2]);
 			}
-			runnable.run();
+			runnable.execute();
 		});
 	}
 

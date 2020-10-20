@@ -59,10 +59,10 @@ public class VirtualTimeSchedulerTests {
 
 		VirtualTimeScheduler.getOrSet();
 
-		assertThat(Schedulers.newParallel("") instanceof VirtualTimeScheduler).isTrue();
-		assertThat(Schedulers.newElastic("") instanceof VirtualTimeScheduler).isTrue();
-		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "") instanceof VirtualTimeScheduler).isTrue();
-		assertThat(Schedulers.newSingle("") instanceof VirtualTimeScheduler).isTrue();
+		assertThat(Schedulers.newParallel("")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newElastic("")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newSingle("")).isInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 

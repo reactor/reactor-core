@@ -110,7 +110,7 @@ public class DefaultTestPublisherTests {
 	             .emit("A", "B", "C")
 	             .error(new IllegalStateException("boom"));
 
-		assertThat(count.get()).isEqualTo(1);
+		assertThat(count).hasValue(1);
 	}
 
 	private Subscriber<String> countingSubscriber(AtomicLong count) {
@@ -149,7 +149,7 @@ public class DefaultTestPublisherTests {
 
 		publisher.emit("A", "B", "C");
 
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count).hasValue(3);
 		publisher.assertCancelled();
 	}
 
@@ -166,7 +166,7 @@ public class DefaultTestPublisherTests {
 
 		publisher.emit("A", "B", "C");
 
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count).hasValue(3);
 		publisher.assertCancelled();
 	}
 
@@ -184,7 +184,7 @@ public class DefaultTestPublisherTests {
 
 		publisher.emit("A", "B", "C");
 
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count).hasValue(3);
 		publisher.assertCancelled();
 	}
 
@@ -209,7 +209,7 @@ public class DefaultTestPublisherTests {
 		publisher.emit("A", "B", "C");
 
 		publisher.assertCancelled();
-		assertThat(emitCount.get()).isEqualTo(3);
+		assertThat(emitCount).hasValue(3);
 	}
 
 	@Test

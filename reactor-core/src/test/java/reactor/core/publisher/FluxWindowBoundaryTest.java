@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -80,8 +79,8 @@ public class FluxWindowBoundaryTest {
 		ts.assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers").isFalse();
+		assertThat(sp1.hasDownstreams()).as("sp2 has subscribers").isFalse();
 	}
 
 	@Test
@@ -115,8 +114,8 @@ public class FluxWindowBoundaryTest {
 		ts.assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers").isFalse();
+		assertThat(sp1.hasDownstreams()).as("sp2 has subscribers").isFalse();
 	}
 
 	@Test
@@ -156,8 +155,8 @@ public class FluxWindowBoundaryTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers").isFalse();
+		assertThat(sp1.hasDownstreams()).as("sp2 has subscribers").isFalse();
 	}
 
 	@Test
@@ -197,8 +196,8 @@ public class FluxWindowBoundaryTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers").isFalse();
+		assertThat(sp1.hasDownstreams()).as("sp2 has subscribers").isFalse();
 	}
 
 

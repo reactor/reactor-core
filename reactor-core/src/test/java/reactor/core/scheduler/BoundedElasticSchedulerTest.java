@@ -484,7 +484,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 					.withFailMessage("worker thread count after shutdown is not zero. threads: %s", Thread.getAllStackTraces().keySet())
 					.isNotPositive();
 			assertThat(dumpThreadNames())
-					.as("current evictor " + newEvictor + " shutdown")
+					.as("current evictor %s shutdown", newEvictor)
 					.doesNotContain(newEvictor);
 		}
 	}

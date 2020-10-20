@@ -15,15 +15,16 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxNeverTest {
 
 	@Test
 	public void singleInstance() {
-		Assert.assertSame(Flux.never(), Flux.never());
+		assertThat(Flux.never()).isSameAs(Flux.never());
 	}
 
 	@Test

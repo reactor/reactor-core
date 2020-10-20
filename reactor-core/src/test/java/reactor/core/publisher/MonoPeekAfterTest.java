@@ -30,8 +30,7 @@ import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoPeekAfterTest {
 
@@ -57,8 +56,8 @@ public class MonoPeekAfterTest {
 	                .expectComplete()
 	                .verify();
 
-		assertFalse("unexpected call to onSuccess with null", hasNull.get());
-		assertEquals(1, invoked.intValue());
+		assertThat(hasNull.get()).as("unexpected call to onSuccess with null").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -82,8 +81,8 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected call to onSuccess with null", hasNull.get());
-		assertEquals(1, invoked.intValue());
+		assertThat(hasNull.get()).as("unexpected call to onSuccess with null").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
 
 	}
 
@@ -106,8 +105,8 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected call to onSuccess with null", hasNull.get());
-		assertEquals(1, invoked.intValue());
+		assertThat(hasNull.get()).as("unexpected call to onSuccess with null").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -130,8 +129,8 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected call to onSuccess with null", hasNull.get());
-		assertEquals(1, invoked.intValue());
+		assertThat(hasNull.get()).as("unexpected call to onSuccess with null").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -157,9 +156,9 @@ public class MonoPeekAfterTest {
 	                .expectComplete()
 	                .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -186,9 +185,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -213,9 +212,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -241,9 +240,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -269,9 +268,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -298,9 +297,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -325,9 +324,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -353,9 +352,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
-		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
+		assertThat(completedEmpty.get()).as("unexpected empty completion").isFalse();
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(error).as("unexpected error").hasValue(null);
 	}
 
 	@Test
@@ -375,7 +374,7 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -393,7 +392,7 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -412,7 +411,7 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -425,7 +424,7 @@ public class MonoPeekAfterTest {
 		                        }))
 	                .expectErrorMessage("foo")
 	                .verify();
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -441,7 +440,7 @@ public class MonoPeekAfterTest {
 		            .expectErrorMessage("foo")
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -461,11 +460,11 @@ public class MonoPeekAfterTest {
 		}
 		catch (Throwable t) {
 			Throwable e = Exceptions.unwrap(t);
-			assertEquals(IllegalArgumentException.class, e.getClass());
-			assertEquals("foo", e.getMessage());
+			assertThat(e.getClass()).isEqualTo(IllegalArgumentException.class);
+			assertThat(e).hasMessage("foo");
 		}
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -483,11 +482,11 @@ public class MonoPeekAfterTest {
 		}
 		catch (Throwable t) {
 			Throwable e = Exceptions.unwrap(t);
-			assertEquals(IllegalArgumentException.class, e.getClass());
-			assertEquals("boom", e.getMessage());
+			assertThat(e.getClass()).isEqualTo(IllegalArgumentException.class);
+			assertThat(e).hasMessage("boom");
 		}
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -500,7 +499,7 @@ public class MonoPeekAfterTest {
 	                .expectErrorMessage("boom")
 	                .verify();
 
-		assertEquals(0, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(0);
 	}
 
 	@Test
@@ -522,9 +521,9 @@ public class MonoPeekAfterTest {
 		            .expectErrorMessage("boom")
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
-		assertEquals(err, error.get());
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(value).hasValue(null);
+		assertThat(error).hasValue(err);
 	}
 
 	@Test
@@ -546,9 +545,9 @@ public class MonoPeekAfterTest {
 		            .expectErrorMessage("boom")
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
-		assertEquals(err, error.get());
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(value).hasValue(null);
+		assertThat(error).hasValue(err);
 	}
 
 	@Test
@@ -562,7 +561,7 @@ public class MonoPeekAfterTest {
 		            .expectErrorMessage("boom")
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -578,8 +577,8 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(value).hasValue(null);
 	}
 
 	@Test
@@ -599,9 +598,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
-		assertEquals(null, error.get());
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(value).hasValue(null);
+		assertThat(error).hasValue(null);
 	}
 
 	@Test
@@ -621,9 +620,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
-		assertEquals(null, error.get());
+		assertThat(invoked.intValue()).isEqualTo(1);
+		assertThat(value).hasValue(null);
+		assertThat(error).hasValue(null);
 	}
 
 	@Test
@@ -637,7 +636,7 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(1, invoked.intValue());
+		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
@@ -665,9 +664,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(55, (Object) successInvocation.get());
-		assertEquals(55, (Object) afterTerminateInvocation.get());
-		assertEquals(null, errorInvocation.get());
+		assertThat((Object) successInvocation.get()).isEqualTo(55);
+		assertThat((Object) afterTerminateInvocation.get()).isEqualTo(55);
+		assertThat(errorInvocation).hasValue(null);
 	}
 
 	@Test
@@ -692,9 +691,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(55, (Object) successInvocation.get());
-		assertEquals(55, (Object) afterTerminateInvocation.get());
-		assertEquals(null, errorInvocation.get());
+		assertThat((Object) successInvocation.get()).isEqualTo(55);
+		assertThat((Object) afterTerminateInvocation.get()).isEqualTo(55);
+		assertThat(errorInvocation).hasValue(null);
 	}
 
 	@Test
@@ -721,9 +720,9 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertEquals(55, (Object) successInvocation.get());
-		assertEquals(null, errorInvocation.get());
-		assertEquals(55, (Object) afterTerminateInvocation.get());
+		assertThat((Object) successInvocation.get()).isEqualTo(55);
+		assertThat(errorInvocation).hasValue(null);
+		assertThat((Object) afterTerminateInvocation.get()).isEqualTo(55);
 	}
 
 	@Test
@@ -741,7 +740,7 @@ public class MonoPeekAfterTest {
 			                      }))
 			    .blockLast();
 
-			assertEquals(10, count.get());
+			assertThat(count).hasValue(10);
 		}
 	}
 

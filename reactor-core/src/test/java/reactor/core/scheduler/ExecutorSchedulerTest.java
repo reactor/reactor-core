@@ -124,7 +124,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 				.as("third-no rejection")
 				.doesNotThrowAnyException();
 
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count).hasValue(3);
 	}
 
 	@Test
@@ -183,7 +183,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 				.as("third-no rejection")
 				.doesNotThrowAnyException();
 
-		assertThat(count.get()).isEqualTo(3);
+		assertThat(count).hasValue(3);
 	}
 
 	@Test

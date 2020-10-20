@@ -31,7 +31,6 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class FluxOnAssemblyTest {
 
@@ -274,10 +273,9 @@ public class FluxOnAssemblyTest {
 	public void onAssemblyDescription() {
 		String fluxOnAssemblyStr = Flux.just(1).checkpoint("onAssemblyDescription").toString();
 		String expectedDescription = "checkpoint(\"onAssemblyDescription\")";
-		assertTrue("Description not included: " + fluxOnAssemblyStr, fluxOnAssemblyStr.contains(expectedDescription));
-
+		assertThat(fluxOnAssemblyStr).contains(expectedDescription);
 		String parallelFluxOnAssemblyStr = Flux.range(1, 10).parallel(2).checkpoint("onAssemblyDescription").toString();
-		assertTrue("Description not included: " + parallelFluxOnAssemblyStr, parallelFluxOnAssemblyStr.contains(expectedDescription));
+		assertThat(parallelFluxOnAssemblyStr).contains(expectedDescription);
 	}
 
 	@Test

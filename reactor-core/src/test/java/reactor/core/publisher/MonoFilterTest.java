@@ -163,7 +163,7 @@ public class MonoFilterTest {
 			up.onNext(3);
 		}
 		catch(Exception e){
-			Assert.assertTrue(Exceptions.isCancel(e));
+			assertThat(Exceptions.isCancel(e)).isTrue();
 		}
 
 		ts.assertValues(2)

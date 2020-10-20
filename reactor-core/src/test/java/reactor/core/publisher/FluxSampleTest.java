@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -107,8 +106,8 @@ public class FluxSampleTest {
 			  .assertErrorMessage("forced failure");
 		}
 
-		Assert.assertFalse("Main has subscribers?", main.hasDownstreams());
-		Assert.assertFalse("Other has subscribers?", other.hasDownstreams());
+		assertThat(main.hasDownstreams()).as("Main has subscribers?").isFalse();
+		assertThat(other.hasDownstreams()).as("Other has subscribers?").isFalse();
 	}
 
 	@Test
@@ -141,13 +140,13 @@ public class FluxSampleTest {
 
 		main.sample(other).subscribe(ts);
 
-		Assert.assertTrue("Main no subscriber?", main.hasDownstreams());
-		Assert.assertTrue("Other no subscriber?", other.hasDownstreams());
+		assertThat(main.hasDownstreams()).as("Main no subscriber?").isTrue();
+		assertThat(other.hasDownstreams()).as("Other no subscriber?").isTrue();
 
 		ts.cancel();
 
-		Assert.assertFalse("Main no subscriber?", main.hasDownstreams());
-		Assert.assertFalse("Other no subscriber?", other.hasDownstreams());
+		assertThat(main.hasDownstreams()).as("Main no subscriber?").isFalse();
+		assertThat(other.hasDownstreams()).as("Other no subscriber?").isFalse();
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -170,8 +169,8 @@ public class FluxSampleTest {
 
 		main.sample(other).subscribe(ts);
 
-		Assert.assertFalse("Main subscriber?", main.hasDownstreams());
-		Assert.assertFalse("Other subscriber?", other.hasDownstreams());
+		assertThat(main.hasDownstreams()).as("Main subscriber?").isFalse();
+		assertThat(other.hasDownstreams()).as("Other subscriber?").isFalse();
 
 		ts.assertNoValues()
 		  .assertNoError()

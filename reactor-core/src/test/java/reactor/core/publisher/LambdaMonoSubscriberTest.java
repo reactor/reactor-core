@@ -30,7 +30,8 @@ import reactor.core.Scannable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.testng.Assert.assertTrue;
 
 public class LambdaMonoSubscriberTest {
 
@@ -207,34 +208,34 @@ public class LambdaMonoSubscriberTest {
 
 	@Test
 	public void emptyMonoState(){
-		assertTrue(Mono.fromDirect(s -> {
-			assertTrue(s instanceof LambdaMonoSubscriber);
-			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
-			assertTrue(bfs.scan(Scannable.Attr.PREFETCH) == Integer.MAX_VALUE);
-			assertFalse(bfs.scan(Scannable.Attr.TERMINATED));
+		assertThat(Mono.fromDirect(s -> {
+			assertThat(s).isInstanceOf(LambdaMonoSubscriber.class);
+			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>) s;
+			assertThat(bfs.scan(Scannable.Attr.PREFETCH) == Integer.MAX_VALUE).isTrue();
+			assertThat(bfs.scan(Scannable.Attr.TERMINATED)).isFalse();
 			bfs.onSubscribe(Operators.emptySubscription());
 			bfs.onSubscribe(Operators.emptySubscription()); // noop
 			s.onComplete();
-			assertTrue(bfs.scan(Scannable.Attr.TERMINATED));
+			assertThat(bfs.scan(Scannable.Attr.TERMINATED)).isTrue();
 			bfs.dispose();
 			bfs.dispose();
-		}).subscribe(s -> {}, null, () -> {}).isDisposed());
+		}).subscribe(s -> {}, null, () -> {}).isDisposed()).isTrue();
 
-		assertFalse(Mono.never().subscribe(null, null, () -> {}).isDisposed());
+		assertThat(Mono.never().subscribe(null, null, () -> {}).isDisposed()).isFalse();
 	}
 
 	@Test
 	public void errorMonoState(){
-		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("test2")));
-		Hooks.onNextDropped(d -> assertTrue(d.equals("test2")));
+		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
+		Hooks.onNextDropped(d -> assertThat(d).isEqualTo("test2"));
 		Mono.fromDirect(s -> {
-			assertTrue(s instanceof LambdaMonoSubscriber);
+			assertThat(s).isInstanceOf(LambdaMonoSubscriber.class);
 			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>) s;
 			Operators.error(s, new Exception("test"));
 			s.onComplete();
 			s.onError(new Exception("test2"));
 			s.onNext("test2");
-			assertTrue(bfs.scan(Scannable.Attr.TERMINATED));
+			assertThat(bfs.scan(Scannable.Attr.TERMINATED)).isTrue();
 			bfs.dispose();
 		})
 		          .subscribe(s -> {
@@ -245,7 +246,7 @@ public class LambdaMonoSubscriberTest {
 
 	@Test
 	public void completeHookErrorDropped() {
-		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("complete")));
+		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("complete"));
 		Mono.just("foo")
 	        .subscribe(v -> {},
 			        e -> {},
@@ -268,7 +269,7 @@ public class LambdaMonoSubscriberTest {
 		    .doOnCancel(cancelCount::incrementAndGet)
 		    .subscribe(v -> {})
 		    .dispose();
-		Assertions.assertThat(cancelCount.get()).isEqualTo(1);
+		assertThat(cancelCount).hasValue(1);
 	}
 
 	@Test

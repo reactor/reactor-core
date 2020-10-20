@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,13 +108,13 @@ public class FluxWindowConsistencyTest {
 		for (int i = 0; i < lists.length; i++) {
 			expectWindow(i, t -> true, lists[i]);
 		}
-		assertEquals("Inner cancel doesn't match", 0, innerCancelled.get());
-		assertEquals("Inner complete doesn't match", lists.length, innerCompleted.get());
-		assertEquals("Inner terminate doesn't match", lists.length, innerTerminated.get());
-		assertEquals("Main cancel doesn't match", 0, mainCancelled.get());
-		assertEquals("Main complete doesn't match", 1, mainCompleted.get());
-		assertEquals("Main terminate doesn't match", 1, mainTerminated.get());
-		assertEquals("Inner not completed", innerCreated.get(), innerCompleted.get());
+		assertThat(innerCancelled).as("Inner cancel doesn't match").hasValue(0);
+		assertThat(innerCompleted).as("Inner complete doesn't match").hasValue(lists.length);
+		assertThat(innerTerminated).as("Inner terminate doesn't match").hasValue(lists.length);
+		assertThat(mainCancelled).as("Main cancel doesn't match").hasValue(0);
+		assertThat(mainCompleted).as("Main complete doesn't match").hasValue(1);
+		assertThat(mainTerminated).as("Main terminate doesn't match").hasValue(1);
+		assertThat(innerCompleted).as("Inner not completed").hasValue(innerCreated.get());
 	}
 
 	@SafeVarargs
@@ -125,13 +125,12 @@ public class FluxWindowConsistencyTest {
 
 		// All tests except groupBy provide sufficient data/duration for all inner windows to complete
 		int expectedInnerComplete = isGroupBy ? lists.length : 0;
-
-		assertEquals("Inner cancel doesn't match", 0, innerCancelled.get());
-		assertEquals("Inner complete doesn't match", expectedInnerComplete, innerCompleted.get());
-		assertEquals("Inner terminate doesn't match", expectedInnerComplete, innerTerminated.get());
-		assertEquals("Main cancel doesn't match", 1, mainCancelled.get());
-		assertEquals("Main complete doesn't match", 0, mainCompleted.get());
-		assertEquals("Main terminate doesn't match", 0, mainTerminated.get());
+		assertThat(innerCancelled).as("Inner cancel doesn't match").hasValue(0);
+		assertThat(innerCompleted).as("Inner complete doesn't match").hasValue(expectedInnerComplete);
+		assertThat(innerTerminated).as("Inner terminate doesn't match").hasValue(expectedInnerComplete);
+		assertThat(mainCancelled).as("Main cancel doesn't match").hasValue(1);
+		assertThat(mainCompleted).as("Main complete doesn't match").hasValue(0);
+		assertThat(mainTerminated).as("Main terminate doesn't match").hasValue(0);
 	}
 
 	@SafeVarargs
@@ -139,12 +138,12 @@ public class FluxWindowConsistencyTest {
 		for (int i = 0; i < lists.length; i++) {
 			expectWindow(i, t -> true, lists[i]);
 		}
-		assertEquals("Inner cancel doesn't match", 0, innerCancelled.get());
-		assertEquals("Inner complete doesn't match", completedWindows, innerCompleted.get());
-		assertEquals("Inner terminate doesn't match", completedWindows, innerTerminated.get());
-		assertEquals("Main cancel doesn't match", 1, mainCancelled.get());
-		assertEquals("Main complete doesn't match", 0, mainCompleted.get());
-		assertEquals("Main terminate doesn't match", 0, mainTerminated.get());
+		assertThat(innerCancelled).as("Inner cancel doesn't match").hasValue(0);
+		assertThat(innerCompleted).as("Inner complete doesn't match").hasValue(completedWindows);
+		assertThat(innerTerminated).as("Inner terminate doesn't match").hasValue(completedWindows);
+		assertThat(mainCancelled).as("Main cancel doesn't match").hasValue(1);
+		assertThat(mainCompleted).as("Main complete doesn't match").hasValue(0);
+		assertThat(mainTerminated).as("Main terminate doesn't match").hasValue(0);
 	}
 
 	@SafeVarargs
@@ -153,12 +152,12 @@ public class FluxWindowConsistencyTest {
 			expectWindow(i, predicate, lists[i]);
 		}
 
-		assertEquals("Inner cancel doesn't match", lists.length - completedWindows, innerCancelled.get());
-		assertEquals("Inner complete doesn't match", completedWindows, innerCompleted.get());
-		assertEquals("Inner terminate doesn't match", completedWindows, innerTerminated.get());
-		assertEquals("Main cancel doesn't match", 1, mainCancelled.get());
-		assertEquals("Main complete doesn't match", 0, mainCompleted.get());
-		assertEquals("Main terminate doesn't match", 0, mainTerminated.get());
+		assertThat(innerCancelled).as("Inner cancel doesn't match").hasValue(lists.length - completedWindows);
+		assertThat(innerCompleted).as("Inner complete doesn't match").hasValue(completedWindows);
+		assertThat(innerTerminated).as("Inner terminate doesn't match").hasValue(completedWindows);
+		assertThat(mainCancelled).as("Main cancel doesn't match").hasValue(1);
+		assertThat(mainCompleted).as("Main complete doesn't match").hasValue(0);
+		assertThat(mainTerminated).as("Main terminate doesn't match").hasValue(0);
 	}
 
 	@Test

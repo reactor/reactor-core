@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -32,8 +31,8 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuples;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FluxZipIterableTest extends FluxOperatorTest<String, String> {
 
@@ -258,9 +257,9 @@ public class FluxZipIterableTest extends FluxOperatorTest<String, String> {
 				Arrays.asList(10, 20, 30, 40, 50), (a, b) -> { throw new RuntimeException("forced failure"); }).subscribe(ts);
 
 		ts.assertNoValues()
-		.assertNotComplete()
-		.assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
+				.assertNotComplete()
+				.assertError(RuntimeException.class)
+				.assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"));
 	}
 
 	@Test
@@ -272,9 +271,9 @@ public class FluxZipIterableTest extends FluxOperatorTest<String, String> {
 				() -> { throw new RuntimeException("forced failure"); }, (a, b) -> a).subscribe(ts);
 
 		ts.assertNoValues()
-		.assertNotComplete()
-		.assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
+				.assertNotComplete()
+				.assertError(RuntimeException.class)
+				.assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"));
 	}
 
 	@Test

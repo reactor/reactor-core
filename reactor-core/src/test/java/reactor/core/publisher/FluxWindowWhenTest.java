@@ -26,15 +26,11 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -185,10 +181,10 @@ public class FluxWindowWhenTest {
 		expect(ts, 0, 2, 3);
 		expect(ts, 1, 3, 4);
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
-		Assert.assertFalse("sp3 has subscribers?", sp3.hasDownstreams());
-		Assert.assertFalse("sp4 has subscribers?", sp4.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).as("sp1 has subscribers?").isFalse();
+		assertThat(sp2.hasDownstreams()).as("sp2 has subscribers?").isFalse();
+		assertThat(sp3.hasDownstreams()).as("sp3 has subscribers?").isFalse();
+		assertThat(sp4.hasDownstreams()).as("sp4 has subscribers?").isFalse();
 	}
 
 	@Test
@@ -229,10 +225,10 @@ public class FluxWindowWhenTest {
 		expect(ts, 0, 2, 3);
 		expect(ts, 1, 3, 4);
 
-		Assert.assertFalse("openSelector has subscribers?", openSelector.hasDownstreams());
-		Assert.assertFalse("closeSelectorFor1 has subscribers?", closeSelectorFor1.hasDownstreams());
-		Assert.assertFalse("closeSelectorForOthers has subscribers?", closeSelectorForOthers.hasDownstreams());
-		Assert.assertFalse("source has subscribers?", source.hasDownstreams());
+		assertThat(openSelector.hasDownstreams()).as("openSelector has subscribers?").isFalse();
+		assertThat(closeSelectorFor1.hasDownstreams()).as("closeSelectorFor1 has subscribers?").isFalse();
+		assertThat(closeSelectorForOthers.hasDownstreams()).as("closeSelectorForOthers has subscribers?").isFalse();
+		assertThat(source.hasDownstreams()).as("source has subscribers?").isFalse();
 	}
 
 	@Test
@@ -264,10 +260,10 @@ public class FluxWindowWhenTest {
 
 		expect(ts, 0, 1, 2, 3);
 
-		Assert.assertFalse("source has subscribers?", source.hasDownstreams());
-		Assert.assertFalse("openSelector has subscribers?", openSelector.hasDownstreams());
-		Assert.assertFalse("closeSelectorFor1 has subscribers?", closeSelectorFor1.hasDownstreams());
-		Assert.assertFalse("closeSelectorOthers has subscribers?", closeSelectorOthers.hasDownstreams());
+		assertThat(source.hasDownstreams()).as("source has subscribers?").isFalse();
+		assertThat(openSelector.hasDownstreams()).as("openSelector has subscribers?").isFalse();
+		assertThat(closeSelectorFor1.hasDownstreams()).as("closeSelectorFor1 has subscribers?").isFalse();
+		assertThat(closeSelectorOthers.hasDownstreams()).as("closeSelectorOthers has subscribers?").isFalse();
 	}
 
 

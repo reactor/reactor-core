@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Condition;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -185,7 +184,7 @@ public class FluxBufferWhenTest {
 
 		sp2.onNext(1);
 
-		Assert.assertTrue("sp3 has no subscribers?", sp3.hasDownstreams());
+		assertThat(sp3.hasDownstreams()).as("sp3 has no subscribers?").isTrue();
 
 		sp1.onNext(2);
 		sp1.onNext(3);
@@ -201,7 +200,7 @@ public class FluxBufferWhenTest {
 
 		sp2.onNext(2);
 
-		Assert.assertTrue("sp4 has no subscribers?", sp4.hasDownstreams());
+		assertThat(sp4.hasDownstreams()).as("sp4 has no subscribers?").isTrue();
 
 		sp1.onNext(6);
 
@@ -242,7 +241,7 @@ public class FluxBufferWhenTest {
 		open.onNext(1);
 		open.onComplete();
 
-		Assert.assertTrue("close has no subscribers?", close.hasDownstreams());
+		assertThat(close.hasDownstreams()).as("close has no subscribers?").isTrue();
 
 		source.onNext(2);
 		source.onNext(3);
@@ -254,9 +253,9 @@ public class FluxBufferWhenTest {
 		  .assertNoError()
 		  .assertComplete();
 
-//		Assert.assertFalse("source has subscribers?", source.hasDownstreams()); //FIXME
-		Assert.assertFalse("open has subscribers?", open.hasDownstreams());
-		Assert.assertFalse("close has subscribers?", close.hasDownstreams());
+//		assertThat(source.hasDownstreams()).as("source has subscribers?").isFalse(); //FIXME
+		assertThat(open.hasDownstreams()).as("open has subscribers?").isFalse();
+		assertThat(close.hasDownstreams()).as("close has subscribers?").isFalse();
 
 	}
 

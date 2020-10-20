@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Processor;
@@ -47,13 +46,14 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.Scannable.Attr;
 import static reactor.core.Scannable.Attr.BUFFERED;
 import static reactor.core.Scannable.Attr.CANCELLED;
 import static reactor.core.Scannable.Attr.CAPACITY;
 import static reactor.core.Scannable.Attr.PREFETCH;
 import static reactor.core.Scannable.Attr.TERMINATED;
+import static reactor.core.scheduler.Schedulers.DEFAULT_POOL_SIZE;
 
 /**
  * @author Stephane Maldini
@@ -163,9 +163,9 @@ public class EmitterProcessorTest {
 		latch.await(8, TimeUnit.SECONDS);
 
 		long count = latch.getCount();
-		org.junit.Assert.assertTrue("Count > 0 : " + count + " (" + list + ")  , Running on " +
-						Schedulers.DEFAULT_POOL_SIZE + " CPU",
-				latch.getCount() == 0);
+		assertThat(latch.getCount())
+				.as("Count > 0 : %d (%s), Running on %d CPUs", count, list, Schedulers.DEFAULT_POOL_SIZE)
+				.isEqualTo(0L);
 
 	}
 
@@ -218,8 +218,7 @@ public class EmitterProcessorTest {
 		latch.await(8, TimeUnit.SECONDS);
 
 		long count = latch.getCount();
-		org.junit.Assert.assertTrue("Count > 0 : " + count + "  , Running on " + Schedulers.DEFAULT_POOL_SIZE + " CPU",
-				latch.getCount() == 0);
+		assertThat(latch.getCount()).as("Count > 0 : %d, Running on %d CPUs", count, DEFAULT_POOL_SIZE).isEqualTo(0);
 
 		stream.onComplete();
 
@@ -258,9 +257,9 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		StepVerifier.create(tp)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
-			            Assert.assertFalse("Completed?", tp.isTerminated());
-			            Assert.assertNull("Has error?", tp.getError());
+			            assertThat(tp.hasDownstreams()).as("No subscribers?").isTrue();
+			            assertThat(tp.isTerminated()).as("Completed?").isFalse();
+			            assertThat(tp.getError()).as("Has error?").isNull();
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -275,9 +274,9 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-		Assert.assertTrue("Not completed?", tp.isTerminated());
-		Assert.assertNull("Has error?", tp.getError());
+		assertThat(tp.hasDownstreams()).as("Subscribers present?").isFalse();
+		assertThat(tp.isTerminated()).as("Not completed?").isTrue();
+		assertThat(tp.getError()).as("Has error?").isNull();
 	}
 
 	@Test
@@ -285,9 +284,9 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
-			            Assert.assertFalse("Completed?", tp.isTerminated());
-			            Assert.assertNull("Has error?", tp.getError());
+			            assertThat(tp.hasDownstreams()).as("No subscribers?").isTrue();
+			            assertThat(tp.isTerminated()).as("Completed?").isFalse();
+			            assertThat(tp.getError()).as("Has error?").isNull();
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -299,9 +298,9 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-		Assert.assertTrue("Not completed?", tp.isTerminated());
-		Assert.assertNull("Has error?", tp.getError());
+		assertThat(tp.hasDownstreams()).as("Subscribers present?").isFalse();
+		assertThat(tp.isTerminated()).as("Not completed?").isTrue();
+		assertThat(tp.getError()).as("Has error?").isNull();
 	}
 
 	@Test
@@ -309,9 +308,9 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create(100);
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
-			            Assert.assertFalse("Completed?", tp.isTerminated());
-			            Assert.assertNull("Has error?", tp.getError());
+			            assertThat(tp.hasDownstreams()).as("No subscribers?").isTrue();
+			            assertThat(tp.isTerminated()).as("Completed?").isFalse();
+			            assertThat(tp.getError()).as("Has error?").isNull();
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -323,9 +322,9 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-		Assert.assertTrue("Not completed?", tp.isTerminated());
-		Assert.assertNull("Has error?", tp.getError());
+		assertThat(tp.hasDownstreams()).as("Subscribers present?").isFalse();
+		assertThat(tp.isTerminated()).as("Not completed?").isTrue();
+		assertThat(tp.getError()).as("Has error?").isNull();
 	}
 
 	@Test
@@ -720,7 +719,7 @@ public class EmitterProcessorTest {
 			Throwable lastException = threads[j].getLastException();
 			if (lastException != null) {
 				lastException.printStackTrace();
-				Assert.fail();
+				fail("Should not have encounterd exception");
 			}
 		}
 
@@ -801,8 +800,8 @@ public class EmitterProcessorTest {
 		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 
-		assertEquals(expectedBufferSize, processor.prefetch);
-		assertEquals(expectedAutoCancel, processor.autoCancel);
+		assertThat(processor.prefetch).isEqualTo(expectedBufferSize);
+		assertThat(processor.autoCancel).isEqualTo(expectedAutoCancel);
 	}
 
 	/**

@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.Optional;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -39,7 +38,7 @@ public class MonoJustTest {
     @Test
     public void valueSame() {
 	    try {
-		    Assert.assertSame(1, new MonoJust<>(1).call());
+		    assertThat(new MonoJust<>(1).call()).isEqualTo(1);
 	    }
 	    catch (Exception e) {
 		    e.printStackTrace();

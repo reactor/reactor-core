@@ -30,7 +30,6 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -48,6 +47,7 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
@@ -329,7 +329,7 @@ public class FluxWindowPredicateTest extends
 		return Arrays.asList(
 				scenario(f -> f.windowUntil(t -> true, true, 1))
 						.prefetch(1)
-						.receive(s -> s.buffer().subscribe(b -> Assert.fail()),
+						.receive(s -> s.buffer().subscribe(b -> fail("Boom!")),
 								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))),
 								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))),
 								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2)))),
@@ -922,7 +922,7 @@ public class FluxWindowPredicateTest extends
 		            .thenCancel()
 		            .verify();
 
-		assertThat(req.get()).isEqualTo(8 + prefetch);
+		assertThat(req).hasValue(8 + prefetch);
 	}
 
 	@Test
@@ -946,7 +946,7 @@ public class FluxWindowPredicateTest extends
 		            .thenCancel()
 		            .verify();
 
-		assertThat(req.get()).isEqualTo(12 + prefetch); //9 forwarded elements, 2
+		assertThat(req).hasValue(12 + prefetch); //9 forwarded elements, 2
 		// delimiters, 1 cancel and prefetch
 	}
 

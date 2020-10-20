@@ -119,7 +119,7 @@ public class MonoDoOnEachTest {
 		    })
 		    .subscribe(ts);
 
-		assertThat(onNext.get()).isEqualTo(1);
+		assertThat(onNext).hasValue(1);
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isTrue();
 	}

@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.data.Offset;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Schedulers;
@@ -127,7 +126,7 @@ public class MonoRunnableTest {
 		    .ignoreElements()
 		    .block();
 
-		Assert.assertEquals(1000, c[0]);
+		assertThat(c[0]).isEqualTo(1000);
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1503

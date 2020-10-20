@@ -110,7 +110,7 @@ class FluxCreateTest {
 		assertThat(cancelled.get()).isTrue();
 		assertThat(completed.get()).isFalse();
 		assertThat(errored.get()).isFalse();
-		assertThat(i.get()).isEqualTo(1);
+		assertThat(i).hasValue(1);
 	}
 
 	@Test
@@ -132,8 +132,8 @@ class FluxCreateTest {
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 	}
 
 	@Test
@@ -151,8 +151,8 @@ class FluxCreateTest {
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 
-		assertThat(cancellation.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(cancellation).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 	}
 
 	@Test
@@ -198,13 +198,13 @@ class FluxCreateTest {
 			s.onDispose(dispose1::getAndIncrement)
 			 .onCancel(cancel1::getAndIncrement);
 			s.onDispose(dispose2::getAndIncrement);
-			assertThat(dispose2.get()).isEqualTo(1);
+			assertThat(dispose2).hasValue(1);
 			s.onCancel(cancel2::getAndIncrement);
-			assertThat(cancel2.get()).isEqualTo(1);
+			assertThat(cancel2).hasValue(1);
 			s.onDispose(cancellation::getAndIncrement);
-			assertThat(cancellation.get()).isEqualTo(1);
-			assertThat(dispose1.get()).isEqualTo(0);
-			assertThat(cancel1.get()).isEqualTo(0);
+			assertThat(cancellation).hasValue(1);
+			assertThat(dispose1).hasValue(0);
+			assertThat(cancel1).hasValue(0);
 			s.next("test1");
 			s.complete();
 		});
@@ -213,8 +213,8 @@ class FluxCreateTest {
 		            .expectNext("test1")
 		            .verifyComplete();
 
-		assertThat(dispose1.get()).isEqualTo(1);
-		assertThat(cancel1.get()).isEqualTo(0);
+		assertThat(dispose1).hasValue(1);
+		assertThat(cancel1).hasValue(0);
 	}
 
 	@Test
@@ -241,8 +241,8 @@ class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -274,8 +274,8 @@ class FluxCreateTest {
 		            .expectNextCount(count)
 		            .expectComplete()
 		            .verify();
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 
 		onDispose.set(0);
 		onCancel.set(0);
@@ -289,8 +289,8 @@ class FluxCreateTest {
 		            .expectNextCount(count)
 		            .expectComplete()
 		            .verify();
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 	}
 
 	@Test
@@ -303,7 +303,7 @@ class FluxCreateTest {
 				.then(() -> sink.get().onCancel(onCancel::getAndIncrement))
 				.thenCancel()
 				.verify();
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -316,7 +316,7 @@ class FluxCreateTest {
 				.then(() -> sink.get().onDispose(onDispose::getAndIncrement))
 				.thenCancel()
 				.verify();
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
 	}
 
 	@Test
@@ -434,8 +434,8 @@ class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -497,11 +497,11 @@ class FluxCreateTest {
 				            }
 			            })
 			            .assertNext(s -> {
-				            assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(ref).hasValue(Thread.currentThread());
 				            assertThat(s).isEqualTo("test2");
 			            })
 			            .assertNext(s -> {
-				            assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(ref).hasValue(Thread.currentThread());
 				            assertThat(s).isEqualTo("test3");
 			            })
 			            .verifyComplete();
@@ -597,8 +597,8 @@ class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -704,8 +704,8 @@ class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -810,8 +810,8 @@ class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -916,8 +916,8 @@ class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -970,7 +970,7 @@ class FluxCreateTest {
 		            .expectNext(4, 5)
 		            .expectComplete()
 		            .verify();
-		assertThat(onRequest.get()).isEqualTo(1);
+		assertThat(onRequest).hasValue(1);
 	}
 
 	@Test
@@ -1005,7 +1005,7 @@ class FluxCreateTest {
 	private void testFluxCreateOnRequestSingleThread(OverflowStrategy overflowStrategy) {
 		RequestTrackingTestQueue queue = new RequestTrackingTestQueue();
 		Flux<Integer> created = Flux.create(pushPullSink -> {
-			assertThat(pushPullSink instanceof SerializedSink).isTrue();
+			assertThat(pushPullSink).isInstanceOf(SerializedSink.class);
 			SerializedSink<Integer> s = (SerializedSink<Integer>)pushPullSink;
 			FluxSink<Integer> s1 = s.onRequest(n -> {
 				if (queue.sink == null) {
@@ -1020,9 +1020,9 @@ class FluxCreateTest {
 				}
 				queue.pushToSink();
 			});
-			assertThat(s1 instanceof SerializedSink).isTrue();
-			assertThat(s.onDispose(() -> {}) instanceof SerializedSink).isTrue();
-			assertThat(s.onCancel(() -> {}) instanceof SerializedSink).isTrue();
+			assertThat(s1).isInstanceOf(SerializedSink.class);
+			assertThat(s.onDispose(() -> {})).isInstanceOf(SerializedSink.class);
+			assertThat(s.onCancel(() -> {})).isInstanceOf(SerializedSink.class);
 		}, overflowStrategy);
 
 		Step<Integer> step = StepVerifier.create(created, 0);
@@ -1490,8 +1490,8 @@ class FluxCreateTest {
 		                        .onCancel(secondDisposed::incrementAndGet),
 				overflowStrategy).subscribe();
 
-		assertThat(firstDisposed).as("first handler for " + overflowStrategy).hasValue(0);
-		assertThat(secondDisposed).as("second handler for " + overflowStrategy).hasValue(1);
+		assertThat(firstDisposed).as("first handler for %s", overflowStrategy).hasValue(0);
+		assertThat(secondDisposed).as("second handler for %s", overflowStrategy).hasValue(1);
 	}
 
 	@ParameterizedTest
@@ -1503,7 +1503,7 @@ class FluxCreateTest {
 		                        .onDispose(secondDisposed::incrementAndGet),
 				overflowStrategy).subscribe();
 
-		assertThat(firstDisposed).as("first handler for " + overflowStrategy).hasValue(0);
-		assertThat(secondDisposed).as("second handler for " + overflowStrategy).hasValue(1);
+		assertThat(firstDisposed).as("first handler for %s", overflowStrategy).hasValue(0);
+		assertThat(secondDisposed).as("second handler for %s", overflowStrategy).hasValue(1);
 	}
 }

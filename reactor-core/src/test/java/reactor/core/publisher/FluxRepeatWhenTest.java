@@ -89,7 +89,7 @@ public class FluxRepeatWhenTest {
 			    }
 		    });
 
-		assertThat(cancelled.get()).isEqualTo(1);
+		assertThat(cancelled).hasValue(1);
 	}
 
 	@Test

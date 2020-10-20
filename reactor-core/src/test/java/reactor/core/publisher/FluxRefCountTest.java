@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -182,30 +181,30 @@ public class FluxRefCountTest {
 
 		Flux<Integer> p = e.publish().refCount();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0L);
 
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has no subscribers?").isNotEqualTo(0L);
 
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has no subscribers?").isNotEqualTo(0L);
 
 		e.onNext(1);
 		e.onNext(2);
 
 		ts1.cancel();
 
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has no subscribers?").isNotEqualTo(0L);
 
 		e.onNext(3);
 
 		ts2.cancel();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0L);
 
 		ts1.assertValues(1, 2)
 		.assertNoError()
@@ -222,30 +221,30 @@ public class FluxRefCountTest {
 
 		Flux<Integer> p = e.publish().refCount(2);
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0L);
 
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0L);
 
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has no subscribers?").isNotEqualTo(0L);
 
 		e.onNext(1);
 		e.onNext(2);
 
 		ts1.cancel();
 
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has no subscribers?").isNotEqualTo(0L);
 
 		e.onNext(3);
 
 		ts2.cancel();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		assertThat(e.downstreamCount()).as("sp has subscribers?").isEqualTo(0L);
 
 		ts1.assertValues(1, 2)
 		.assertNoError()
@@ -356,21 +355,21 @@ public class FluxRefCountTest {
 		assertThat(termination.get()).isNull();
 
 		Disposable sub2 = refCounted.subscribe();
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 		assertThat(termination.get()).isNull();
 
 		sub1.dispose();
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 		assertThat(termination.get()).isNull();
 
 		sub2.dispose();
-		assertThat(subscriptionCount.get()).isEqualTo(1);
-		assertThat(termination.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(subscriptionCount).hasValue(1);
+		assertThat(termination).hasValue(SignalType.CANCEL);
 
 		try {
 			sub1 = refCounted.subscribe();
 			sub2 = refCounted.subscribe();
-			assertThat(subscriptionCount.get()).isEqualTo(2);
+			assertThat(subscriptionCount).hasValue(2);
 		} finally {
 			sub1.dispose();
 			sub2.dispose();
@@ -401,7 +400,7 @@ public class FluxRefCountTest {
 		p.onComplete();
 
 		assertThat(result.get(10, TimeUnit.MILLISECONDS).size()).isEqualTo(10);
-		assertThat(cancellations.get()).isEqualTo(1);
+		assertThat(cancellations).hasValue(1);
 	}
 
 	@Test

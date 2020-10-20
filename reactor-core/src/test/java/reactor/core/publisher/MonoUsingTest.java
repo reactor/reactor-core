@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Condition;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import reactor.test.StepVerifier;
@@ -64,14 +63,14 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set, false)
-		    .doAfterTerminate(() ->  Assert.assertEquals(0, cleanup.get()))
+		    .doAfterTerminate(() -> assertThat(cleanup).hasValue(0))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertComplete()
 		  .assertNoError();
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test
@@ -90,7 +89,7 @@ public class MonoUsingTest {
 		  .assertComplete()
 		  .assertNoError();
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	void checkCleanupExecutionTime(boolean eager, boolean fail) {
@@ -131,8 +130,8 @@ public class MonoUsingTest {
 			  .assertNoError();
 		}
 
-		Assert.assertEquals(1, cleanup.get());
-		Assert.assertEquals(eager, before.get());
+		assertThat(cleanup).hasValue(1);
+		assertThat(before.get()).isEqualTo(eager);
 	}
 
 	@Test
@@ -171,7 +170,7 @@ public class MonoUsingTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
-		Assert.assertEquals(0, cleanup.get());
+		assertThat(cleanup).hasValue(0);
 	}
 
 	@Test
@@ -190,7 +189,7 @@ public class MonoUsingTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test
@@ -208,7 +207,7 @@ public class MonoUsingTest {
 		  .assertNotComplete()
 		  .assertError(NullPointerException.class);
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test
@@ -222,7 +221,7 @@ public class MonoUsingTest {
 		Mono.using(() -> 1, r -> tp, cleanup::set, true)
 		    .subscribe(ts);
 
-		Assert.assertTrue("No subscriber?", tp.hasDownstreams());
+		assertThat(tp.hasDownstreams()).as("No subscriber?").isTrue();
 
 		tp.onNext(1);
 
@@ -231,7 +230,7 @@ public class MonoUsingTest {
 		  .assertNoError();
 
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test

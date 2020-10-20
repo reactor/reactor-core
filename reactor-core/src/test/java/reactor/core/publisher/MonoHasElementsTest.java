@@ -116,7 +116,7 @@ public class MonoHasElementsTest {
 	                .expectNext(true)
 	                .verifyComplete();
 
-		assertThat(cancelCount.get()).isEqualTo(1);
+		assertThat(cancelCount).hasValue(1);
 	}
 
 	@Test
@@ -129,7 +129,7 @@ public class MonoHasElementsTest {
 		            .expectNext(true)
 		            .verifyComplete();
 
-		assertThat(cancelCount.get()).isEqualTo(0);
+		assertThat(cancelCount).hasValue(0);
 	}
 
 	@Test

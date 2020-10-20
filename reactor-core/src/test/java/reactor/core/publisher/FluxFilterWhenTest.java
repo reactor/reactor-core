@@ -214,8 +214,8 @@ public class FluxFilterWhenTest {
 		    .filterWhen(v -> Mono.just(true).hide())
 		    .subscribe(bs);
 
-		assertThat(onNextCount.get()).isEqualTo(1);
-		assertThat(endSignal.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(onNextCount).hasValue(1);
+		assertThat(endSignal).hasValue(SignalType.CANCEL);
 	}
 
 	@Test
@@ -246,8 +246,8 @@ public class FluxFilterWhenTest {
 		        .filterWhen(v -> Mono.just(true).hide())
 		        .subscribe(bs);
 
-		assertThat(onNextCount.get()).isEqualTo(1);
-		assertThat(endSignal.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(onNextCount).hasValue(1);
+		assertThat(endSignal).hasValue(SignalType.CANCEL);
 	}
 
 
@@ -272,7 +272,7 @@ public class FluxFilterWhenTest {
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
-		assertThat(cancelCount.get()).isEqualTo(3);
+		assertThat(cancelCount).hasValue(3);
 	}
 
 	@Test
@@ -292,7 +292,7 @@ public class FluxFilterWhenTest {
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
-		assertThat(cancelCount.get()).isEqualTo(0);
+		assertThat(cancelCount).hasValue(0);
 	}
 
 	@Test
@@ -305,7 +305,7 @@ public class FluxFilterWhenTest {
 		    .filterWhen(v -> Mono.just(v % 2 == 0), 5)
 		    .subscribe().dispose();
 
-		assertThat(requested.get()).isEqualTo(5);
+		assertThat(requested).hasValue(5);
 	}
 
 	@Test
@@ -319,7 +319,7 @@ public class FluxFilterWhenTest {
 		    .filterWhen(v -> Mono.just(v % 2 == 0), bufferSize)
 		    .subscribe().dispose();
 
-		assertThat(requested.get()).isEqualTo(bufferSize);
+		assertThat(requested).hasValue(bufferSize);
 
 		bufferSize = bufferSize + 1; //assert even if above it is still fine
 		requested.set(0);
@@ -329,7 +329,7 @@ public class FluxFilterWhenTest {
 		    .filterWhen(v -> Mono.just(v % 2 == 0), bufferSize)
 		    .subscribe().dispose();
 
-		assertThat(requested.get()).isEqualTo(bufferSize);
+		assertThat(requested).hasValue(bufferSize);
 	}
 
 	@Test

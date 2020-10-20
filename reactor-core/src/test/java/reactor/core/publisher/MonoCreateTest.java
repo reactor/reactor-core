@@ -31,7 +31,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoCreateTest {
 
@@ -46,8 +46,8 @@ public class MonoCreateTest {
 						}))
 		            .expectNext("test1")
 		            .verifyComplete();
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 	}
 
 	@Test
@@ -67,8 +67,8 @@ public class MonoCreateTest {
 							 .error(new Exception("test"));
 						}))
 		            .verifyErrorMessage("test");
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 	}
 
 	@Test
@@ -83,8 +83,8 @@ public class MonoCreateTest {
 		            .consumeSubscriptionWith(Subscription::cancel)
 		            .thenCancel()
 		            .verify();
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -98,21 +98,21 @@ public class MonoCreateTest {
 			s.onDispose(dispose1::getAndIncrement)
 			 .onCancel(cancel1::getAndIncrement);
 			s.onDispose(dispose2::getAndIncrement);
-			assertThat(dispose2.get()).isEqualTo(1);
+			assertThat(dispose2).hasValue(1);
 			s.onCancel(cancel2::getAndIncrement);
-			assertThat(cancel2.get()).isEqualTo(1);
+			assertThat(cancel2).hasValue(1);
 			s.onDispose(cancellation::getAndIncrement);
-			assertThat(cancellation.get()).isEqualTo(1);
-			assertThat(dispose1.get()).isEqualTo(0);
-			assertThat(cancel1.get()).isEqualTo(0);
+			assertThat(cancellation).hasValue(1);
+			assertThat(dispose1).hasValue(0);
+			assertThat(cancel1).hasValue(0);
 			s.success();
 		});
 
 		StepVerifier.create(created)
 		            .verifyComplete();
 
-		assertThat(dispose1.get()).isEqualTo(1);
-		assertThat(cancel1.get()).isEqualTo(0);
+		assertThat(dispose1).hasValue(1);
+		assertThat(cancel1).hasValue(0);
 	}
 
 	@Test
@@ -142,8 +142,8 @@ public class MonoCreateTest {
 					.expectNext("done")
 					.verifyComplete();
 
-		assertThat(onDispose.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(onDispose).hasValue(1);
+		assertThat(onCancel).hasValue(0);
 	}
 
 	@Test
@@ -156,7 +156,7 @@ public class MonoCreateTest {
 				.then(() -> sink.get().onCancel(onCancel::getAndIncrement))
 				.thenCancel()
 				.verify();
-		assertThat(onCancel.get()).isEqualTo(1);
+		assertThat(onCancel).hasValue(1);
 	}
 
 	@Test
@@ -169,7 +169,7 @@ public class MonoCreateTest {
 				.then(() -> sink.get().onDispose(onDispose::getAndIncrement))
 				.thenCancel()
 				.verify();
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onDispose).hasValue(1);
 	}
 
 	@Test
