@@ -72,7 +72,7 @@ final class SinksSpecs {
 		}
 
 		@Override
-		public <T> Disposable connectEmpty(Publisher<Void> emptySource, Empty<T> emptySink) {
+		public <T> Disposable connectEmpty(Mono<Void> emptySource, Empty<T> emptySink) {
 			EmptySubscriberAdapter<T> subscriber = new EmptySubscriberAdapter<>(emptySink);
 			emptySource.subscribe(subscriber);
 			return subscriber;

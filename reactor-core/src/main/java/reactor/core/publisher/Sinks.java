@@ -320,7 +320,7 @@ public final class Sinks {
 		<T> Disposable connectMany(Publisher<T> source, Sinks.Many<T> manySink);
 
 		/**
-		 * Connect a {@link Sinks.Empty} to an arbitrary {@link Void} {@link Publisher}.
+		 * Connect a {@link Sinks.Empty} to a {@link Void} {@link Mono}.
 		 * This is considered an unsafe operation because connecting implies adhering to some rules
 		 * and ceremony:
 		 * <ol>
@@ -341,13 +341,13 @@ public final class Sinks {
 		 * However, it is generally ok (and even preferable maybe) to connect an {@link Sinks#unsafe() unsafe sink}, as the parent
 		 * subscriber will ensure intrinsic serialization by respecting the Reactive Streams specification.
 		 *
-		 * @param source the source {@link Publisher} to connect to
+		 * @param source the source {@link Mono} to connect to
 		 * @param emptySink the {@link Sinks.Empty} to feed
 		 * @param <T> the (ignored) type of the sink's {@link Empty#asMono() asMono() view}
 		 * @return a {@link Disposable} allowing to disconnect the sink from the source, cancelling the subscription to the source
 		 * @see org.reactivestreams.Processor
 		 */
-		<T> Disposable connectEmpty(Publisher<Void> source, Sinks.Empty<T> emptySink);
+		<T> Disposable connectEmpty(Mono<Void> source, Sinks.Empty<T> emptySink);
 
 		/**
 		 * Connect a {@link Sinks.One} to a {@link Mono} of compatible type.
