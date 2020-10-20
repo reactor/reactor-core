@@ -105,7 +105,7 @@ the `Flux`.
 == Activating Debug Mode - aka tracebacks
 
 WARNING: this section describes the easiest but also the slowest way to enable
-the debugging capabitilies due to the fact that it captures the stacktrace on every operator.
+the debugging capabilities due to the fact that it captures the stacktrace on every operator.
 See <<checkpoint-alternative>> for a more fine grained way of debugging,
 and <<reactor-tools-debug>> for a more advanced and performant global option.
 
