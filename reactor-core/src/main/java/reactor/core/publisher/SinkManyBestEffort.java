@@ -201,7 +201,12 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		if (consumer == null) {
 			return;
 		}
+
 		DirectInner<T>[] subs = this.subscribers;
+		if (subs.length == 0) {
+			return;
+		}
+
 		long highestServiceable = 0L;
 		long highestWithoutDropping = -1L;
 		for (DirectInner<T> sub : subs) {
@@ -220,10 +225,10 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			}
 		}
 
-		if (allOrNothing && highestWithoutDropping != 0) {
+		if (allOrNothing && highestWithoutDropping > 0) {
 			consumer.accept(highestWithoutDropping, highestWithoutDropping);
 		}
-		else if (!allOrNothing && highestServiceable != 0) {
+		else if (!allOrNothing && highestServiceable > 0) {
 			consumer.accept(highestWithoutDropping, highestServiceable);
 		}
 	}

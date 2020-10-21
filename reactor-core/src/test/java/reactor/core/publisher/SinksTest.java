@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -38,12 +40,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
-import reactor.core.CoreSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -96,7 +95,8 @@ class SinksTest {
 					expectReplay(supplier, NONE),
 					dynamicContainer("buffers all before 1st subscriber, except for errors",
 									 expectBufferingBeforeFirstSubscriber(supplier, ALL).getChildren().filter(dn -> !dn.getDisplayName().equals("replayAndErrorFirstSubscriber"))),
-					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 10L, 3L, 13L, 8L, 18L))
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 10L, 3L, 13L, 8L, 18L),
+							Arrays.asList(0L, 10L))
 			);
 		}
 
@@ -128,7 +128,8 @@ class SinksTest {
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, ALL),
 					expectBufferingBeforeFirstSubscriber(supplier, ALL),
-					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L))
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L),
+							Arrays.asList(0L, Long.MAX_VALUE))
 			);
 		}
 	}
@@ -145,7 +146,8 @@ class SinksTest {
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
 					expectBufferingBeforeFirstSubscriber(supplier, historySize),
-					expectRequestPatterns(supplier, Arrays.asList(0L, 5L, 0L, 5L, 3L, 8L, 8L, 13L))
+					expectRequestPatterns(supplier, Arrays.asList(0L, 5L, 0L, 5L, 3L, 8L, 8L, 13L),
+							Arrays.asList(0L, 5L))
 			);
 		}
 
@@ -158,7 +160,8 @@ class SinksTest {
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
 					expectBufferingBeforeFirstSubscriber(supplier, historySize),
-					expectRequestPatterns(supplier, Arrays.asList(3L, 3L, 8L, 8L)) //
+					expectRequestPatterns(supplier, Arrays.asList(3L, 3L, 8L, 8L),
+							Collections.emptyList())
 			);
 		}
 
@@ -171,7 +174,8 @@ class SinksTest {
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
 					expectBufferingBeforeFirstSubscriber(supplier, historySize),
-					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L)) //full range of requests
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L),
+							Arrays.asList(0L, 100L))
 			);
 		}
 	}
@@ -186,7 +190,8 @@ class SinksTest {
 			return Stream.of(
 					expectMulticast(supplier, 0, true),
 					expectReplay(supplier, NONE),
-					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L))
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L),
+							Collections.emptyList())
 			);
 		}
 	}
@@ -201,7 +206,8 @@ class SinksTest {
 			return Stream.of(
 					expectMulticast(supplier, 0),
 					expectReplay(supplier, NONE),
-					expectRequestPatterns(supplier, Arrays.asList(3L, 3L, 8L, 8L))
+					expectRequestPatterns(supplier, Arrays.asList(3L, 3L, 8L, 8L),
+							Collections.emptyList())
 			);
 		}
 	}
@@ -216,7 +222,8 @@ class SinksTest {
 			return Stream.of(
 					expectUnicast(supplier),
 					expectBufferingBeforeFirstSubscriber(supplier, ALL),
-					expectRequestPatterns(supplier, Arrays.asList(10L, 10L, 20L, 20L)) //only requests from sub1
+					expectRequestPatterns(supplier, Arrays.asList(10L, 10L, 20L, 20L),
+							Collections.emptyList())
 			);
 		}
 	}
@@ -904,30 +911,72 @@ class SinksTest {
 		}
 	}
 
-	DynamicTest expectRequestPatterns(Supplier<Sinks.Many<Integer>> sinkSupplier, List<Long> expectedRequests) {
-		return dynamicTest("requestPattern", () -> {
-			Sinks.Many<Integer> sink = sinkSupplier.get();
-			List<Long> actualRequests = new CopyOnWriteArrayList<>();
-			sink.setRequestHandler((low, high) -> {
-				actualRequests.add(low);
-				actualRequests.add(high);
-			});
+	/**
+	 * Various tests of the {@link Sinks.Many#setRequestHandler(BiConsumer)} results.
+	 * <p>
+	 * {@code expectedSlowFastRequests} is compared to two subscribers sub1 and sub2 with request pattern of
+	 * sub1.request(10), sub1.request(10), sub2.request(3), sub2.request(5)
+	 * <p>
+	 * {@code expectedSubscriberNoDemand} is compared to 2 subscribers that have no request, when forcing a requestSnapshot
+	 * <p>
+	 * The third case tests forcing a requestSnapshot when no subscriber is registered, expecting no notification
+	 *
+	 * @param sinkSupplier the {@link Supplier} of the sink under test
+	 * @param expectedSlowFastRequests the expected couple of longs corresponding to the low and high numbers of the {@link BiConsumer}
+	 * @return a new {@link DynamicTest} for request patterns
+	 */
+	DynamicContainer expectRequestPatterns(Supplier<Sinks.Many<Integer>> sinkSupplier, List<Long> expectedSlowFastRequests,
+			List<Long> expectedSubscriberNoDemand) {
+		return dynamicContainer("request notifications", Stream.of(
+				dynamicTest("fast vs slow requesting", () -> {
+					List<Long> actualRequests = new CopyOnWriteArrayList<>();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
+					sink.setRequestHandler((low, high) -> {
+						actualRequests.add(low);
+						actualRequests.add(high);
+					});
 
-			AssertSubscriber<Integer> sub1 = new AssertSubscriber<>(0);
-			AssertSubscriber<Integer> sub2 = new AssertSubscriber<>(0);
+					AssertSubscriber<Integer> sub1 = new AssertSubscriber<>(0);
+					AssertSubscriber<Integer> sub2 = new AssertSubscriber<>(0);
 
-			sink.asFlux().subscribe(sub1);
-			sink.asFlux().subscribe(sub2);
+					sink.asFlux().subscribe(sub1);
+					sink.asFlux().subscribe(sub2);
 
-			sub1.request(10);
+					sub1.request(10);
 
-			sub1.request(10);
+					sub1.request(10);
 
-			sub2.request(3);
+					sub2.request(3);
 
-			sub2.request(5);
+					sub2.request(5);
 
-			assertThat(actualRequests).containsExactlyElementsOf(expectedRequests);
-		});
+					assertThat(actualRequests).containsExactlyElementsOf(expectedSlowFastRequests);
+				}),
+				dynamicTest("forced requestSnapshot 0 demand", () -> {
+					List<Long> notifications = new ArrayList<>();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
+					sink.setRequestHandler((low, high) -> {
+						notifications.add(low);
+						notifications.add(high);
+					});
+					sink.asFlux().subscribe(AssertSubscriber.create(0));
+					sink.asFlux().subscribe(AssertSubscriber.create(0));
+
+					sink.requestSnapshot();
+
+					assertThat(notifications).as("3 subscribers, 0 demand").containsExactlyElementsOf(expectedSubscriberNoDemand);
+				}),
+				dynamicTest("forced requestSnapshot no subscriber", () -> {
+					Sinks.Many<Integer> sink = sinkSupplier.get();
+					List<Long> notifications = new ArrayList<>();
+					sink.setRequestHandler((low, high) -> {
+						notifications.add(low);
+						notifications.add(high);
+					});
+					sink.requestSnapshot();
+
+					assertThat(notifications).as("no subscriber, requestSnapshot()").isEmpty();
+				})
+		));
 	}
 }

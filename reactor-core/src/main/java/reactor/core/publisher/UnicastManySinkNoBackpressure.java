@@ -194,9 +194,10 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 	@Override
 	public synchronized void requestSnapshot() {
 		BiConsumer<Long, Long> consumer = requestRangeConsumer;
-		if (consumer == null) {
+		if (consumer == null || this.state == State.INITIAL) {
 			return;
 		}
+
 		long r = this.requested;
 		if (r > 0L && this.state != State.CANCELLED) {
 			consumer.accept(r, r);

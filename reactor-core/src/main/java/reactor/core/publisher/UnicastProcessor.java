@@ -347,7 +347,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public synchronized void requestSnapshot() {
 		BiConsumer<Long, Long> consumer = requestRangeConsumer;
-		if (consumer == null) {
+		if (consumer == null || once == 0) {
 			return;
 		}
 		long r = this.requested;

@@ -525,31 +525,49 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		if (consumer == null) {
 			return;
 		}
+
 		FluxReplay.ReplaySubscription<T>[] subs = this.subscribers;
-		long highestServiceable = 0L;
-		long highestWithoutDropping = -1L;
-		long maxDiff = this.buffer.capacity(); //TODO check the logic here
+		if (subs.length == 0) {
+			return;
+		}
+
+		long highestRequest = 0L;
+		long lowestRequest = -1L;
+		int bufferCapacity = this.buffer.capacity();
 		for (FluxReplay.ReplaySubscription<T> sub : subs) {
 			long r = sub.requested();
 			if (sub.isCancelled()) {
 				continue;
 			}
-			if (highestWithoutDropping == -1L) {
-				highestWithoutDropping = r;
+			if (lowestRequest == -1L || r < lowestRequest) {
+				lowestRequest = r;
 			}
-			else if (r < highestWithoutDropping) {
-				highestWithoutDropping = r;
+			if (r > highestRequest) {
+				highestRequest = r;
 			}
-			if (highestServiceable < r) {
-				highestServiceable = r;
-			}
-		}
-		if (highestServiceable > highestWithoutDropping + maxDiff) {
-			highestServiceable = highestWithoutDropping + maxDiff;
 		}
 
-		if (highestServiceable != 0) {
-			consumer.accept(highestWithoutDropping, highestServiceable);
+		if (lowestRequest == -1L) {
+			return; //no subscribers that are not cancelled
+		}
+		if (lowestRequest == Long.MAX_VALUE) {
+			consumer.accept(Long.MAX_VALUE, Long.MAX_VALUE);
+			return;
+		}
+		if (highestRequest == 0L && bufferCapacity > 0) {
+			consumer.accept(0L, Operators.unboundedOrPrefetch(bufferCapacity));
+			return;
+		}
+
+		//careful not to overflow
+		long lowestWithCapacity = (bufferCapacity == Integer.MAX_VALUE) ? Long.MAX_VALUE : lowestRequest + bufferCapacity;
+		if (lowestWithCapacity < 0) {
+			lowestWithCapacity = Long.MAX_VALUE;
+		}
+		long serviceableRequest = Math.min(highestRequest, lowestWithCapacity);
+
+		if (serviceableRequest > 0) {
+			consumer.accept(lowestRequest, serviceableRequest);
 		}
 	}
 

@@ -1133,7 +1133,6 @@ public class AssertSubscriber<T>
 		return values;
 	}
 
-
 	public final AssertSubscriber<T> assertNoEvents() {
 		return assertNoValues().assertNoError().assertNotComplete();
 	}
