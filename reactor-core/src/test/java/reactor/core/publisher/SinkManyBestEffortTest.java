@@ -181,7 +181,7 @@ class SinkManyBestEffortTest {
 	}
 
 	@Nested
-	class IndividualSpecific {
+	class BestEffortSpecific {
 
 		@Test
 		void downstreamStillUsableAfterBackpressure() {
@@ -193,10 +193,10 @@ class SinkManyBestEffortTest {
 			sink.subscribe(sub1);
 			sink.subscribe(sub2);
 
-			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.FAIL_OVERFLOW);
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.OK);
 
 			sub1.assertValues(1).assertNotTerminated();
-			sub2.assertNoValues().assertNotTerminated();
+			sub2.assertNoValues().assertNotTerminated(); //for best effort, represents backpressure (drop)
 
 			sub2.request(1);
 
@@ -226,6 +226,26 @@ class SinkManyBestEffortTest {
 
 			sub1.assertNoValues().assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();
+		}
+
+		@Test
+		void halfReceivedWhenSlowSubscriber() {
+			SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
+
+			AssertSubscriber<Integer> sub1 = AssertSubscriber.create();
+			AssertSubscriber<Integer> sub2 = AssertSubscriber.create(0);
+
+			sink.subscribe(sub1);
+			sink.subscribe(sub2);
+
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.OK);
+
+			sub1.assertValues(1).assertNotTerminated();
+			sub2.assertNoValues().assertNotTerminated();
+
+			sink.tryEmitComplete().orThrow();
+			sub1.assertValues(1).assertComplete();
+			sub2.assertNoValues().assertComplete();
 		}
 	}
 
@@ -302,6 +322,26 @@ class SinkManyBestEffortTest {
 
 			sub1.assertNoValues().assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();
+		}
+
+		@Test
+		void noneReceivedWhenSlowSubscriber() {
+			SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createAllOrNothing();
+
+			AssertSubscriber<Integer> sub1 = AssertSubscriber.create();
+			AssertSubscriber<Integer> sub2 = AssertSubscriber.create(0);
+
+			sink.subscribe(sub1);
+			sink.subscribe(sub2);
+
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.FAIL_OVERFLOW);
+
+			sub1.assertNoValues().assertNotTerminated();
+			sub2.assertNoValues().assertNotTerminated();
+
+			sink.tryEmitComplete().orThrow();
+			sub1.assertNoValues().assertComplete();
+			sub2.assertNoValues().assertComplete();
 		}
 	}
 }

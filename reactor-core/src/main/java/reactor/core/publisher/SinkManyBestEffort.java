@@ -137,6 +137,9 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		else if (cancelledCount + emittedCount == expectedEmitted) {
 			return EmitResult.OK;
 		}
+		else if (emittedCount > 0 && !allOrNothing) {
+			return EmitResult.OK;
+		}
 		else {
 			return EmitResult.FAIL_OVERFLOW;
 		}
