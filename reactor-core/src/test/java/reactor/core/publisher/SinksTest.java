@@ -74,20 +74,6 @@ class SinksTest {
 		assertThat(Sinks.unsafe().empty()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
 	}
 
-	@Nested
-	class MulticastNoWarmup {
-
-		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(0);
-
-		@TestFactory
-		Stream<DynamicContainer> checkSemantics() {
-			return Stream.of(
-					expectMulticast(supplier),
-					expectReplay(supplier, NONE),
-					expectBufferingBeforeFirstSubscriber(supplier, NONE)
-			);
-		}
-	}
 
 	@Nested
 	class Multicast {
@@ -95,12 +81,12 @@ class SinksTest {
 		//TODO Multicast has slightly different behavior with early onNext + onError : doesn't buffer elements for benefit of 1st subscriber
 		//(this is a behavioral difference in EmitterProcessor)
 
-		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().onBackpressureBuffer();
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().onBackpressureBuffer(10);
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
 			return Stream.of(
-					expectMulticast(supplier),
+					expectMulticast(supplier, 10),
 					expectReplay(supplier, NONE),
 					dynamicContainer("buffers all before 1st subscriber, except for errors",
 									 expectBufferingBeforeFirstSubscriber(supplier, ALL).getChildren().filter(dn -> !dn.getDisplayName().equals("replayAndErrorFirstSubscriber")))
@@ -120,7 +106,7 @@ class SinksTest {
 			flux.subscribe(first);
 
 			first.assertNoValues()
-				 .assertErrorMessage("boom");
+			     .assertErrorMessage("boom");
 		}
 	}
 
@@ -132,7 +118,7 @@ class SinksTest {
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
 			return Stream.of(
-					expectMulticast(supplier),
+					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, ALL),
 					expectBufferingBeforeFirstSubscriber(supplier, ALL)
 			);
@@ -148,7 +134,7 @@ class SinksTest {
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
-					expectMulticast(supplier),
+					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
 					expectBufferingBeforeFirstSubscriber(supplier, historySize)
 			);
@@ -160,7 +146,7 @@ class SinksTest {
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
-					expectMulticast(supplier),
+					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
 					expectBufferingBeforeFirstSubscriber(supplier, historySize)
 			);
@@ -172,9 +158,37 @@ class SinksTest {
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
-					expectMulticast(supplier),
+					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
 					expectBufferingBeforeFirstSubscriber(supplier, historySize)
+			);
+		}
+	}
+
+	@Nested
+	class MulticastDirectBestEffort {
+
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().directBestEffort();
+
+		@TestFactory
+		Stream<DynamicContainer> checkSemantics() {
+			return Stream.of(
+					expectMulticast(supplier, 0, true),
+					expectReplay(supplier, NONE)
+			);
+		}
+	}
+
+	@Nested
+	class MulticastDirectAllOrNothing {
+
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().directAllOrNothing();
+
+		@TestFactory
+		Stream<DynamicContainer> checkSemantics() {
+			return Stream.of(
+					expectMulticast(supplier, 0),
+					expectReplay(supplier, NONE)
 			);
 		}
 	}
@@ -393,7 +407,11 @@ class SinksTest {
 	private static final int NONE = 0;
 	private static final int ALL = Integer.MAX_VALUE;
 
-	DynamicContainer expectMulticast(Supplier<Sinks.Many<Integer>> sinkSupplier) {
+	DynamicContainer expectMulticast(Supplier<Sinks.Many<Integer>> sinkSupplier, int acceptableDifference) {
+		return expectMulticast(sinkSupplier, acceptableDifference, false);
+	}
+
+	DynamicContainer expectMulticast(Supplier<Sinks.Many<Integer>> sinkSupplier, int acceptableDifference, boolean dropForSlow) {
 		return dynamicContainer("multicast", Stream.of(
 
 				dynamicTest("fluxViewReturnsSameInstance", () -> {
@@ -425,13 +443,20 @@ class SinksTest {
 							test1.assertNoValues();
 							requestLatch.countDown();
 
-							test1.awaitAndAssertNextValues(1, 2);
+							int expectedCount = (dropForSlow || acceptableDifference > 0) ? 2 : 1;
+
+							if (expectedCount == 2) {
+								test1.awaitAndAssertNextValues(1, 2);
+							}
+							else {
+								test1.awaitAndAssertNextValues(1);
+							}
 							try {
 								Awaitility.await()
 										  .atMost(2, TimeUnit.SECONDS)
 										  .with()
 										  .pollDelay(1, TimeUnit.SECONDS)
-										  .untilAsserted(() -> test1.assertValueCount(2));
+										  .untilAsserted(() -> test1.assertValueCount(expectedCount));
 							}
 							finally {
 								test1.cancel();
@@ -456,11 +481,21 @@ class SinksTest {
 						});
 
 						requestLatch.await(1, TimeUnit.SECONDS);
-						sink.emitNext(1, FAIL_FAST);
-						sink.emitNext(2, FAIL_FAST);
-						sink.emitNext(3, FAIL_FAST);
-						sink.emitNext(4, FAIL_FAST);
-						sink.emitComplete(FAIL_FAST);
+						Sinks.EmitResult expectedFor2 = (!dropForSlow && acceptableDifference < 1) ?
+								Sinks.EmitResult.FAIL_OVERFLOW  :
+								Sinks.EmitResult.OK;
+						Sinks.EmitResult expectedFor3 = acceptableDifference < 2 ?
+								Sinks.EmitResult.FAIL_OVERFLOW  :
+								Sinks.EmitResult.OK;
+						Sinks.EmitResult expectedFor4 = acceptableDifference < 3 ?
+								Sinks.EmitResult.FAIL_OVERFLOW  :
+								Sinks.EmitResult.OK;
+
+						assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Sinks.EmitResult.OK);
+						assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(expectedFor2);
+						assertThat(sink.tryEmitNext(3)).as("tryEmitNext(3)").isEqualTo(expectedFor3);
+						assertThat(sink.tryEmitNext(4)).as("tryEmitNext(4)").isEqualTo(expectedFor4);
+						assertThat(sink.tryEmitComplete()).as("tryEmitComplete()").isEqualTo(Sinks.EmitResult.OK);
 
 						f1.get();
 						f2.get();
@@ -468,7 +503,8 @@ class SinksTest {
 					finally {
 						es.shutdownNow();
 					}
-				})));
+				})
+		));
 	}
 
 	DynamicContainer expectUnicast(Supplier<Sinks.Many<Integer>> sinkSupplier) {
