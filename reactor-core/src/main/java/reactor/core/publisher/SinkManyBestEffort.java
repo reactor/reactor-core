@@ -220,7 +220,10 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			}
 		}
 
-		if (highestServiceable != 0) {
+		if (allOrNothing && highestWithoutDropping != 0) {
+			consumer.accept(highestWithoutDropping, highestWithoutDropping);
+		}
+		else if (!allOrNothing && highestServiceable != 0) {
 			consumer.accept(highestWithoutDropping, highestServiceable);
 		}
 	}
