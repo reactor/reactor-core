@@ -18,7 +18,9 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,14 +32,18 @@ import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
+import reactor.core.CoreSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -84,12 +90,13 @@ class SinksTest {
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().onBackpressureBuffer(10);
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemantics() {
+		Stream<DynamicNode> checkSemantics() {
 			return Stream.of(
 					expectMulticast(supplier, 10),
 					expectReplay(supplier, NONE),
 					dynamicContainer("buffers all before 1st subscriber, except for errors",
-									 expectBufferingBeforeFirstSubscriber(supplier, ALL).getChildren().filter(dn -> !dn.getDisplayName().equals("replayAndErrorFirstSubscriber")))
+									 expectBufferingBeforeFirstSubscriber(supplier, ALL).getChildren().filter(dn -> !dn.getDisplayName().equals("replayAndErrorFirstSubscriber"))),
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 10L, 3L, 13L, 8L, 18L))
 			);
 		}
 
@@ -116,11 +123,12 @@ class SinksTest {
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().all();
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemantics() {
+		Stream<DynamicNode> checkSemantics() {
 			return Stream.of(
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, ALL),
-					expectBufferingBeforeFirstSubscriber(supplier, ALL)
+					expectBufferingBeforeFirstSubscriber(supplier, ALL),
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L))
 			);
 		}
 	}
@@ -129,38 +137,41 @@ class SinksTest {
 	class MulticastReplayN {
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemanticsSize5() {
+		Stream<DynamicNode> checkSemanticsSize5() {
 			final int historySize = 5;
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
-					expectBufferingBeforeFirstSubscriber(supplier, historySize)
+					expectBufferingBeforeFirstSubscriber(supplier, historySize),
+					expectRequestPatterns(supplier, Arrays.asList(0L, 5L, 0L, 5L, 3L, 8L, 8L, 13L))
 			);
 		}
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemanticsSize0() {
+		Stream<DynamicNode> checkSemanticsSize0() {
 			final int historySize = 0;
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
-					expectBufferingBeforeFirstSubscriber(supplier, historySize)
+					expectBufferingBeforeFirstSubscriber(supplier, historySize),
+					expectRequestPatterns(supplier, Arrays.asList(3L, 3L, 8L, 8L)) //
 			);
 		}
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemanticsSize100() {
+		Stream<DynamicNode> checkSemanticsSize100() {
 			final int historySize = 100;
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
 					expectMulticast(supplier, Integer.MAX_VALUE),
 					expectReplay(supplier, historySize),
-					expectBufferingBeforeFirstSubscriber(supplier, historySize)
+					expectBufferingBeforeFirstSubscriber(supplier, historySize),
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L)) //full range of requests
 			);
 		}
 	}
@@ -171,10 +182,11 @@ class SinksTest {
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().directBestEffort();
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemantics() {
+		Stream<DynamicNode> checkSemantics() {
 			return Stream.of(
 					expectMulticast(supplier, 0, true),
-					expectReplay(supplier, NONE)
+					expectReplay(supplier, NONE),
+					expectRequestPatterns(supplier, Arrays.asList(0L, 10L, 0L, 20L, 3L, 20L, 8L, 20L))
 			);
 		}
 	}
@@ -185,10 +197,11 @@ class SinksTest {
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().directAllOrNothing();
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemantics() {
+		Stream<DynamicNode> checkSemantics() {
 			return Stream.of(
 					expectMulticast(supplier, 0),
-					expectReplay(supplier, NONE)
+					expectReplay(supplier, NONE),
+					expectRequestPatterns(supplier, Arrays.asList(3L, 3L, 8L, 8L))
 			);
 		}
 	}
@@ -199,13 +212,16 @@ class SinksTest {
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().unicast().onBackpressureBuffer();
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemantics() {
+		Stream<DynamicNode> checkSemantics() {
 			return Stream.of(
 					expectUnicast(supplier),
-					expectBufferingBeforeFirstSubscriber(supplier, ALL)
+					expectBufferingBeforeFirstSubscriber(supplier, ALL),
+					expectRequestPatterns(supplier, Arrays.asList(10L, 10L, 20L, 20L)) //only requests from sub1
 			);
 		}
 	}
+
+	//TODO add test for unicast().OnBackpressureError()
 
 	@Nested
 	class SingleOrEmpty {
@@ -888,4 +904,30 @@ class SinksTest {
 		}
 	}
 
+	DynamicTest expectRequestPatterns(Supplier<Sinks.Many<Integer>> sinkSupplier, List<Long> expectedRequests) {
+		return dynamicTest("requestPattern", () -> {
+			Sinks.Many<Integer> sink = sinkSupplier.get();
+			List<Long> actualRequests = new CopyOnWriteArrayList<>();
+			sink.setRequestHandler((low, high) -> {
+				actualRequests.add(low);
+				actualRequests.add(high);
+			});
+
+			AssertSubscriber<Integer> sub1 = new AssertSubscriber<>(0);
+			AssertSubscriber<Integer> sub2 = new AssertSubscriber<>(0);
+
+			sink.asFlux().subscribe(sub1);
+			sink.asFlux().subscribe(sub2);
+
+			sub1.request(10);
+
+			sub1.request(10);
+
+			sub2.request(3);
+
+			sub2.request(5);
+
+			assertThat(actualRequests).containsExactlyElementsOf(expectedRequests);
+		});
+	}
 }
