@@ -34,7 +34,11 @@ import reactor.util.context.Context;
  * semantics. These standalone sinks expose {@link Many#tryEmitNext(Object) tryEmit} methods that return an {@link EmitResult} enum,
  * allowing to atomically fail in case the attempted signal is inconsistent with the spec and/or the state of the sink.
  * <p>
- * This class exposes a collection of ({@link Sinks.Many} builders and {@link Sinks.One} factories.
+ * This class exposes a collection of ({@link Sinks.Many} builders and {@link Sinks.One} factories. Unless constructed through the
+ * {@link #unsafe()} spec, these sinks are thread safe in the sense that they will detect concurrent access and fail fast on one of
+ * the attempts. {@link #unsafe()} sinks on the other hand are expected to be externally synchronized (typically by being called from
+ * within a Reactive Streams-compliant context, like a {@link Subscriber} or an operator, which means it is ok to remove the overhead
+ * of detecting concurrent access from the sink itself).
  *
  * @author Simon Baslé
  * @author Stephane Maldini
@@ -92,6 +96,9 @@ public final class Sinks {
 	 * Return a {@link RootSpec root spec} for more advanced use cases such as building operators.
 	 * Unsafe {@link Sinks.Many}, {@link Sinks.One} and {@link Sinks.Empty} are not serialized nor thread safe,
 	 * which implies they MUST be externally synchronized so as to respect the Reactive Streams specification.
+	 * This can typically be the case when the sinks are being called from within a Reactive Streams-compliant context,
+	 * like a {@link Subscriber} or an operator.In turn, this allows the sinks to have less overhead, since they
+	 * don't care to detect concurrent access anymore.
 	 *
 	 * @return {@link RootSpec}
 	 */
@@ -643,8 +650,11 @@ public final class Sinks {
 		 * Try emitting a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal.
 		 * The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
 		 * <p>
-		 * Might throw an unchecked exception in case of a fatal error downstream which cannot
-		 * be propagated to any asynchronous handler (aka a bubbling exception).
+		 * See the list of failure {@link EmitResult} in {@link #emitNext(Object, EmitFailureHandler)} javadoc for an
+		 * example of how each of these can be dealt with, to decide if the emit API would be a good enough fit instead.
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, ...).
 		 *
 		 * @param t the value to emit, not null
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
@@ -655,6 +665,9 @@ public final class Sinks {
 		/**
 		 * Try to terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
 		 * signal. The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
+		 * <p>
+		 * See the list of failure {@link EmitResult} in {@link #emitComplete(EmitFailureHandler)} javadoc for an
+		 * example of how each of these can be dealt with, to decide if the emit API would be a good enough fit instead.
 		 *
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see Subscriber#onComplete()
@@ -664,6 +677,9 @@ public final class Sinks {
 		/**
 		 * Try to fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
 		 * signal. The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
+		 * <p>
+		 * See the list of failure {@link EmitResult} in {@link #emitError(Throwable, EmitFailureHandler)} javadoc for an
+		 * example of how each of these can be dealt with, to decide if the emit API would be a good enough fit instead.
 		 *
 		 * @param error the exception to signal, not null
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
@@ -672,22 +688,43 @@ public final class Sinks {
 		EmitResult tryEmitError(Throwable error);
 
 		/**
-		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal,
-		 * or notifies the downstream subscriber(s) of a failure to do so via {@link #emitError(Throwable, Sinks.EmitFailureHandler)}
-		 * (with an {@link Exceptions#isOverflow(Throwable) overflow exception}).
+		 * A simplified attempt at emitting a non-null element via the {@link #tryEmitNext(Object)} API, generating an
+		 * {@link Subscriber#onNext(Object) onNext} signal.
+		 * If the result of the attempt is not a {@link EmitResult#isSuccess() success}, implementations SHOULD retry the
+		 * {@link #tryEmitNext(Object)} call IF the provided {@link EmitFailureHandler} returns {@code true}.
+		 * Otherwise, failures are dealt with in a predefined way that might depend on the actual sink implementation
+		 * (see below for the vanilla reactor-core behavior).
 		 * <p>
 		 * Generally, {@link #tryEmitNext(Object)} is preferable since it allows a custom handling
 		 * of error cases, although this implies checking the returned {@link EmitResult} and correctly
-		 * acting on it (see implementation notes).
+		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
-		 * Might throw an unchecked exception in case of a fatal error downstream which cannot
-		 * be propagated to any asynchronous handler (aka a bubbling exception).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitNext(Object)} and act on
-		 * failures: {@link EmitResult#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
-		 * by {@link #emitError(Throwable, Sinks.EmitFailureHandler)}. {@link EmitResult#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
-		 * {@link EmitResult#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
-		 * @implNote the duality between this method and {@link #tryEmitNext(Object)} is expected.
+		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
+		 * <ol>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: no particular handling. should ideally discard the value but at that
+		 *         point there's no {@link Subscriber} from which to get a contextual discard handler.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_OVERFLOW}: discard the value ({@link Operators#onDiscard(Object, Context)})
+		 *         then call {@link #emitError(Throwable, Sinks.EmitFailureHandler)} with a {@link Exceptions#failWithOverflow(String)} exception.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_CANCELLED}: discard the value ({@link Operators#onDiscard(Object, Context)}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_TERMINATED}: drop the value ({@link Operators#onNextDropped(Object, Context)}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_NON_SERIALIZED}: throw an {@link EmissionException} mentioning RS spec rule 1.3.
+		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
+		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case for safe sinks...
+		 *     </li>
+		 * </ol>
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
+		 * as described above, ...).
 		 *
 		 * @param t the value to emit, not null
 		 * @param failureHandler the failure handler that allows retrying failed {@link EmitResult}.
@@ -698,15 +735,44 @@ public final class Sinks {
 		void emitNext(T t, EmitFailureHandler failureHandler);
 
 		/**
-		 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
-		 * signal.
+		 * A simplified attempt at completing via the {@link #tryEmitComplete()} API, generating an
+		 * {@link Subscriber#onComplete() onComplete} signal.
+		 * If the result of the attempt is not a {@link EmitResult#isSuccess() success}, implementations SHOULD retry the
+		 * {@link #tryEmitComplete()} call IF the provided {@link EmitFailureHandler} returns {@code true}.
+		 * Otherwise, failures are dealt with in a predefined way that might depend on the actual sink implementation
+		 * (see below for the vanilla reactor-core behavior).
 		 * <p>
-		 * Generally, {@link #tryEmitComplete()} is preferable, since it allows a custom handling
-		 * of error cases.
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitComplete()}. Failure {@link EmitResult}
-		 * don't need any particular handling where emitComplete is concerned.
-		 * @implNote the duality between this method and {@link #tryEmitComplete()} is expected.
+		 * Generally, {@link #tryEmitComplete()} is preferable since it allows a custom handling
+		 * of error cases, although this implies checking the returned {@link EmitResult} and correctly
+		 * acting on it. This API is intended as a good default for convenience.
+		 * <p>
+		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
+		 * <ol>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onComplete is not driven by backpressure.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: the completion can be ignored since nobody is listening.
+		 *         Note that most vanilla reactor sinks never trigger this result for onComplete, replaying the
+		 *         terminal signal to later subscribers instead (to the exception of {@link UnicastSpec#onBackpressureError()}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_CANCELLED}: the completion can be ignored since nobody is interested.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_TERMINATED}: the extra completion is basically ignored since there was a previous
+		 *         termination signal, but there is nothing interesting to log.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_NON_SERIALIZED}: throw an {@link EmissionException} mentioning RS spec rule 1.3.
+		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
+		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
+		 *     </li>
+		 * </ol>
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
+		 * as described above, ...).
 		 *
 		 * @param failureHandler the failure handler that allows retrying failed {@link EmitResult}.
 		 * @throws EmissionException on non-serialized access
@@ -716,16 +782,44 @@ public final class Sinks {
 		void emitComplete(EmitFailureHandler failureHandler);
 
 		/**
-		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
-		 * signal.
+		 * A simplified attempt at failing the sequence via the {@link #tryEmitError(Throwable)} API, generating an
+		 * {@link Subscriber#onError(Throwable) onError} signal.
+		 * If the result of the attempt is not a {@link EmitResult#isSuccess() success}, implementations SHOULD retry the
+		 * {@link #tryEmitError(Throwable)} call IF the provided {@link EmitFailureHandler} returns {@code true}.
+		 * Otherwise, failures are dealt with in a predefined way that might depend on the actual sink implementation
+		 * (see below for the vanilla reactor-core behavior).
 		 * <p>
 		 * Generally, {@link #tryEmitError(Throwable)} is preferable since it allows a custom handling
 		 * of error cases, although this implies checking the returned {@link EmitResult} and correctly
-		 * acting on it (see implementation notes).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitError(Throwable)} and act on
-		 * {@link EmitResult#FAIL_TERMINATED} by calling {@link Operators#onErrorDropped(Throwable, Context)}.
-		 * @implNote the duality between this method and {@link #tryEmitError(Throwable)} is expected.
+		 * acting on it. This API is intended as a good default for convenience.
+		 * <p>
+		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
+		 * <ol>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onError is not driven by backpressure.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: the error is ignored since nobody is listening. Note that most vanilla reactor sinks
+		 *         never trigger this result for onError, replaying the terminal signal to later subscribers instead
+		 *         (to the exception of {@link UnicastSpec#onBackpressureError()}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_CANCELLED}: the error can be ignored since nobody is interested.
+		 *      </li>
+		 *      <li>
+		 *         {@link EmitResult#FAIL_TERMINATED}: the error unexpectedly follows another terminal signal, so it is
+		 *         dropped via {@link Operators#onErrorDropped(Throwable, Context)}.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_NON_SERIALIZED}: throw an {@link EmissionException} mentioning RS spec rule 1.3.
+		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
+		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
+		 *     </li>
+		 * </ol>
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
+		 * as described above, ...).
 		 *
 		 * @param error the exception to signal, not null
 		 * @param failureHandler the failure handler that allows retrying failed {@link EmitResult}.
@@ -769,6 +863,9 @@ public final class Sinks {
 		/**
 		 * Try to complete the {@link Mono} without a value, generating only an {@link Subscriber#onComplete() onComplete} signal.
 		 * The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
+		 * <p>
+		 * See the list of failure {@link EmitResult} in {@link #emitEmpty(EmitFailureHandler)} javadoc for an
+		 * example of how each of these can be dealt with, to decide if the emit API would be a good enough fit instead.
 		 *
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see #emitEmpty(Sinks.EmitFailureHandler)
@@ -779,6 +876,9 @@ public final class Sinks {
 		/**
 		 * Try to fail the {@link Mono}, generating only an {@link Subscriber#onError(Throwable) onError} signal.
 		 * The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
+		 * <p>
+		 * See the list of failure {@link EmitResult} in {@link #emitError(Throwable, EmitFailureHandler)} javadoc for an
+		 * example of how each of these can be dealt with, to decide if the emit API would be a good enough fit instead.
 		 *
 		 * @param error the exception to signal, not null
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
@@ -788,15 +888,44 @@ public final class Sinks {
 		EmitResult tryEmitError(Throwable error);
 
 		/**
-		 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
-		 * signal.
+		 * A simplified attempt at completing via the {@link #tryEmitEmpty()} API, generating an
+		 * {@link Subscriber#onComplete() onComplete} signal.
+		 * If the result of the attempt is not a {@link EmitResult#isSuccess() success}, implementations SHOULD retry the
+		 * {@link #tryEmitEmpty()} call IF the provided {@link EmitFailureHandler} returns {@code true}.
+		 * Otherwise, failures are dealt with in a predefined way that might depend on the actual sink implementation
+		 * (see below for the vanilla reactor-core behavior).
 		 * <p>
-		 * Generally, {@link #tryEmitEmpty()} is preferable, since it allows a custom handling
-		 * of error cases.
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitEmpty()}. Failure {@link EmitResult}
-		 * don't need any particular handling where emitEmpty is concerned.
-		 * @implNote the duality between this method and {@link #tryEmitEmpty()} is expected.
+		 * Generally, {@link #tryEmitEmpty()} is preferable since it allows a custom handling
+		 * of error cases, although this implies checking the returned {@link EmitResult} and correctly
+		 * acting on it. This API is intended as a good default for convenience.
+		 * <p>
+		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
+		 * <ol>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onComplete is not driven by backpressure.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: the completion can be ignored since nobody is listening.
+		 *         Note that most vanilla reactor sinks never trigger this result for onComplete, replaying the
+		 *         terminal signal to later subscribers instead (to the exception of {@link UnicastSpec#onBackpressureError()}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_CANCELLED}: the completion can be ignored since nobody is interested.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_TERMINATED}: the extra completion is basically ignored since there was a previous
+		 *         termination signal, but there is nothing interesting to log.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_NON_SERIALIZED}: throw an {@link EmissionException} mentioning RS spec rule 1.3.
+		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
+		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
+		 *     </li>
+		 * </ol>
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
+		 * as described above, ...).
 		 *
 		 * @param failureHandler the failure handler that allows retrying failed {@link EmitResult}.
 		 * @throws EmissionException on non-serialized access
@@ -805,17 +934,46 @@ public final class Sinks {
 		 */
 		void emitEmpty(EmitFailureHandler failureHandler);
 
+
 		/**
-		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
-		 * signal.
+		 * A simplified attempt at failing the sequence via the {@link #tryEmitError(Throwable)} API, generating an
+		 * {@link Subscriber#onError(Throwable) onError} signal.
+		 * If the result of the attempt is not a {@link EmitResult#isSuccess() success}, implementations SHOULD retry the
+		 * {@link #tryEmitError(Throwable)} call IF the provided {@link EmitFailureHandler} returns {@code true}.
+		 * Otherwise, failures are dealt with in a predefined way that might depend on the actual sink implementation
+		 * (see below for the vanilla reactor-core behavior).
 		 * <p>
 		 * Generally, {@link #tryEmitError(Throwable)} is preferable since it allows a custom handling
 		 * of error cases, although this implies checking the returned {@link EmitResult} and correctly
-		 * acting on it (see implementation notes).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitError(Throwable)} and act on
-		 * {@link EmitResult#FAIL_TERMINATED} by calling {@link Operators#onErrorDropped(Throwable, Context)}.
-		 * @implNote the duality between this method and {@link #tryEmitError(Throwable)} is expected.
+		 * acting on it. This API is intended as a good default for convenience.
+		 * <p>
+		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
+		 * <ol>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onError is not driven by backpressure.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: the error is ignored since nobody is listening. Note that most vanilla reactor sinks
+		 *         never trigger this result for onError, replaying the terminal signal to later subscribers instead
+		 *         (to the exception of {@link UnicastSpec#onBackpressureError()}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_CANCELLED}: the error can be ignored since nobody is interested.
+		 *      </li>
+		 *      <li>
+		 *         {@link EmitResult#FAIL_TERMINATED}: the error unexpectedly follows another terminal signal, so it is
+		 *         dropped via {@link Operators#onErrorDropped(Throwable, Context)}.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_NON_SERIALIZED}: throw an {@link EmissionException} mentioning RS spec rule 1.3.
+		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
+		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
+		 *     </li>
+		 * </ol>
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
+		 * as described above, ...).
 		 *
 		 * @param error the exception to signal, not null
 		 * @param failureHandler the failure handler that allows retrying failed {@link EmitResult}.
@@ -860,8 +1018,11 @@ public final class Sinks {
 		 * will only trigger the onComplete. The result of the attempt is represented as an {@link EmitResult},
 		 * which possibly indicates error cases.
 		 * <p>
-		 * Might throw an unchecked exception in case of a fatal error downstream which cannot
-		 * be propagated to any asynchronous handler (aka a bubbling exception).
+		 * See the list of failure {@link EmitResult} in {@link #emitValue(Object, EmitFailureHandler)} javadoc for an
+		 * example of how each of these can be dealt with, to decide if the emit API would be a good enough fit instead.
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, ...).
 		 *
 		 * @param value the value to emit and complete with, or {@code null} to only trigger an onComplete
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
@@ -872,26 +1033,45 @@ public final class Sinks {
 		EmitResult tryEmitValue(@Nullable T value);
 
 		/**
-		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal
-		 * immediately followed by an {@link Subscriber#onComplete() onComplete} signal,
-		 * or notifies the downstream subscriber(s) of a failure to do so via
-		 * {@link #emitError(Throwable, Sinks.EmitFailureHandler)}
-		 * (with an {@link Exceptions#isOverflow(Throwable) overflow exception}).
+		 * A simplified attempt at emitting a non-null element via the {@link #tryEmitValue(Object)} API, generating an
+		 * {@link Subscriber#onNext(Object) onNext} signal immediately followed by an {@link Subscriber#onComplete()} signal.
+		 * If the result of the attempt is not a {@link EmitResult#isSuccess() success}, implementations SHOULD retry the
+		 * {@link #tryEmitValue(Object)} call IF the provided {@link EmitFailureHandler} returns {@code true}.
+		 * Otherwise, failures are dealt with in a predefined way that might depend on the actual sink implementation
+		 * (see below for the vanilla reactor-core behavior).
 		 * <p>
 		 * Generally, {@link #tryEmitValue(Object)} is preferable since it allows a custom handling
 		 * of error cases, although this implies checking the returned {@link EmitResult} and correctly
-		 * acting on it (see implementation notes).
+		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
-		 * Might throw an unchecked exception in case of a fatal error downstream which cannot
-		 * be propagated to any asynchronous handler (aka a bubbling exception).
+		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
+		 * <ol>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: no particular handling. should ideally discard the value but at that
+		 *         point there's no {@link Subscriber} from which to get a contextual discard handler.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_OVERFLOW}: discard the value ({@link Operators#onDiscard(Object, Context)})
+		 *         then call {@link #emitError(Throwable, Sinks.EmitFailureHandler)} with a {@link Exceptions#failWithOverflow(String)} exception.
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_CANCELLED}: discard the value ({@link Operators#onDiscard(Object, Context)}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_TERMINATED}: drop the value ({@link Operators#onNextDropped(Object, Context)}).
+		 *     </li>
+		 *     <li>
+		 *         {@link EmitResult#FAIL_NON_SERIALIZED}: throw an {@link EmissionException} mentioning RS spec rule 1.3.
+		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
+		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case for safe sinks...
+		 *     </li>
+		 * </ol>
+		 * <p>
+		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
+		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
+		 * as described above, ...).
 		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitValue (Object)} and act on
-		 * failures: {@link EmitResult#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
-		 * by {@link #emitError(Throwable, Sinks.EmitFailureHandler)}. {@link EmitResult#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
-		 * {@link EmitResult#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
-		 * @implNote the duality between this method and {@link #tryEmitValue(Object)} is expected.
-		 *
-		 * @param value the value to emit and complete with, or {@code null} to only trigger an onComplete
+		 * @param value the value to emit and complete with, a {@code null} is actually acceptable to only trigger an onComplete
 		 * @param failureHandler the failure handler that allows retrying failed {@link EmitResult}.
 		 * @throws EmissionException on non-serialized access
 		 * @see #tryEmitValue(Object)
