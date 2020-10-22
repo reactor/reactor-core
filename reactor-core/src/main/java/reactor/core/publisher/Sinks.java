@@ -700,7 +700,7 @@ public final class Sinks {
 		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
 		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
-		 * <ol>
+		 * <ul>
 		 *     <li>
 		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: no particular handling. should ideally discard the value but at that
 		 *         point there's no {@link Subscriber} from which to get a contextual discard handler.
@@ -720,7 +720,7 @@ public final class Sinks {
 		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
 		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case for safe sinks...
 		 *     </li>
-		 * </ol>
+		 * </ul>
 		 * <p>
 		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
 		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
@@ -747,7 +747,7 @@ public final class Sinks {
 		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
 		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
-		 * <ol>
+		 * <ul>
 		 *     <li>
 		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onComplete is not driven by backpressure.
 		 *     </li>
@@ -768,7 +768,7 @@ public final class Sinks {
 		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
 		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
 		 *     </li>
-		 * </ol>
+		 * </ul>
 		 * <p>
 		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
 		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
@@ -794,7 +794,7 @@ public final class Sinks {
 		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
 		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
-		 * <ol>
+		 * <ul>
 		 *     <li>
 		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onError is not driven by backpressure.
 		 *     </li>
@@ -815,7 +815,7 @@ public final class Sinks {
 		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
 		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
 		 *     </li>
-		 * </ol>
+		 * </ul>
 		 * <p>
 		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
 		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
@@ -900,7 +900,7 @@ public final class Sinks {
 		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
 		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
-		 * <ol>
+		 * <ul>
 		 *     <li>
 		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onComplete is not driven by backpressure.
 		 *     </li>
@@ -921,7 +921,7 @@ public final class Sinks {
 		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
 		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
 		 *     </li>
-		 * </ol>
+		 * </ul>
 		 * <p>
 		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
 		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
@@ -948,7 +948,7 @@ public final class Sinks {
 		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
 		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
-		 * <ol>
+		 * <ul>
 		 *     <li>
 		 *         {@link EmitResult#FAIL_OVERFLOW}: irrelevant as onError is not driven by backpressure.
 		 *     </li>
@@ -969,7 +969,7 @@ public final class Sinks {
 		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
 		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case in safe sinks...
 		 *     </li>
-		 * </ol>
+		 * </ul>
 		 * <p>
 		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
 		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
@@ -1045,7 +1045,7 @@ public final class Sinks {
 		 * acting on it. This API is intended as a good default for convenience.
 		 * <p>
 		 * When the {@link EmitResult} is not a success, vanilla reactor-core operators have the following behavior:
-		 * <ol>
+		 * <ul>
 		 *     <li>
 		 *         {@link EmitResult#FAIL_ZERO_SUBSCRIBER}: no particular handling. should ideally discard the value but at that
 		 *         point there's no {@link Subscriber} from which to get a contextual discard handler.
@@ -1065,7 +1065,7 @@ public final class Sinks {
 		 *         Note that {@link Sinks#unsafe()} never trigger this result. It would be possible for an {@link EmitFailureHandler}
 		 *         to busy-loop and optimistically wait for the contention to disappear to avoid this case for safe sinks...
 		 *     </li>
-		 * </ol>
+		 * </ul>
 		 * <p>
 		 * Might throw an unchecked exception as a last resort (eg. in case of a fatal error downstream which cannot
 		 * be propagated to any asynchronous handler, a bubbling exception, a {@link EmitResult#FAIL_NON_SERIALIZED}
