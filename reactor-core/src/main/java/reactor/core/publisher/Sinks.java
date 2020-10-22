@@ -97,7 +97,7 @@ public final class Sinks {
 	 * Unsafe {@link Sinks.Many}, {@link Sinks.One} and {@link Sinks.Empty} are not serialized nor thread safe,
 	 * which implies they MUST be externally synchronized so as to respect the Reactive Streams specification.
 	 * This can typically be the case when the sinks are being called from within a Reactive Streams-compliant context,
-	 * like a {@link Subscriber} or an operator.In turn, this allows the sinks to have less overhead, since they
+	 * like a {@link Subscriber} or an operator. In turn, this allows the sinks to have less overhead, since they
 	 * don't care to detect concurrent access anymore.
 	 *
 	 * @return {@link RootSpec}
