@@ -380,22 +380,3 @@ final class SinkManyBestEffort<T> extends Flux<T>
 
 }
 
-//also used by DirectProcessor
-interface DirectInnerContainer<T> {
-
-	/**
-	 * Add a new {@link SinkManyBestEffort.DirectInner} to this publisher.
-	 *
-	 * @param s the new {@link SinkManyBestEffort.DirectInner} to add
-	 * @return {@code true} if the inner could be added, {@code false} if the publisher cannot accept new subscribers
-	 */
-	boolean add(SinkManyBestEffort.DirectInner<T> s);
-
-	/**
-	 * Remove an {@link SinkManyBestEffort.DirectInner} from this publisher. Does nothing if the inner is not currently managed
-	 * by the publisher.
-	 *
-	 * @param s the  {@link SinkManyBestEffort.DirectInner} to remove
-	 */
-	void remove(SinkManyBestEffort.DirectInner<T> s);
-}
