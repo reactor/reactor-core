@@ -180,7 +180,7 @@ public class MonoDematerializeTest {
 		            .expectNext("foo")
 		            .verifyComplete();
 
-		testPublisher.assertWasCancelled();
+		testPublisher.assertWasNotCancelled(); //new behavior as of 3.4.0 for MonoMaterialize
 	}
 
 	@Test
