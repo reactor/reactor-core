@@ -1045,7 +1045,7 @@ Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 }
 ----
 <1> Materialize the `ContextView` through `Mono.deferContextual` and...
-<2> within the defer, extract a value for a the correlation ID key, as an `Optional`.
+<2> within the defer, extract a value for the correlation ID key, as an `Optional`.
 <3> If the key was present in the context, use the correlation ID as a header.
 ====
 
