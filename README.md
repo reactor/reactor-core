@@ -26,23 +26,22 @@ repositories {
     mavenCentral()
 
     // Uncomment to get access to Milestones
-    maven { url "https://repo.spring.io/milestone" }
+    // maven { url "https://repo.spring.io/milestone" }
 
     // Uncomment to get access to Snapshots
     // maven { url "https://repo.spring.io/snapshot" }
 }
 
 dependencies {
-    //TODO change to the release artifact and comment milestone repo above when GA
-    compile "io.projectreactor:reactor-core:3.4.0-RC2"
-    testCompile "io.projectreactor:reactor-test:3.4.0-RC2"
+    compile "io.projectreactor:reactor-core:3.4.0"
+    testCompile "io.projectreactor:reactor-test:3.4.0"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.4.0-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.4.0-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.4.1-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.4.1-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.4.0-RC2"
+    // implementation "io.projectreactor:reactor-tools:3.4.0"
 }
 ```
 
