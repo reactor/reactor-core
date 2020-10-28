@@ -67,7 +67,7 @@ class FluxFirstWithValueTest {
 				.expectErrorSatisfies(e -> {
 					assertThat(e).isInstanceOf(NoSuchElementException.class);
 					assertThat(e.getMessage()).isEqualTo("All sources completed with error or without values");
-					Throwable throwable = e.getSuppressed()[0];
+					Throwable throwable = e.getCause();
 					assertThat(throwable.getSuppressed()[0].getMessage()).isEqualTo("Boom!");
 					assertThat(throwable.getSuppressed()[1].getMessage())
 							.isEqualTo("source at index 1 completed empty");
