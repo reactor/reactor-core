@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-import japicmp.model.JApiCompatibility
 import me.champeau.gradle.japicmp.JapicmpTask
-import me.champeau.gradle.japicmp.report.Violation
-import me.champeau.gradle.japicmp.report.stdrules.AbstractRecordingSeenMembers
-import me.champeau.gradle.japicmp.report.stdrules.RecordSeenMembersSetup
 
 buildscript {
 	repositories {
@@ -132,59 +128,6 @@ task downloadBaseline(type: Download) {
 	dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
 }
 
-class IncompatibleChangeWithExclusions extends AbstractRecordingSeenMembers implements Serializable {
-
-	private final Map<String, String> acceptedViolations
-
-	IncompatibleChangeWithExclusions(Map<String, String> params) {
-		acceptedViolations = params
-	}
-
-	@Override
-	public Violation maybeAddViolation(final JApiCompatibility memberRaw) {
-		def member = Violation.describe(memberRaw)
-		def memberViolationsStringList = memberRaw.compatibilityChanges.collect {it.toString() }
-		def memberViolations = memberViolationsStringList.join(",")
-
-		def memberAcceptedViolations = acceptedViolations[member]
-		if (memberAcceptedViolations == memberViolations) {
-			println "Excluded violation $memberAcceptedViolations for $member"
-			return null;
-		}
-		if (memberAcceptedViolations) {
-			println "Recognized exclusions for $member, but has more changes: $memberViolations"
-		}
-		if (!memberRaw.isBinaryCompatible()) {
-			//let's see if there are generic binary exceptions:
-			def acceptedBinaryViolations = acceptedViolations
-				.getOrDefault("BINARY_COMPATIBLE", "")
-				.tokenize(",")
-				.toSet()
-			if (acceptedBinaryViolations.containsAll(memberViolationsStringList)
-				|| acceptedBinaryViolations.contains("*")) {
-				return null;
-			}
-			return Violation.notBinaryCompatible(memberRaw);
-		}
-		else if (!memberRaw.isSourceCompatible()) {
-			//let's see if there are generic source exceptions:
-			def acceptedSourceViolations = acceptedViolations
-				.getOrDefault("SOURCE_COMPATIBLE", "")
-				.tokenize(",")
-				.toSet()
-
-			if (acceptedSourceViolations.containsAll(memberViolationsStringList)
-				|| acceptedSourceViolations.contains("*")) {
-				return null;
-			}
-			return Violation.error(memberRaw, "Is not source compatible", )
-		}
-		else {
-			return null;
-		}
-	}
-}
-
 task japicmp(type: JapicmpTask) {
 	if (project.gradle.startParameter.isOffline()) {
 		println "Offline: skipping downloading of baseline and JAPICMP"
@@ -208,65 +151,10 @@ task japicmp(type: JapicmpTask) {
 	ignoreMissingClasses = true
 	includeSynthetic = true
 
-	//TODO after a release, bump the gradle.properties baseline
-	//TODO after a release, remove the reactor-core exclusions below if any
-	classExcludes = [
-			"reactor.core.publisher.TopicProcessor",
-			"reactor.core.publisher.WorkQueueProcessor",
-			'reactor.core.publisher.EventLoopProcessor$Slot',
-			'reactor.util.concurrent.WaitStrategy',
-	]
-	methodExcludes = [
-			'reactor.core.publisher.Flux#onLastAssembly(reactor.core.publisher.Flux)',
-			'reactor.core.publisher.Flux#compose(java.util.function.Function)',
-			'reactor.core.publisher.Flux#retry(java.util.function.Predicate)',
-			'reactor.core.publisher.Flux#retry(long, java.util.function.Predicate)',
-			'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration)',
-			'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration)',
-			'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration, reactor.core.scheduler.Scheduler)',
-			'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration, double)',
-			'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration, double, reactor.core.scheduler.Scheduler)',
-			'reactor.core.publisher.Flux#retryWhen(java.util.function.Function)',
-			'reactor.core.publisher.Flux#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
-			'reactor.core.publisher.Flux#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
-
-			'reactor.core.publisher.Mono#onLastAssembly(reactor.core.publisher.Mono)',
-			'reactor.core.publisher.Mono#compose(java.util.function.Function)',
-			'reactor.core.publisher.Mono#retry(java.util.function.Predicate)',
-			'reactor.core.publisher.Mono#retry(long, java.util.function.Predicate)',
-			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration)',
-			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration)',
-			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration, reactor.core.scheduler.Scheduler)',
-			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration, double)',
-			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration, double, reactor.core.scheduler.Scheduler)',
-			'reactor.core.publisher.Mono#retryWhen(java.util.function.Function)',
-			'reactor.core.publisher.Mono#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
-			'reactor.core.publisher.Mono#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
-
-			'reactor.core.publisher.ParallelFlux#composeGroup(java.util.function.Function)',
-	]
-
-	Map<String, String> specificChangeExclusions = [
-		// class Excludes
-		"Class reactor.core.publisher.MonoProcessor" : "CLASS_NOW_ABSTRACT", //MonoProcessor was final so should be fine to be now abstract
-
-		// method Excludes
-
-		// these methods are now abstract, should be source compatible
-		"Method reactor.core.publisher.MonoProcessor.onSubscribe(org.reactivestreams.Subscription)" : "METHOD_REMOVED",
-		"Method reactor.core.publisher.MonoProcessor.onNext(java.lang.Object)" : "METHOD_REMOVED",
-		"Method reactor.core.publisher.MonoProcessor.onError(java.lang.Throwable)" : "METHOD_REMOVED",
-		"Method reactor.core.publisher.MonoProcessor.onComplete()" : "METHOD_REMOVED",
-
-		// generic excludes
-		"SOURCE_COMPATIBLE" : "METHOD_ADDED_TO_INTERFACE" //needed for the rule to ignore new default methods
-	]
-
-	richReport {
-		addDefaultRules = false
-		addSetupRule(RecordSeenMembersSetup)
-		addRule(IncompatibleChangeWithExclusions, specificChangeExclusions)
-	}
+	//TODO after a .0 release, bump the gradle.properties baseline
+	//TODO after a .0 release, remove the reactor-core exclusions below if any
+	classExcludes = [ ]
+	methodExcludes = [ ]
 }
 
 gradle.taskGraph.afterTask { task, state ->
