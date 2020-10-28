@@ -85,10 +85,8 @@ task japicmp(type: JapicmpTask) {
 	ignoreMissingClasses = true
 	includeSynthetic = true
 
-	//TODO after a release, remove the reactor-test exclusions below if any
-	methodExcludes = [
-	        'reactor.test.StepVerifier$FirstStep#expectNoEvent(java.time.Duration)',
-	]
+	//TODO after a .0 release, remove the reactor-test exclusions below if any
+	methodExcludes = [ ]
 }
 
 tasks.withType(Test).all {
