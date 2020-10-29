@@ -19,8 +19,11 @@ package reactor;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
+
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.AssertionsUtils;
 
 public class ReactorTestExecutionListener implements TestExecutionListener {
 
@@ -46,5 +49,10 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 	@Override
 	public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
 		reset();
+	}
+
+	@Override
+	public void testPlanExecutionStarted(TestPlan testPlan) {
+		AssertionsUtils.installAssertJTestRepresentation();
 	}
 }

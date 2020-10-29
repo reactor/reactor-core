@@ -97,8 +97,8 @@ public class MemoryUtils {
 
 
 		public OffHeapDetector() {
+			//note: AssertJ representation of Tracked is installed in ReactorTestExecutionListener
 			tracker = new ConcurrentLinkedQueue<>();
-			AssertionsUtils.installAssertJTestRepresentation();
 		}
 
 		/**
