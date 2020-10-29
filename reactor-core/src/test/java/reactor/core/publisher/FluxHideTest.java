@@ -29,10 +29,10 @@ public class FluxHideTest {
 	@Test
 	public void normal() {
 		Flux<Integer> f = Flux.just(1);
-		assertThat(f instanceof Fuseable.ScalarCallable).isTrue();
+		assertThat(f).isInstanceOf(Fuseable.ScalarCallable.class);
 		f = f.hide();
-		assertThat(f instanceof Fuseable.ScalarCallable).isFalse();
-		assertThat(f instanceof FluxHide).isTrue();
+		assertThat(f).isNotInstanceOf(Fuseable.ScalarCallable.class);
+		assertThat(f).isInstanceOf(FluxHide.class);
 	}
 
 	@Test

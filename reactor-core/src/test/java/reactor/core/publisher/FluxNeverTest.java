@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
@@ -26,7 +25,7 @@ public class FluxNeverTest {
 
 	@Test
 	public void singleInstance() {
-		Assert.assertSame(Flux.never(), Flux.never());
+		assertThat(Flux.never()).isSameAs(Flux.never());
 	}
 
 	@Test

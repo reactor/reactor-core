@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Condition;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -189,9 +188,7 @@ public class FluxBufferWhenTest {
 
 		sp2.emitNext(1, FAIL_FAST);
 
-		Assert.assertTrue("sp3 has no subscribers?", Scannable.from(sp3)
-															  .inners()
-															  .count() != 0);
+		assertThat(sp3.currentSubscriberCount()).as("sp3 has no subscribers?").isPositive();
 
 		sp1.emitNext(2, FAIL_FAST);
 		sp1.emitNext(3, FAIL_FAST);

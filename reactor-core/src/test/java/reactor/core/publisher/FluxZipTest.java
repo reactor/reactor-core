@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -45,6 +44,7 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxZipTest extends FluxOperatorTest<String, String> {
@@ -391,10 +391,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				Flux.zip(Flux.just(1), Flux.just("test"))
 				    .zipWith(Flux.just("test2"));
 
-		Assert.assertTrue(f instanceof FluxZip);
+		assertThat(f).isInstanceOf(FluxZip.class);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 3);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(3);
 
 		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),
@@ -412,10 +412,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				Flux.zip(Flux.just(1), Flux.just("test"), Flux.just("test0"))
 				    .zipWith(Flux.just("test2"));
 
-		Assert.assertTrue(f instanceof FluxZip);
+		assertThat(f).isInstanceOf(FluxZip.class);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 2);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(2);
 
 		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),
@@ -436,10 +436,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				                 .hide()
 				                 .doOnRequest(ref::set), 1);
 
-		Assert.assertTrue(f instanceof FluxZip);
+		assertThat(f).isInstanceOf(FluxZip.class);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 2);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(2);
 
 		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),
@@ -449,7 +449,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		ff.subscribeWith(AssertSubscriber.create())
 		  .assertValues(Tuples.of(1, "testtest2"))
 		  .assertComplete();
-		Assert.assertTrue(ref.get() == 1);
+		assertThat(ref.get() == 1).isTrue();
 	}
 
 	@Test
@@ -459,10 +459,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						obj -> Tuples.of((int) obj[0], (String) obj[1]))
 				    .zipWith(Flux.just("test2"));
 
-		Assert.assertTrue(f instanceof FluxZip);
+		assertThat(f).isInstanceOf(FluxZip.class);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 2);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(2);
 
 		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),
@@ -491,14 +491,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		source2.emitNext(4, FAIL_FAST);
 
 //		then: "the values are all collected from source1 flux"
-		assertThat(tap.get()).isEqualTo(3);
+		assertThat(tap).hasValue(3);
 
 //		when: "the sources accept the missing value"
 		source2.emitNext(5, FAIL_FAST);
 		source1.emitNext(6, FAIL_FAST);
 
 //		then: "the values are all collected from source1 flux"
-		assertThat(tap.get()).isEqualTo(9);
+		assertThat(tap).hasValue(9);
 	}
 
 	@Test
@@ -1176,7 +1176,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				}),
 				Flux.just(3))
 		                        .doOnSubscribe(s -> {
-			                        assertThat(s instanceof FluxZip.ZipSingleCoordinator).isTrue();
+			                        assertThat(s).isInstanceOf(FluxZip.ZipSingleCoordinator.class);
 			                        ref.set((FluxZip.ZipSingleCoordinator) s);
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
@@ -1236,7 +1236,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				Flux.just(3)
 				    .hide())
 		                        .doOnSubscribe(s -> {
-			                        assertThat(s instanceof FluxZip.ZipCoordinator).isTrue();
+			                        assertThat(s).isInstanceOf(FluxZip.ZipCoordinator.class);
 			                        ref.set((FluxZip.ZipCoordinator) s);
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
@@ -1273,7 +1273,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				Flux.just(3)
 				    .hide())
 		                        .doOnSubscribe(s -> {
-			                        assertThat(s instanceof FluxZip.ZipCoordinator).isTrue();
+			                        assertThat(s).isInstanceOf(FluxZip.ZipCoordinator.class);
 			                        ref.set((FluxZip.ZipCoordinator) s);
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)

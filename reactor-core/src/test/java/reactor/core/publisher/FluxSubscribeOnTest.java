@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -161,11 +160,11 @@ public class FluxSubscribeOnTest {
 
 		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()));
 
-		Assert.assertEquals(0, count.get());
+		assertThat(count).hasValue(0);
 
 		p.subscribeWith(AssertSubscriber.create()).await();
 
-		Assert.assertEquals(1, count.get());
+		assertThat(count).hasValue(1);
 	}
 
 	@Test
@@ -275,7 +274,7 @@ public class FluxSubscribeOnTest {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
 
-		assertThat(count.get()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+		assertThat(count).hasValue(Queues.SMALL_BUFFER_SIZE);
 	}
 
 	@Test

@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 

@@ -19,17 +19,17 @@ import org.junit.jupiter.api.Test;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoHideTest {
 
 	@Test
 	public void normal() {
 		Mono<Integer> f = Mono.just(1);
-		assertThat(f instanceof Fuseable.ScalarCallable).isTrue();
+		assertThat(f).isInstanceOf(Fuseable.ScalarCallable.class);
 		f = f.hide();
-		assertThat(f instanceof Fuseable.ScalarCallable).isFalse();
-		assertThat(f instanceof MonoHide).isTrue();
+		assertThat(f).isNotInstanceOf(Fuseable.ScalarCallable.class);
+		assertThat(f).isInstanceOf(MonoHide.class);
 	}
 
 	@Test

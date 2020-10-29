@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -167,8 +166,7 @@ public class MonoOnErrorResumeTest {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
-		                                           .contains("forced failure 2")));
+		  .assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure 2"));
 	}
 
 	@Test

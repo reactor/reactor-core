@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -48,8 +47,8 @@ public class FluxAutoConnectTest {
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
 		e.asFlux().publish().autoConnect(0, cancel::set);
-		
-		Assert.assertNotNull(cancel.get());
+
+		assertThat(cancel).doesNotHaveValue(null);
 		assertThat(e.currentSubscriberCount()).as("source subscribed").isPositive();
 
 		cancel.get().dispose();
@@ -63,18 +62,18 @@ public class FluxAutoConnectTest {
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
 		Flux<Integer> p = e.asFlux().publish().autoConnect(2, cancel::set);
-		
-		Assert.assertNull(cancel.get());
-		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
-		
-		p.subscribe(AssertSubscriber.create());
-		
-		Assert.assertNull(cancel.get());
+
+		assertThat(cancel).hasValue(null);
 		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
 
 		p.subscribe(AssertSubscriber.create());
 
-		Assert.assertNotNull(cancel.get());
+		assertThat(cancel).hasValue(null);
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
+
+		p.subscribe(AssertSubscriber.create());
+
+		assertThat(cancel.get()).isNotNull();
 		assertThat(e.currentSubscriberCount()).as("source subscribed").isPositive();
 
 		cancel.get().dispose();

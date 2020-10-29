@@ -36,7 +36,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -54,7 +53,6 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertFalse;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxBufferPredicateTest {
@@ -1201,7 +1199,7 @@ public class FluxBufferPredicateTest {
 			Assertions.assertThat(value2).as("trigger value not discarded").hasValue(-2);
 
 			Assertions.assertThat(received.get() + (value1.get() + 1))
-					.as("received " + received.get() + ", val1 state " + value1.get())
+					.as("received %d, val1 state %d", received.get(), value1.get())
 					.withFailMessage("\nExpecting non-trigger values to be either received or discarded in round %s/%s", i, ROUNDS)
 					.isEqualTo(1);
 		}

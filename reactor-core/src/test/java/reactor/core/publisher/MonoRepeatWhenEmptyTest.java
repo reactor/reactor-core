@@ -16,17 +16,17 @@
 
 package reactor.core.publisher;
 
-import org.junit.Assert;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,8 +50,8 @@ public class MonoRepeatWhenEmptyTest {
             .assertComplete()
             .assertNoError();
 
-        Assert.assertEquals(4, c.get());
-        Assert.assertEquals(Arrays.asList(0L, 1L, 2L), iterations);
+        assertThat(c).hasValue(4);
+        assertThat(iterations).containsExactly(0L, 1L, 2L);
     }
 
     @Test
@@ -72,8 +72,8 @@ public class MonoRepeatWhenEmptyTest {
             .assertComplete()
             .assertNoError();
 
-        Assert.assertEquals(4, c.get());
-        Assert.assertEquals(Arrays.asList(0L, 1L, 2L), iterations);
+        assertThat(c).hasValue(4);
+        assertThat(iterations).containsExactly(0L, 1L, 2L);
     }
 
     @Test
@@ -92,8 +92,8 @@ public class MonoRepeatWhenEmptyTest {
         ts
             .assertError(IllegalStateException.class);
 
-        Assert.assertEquals(3, c.get());
-        Assert.assertEquals(Arrays.asList(0L, 1L), iterations);
+        assertThat(c).hasValue(3);
+        assertThat(iterations).containsExactly(0L, 1L);
     }
 
     @Test

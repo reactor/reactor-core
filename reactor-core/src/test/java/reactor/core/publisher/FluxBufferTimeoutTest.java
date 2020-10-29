@@ -225,15 +225,15 @@ public class FluxBufferTimeoutTest {
 
 		StepVerifier.withVirtualTime(() -> flux, () -> scheduler, 0)
 		            .expectSubscription()
-		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(0))
+		            .then(() -> assertThat(requestedOutstanding).hasValue(0))
 		            .thenRequest(2)
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
 		            .then(() -> sink.emitNext("a", FAIL_FAST))
 		            .thenAwait(Duration.ofMillis(100))
 		            .assertNext(s -> assertThat(s).containsExactly("a"))
-		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(9))
+		            .then(() -> assertThat(requestedOutstanding).hasValue(9))
 		            .thenRequest(1)
-		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
+		            .then(() -> assertThat(requestedOutstanding).hasValue(10))
 		            .thenCancel()
 		            .verify();
 	}

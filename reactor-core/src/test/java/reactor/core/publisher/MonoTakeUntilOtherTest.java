@@ -57,7 +57,7 @@ public class MonoTakeUntilOtherTest {
 		            .expectNoEvent(Duration.ofMillis(100))
 		            .verifyComplete();
 
-		assertThat(signal.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(signal).hasValue(SignalType.CANCEL);
 	}
 
 	@Test
@@ -72,8 +72,8 @@ public class MonoTakeUntilOtherTest {
 		            .thenCancel()
 		            .verify(Duration.ofMillis(500));
 
-		assertThat(s1.get()).isEqualTo(SignalType.CANCEL);
-		assertThat(s2.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(s1).hasValue(SignalType.CANCEL);
+		assertThat(s2).hasValue(SignalType.CANCEL);
 	}
 
 	@Test

@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -161,7 +160,7 @@ public class MonoAnyTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorWith( e -> {
 			  e.printStackTrace();
-			  Assert.assertTrue(e.getMessage().contains("forced failure"));
+			  assertThat(e.getMessage().contains("forced failure")).isTrue();
 		  });
 	}
 

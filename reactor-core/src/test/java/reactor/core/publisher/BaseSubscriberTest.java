@@ -51,7 +51,7 @@ public class BaseSubscriberTest {
 
 			@Override
 			public void hookOnNext(Integer integer) {
-				assertThat(lastValue.compareAndSet(integer - 1, integer)).as("compareAndSet of " + integer).isTrue();
+				assertThat(lastValue.compareAndSet(integer - 1, integer)).as("compareAndSet of %d", integer).isTrue();
 				if (integer < 10) {
 					request(1);
 				}
@@ -78,7 +78,7 @@ public class BaseSubscriberTest {
 		});
 
 		latch.await(500, TimeUnit.MILLISECONDS);
-		assertThat(lastValue.get()).isEqualTo(10);
+		assertThat(lastValue).hasValue(10);
 	}
 
 	@Test

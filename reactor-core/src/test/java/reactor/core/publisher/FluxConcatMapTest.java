@@ -24,9 +24,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -187,6 +185,9 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		ts.assertValues(1, 2)
 		  .assertNoError()
 		  .assertComplete();
+
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscribers?").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscribers?").isZero();
 	}
 
 	@Test

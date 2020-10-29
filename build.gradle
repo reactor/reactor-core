@@ -71,7 +71,6 @@ ext {
 
 	// Testing
 	jUnitPlatformVersion = '5.6.0'
-	jUnitVersion = '4.13'
 	assertJVersion = '3.11.1'
 	mockitoVersion = '2.23.0'
 	jUnitParamsVersion = '1.1.1'

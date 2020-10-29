@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
 import org.awaitility.Duration;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -57,7 +56,7 @@ public class FluxDetachTest {
 		System.gc();
 		Thread.sleep(200);
 
-		Assert.assertNull("Object retained!", wr.get());
+		assertThat(wr.get()).as("Object retained!").isNull();
 
 	}
 
@@ -127,7 +126,7 @@ public class FluxDetachTest {
 		System.gc();
 		Thread.sleep(200);
 
-		Assert.assertNull("Object retained!", wr.get());
+		assertThat(wr.get()).as("Object retained!").isNull();
 	}
 
 	@Test
@@ -153,7 +152,7 @@ public class FluxDetachTest {
 			.untilAsserted(() -> {
 				System.gc();
 				Object garbage = new Object();
-				Assert.assertNull("Object retained!", wr.get());
+				assertThat(wr.get()).as("Object retained!").isNull();
 				garbage.toString();
 			});
 	}

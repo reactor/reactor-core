@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -38,8 +37,8 @@ public class MonoZipTest {
 
 	@Test
 	public void allEmpty() {
-		Assert.assertNull(Mono.zip(Mono.empty(), Mono.empty())
-		                      .block());
+		assertThat(Mono.zip(Mono.empty(), Mono.empty())
+		                      .block()).isNull();
 	}
 
 	@Test
@@ -63,8 +62,8 @@ public class MonoZipTest {
 
 	@Test
 	public void allEmptyDelay() {
-		Assert.assertNull(Mono.zipDelayError(Mono.empty(), Mono.empty())
-		                      .block());
+		assertThat(Mono.zipDelayError(Mono.empty(), Mono.empty())
+		                      .block()).isNull();
 	}
 
 	@Test
@@ -98,9 +97,8 @@ public class MonoZipTest {
 
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
-		Assert.assertEquals(Tuples.of(0L, 0L),
-				Mono.zip(Mono.delay(Duration.ofMillis(150)), Mono.delay(Duration.ofMillis(250)))
-				    .block());
+		assertThat(Mono.zip(Mono.delay(Duration.ofMillis(150)), Mono.delay(Duration.ofMillis(250))).block())
+				.isEqualTo(Tuples.of(0L, 0L));
 	}
 
 	@Test
@@ -134,7 +132,7 @@ public class MonoZipTest {
 			Object[] out = Mono.zip(a -> a, monos)
 			                   .block();
 
-			Assert.assertArrayEquals(result, out);
+			assertThat(out).isEqualTo(result);
 		}
 	}
 
@@ -143,10 +141,10 @@ public class MonoZipTest {
 		Mono<Tuple2<Integer, String>> f = Mono.just(1)
 		                                      .zipWith(Mono.just("test2"));
 
-		Assert.assertTrue(f instanceof MonoZip);
+		assertThat(f).isInstanceOf(MonoZip.class);
 		MonoZip<?, ?> s = (MonoZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 2);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(2);
 
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(Tuples.of(1, "test2"))
@@ -159,10 +157,10 @@ public class MonoZipTest {
 				Mono.zip(Mono.just(1), Mono.just("test"))
 				    .zipWith(Mono.just("test2"));
 
-		Assert.assertTrue(f instanceof MonoZip);
+		assertThat(f).isInstanceOf(MonoZip.class);
 		MonoZip<?, ?> s = (MonoZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 3);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(3);
 
 		Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),
@@ -181,10 +179,10 @@ public class MonoZipTest {
 						obj -> Tuples.of((int) obj[0], (String) obj[1]))
 				    .zipWith(Mono.just("test2"));
 
-		Assert.assertTrue(f instanceof MonoZip);
+		assertThat(f).isInstanceOf(MonoZip.class);
 		MonoZip<?, ?> s = (MonoZip<?, ?>) f;
-		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 2);
+		assertThat(s.sources).isNotNull();
+		assertThat(s.sources).hasSize(2);
 
 		Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),

@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -40,7 +39,7 @@ public class FluxJustTest {
     @Test
     @SuppressWarnings("unchecked")
     public void valueSame() throws Exception {
-        Assert.assertSame(1, ((Callable<Integer>)Flux.just(1)).call());
+        assertThat(((Callable<Integer>)Flux.just(1)).call()).isEqualTo(1);
     }
 
     @Test
@@ -88,7 +87,7 @@ public class FluxJustTest {
         Flux<String> stream = Flux.just("test");
         AtomicReference<String> value = new AtomicReference<>();
         stream.subscribe(value::set);
-        assertThat(value.get()).isEqualTo("test");
+        assertThat(value).hasValue("test");
     }
 
     @Test

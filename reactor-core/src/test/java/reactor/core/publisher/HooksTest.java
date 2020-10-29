@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -118,7 +117,7 @@ public class HooksTest {
 		Hooks.onEachOperator(hook);
 		Hooks.onEachOperatorHook.apply(s -> {});
 
-		assertThat(applied.get()).isEqualTo(1);
+		assertThat(applied).hasValue(1);
 	}
 
 	@Test
@@ -133,7 +132,7 @@ public class HooksTest {
 		Hooks.onEachOperator("other", hook);
 		Hooks.onEachOperatorHook.apply(s -> {});
 
-		assertThat(applied.get()).isEqualTo(2);
+		assertThat(applied).hasValue(2);
 	}
 
 	@Test
@@ -255,7 +254,7 @@ public class HooksTest {
 		Hooks.onLastOperator(hook);
 		Hooks.onLastOperatorHook.apply(s -> {});
 
-		assertThat(applied.get()).isEqualTo(1);
+		assertThat(applied).hasValue(1);
 	}
 
 	@Test
@@ -270,7 +269,7 @@ public class HooksTest {
 		Hooks.onLastOperator("other", hook);
 		Hooks.onLastOperatorHook.apply(s -> {});
 
-		assertThat(applied.get()).isEqualTo(2);
+		assertThat(applied).hasValue(2);
 	}
 
 	@Test
@@ -392,7 +391,7 @@ public class HooksTest {
 		Hooks.onOperatorError(hook);
 		Hooks.onOperatorErrorHook.apply(new IllegalStateException("boom"), "foo");
 
-		assertThat(applied.get()).isEqualTo(1);
+		assertThat(applied).hasValue(1);
 	}
 
 	@Test
@@ -407,7 +406,7 @@ public class HooksTest {
 		Hooks.onOperatorError("other", hook);
 		Hooks.onOperatorErrorHook.apply(new IllegalStateException("boom"), "foo");
 
-		assertThat(applied.get()).isEqualTo(2);
+		assertThat(applied).hasValue(2);
 	}
 
 	@Test
@@ -529,30 +528,16 @@ public class HooksTest {
 
 		Throwable w = Operators.onOperatorError(null, new Exception(), "hello", Context.empty());
 
-		Assert.assertTrue(w instanceof TestException);
-		Assert.assertTrue(w.getMessage()
-		                   .equals("hello"));
+		assertThat(w).isInstanceOf(TestException.class);
+		assertThat(w).hasMessage("hello");
 
-		try {
+		assertThatExceptionOfType(TestException.class).isThrownBy(() -> {
 			Operators.onNextDropped("hello", Context.empty());
-			Assert.fail();
-		}
-		catch (Throwable t) {
-			t.printStackTrace();
-			Assert.assertTrue(t instanceof TestException);
-			Assert.assertTrue(t.getMessage()
-			                   .equals("hello"));
-		}
+		}).withMessage("hello");
 
-		try {
+		assertThatExceptionOfType(TestException.class).isThrownBy(() -> {
 			Operators.onErrorDropped(new Exception(), Context.empty());
-			Assert.fail();
-		}
-		catch (Throwable t) {
-			Assert.assertTrue(t instanceof TestException);
-			Assert.assertTrue(t.getMessage()
-			                   .equals("errorDrop"));
-		}
+		}).withMessage("errorDrop");
 	}
 
 	@Test
@@ -567,7 +552,7 @@ public class HooksTest {
 
 		Operators.onNextDropped("foo", Context.empty());
 
-		assertThat(ref.get()).isEqualTo("foobar");
+		assertThat(ref).hasValue("foobar");
 
 		Hooks.onErrorDropped(d -> {
 			ref.set(d.getMessage());
@@ -578,7 +563,7 @@ public class HooksTest {
 
 		Operators.onErrorDropped(new Exception("foo"), Context.empty());
 
-		assertThat(ref.get()).isEqualTo("foobar");
+		assertThat(ref).hasValue("foobar");
 
 		Hooks.resetOnErrorDropped();
 
@@ -594,7 +579,7 @@ public class HooksTest {
 
 		Operators.onOperatorError(null, null, "foo", Context.empty());
 
-		assertThat(ref.get()).isEqualTo("foobar");
+		assertThat(ref).hasValue("foobar");
 
 		Hooks.resetOnOperatorError();
 

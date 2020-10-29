@@ -27,7 +27,7 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 public class LambdaSubscriberTest {
 

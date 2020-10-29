@@ -88,7 +88,7 @@ public class ContextTests {
 		    .log()
 		    .subscribe();
 
-		assertThat(innerC.get()).isEqualTo("foobar");
+		assertThat(innerC).hasValue("foobar");
 	}
 
 	@Test

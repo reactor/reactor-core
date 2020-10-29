@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -45,8 +44,6 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxMergeSequentialTest {
@@ -235,7 +232,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source).subscribe(tsBp);
 
-		Assert.assertEquals(2, count.get());
+		assertThat(count).hasValue(2);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -255,7 +252,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(3, count.get());
+		assertThat(count).hasValue(3);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -275,7 +272,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(4, count.get());
+		assertThat(count).hasValue(4);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -295,7 +292,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(5, count.get());
+		assertThat(count).hasValue(5);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -315,7 +312,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source, source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(6, count.get());
+		assertThat(count).hasValue(6);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -335,7 +332,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source, source, source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(7, count.get());
+		assertThat(count).hasValue(7);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -355,7 +352,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source, source, source, source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(8, count.get());
+		assertThat(count).hasValue(8);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -375,7 +372,7 @@ public class FluxMergeSequentialTest {
 
 		Flux.mergeSequential(source, source, source, source, source, source, source, source, source).subscribe(tsBp);
 
-		Assert.assertEquals(9, count.get());
+		assertThat(count).hasValue(9);
 		tsBp.assertNoError();
 		tsBp.assertNotComplete();
 		tsBp.assertNoValues();
@@ -507,7 +504,7 @@ public class FluxMergeSequentialTest {
 		ts.assertNoError();
 		ts.assertNoValues();
 		ts.assertNotComplete();
-		Assert.assertEquals(Queues.XS_BUFFER_SIZE, count.get());
+		assertThat(count).hasValue(Queues.XS_BUFFER_SIZE);
 	}
 
 	@Test
@@ -521,12 +518,12 @@ public class FluxMergeSequentialTest {
 		ts.assertValueCount(100);
 		ts.assertComplete();
 
-		Assert.assertEquals(5, (long) requests.get(0));
-		Assert.assertEquals(1, (long) requests.get(1));
-		Assert.assertEquals(1, (long) requests.get(2));
-		Assert.assertEquals(1, (long) requests.get(3));
-		Assert.assertEquals(1, (long) requests.get(4));
-		Assert.assertEquals(1, (long) requests.get(5));
+		assertThat((long) requests.get(0)).isEqualTo(5);
+		assertThat((long) requests.get(1)).isEqualTo(1);
+		assertThat((long) requests.get(2)).isEqualTo(1);
+		assertThat((long) requests.get(3)).isEqualTo(1);
+		assertThat((long) requests.get(4)).isEqualTo(1);
+		assertThat((long) requests.get(5)).isEqualTo(1);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -575,7 +572,7 @@ public class FluxMergeSequentialTest {
 		try {
 			Flux.mergeSequential(Arrays.asList(source, source, source), 1, -99);
 		} catch (IllegalArgumentException ex) {
-			assertEquals("prefetch > 0 required but it was -99", ex.getMessage());
+			assertThat(ex).hasMessage("prefetch > 0 required but it was -99");
 		}
 
 	}
@@ -587,7 +584,7 @@ public class FluxMergeSequentialTest {
 		try {
 			Flux.just(source, source, source).flatMapSequential(Flux.identityFunction(), 10, -99);
 		} catch (IllegalArgumentException ex) {
-			assertEquals("prefetch > 0 required but it was -99", ex.getMessage());
+			assertThat(ex).hasMessage("prefetch > 0 required but it was -99");
 		}
 
 	}
@@ -687,8 +684,8 @@ public class FluxMergeSequentialTest {
 		                 })
 		                 .count().block();
 
-		assertEquals(500L, count);
-		assertFalse(comparisonFailure.get());
+		assertThat(count).isEqualTo(500L);
+		assertThat(comparisonFailure.get()).isFalse();
 	}
 
 	@Test

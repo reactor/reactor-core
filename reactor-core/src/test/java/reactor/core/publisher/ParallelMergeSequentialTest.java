@@ -72,7 +72,7 @@ public class ParallelMergeSequentialTest {
 		subscriber.onSubscribe(test);
 
 		for (int i = 0; i < n; i++) {
-			assertThat(test.scan(Scannable.Attr.TERMINATED)).as("complete " + i)
+			assertThat(test.scan(Scannable.Attr.TERMINATED)).as("complete %d", i)
 			                                                .isFalse();
 			test.onComplete();
 		}

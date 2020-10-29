@@ -27,7 +27,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -51,7 +50,7 @@ public class BlockingIterableTest {
 			values.add(i);
 		}
 
-		Assert.assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), values);
+		assertThat(values).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
 	@Test
@@ -65,7 +64,7 @@ public class BlockingIterableTest {
 			values.add(i);
 		}
 
-		Assert.assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), values);
+		assertThat(values).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
 	@Test
@@ -77,7 +76,7 @@ public class BlockingIterableTest {
 			values.add(i);
 		}
 
-		Assert.assertEquals(Collections.emptyList(), values);
+		assertThat(values).isEmpty();
 	}
 
 	@Test
@@ -91,7 +90,7 @@ public class BlockingIterableTest {
 			}
 		});
 
-		Assert.assertEquals(Collections.emptyList(), values);
+		assertThat(values).isEmpty();
 	}
 
 	@Test
@@ -103,7 +102,7 @@ public class BlockingIterableTest {
 		    .toStream()
 		    .forEach(values::add);
 
-		Assert.assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), values);
+		assertThat(values).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
 	@Test
@@ -114,7 +113,7 @@ public class BlockingIterableTest {
 		FluxEmpty.<Integer>instance().toStream()
 		                             .forEach(values::add);
 
-		Assert.assertEquals(Collections.emptyList(), values);
+		assertThat(values).isEmpty();
 	}
 
 	@Test
@@ -127,7 +126,7 @@ public class BlockingIterableTest {
 		    .limit(10)
 		    .forEach(values::add);
 
-		Assert.assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), values);
+		assertThat(values).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
 	@Test
@@ -140,8 +139,8 @@ public class BlockingIterableTest {
 		                            .parallel()
 		                            .max(Integer::compare);
 
-		Assert.assertTrue("No maximum?", opt.isPresent());
-		Assert.assertEquals((Integer) n, opt.get());
+		assertThat(opt.isPresent()).as("No maximum?").isTrue();
+		assertThat(opt.get()).isEqualTo(n);
 	}
 
 	@Test

@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -128,7 +127,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		  .assertComplete()
 		  .assertNoError();
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test
@@ -144,7 +143,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		  .assertComplete()
 		  .assertNoError();
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	void checkCleanupExecutionTime(boolean eager, boolean fail) {
@@ -185,8 +184,8 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 			  .assertNoError();
 		}
 
-		Assert.assertEquals(1, cleanup.get());
-		Assert.assertEquals(eager, before.get());
+		assertThat(cleanup).hasValue(1);
+		assertThat(before.get()).isEqualTo(eager);
 	}
 
 	@Test
@@ -225,7 +224,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
-		Assert.assertEquals(0, cleanup.get());
+		assertThat(cleanup).hasValue(0);
 	}
 
 	@Test
@@ -244,7 +243,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test
@@ -262,7 +261,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		  .assertNotComplete()
 		  .assertError(NullPointerException.class);
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test
@@ -294,7 +293,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		assertThat(tp.currentSubscriberCount()).as("tp has subscriber").isZero();
 
-		Assert.assertEquals(1, cleanup.get());
+		assertThat(cleanup).hasValue(1);
 	}
 
 	@Test

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
@@ -377,23 +376,22 @@ public class FluxRefCountTest {
 		assertThat(termination.get()).isNull();
 
 		Disposable sub2 = refCounted.subscribe();
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 		assertThat(termination.get()).isNull();
 
 		sub1.dispose();
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 		assertThat(termination.get()).isNull();
 
 		sub2.dispose();
-		assertThat(subscriptionCount.get()).isEqualTo(1);
-		assertThat(termination.get()).isEqualTo(SignalType.CANCEL);
+		assertThat(subscriptionCount).hasValue(1);
+		assertThat(termination).hasValue(SignalType.CANCEL);
 
 		try {
 			sub1 = refCounted.subscribe();
 			sub2 = refCounted.subscribe();
-			assertThat(subscriptionCount.get()).isEqualTo(2);
-		}
-		finally {
+			assertThat(subscriptionCount).hasValue(2);
+		} finally {
 			sub1.dispose();
 			sub2.dispose();
 		}
@@ -423,9 +421,8 @@ public class FluxRefCountTest {
 		}
 		p.emitComplete(FAIL_FAST);
 
-		assertThat(result.get(10, TimeUnit.MILLISECONDS)
-						 .size()).isEqualTo(10);
-		assertThat(cancellations.get()).isEqualTo(1);
+		assertThat(result.get(10, TimeUnit.MILLISECONDS).size()).isEqualTo(10);
+		assertThat(cancellations).hasValue(1);
 	}
 
 	@Test

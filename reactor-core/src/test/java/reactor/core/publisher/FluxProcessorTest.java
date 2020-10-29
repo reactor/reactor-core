@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
@@ -32,6 +31,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 
 @SuppressWarnings("deprecation")
 public class FluxProcessorTest {
@@ -141,7 +141,7 @@ public class FluxProcessorTest {
 		session.complete();
 
 		latch.await(5, TimeUnit.SECONDS);
-		Assert.assertTrue("latch : " + count, count.get() == 1);
+		assertThat(count.get()).as("latch").isEqualTo(1);
 		scheduler.dispose();
 	}
 
@@ -169,7 +169,7 @@ public class FluxProcessorTest {
 		session.complete();
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
-		Assert.assertTrue( "latch : " + latch.getCount(), waited);
+		assertThat(waited).as("latch : %d", latch.getCount()).isTrue();
 		c.dispose();
 	}
 	@Test
@@ -197,7 +197,7 @@ public class FluxProcessorTest {
 		session.complete();
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
-		Assert.assertTrue( "latch : " + latch.getCount(), waited);
+		assertThat(waited).as("latch : %d", latch.getCount()).isTrue();
 		c.dispose();
 	}
 
@@ -222,7 +222,7 @@ public class FluxProcessorTest {
 					            latch2.await();
 				            }
 				            catch (InterruptedException e) {
-					            Assert.fail();
+					            fail("Unexpected InterruptedException");
 				            }
 				            w2.schedule(() -> {
 					            serialized.onNext("test2");
@@ -240,15 +240,15 @@ public class FluxProcessorTest {
 					            latch.await();
 				            }
 				            catch (InterruptedException e) {
-					            Assert.fail();
+								fail("Unexpected InterruptedException");
 				            }
 			            })
 			            .assertNext(s -> {
-				            AssertionsForClassTypes.assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(ref).hasValue(Thread.currentThread());
 				            AssertionsForClassTypes.assertThat(s).isEqualTo("test2");
 			            })
 			            .assertNext(s -> {
-				            AssertionsForClassTypes.assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(ref).hasValue(Thread.currentThread());
 				            AssertionsForClassTypes.assertThat(s).isEqualTo("test3");
 			            })
 			            .verifyComplete();

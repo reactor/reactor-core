@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -109,8 +108,7 @@ public class MonoAllTest {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
-		                                           .contains("forced failure")));
+		  .assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"));
 	}
 
 	@Test

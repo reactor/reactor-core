@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -54,7 +53,7 @@ public class FluxCancelOnTest {
 		    .cancel();
 
 		latch.await();
-		Assert.assertNull(threadHash.get());
+		assertThat(threadHash).hasValue(null);
 	}
 
 	@Test

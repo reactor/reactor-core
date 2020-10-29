@@ -44,7 +44,6 @@ import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 @SuppressWarnings("deprecation")
@@ -137,10 +136,10 @@ public class UnicastProcessorTest {
 			@Nullable Disposable onTerminate) {
 		Queue<Integer> expectedQueue = queue != null ? queue : Queues.<Integer>unbounded().get();
 		Disposable expectedOnTerminate = onTerminate;
-		assertEquals(expectedQueue.getClass(), processor.queue.getClass());
-		assertEquals(expectedOnTerminate, processor.onTerminate);
+		assertThat(processor.queue.getClass()).isEqualTo(expectedQueue.getClass());
+		assertThat(processor.onTerminate).isEqualTo(expectedOnTerminate);
 		if (onOverflow != null)
-			assertEquals(onOverflow, processor.onOverflow);
+			assertThat(processor.onOverflow).isEqualTo(onOverflow);
 	}
 
 	@Test

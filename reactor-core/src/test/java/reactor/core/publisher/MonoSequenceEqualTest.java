@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -167,8 +166,8 @@ public class MonoSequenceEqualTest {
 		            .expectNext(Boolean.FALSE)
 		            .verifyComplete();
 
-		Assert.assertTrue("left not cancelled", sub1.get());
-		Assert.assertTrue("right not cancelled", sub2.get());
+		assertThat(sub1.get()).as("left not cancelled").isTrue();
+		assertThat(sub2.get()).as("right not cancelled").isTrue();
 	}
 
 	@Test
@@ -191,10 +190,10 @@ public class MonoSequenceEqualTest {
 		    .subscribeWith(new LambdaSubscriber<>(System.out::println, Throwable::printStackTrace, null,
 				    Subscription::cancel));
 
-		Assert.assertNotNull("left not subscribed", sub1.get());
-		Assert.assertTrue("left not cancelled", cancel1.get());
-		Assert.assertNotNull("right not subscribed", sub2.get());
-		Assert.assertTrue("right not cancelled", cancel2.get());
+		assertThat(sub1.get()).as("left not subscribed").isNotNull();
+		assertThat(cancel1.get()).as("left not cancelled").isTrue();
+		assertThat(sub2.get()).as("right not subscribed").isNotNull();
+		assertThat(cancel2.get()).as("right not cancelled").isTrue();
 	}
 
 	@Test
@@ -217,10 +216,10 @@ public class MonoSequenceEqualTest {
 		    .subscribeWith(new LambdaSubscriber<>(System.out::println, Throwable::printStackTrace, null,
 				    s -> { s.cancel(); s.cancel(); }));
 
-		Assert.assertNotNull("left not subscribed", sub1.get());
-		assertThat(cancel1.get()).isEqualTo(1);
-		Assert.assertNotNull("right not subscribed", sub2.get());
-		assertThat(cancel2.get()).isEqualTo(1);
+		assertThat(sub1.get()).as("left not subscribed").isNotNull();
+		assertThat(cancel1).hasValue(1);
+		assertThat(sub2.get()).as("right not subscribed").isNotNull();
+		assertThat(cancel2).hasValue(1);
 	}
 
 	@Test
@@ -242,10 +241,10 @@ public class MonoSequenceEqualTest {
 		    .subscribeWith(new LambdaSubscriber<>(System.out::println, Throwable::printStackTrace, null,
 				    Subscription::cancel));
 
-		Assert.assertNotNull("left not subscribed", sub1.get());
-		Assert.assertTrue("left not cancelled", cancel1.get());
-		Assert.assertNotNull("right not subscribed", sub2.get());
-		Assert.assertTrue("right not cancelled", cancel2.get());
+		assertThat(sub1.get()).as("left not subscribed").isNotNull();
+		assertThat(cancel1.get()).as("left not cancelled").isTrue();
+		assertThat(sub2.get()).as("right not subscribed").isNotNull();
+		assertThat(cancel2.get()).as("right not cancelled").isTrue();
 	}
 
 	@Test
@@ -261,8 +260,8 @@ public class MonoSequenceEqualTest {
 		Mono.sequenceEqual(source1, source2)
 		    .subscribe();
 
-		Assert.assertEquals("left has been subscribed multiple times", 1, innerSub1.intValue());
-		Assert.assertEquals("right has been subscribed multiple times", 1, innerSub2.intValue());
+		assertThat(innerSub1.intValue()).as("left has been subscribed multiple times").isEqualTo(1);
+		assertThat(innerSub2.intValue()).as("right has been subscribed multiple times").isEqualTo(1);
 	}
 
 	@Test

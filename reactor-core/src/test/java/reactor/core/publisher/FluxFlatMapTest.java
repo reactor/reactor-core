@@ -25,9 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.Assert;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -144,9 +142,9 @@ public class FluxFlatMapTest {
 		.flatMap(v -> Flux.just(v)).subscribe(ts);
 
 		ts.assertNoValues()
-		.assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
-		.assertNotComplete();
+				.assertError(RuntimeException.class)
+				.assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"))
+				.assertNotComplete();
 	}
 
 	@Test
@@ -156,9 +154,9 @@ public class FluxFlatMapTest {
 		Flux.just(1).flatMap(v -> Flux.error(new RuntimeException("forced failure"))).subscribe(ts);
 
 		ts.assertNoValues()
-		.assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
-		.assertNotComplete();
+				.assertError(RuntimeException.class)
+				.assertErrorWith(e -> assertThat(e).hasMessageContaining("forced failure"))
+				.assertNotComplete();
 	}
 
 	@Test
@@ -380,7 +378,7 @@ public class FluxFlatMapTest {
 
 		source.flatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), 1, 32).subscribe(ts);
 
-		Assert.assertEquals(1, emission.get());
+		assertThat(emission).hasValue(1);
 
 		ts.assertNoValues()
 		.assertNoError()
@@ -415,7 +413,7 @@ public class FluxFlatMapTest {
 
 		source.flatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), Integer.MAX_VALUE, 32).subscribe(ts);
 
-		Assert.assertEquals(1000, emission.get());
+		assertThat(emission).hasValue(1000);
 
 		ts.assertNoValues()
 		.assertNoError()
@@ -730,7 +728,7 @@ public class FluxFlatMapTest {
 			                        .flatMap(Flux::just))
 			            .verifyErrorMessage("test");
 
-			Assertions.assertThat(testLogger.getErrContent())
+			assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test2");
 		} finally {
@@ -753,7 +751,7 @@ public class FluxFlatMapTest {
 			})
 			                        .flatMap(Flux::just))
 			            .verifyComplete();
-			Assertions.assertThat(testLogger.getErrContent())
+			assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test");
 		} finally {
@@ -776,7 +774,7 @@ public class FluxFlatMapTest {
 			                        })))
 			            .verifyComplete();
 
-			Assertions.assertThat(testLogger.getErrContent())
+			assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test");
 		} finally {
@@ -1262,7 +1260,7 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> f1 = Mono.just(1).flatMapMany(i -> Flux.error(new Exception("test")));
 		StepVerifier.create(f1).verifyErrorMessage("test");
-		assertThat(errorValue.get()).isEqualTo(1);
+		assertThat(errorValue).hasValue(1);
 
 //		Flux<Integer> f2 = Mono.just(2).flatMapMany(i -> {
 //			throw new RuntimeException("test");
@@ -1376,7 +1374,7 @@ public class FluxFlatMapTest {
 		            .consumeRecordedWith(c ->  assertThat(c).containsExactlyInAnyOrder(0, 2, 4))
 		            .verifyError();
 
-		assertThat(onNextSignals.get()).isEqualTo(10);
+		assertThat(onNextSignals).hasValue(10);
 	}
 
 

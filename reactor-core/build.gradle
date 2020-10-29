@@ -67,7 +67,11 @@ configurations {
 dependencies {
 	// Reactive Streams
 	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
-	testImplementation "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
+	testImplementation ("org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}") {
+		// without this exclusion, testng brings an old version of junit which *embeds* an old version of hamcrest
+		// which gets picked up first and that we don't want. TCK runs fine w/o (old) junit 4.
+		exclude group: 'junit', module: 'junit'
+	}
 
 	// JSR-305 annotations
 	compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
@@ -93,7 +97,6 @@ dependencies {
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
 	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
-	testImplementation "junit:junit:${jUnitVersion}"
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testImplementation "org.junit.platform:junit-platform-launcher"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
@@ -106,7 +109,6 @@ dependencies {
 	}
 
 	testImplementation "org.assertj:assertj-core:$assertJVersion"
-	testImplementation "org.testng:testng:$testNgVersion"
 	testImplementation "org.mockito:mockito-core:$mockitoVersion"
 	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
 	testImplementation "org.awaitility:awaitility:$awaitilityVersion"

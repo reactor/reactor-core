@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
@@ -32,6 +31,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.Scannable.from;
 
 public class FluxIntervalTest {
@@ -72,7 +72,7 @@ public class FluxIntervalTest {
 				long diff = list.get(i + 1) - list.get(i);
 
 				if (diff < 50 || diff > 150) {
-					Assert.fail("Period failure: " + diff);
+					fail("Period failure: " + diff);
 				}
 			}
 

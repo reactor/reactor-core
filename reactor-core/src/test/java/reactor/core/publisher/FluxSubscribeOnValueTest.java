@@ -28,7 +28,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 import static reactor.core.Scannable.from;
 
 public class FluxSubscribeOnValueTest {
@@ -56,8 +55,7 @@ public class FluxSubscribeOnValueTest {
 		int minExec = 2;
 
 		for (Integer counted : execs.values()) {
-			assertTrue("Thread used less than " + minExec + " " + "times",
-					counted >= minExec);
+			assertThat(counted).as("Thread used less than %d times", minExec).isGreaterThanOrEqualTo(minExec);
 		}
 
 	}

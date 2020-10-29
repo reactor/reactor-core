@@ -186,7 +186,7 @@ public class MonoDelayElementTest {
 		            .verify();
 
 		vts.advanceTimeBy(Duration.ofHours(1));
-		assertThat(upstreamCancelCount.get()).isEqualTo(1);
+		assertThat(upstreamCancelCount).hasValue(1);
 	}
 
 	@Test
@@ -264,7 +264,7 @@ public class MonoDelayElementTest {
 		finally {
 			Hooks.resetOnNextDropped();
 		}
-		assertThat(dropped.get()).isEqualTo("bar");
+		assertThat(dropped).hasValue("bar");
 	}
 
 	@Test
@@ -355,10 +355,10 @@ public class MonoDelayElementTest {
 		            .expectNext("foo")
 		            .verifyComplete();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
-		assertThat(sourceOnTerminate.get()).isEqualTo(1);
-		assertThat(onCancel.get()).isEqualTo(0);
-		assertThat(sourceOnCancel.get()).isEqualTo(0);
+		assertThat(onTerminate).hasValue(1);
+		assertThat(sourceOnTerminate).hasValue(1);
+		assertThat(onCancel).hasValue(0);
+		assertThat(sourceOnCancel).hasValue(0);
 	}
 
 	@Test

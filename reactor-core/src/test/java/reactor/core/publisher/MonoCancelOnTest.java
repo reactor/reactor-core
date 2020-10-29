@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.Scannable;
@@ -50,7 +49,7 @@ public class MonoCancelOnTest {
 		    .cancel();
 
 		latch.await();
-		Assert.assertNull(threadHash.get());
+		assertThat(threadHash.get()).isNull();
 	}
 
 	@Test

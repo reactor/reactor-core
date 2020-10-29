@@ -18,39 +18,41 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static java.lang.Integer.MIN_VALUE;
+import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Mono.delay;
+import static reactor.core.publisher.Mono.firstWithSignal;
 
 public class MonoFirstWithSignalTest {
 
 	@Test
 	@Timeout(5)
 	public void allEmpty() {
-		Assert.assertNull(Mono.firstWithSignal(Mono.empty(),
+		assertThat(Mono.firstWithSignal(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))
 				    .ignoreElement())
-		                      .block());
+		                      .block()).isNull();
 	}
 
 	@Test
 	@Timeout(5)
 	public void someEmpty() {
-		Assert.assertNull(Mono.firstWithSignal(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
-		                      .block());
+		assertThat(Mono.firstWithSignal(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
+		                      .block()).isNull();
 	}
 
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
-		Assert.assertEquals(Integer.MIN_VALUE,
-				Mono.firstWithSignal(Mono.delay(Duration.ofMillis(150))
-				               .map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
-				    .block());
+		assertThat(firstWithSignal(delay(ofMillis(150))
+				.map(i -> MIN_VALUE), delay(ofMillis(250)))
+				.block()).isEqualTo(MIN_VALUE);
 	}
 
 	@Test
@@ -58,10 +60,10 @@ public class MonoFirstWithSignalTest {
 		Mono<Integer> f = Mono.firstWithSignal(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof MonoFirstWithSignal);
+		assertThat(f).isInstanceOf(MonoFirstWithSignal.class);
 		MonoFirstWithSignal<Integer> s = (MonoFirstWithSignal<Integer>) f;
-		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 3);
+		assertThat(s.array).isNotNull();
+		assertThat(s.array).hasSize(3);
 
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)
@@ -71,26 +73,25 @@ public class MonoFirstWithSignalTest {
 	@Test
 	@Timeout(5)
 	public void allEmptyIterable() {
-		Assert.assertNull(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
+		assertThat(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))
 				    .ignoreElement()))
-		                      .block());
+		                      .block()).isNull();
 	}
 
 	@Test
 	@Timeout(5)
 	public void someEmptyIterable() {
-		Assert.assertNull(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
+		assertThat(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))))
-		                      .block());
+		                      .block()).isNull();
 	}
 
 	@Test//(timeout = 5000)
 	public void all2NonEmptyIterable() {
-		Assert.assertEquals(Integer.MIN_VALUE,
-				Mono.firstWithSignal(Mono.delay(Duration.ofMillis(150))
-				               .map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
-				    .block());
+		assertThat(Mono.firstWithSignal(Mono.delay(Duration.ofMillis(150))
+				.map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
+				.block()).isEqualTo(Integer.MIN_VALUE);
 	}
 
 	@Test
@@ -98,10 +99,10 @@ public class MonoFirstWithSignalTest {
 		Mono<Integer> f = Mono.firstWithSignal(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof MonoFirstWithSignal);
+		assertThat(f).isInstanceOf(MonoFirstWithSignal.class);
 		MonoFirstWithSignal<Integer> s = (MonoFirstWithSignal<Integer>) f;
-		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 2);
+		assertThat(s.array).isNotNull();
+		assertThat(s.array).hasSize(2);
 
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)

@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -62,9 +61,9 @@ public class StrictSubscriberTest {
 			    }
 		    });
 
-		Assert.assertNull("Error: " + e.get(), e.get());
+		assertThat(e).hasValue(null);
 
-		Assert.assertTrue("Not open!", state.get());
+		assertThat(state.get()).as("Not open!").isTrue();
 	}
 
 	@Test
@@ -98,9 +97,9 @@ public class StrictSubscriberTest {
 			  }
 		  });
 
-		Assert.assertNull("Error: " + e.get(), e.get());
+		assertThat(e).hasValue(null);
 
-		Assert.assertTrue("Cancel executed before onSubscribe finished", state2.get());
+		assertThat(state2.get()).as("Cancel executed before onSubscribe finished").isTrue();
 		assertThat(sp.currentSubscriberCount()).as("sp has subscriber").isZero();
 	}
 
@@ -135,9 +134,9 @@ public class StrictSubscriberTest {
 			    }
 		    });
 
-		Assert.assertNull("Error: " + e.get(), e.get());
+		assertThat(e).hasValue(null);
 
-		Assert.assertFalse("Request delayed!", state.get());
+		assertThat(state.get()).as("Request delayed!").isFalse();
 	}
 
 	@Test
@@ -170,9 +169,9 @@ public class StrictSubscriberTest {
 			    }
 		    });
 
-		Assert.assertNull("Error: " + e.get(), e.get());
+		assertThat(e).hasValue(null);
 
-		Assert.assertFalse("Cancel executed before onSubscribe finished", state2.get());
+		assertThat(state2.get()).as("Cancel executed before onSubscribe finished").isFalse();
 	}
 
 	@Test

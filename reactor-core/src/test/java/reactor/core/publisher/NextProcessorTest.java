@@ -175,7 +175,7 @@ public class NextProcessorTest {
 		mp.doOnTerminate(invoked::incrementAndGet).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
-		assertThat(invoked.get()).isEqualTo(1);
+		assertThat(invoked).hasValue(1);
 		assertThat(mp.isSuccess()).isFalse();
 		assertThat(mp.isError()).isTrue();
 	}
@@ -215,7 +215,7 @@ public class NextProcessorTest {
 		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
 		mp.onNext("test");
 
-		assertThat(invoked.get()).isEqualTo(1);
+		assertThat(invoked).hasValue(1);
 		assertThat(mp.isSuccess()).isTrue();
 		assertThat(mp.isError()).isFalse();
 	}
@@ -539,7 +539,7 @@ public class NextProcessorTest {
 		    .shareNext()
 		    .subscribe();
 
-		assertThat(cancelCounter.get()).isEqualTo(1);
+		assertThat(cancelCounter).hasValue(1);
 	}
 
 	@Test
@@ -549,7 +549,7 @@ public class NextProcessorTest {
 			.doOnCancel(cancelCounter::incrementAndGet)
 			.subscribe();
 
-		assertThat(cancelCounter.get()).isEqualTo(0);
+		assertThat(cancelCounter).hasValue(0);
 	}
 
 	@Test
@@ -648,7 +648,7 @@ public class NextProcessorTest {
 		coldToHot.block();
 		coldToHot.block();
 
-		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(subscriptionCount).hasValue(1);
 	}
 
 	@Test

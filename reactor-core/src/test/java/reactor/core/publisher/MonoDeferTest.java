@@ -17,12 +17,11 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.util.context.Context;
 import reactor.core.Scannable;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDeferTest {
 
@@ -33,9 +32,9 @@ public class MonoDeferTest {
 		Mono<Integer> source =
 				Mono.defer(() -> Mono.just(i.incrementAndGet()));
 
-		Assert.assertEquals(source.block().intValue(), 1);
-		Assert.assertEquals(source.block().intValue(), 2);
-		Assert.assertEquals(source.block().intValue(), 3);
+		assertThat(source.block().intValue()).isEqualTo(1);
+		assertThat(source.block().intValue()).isEqualTo(2);
+		assertThat(source.block().intValue()).isEqualTo(3);
 	}
 
 	@Test
@@ -49,9 +48,9 @@ public class MonoDeferTest {
 						"i", new AtomicInteger()
 				));
 
-		Assert.assertEquals(source.block().intValue(), 1);
-		Assert.assertEquals(source.block().intValue(), 2);
-		Assert.assertEquals(source.block().intValue(), 3);
+		assertThat(1).isEqualTo(source.block().intValue());
+		assertThat(2).isEqualTo(source.block().intValue());
+		assertThat(3).isEqualTo(source.block().intValue());
 	}
 
 	@Test

@@ -30,6 +30,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxScanTest extends FluxOperatorTest<String, String> {
@@ -158,7 +159,7 @@ public class FluxScanTest extends FluxOperatorTest<String, String> {
 			RaceTestUtils.race(sub::cancel, () -> sub.onNext(1));
 
 			testSubscriber.assertNoError();
-			Assertions.assertThat(accumulatorCheck).as("no NPE due to onNext/cancel race in round " + i).isTrue();
+			assertThat(accumulatorCheck).as("no NPE due to onNext/cancel race in round %d", i).isTrue();
 		}
 	}
 

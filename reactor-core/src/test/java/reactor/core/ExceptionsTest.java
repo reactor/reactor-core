@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Mono;
@@ -30,8 +29,6 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static reactor.core.Exceptions.*;
 
 /**
@@ -51,14 +48,14 @@ public class ExceptionsTest {
 
 		Throwable w = Exceptions.bubble(Exceptions.propagate(t));
 
-		assertTrue(Exceptions.unwrap(w) == t);
+		assertThat(Exceptions.unwrap(w)).isSameAs(t);
 	}
 
 	@Test
 	public void nullBubble() throws Exception {
 		Throwable w = Exceptions.bubble(null);
 
-		assertTrue(Exceptions.unwrap(w) == w);
+		assertThat(Exceptions.unwrap(w)).isSameAs(w);
 	}
 
 	@Test
@@ -99,15 +96,15 @@ public class ExceptionsTest {
 		IllegalStateException overflow1 = Exceptions.failWithOverflow();
 		IllegalStateException overflow2 = Exceptions.failWithOverflow("foo");
 
-		assertTrue(Exceptions.isOverflow(overflow1));
-		assertTrue(Exceptions.isOverflow(overflow2));
+		assertThat(Exceptions.isOverflow(overflow1)).isTrue();
+		assertThat(Exceptions.isOverflow(overflow2)).isTrue();
 	}
 
 	@Test
 	public void allIllegalStateIsntOverflow() {
 		IllegalStateException ise = new IllegalStateException("foo");
 
-		assertFalse(Exceptions.isOverflow(ise));
+		assertThat(Exceptions.isOverflow(ise)).isFalse();
 	}
 
 	@Test

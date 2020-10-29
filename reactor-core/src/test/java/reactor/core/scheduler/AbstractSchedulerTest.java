@@ -20,7 +20,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assumptions;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -68,7 +67,7 @@ public abstract class AbstractSchedulerTest {
 	protected Scheduler schedulerNotCached() {
 		Scheduler s = scheduler();
 		assertThat(s).as("common scheduler tests should not use a CachedScheduler")
-		             .isNotInstanceOf(Schedulers.CachedScheduler.class);
+				.isNotInstanceOf(Schedulers.CachedScheduler.class);
 		return s;
 	}
 
@@ -115,7 +114,7 @@ public abstract class AbstractSchedulerTest {
 						latch.countDown();
 						if (latch2 != null && !latch2.await(10,
 								TimeUnit.SECONDS) && shouldCheckInterrupted()) {
-							Assert.fail("Should have interrupted");
+							fail("Should have interrupted");
 						}
 					}
 					catch (InterruptedException e) {
@@ -190,7 +189,7 @@ public abstract class AbstractSchedulerTest {
 						latch.countDown();
 						if(latch2 != null && !latch2.await(10, TimeUnit.SECONDS) &&
 								shouldCheckInterrupted()){
-							Assert.fail("Should have interrupted");
+							fail("Should have interrupted");
 						}
 					}
 					catch (InterruptedException e){
