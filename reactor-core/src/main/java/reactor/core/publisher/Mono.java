@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -400,9 +401,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
 	 * When no source can provide a value, this operator fails with a {@link NoSuchElementException}
-	 * (provided there are at least two sources). This exception itself suppressed a single
-	 * {@link Exceptions#multiple(Throwable...) composite} that reflects errors from failing sources
-	 * and a per-source {@link NoSuchElementException} for empty sources (see {@link Exceptions#unwrapMultiple(Throwable)}).
+	 * (provided there are at least two sources). This exception has a {@link Exceptions#multiple(Throwable...) composite}
+	 * as its {@link Throwable#getCause() cause} that can be used to inspect what went wrong with each source
+	 * (so the composite has as many elements as there are sources).
+	 * Exceptions from failing sources are directly reflected in the composite at the index of the failing source
+	 * For empty sources, a {@link NoSuchElementException} is added at their respective index.
+	 * One can use {@link Exceptions#unwrapMultiple(Throwable) Exceptions.unwrapMultiple(topLevel.getCause())}
+	 * to easily inspect these errors as a {@link List}.
 	 * <p>
 	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
@@ -426,9 +431,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
 	 * When no source can provide a value, this operator fails with a {@link NoSuchElementException}
-	 * (provided there are at least two sources). This exception itself suppressed a single
-	 * {@link Exceptions#multiple(Throwable...) composite} that reflects errors from failing sources
-	 * and a per-source {@link NoSuchElementException} for empty sources (see {@link Exceptions#unwrapMultiple(Throwable)}).
+	 * (provided there are at least two sources). This exception has a {@link Exceptions#multiple(Throwable...) composite}
+	 * as its {@link Throwable#getCause() cause} that can be used to inspect what went wrong with each source
+	 * (so the composite has as many elements as there are sources).
+	 * Exceptions from failing sources are directly reflected in the composite at the index of the failing source
+	 * For empty sources, a {@link NoSuchElementException} is added at their respective index.
+	 * One can use {@link Exceptions#unwrapMultiple(Throwable) Exceptions.unwrapMultiple(topLevel.getCause())}
+	 * to easily inspect these errors as a {@link List}.
 	 * <p>
 	 * Note that like in {@link #firstWithSignal(Mono[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
