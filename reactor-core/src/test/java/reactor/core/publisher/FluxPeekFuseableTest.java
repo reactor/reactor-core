@@ -493,7 +493,7 @@ public class FluxPeekFuseableTest {
 		    .subscribe(ts);
 
 		Subscription s = ts.upstream();
-		assertThat(s).withFailMessage("Non-fuseable upstream: %s", s.getClass()).isInstanceOf(QueueSubscription.class);
+		assertThat(s).as("check QueueSubscription").isInstanceOf(QueueSubscription.class);
 	}
 
 	@Test
@@ -506,7 +506,7 @@ public class FluxPeekFuseableTest {
 		                .subscribe(ts);
 
 		Subscription s = ts.upstream();
-		assertThat(s).withFailMessage("Non-fuseable upstream: %s", s.getClass()).isInstanceOf(QueueSubscription.class);
+		assertThat(s).as("check QueueSubscription").isInstanceOf(QueueSubscription.class);
 	}
 
 	@Test
