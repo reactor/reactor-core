@@ -2293,10 +2293,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Modify the behavior of the <i>whole chain</i> of operators upstream of this one to
+	 * Potentially modify the behavior of the <i>whole chain</i> of operators upstream of this one to
 	 * conditionally clean up elements that get <i>discarded</i> by these operators.
 	 * <p>
-	 * The {@code discardHook} must be idempotent and safe to use on any instance of the desired
+	 * The {@code discardHook} MUST be idempotent and safe to use on any instance of the desired
 	 * type.
 	 * Calls to this method are additive, and the order of invocation of the {@code discardHook}
 	 * is the same as the order of declaration (calling {@code .filter(...).doOnDiscard(first).doOnDiscard(second)}
@@ -2307,7 +2307,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *     <li>filtering operators, dropping some source elements as part of their designed behavior</li>
 	 *     <li>operators that prefetch a few elements and keep them around pending a request, but get cancelled/in error</li>
 	 * </ul>
-	 * These operators are identified in the javadoc by the presence of an {@code onDiscard Support} section.
+	 * WARNING: Not all operators support this instruction. The ones that do are identified in the javadoc by
+	 * the presence of a <strong>Discard Support</strong> section.
 	 *
 	 * @param type the {@link Class} of elements in the upstream chain of operators that
 	 * this cleanup hook should take into account.
@@ -3204,7 +3205,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
-	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * (look for the <strong>Error Mode Support</strong> javadoc section to find operators that
 	 * support it).
 	 *
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
@@ -3228,7 +3229,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
-	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * (look for the <strong>Error Mode Support</strong> javadoc section to find operators that
 	 * support it). In particular, this operator is offered on {@link Mono} mainly as a
 	 * way to propagate the configuration to upstream {@link Flux}. The mode doesn't really
 	 * make sense on a {@link Mono}, since we're sure there will be no further value to
@@ -3253,7 +3254,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
-	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * (look for the <strong>Error Mode Support</strong> javadoc section to find operators that
 	 * support it). In particular, this operator is offered on {@link Mono} mainly as a
 	 * way to propagate the configuration to upstream {@link Flux}. The mode doesn't really
 	 * make sense on a {@link Mono}, since we're sure there will be no further value to
