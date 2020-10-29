@@ -360,7 +360,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 
 			if (nb == parent.subscribers.length) {
 				NoSuchElementException e = new NoSuchElementException("All sources completed with error or without values");
-				e.addSuppressed(Exceptions.multiple(parent.errorsOrCompleteEmpty));
+				e.initCause(Exceptions.multiple(parent.errorsOrCompleteEmpty));
 				actual.onError(e);
 			}
 		}
