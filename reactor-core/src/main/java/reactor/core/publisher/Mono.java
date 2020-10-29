@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -399,12 +400,22 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
+	 * <p>
+	 * When no source can provide a value, this operator fails with a {@link NoSuchElementException}
+	 * (provided there are at least two sources). This exception has a {@link Exceptions#multiple(Throwable...) composite}
+	 * as its {@link Throwable#getCause() cause} that can be used to inspect what went wrong with each source
+	 * (so the composite has as many elements as there are sources).
+	 * <p>
+	 * Exceptions from failing sources are directly reflected in the composite at the index of the failing source.
+	 * For empty sources, a {@link NoSuchElementException} is added at their respective index.
+	 * One can use {@link Exceptions#unwrapMultiple(Throwable) Exceptions.unwrapMultiple(topLevel.getCause())}
+	 * to easily inspect these errors as a {@link List}.
+	 * <p>
 	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
-	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/firstWithValueForMono.svg" alt="">
-	 * <p>
+	 *
 	 * @param monos An {@link Iterable} of the competing source monos
 	 * @param <T> The type of the element in the sources and the resulting mono
 	 *
@@ -418,19 +429,27 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Pick the first {@link Mono} source to emit any value and replay that signal,
 	 * effectively behaving like the source that first emits an
 	 * {@link Subscriber#onNext(Object) onNext}.
-	 *
 	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
+	 * <p>
+	 * When no source can provide a value, this operator fails with a {@link NoSuchElementException}
+	 * (provided there are at least two sources). This exception has a {@link Exceptions#multiple(Throwable...) composite}
+	 * as its {@link Throwable#getCause() cause} that can be used to inspect what went wrong with each source
+	 * (so the composite has as many elements as there are sources).
+	 * <p>
+	 * Exceptions from failing sources are directly reflected in the composite at the index of the failing source.
+	 * For empty sources, a {@link NoSuchElementException} is added at their respective index.
+	 * One can use {@link Exceptions#unwrapMultiple(Throwable) Exceptions.unwrapMultiple(topLevel.getCause())}
+	 * to easily inspect these errors as a {@link List}.
+	 * <p>
 	 * Note that like in {@link #firstWithSignal(Mono[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
-	 * <p>
 	 * In case the {@code first} source is already an array-based {@link #firstWithValue(Mono, Mono[])}
 	 * instance, nesting is avoided: a single new array-based instance is created with all the
 	 * sources from {@code first} plus all the {@code others} sources at the same level.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/firstWithValueForMono.svg" alt="">
-	 * <p>
 	 *
 	 * @param first the first competing source {@link Mono}
 	 * @param others the other competing sources {@link Mono}

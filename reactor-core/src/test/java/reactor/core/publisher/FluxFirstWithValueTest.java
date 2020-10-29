@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -59,19 +61,77 @@ class FluxFirstWithValueTest {
 	}
 
 	@Test
-	void onlyErrorOrCompleteEmptyEmitsError() {
-		StepVerifier.withVirtualTime(() -> Flux.firstWithValue(
-				Flux.error(new RuntimeException("Boom!")),
-				Flux.empty()
-		))
-				.expectErrorSatisfies(e -> {
-					assertThat(e).isInstanceOf(NoSuchElementException.class);
-					assertThat(e).hasMessage("All sources completed with error or without values");
-					Throwable throwable = e.getCause();
-					assertThat(throwable.getSuppressed()[0]).hasMessage("Boom!");
-					assertThat(throwable.getSuppressed()[1]).hasMessage("source at index 1 completed empty");
-				})
-				.verify();
+	void singleErrorIsPropagatedAsIs() {
+		StepVerifier.create(Flux.firstWithValue(Flux.error(new IllegalStateException("boom"))))
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("boom")
+				            .hasNoCause()
+				            .hasNoSuppressedExceptions())
+		            .verify();
+	}
+
+	@Test
+	void singleEmptyLeadsToComplete() {
+		StepVerifier.create(Flux.firstWithValue(Flux.empty()))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	void errorAndEmptySourcesTriggerNoSuchElementWithOneSuppressedCompositeOfTwo() {
+		StepVerifier.create(Flux.firstWithValue(
+				Flux.error(new IllegalStateException("boom")),
+				Flux.empty()))
+		            .expectErrorSatisfies(e -> {
+			            assertThat(e)
+					            .isInstanceOf(NoSuchElementException.class)
+					            .hasMessage("All sources completed with error or without values")
+					            .hasCauseInstanceOf(RuntimeException.class);
+			            List<Throwable> composite = Exceptions.unwrapMultiple(e.getCause());
+			            assertThat(composite)
+					            .hasSize(2)
+					            .extracting(Throwable::toString)
+					            .containsExactly("java.lang.IllegalStateException: boom",
+							            "java.util.NoSuchElementException: source at index 1 completed empty");
+		            })
+		            .verify();
+	}
+
+	@Test
+	void twoErrorsTriggerNoSuchElementWithOneSuppressedCompositeOfBothErrors() {
+		StepVerifier.create(Flux.firstWithValue(Flux.error(new IllegalStateException("boom1")), Flux.error(new IllegalArgumentException("boom2"))))
+		            .expectErrorSatisfies(e -> {
+			            assertThat(e)
+					            .isInstanceOf(NoSuchElementException.class)
+					            .hasMessage("All sources completed with error or without values")
+					            .hasCauseInstanceOf(RuntimeException.class);
+			            List<Throwable> composite = Exceptions.unwrapMultiple(e.getCause());
+			            assertThat(composite)
+					            .hasSize(2)
+					            .extracting(Throwable::toString)
+					            .containsExactly("java.lang.IllegalStateException: boom1",
+							            "java.lang.IllegalArgumentException: boom2");
+		            })
+		            .verify();
+	}
+
+	@Test
+	void twoEmptyTriggersNoSuchElementWithOneSuppressedCompositeOfTwoNoSuchElement() {
+		StepVerifier.create(Flux.firstWithValue(Flux.empty(), Flux.empty()))
+		            .expectErrorSatisfies(e -> {
+			            assertThat(e)
+					            .isInstanceOf(NoSuchElementException.class)
+					            .hasMessage("All sources completed with error or without values")
+					            .hasCauseInstanceOf(RuntimeException.class);
+			            List<Throwable> composite = Exceptions.unwrapMultiple(e.getCause());
+			            assertThat(composite)
+					            .hasSize(2)
+					            .extracting(Throwable::toString)
+					            .containsExactly("java.util.NoSuchElementException: source at index 0 completed empty",
+							            "java.util.NoSuchElementException: source at index 1 completed empty");
+		            })
+		            .verify();
 	}
 
 	@Test

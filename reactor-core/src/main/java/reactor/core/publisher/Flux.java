@@ -991,12 +991,22 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Sources with values always "win" over empty sources (ones that only emit onComplete)
 	 * or failing sources (ones that only emit onError).
+	 * <p>
+	 * When no source can provide a value, this operator fails with a {@link NoSuchElementException}
+	 * (provided there are at least two sources). This exception has a {@link Exceptions#multiple(Throwable...) composite}
+	 * as its {@link Throwable#getCause() cause} that can be used to inspect what went wrong with each source
+	 * (so the composite has as many elements as there are sources).
+	 * <p>
+	 * Exceptions from failing sources are directly reflected in the composite at the index of the failing source.
+	 * For empty sources, a {@link NoSuchElementException} is added at their respective index.
+	 * One can use {@link Exceptions#unwrapMultiple(Throwable) Exceptions.unwrapMultiple(topLevel.getCause())}
+	 * to easily inspect these errors as a {@link List}.
+	 * <p>
 	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
-	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/firstWithValueForFlux.svg" alt="">
-
+	 *
 	 * @param sources An {@link Iterable} of the competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
@@ -1010,21 +1020,27 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Pick the first {@link Publisher} to emit any value and replay all values
 	 * from that {@link Publisher}, effectively behaving like the source that first
 	 * emits an {@link Subscriber#onNext(Object) onNext}.
-	 *
 	 * <p>
 	 * Sources with values always "win" over an empty source (ones that only emit onComplete)
 	 * or failing sources (ones that only emit onError).
+	 * <p>
+	 * When no source can provide a value, this operator fails with a {@link NoSuchElementException}
+	 * (provided there are at least two sources). This exception has a {@link Exceptions#multiple(Throwable...) composite}
+	 * as its {@link Throwable#getCause() cause} that can be used to inspect what went wrong with each source
+	 * (so the composite has as many elements as there are sources).
+	 * <p>
+	 * Exceptions from failing sources are directly reflected in the composite at the index of the failing source.
+	 * For empty sources, a {@link NoSuchElementException} is added at their respective index.
+	 * One can use {@link Exceptions#unwrapMultiple(Throwable) Exceptions.unwrapMultiple(topLevel.getCause())}
+	 * to easily inspect these errors as a {@link List}.
+	 * <p>
 	 * Note that like in {@link #firstWithSignal(Publisher[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
-	 *
-	 * <p>
 	 * In case the {@code first} source is already an array-based {@link #firstWithValue(Publisher, Publisher[])}
 	 * instance, nesting is avoided: a single new array-based instance is created with all the
 	 * sources from {@code first} plus all the {@code others} sources at the same level.
-	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/firstWithValueForFlux.svg" alt="">
-
 	 *
 	 * @param first The first competing source publisher
 	 * @param others The other competing source publishers
