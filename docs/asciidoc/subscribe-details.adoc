@@ -159,7 +159,7 @@ such a `Subscriber`, we provide an extendable class called `BaseSubscriber`.
 WARNING: Instances of `BaseSubscriber` (or subclasses of it) are *single-use*,
 meaning that a `BaseSubscriber` cancels its subscription to the first `Publisher` if it
 is subscribed to a second `Publisher`.
-That is because using an instance twice would violate the Reactive Streams rule that a
+That is because using an instance twice would violate the Reactive Streams rule that
 the `onNext` method of a `Subscriber` must not be called in parallel.
 As a result, anonymous implementations are fine only if they are declared directly within
 the call to `Publisher#subscribe(Subscriber)`.
@@ -172,10 +172,6 @@ example shows how it would be attached to a `Flux`:
 ----
 SampleSubscriber<Integer> ss = new SampleSubscriber<Integer>();
 Flux<Integer> ints = Flux.range(1, 4);
-ints.subscribe(i -> System.out.println(i),
-    error -> System.err.println("Error " + error),
-    () -> {System.out.println("Done");},
-    s -> s.request(10));
 ints.subscribe(ss);
 ----
 ====
@@ -241,5 +237,5 @@ in as a `SignalType` parameter)
 
 NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`, and
 `hookOnComplete` methods. You may also want to implement the `hookFinally` method.
-`SampleSubscribe` is the absolute minimum implementation of a `Subscriber` _that performs
+`SampleSubscriber` is the absolute minimum implementation of a `Subscriber` _that performs
 bounded requests_.

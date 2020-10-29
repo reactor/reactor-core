@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * Wraps a the downstream Subscriber into a single emission object and calls the given
+ * Wraps the downstream Subscriber into a single emission object and calls the given
  * callback to produce a signal (a)synchronously.
  *
  * @param <T> the value type
