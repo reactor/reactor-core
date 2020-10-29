@@ -117,7 +117,7 @@ public class SerializedSubscriberTest {
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
 		with().pollInterval(50, TimeUnit.MILLISECONDS)
-		      .await().atMost(500, TimeUnit.MILLISECONDS)
+		      .await().atMost(5000, TimeUnit.MILLISECONDS)
 		      .untilAsserted(() -> {
 				  int expectedCnt = counter.get();
 				  int snn = seen.get();
