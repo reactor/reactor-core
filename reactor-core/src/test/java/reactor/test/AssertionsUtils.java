@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.presentation.StandardRepresentation;
 
+import reactor.core.Fuseable;
+
 /**
  * Utilities around assertions in core tests, eg. AssertJ configuration of representations.
  *
@@ -47,6 +49,14 @@ public class AssertionsUtils {
 				return atomicBoolean.toString();
 			}
 			return super.toStringOf(atomicBoolean);
+		}
+
+		@Override
+		protected String smartFormat(Iterable<?> iterable) {
+			if (iterable instanceof Fuseable.QueueSubscription) {
+				return String.valueOf(iterable);
+			}
+			return super.smartFormat(iterable);
 		}
 	};
 }
