@@ -1021,9 +1021,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Aggregate given publishers into a new {@literal Mono} that will be
-	 * fulfilled when all of the given {@literal sources} have completed. If any Publisher
-	 * terminates without value, the returned sequence will be terminated immediately and
-	 * pending results cancelled. Errors from the sources are delayed.
+	 * fulfilled when all of the given {@literal sources} have completed. Errors from
+	 * the sources are delayed.
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
