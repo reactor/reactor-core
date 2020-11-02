@@ -213,11 +213,11 @@ public class FluxTests extends AbstractReactorTest {
 		            .verify();
 
 		assertThat(signals).hasSize(3);
-		assertThat(signals.get(0).get()).as("onNext signal are not reused"). isEqualTo(2);
-		assertThat(signals.get(1).get()).as("onNext signal isn't last value").isEqualTo(2);
-		assertThat(signals.get(2).isOnComplete()).as("onComplete expected").isTrue();
-		assertThat(values.get(0)).as("1st onNext value unexpected").isEqualTo(1);
-		assertThat(values.get(1)).as("2nd onNext value unexpected").isEqualTo(2);
+		assertThat(signals.get(0).get()).withFailMessage("onNext signal are not reused"). isEqualTo(2);
+		assertThat(signals.get(1).get()).withFailMessage("onNext signal isn't last value").isEqualTo(2);
+		assertThat(signals.get(2).isOnComplete()).as("last signal isOnComplete()?").isTrue();
+		assertThat(values.get(0)).as("1st onNext value").isEqualTo(1);
+		assertThat(values.get(1)).as("2nd onNext value").isEqualTo(2);
 	}
 
 	@Test
@@ -245,8 +245,8 @@ public class FluxTests extends AbstractReactorTest {
 		}
 
 		assertThat(nextValue).isEqualTo(1000);
-		assertThat(foundComplete).as("onComplete expected").isTrue();
-		assertThat(foundOther).as("either onNext or onComplete expected").isFalse();
+		assertThat(foundComplete).as("foundComplete").isTrue();
+		assertThat(foundOther).as("foundOther").isFalse();
 	}
 
 	@Test
@@ -260,8 +260,8 @@ public class FluxTests extends AbstractReactorTest {
 		            .verify();
 
 		assertThat(signals).hasSize(1);
-		assertThat(signals.get(0).isOnError()).as("onError expected").isTrue();
-		assertThat(signals.get(0).getThrowable()).as("plain exception expected").hasMessage("foo");
+		assertThat(signals.get(0).isOnError()).as("first signal isOnError?").isTrue();
+		assertThat(signals.get(0).getThrowable()).as("first signal throwable").hasMessage("foo");
 	}
 
 	@Test
@@ -433,7 +433,7 @@ public class FluxTests extends AbstractReactorTest {
 		                          });
 
 		assertThat(await(2, s)).isEqualTo(3);
-		assertThat(latch.getCount()).as("error handler was invoked").isEqualTo(0L);
+		assertThat(latch.getCount()).as("error handler latch count").isEqualTo(0L);
 	}
 
 	@Test
@@ -802,7 +802,7 @@ public class FluxTests extends AbstractReactorTest {
 		                  .count()
 		                  .block(Duration.ofSeconds(5));
 
-		assertThat(res).as("Latch value").isEqualTo(2_000_000);
+		assertThat(res).as("latch value").isEqualTo(2_000_000);
 	}
 	@Test
 	public void cancelOn() throws Exception {
@@ -879,7 +879,7 @@ public class FluxTests extends AbstractReactorTest {
 		globalFeed.onNext(2224);
 
 		latch.await(5, TimeUnit.SECONDS);
-		assertThat(latch.getCount()).as("Must have counted 4 elements").isEqualTo(0);
+		assertThat(latch.getCount()).as("latch count").isEqualTo(0);
 
 	}
 
@@ -1089,7 +1089,7 @@ public class FluxTests extends AbstractReactorTest {
 			throw new RuntimeException(latch.getCount()+"");
 		}
 		else {
-			assertThat(latch.getCount()).as("Must have correct latch number").isEqualTo(0);
+			assertThat(latch.getCount()).as("latch count").isEqualTo(0);
 		}
 	}
 
@@ -1426,7 +1426,7 @@ public class FluxTests extends AbstractReactorTest {
 			Thread.setDefaultUncaughtExceptionHandler(null);
 			Schedulers.resetOnHandleError();
 		}
-		assertThat(handled).as("Uncaught error handler").isTrue();
+		assertThat(handled).as("error handled?").isTrue();
 		if (failure.get() != null) {
 			fail(failure.get());
 		}
