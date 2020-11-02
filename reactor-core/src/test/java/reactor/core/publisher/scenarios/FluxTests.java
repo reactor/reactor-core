@@ -1127,7 +1127,7 @@ public class FluxTests extends AbstractReactorTest {
 
 
 		latch.await(30, TimeUnit.SECONDS);
-		assertThat(latch.getCount()).as("Not totally dispatched: ").isEqualTo(0L);
+		assertThat(latch.getCount()).as("dispatch count").isEqualTo(0L);
 		supplier1.dispose();
 		supplier2.dispose();
 	}
@@ -1164,7 +1164,7 @@ public class FluxTests extends AbstractReactorTest {
 		       .subscribe(t -> latch.countDown());
 
 		latch.await(30, TimeUnit.SECONDS);
-		assertThat(latch.getCount()).as("Not totally dispatched: ").isEqualTo(0L);
+		assertThat(latch.getCount()).as("dispatch count").isEqualTo(0L);
 	}
 	@Test
 	public void unimplementedErrorCallback() throws InterruptedException {
