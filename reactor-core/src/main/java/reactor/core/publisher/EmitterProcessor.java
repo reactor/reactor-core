@@ -75,7 +75,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	 * @param <E> Type of processed signals
 	 *
 	 * @return a fresh processor
+	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
@@ -88,7 +91,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	 * @param autoCancel automatically cancel
 	 *
 	 * @return a fresh processor
+	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, boolean)}
+	 * using the old default of {@link Queues#SMALL_BUFFER_SIZE} for the {@code bufferSize}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
 		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
 	}
@@ -100,7 +107,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	 * @param bufferSize the internal buffer size to hold signals
 	 *
 	 * @return a fresh processor
+	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int) Sinks.many().multicast().onBackpressureBuffer(bufferSize)}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
 		return create(bufferSize, true);
 	}
@@ -113,7 +123,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	 * @param autoCancel automatically cancel
 	 *
 	 * @return a fresh processor
+	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, autoCancel)}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, bufferSize);
 	}

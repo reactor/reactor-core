@@ -94,7 +94,10 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 *
 	 * @return a fresh processor
+	 * @deprecated To be removed in 3.5. Closest sink is {@link Sinks.MulticastSpec#directBestEffort() Sinks.many().multicast().directBestEffort()},
+	 * except it doesn't terminate overflowing downstreams.
 	 */
+	@Deprecated
 	public static <E> DirectProcessor<E> create() {
 		return new DirectProcessor<>();
 	}

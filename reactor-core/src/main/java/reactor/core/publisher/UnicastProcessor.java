@@ -100,7 +100,10 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
+	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer() Sinks.many().unicast().onBackpressureBuffer()}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create() {
 		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
@@ -112,7 +115,10 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	 * @param queue the buffering queue
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
+	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer(Queue) Sinks.many().unicast().onBackpressureBuffer(queue)}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
 		return new UnicastProcessor<>(queue);
 	}
@@ -125,7 +131,10 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	 * @param endcallback called on any terminal signal
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
+	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer(Queue, Disposable)  Sinks.many().unicast().onBackpressureBuffer(queue, endCallback)}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
@@ -141,7 +150,9 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> the relayed type
 	 *
 	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated should not expose onOverflow / remove in a future reactor version
+	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer(Queue, Disposable)  Sinks.many().unicast().onBackpressureBuffer(queue, endCallback)}
+	 * (or the unsafe variant if you're sure about external synchronization). The {@code onOverflow} callback is not
+	 * supported anymore. To be removed in 3.5.
 	 */
 	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue,
