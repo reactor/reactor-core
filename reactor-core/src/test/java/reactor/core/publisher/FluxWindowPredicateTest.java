@@ -49,7 +49,6 @@ import reactor.util.context.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.is;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
