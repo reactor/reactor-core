@@ -55,13 +55,6 @@ task copyReadme(type: Copy, group: "releaser helpers", description: "copies the 
 	into rootProject.buildDir
 }
 
-task copyGettingStarted(type: Copy, group: "releaser helpers", description: "copies the gettingStarted.adoc in preparation for search and replace") {
-	from(rootProject.rootDir) {
-		include "docs/asciidoc/gettingStarted.adoc"
-	}
-	into rootProject.buildDir
-}
-
 task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "replaces versions in README") {
 	def oldVersion = rootProject.findProperty("oldVersion")
 	def currentVersion = rootProject.findProperty("currentVersion")
