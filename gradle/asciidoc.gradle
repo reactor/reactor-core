@@ -44,6 +44,7 @@ configure(rootProject) {
 			doctype: 'book'
 		]
 		attributes 'allow-uri-read': '',
+			reactorReleaseTrain: "$bomVersion",
 			imagesdir: "images/",
 			stylesdir: "stylesheets/",
 			stylesheet: 'reactor.css',

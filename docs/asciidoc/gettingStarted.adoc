@@ -1,4 +1,3 @@
-:reactorReleaseTrain: Dysprosium-SR13
 [[getting-started]]
 = Getting Started
 

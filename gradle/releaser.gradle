@@ -63,7 +63,6 @@ task copyGettingStarted(type: Copy, group: "releaser helpers", description: "cop
 }
 
 task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "replaces versions in README") {
-	def bomVersion = rootProject.findProperty("bomVersion")
 	def oldVersion = rootProject.findProperty("oldVersion")
 	def currentVersion = rootProject.findProperty("currentVersion")
 	def nextVersion = rootProject.findProperty("nextVersion")
@@ -71,24 +70,17 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
 
 	onlyIf { oldVersion != null && currentVersion != null && nextVersion != null }
 	dependsOn copyReadme
-	dependsOn copyGettingStarted
 
 	doLast {
 		println "Will replace $oldVersion with $currentVersion and $oldSnapshot with $nextVersion"
-		if (bomVersion == null) println "No `bomVersion` set, will not change bom version in gettingStarted.adoc"
-		else println "Will change bomVersion in gettingStarted.adoc to $bomVersion"
 	}
 	from(rootProject.buildDir) {
 		include 'README.md'
-		include "docs/asciidoc/gettingStarted.adoc"
 	}
 	into rootProject.rootDir
-	filter { line -> (bomVersion == null) ?
-		line.replace(oldVersion, currentVersion)
-			.replace(oldSnapshot, nextVersion) :
-		line.replace(oldVersion, currentVersion)
-			.replace(oldSnapshot, nextVersion)
-			.replaceAll("\\:reactorReleaseTrain\\: .*", ":reactorReleaseTrain: " + bomVersion)
+	filter { line -> line
+		.replace(oldVersion, currentVersion)
+		.replace(oldSnapshot, nextVersion)
 	}
 }
 
