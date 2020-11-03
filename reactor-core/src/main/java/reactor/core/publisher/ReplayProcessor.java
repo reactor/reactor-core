@@ -159,11 +159,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * subscribes, it observes items without gaps in the sequence except for any outdated
 	 * items at the beginning of the sequence.
 	 * <p>
-	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
-	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
-	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
-	 * onCompleted} signal.
 	 *
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
@@ -194,11 +189,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * subscribes, it observes items without gaps in the sequence except for any outdated
 	 * items at the beginning of the sequence.
 	 * <p>
-	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
-	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
-	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
-	 * onCompleted} signal.
 	 *
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
@@ -230,11 +220,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * observes items without gaps in the sequence except for the outdated items at the
 	 * beginning of the sequence.
 	 * <p>
-	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
-	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
-	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
-	 * onCompleted} signal.
 	 *
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
@@ -267,11 +252,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * observes items without gaps in the sequence except for the outdated items at the
 	 * beginning of the sequence.
 	 * <p>
-	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
-	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
-	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
-	 * onCompleted} signal.
 	 *
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items in milliseconds
