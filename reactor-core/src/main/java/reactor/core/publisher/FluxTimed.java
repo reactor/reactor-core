@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscription;
@@ -46,7 +47,8 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
-		//FIXME
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
 		return super.scanUnsafe(key);
 	}
 
@@ -95,6 +97,27 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 		}
 
 		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			ImmutableTimed<?> timed = (ImmutableTimed<?>) o;
+			return eventElapsedSinceSubscriptionNanos == timed.eventElapsedSinceSubscriptionNanos && eventElapsedNanos == timed.eventElapsedNanos && eventTimestampEpochMillis == timed.eventTimestampEpochMillis && event.equals(
+					timed.event);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(eventElapsedSinceSubscriptionNanos,
+					eventElapsedNanos,
+					eventTimestampEpochMillis,
+					event);
+		}
+
+		@Override
 		public String toString() {
 			return "Timed(" + event + "){eventElapsedNanos=" + eventElapsedNanos + ", eventElapsedSinceSubscriptionNanos=" + eventElapsedSinceSubscriptionNanos + ",  eventTimestampEpochMillis=" + eventTimestampEpochMillis + '}';
 		}
@@ -108,6 +131,7 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 		long subscriptionNanos;
 		long lastEventNanos;
 
+		boolean done;
 		Subscription s;
 
 		TimedSubscriber(CoreSubscriber<? super Timed<T>> actual, Scheduler clock) {
@@ -132,10 +156,13 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 			}
 		}
 
-		//TODO protect against malformed publishers
-
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t, currentContext());
+				return;
+			}
+
 			long nowNanos = clock.now(TimeUnit.NANOSECONDS);
 			long timestamp = clock.now(TimeUnit.MILLISECONDS);
 			Timed<T> timed = new ImmutableTimed<>(nowNanos - this.subscriptionNanos, nowNanos - this.lastEventNanos, timestamp, t);
@@ -145,11 +172,20 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 
 		@Override
 		public void onError(Throwable throwable) {
+			if (done) {
+				Operators.onErrorDropped(throwable, currentContext());
+				return;
+			}
+			done = true;
 			actual.onError(throwable);
 		}
 
 		@Override
 		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
 			actual.onComplete();
 		}
 
@@ -168,8 +204,11 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
-			//FIXME
-			return null;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
+
 }
