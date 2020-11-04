@@ -3769,7 +3769,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	@SuppressWarnings("deprecation") //TODO NextProcessor will be turned into an internal class only in 3.5
 	public final Mono<T> share() {
 		if (this instanceof Fuseable.ScalarCallable) {
 			return this;
@@ -3828,7 +3827,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	@SuppressWarnings("deprecation") //TODO NextProcessor will be turned into an internal class only in 3.5
 	public final Disposable subscribe() {
 		if(this instanceof NextProcessor){
 			NextProcessor<T> s = (NextProcessor<T>)this;

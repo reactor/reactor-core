@@ -92,7 +92,6 @@ final class SinksSpecs {
 
 		@Override
 		public <T> One<T> one() {
-			@SuppressWarnings("deprecation") //TODO NextProcessor will be turned into an internal class only in 3.5
 			final NextProcessor<T> original = new NextProcessor<>(null);
 			return wrapOne(original);
 		}
