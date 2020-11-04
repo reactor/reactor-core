@@ -8696,8 +8696,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *     as a {@link Duration}.</li>
 	 * </ul>
 	 * <p>
-	 * The {@link Timed} object instances are safe to store and used later, as they are created as an
-	 * immutable wrapper around the {@code <T>} value and immediately passed to the downstream.
+	 * The {@link Timed} object instances are safe to store and use later, as they are created as an
+	 * immutable wrapper around the {@code <T>} value and immediately passed downstream.
 	 *
 	 * @return a timed {@link Flux}
 	 * @see #elapsed()
@@ -8723,8 +8723,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *     as a {@link Duration}.</li>
 	 * </ul>
 	 * <p>
-	 * The {@link Timed} object instances are safe to store and used later, as they are created as an
-	 * immutable wrapper around the {@code <T>} value and immediately passed to the downstream.
+	 * The {@link Timed} object instances are safe to store and use later, as they are created as an
+	 * immutable wrapper around the {@code <T>} value and immediately passed downstream.
 	 *
 	 * @return a timed {@link Flux}
 	 * @see #elapsed(Scheduler)
