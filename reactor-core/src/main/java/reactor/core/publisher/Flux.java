@@ -8687,11 +8687,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <ul>
 	 *     <li>{@link Timed#elapsed()}: the time in nanoseconds since last event, as a {@link Duration}.
 	 *     For the first onNext, "last event" is the subscription. Otherwise it is the previous onNext.
-	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive representation
-	 *     than a {@link Tuple2} with a long.</li>
+	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive and precise
+	 *     representation than a {@link Tuple2} with a long.</li>
 	 *     <li>{@link Timed#timestamp()}: the timestamp of this onNext, as an {@link java.time.Instant}
 	 *     (with nanoseconds part). This is functionally equivalent to {@link #timestamp()}, with a more
-	 *     expressive representation than a {@link Tuple2} with a long.</li>
+	 *     expressive and precise representation than a {@link Tuple2} with a long.</li>
 	 *     <li>{@link Timed#elapsedSinceSubscription()}: the time in nanoseconds since subscription,
 	 *     as a {@link Duration}.</li>
 	 * </ul>
@@ -8714,11 +8714,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <ul>
 	 *     <li>{@link Timed#elapsed()}: the time in nanoseconds since last event, as a {@link Duration}.
 	 *     For the first onNext, "last event" is the subscription. Otherwise it is the previous onNext.
-	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive representation
-	 *     than a {@link Tuple2} with a long.</li>
+	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive and precise
+	 *     representation than a {@link Tuple2} with a long.</li>
 	 *     <li>{@link Timed#timestamp()}: the timestamp of this onNext, as an {@link java.time.Instant}
 	 *     (with nanoseconds part). This is functionally equivalent to {@link #timestamp()}, with a more
-	 *     expressive representation than a {@link Tuple2} with a long.</li>
+	 *     expressive and precise representation than a {@link Tuple2} with a long.</li>
 	 *     <li>{@link Timed#elapsedSinceSubscription()}: the time in nanoseconds since subscription,
 	 *     as a {@link Duration}.</li>
 	 * </ul>
