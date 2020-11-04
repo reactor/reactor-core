@@ -44,6 +44,11 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 		return new TimedSubscriber<>(actual, this.clock);
 	}
 
+	@Override
+	public int getPrefetch() {
+		return 0;
+	}
+
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {

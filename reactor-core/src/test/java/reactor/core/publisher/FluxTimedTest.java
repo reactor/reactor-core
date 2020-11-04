@@ -206,7 +206,7 @@ class FluxTimedTest {
 		FluxTimed<String> operator = new FluxTimed<>(source, Schedulers.immediate());
 
 		assertThat(operator.scan(Attr.RUN_STYLE)).as("RUN_STYLE").isSameAs(SYNC);
-		assertThat(operator.scan(Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1L);
+		assertThat(operator.scan(Attr.PREFETCH)).as("PREFETCH").isEqualTo(0);
 		assertThat(operator.scan(Attr.PARENT)).as("PARENT").isSameAs(source);
 	}
 

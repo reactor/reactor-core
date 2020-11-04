@@ -47,6 +47,7 @@ final class MonoTimed<T> extends InternalMonoOperator<T, Timed<T>> {
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PREFETCH) return 0;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);
