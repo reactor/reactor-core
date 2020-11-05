@@ -86,7 +86,7 @@ and specify dependencies by their artifact versions.
 WARNING: As of this version (reactor-core {project-version}), the latest stable BOM in the associated
 release train line is `{reactorReleaseTrain}`, which is what is used in snippets below.
 There might be newer versions since then (including snapshots, milestones and new release train lines),
-see https://github.com/reactor/reactor/releases/.
+see https://projectreactor.io/docs for the latest artifacts and BOMs.
 
 === Maven Installation
 
