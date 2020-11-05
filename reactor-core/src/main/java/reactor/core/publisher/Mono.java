@@ -2551,6 +2551,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/elapsedForMono.svg" alt="">
 	 *
 	 * @return a new {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
+	 * @see #timed()
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed() {
 		return elapsed(Schedulers.parallel());
@@ -2566,6 +2567,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a new {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
+	 * @see #timed(Scheduler)
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
@@ -4308,6 +4310,63 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return Flux.onAssembly(concat);
 	}
 
+
+	/**
+	 * Times this {@link Mono} {@link Subscriber#onNext(Object)} event, encapsulated into a {@link Timed} object
+	 * that lets downstream consumer look at various time information gathered with nanosecond
+	 * resolution using the default clock ({@link Schedulers#parallel()}):
+	 * <ul>
+	 *     <li>{@link Timed#elapsed()}: the time in nanoseconds since subscription, as a {@link Duration}.
+	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive and precise
+	 *     representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#timestamp()}: the timestamp of this onNext, as an {@link java.time.Instant}
+	 *     (with nanoseconds part). This is functionally equivalent to {@link #timestamp()}, with a more
+	 *     expressive and precise representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#elapsedSinceSubscription()}: for {@link Mono} this is the same as
+	 *     {@link Timed#elapsed()}.</li>
+	 * </ul>
+	 * <p>
+	 * The {@link Timed} object instances are safe to store and use later, as they are created as an
+	 * immutable wrapper around the {@code <T>} value and immediately passed downstream.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/timedForMono.svg" alt="">
+	 *
+	 * @return a timed {@link Mono}
+	 * @see #elapsed()
+	 * @see #timestamp()
+	 */
+	public final Mono<Timed<T>> timed() {
+		return this.timed(Schedulers.parallel());
+	}
+
+	 /**
+	 * Times this {@link Mono} {@link Subscriber#onNext(Object)} event, encapsulated into a {@link Timed} object
+	 * that lets downstream consumer look at various time information gathered with nanosecond
+	 * resolution using the provided {@link Scheduler} as a clock:
+	 * <ul>
+	 *     <li>{@link Timed#elapsed()}: the time in nanoseconds since subscription, as a {@link Duration}.
+	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive and precise
+	  *    representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#timestamp()}: the timestamp of this onNext, as an {@link java.time.Instant}
+	 *     (with nanoseconds part). This is functionally equivalent to {@link #timestamp()}, with a more
+	 *     expressive and precise representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#elapsedSinceSubscription()}: for {@link Mono} this is the same as
+	 *     {@link Timed#elapsed()}.</li>
+	 * </ul>
+	 * <p>
+	 * The {@link Timed} object instances are safe to store and use later, as they are created as an
+	 * immutable wrapper around the {@code <T>} value and immediately passed downstream.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/timedForMono.svg" alt="">
+	 *
+	 * @return a timed {@link Flux}
+	 * @see #elapsed(Scheduler)
+	 * @see #timestamp(Scheduler)
+	 */
+	public final Mono<Timed<T>> timed(Scheduler clock) {
+		return onAssembly(new MonoTimed<>(this, clock));
+	}
+
 	/**
 	 * Propagate a {@link TimeoutException} in case no item arrives within the given
 	 * {@link Duration}.
@@ -4428,6 +4487,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/timestampForMono.svg" alt="">
 	 *
 	 * @return a timestamped {@link Mono}
+	 * @see #timed()
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp() {
 		return timestamp(Schedulers.parallel());
@@ -4448,6 +4508,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a timestamped {@link Mono}
 	 * @see Scheduler#now(TimeUnit)
+	 * @see #timed(Scheduler)
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");

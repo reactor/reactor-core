@@ -4640,6 +4640,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/elapsedForFlux.svg" alt="">
 	 *
 	 * @return a new {@link Flux} that emits a tuple of time elapsed in milliseconds and matching data
+	 * @see #timed()
+	 * @see Timed#elapsed()
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
 		return elapsed(Schedulers.parallel());
@@ -4656,6 +4658,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param scheduler a {@link Scheduler} instance to {@link Scheduler#now(TimeUnit) read time from}
 	 *
 	 * @return a new {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
+	 * @see #timed(Scheduler)
+	 * @see Timed#elapsed()
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
@@ -8677,6 +8681,64 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Times {@link Subscriber#onNext(Object)} events, encapsulated into a {@link Timed} object
+	 * that lets downstream consumer look at various time information gathered with nanosecond
+	 * resolution using the default clock ({@link Schedulers#parallel()}):
+	 * <ul>
+	 *     <li>{@link Timed#elapsed()}: the time in nanoseconds since last event, as a {@link Duration}.
+	 *     For the first onNext, "last event" is the subscription. Otherwise it is the previous onNext.
+	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive and precise
+	 *     representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#timestamp()}: the timestamp of this onNext, as an {@link java.time.Instant}
+	 *     (with nanoseconds part). This is functionally equivalent to {@link #timestamp()}, with a more
+	 *     expressive and precise representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#elapsedSinceSubscription()}: the time in nanoseconds since subscription,
+	 *     as a {@link Duration}.</li>
+	 * </ul>
+	 * <p>
+	 * The {@link Timed} object instances are safe to store and use later, as they are created as an
+	 * immutable wrapper around the {@code <T>} value and immediately passed downstream.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/timedForFlux.svg" alt="">
+	 *
+	 * @return a timed {@link Flux}
+	 * @see #elapsed()
+	 * @see #timestamp()
+	 */
+	public final Flux<Timed<T>> timed() {
+		return this.timed(Schedulers.parallel());
+	}
+
+	/**
+	 * Times {@link Subscriber#onNext(Object)} events, encapsulated into a {@link Timed} object
+	 * that lets downstream consumer look at various time information gathered with nanosecond
+	 * resolution using the provided {@link Scheduler} as a clock:
+	 * <ul>
+	 *     <li>{@link Timed#elapsed()}: the time in nanoseconds since last event, as a {@link Duration}.
+	 *     For the first onNext, "last event" is the subscription. Otherwise it is the previous onNext.
+	 *     This is functionally equivalent to {@link #elapsed()}, with a more expressive and precise
+	 *     representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#timestamp()}: the timestamp of this onNext, as an {@link java.time.Instant}
+	 *     (with nanoseconds part). This is functionally equivalent to {@link #timestamp()}, with a more
+	 *     expressive and precise representation than a {@link Tuple2} with a long.</li>
+	 *     <li>{@link Timed#elapsedSinceSubscription()}: the time in nanoseconds since subscription,
+	 *     as a {@link Duration}.</li>
+	 * </ul>
+	 * <p>
+	 * The {@link Timed} object instances are safe to store and use later, as they are created as an
+	 * immutable wrapper around the {@code <T>} value and immediately passed downstream.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/timedForFlux.svg" alt="">
+	 *
+	 * @return a timed {@link Flux}
+	 * @see #elapsed(Scheduler)
+	 * @see #timestamp(Scheduler)
+	 */
+	public final Flux<Timed<T>> timed(Scheduler clock) {
+		return onAssembly(new FluxTimed<>(this, clock));
+	}
+
+	/**
 	 * Propagate a {@link TimeoutException} as soon as no item is emitted within the
 	 * given {@link Duration} from the previous emission (or the subscription for the first item).
 	 *
@@ -8839,6 +8901,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/timestampForFlux.svg" alt="">
 	 *
 	 * @return a timestamped {@link Flux}
+	 * @see #timed()
+	 * @see Timed#timestamp()
 	 */
 	public final Flux<Tuple2<Long, T>> timestamp() {
 		return timestamp(Schedulers.parallel());
@@ -8859,6 +8923,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param scheduler the {@link Scheduler} to read time from
 	 * @return a timestamped {@link Flux}
 	 * @see Scheduler#now(TimeUnit)
+	 * @see #timed(Scheduler)
+	 * @see Timed#timestamp()
 	 */
 	public final Flux<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
