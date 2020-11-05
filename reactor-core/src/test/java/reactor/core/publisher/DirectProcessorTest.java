@@ -27,6 +27,7 @@ import reactor.util.context.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+// This is ok as this class tests the deprecated DirectProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class DirectProcessorTest {
 

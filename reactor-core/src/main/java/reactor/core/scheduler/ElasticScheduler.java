@@ -51,6 +51,7 @@ import reactor.util.annotation.Nullable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
+// To be removed in 3.5
 final class ElasticScheduler implements Scheduler, Scannable {
 
 	static final AtomicLong COUNTER = new AtomicLong();

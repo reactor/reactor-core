@@ -60,6 +60,7 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 /**
  * @author Stephane Maldini
  */
+// This is ok as this class tests the deprecated EmitterProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
 

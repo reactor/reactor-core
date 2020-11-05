@@ -598,7 +598,6 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	@SuppressWarnings("deprecation") //the API-level is deprecated to discourage direct use as first step
 	public DefaultStepVerifierBuilder<T> expectNoEvent(Duration duration) {
 		Objects.requireNonNull(duration, "duration");
 		if(this.script.size() == 1 && this.script.get(0) == defaultFirstStep){

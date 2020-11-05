@@ -28,7 +28,6 @@ public class FluxSourceTest {
 
 	@Test
 	public void monoProcessor() {
-		@SuppressWarnings("deprecation")
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		mp.onNext("test");
 

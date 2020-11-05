@@ -46,6 +46,7 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
+// This is ok as this class tests the deprecated UnicastProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class UnicastProcessorTest {
 

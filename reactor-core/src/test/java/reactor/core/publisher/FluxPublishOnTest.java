@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -455,13 +456,12 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void diamond() {
-		@SuppressWarnings("deprecation")
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+		Sinks.Many<Integer> sink = Sinks.many().multicast().<Integer>onBackpressureBuffer();
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux<Integer> fork1 = processor.map(d -> d)
+		Flux<Integer> fork1 = sink.asFlux().map(d -> d)
 		                        .publishOn(Schedulers.fromExecutorService(exec));
-		Flux<Integer> fork2 = processor.map(d -> d)
+		Flux<Integer> fork2 = sink.asFlux().map(d -> d)
 		                        .publishOn(Schedulers.fromExecutorService(exec));
 
 		ts.request(256);
@@ -472,7 +472,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.range(0, 128)
 		    .hide()
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
-		    .subscribe(processor);
+		    .subscribe(v -> sink.emitNext(v, FAIL_FAST), e -> sink.emitError(e, FAIL_FAST), () -> sink.emitComplete(FAIL_FAST));
 
 		ts.await(Duration.ofSeconds(5))
 		  .assertTerminated()

@@ -268,7 +268,6 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		    .verify(Duration.ofSeconds(5));
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();

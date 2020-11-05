@@ -1071,7 +1071,6 @@ public class FluxRetryWhenTest {
 		});
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void retryWhenThrowableCompanionIsComparableToRetryWhenRetryFromFunction() {
 		AtomicInteger sourceHelper = new AtomicInteger();

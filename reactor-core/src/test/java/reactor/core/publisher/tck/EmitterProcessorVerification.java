@@ -27,7 +27,7 @@ import org.testng.SkipException;
 public class EmitterProcessorVerification extends AbstractProcessorVerification {
 
 	@Override
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation") // This is ok because this uses FluxProcessor and EmitterProcessor, to be removed in 3.5
 	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
 		reactor.core.publisher.FluxProcessor<Long, Long> p = reactor.core.publisher.EmitterProcessor.create(bufferSize);
 		return reactor.core.publisher.FluxProcessor.wrap(p, p.log("EmitterProcessorVerification", Level.FINE));

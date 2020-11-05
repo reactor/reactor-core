@@ -183,7 +183,6 @@ public class SchedulersMetricsTest {
 				.containsExactly("foo");
 	}
 
-	@SuppressWarnings("deprecation")
 	static Object[] metricsSchedulers() {
 		return new Object[] {
 				new Object[] {
@@ -191,7 +190,11 @@ public class SchedulersMetricsTest {
 						"PARALLEL"
 				},
 				new Object[] {
-						(Supplier<Scheduler>) () -> Schedulers.newElastic("A"),
+						(Supplier<Scheduler>) () -> {
+							@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic()
+							Scheduler newElastic = Schedulers.newElastic("A");
+							return newElastic;
+						},
 						"ELASTIC"
 				},
 				new Object[] {
@@ -269,8 +272,7 @@ public class SchedulersMetricsTest {
 	@Test
 	public void shouldRemoveOnShutdown() throws Exception {
 		int ttl = 1;
-		@SuppressWarnings("deprecation")
-		Scheduler scheduler = afterTest.autoDispose(Schedulers.newElastic("A", ttl));
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(2, 2, "A", ttl));
 		String schedulerName = scheduler.toString();
 
 		Scheduler.Worker worker0 = scheduler.createWorker();
@@ -284,11 +286,10 @@ public class SchedulersMetricsTest {
 				.extracting(Meter::getId)
 				.anyMatch(schedulerPredicate);
 
+		// Explicitly do *not* dispose worker0 and assert that metrics from it still live below
 		worker1.dispose();
 
-		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-			((ElasticScheduler) scheduler).eviction();
-
+		await().atMost(ttl*5, TimeUnit.SECONDS).untilAsserted(() -> {
 			List<Meter> meters = registry.getMeters();
 			assertThat(meters)
 					.extracting(Meter::getId)

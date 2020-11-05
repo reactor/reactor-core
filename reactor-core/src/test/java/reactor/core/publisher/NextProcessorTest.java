@@ -30,6 +30,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
@@ -153,13 +154,14 @@ public class NextProcessorTest {
 		});
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void rejectedDoOnSuccessOrError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnSuccessOrError((s, f) -> ref.set(f)).subscribe(v -> {}, e -> {});
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
+		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(f));
+		mono.subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(ref.get()).hasMessage("test");
@@ -193,13 +195,14 @@ public class NextProcessorTest {
 		assertThat(mp.isError()).isTrue();
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void successDoOnSuccessOrError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
-		mp.doOnSuccessOrError((s, f) -> ref.set(s)).subscribe();
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
+		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(s));
+		mono.subscribe();
 		mp.onNext("test");
 
 		assertThat(ref.get()).isEqualToIgnoringCase("test");

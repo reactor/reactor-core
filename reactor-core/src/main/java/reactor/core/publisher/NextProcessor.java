@@ -18,6 +18,7 @@ import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+// NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.
 @SuppressWarnings("deprecation")
 class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 

@@ -130,7 +130,7 @@ public class MonoFilterTest {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		@SuppressWarnings("deprecation") //TODO find a suitable source that can be async fused (MonoProcessor was never fuseable)
+		//TODO find a suitable source that can be async fused (MonoProcessor was never fuseable)
 		NextProcessor<Integer> up = new NextProcessor<>(null);
 
 		up.filter(v -> (v & 1) == 0)
@@ -147,7 +147,7 @@ public class MonoFilterTest {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		@SuppressWarnings("deprecation") //TODO find a suitable source that can be async fused (MonoProcessor was never fuseable)
+		//TODO find a suitable source that can be async fused (MonoProcessor was never fuseable)
 		NextProcessor<Integer> up = new NextProcessor<>(null);
 
 		Mono.just(1)

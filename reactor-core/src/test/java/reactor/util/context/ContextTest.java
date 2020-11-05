@@ -535,7 +535,7 @@ public class ContextTest {
 		ContextView contextView = context;
 		Context receiver = Context.of("foo", "bar");
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // because of putAll(Context). This test method shall be removed in 3.5 alongside putAll(Context)
 		Context resultFromContext = receiver.putAll(context);
 		Context resultFromContextView = receiver.putAll(contextView);
 
