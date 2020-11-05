@@ -242,9 +242,16 @@ I want to deal with:
 [[which.time]]
 == Working with Time
 
-* I want to associate emissions with a timing (`Tuple2<Long, T>`) measured...
-** since subscription: `elapsed`
-** since the dawn of time (well, computer time): `timestamp`
+* I want to associate emissions with a timing measured...
+** ...with best available precision and versatility of provided data: `timed`
+*** `Timed<T>#elapsed()` for `Duration` since last `onNext`
+*** `Timed<T>#timestamp()` for `Instant` representation of the epoch timestamp (milliseconds resolution)
+*** `Timed<T>#elapsedSinceSubcription()` for `Duration` since subscription (rather than last onNext)
+*** can have nanoseconds resolution for elapsed `Duration`s
+** ...as a (legacy) `Tuple2<Long, T>`...
+*** since last onNext: `elapsed`
+*** since the dawn of time (well, computer time): `timestamp`
+
 
 * I want my sequence to be interrupted if there is too much delay between emissions: `timeout`
 
