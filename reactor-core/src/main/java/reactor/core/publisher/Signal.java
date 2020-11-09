@@ -46,9 +46,8 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 *
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
-	@SuppressWarnings({"deprecation", "unchecked"})
 	static <T> Signal<T> complete() {
-		return (Signal<T>) ImmutableSignal.ON_COMPLETE;
+		return ImmutableSignal.onComplete();
 	}
 
 	/**
@@ -60,10 +59,9 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 *
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
-	@SuppressWarnings({"deprecation", "unchecked"})
 	static <T> Signal<T> complete(Context context) {
 		if (context.isEmpty()) {
-			return (Signal<T>) ImmutableSignal.ON_COMPLETE;
+			return ImmutableSignal.onComplete();
 		}
 		return new ImmutableSignal<>(context, SignalType.ON_COMPLETE, null, null, null);
 	}
@@ -160,9 +158,8 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @param o the object to check
 	 * @return true if object represents the completion signal
 	 */
-	@SuppressWarnings("deprecation")
 	static boolean isComplete(Object o) {
-		return o == ImmutableSignal.ON_COMPLETE ||
+		return o == ImmutableSignal.onComplete() ||
 				(o instanceof Signal && ((Signal) o).getType() == SignalType.ON_COMPLETE);
 	}
 
