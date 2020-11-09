@@ -113,21 +113,21 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer() {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
 			final EmitterProcessor<T> original = EmitterProcessor.create();
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
 			final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
 			final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize, autoCancel);
 			return wrapMany(original);
 		}
@@ -147,63 +147,63 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> all() {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.create();
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> all(int batchSize) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5
 			final ReplayProcessor<T> original = ReplayProcessor.create(batchSize, true);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> latest() {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.cacheLast();
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> latestOrDefault(T value) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.cacheLastOrDefault(value);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> limit(int historySize) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.create(historySize);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> limit(Duration maxAge) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createTimeout(maxAge);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> limit(Duration maxAge, Scheduler scheduler) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createTimeout(maxAge, scheduler);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> limit(int historySize, Duration maxAge) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> limit(int historySize, Duration maxAge, Scheduler scheduler) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
 			return wrapMany(original);
 		}
@@ -226,21 +226,21 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer() {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // UnicastProcessor will be removed in 3.5.
 			final UnicastProcessor<T> original = UnicastProcessor.create();
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(Queue<T> queue) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // UnicastProcessor will be removed in 3.5.
 			final UnicastProcessor<T> original = UnicastProcessor.create(queue);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(Queue<T> queue, Disposable endCallback) {
-			@SuppressWarnings("deprecation")
+			@SuppressWarnings("deprecation") // UnicastProcessor will be removed in 3.5.
 			final UnicastProcessor<T> original = UnicastProcessor.create(queue, endCallback);
 			return wrapMany(original);
 		}

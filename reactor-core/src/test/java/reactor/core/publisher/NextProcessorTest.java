@@ -42,7 +42,6 @@ import reactor.util.function.Tuple2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-@SuppressWarnings("deprecation")
 public class NextProcessorTest {
 
 	@Test
@@ -116,7 +115,7 @@ public class NextProcessorTest {
 
 		assertThat(refFuture.get()).isNull();
 		assertThat(cycles).isNotZero()
-				.isPositive();
+		                  .isPositive();
 	}
 
 	@Test
@@ -330,7 +329,7 @@ public class NextProcessorTest {
 		mp.onNext(1);
 
 		NextProcessor<Integer> mp2 = mp.map(s -> s * 2)
-									   .cache()
+		                               .cache()
 		                               .subscribeWith(new NextProcessor<>(null));
 		mp2.subscribe();
 
@@ -505,8 +504,8 @@ public class NextProcessorTest {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		StepVerifier.create(mp.filter(s -> {throw new RuntimeException("test"); })
-					.subscribeWith
-						(mp2))
+		                      .subscribeWith
+				                      (mp2))
 		            .then(() -> mp.onNext(2))
 		            .then(() -> assertThat(mp2.isError()).isTrue())
 		            .then(() -> assertThat(mp2.isSuccess()).isFalse())
@@ -523,8 +522,8 @@ public class NextProcessorTest {
 
 		StepVerifier.create(mp.doOnSuccess(s -> {throw new RuntimeException("test"); })
 		                      .doOnError(ref::set)
-					.subscribeWith
-						(mp2))
+		                      .subscribeWith
+				                      (mp2))
 		            .then(() -> mp.onNext(2))
 		            .then(() -> assertThat(mp2.isError()).isTrue())
 		            .then(() -> assertThat(ref.get()).hasMessage("test"))
@@ -549,8 +548,8 @@ public class NextProcessorTest {
 	public void monoNotCancelledByMonoProcessor() {
 		AtomicLong cancelCounter = new AtomicLong();
 		Mono.just("foo")
-			.doOnCancel(cancelCounter::incrementAndGet)
-			.subscribe();
+		    .doOnCancel(cancelCounter::incrementAndGet)
+		    .subscribe();
 
 		assertThat(cancelCounter).hasValue(0);
 	}
@@ -612,8 +611,8 @@ public class NextProcessorTest {
 	@SuppressWarnings("deprecated")
 	public void sharedMonoReusesInstance() {
 		Mono<String> sharedMono = Mono.just("foo")
-									  .hide()
-									  .share();
+		                              .hide()
+		                              .share();
 
 		assertThat(sharedMono)
 				.isSameAs(sharedMono.share())
@@ -678,7 +677,7 @@ public class NextProcessorTest {
 				                      .delayElement(Duration.ofMillis(500))
 				                      .share()
 				                      .block(Duration.ZERO))
-		        .withMessage("Timeout on Mono blocking read");
+				.withMessage("Timeout on Mono blocking read");
 
 		assertThat(Duration.ofNanos(System.nanoTime() - start))
 				.isLessThan(Duration.ofMillis(500));
@@ -714,7 +713,7 @@ public class NextProcessorTest {
 
 		NextProcessor.NextInner<String> test = new NextProcessor.NextInner<>(subscriber, processor);
 
-	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

@@ -59,7 +59,7 @@ public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
 		final Scheduler elastic        = Schedulers.Factory.super.newElastic(60, Thread::new);
 		final Scheduler boundedElastic = Schedulers.Factory.super.newBoundedElastic(2, Integer.MAX_VALUE, Thread::new, 60);
 		final Scheduler single         = Schedulers.Factory.super.newSingle(Thread::new);

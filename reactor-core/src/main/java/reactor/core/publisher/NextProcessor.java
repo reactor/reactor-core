@@ -241,6 +241,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	}
 
 	@Override
+	// This method is inherited from a deprecated class and will be removed in 3.5.
 	@SuppressWarnings("deprecation")
 	public void cancel() {
 		if (isTerminated()) {
@@ -266,6 +267,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	}
 
 	@Override
+	// This method is inherited from a deprecated class and will be removed in 3.5.
 	@SuppressWarnings("deprecation")
 	public boolean isCancelled() {
 		return subscription == Operators.cancelledSubscription() && !isTerminated();
