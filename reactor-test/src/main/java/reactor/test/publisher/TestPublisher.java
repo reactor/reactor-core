@@ -72,13 +72,30 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * subscribers. It caches the {@link #next(Object)} events and replays them to
 	 * all subscribers upon subscription.
 	 * <p>
-	 * Note that this type of {@link Publisher} isn't
+	 * Note that this type of {@link Publisher} isn't //TODO to complete when we get
+	 * the final word
 	 *
 	 * @param <T> the type of the publisher
 	 * @return the new {@link TestPublisher}
 	 */
 	public static <T> TestPublisher<T> createCold() {
-		return new ColdTestPublisher<>();
+		return new ColdTestPublisher<>(ColdTestPublisher.Behavior.BUFFER);
+	}
+
+	/**
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It caches the {@link #next(Object)} events and replays them to
+	 * all subscribers upon subscription.
+	 * <p>
+	 * Note that this type of {@link Publisher} isn't //TODO to complete when we get
+	 * the final word
+	 *
+	 * @param <T> the type of the publisher
+	 * @param {@link ColdTestPublisher.Behavior} the desired behavior for backpressure
+	 * @return the new {@link TestPublisher}
+	 */
+	public static <T> TestPublisher<T> createCold(ColdTestPublisher.Behavior behavior) {
+		return new ColdTestPublisher<>(behavior);
 	}
 
 	/**
@@ -228,6 +245,14 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 			next(t);
 		}
 		return complete();
+	}
+
+	/**
+	 * Possible behaviors for backpressure management on {@link ColdTestPublisher}
+	 */
+	public enum Behavior {
+
+		MISBEHAVE, BUFFER, ERROR;
 	}
 
 	/**

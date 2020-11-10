@@ -27,6 +27,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static reactor.test.publisher.TestPublisher.Behavior.*;
 
 public class ColdTestPublisherTests {
 
@@ -98,7 +99,8 @@ public class ColdTestPublisherTests {
 
 	@Test
 	public void coldDisallowsOverflow() {
-		TestPublisher<String> publisher = TestPublisher.createCold();
+		TestPublisher<String> publisher =
+				TestPublisher.createCold(ERROR);
 
 		StepVerifier.create(publisher, 1)
 		            .then(() -> publisher.next("foo")).as("should pass")

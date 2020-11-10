@@ -46,6 +46,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	final List<T> values;
 	Throwable     error;
+	final Behavior behavior;
 
 	volatile boolean wasRequested;
 
@@ -60,7 +61,8 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	static final AtomicLongFieldUpdater<ColdTestPublisher> SUBSCRIBED_COUNT =
 			AtomicLongFieldUpdater.newUpdater(ColdTestPublisher.class, "subscribeCount");
 
-	ColdTestPublisher() {
+	ColdTestPublisher(Behavior behavior) {
+		this.behavior = behavior;
 		this.values = Collections.synchronizedList(new ArrayList<>());
 	}
 
@@ -77,8 +79,21 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 		ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
-		for (T value : values) {
-			p.onNext(value);
+		long requested;
+		switch (behavior){
+			case BUFFER:
+			case ERROR:
+				requested = Math.min(values.size(), p.requested);
+				break;
+			case MISBEHAVE:
+				requested =	p.requested == Long.MAX_VALUE ? values.size() : p.requested;
+				break;
+			default:
+				throw new IllegalStateException("Disallowed Behavior");
+		}
+
+		for(int i = 0; i < requested; i++){
+			p.onNext(values.get(i));
 		}
 		if (error == Exceptions.TERMINATED) {
 			p.onComplete();
@@ -203,8 +218,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 				}
 				return;
 			}
-			parent.remove(this);
-			actual.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
+			if(parent.behavior == Behavior.ERROR){
+				parent.remove(this);
+				actual.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
+			}
 		}
 
 		void onError(Throwable e) {
