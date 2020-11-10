@@ -71,32 +71,24 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		ColdTestPublisherSubscription<T> p = new ColdTestPublisherSubscription<>(s, this);
 		s.onSubscribe(p);
 
-		if (add(p)) {
-			if (p.cancelled) {
-				remove(p);
-			}
-			ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
+		add(p);
+		if (p.cancelled) {
+			remove(p);
+		}
+		ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
-			for (T value : values) {
-				p.onNext(value);
-			}
-			if (error == Exceptions.TERMINATED) {
-				p.onComplete();
-			}
-			else if (error != null) {
-				p.onError(error);
-			}
-		} else {
-			Throwable e = error;
-			if (e != null) {
-				s.onError(e);
-			} else {
-				s.onComplete();
-			}
+		for (T value : values) {
+			p.onNext(value);
+		}
+		if (error == Exceptions.TERMINATED) {
+			p.onComplete();
+		}
+		else if (error != null) {
+			p.onError(error);
 		}
 	}
 
-	boolean add(ColdTestPublisherSubscription<T> s) {
+	void add(ColdTestPublisherSubscription<T> s) {
 		synchronized (this) {
 
 			ColdTestPublisherSubscription<T>[] a = subscribers;
@@ -108,8 +100,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			b[len] = s;
 
 			subscribers = b;
-
-			return true;
 		}
 	}
 
