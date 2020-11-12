@@ -71,36 +71,14 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		Objects.requireNonNull(s, "s");
 
 		ColdTestPublisherSubscription<T> p = new ColdTestPublisherSubscription<>(s, this);
-		s.onSubscribe(p);
-
 		add(p);
 		if (p.cancelled) {
 			remove(p);
 		}
 		ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
-		long requested;
-		switch (behavior){
-			case BUFFER:
-			case ERROR:
-				requested = Math.min(values.size(), p.requested);
-				break;
-			case MISBEHAVE:
-				requested =	p.requested == Long.MAX_VALUE ? values.size() : p.requested;
-				break;
-			default:
-				throw new IllegalStateException("Disallowed Behavior");
-		}
+		s.onSubscribe(p); // will trigger drain() via request()
 
-		for(int i = 0; i < requested; i++){
-			p.onNext(values.get(i));
-		}
-		if (error == Exceptions.TERMINATED) {
-			p.onComplete();
-		}
-		else if (error != null) {
-			p.onError(error);
-		}
 	}
 
 	void add(ColdTestPublisherSubscription<T> s) {
@@ -173,6 +151,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 				REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "requested");
 
+		/** Where in the {@link ColdTestPublisher#values} buffer this subscription is at. */
+		int index;
+
+
 		@SuppressWarnings("unchecked")
 		ColdTestPublisherSubscription(Subscriber<? super T> actual, ColdTestPublisher<T> parent) {
 			this.actual = actual;
@@ -188,8 +170,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
-				parent.wasRequested = true;
+				if (Operators.addCap(REQUESTED, this, n) == 0) {
+					parent.wasRequested = true;
+					drain(n);
+				}
 			}
 		}
 
@@ -202,26 +186,8 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		void onNext(T value) {
-			long r = requested;
-			if (r != 0L) {
-				boolean sent;
-				if(actualConditional != null){
-					sent = actualConditional.tryOnNext(value);
-				}
-				else {
-					sent = true;
-					actual.onNext(value);
-				}
-				if (sent && r != Long.MAX_VALUE) {
-					REQUESTED.decrementAndGet(this);
-				}
-				return;
-			}
-			if(parent.behavior == Behavior.ERROR){
-				parent.remove(this);
-				actual.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
-			}
+		private void onNext(T value) {
+			actual.onNext(value);
 		}
 
 		void onError(Throwable e) {
@@ -232,6 +198,87 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		void onComplete() {
 			parent.remove(this);
 			actual.onComplete();
+		}
+
+		private void drain(long n) {
+			long r;
+			switch (parent.behavior){
+			case BUFFER:
+			case ERROR:
+				r = Math.min(parent.values.size() - index, this.requested);
+				break;
+			case MISBEHAVE:
+				r =	this.requested == Long.MAX_VALUE ? parent.values.size() - index : this.requested;
+				break;
+			default:
+				throw new IllegalStateException("Disallowed Behavior");
+			}
+
+			int i = index;
+			int emitted = 0;
+			for ( ; ; ) {
+				if (cancelled) {
+					return;
+				}
+
+				while (i != parent.values.size() && emitted != n) {
+					T t = parent.values.get(i);
+					// TODO allow violation null
+					if (t == null) {
+						actual.onError(new NullPointerException("The " + i + "th element was null"));
+						return;
+					}
+
+					this.onNext(t);
+					if (cancelled) {
+						return;
+					}
+					i++;
+					emitted++;
+				}
+
+
+
+				n = requested;
+				if (n == emitted) {
+					index = i;
+					n = REQUESTED.addAndGet(this, -emitted);
+					if (i == parent.values.size()) {
+						if (parent.error == Exceptions.TERMINATED) {
+							this.onComplete();
+						}
+						else if (parent.error != null) {
+							this.onError(parent.error);
+						}
+						return;
+					}
+					if (n == 0) {
+						return;
+					}
+					emitted = 0;
+				} else if (n == Long.MAX_VALUE) {
+					index = i;
+					emitted = 0;
+					if (i == parent.values.size()) {
+						if (parent.error == Exceptions.TERMINATED) {
+							this.onComplete();
+						}
+						else if (parent.error != null) {
+							this.onError(parent.error);
+						}
+						return;
+					}
+				} else if (i == parent.values.size()) {
+					if (parent.error == Exceptions.TERMINATED) {
+						this.onComplete();
+					}
+					else if (parent.error != null) {
+						this.onError(parent.error);
+					}
+					return;
+				}
+
+			}
 		}
 	}
 
@@ -361,7 +408,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 		values.add(t);
 		for (ColdTestPublisherSubscription<T> s : subscribers) {
-			s.onNext(t);
+			s.drain(s.requested);
 		}
 
 		return this;
