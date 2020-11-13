@@ -206,19 +206,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 
 		private void drain(long n) {
-			long r;
-			switch (parent.behavior){
-			case BUFFER:
-			case ERROR:
-				r = Math.min(parent.values.size() - index, this.requested);
-				break;
-			case MISBEHAVE:
-				r =	this.requested == Long.MAX_VALUE ? parent.values.size() - index : this.requested;
-				break;
-			default:
-				throw new IllegalStateException("Disallowed Behavior");
-			}
-
 			int i = index;
 			int emitted = 0;
 			for ( ; ; ) {
@@ -243,8 +230,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 					}
 				}
 
-
-
 				n = requested;
 				if (n == emitted) {
 					index = i;
@@ -259,7 +244,14 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 						return;
 					}
 					if (n == 0) {
-						return;
+						switch (parent.behavior) {
+						case BUFFER: // Still some elements in buffer && no more request, wait till more data requested
+							return;
+						case ERROR: // Still some elements in buffer && no more request && want to error on overflow
+							this.onError(Exceptions
+									.failWithOverflow("Can't deliver value due to lack of requests"));
+							return;
+						}
 					}
 					emitted = 0;
 				} else if (n == Long.MAX_VALUE) {

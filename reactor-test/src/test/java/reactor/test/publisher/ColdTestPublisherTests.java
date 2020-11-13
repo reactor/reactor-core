@@ -100,7 +100,7 @@ public class ColdTestPublisherTests {
 				.withMessage("emitted values must be non-null");
 	}
 
-	@Test @Disabled
+	@Test
 	public void coldDisallowsOverflow() {
 		TestPublisher<String> publisher =
 				TestPublisher.createCold(ERROR);
