@@ -186,8 +186,13 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		private void onNext(T value) {
-			actual.onNext(value);
+		private boolean onNext(T value) {
+			if (actualConditional != null) {
+				return actualConditional.tryOnNext(value);
+			} else {
+				actual.onNext(value);
+				return true;
+			}
 		}
 
 		void onError(Throwable e) {
@@ -229,12 +234,13 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 						return;
 					}
 
-					this.onNext(t);
+					if (this.onNext(t)) {
+						emitted++;
+					}
+					i++;
 					if (cancelled) {
 						return;
 					}
-					i++;
-					emitted++;
 				}
 
 
@@ -269,6 +275,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 						return;
 					}
 				} else if (i == parent.values.size()) {
+					index = i;
 					if (parent.error == Exceptions.TERMINATED) {
 						this.onComplete();
 					}
@@ -421,7 +428,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		error = t;
 		ColdTestPublisherSubscription<?>[] subs = subscribers;
 		for (ColdTestPublisherSubscription<?> s : subs) {
-			s.onError(t);
+			s.drain(s.requested);
 		}
 		return this;
 	}
@@ -431,7 +438,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		ColdTestPublisherSubscription<?>[] subs = subscribers;
 		error = Exceptions.TERMINATED;
 		for (ColdTestPublisherSubscription<?> s : subs) {
-			s.onComplete();
+			s.drain(s.requested);
 		}
 		return this;
 	}

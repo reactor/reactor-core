@@ -100,7 +100,7 @@ public class ColdTestPublisherTests {
 				.withMessage("emitted values must be non-null");
 	}
 
-	@Test
+	@Test @Disabled
 	public void coldDisallowsOverflow() {
 		TestPublisher<String> publisher =
 				TestPublisher.createCold(ERROR);
@@ -361,10 +361,8 @@ public class ColdTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 		publisher.emit("A", "B", "C", "D", "E", "F");
 		StepVerifier.create(publisher, 3L)
-				//.expectNextCount(2L)
 				.expectNext("A", "B", "C")
 				.thenRequest(1L)
-				//.expectNextCount(1L)
 				.expectNext("D")
 				.thenRequest(Long.MAX_VALUE)
 				.expectNextCount(2L)
