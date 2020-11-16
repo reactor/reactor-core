@@ -16,9 +16,9 @@
 
 package reactor.test.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -28,11 +28,8 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static reactor.test.publisher.TestPublisher.Behavior.*;
 
 public class ColdTestPublisherTests {
-
-
 
 	@Test
 	public void gh1236_test() {
@@ -92,7 +89,7 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void coldDisallowsNull() {
+	public void normalDisallowsNull() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
@@ -101,9 +98,20 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void coldDisallowsOverflow() {
+	public void misbehavingAllowsNull() {
+		TestPublisher<String> publisher = TestPublisher.createColdNonCompliant(false, TestPublisher.Violation.ALLOW_NULL);
+		publisher.emit("foo", null);
+
+		StepVerifier.create(publisher)
+				.expectNext("foo", null)
+				.expectComplete()
+				.verify();
+	}
+
+	@Test
+	public void normalDisallowsOverflow() {
 		TestPublisher<String> publisher =
-				TestPublisher.createCold(ERROR);
+				TestPublisher.createColdNonBuffering();
 
 		StepVerifier.create(publisher, 1)
 		            .then(() -> publisher.next("foo")).as("should pass")
@@ -115,6 +123,21 @@ public class ColdTestPublisherTests {
 
 		publisher.assertNoRequestOverflow();
 	}
+
+	@Test
+	public void misbehavingAllowsOverflow() {
+		TestPublisher<String> publisher = TestPublisher.createColdNonCompliant(false, TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(publisher, 1)
+						.then(() -> publisher.emit("foo", "bar"))
+						.expectNext("foo")
+						.verifyComplete())
+				.withMessageContaining("expected production of at most 1;");
+
+		publisher.assertRequestOverflow();
+	}
+
 
 	@Test
 	public void coldAllowsMultipleReplayOnSubscribe() {
@@ -370,14 +393,12 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void testBufferSupport2() {
+	public void testBufferSupportSubsequentDataAdded() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 		publisher.next("A", "B", "C", "D", "E", "F");
 		StepVerifier.create(publisher, 3L)
-				//.expectNextCount(2L)
 				.expectNext("A", "B", "C")
 				.thenRequest(1L)
-				//.expectNextCount(1L)
 				.expectNext("D")
 				.thenRequest(Long.MAX_VALUE)
 				.expectNextCount(2L)

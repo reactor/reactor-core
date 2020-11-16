@@ -15,10 +15,13 @@
  */
 package reactor.test.publisher;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
@@ -72,14 +75,13 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * subscribers. It caches the {@link #next(Object)} events and replays them to
 	 * all subscribers upon subscription.
 	 * <p>
-	 * Note that this type of {@link Publisher} isn't //TODO to complete when we get
-	 * the final word
+	 * The returned publisher will buffer values if there is not enough request from subscribers.
 	 *
 	 * @param <T> the type of the publisher
 	 * @return the new {@link TestPublisher}
 	 */
 	public static <T> TestPublisher<T> createCold() {
-		return new ColdTestPublisher<>(ColdTestPublisher.Behavior.BUFFER);
+		return new ColdTestPublisher<>(false, EnumSet.noneOf(Violation.class));
 	}
 
 	/**
@@ -87,15 +89,29 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * subscribers. It caches the {@link #next(Object)} events and replays them to
 	 * all subscribers upon subscription.
 	 * <p>
-	 * Note that this type of {@link Publisher} isn't //TODO to complete when we get
-	 * the final word
+	 * The returned publisher will emit an overflow error if there is not enough request from subscribers.
 	 *
 	 * @param <T> the type of the publisher
-	 * @param {@link ColdTestPublisher.Behavior} the desired behavior for backpressure
 	 * @return the new {@link TestPublisher}
 	 */
-	public static <T> TestPublisher<T> createCold(ColdTestPublisher.Behavior behavior) {
-		return new ColdTestPublisher<>(behavior);
+	public static <T> TestPublisher<T> createColdNonBuffering() {
+		return new ColdTestPublisher<>(true, EnumSet.noneOf(Violation.class));
+	}
+
+	/**
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It caches the {@link #next(Object)} events and replays them to
+	 * all subscribers upon subscription.
+	 * <p>
+	 * The returned publisher will be non-compliant to the spec according to one or more {@link Violation}s. In addition,
+	 * its behavior when there is more data than {@link Subscription#request(long) requested} can be set via {@code errorOnOverflow}.
+	 *
+	 * @param <T> the type of the publisher
+	 * @param errorOnOverflow whether to throw an exception if there are more values than request (true) or buffer values until request becomes available (false)
+	 * @return the new {@link TestPublisher}
+	 */
+	public static <T> TestPublisher<T> createColdNonCompliant(boolean errorOnOverflow, Violation firstViolation, Violation... otherViolations) {
+		return new ColdTestPublisher<>(errorOnOverflow, EnumSet.of(firstViolation, otherViolations));
 	}
 
 	/**
@@ -245,14 +261,6 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 			next(t);
 		}
 		return complete();
-	}
-
-	/**
-	 * Possible behaviors for backpressure management on {@link ColdTestPublisher}
-	 */
-	public enum Behavior {
-
-		MISBEHAVE, BUFFER, ERROR;
 	}
 
 	/**
