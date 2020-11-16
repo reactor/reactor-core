@@ -37,7 +37,7 @@ public class MonoPeekTest {
 		Mono<String> mp = Mono.error(new Exception("test"));
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(f));
 
 		mono.subscribe();
@@ -50,7 +50,7 @@ public class MonoPeekTest {
 		Mono<String> mp = Mono.just("test");
 		AtomicReference<String> ref = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(s));
 
 		mono.subscribe();

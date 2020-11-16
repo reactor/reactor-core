@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 
+// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class FluxProcessorTest {
 

@@ -36,6 +36,7 @@ public class CurrentContextArchTest {
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
 			.importPackagesOf(CoreSubscriber.class);
 
+	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
 	@SuppressWarnings("deprecation")
 	static JavaClasses FLUXPROCESSOR_CLASSES = new ClassFileImporter()
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -69,6 +70,7 @@ public class CurrentContextArchTest {
 	}
 
 	@Test
+	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
 	@SuppressWarnings("deprecation")
 	public void fluxProcessorsShouldNotUseDefaultCurrentContext() {
 		classes()

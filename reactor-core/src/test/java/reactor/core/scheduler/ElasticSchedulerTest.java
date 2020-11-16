@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-@SuppressWarnings("deprecation")
+@SuppressWarnings("deprecation") // This is because of #newElastic() calls, to be removed in 3.5. ElasticScheduler class would then also be removed.
 public class ElasticSchedulerTest extends AbstractSchedulerTest {
 
 	private static final Logger LOGGER = Loggers.getLogger(ElasticSchedulerTest.class);

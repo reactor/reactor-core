@@ -143,7 +143,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -171,7 +171,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -200,7 +200,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -227,7 +227,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -255,7 +255,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -283,7 +283,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -312,7 +312,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -339,7 +339,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -434,7 +434,7 @@ public class MonoPeekAfterTest {
 	@Test
 	public void onSuccessOrErrorCallbackFailureInterruptsOnNext() {
 		LongAdder invoked = new LongAdder();
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<String> mono = Mono.just("foo")
 		                        .doOnSuccessOrError((v, t) -> {
 			                        invoked.increment();
@@ -454,7 +454,7 @@ public class MonoPeekAfterTest {
 		try {
 			LongAdder invoked = new LongAdder();
 			try {
-				@SuppressWarnings("deprecation")
+				@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 				Mono<String> mono = Mono.just("foo")
 				                        .doAfterSuccessOrError((v, t) -> {
 					                        invoked.increment();
@@ -490,7 +490,7 @@ public class MonoPeekAfterTest {
 		try {
 			LongAdder invoked = new LongAdder();
 			try {
-				@SuppressWarnings("deprecation")
+				@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 				Mono<String> mono = Mono.just("foo")
 				                        .doAfterSuccessOrError((v, t) -> {
 					                        invoked.increment();
@@ -541,7 +541,7 @@ public class MonoPeekAfterTest {
 
 		IllegalArgumentException err = new IllegalArgumentException("boom");
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<String> test = Mono.<String>error(err)
 				.doOnSuccessOrError((v, t) -> {
 					invoked.increment();
@@ -565,7 +565,7 @@ public class MonoPeekAfterTest {
 
 		IllegalArgumentException err = new IllegalArgumentException("boom");
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 		Mono<String> mono = Mono.<String>error(err).doAfterSuccessOrError((v, t) -> {
 			invoked.increment();
 			value.set(v);
@@ -618,7 +618,7 @@ public class MonoPeekAfterTest {
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
 		Mono<String> mono = Mono.<String>empty().doOnSuccessOrError((v, t) -> {
 			invoked.increment();
 			value.set(v);
@@ -640,7 +640,7 @@ public class MonoPeekAfterTest {
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		@SuppressWarnings("deprecation")
+		@SuppressWarnings("deprecation") // Because of doAfterSuccessOrError, which will be removed in 3.5.0
 		Mono<String> mono = Mono.<String>empty()
 				.doAfterSuccessOrError((v, t) -> {
 					invoked.increment();

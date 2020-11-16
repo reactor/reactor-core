@@ -18,7 +18,8 @@ import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-@Deprecated
+// NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.
+@SuppressWarnings("deprecation")
 class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 
 	volatile NextInner<O>[] subscribers;
@@ -240,6 +241,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	}
 
 	@Override
+	// This method is inherited from a deprecated class and will be removed in 3.5.
 	@SuppressWarnings("deprecation")
 	public void cancel() {
 		if (isTerminated()) {
@@ -265,6 +267,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	}
 
 	@Override
+	// This method is inherited from a deprecated class and will be removed in 3.5.
 	@SuppressWarnings("deprecation")
 	public boolean isCancelled() {
 		return subscription == Operators.cancelledSubscription() && !isTerminated();

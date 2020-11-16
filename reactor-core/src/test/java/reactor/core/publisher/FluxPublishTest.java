@@ -67,19 +67,17 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void prematureOnComplete() {
-		@SuppressWarnings("deprecation")
-		EmitterProcessor<Flux<String>> incomingProcessor = EmitterProcessor.create(false);
+		Sinks.Many<Flux<String>> sink = Sinks.unsafe().many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
 		Flux.just("ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA")
 		    .log("stream.incoming")
 		    .windowWhile(s -> !"DELTA".equals(s),1 )
-		    .subscribe(incomingProcessor);
+		    .subscribe(v -> sink.emitNext(v, FAIL_FAST), e -> sink.emitError(e, FAIL_FAST), () -> sink.emitComplete(FAIL_FAST));
 
 		AtomicInteger windowIndex = new AtomicInteger(0);
 		AtomicInteger nextIndex = new AtomicInteger(0);
 
-		System.out.println("ZERO");
-		incomingProcessor
+		sink.asFlux()
 				.next()
 				.flatMapMany(flux -> flux
 						.takeWhile(s -> !"CHARLIE".equals(s))
@@ -89,8 +87,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 				.expectNextCount(2)
 				.verifyComplete();
 
-		System.out.println("ONE");
-		incomingProcessor.next()
+		sink.asFlux().next()
 		                 .flatMapMany(flux -> flux
 				                 .takeWhile(s -> !"CHARLIE".equals(s))
 				                 .log(String.format("stream.window.%d", windowIndex.getAndIncrement())))
@@ -99,8 +96,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		                 .expectNextCount(2)
 		                 .verifyComplete();
 
-		System.out.println("TWO");
-		incomingProcessor.next()
+		sink.asFlux().next()
 		                 .flatMapMany(flux -> flux
 				                 .takeWhile(s -> !"CHARLIE".equals(s))
 				                 .log(String.format("stream.window.%d", windowIndex.getAndIncrement())))

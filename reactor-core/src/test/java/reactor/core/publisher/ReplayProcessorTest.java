@@ -36,6 +36,7 @@ import reactor.test.util.TestLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+// This is ok as this class tests the deprecated ReplayProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class ReplayProcessorTest {
 

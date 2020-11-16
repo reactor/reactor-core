@@ -146,10 +146,16 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 		}
 	}
 
-	/**
-	 * @deprecated as Signal is now associated with {@link Context}, prefer using per-subscription instances.
-	 */
-	@Deprecated
-	static final Signal<Void> ON_COMPLETE =
+	private static final Signal<?> ON_COMPLETE =
 			new ImmutableSignal<>(Context.empty(), SignalType.ON_COMPLETE, null, null, null);
+
+	/**
+	 * @return a singleton signal to signify onComplete.
+	 * As Signal is now associated with {@link Context}, prefer using per-subscription instances.
+	 * This instance is used when context doesn't matter.
+	 */
+	@SuppressWarnings("unchecked")
+	static <U> Signal<U> onComplete() {
+		return (Signal<U>) ON_COMPLETE;
+	}
 }

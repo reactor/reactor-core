@@ -24,6 +24,7 @@ import reactor.core.Scannable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+// This is ok as this class tests the deprecated DelegateProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class DelegateProcessorTest {
 
