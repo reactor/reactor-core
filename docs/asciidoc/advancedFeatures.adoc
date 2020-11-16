@@ -759,7 +759,7 @@ In the following sections, we cover `Context` and how to use it, so that you
 can eventually understand the preceding example.
 
 IMPORTANT: This is an advanced feature that is more targeted at library developers. It
-requires good understanding of the lifecycle of a `Subscription` and is intended for
+requires good understanding of https://github.com/reactive-streams/reactive-streams-jvm/blob/master/README.md#3-subscription-code[the lifecycle of a `Subscription`] and is intended for
 libraries that are responsible for the subscriptions.
 
 [[context.api]]
