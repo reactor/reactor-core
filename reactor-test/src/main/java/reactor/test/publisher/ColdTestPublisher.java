@@ -161,9 +161,14 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		volatile long requested;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription>
-				REQUESTED =
+		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "requested");
+
+		volatile long wip;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> WIP =
+				AtomicLongFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "wip");
 
 		/** Where in the {@link ColdTestPublisher#values} buffer this subscription is at. */
 		int index;
@@ -223,63 +228,81 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 
 		private void drain() {
-			long n = requested;
-			int i = index;
-			int emitted = 0;
-			for ( ; ; ) {
-				if (cancelled) {
-					return;
-				}
+			if (WIP.getAndIncrement(this) == 0) {
+				while (WIP.get(this) > 0) {
+					try {
+						long r = requested;
+						int i = index;
+						int emitted = 0;
+						for (; ; ) {
+							if (cancelled) {
+								return;
+							}
 
-				while (i != parent.values.size()) {
-					if (emitted == n && !parent.violations.contains(REQUEST_OVERFLOW)) {
-						break;
-					}
-					T t = parent.values.get(i);
-					if (t == null && !parent.violations.contains(ALLOW_NULL)) {
-						actual.onError(new NullPointerException("The " + i + "th element was null"));
-						return;
-					}
+							while (i != parent.values.size()) {
+								if (emitted == r && !parent.violations.contains(REQUEST_OVERFLOW)) {
+									break;
+								}
+								T t = parent.values.get(i);
+								if (t == null && !parent.violations.contains(ALLOW_NULL)) {
+									actual.onError(new NullPointerException("The " + i + "th element was null"));
+									return;
+								}
 
-					if (this.onNext(t)) {
-						emitted++;
-					}
-					i++;
-					if (cancelled) {
-						return;
-					}
-				}
+								if (this.onNext(t)) {
+									emitted++;
+								}
+								i++;
+								if (cancelled) {
+									return;
+								}
+							}
 
-				n = requested;
-				if (emitted > n) {
-					assert parent.violations.contains(Violation.REQUEST_OVERFLOW);
-					parent.hasOverflown = true;
-					return;
-				} else if (n == emitted) {
-					index = i;
-					n = REQUESTED.addAndGet(this, -emitted);
-					if (i == parent.values.size()) {
-						emitTerminalSignalIfAny();
-						return;
-					}
-					if (n == 0) {
-						if (parent.errorOnOverflow) {
-							this.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
+							r = requested;
+							if (emitted > r) {
+								assert parent.violations.contains(Violation.REQUEST_OVERFLOW);
+								parent.hasOverflown = true;
+								index = i;
+								REQUESTED.addAndGet(this, -emitted);
+								if (i == parent.values.size()) {
+									emitTerminalSignalIfAny();
+								}
+								return;
+							}
+							else if (r == emitted) {
+								index = i;
+								r = REQUESTED.addAndGet(this, -emitted);
+								if (i == parent.values.size()) {
+									emitTerminalSignalIfAny();
+									return;
+								}
+								if (r == 0) {
+									if (parent.errorOnOverflow) {
+										this.onError(Exceptions
+												.failWithOverflow("Can't deliver value due to lack of requests"));
+									}
+									return;
+								}
+								emitted = 0;
+							}
+							else if (r == Long.MAX_VALUE) {
+								index = i;
+								emitted = 0;
+								if (i == parent.values.size()) {
+									emitTerminalSignalIfAny();
+									return;
+								}
+							}
+							else if (i == parent.values.size()) {
+								index = i;
+								emitTerminalSignalIfAny();
+								return;
+							}
 						}
-						return;
 					}
-					emitted = 0;
-				} else if (n == Long.MAX_VALUE) {
-					index = i;
-					emitted = 0;
-					if (i == parent.values.size()) {
-						emitTerminalSignalIfAny();
-						return;
+					finally {
+						WIP.decrementAndGet(this);
 					}
-				} else if (i == parent.values.size()) {
-					index = i;
-					emitTerminalSignalIfAny();
-					return;
 				}
 			}
 		}
