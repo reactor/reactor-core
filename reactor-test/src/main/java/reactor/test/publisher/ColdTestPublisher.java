@@ -186,7 +186,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			if (Operators.validate(n)) {
 				if (Operators.addCap(REQUESTED, this, n) == 0) {
 					parent.wasRequested = true;
-					drain(n);
+					drain();
 				}
 			}
 		}
@@ -222,7 +222,8 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			actual.onComplete();
 		}
 
-		private void drain(long n) {
+		private void drain() {
+			long n = requested;
 			int i = index;
 			int emitted = 0;
 			for ( ; ; ) {
@@ -425,7 +426,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 		values.add(t);
 		for (ColdTestPublisherSubscription<T> s : subscribers) {
-			s.drain(s.requested);
+			s.drain();
 		}
 
 		return this;
@@ -438,7 +439,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		error = t;
 		ColdTestPublisherSubscription<?>[] subs = subscribers;
 		for (ColdTestPublisherSubscription<?> s : subs) {
-			s.drain(s.requested);
+			s.drain();
 		}
 		return this;
 	}
@@ -448,7 +449,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		ColdTestPublisherSubscription<?>[] subs = subscribers;
 		error = Exceptions.TERMINATED;
 		for (ColdTestPublisherSubscription<?> s : subs) {
-			s.drain(s.requested);
+			s.drain();
 		}
 		return this;
 	}
