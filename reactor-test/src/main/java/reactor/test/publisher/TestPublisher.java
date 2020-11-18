@@ -75,7 +75,8 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * subscribers. It caches the {@link #next(Object)} events and replays them to
 	 * all subscribers upon subscription.
 	 * <p>
-	 * The returned publisher will buffer values if there is not enough request from subscribers.
+	 * The publisher honors backpressure, holding off emitting newest items
+	 * from the buffer if the subscriber doesn't have enough request.
 	 *
 	 * @param <T> the type of the publisher
 	 * @return the new {@link TestPublisher}
@@ -86,10 +87,13 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 
 	/**
 	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
-	 * subscribers. It caches the {@link #next(Object)} events and replays them to
-	 * all subscribers upon subscription.
+	 * subscribers. It buffers the {@link #next(Object)} events and tracks how many
+	 * elements have been seen by each subscriber in order to correctly replay the
+	 * buffer.
 	 * <p>
-	 * The returned publisher will emit an overflow error if there is not enough request from subscribers.
+	 * The returned publisher will emit an overflow error if a new subscriber's
+	 * first request is lower than the current buffer size, or if a new element
+	 * is pushed to a registered subscriber that has zero pending demand.
 	 *
 	 * @param <T> the type of the publisher
 	 * @return the new {@link TestPublisher}
@@ -100,8 +104,9 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 
 	/**
 	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
-	 * subscribers. It caches the {@link #next(Object)} events and replays them to
-	 * all subscribers upon subscription.
+	 * subscribers. It buffers the {@link #next(Object)} events and tracks how many
+	 * elements have been seen by each subscriber in order to correctly replay the
+	 * buffer.
 	 * <p>
 	 * The returned publisher will be non-compliant to the spec according to one or more {@link Violation}s. In addition,
 	 * its behavior when there is more data than {@link Subscription#request(long) requested} can be set via {@code errorOnOverflow}.
