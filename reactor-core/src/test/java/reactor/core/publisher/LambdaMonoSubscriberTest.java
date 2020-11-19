@@ -178,7 +178,7 @@ public class LambdaMonoSubscriberTest {
 	@Test
 	public void onNextConsumerExceptionNonFatalTriggersCancellation() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 					value -> { throw new IllegalArgumentException(); },
@@ -199,14 +199,14 @@ public class LambdaMonoSubscriberTest {
 			                                        .isTrue();
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void onNextConsumerFatalDoesntTriggerCancellation() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 					value -> { throw new OutOfMemoryError(); },
@@ -224,7 +224,7 @@ public class LambdaMonoSubscriberTest {
 			                                        .isFalse();
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -278,7 +278,7 @@ public class LambdaMonoSubscriberTest {
 	@Test
 	public void noErrorHookThrowsCallbackNotImplemented() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			RuntimeException boom = new IllegalArgumentException("boom");
 			Mono.error(boom)
@@ -290,7 +290,7 @@ public class LambdaMonoSubscriberTest {
 					          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 

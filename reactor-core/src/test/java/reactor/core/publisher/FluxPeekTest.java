@@ -496,7 +496,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			IllegalStateException e = new IllegalStateException("test");
 			AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
@@ -525,7 +525,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					.contains("Operator called default onErrorDropped")
 					.contains(e.toString());
 		} finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -575,7 +575,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			IllegalStateException error1 = new IllegalStateException("afterTerminate");
 			IllegalArgumentException error2 = new IllegalArgumentException("error");
@@ -598,14 +598,14 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			ts.assertComplete();
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
 			IllegalArgumentException error = new IllegalArgumentException("error");
@@ -633,7 +633,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
 			ts.assertErrorMessage("error");
 		}  finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 

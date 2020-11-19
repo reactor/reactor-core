@@ -718,7 +718,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void failDoubleError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
@@ -732,7 +732,7 @@ public class FluxFlatMapTest {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test2");
 		} finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -740,7 +740,7 @@ public class FluxFlatMapTest {
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorTerminated() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
@@ -755,14 +755,14 @@ public class FluxFlatMapTest {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test");
 		} finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorTerminatedInner() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.just(1)
 			                        .hide()
@@ -778,7 +778,7 @@ public class FluxFlatMapTest {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test");
 		} finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 

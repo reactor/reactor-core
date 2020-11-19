@@ -375,7 +375,7 @@ public class NextProcessorTest {
 	@Test
 	public void doubleError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			NextProcessor<String> mp = new NextProcessor<>(null);
 
@@ -386,14 +386,14 @@ public class NextProcessorTest {
 			          .contains("test2");
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void doubleSignal() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			NextProcessor<String> mp = new NextProcessor<>(null);
 
@@ -405,7 +405,7 @@ public class NextProcessorTest {
 			          .contains("test2");
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 

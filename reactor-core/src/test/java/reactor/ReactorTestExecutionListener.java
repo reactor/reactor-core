@@ -66,6 +66,6 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 	@Override
 	public void testPlanExecutionStarted(TestPlan testPlan) {
 		AssertionsUtils.installAssertJTestRepresentation();
-		LoggerUtils.setupDivertingLoggerFactory();
+		LoggerUtils.useCurrentLoggersWithCapture();
 	}
 }

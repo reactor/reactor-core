@@ -13,20 +13,23 @@ import reactor.util.Loggers;
  *
  * @author Eric Bottard
  */
-public class LoggerUtils {
+public final class LoggerUtils {
 	private static Logger testLogger;
+
+	private LoggerUtils() {
+	}
 
 	/**
 	 * Sets a {@link Loggers#useCustomLoggers(Function) logger factory} that will return loggers that not only use the
-	 * original logging framework used by reactor, but also use the logger set via {@link #installAdditionalLogger(Logger)}, irrespective
+	 * original logging framework used by reactor, but also use the logger set via {@link #enableCaptureWith(Logger)}, irrespective
 	 * of its name or how it was obtained. The expectation here is that tests that want to assess that something is
-	 * logged by reactor will pass a {@link TestLogger} instance to {@link #installAdditionalLogger(Logger)}, trigger the operation
-	 * under scrutiny, assert the logger contents and reset state by calling {@link #resetAdditionalLogger()}.
+	 * logged by reactor will pass a {@link TestLogger} instance to {@link #enableCaptureWith(Logger)}, trigger the operation
+	 * under scrutiny, assert the logger contents and reset state by calling {@link #disableCapture()}.
 	 *
 	 * <p>This method should be called very early in the application/tests lifecycle, before reactor classes have created
 	 * their loggers.</p>
 	 */
-	public static void setupDivertingLoggerFactory() {
+	public static void useCurrentLoggersWithCapture() {
 		try {
 			Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
 			lfField.setAccessible(true);
@@ -49,14 +52,14 @@ public class LoggerUtils {
 		}
 	}
 
-	public static void installAdditionalLogger(Logger testLogger) {
+	public static void enableCaptureWith(Logger testLogger) {
 		if (LoggerUtils.testLogger != null) {
 			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call resetAdditionalLogger()");
 		}
 		LoggerUtils.testLogger = testLogger;
 	}
 
-	public static void resetAdditionalLogger() {
+	public static void disableCapture() {
 		LoggerUtils.testLogger = null;
 	}
 

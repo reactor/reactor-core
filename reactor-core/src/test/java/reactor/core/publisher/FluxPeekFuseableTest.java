@@ -324,7 +324,7 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 
 			IllegalStateException error = new IllegalStateException("test");
@@ -355,7 +355,7 @@ public class FluxPeekFuseableTest {
 			          .contains(error.getMessage());
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -406,7 +406,7 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 
 			IllegalStateException error = new IllegalStateException("expected afterTerminate");
@@ -431,14 +431,14 @@ public class FluxPeekFuseableTest {
 			ts.assertComplete();
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 
 			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
@@ -469,7 +469,7 @@ public class FluxPeekFuseableTest {
 			ts.assertErrorMessage("error");
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 

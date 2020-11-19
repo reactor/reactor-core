@@ -1196,7 +1196,7 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void unimplementedErrorCallback() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Flux.error(new Exception("forced1"))
 			    .log("error")
@@ -1210,7 +1210,7 @@ public class FluxTests extends AbstractReactorTest {
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -1446,7 +1446,7 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		AtomicReference<String> failure = new AtomicReference<>(null);
 		AtomicBoolean handled = new AtomicBoolean(false);
 
@@ -1486,7 +1486,7 @@ public class FluxTests extends AbstractReactorTest {
 			fail(e.toString());
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 			Thread.setDefaultUncaughtExceptionHandler(null);
 			Schedulers.resetOnHandleError();
 			Schedulers.resetOnScheduleHook("test");

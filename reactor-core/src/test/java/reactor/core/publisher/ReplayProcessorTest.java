@@ -599,7 +599,7 @@ public class ReplayProcessorTest {
 	@SuppressWarnings("unchecked")
 	void testReplayProcessorState(ReplayProcessor<String> rp) {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.installAdditionalLogger(testLogger);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Disposable d1 = rp.subscribe();
 
@@ -632,7 +632,7 @@ public class ReplayProcessorTest {
 			          .contains(e.getMessage());
 		}
 		finally {
-			LoggerUtils.resetAdditionalLogger();
+			LoggerUtils.disableCapture();
 		}
 	}
 
