@@ -78,145 +78,165 @@ public class LoggerUtils {
 
 		@Override
 		public boolean isTraceEnabled() {
-			return delegate.isTraceEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isTraceEnabled());
+			Logger logger = LoggerUtils.testLogger;
+			return delegate.isTraceEnabled() || (logger != null && logger.isTraceEnabled());
 		}
 
 		@Override
 		public void trace(String msg) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.trace(msg);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.trace(msg);
 			}
 			delegate.trace(msg);
 		}
 
 		@Override
 		public void trace(String format, Object... arguments) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.trace(format, arguments);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.trace(format, arguments);
 			}
 			delegate.trace(format, arguments);
 		}
 
 		@Override
 		public void trace(String msg, Throwable t) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.trace(msg, t);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.trace(msg, t);
 			}
 			delegate.trace(msg, t);
 		}
 
 		@Override
 		public boolean isDebugEnabled() {
-			return delegate.isDebugEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isDebugEnabled());
+			Logger logger = LoggerUtils.testLogger;
+			return delegate.isDebugEnabled() || (logger != null && logger.isDebugEnabled());
 		}
 
 		@Override
 		public void debug(String msg) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.debug(msg);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.debug(msg);
 			}
 			delegate.debug(msg);
 		}
 
 		@Override
 		public void debug(String format, Object... arguments) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.debug(format, arguments);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.debug(format, arguments);
 			}
 			delegate.debug(format, arguments);
 		}
 
 		@Override
 		public void debug(String msg, Throwable t) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.debug(msg, t);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.debug(msg, t);
 			}
 			delegate.debug(msg, t);
 		}
 
 		@Override
 		public boolean isInfoEnabled() {
-			return delegate.isInfoEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isInfoEnabled());
+			Logger logger = LoggerUtils.testLogger;
+			return delegate.isInfoEnabled() || (logger != null && logger.isInfoEnabled());
 		}
 
 		@Override
 		public void info(String msg) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.info(msg);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.info(msg);
 			}
 			delegate.info(msg);
 		}
 
 		@Override
 		public void info(String format, Object... arguments) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.info(format, arguments);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.info(format, arguments);
 			}
 			delegate.info(format, arguments);
 		}
 
 		@Override
 		public void info(String msg, Throwable t) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.info(msg, t);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.info(msg, t);
 			}
 			delegate.info(msg, t);
 		}
 
 		@Override
 		public boolean isWarnEnabled() {
-			return delegate.isWarnEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isWarnEnabled());
+			Logger logger = LoggerUtils.testLogger;
+			return delegate.isWarnEnabled() || (logger != null && logger.isWarnEnabled());
 		}
 
 		@Override
 		public void warn(String msg) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.warn(msg);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.warn(msg);
 			}
 			delegate.warn(msg);
 		}
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.warn(format, arguments);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.warn(format, arguments);
 			}
 			delegate.warn(format, arguments);
 		}
 
 		@Override
 		public void warn(String msg, Throwable t) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.warn(msg, t);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.warn(msg, t);
 			}
 			delegate.warn(msg, t);
 		}
 
 		@Override
 		public boolean isErrorEnabled() {
-			return delegate.isErrorEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isErrorEnabled());
+			Logger logger = LoggerUtils.testLogger;
+			return delegate.isErrorEnabled() || (logger != null && logger.isErrorEnabled());
 		}
 
 		@Override
 		public void error(String msg) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.error(msg);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.error(msg);
 			}
 			delegate.error(msg);
 		}
 
 		@Override
 		public void error(String format, Object... arguments) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.error(format, arguments);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.error(format, arguments);
 			}
 			delegate.error(format, arguments);
 		}
 
 		@Override
 		public void error(String msg, Throwable t) {
-			if (LoggerUtils.testLogger != null) {
-				LoggerUtils.testLogger.error(msg, t);
+			Logger logger = LoggerUtils.testLogger;
+			if (logger != null) {
+				logger.error(msg, t);
 			}
 			delegate.error(msg, t);
 		}
