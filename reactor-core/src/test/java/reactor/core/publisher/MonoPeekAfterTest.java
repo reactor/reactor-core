@@ -27,7 +27,7 @@ import org.assertj.core.api.Assertions;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
 import reactor.util.Logger;

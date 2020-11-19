@@ -40,7 +40,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;

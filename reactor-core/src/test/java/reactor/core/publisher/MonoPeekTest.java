@@ -23,7 +23,7 @@ import org.assertj.core.api.Assertions;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
 

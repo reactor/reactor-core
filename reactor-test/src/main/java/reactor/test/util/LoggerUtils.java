@@ -1,27 +1,20 @@
-package reactor.test;
+package reactor.test.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
-import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
+/**
+ * This class eases testing interested in what reactor classes emit using {@link Logger loggers}.
+ *
+ * @author Eric Bottard
+ */
 public class LoggerUtils {
 	private static Logger testLogger;
-
-	public static void installAdditionalLogger(Logger testLogger) {
-		if (LoggerUtils.testLogger != null) {
-			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call resetAdditionalLogger()");
-		}
-		LoggerUtils.testLogger = testLogger;
-	}
-
-	public static void resetAdditionalLogger() {
-		LoggerUtils.testLogger = null;
-	}
 
 	/**
 	 * Sets a {@link Loggers#useCustomLoggers(Function) logger factory} that will return loggers that not only use the
@@ -29,6 +22,9 @@ public class LoggerUtils {
 	 * of its name or how it was obtained. The expectation here is that tests that want to assess that something is
 	 * logged by reactor will pass a {@link TestLogger} instance to {@link #installAdditionalLogger(Logger)}, trigger the operation
 	 * under scrutiny, assert the logger contents and reset state by calling {@link #resetAdditionalLogger()}.
+	 *
+	 * <p>This method should be called very early in the application/tests lifecycle, before reactor classes have created
+	 * their loggers.</p>
 	 */
 	public static void setupDivertingLoggerFactory() {
 		try {
@@ -51,6 +47,17 @@ public class LoggerUtils {
 		catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException e) {
 			throw new RuntimeException("Could not install custom logger", e);
 		}
+	}
+
+	public static void installAdditionalLogger(Logger testLogger) {
+		if (LoggerUtils.testLogger != null) {
+			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call resetAdditionalLogger()");
+		}
+		LoggerUtils.testLogger = testLogger;
+	}
+
+	public static void resetAdditionalLogger() {
+		LoggerUtils.testLogger = null;
 	}
 
 	/**

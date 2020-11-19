@@ -25,7 +25,7 @@ import org.junit.platform.launcher.TestPlan;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.util.Logger;
 
 /**

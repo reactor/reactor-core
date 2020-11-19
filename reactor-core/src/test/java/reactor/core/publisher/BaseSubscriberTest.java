@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
