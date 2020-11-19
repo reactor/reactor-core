@@ -1119,4 +1119,19 @@ public class FluxRetryWhenTest {
 		            .verifyComplete();
 	}
 
+	@Test
+	void gh2488() {
+		for (int i = 0; i < 1_000; i++) {
+			AtomicInteger sourceHelper = new AtomicInteger();
+			Flux.just("hello")
+			    .doOnNext(m -> {
+				    if (sourceHelper.getAndIncrement() < 9) {
+					    throw new RuntimeException("Boom!");
+				    }
+			    })
+			    .retryWhen(Retry.fixedDelay(10, Duration.ofNanos(1)))
+			    .blockFirst(Duration.ofSeconds(2));
+		}
+	}
+
 }
