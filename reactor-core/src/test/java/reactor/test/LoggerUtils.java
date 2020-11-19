@@ -13,6 +13,9 @@ public class LoggerUtils {
 	private static Logger testLogger;
 
 	public static void installAdditionalLogger(Logger testLogger) {
+		if (LoggerUtils.testLogger != null) {
+			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call resetAdditionalLogger()");
+		}
 		LoggerUtils.testLogger = testLogger;
 	}
 
