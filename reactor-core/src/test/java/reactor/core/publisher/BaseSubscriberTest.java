@@ -84,7 +84,7 @@ public class BaseSubscriberTest {
 	@Test
 	public void onErrorCallbackNotImplemented() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			Flux<String> flux = Flux.error(new IllegalStateException());
 
@@ -104,7 +104,7 @@ public class BaseSubscriberTest {
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 
@@ -279,7 +279,7 @@ public class BaseSubscriberTest {
 	@Test
 	public void finallyExecutesWhenHookOnErrorFails() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			RuntimeException error = new IllegalArgumentException("hookOnError");
 			AtomicReference<SignalType> checkFinally = new AtomicReference<>();
@@ -310,7 +310,7 @@ public class BaseSubscriberTest {
 			assertThat(checkFinally).hasValue(SignalType.ON_ERROR);
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 

@@ -499,7 +499,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	//see https://github.com/reactor/reactor-core/issues/951
 	public void gh951_withoutDoOnError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			List<String> events = new ArrayList<>();
 
@@ -516,7 +516,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException: boom");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 

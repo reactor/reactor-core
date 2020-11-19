@@ -30,7 +30,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
@@ -376,7 +375,7 @@ public class NextProcessorTest {
 	@Test
 	public void doubleError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			NextProcessor<String> mp = new NextProcessor<>(null);
 
@@ -387,14 +386,14 @@ public class NextProcessorTest {
 			          .contains("test2");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 
 	@Test
 	public void doubleSignal() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			NextProcessor<String> mp = new NextProcessor<>(null);
 
@@ -406,7 +405,7 @@ public class NextProcessorTest {
 			          .contains("test2");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 

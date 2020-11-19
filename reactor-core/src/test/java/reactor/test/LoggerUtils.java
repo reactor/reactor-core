@@ -3,28 +3,31 @@ package reactor.test;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.function.Function;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.pattern.ThrowableProxyConverter;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
 public class LoggerUtils {
-	private static TestLogger testLogger;
+	private static Logger testLogger;
 
-	public static void addAppender(TestLogger testLogger, Class<?> classWithLogger) {
+	public static void installAdditionalLogger(Logger testLogger) {
 		LoggerUtils.testLogger = testLogger;
 	}
 
-	public static void resetAppender(Class<?> classWithLogger) {
+	public static void resetAdditionalLogger() {
 		LoggerUtils.testLogger = null;
 	}
 
-	public static void installQueryableLogger() {
-		Loggers.resetLoggerFactory();
+	/**
+	 * Sets a {@link Loggers#useCustomLoggers(Function) logger factory} that will return loggers that not only use the
+	 * original logging framework used by reactor, but also use the logger set via {@link #installAdditionalLogger(Logger)}, irrespective
+	 * of its name or how it was obtained. The expectation here is that tests that want to assess that something is
+	 * logged by reactor will pass a {@link TestLogger} instance to {@link #installAdditionalLogger(Logger)}, trigger the operation
+	 * under scrutiny, assert the logger contents and reset state by calling {@link #resetAdditionalLogger()}.
+	 */
+	public static void setupDivertingLoggerFactory() {
 		try {
 			Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
 			lfField.setAccessible(true);
@@ -47,6 +50,9 @@ public class LoggerUtils {
 		}
 	}
 
+	/**
+	 * A Logger that behaves like its {@link #delegate} but also logs to {@link LoggerUtils#testLogger} if it is set.
+	 */
 	private static class DivertingLogger implements reactor.util.Logger {
 
 		private final reactor.util.Logger delegate;
@@ -62,7 +68,7 @@ public class LoggerUtils {
 
 		@Override
 		public boolean isTraceEnabled() {
-			return delegate.isTraceEnabled();
+			return delegate.isTraceEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isTraceEnabled());
 		}
 
 		@Override
@@ -91,7 +97,7 @@ public class LoggerUtils {
 
 		@Override
 		public boolean isDebugEnabled() {
-			return delegate.isDebugEnabled();
+			return delegate.isDebugEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isDebugEnabled());
 		}
 
 		@Override
@@ -120,7 +126,7 @@ public class LoggerUtils {
 
 		@Override
 		public boolean isInfoEnabled() {
-			return delegate.isInfoEnabled();
+			return delegate.isInfoEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isInfoEnabled());
 		}
 
 		@Override
@@ -149,7 +155,7 @@ public class LoggerUtils {
 
 		@Override
 		public boolean isWarnEnabled() {
-			return delegate.isWarnEnabled();
+			return delegate.isWarnEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isWarnEnabled());
 		}
 
 		@Override
@@ -178,7 +184,7 @@ public class LoggerUtils {
 
 		@Override
 		public boolean isErrorEnabled() {
-			return delegate.isErrorEnabled();
+			return delegate.isErrorEnabled() || (LoggerUtils.testLogger != null && LoggerUtils.testLogger.isErrorEnabled());
 		}
 
 		@Override

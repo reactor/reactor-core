@@ -450,7 +450,7 @@ public class MonoPeekAfterTest {
 	@Test
 	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			LongAdder invoked = new LongAdder();
 			try {
@@ -479,14 +479,14 @@ public class MonoPeekAfterTest {
 			          .contains("foo");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 
 	@Test
 	public void afterTerminateCallbackFailureInterruptsOnNextAndThrows() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			LongAdder invoked = new LongAdder();
 			try {
@@ -516,7 +516,7 @@ public class MonoPeekAfterTest {
 			          .contains("IllegalArgumentException");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 

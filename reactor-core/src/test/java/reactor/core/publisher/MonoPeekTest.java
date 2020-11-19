@@ -166,7 +166,7 @@ public class MonoPeekTest {
 	@Test
 	public void testErrorWithDoOnSuccess() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.installAdditionalLogger(testLogger);
 		try {
 			Mono.error(new NullPointerException("boom"))
 			    .doOnSuccess(aValue -> {
@@ -178,7 +178,7 @@ public class MonoPeekTest {
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.resetAdditionalLogger();
 		}
 	}
 
