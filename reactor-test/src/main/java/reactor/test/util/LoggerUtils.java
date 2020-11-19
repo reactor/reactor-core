@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
+import reactor.core.Disposable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -28,27 +29,60 @@ public final class LoggerUtils {
 	 *
 	 * <p>This method should be called very early in the application/tests lifecycle, before reactor classes have created
 	 * their loggers.</p>
+	 *
+	 * @return a disposable that re-installs the original factory when disposed
 	 */
-	public static void useCurrentLoggersWithCapture() {
+	public static Disposable useCurrentLoggersWithCapture() {
 		try {
-			Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
-			lfField.setAccessible(true);
-			Object factoryObject = lfField.get(Loggers.class);
-			Method factoryMethod = factoryObject.getClass().getMethod("getLogger", String.class);
-			factoryMethod.setAccessible(true);
-
-			Loggers.useCustomLoggers(category -> {
-				try {
-					Logger original = (Logger) factoryMethod.invoke(factoryObject, category);
-					return new DivertingLogger(original);
-				}
-				catch (IllegalAccessException | InvocationTargetException e) {
-					throw new RuntimeException(e);
-				}
-			});
+			CapturingFactory capturingFactory = new CapturingFactory();
+			Loggers.useCustomLoggers(capturingFactory);
+			return capturingFactory;
 		}
 		catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException e) {
 			throw new RuntimeException("Could not install custom logger", e);
+		}
+	}
+
+	private static class CapturingFactory implements Function<String, Logger>, Disposable {
+
+		private final Method originalFactoryMethod;
+
+		private final Object orginalFactory;
+
+		private CapturingFactory() throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
+			Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
+			lfField.setAccessible(true);
+			orginalFactory = lfField.get(Loggers.class);
+			originalFactoryMethod = orginalFactory.getClass().getMethod("getLogger", String.class);
+			originalFactoryMethod.setAccessible(true);
+		}
+
+		@Override
+		public Logger apply(String category) {
+			try {
+				Logger original = (Logger) originalFactoryMethod.invoke(orginalFactory, category);
+				return new DivertingLogger(original);
+			}
+			catch (IllegalAccessException | InvocationTargetException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void dispose() {
+			try {
+				Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
+				lfField.setAccessible(true);
+				Object o = lfField.get(Loggers.class);
+
+				if (!(Loggers.getLogger(LoggerUtils.class) instanceof DivertingLogger)) {
+					throw new IllegalStateException("Expected the current factory to be " + this + ", found " + o + " instead");
+				}
+				lfField.set(Loggers.class, orginalFactory);
+			}
+			catch (NoSuchFieldException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
