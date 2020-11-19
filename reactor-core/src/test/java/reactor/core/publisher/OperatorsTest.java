@@ -54,7 +54,9 @@ import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.RaceTestUtils;
+import reactor.test.util.TestLogger;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -976,7 +978,14 @@ public class OperatorsTest {
 	@Test
 	public void onDiscardCallbackErrorsLog() {
 		Context context = Operators.enableOnDiscard(Context.empty(), t -> {throw new RuntimeException("Boom");});
-		Operators.onDiscard("Foo", context);
 
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.installAdditionalLogger(testLogger);
+		try {
+			Operators.onDiscard("Foo", context);
+			assertThat(testLogger.getErrContent()).contains("Error in discard hook - java.lang.RuntimeException: Boom");
+		} finally {
+			LoggerUtils.resetAdditionalLogger();
+		}
 	}
 }
