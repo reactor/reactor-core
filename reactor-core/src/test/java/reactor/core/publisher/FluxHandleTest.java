@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -685,6 +687,18 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                                                    .hasMessage("Cannot emit after a complete or error"));
 	}
 
+    @Test
+    public void runtimeExceptionFused() {
+        // Check issue that for fuseable and Exception thrown inside handle it did not propagate signal -> hanging flux
+        //  and throws IllegalStateException: Timeout on blocking read
+        Assertions.assertThatThrownBy(() -> {
+            Flux.range(0, 10)
+                .handle((v, sink) -> {
+                    throw new NullPointerException("boom");
+                })
+                .blockLast(Duration.ofSeconds(1));
+        }).isInstanceOf(NullPointerException.class).hasMessageContaining("boom");
+    }
 
 	@Test
 	public void errorAfterCompleteFused() {
