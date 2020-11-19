@@ -972,4 +972,11 @@ public class OperatorsTest {
 
 		assertSubscriber.assertNoError().awaitAndAssertNextValues(123);
 	}
+
+	@Test
+	public void onDiscardCallbackErrorsLog() {
+		Context context = Operators.enableOnDiscard(Context.empty(), t -> {throw new RuntimeException("Boom");});
+		Operators.onDiscard("Foo", context);
+
+	}
 }

@@ -16,6 +16,7 @@
 
 package reactor;
 
+import org.assertj.core.presentation.Representation;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
@@ -24,10 +25,21 @@ import org.junit.platform.launcher.TestPlan;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
+import reactor.test.LoggerUtils;
+import reactor.util.Logger;
 
+/**
+ * A custom TestExecutionListener that helps with tests in reactor:<ul>
+ *     <li>resets {@link Hooks} once a test is finished, making sure no dirty state remains,</li>
+ *     <li>resets {@link Schedulers} related infrastructure, making sure no dirty state remains,</li>
+ *     <li>installs custom assertJ {@link Representation} for some of reactor types,</li>
+ *     <li>installs a custom {@link Logger} factory <strong>very</strong> early in the suite lifecycle, so that loggers
+ *     in reactor (which are typically static members initialized early) can be diverted and asserted in tests.</li>
+ * </ul>
+ */
 public class ReactorTestExecutionListener implements TestExecutionListener {
 
-	public static void reset() {
+	private static void resetHooksAndSchedulers() {
 		Hooks.resetOnOperatorDebug();
 
 		Hooks.resetOnEachOperator();
@@ -48,11 +60,12 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 
 	@Override
 	public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
-		reset();
+		resetHooksAndSchedulers();
 	}
 
 	@Override
 	public void testPlanExecutionStarted(TestPlan testPlan) {
 		AssertionsUtils.installAssertJTestRepresentation();
+		LoggerUtils.installQueryableLogger();
 	}
 }
