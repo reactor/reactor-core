@@ -105,7 +105,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
 					return true;
