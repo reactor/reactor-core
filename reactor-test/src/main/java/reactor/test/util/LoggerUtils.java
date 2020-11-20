@@ -43,6 +43,26 @@ public final class LoggerUtils {
 		}
 	}
 
+	/**
+	 * Set the logger used for capturing.
+	 *
+	 * @throws IllegalStateException if a previous logger has been set but not cleared via {@link #disableCapture()}
+	 */
+	public static void enableCaptureWith(Logger testLogger) {
+		if (LoggerUtils.testLogger != null) {
+			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call resetAdditionalLogger()");
+		}
+		LoggerUtils.testLogger = testLogger;
+	}
+
+	/**
+	 * Disable capturing, forgetting about the logger set via {@link #enableCaptureWith(Logger)}.
+	 */
+	public static void disableCapture() {
+		LoggerUtils.testLogger = null;
+	}
+
+
 	private static class CapturingFactory implements Function<String, Logger>, Disposable {
 
 		private final Method originalFactoryMethod;
@@ -84,17 +104,6 @@ public final class LoggerUtils {
 				throw new RuntimeException(e);
 			}
 		}
-	}
-
-	public static void enableCaptureWith(Logger testLogger) {
-		if (LoggerUtils.testLogger != null) {
-			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call resetAdditionalLogger()");
-		}
-		LoggerUtils.testLogger = testLogger;
-	}
-
-	public static void disableCapture() {
-		LoggerUtils.testLogger = null;
 	}
 
 	/**

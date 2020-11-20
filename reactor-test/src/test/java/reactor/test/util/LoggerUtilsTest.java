@@ -55,6 +55,7 @@ class LoggerUtilsTest {
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
 			Loggers.resetLoggerFactory(); // Overwrites our custom logger
 			disposable.dispose();
-		});
+		})
+		.withMessageContaining("Expected the current factory to be " + LoggerUtils.class.getName() + "$");
 	}
 }

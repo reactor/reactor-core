@@ -468,9 +468,6 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 				}
 				throw Exceptions.bubble(e);
 			}
-			finally {
-				ReactorTestExecutionListener.reset();
-			}
 		}
 	}
 
