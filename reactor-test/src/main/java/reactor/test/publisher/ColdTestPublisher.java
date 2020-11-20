@@ -207,7 +207,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		private boolean onNext(@Nullable T value) {
+		private boolean doTryNext(@Nullable T value) {
 			if (actualConditional != null) {
 				//noinspection ConstantConditions
 				return actualConditional.tryOnNext(value);
@@ -218,12 +218,12 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		void onError(Throwable e) {
+		void doError(Throwable e) {
 			parent.remove(this);
 			actual.onError(e);
 		}
 
-		void onComplete() {
+		void doComplete() {
 			parent.remove(this);
 			actual.onComplete();
 		}
@@ -249,11 +249,11 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 					}
 					T t = parent.values.get(i);
 					if (t == null && !parent.violations.contains(ALLOW_NULL)) {
-						actual.onError(new NullPointerException("The " + i + "th element was null"));
+						doError(new NullPointerException("The " + i + "th element was null"));
 						return;
 					}
 
-					if (this.onNext(t)) {
+					if (doTryNext(t)) {
 						emitted++;
 					}
 					i++;
@@ -286,7 +286,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 				//all the requested amount but there's still values in the buffer...
 				//if the parent is configured to errorOnOverflow then we must terminate
 				if (hasMoreData && !hasMoreRequest && parent.errorOnOverflow) {
-					this.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
+					doError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
 					return;
 				}
 
@@ -306,11 +306,11 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		 */
 		private boolean emitTerminalSignalIfAny() {
 			if (parent.error == Exceptions.TERMINATED) {
-				this.onComplete();
+				doComplete();
 				return true;
 			}
 			if (parent.error != null) {
-				this.onError(parent.error);
+				doError(parent.error);
 				return true;
 			}
 			return false;
