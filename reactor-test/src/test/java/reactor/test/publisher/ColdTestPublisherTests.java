@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -120,6 +121,21 @@ public class ColdTestPublisherTests {
 		            .expectErrorMatches(e -> e instanceof IllegalStateException &&
 		                "Can't deliver value due to lack of requests".equals(e.getMessage()))
 		            .verify();
+
+		publisher.assertNoRequestOverflow();
+	}
+
+	@Test
+	public void normalDisallowsOverflow2() {
+		TestPublisher<String> publisher =
+				TestPublisher.createColdNonBuffering();
+		publisher.emit("foo", "bar");
+
+		StepVerifier.create(publisher, 1)
+				.expectNext("foo")
+				.expectErrorMatches(e -> e instanceof IllegalStateException &&
+						"Can't deliver value due to lack of requests".equals(e.getMessage()))
+				.verify();
 
 		publisher.assertNoRequestOverflow();
 	}

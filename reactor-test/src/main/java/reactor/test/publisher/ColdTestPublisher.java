@@ -228,83 +228,80 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 
 		private void drain() {
-			if (WIP.getAndIncrement(this) == 0) {
-				while (WIP.get(this) > 0) {
-					try {
-						long r = requested;
-						int i = index;
-						int emitted = 0;
-						for (; ; ) {
-							if (cancelled) {
-								return;
-							}
+			if (WIP.getAndIncrement(this) > 0) {
+				return;
+			}
+			do {
+				inner:
+				for (; ; ) {
+					int i = index;
+					long r = requested; // Re-read the volatile 'requested' which could have grown via another thread
+					int emitted = 0;
+					if (cancelled) {
+						break inner;
+					}
 
-							while (i != parent.values.size()) {
-								if (emitted == r && !parent.violations.contains(REQUEST_OVERFLOW)) {
-									break;
-								}
-								T t = parent.values.get(i);
-								if (t == null && !parent.violations.contains(ALLOW_NULL)) {
-									actual.onError(new NullPointerException("The " + i + "th element was null"));
-									return;
-								}
+					int s = parent.values.size(); // This list can only grow while we're in drain()
+					while (i < s) {
+						if (emitted == r && !parent.violations.contains(REQUEST_OVERFLOW)) {
+							break;
+						}
+						T t = parent.values.get(i);
+						if (t == null && !parent.violations.contains(ALLOW_NULL)) {
+							actual.onError(new NullPointerException("The " + i + "th element was null"));
+							break inner;
+						}
 
-								if (this.onNext(t)) {
-									emitted++;
-								}
-								i++;
-								if (cancelled) {
-									return;
-								}
-							}
-
-							r = requested;
-							if (emitted > r) {
-								assert parent.violations.contains(Violation.REQUEST_OVERFLOW);
-								parent.hasOverflown = true;
-								index = i;
-								REQUESTED.addAndGet(this, -emitted);
-								if (i == parent.values.size()) {
-									emitTerminalSignalIfAny();
-								}
-								return;
-							}
-							else if (r == emitted) {
-								index = i;
-								r = REQUESTED.addAndGet(this, -emitted);
-								if (i == parent.values.size()) {
-									emitTerminalSignalIfAny();
-									return;
-								}
-								if (r == 0) {
-									if (parent.errorOnOverflow) {
-										this.onError(Exceptions
-												.failWithOverflow("Can't deliver value due to lack of requests"));
-									}
-									return;
-								}
-								emitted = 0;
-							}
-							else if (r == Long.MAX_VALUE) {
-								index = i;
-								emitted = 0;
-								if (i == parent.values.size()) {
-									emitTerminalSignalIfAny();
-									return;
-								}
-							}
-							else if (i == parent.values.size()) {
-								index = i;
-								emitTerminalSignalIfAny();
-								return;
-							}
+						if (this.onNext(t)) {
+							emitted++;
+						}
+						i++;
+						if (cancelled) {
+							break inner;
 						}
 					}
-					finally {
-						WIP.decrementAndGet(this);
+
+					if (emitted > r) {
+						assert parent.violations.contains(Violation.REQUEST_OVERFLOW);
+						parent.hasOverflown = true;
+						index = i;
+						REQUESTED.addAndGet(this, -emitted);
+						if (i == s) {
+							emitTerminalSignalIfAny();
+						}
+						break inner;
+					}
+					else if (emitted == r) {
+						index = i;
+						// using r2 just for the test below, r will be re-read in the outer loop anyway
+						long r2 = REQUESTED.addAndGet(this, -emitted);
+						if (i == s) {
+							emitTerminalSignalIfAny();
+							break inner;
+						}
+						if (r2 == 0) {
+							if (parent.errorOnOverflow) {
+								this.onError(Exceptions
+										.failWithOverflow("Can't deliver value due to lack of requests"));
+							}
+							break inner;
+						}
+					}
+					else if (r == Long.MAX_VALUE) {
+						index = i;
+						if (i == s) {
+							emitTerminalSignalIfAny();
+							break inner;
+						}
+					}
+					else if (i == s) {
+						index = i;
+						emitTerminalSignalIfAny();
+						break inner;
 					}
 				}
 			}
+			while (WIP.decrementAndGet(this) > 0);
 		}
 
 		private void emitTerminalSignalIfAny() {
