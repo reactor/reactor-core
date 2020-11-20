@@ -232,86 +232,88 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			if (WIP.getAndIncrement(this) > 0) {
 				return;
 			}
-			do {
-				inner:
-				for (; ; ) {
-					int i = index;
-					long r = requested; // Re-read the volatile 'requested' which could have grown via another thread
-					int emitted = 0;
+			for (; ; ) {
+				int i = index;
+				// Re-read the volatile 'requested' which could have grown via another thread
+				long r = requested;
+				int emitted = 0;
+				if (cancelled) {
+					return;
+				}
+
+				// This list can only grow while we're in drain(), so no risk in get(i) being out of bounds
+				int s = parent.values.size();
+				while (i < s) {
+					if (emitted == r && !parent.violations.contains(REQUEST_OVERFLOW)) {
+						break;
+					}
+					T t = parent.values.get(i);
+					if (t == null && !parent.violations.contains(ALLOW_NULL)) {
+						actual.onError(new NullPointerException("The " + i + "th element was null"));
+						return;
+					}
+
+					if (this.onNext(t)) {
+						emitted++;
+					}
+					i++;
 					if (cancelled) {
-						break inner;
-					}
-
-					int s = parent.values.size(); // This list can only grow while we're in drain()
-					while (i < s) {
-						if (emitted == r && !parent.violations.contains(REQUEST_OVERFLOW)) {
-							break;
-						}
-						T t = parent.values.get(i);
-						if (t == null && !parent.violations.contains(ALLOW_NULL)) {
-							actual.onError(new NullPointerException("The " + i + "th element was null"));
-							break inner;
-						}
-
-						if (this.onNext(t)) {
-							emitted++;
-						}
-						i++;
-						if (cancelled) {
-							break inner;
-						}
-					}
-
-					if (emitted > r) {
-						assert parent.violations.contains(Violation.REQUEST_OVERFLOW);
-						parent.hasOverflown = true;
-						index = i;
-						REQUESTED.addAndGet(this, -emitted);
-						if (i == s) {
-							emitTerminalSignalIfAny();
-						}
-						break inner;
-					}
-					else if (emitted == r) {
-						index = i;
-						// using r2 just for the test below, r will be re-read in the outer loop anyway
-						long r2 = REQUESTED.addAndGet(this, -emitted);
-						if (i == s) {
-							emitTerminalSignalIfAny();
-							break inner;
-						}
-						if (r2 == 0) {
-							if (parent.errorOnOverflow) {
-								this.onError(Exceptions
-										.failWithOverflow("Can't deliver value due to lack of requests"));
-							}
-							break inner;
-						}
-					}
-					else if (r == Long.MAX_VALUE) {
-						index = i;
-						if (i == s) {
-							emitTerminalSignalIfAny();
-							break inner;
-						}
-					}
-					else if (i == s) {
-						index = i;
-						emitTerminalSignalIfAny();
-						break inner;
+						return;
 					}
 				}
+
+				index = i;
+				boolean hasMoreData = i < s;
+				boolean hasMoreRequest;
+				if (emitted > r) { //we did clearly overflow
+					assert parent.violations.contains(REQUEST_OVERFLOW);
+					parent.hasOverflown = true;
+				}
+				//let's update the REQUESTED unless we're in fastpath
+				if (r != Long.MAX_VALUE) {
+					hasMoreRequest = REQUESTED.addAndGet(this, -emitted) > 0;
+				}
+				else {
+					hasMoreRequest = true;
+				}
+
+				//let's exit early if we've transmitted the whole buffer and there's a terminal signal
+				if (i == s && emitTerminalSignalIfAny()) {
+					return;
+				}
+
+				//the only remaining early exit condition is if we're in slowpath and we've emitted
+				//all the requested amount but there's still values in the buffer...
+				//if the parent is configured to errorOnOverflow then we must terminate
+				if (hasMoreData && !hasMoreRequest && parent.errorOnOverflow) {
+					this.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
+					return;
+				}
+
+				//in all other cases, let's loop again in case of additional work, exit otherwise
+				if (WIP.decrementAndGet(this) == 0) {
+					return;
+				}
 			}
-			while (WIP.decrementAndGet(this) > 0);
 		}
 
-		private void emitTerminalSignalIfAny() {
+		/**
+		 * Attempt to terminate the subscriber if the publisher was marked as terminated.
+		 * Note that if that is not the case, it is important to continue the drain loop
+		 * since otherwise no downstream signal is going to be pushed yet we'd exit the loop early.
+		 *
+		 * @return true if the TestPublisher was terminated, false otherwise
+		 */
+		private boolean emitTerminalSignalIfAny() {
 			if (parent.error == Exceptions.TERMINATED) {
 				this.onComplete();
+				return true;
 			}
-			else if (parent.error != null) {
+			if (parent.error != null) {
 				this.onError(parent.error);
+				return true;
 			}
+			return false;
 		}
 	}
 
