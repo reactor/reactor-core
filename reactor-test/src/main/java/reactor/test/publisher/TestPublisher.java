@@ -72,8 +72,9 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 
 	/**
 	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
-	 * subscribers. It caches the {@link #next(Object)} events and replays them to
-	 * all subscribers upon subscription.
+	 * subscribers. It buffers the {@link #next(Object)} events and tracks how many
+	 * elements have been seen by each subscriber in order to correctly replay the
+	 * buffer.
 	 * <p>
 	 * The publisher honors backpressure, holding off emitting newest items
 	 * from the buffer if the subscriber doesn't have enough request.

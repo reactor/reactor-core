@@ -97,7 +97,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	void add(ColdTestPublisherSubscription<T> s) {
 		synchronized (this) {
-
 			ColdTestPublisherSubscription<T>[] a = subscribers;
 			int len = a.length;
 
@@ -208,10 +207,12 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		private boolean onNext(T value) {
+		private boolean onNext(@Nullable T value) {
 			if (actualConditional != null) {
+				//noinspection ConstantConditions
 				return actualConditional.tryOnNext(value);
 			} else {
+				//noinspection ConstantConditions
 				actual.onNext(value);
 				return true;
 			}
