@@ -27,7 +27,7 @@ import org.assertj.core.api.Assertions;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
 import reactor.util.Logger;
@@ -450,7 +450,7 @@ public class MonoPeekAfterTest {
 	@Test
 	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			LongAdder invoked = new LongAdder();
 			try {
@@ -479,14 +479,14 @@ public class MonoPeekAfterTest {
 			          .contains("foo");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void afterTerminateCallbackFailureInterruptsOnNextAndThrows() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			LongAdder invoked = new LongAdder();
 			try {
@@ -516,7 +516,7 @@ public class MonoPeekAfterTest {
 			          .contains("IllegalArgumentException");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 

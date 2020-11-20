@@ -31,7 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -496,7 +496,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			IllegalStateException e = new IllegalStateException("test");
 			AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
@@ -525,7 +525,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					.contains("Operator called default onErrorDropped")
 					.contains(e.toString());
 		} finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -575,7 +575,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			IllegalStateException error1 = new IllegalStateException("afterTerminate");
 			IllegalArgumentException error2 = new IllegalArgumentException("error");
@@ -598,14 +598,14 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			ts.assertComplete();
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
 			IllegalArgumentException error = new IllegalArgumentException("error");
@@ -633,7 +633,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
 			ts.assertErrorMessage("error");
 		}  finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 

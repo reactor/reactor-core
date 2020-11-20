@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,9 +51,10 @@ import reactor.core.publisher.Operators.EmptySubscription;
 import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
-import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.RaceTestUtils;
+import reactor.test.util.TestLogger;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -971,5 +971,19 @@ public class OperatorsTest {
 		Operators.reportThrowInSubscribe(fuseableSubscriber, new RuntimeException("boom"));
 
 		assertSubscriber.assertNoError().awaitAndAssertNextValues(123);
+	}
+
+	@Test
+	public void onDiscardCallbackErrorsLog() {
+		Context context = Operators.enableOnDiscard(Context.empty(), t -> {throw new RuntimeException("Boom");});
+
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.enableCaptureWith(testLogger);
+		try {
+			Operators.onDiscard("Foo", context);
+			assertThat(testLogger.getErrContent()).contains("Error in discard hook - java.lang.RuntimeException: Boom");
+		} finally {
+			LoggerUtils.disableCapture();
+		}
 	}
 }

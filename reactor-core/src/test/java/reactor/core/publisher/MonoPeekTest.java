@@ -23,7 +23,7 @@ import org.assertj.core.api.Assertions;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
 
@@ -166,7 +166,7 @@ public class MonoPeekTest {
 	@Test
 	public void testErrorWithDoOnSuccess() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Mono.error(new NullPointerException("boom"))
 			    .doOnSuccess(aValue -> {
@@ -178,7 +178,7 @@ public class MonoPeekTest {
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 

@@ -40,7 +40,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -324,7 +324,7 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 
 			IllegalStateException error = new IllegalStateException("test");
@@ -355,7 +355,7 @@ public class FluxPeekFuseableTest {
 			          .contains(error.getMessage());
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -406,7 +406,7 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 
 			IllegalStateException error = new IllegalStateException("expected afterTerminate");
@@ -431,14 +431,14 @@ public class FluxPeekFuseableTest {
 			ts.assertComplete();
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 
 			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
@@ -469,7 +469,7 @@ public class FluxPeekFuseableTest {
 			ts.assertErrorMessage("error");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 

@@ -64,7 +64,7 @@ public abstract class Loggers {
 	 * @see #useConsoleLoggers()
 	 * @see #useVerboseConsoleLoggers()
 	 */
-	public static final void resetLoggerFactory() {
+	public static void resetLoggerFactory() {
 		try {
 			useSl4jLoggers();
 		}
@@ -85,7 +85,7 @@ public abstract class Loggers {
 	 *
 	 * @return true if falling back to JDK, false for Console.
 	 */
-	static final boolean isFallbackToJdk() {
+	static boolean isFallbackToJdk() {
 		return "JDK".equalsIgnoreCase(System.getProperty(FALLBACK_PROPERTY));
 	}
 
@@ -99,7 +99,7 @@ public abstract class Loggers {
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
 	 */
-	public static final void useConsoleLoggers() {
+	public static void useConsoleLoggers() {
 		String name = LoggerFactory.class.getName();
 		LoggerFactory loggerFactory = new ConsoleLoggerFactory(false);
 		loggerFactory.getLogger(name).debug("Using Console logging");
@@ -115,7 +115,7 @@ public abstract class Loggers {
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
 	 */
-	public static final void useVerboseConsoleLoggers() {
+	public static void useVerboseConsoleLoggers() {
 		String name = LoggerFactory.class.getName();
 		LoggerFactory loggerFactory = new ConsoleLoggerFactory(true);
 		loggerFactory.getLogger(name).debug("Using Verbose Console logging");
@@ -132,7 +132,7 @@ public abstract class Loggers {
 	 * @param loggerFactory the {@link Function} that provides a (possibly cached) {@link Logger}
 	 * given a name.
 	 */
-	public static final void useCustomLoggers(final Function<String, ? extends Logger> loggerFactory) {
+	public static void useCustomLoggers(final Function<String, ? extends Logger> loggerFactory) {
 		String name = LoggerFactory.class.getName();
 		loggerFactory.apply(name).debug("Using custom logging");
 		LOGGER_FACTORY = loggerFactory::apply;
@@ -145,7 +145,7 @@ public abstract class Loggers {
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
 	 */
-	public static final void useJdkLoggers() {
+	public static void useJdkLoggers() {
 		String name = LoggerFactory.class.getName();
 		LoggerFactory loggerFactory = new JdkLoggerFactory();
 		loggerFactory.getLogger(name).debug("Using JDK logging framework");
@@ -160,7 +160,7 @@ public abstract class Loggers {
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
 	 */
-	public static final void useSl4jLoggers() {
+	public static void useSl4jLoggers() {
 		String name = LoggerFactory.class.getName();
 		LoggerFactory loggerFactory = new Slf4JLoggerFactory();
 		loggerFactory.getLogger(name).debug("Using Slf4j logging framework");

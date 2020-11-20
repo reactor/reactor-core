@@ -31,7 +31,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -718,7 +718,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
 				s.onSubscribe(Operators.emptySubscription());
@@ -731,14 +731,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("test2");
 		} finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError3() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
@@ -755,7 +755,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("test2");
 		} finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -774,7 +774,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorHide() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
@@ -791,7 +791,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("test2");
 		} finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -813,7 +813,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError2() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
@@ -830,7 +830,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("test2");
 		} finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 

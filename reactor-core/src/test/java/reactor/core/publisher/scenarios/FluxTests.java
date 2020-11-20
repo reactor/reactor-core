@@ -46,7 +46,6 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -68,7 +67,7 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.TestLogger;
@@ -1197,7 +1196,7 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void unimplementedErrorCallback() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Flux.error(new Exception("forced1"))
 			    .log("error")
@@ -1211,7 +1210,7 @@ public class FluxTests extends AbstractReactorTest {
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
@@ -1447,7 +1446,7 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		AtomicReference<String> failure = new AtomicReference<>(null);
 		AtomicBoolean handled = new AtomicBoolean(false);
 
@@ -1487,7 +1486,7 @@ public class FluxTests extends AbstractReactorTest {
 			fail(e.toString());
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 			Thread.setDefaultUncaughtExceptionHandler(null);
 			Schedulers.resetOnHandleError();
 			Schedulers.resetOnScheduleHook("test");

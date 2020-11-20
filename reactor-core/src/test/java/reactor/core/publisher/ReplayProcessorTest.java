@@ -27,7 +27,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.test.LoggerUtils;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
@@ -599,7 +599,7 @@ public class ReplayProcessorTest {
 	@SuppressWarnings("unchecked")
 	void testReplayProcessorState(ReplayProcessor<String> rp) {
 		TestLogger testLogger = new TestLogger();
-		LoggerUtils.addAppender(testLogger, Operators.class);
+		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Disposable d1 = rp.subscribe();
 
@@ -632,7 +632,7 @@ public class ReplayProcessorTest {
 			          .contains(e.getMessage());
 		}
 		finally {
-			LoggerUtils.resetAppender(Operators.class);
+			LoggerUtils.disableCapture();
 		}
 	}
 
