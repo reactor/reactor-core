@@ -1130,7 +1130,7 @@ public class FluxRetryWhenTest {
 				    }
 			    })
 			    .retryWhen(Retry.fixedDelay(10, Duration.ofNanos(1)))
-			    .blockFirst(Duration.ofSeconds(2));
+			    .blockFirst(Duration.ofSeconds(1));
 		}
 	}
 
