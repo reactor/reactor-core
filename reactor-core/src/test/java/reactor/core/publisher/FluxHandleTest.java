@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
 
@@ -664,6 +666,18 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                                                    .hasMessage("Cannot emit after a complete or error"));
 	}
 
+    @Test
+    public void runtimeExceptionFused() {
+        // Check issue that for fuseable and Exception thrown inside handle it did not propagate signal -> hanging flux
+        //  and throws IllegalStateException: Timeout on blocking read
+        assertThatNullPointerException().isThrownBy(() -> {
+            Flux.range(0, 10)
+                .handle((v, sink) -> {
+                    throw new NullPointerException("boom");
+                })
+                .blockLast(Duration.ofSeconds(1));
+        }).withMessage("boom");
+    }
 
 	@Test
 	public void errorAfterCompleteFused() {
