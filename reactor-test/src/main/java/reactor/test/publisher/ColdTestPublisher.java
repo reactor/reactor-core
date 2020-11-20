@@ -190,8 +190,8 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			if (Operators.validate(n)) {
 				if (Operators.addCap(REQUESTED, this, n) == 0) {
 					parent.wasRequested = true;
-					drain();
 				}
+				drain();
 			}
 		}
 
