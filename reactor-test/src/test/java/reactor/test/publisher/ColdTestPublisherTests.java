@@ -16,12 +16,14 @@
 
 package reactor.test.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -88,7 +90,7 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void coldDisallowsNull() {
+	public void normalDisallowsNull() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
@@ -97,8 +99,20 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void coldDisallowsOverflow() {
-		TestPublisher<String> publisher = TestPublisher.createCold();
+	public void misbehavingAllowsNull() {
+		TestPublisher<String> publisher = TestPublisher.createColdNonCompliant(false, TestPublisher.Violation.ALLOW_NULL);
+		publisher.emit("foo", null);
+
+		StepVerifier.create(publisher)
+				.expectNext("foo", null)
+				.expectComplete()
+				.verify();
+	}
+
+	@Test
+	public void normalDisallowsOverflow() {
+		TestPublisher<String> publisher =
+				TestPublisher.createColdNonBuffering();
 
 		StepVerifier.create(publisher, 1)
 		            .then(() -> publisher.next("foo")).as("should pass")
@@ -110,6 +124,36 @@ public class ColdTestPublisherTests {
 
 		publisher.assertNoRequestOverflow();
 	}
+
+	@Test
+	public void normalDisallowsOverflow2() {
+		TestPublisher<String> publisher =
+				TestPublisher.createColdNonBuffering();
+		publisher.emit("foo", "bar");
+
+		StepVerifier.create(publisher, 1)
+				.expectNext("foo")
+				.expectErrorMatches(e -> e instanceof IllegalStateException &&
+						"Can't deliver value due to lack of requests".equals(e.getMessage()))
+				.verify();
+
+		publisher.assertNoRequestOverflow();
+	}
+
+	@Test
+	public void misbehavingAllowsOverflow() {
+		TestPublisher<String> publisher = TestPublisher.createColdNonCompliant(false, TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(publisher, 1)
+						.then(() -> publisher.emit("foo", "bar"))
+						.expectNext("foo")
+						.verifyComplete())
+				.withMessageContaining("expected production of at most 1;");
+
+		publisher.assertRequestOverflow();
+	}
+
 
 	@Test
 	public void coldAllowsMultipleReplayOnSubscribe() {
@@ -139,12 +183,12 @@ public class ColdTestPublisherTests {
 
 			@Override
 			public void onError(Throwable t) {
-				count.incrementAndGet();
+				count.addAndGet(2L);
 			}
 
 			@Override
 			public void onComplete() {
-				count.incrementAndGet();
+				count.addAndGet(1L);
 			}
 		};
 
@@ -153,7 +197,7 @@ public class ColdTestPublisherTests {
 	             .emit("A", "B", "C")
 	             .error(new IllegalStateException("boom"));
 
-		assertThat(count).hasValue(1);
+		assertThat(count).hasValue(1L);
 	}
 
 	@Test
@@ -230,7 +274,7 @@ public class ColdTestPublisherTests {
 	public void expectMinRequestedNormal() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
-		StepVerifier.create(Flux.from(publisher).limitRate(5))
+		StepVerifier.create(Flux.from(publisher), 5)
 	                .then(publisher::assertNotCancelled)
 	                .then(() -> publisher.assertMinRequested(5))
 	                .thenCancel()
@@ -245,7 +289,7 @@ public class ColdTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> StepVerifier.create(Flux.from(publisher).limitRate(5))
+				.isThrownBy(() -> StepVerifier.create(Flux.from(publisher), 5)
 		            .then(() -> publisher.assertMinRequested(6)
 		                                 .emit("foo"))
 		            .expectNext("foo").expectComplete() // N/A
@@ -331,6 +375,16 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
+	public void testErrorCold() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.next("foo", "bar").error(new IllegalArgumentException("boom"));
+		StepVerifier.create(publisher)
+	                .expectNextCount(2)
+	                .expectErrorMessage("boom")
+	                .verify();
+	}
+
+	@Test
 	public void conditionalSupport() {
 		TestPublisher<String> up = TestPublisher.createCold();
 		StepVerifier.create(up.flux().filter("test"::equals), 2)
@@ -341,4 +395,31 @@ public class ColdTestPublisherTests {
 		            .verifyComplete();
 	}
 
+	@Test
+	public void testBufferSupport() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.emit("A", "B", "C", "D", "E", "F");
+		StepVerifier.create(publisher, 3L)
+				.expectNext("A", "B", "C")
+				.thenRequest(1L)
+				.expectNext("D")
+				.thenRequest(Long.MAX_VALUE)
+				.expectNextCount(2L)
+				.verifyComplete();
+	}
+
+	@Test
+	public void testBufferSupportSubsequentDataAdded() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.next("A", "B", "C", "D", "E", "F");
+		StepVerifier.create(publisher, 3L)
+				.expectNext("A", "B", "C")
+				.thenRequest(1L)
+				.expectNext("D")
+				.thenRequest(Long.MAX_VALUE)
+				.expectNextCount(2L)
+				.then(() -> publisher.emit("G", "H"))
+				.expectNext("G", "H")
+				.verifyComplete();
+	}
 }
