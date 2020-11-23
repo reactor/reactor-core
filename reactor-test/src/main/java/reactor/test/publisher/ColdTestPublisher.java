@@ -207,27 +207,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		private boolean doTryNext(@Nullable T value) {
-			if (actualConditional != null) {
-				//noinspection ConstantConditions
-				return actualConditional.tryOnNext(value);
-			} else {
-				//noinspection ConstantConditions
-				actual.onNext(value);
-				return true;
-			}
-		}
-
-		void doError(Throwable e) {
-			parent.remove(this);
-			actual.onError(e);
-		}
-
-		void doComplete() {
-			parent.remove(this);
-			actual.onComplete();
-		}
-
 		private void drain() {
 			if (WIP.getAndIncrement(this) > 0) {
 				return;
@@ -249,11 +228,20 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 					}
 					T t = parent.values.get(i);
 					if (t == null && !parent.violations.contains(ALLOW_NULL)) {
-						doError(new NullPointerException("The " + i + "th element was null"));
+						parent.remove(this);
+						actual.onError(new NullPointerException("The " + i + "th element was null"));
 						return;
 					}
 
-					if (doTryNext(t)) {
+					//emit and increase count, potentially using conditional subscriber
+					if (actualConditional != null) {
+						//noinspection ConstantConditions
+						if (actualConditional.tryOnNext(t)) {
+							emitted++;
+						}
+					} else {
+						//noinspection ConstantConditions
+						actual.onNext(t);
 						emitted++;
 					}
 					i++;
@@ -286,7 +274,8 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 				//all the requested amount but there's still values in the buffer...
 				//if the parent is configured to errorOnOverflow then we must terminate
 				if (hasMoreData && !hasMoreRequest && parent.errorOnOverflow) {
-					doError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
+					parent.remove(this);
+					actual.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
 					return;
 				}
 
@@ -306,11 +295,13 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		 */
 		private boolean emitTerminalSignalIfAny() {
 			if (parent.error == Exceptions.TERMINATED) {
-				doComplete();
+				parent.remove(this);
+				actual.onComplete();
 				return true;
 			}
 			if (parent.error != null) {
-				doError(parent.error);
+				parent.remove(this);
+				actual.onError(parent.error);
 				return true;
 			}
 			return false;
