@@ -13,4 +13,4 @@ jobs:
         java-version: 8
     - uses: eskatos/gradle-command-action@v1
       with:
-        arguments: {{matrix.gradle}}
+        arguments: ${{ matrix.gradle }}
