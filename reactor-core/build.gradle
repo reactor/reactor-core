@@ -50,7 +50,8 @@ ext {
 			"*"
 		].join(","),
 		"Bundle-Name" : "reactor-core",
-		"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-core",
+		"Bundle-Version" : "$osgiVersion"
 	]
 }
 

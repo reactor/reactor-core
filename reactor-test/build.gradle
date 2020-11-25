@@ -31,7 +31,8 @@ ext {
 			"kotlin.*;resolution:=optional,*"
 		].join(","),
 		"Bundle-Name" : "reactor-test",
-		"Bundle-SymbolicName" : "io.projectreactor.reactor-test"
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-test",
+		"Bundle-Version" : "$osgiVersion"
 	]
 }
 
