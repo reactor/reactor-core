@@ -2,6 +2,7 @@ name: PR Check
 on: pull_request
 jobs:
   gradle:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         gradle: ["check -x :reactor-core:test -x jcstress", ":reactor-core:test", "jcstress"]
