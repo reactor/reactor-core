@@ -211,7 +211,16 @@ tasks.withType(Test).all {
 	if (it.name == "reactivestreamsTCK") {
 		useTestNG()
 	} else {
-		useJUnitPlatform()
+		def tags = rootProject.findProperty("junit-tags")
+		if (tags != null) {
+			println "junit5 tags for core: $tags"
+			useJUnitPlatform() {
+				includeTags "$tags"
+			}
+		}
+		else {
+			useJUnitPlatform()
+		}
 	}
 }
 
