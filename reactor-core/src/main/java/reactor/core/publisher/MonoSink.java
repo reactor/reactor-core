@@ -93,7 +93,7 @@ public interface MonoSink<T> {
 	 *
 	 * @param d the {@link Disposable} to use as a callback
 	 * @return the {@link MonoSink} with a cancellation callback
-	 * @see #onCancel(Disposable) onDispose(Disposable) for a callback that covers cancellation AND terminal signals
+	 * @see #onDispose(Disposable) onDispose(Disposable) for a callback that covers cancellation AND terminal signals
 	 */
 	MonoSink<T> onCancel(Disposable d);
 
