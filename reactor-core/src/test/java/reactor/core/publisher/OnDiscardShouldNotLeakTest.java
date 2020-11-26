@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
@@ -47,6 +48,7 @@ import reactor.util.concurrent.Queues;
 // test count did not regress.
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
+@Tag("slow")
 public class OnDiscardShouldNotLeakTest {
 
 	// add DiscardScenarios here to test more operators
