@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
@@ -43,6 +44,7 @@ import reactor.util.concurrent.Queues;
 
 // TODO Junit 5: would maybe be better handled as a dynamic test, but  was migrated kind of "as is" to make sure
 // test count did not regress.
+@Tag("slow")
 public class OnDiscardShouldNotLeakTest {
 
 	// add DiscardScenarios here to test more operators
