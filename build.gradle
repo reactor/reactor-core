@@ -55,14 +55,13 @@ ext {
 		osgiVersion = "${version}.RELEASE"
 		println "$version is a release, will use $osgiVersion for bnd"
 	}
-	else if (!versionNumber.qualifier.equalsIgnoreCase("SNAPSHOT")) {
-		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.${versionNumber.qualifier}"
-		println "$version is neither release nor snapshot, will use $osgiVersion for bnd"
+	else if (versionNumber.qualifier.equalsIgnoreCase("SNAPSHOT")) {
 		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.BUILD-SNAPSHOT"
+		println "$version is a snapshot, will use $osgiVersion for bnd"
 	}
 	else {
-		osgiVersion = version
-		println "$version is a snapshot, will interpolate timestamp using bnd -snapshot BUILD-\${tstamp} flag"
+		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.${versionNumber.qualifier}"
+		println "$version is neither release nor snapshot, will use $osgiVersion for bnd"
 	}
 
 	/*

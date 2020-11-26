@@ -51,8 +51,7 @@ ext {
 		].join(","),
 		"Bundle-Name" : "reactor-core",
 		"Bundle-SymbolicName" : "io.projectreactor.reactor-core",
-		"Bundle-Version" : "$osgiVersion",
-		"-snapshot" : 'BUILD-${tstamp}' //using bnd's own interpolation here
+		"Bundle-Version" : "$osgiVersion"
 	]
 }
 
