@@ -166,6 +166,39 @@ class SinksTest {
 	}
 
 	@Nested
+	class MulticastReplayDuration {
+
+		final Duration            duration = Duration.ofMillis(1000);
+		final Sinks.Many<Integer> replaySink = Sinks.many().replay().limit(duration);
+		final Flux<Integer>       flux = replaySink.asFlux();
+		final int 				  event = 12;
+
+		@Test
+		void lateSubscriberReceivesEventInRetentionTime() {
+			replaySink.emitNext(event, FAIL_FAST);
+
+			StepVerifier.withVirtualTime(() -> flux, 0L)
+					.thenAwait(duration.minusMillis(1))
+					.thenRequest(1)
+					.expectNext(event)
+					.thenCancel()
+					.verify(Duration.ofMillis(20));
+		}
+
+		@Test
+		void lateSubscriberDoesntReceiveEventOutsideRetentionTime() {
+			replaySink.emitNext(event, FAIL_FAST);
+
+			StepVerifier.withVirtualTime(() -> flux, 0L)
+					.thenAwait(duration.plusMillis(1))
+					.thenRequest(1)
+					.expectNoEvent(Duration.ofMillis(20))
+					.thenCancel()
+					.verify(Duration.ofMillis(20));
+		}
+	}
+
+	@Nested
 	class MulticastDirectBestEffort {
 
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().directBestEffort();

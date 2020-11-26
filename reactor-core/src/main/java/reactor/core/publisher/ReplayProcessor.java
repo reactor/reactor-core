@@ -302,7 +302,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
 		}
 		return new ReplayProcessor<>(new FluxReplay.SizeAndTimeBoundReplayBuffer<>(size,
-				maxAge.toMillis(),
+				maxAge.toNanos(),
 				scheduler));
 	}
 
