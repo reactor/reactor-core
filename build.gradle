@@ -141,7 +141,6 @@ configure(subprojects) { p ->
 			events "FAILED"
 			showExceptions true
 			exceptionFormat "FULL"
-			stackTraceFilters "ENTRY_POINT"
 			maxGranularity -1
 		}
 
@@ -151,27 +150,6 @@ configure(subprojects) { p ->
 			if (last != td.getParent()) {
 				last = td.getParent()
 				println last
-			}
-		}
-
-		if (isCiServer) {
-			def stdout = new LinkedList<TestOutputEvent>()
-			beforeTest { TestDescriptor td ->
-				stdout.clear()
-			}
-			onOutput { TestDescriptor td, TestOutputEvent toe ->
-				stdout.add(toe)
-			}
-			afterTest { TestDescriptor td, TestResult tr ->
-				if (tr.resultType == TestResult.ResultType.FAILURE && stdout.size() > 0) {
-					def stdOutput = stdout.collect {
-						it.getDestination().name() == "StdErr"
-							? "STD_ERR: ${it.getMessage()}"
-							: "STD_OUT: ${it.getMessage()}"
-					}
-						.join()
-					println "This is the console output of the failing test below:\n$stdOutput"
-				}
 			}
 		}
 
