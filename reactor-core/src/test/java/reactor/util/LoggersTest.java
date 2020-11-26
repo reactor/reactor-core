@@ -16,14 +16,23 @@
 
 package reactor.util;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+
+import reactor.ReactorTestExecutionListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LoggersTest {
+class LoggersTest {
+
+	@AfterAll
+	static void resetLoggerFactory() {
+		//delegate to ReactorTestExecutionListener to centralize the logic
+		ReactorTestExecutionListener.resetLoggersFactory();
+	}
 
 	@Test
-	public void dontFallbackToJdk() throws Exception {
+	void dontFallbackToJdk() throws Exception {
 		String oldValue = System.getProperty(Loggers.FALLBACK_PROPERTY);
 
 		System.setProperty(Loggers.FALLBACK_PROPERTY, "something");
@@ -37,7 +46,7 @@ public class LoggersTest {
 	}
 
 	@Test
-	public void fallbackToJdk() throws Exception {
+	void fallbackToJdk() throws Exception {
 		String oldValue = System.getProperty(Loggers.FALLBACK_PROPERTY);
 
 		System.setProperty(Loggers.FALLBACK_PROPERTY, "JdK");
@@ -51,7 +60,7 @@ public class LoggersTest {
 	}
 
 	@Test
-	public void useConsoleLoggers() throws Exception {
+	void useConsoleLoggers() throws Exception {
 		try {
 			Loggers.useConsoleLoggers();
 			Logger l = Loggers.getLogger("test");
@@ -64,7 +73,7 @@ public class LoggersTest {
 	}
 
 	@Test
-	public void useVerboseConsoleLoggers() throws Exception {
+	void useVerboseConsoleLoggers() throws Exception {
 		try {
 			Loggers.useVerboseConsoleLoggers();
 			Logger l = Loggers.getLogger("test");
@@ -77,7 +86,7 @@ public class LoggersTest {
 	}
 
 	@Test
-	public void useJdkLoggers() throws Exception {
+	void useJdkLoggers() throws Exception {
 		try {
 			Loggers.useJdkLoggers();
 			Logger l = Loggers.getLogger("test");
@@ -90,7 +99,7 @@ public class LoggersTest {
 	}
 
 	@Test
-	public void useSl4jLoggers() throws Exception {
+	void useSl4jLoggers() throws Exception {
 		try {
 			Loggers.useSl4jLoggers();
 			Logger l = Loggers.getLogger("test");

@@ -27,6 +27,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
 import reactor.test.util.LoggerUtils;
 import reactor.util.Logger;
+import reactor.util.Loggers;
 
 /**
  * A custom TestExecutionListener that helps with tests in reactor:<ul>
@@ -58,6 +59,15 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 		// TODO capture non-default schedulers and shutdown them
 	}
 
+	/**
+	 * Reset the {@link Loggers} factory to defaults suitable for reactor-core tests.
+	 * Notably, it installs an indirection via {@link LoggerUtils#useCurrentLoggersWithCapture()}.
+	 */
+	public static void resetLoggersFactory() {
+		Loggers.resetLoggerFactory();
+		LoggerUtils.useCurrentLoggersWithCapture();
+	}
+
 	@Override
 	public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
 		resetHooksAndSchedulers();
@@ -66,6 +76,6 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 	@Override
 	public void testPlanExecutionStarted(TestPlan testPlan) {
 		AssertionsUtils.installAssertJTestRepresentation();
-		LoggerUtils.useCurrentLoggersWithCapture();
+		resetLoggersFactory();
 	}
 }
