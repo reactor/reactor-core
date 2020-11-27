@@ -38,7 +38,7 @@ ext {
 		"Export-Package": [
 			"!*internal*",
 			"!reactor.blockhound*",
-			"reactor.*"
+			"reactor.*;version=$osgiVersion"
 		].join(","),
 		"Import-Package": [
 			"!javax.annotation",

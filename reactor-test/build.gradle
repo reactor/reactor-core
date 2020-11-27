@@ -24,7 +24,7 @@ ext {
 	bndOptions = [
 		"Export-Package": [
 			"!*internal*",
-			"reactor.test*;-noimport:=true"
+			"reactor.test*;version=$osgiVersion;-noimport:=true"
 		].join(","),
 		"Import-Package": [
 			"!javax.annotation",
