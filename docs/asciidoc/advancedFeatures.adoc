@@ -46,7 +46,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 
 The following image shows how the `transform` operator encapsulates flows:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
+image::images/gs-transform.png[Transform Operator : encapsulate flows]
 
 The preceding example produces the following output:
 
@@ -95,7 +95,7 @@ composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndF
 
 The following image shows how the `transformDeferred` operator works with per-subscriber transformations:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+image::images/gs-compose.png[Compose Operator : Per Subscriber transformation]
 
 The preceding example produces the following output:
 
@@ -179,7 +179,7 @@ Subscriber 2: PURPLE
 
 The following image shows the replay behavior:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
+image::images/gs-cold.png[Replaying behavior]
 
 Both subscribers catch all four colors, because each subscriber causes the
 process defined by the operators on the `Flux` to run.
@@ -222,7 +222,7 @@ Subscriber 2 to Hot Source: PURPLE
 
 The following image shows how a subscription is broadcast:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
+image::images/gs-hot.png[Broadcasting a subscription]
 
 Subscriber 1 catches all four colors. Subscriber 2, having been created after the first
 two colors were produced, catches only the last two colors. This difference accounts for
