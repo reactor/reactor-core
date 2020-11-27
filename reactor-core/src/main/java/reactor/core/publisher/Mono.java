@@ -80,7 +80,7 @@ import reactor.util.retry.Retry;
  * <p>Most Mono implementations are expected to immediately call {@link Subscriber#onComplete()}
  * after having called {@link Subscriber#onNext(T)}. {@link Mono#never() Mono.never()} is an outlier: it doesn't
  * emit any signal, which is not technically forbidden although not terribly useful outside
- * of tests. On the other hand, {@code onNext+onError} is explicitly forbidden.
+ * of tests. On the other hand, a combination of {@code onNext} and {@code onError} is explicitly forbidden.
  *
  * <p>
  * The recommended way to learn about the {@link Mono} API and discover new operators is
