@@ -15,13 +15,16 @@
  */
 package reactor.test.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
+
 import reactor.core.Disposable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 
 class LoggerUtilsTest {
 
@@ -50,7 +53,7 @@ class LoggerUtilsTest {
 	}
 
 	@Test
-	void disposeOnlyUninstallsItelf() {
+	void disposeOnlyUninstallsItself() {
 		Disposable disposable = LoggerUtils.useCurrentLoggersWithCapture();
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
 			Loggers.resetLoggerFactory(); // Overwrites our custom logger
@@ -58,4 +61,20 @@ class LoggerUtilsTest {
 		})
 		.withMessageContaining("Expected the current factory to be " + LoggerUtils.class.getName() + "$");
 	}
+
+	@Test
+	void continuouslyInstallingFactoryDoesntCauseStackOverflow() {
+		final int LOOPS = 2000;
+		List<Disposable> disposables = new ArrayList<>(LOOPS);
+		for (int i = 0; i < LOOPS; i++) {
+			disposables.add(LoggerUtils.useCurrentLoggersWithCapture());
+		}
+
+		final Logger test = Loggers.getLogger("test");
+
+		Loggers.resetLoggerFactory();
+
+		assertThatCode(() -> test.error("expected error message")).doesNotThrowAnyException();
+	}
+
 }
