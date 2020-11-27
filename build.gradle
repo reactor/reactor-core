@@ -1,5 +1,7 @@
 import org.gradle.util.VersionNumber
 
+import java.text.SimpleDateFormat
+
 /*
  * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
@@ -56,7 +58,10 @@ ext {
 		println "$version is a release, will use $osgiVersion for bnd"
 	}
 	else if (versionNumber.qualifier.equalsIgnoreCase("SNAPSHOT")) {
-		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.BUILD-SNAPSHOT"
+		def sdf = new SimpleDateFormat("yyyyMMddHHmm");
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		def buildTimestamp = sdf.format(new Date())
+		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.BUILD-$buildTimestamp"
 		println "$version is a snapshot, will use $osgiVersion for bnd"
 	}
 	else {
