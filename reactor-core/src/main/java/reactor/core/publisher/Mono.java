@@ -73,8 +73,14 @@ import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 /**
- * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by
- * emitting an element, or with an error.
+ * A Reactive Streams {@link Publisher} with basic rx operators that emits at most one item <em>via</em> the
+ * {@code onNext} signal then terminates with an {@code onComplete} signal (successful Mono,
+ * with or without value), or only emits a single {@code onError} signal (failed Mono).
+ *
+ * <p>Most Mono implementations are expected to immediately call {@link Subscriber#onComplete()}
+ * after having called {@link Subscriber#onNext(T)}. {@link Mono#never() Mono.never()} is an outlier: it doesn't
+ * emit any signal, which is not technically forbidden although not terribly useful outside
+ * of tests. On the other hand, a combination of {@code onNext} and {@code onError} is explicitly forbidden.
  *
  * <p>
  * The recommended way to learn about the {@link Mono} API and discover new operators is

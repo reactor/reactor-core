@@ -44,12 +44,19 @@ produces a `Flux<Long>` that is infinite and emits regular ticks from a clock.
 
 The following image shows how a `Mono` transforms an item:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/mono.png[Mono]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.4.0/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mono.svg[Mono]
 
-A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item and then
-(optionally) terminates with an `onComplete` signal or an `onError` signal.
+A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item _via_ the
+`onNext` signal then terminates with an `onComplete` signal (successful `Mono`,
+with or without value), or only emits a single `onError` signal (failed `Mono`).
 
-It offers only a subset of the operators that are available for a `Flux`, and
+
+Most `Mono` implementations are expected to immediately call `onComplete` on their
+`Subscriber` after having called `onNext`. `Mono.never()` is an outlier: it doesn't
+emit any signal, which is not technically forbidden although not terribly useful outside
+of tests. On the other hand, a combination of `onNext` and `onError` is explicitly forbidden.
+
+`Mono` offers only a subset of the operators that are available for a `Flux`, and
 some operators (notably those that combine the `Mono` with another `Publisher`)
 switch to a `Flux`.
 For example, `Mono#concatWith(Publisher)` returns a `Flux` while `Mono#then(Mono)`
