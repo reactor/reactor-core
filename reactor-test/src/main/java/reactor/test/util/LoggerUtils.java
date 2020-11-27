@@ -73,7 +73,7 @@ public final class LoggerUtils {
 			Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
 			lfField.setAccessible(true);
 			orginalFactory = lfField.get(Loggers.class);
-			originalFactoryMethod = orginalFactory.getClass().getMethod("getLogger", String.class);
+			originalFactoryMethod = orginalFactory.getClass().getMethod("apply", String.class);
 			originalFactoryMethod.setAccessible(true);
 		}
 
