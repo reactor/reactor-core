@@ -2506,9 +2506,9 @@ final class DefaultStepVerifierBuilder<T>
 	static final class DefaultContextExpectations<T>
 			implements StepVerifier.ContextExpectations<T> {
 
-		private final MessageFormatter     messageFormatter;
-		private final StepVerifier.Step<T> step;
-		private       Consumer<Context>    contextExpectations;
+		private final MessageFormatter             messageFormatter;
+		private final StepVerifier.Step<T>         step;
+		private       Consumer<CoreSubscriber<?>>  contextExpectations;
 
 		DefaultContextExpectations(StepVerifier.Step<T> step, MessageFormatter messageFormatter) {
 			this.messageFormatter = messageFormatter;
@@ -2525,7 +2525,7 @@ final class DefaultStepVerifierBuilder<T>
 				Scannable lowest = Scannable.from(s);
 
 				//attempt to go back to the leftmost parent to check the Context from its perspective
-				Context c = Flux.<Scannable>
+				CoreSubscriber<?> subscriber = Flux.<Scannable>
 						fromStream(lowest.parents())
 						.ofType(CoreSubscriber.class)
 						.takeLast(1)
@@ -2540,55 +2540,67 @@ final class DefaultStepVerifierBuilder<T>
 								    //we are ultimately only interested in CoreSubscribers' Context
 								    .ofType(CoreSubscriber.class)
 						)
-						.map(CoreSubscriber::currentContext)
 						//if it wasn't a CoreSubscriber (eg. custom or vanilla Subscriber) there won't be a Context
 						.block();
 
-				this.contextExpectations.accept(c);
+				this.contextExpectations.accept(subscriber);
 			});
 		}
 
 		@Override
 		public StepVerifier.ContextExpectations<T> hasKey(Object key) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
-					if (!c.hasKey(key))
-						throw messageFormatter.assertionError(String.format("Key %s not found in Context %s", key, c));
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
+				if (!c.hasKey(key))
+						throw messageFormatter.assertionError(formatErrorMessage(subscriber, "Key %s not found", key));
 			});
 			return this;
 		}
 
+		static String formatErrorMessage(CoreSubscriber<?> subscriber, String format, Object... args) {
+			return String.format(
+					"%s\nContext: %s\nCaptured at: %s",
+					String.format(format, args),
+					subscriber.currentContext(),
+					Scannable.from(subscriber).name()
+			);
+		}
+
 		@Override
 		public StepVerifier.ContextExpectations<T> hasSize(int size) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				long realSize = c.stream().count();
 				if (realSize != size)
 					throw messageFormatter.assertionError(
-							String.format("Expected Context of size %d, got %d for Context %s", size, realSize, c));
+							formatErrorMessage(subscriber, "Expected Context of size %d, got %d", size, realSize));
 			});
 			return this;
 		}
 
 		@Override
 		public StepVerifier.ContextExpectations<T> contains(Object key, Object value) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				Object realValue = c.getOrDefault(key, null);
 				if (realValue == null)
 					throw messageFormatter.assertionError(
-							String.format("Expected value %s for key %s, key not present in Context %s", value, key, c));
+							formatErrorMessage(subscriber, "Expected value %s for key %s, key not present", value, key));
 
 				if (!value.equals(realValue))
 					throw messageFormatter.assertionError(
-							String.format("Expected value %s for key %s, got %s in Context %s", value, key, realValue, c));
+							formatErrorMessage(subscriber, "Expected value %s for key %s, got %s", value, key, realValue));
 			});
 			return this;
 		}
 
 		@Override
 		public StepVerifier.ContextExpectations<T> containsAllOf(Context other) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				boolean all = other.stream().allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
 				if (!all) {
-					throw messageFormatter.assertionError(String.format("Expected Context %s to contain all of %s", c, other));
+					throw messageFormatter.assertionError(formatErrorMessage(subscriber, "Expected Context to contain all of %s", other));
 				}
 			});
 			return this;
@@ -2596,12 +2608,13 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.ContextExpectations<T> containsAllOf(Map<?, ?> other) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				boolean all = other.entrySet()
 				                   .stream()
 				                   .allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
 				if (!all) {
-					throw messageFormatter.assertionError(String.format("Expected Context %s to contain all of %s", c, other));
+					throw messageFormatter.assertionError(formatErrorMessage(subscriber, "Expected Context to contain all of %s", other));
 				}
 			});
 			return this;
@@ -2609,16 +2622,17 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.ContextExpectations<T> containsOnly(Context other) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				if (c.stream().count() != other.stream().count()) {
 					throw messageFormatter.assertionError(
-							String.format("Expected Context %s to contain same values as %s, but they differ in size", c, other));
+							formatErrorMessage(subscriber, "Expected Context to contain same values as %s, but they differ in size", other));
 				}
 				boolean all = other.stream()
 				                   .allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
 				if (!all) {
 					throw messageFormatter.assertionError(
-							String.format("Expected Context %s to contain same values as %s, but they differ in content", c, other));
+							formatErrorMessage(subscriber, "Expected Context to contain same values as %s, but they differ in content", other));
 				}
 			});
 			return this;
@@ -2626,17 +2640,18 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.ContextExpectations<T> containsOnly(Map<?, ?> other) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				if (c.stream().count() != other.size()) {
 					throw messageFormatter.assertionError(
-							String.format("Expected Context %s to contain same values as %s, but they differ in size", c, other));
+							formatErrorMessage(subscriber, "Expected Context to contain same values as %s, but they differ in size", other));
 				}
 				boolean all = other.entrySet()
 				                   .stream()
 				                   .allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
 				if (!all) {
 					throw messageFormatter.assertionError(
-							String.format("Expected Context %s to contain same values as %s, but they differ in content", c, other));
+							formatErrorMessage(subscriber, "Expected Context to contain same values as %s, but they differ in content", other));
 				}
 			});
 			return this;
@@ -2644,16 +2659,19 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.ContextExpectations<T> assertThat(Consumer<Context> assertingConsumer) {
-			this.contextExpectations = this.contextExpectations.andThen(assertingConsumer);
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				assertingConsumer.accept(subscriber != null ? subscriber.currentContext() : null);
+			});
 			return this;
 		}
 
 		@Override
 		public StepVerifier.ContextExpectations<T> matches(Predicate<Context> predicate) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				if (!predicate.test(c)) {
 					throw messageFormatter.assertionError(
-							String.format("Context %s doesn't match predicate", c));
+							formatErrorMessage(subscriber, "Context doesn't match predicate"));
 				}
 			});
 			return this;
@@ -2661,10 +2679,11 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.ContextExpectations<T> matches(Predicate<Context> predicate, String description) {
-			this.contextExpectations = this.contextExpectations.andThen(c -> {
+			this.contextExpectations = this.contextExpectations.andThen(subscriber -> {
+				Context c = subscriber.currentContext();
 				if (!predicate.test(c)) {
 					throw messageFormatter.assertionError(
-							String.format("Context %s doesn't match predicate %s", c, description));
+							formatErrorMessage(subscriber, "Context doesn't match predicate %s", description));
 				}
 			});
 			return this;
