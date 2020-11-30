@@ -54,7 +54,7 @@ configure(rootProject) {
 	}
 
 	asciidoctorPdf {
-		onlyIf { isCiServer || !rootProject.version.toString().endsWith("-SNAPSHOT") }
+		onlyIf { isCiServer || !rootProject.version.toString().endsWith("-SNAPSHOT") || rootProject.hasProperty("forcePdf") }
 		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
