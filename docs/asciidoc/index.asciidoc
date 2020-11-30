@@ -72,6 +72,13 @@ to "<<which-operator>>"
 endif::[]
 
 [appendix]
+include::apdx-howtoReadMarbles.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/apdx-howtoReadMarbles.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<howtoReadMarbles>>"
+endif::[]
+
+[appendix]
 include::faq.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/faq.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]

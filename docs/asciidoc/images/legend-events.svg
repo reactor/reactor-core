@@ -1,0 +1,599 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1748.96" height="1848.34" viewBox="0 0 462.75 489.04" version="1.1" id="svg96710">
+ <defs id="defs96704">
+  <marker orient="auto" refY="0" refX="0" id="marker13519" overflow="visible">
+   <path id="path13517" d="M0-1.41L-1.41 0 0 1.41 1.41 0z" fill="#f7ac09" fill-opacity="1" fill-rule="evenodd" stroke="#f7ac09" stroke-width=".2pt" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" refY="0" refX="0" id="marker11654" overflow="visible">
+   <path id="path11652" d="M0-1.41L-1.41 0 0 1.41 1.41 0z" fill="#f7ac09" fill-opacity="1" fill-rule="evenodd" stroke="#f7ac09" stroke-width=".2pt" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" refY="0" refX="0" id="marker109029" overflow="visible">
+   <path id="path109027" d="M0-1.41L-1.41 0 0 1.41 1.41 0z" fill="#f7ac09" fill-opacity="1" fill-rule="evenodd" stroke="#f7ac09" stroke-width=".2pt" stroke-opacity="1"/>
+  </marker>
+  <marker stroke-linejoin="miter" color="#45b8de" markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_3-3" markerUnits="strokeWidth" overflow="visible" orient="auto">
+   <g id="g16-6">
+    <path stroke-width="1" stroke="currentColor" fill="currentColor" id="path14-7" d="M8 0L0-3v6z"/>
+   </g>
+  </marker>
+  <marker stroke-linejoin="miter" color="#45b8de" markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_3-3-5" markerUnits="strokeWidth" overflow="visible" orient="auto">
+   <g id="g16-6-9">
+    <path stroke-width="1" stroke="currentColor" fill="currentColor" id="path14-7-1" d="M8 0L0-3v6z"/>
+   </g>
+  </marker>
+  <marker overflow="visible" id="DotM" refX="0" refY="0" orient="auto">
+   <path fill-opacity="1" fill="#5b1d88" stroke-opacity="1" stroke-width=".53" stroke="#5b1d88" fill-rule="evenodd" d="M1.96 0a2 2 0 11-4 0 2 2 0 014 0z" id="path32183"/>
+  </marker>
+  <marker stroke-linejoin="miter" color="#45b8de" markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_3-3e-7-3-3" markerUnits="strokeWidth" overflow="visible" orient="auto">
+   <g fill-opacity="1" fill="#5b1d88" stroke-opacity="1" stroke="#5b1d88" id="g4771-7-3-2">
+    <path stroke-opacity="1" stroke-width="1" stroke="#5b1d88" fill-opacity="1" fill="#5b1d88" id="path4769-3-6-6" d="M8 0L0-3v6z"/>
+   </g>
+  </marker>
+  <marker overflow="visible" id="Arrow2Lend" refX="0" refY="0" orient="auto">
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-width="1" stroke="#000" fill-rule="evenodd" fill-opacity="1" fill="#000" d="M-11-4L1 0l-12 4c2-2 2-6 0-8z" id="path5247"/>
+  </marker>
+  <marker overflow="visible" id="Arrow2Lend-6" refX="0" refY="0" orient="auto">
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-width="1" stroke="#000" fill-rule="evenodd" fill-opacity="1" fill="#000" d="M-11-4L1 0l-12 4c2-2 2-6 0-8z" id="path5247-9"/>
+  </marker>
+  <marker overflow="visible" id="Arrow2Lend-62" refX="0" refY="0" orient="auto">
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-width="1" stroke="#000" fill-rule="evenodd" fill-opacity="1" fill="#000" d="M-11-4L1 0l-12 4c2-2 2-6 0-8z" id="path5247-2"/>
+  </marker>
+  <marker overflow="visible" id="Arrow2Lend-9" refX="0" refY="0" orient="auto">
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-width="1" stroke="#000" fill-rule="evenodd" fill-opacity="1" fill="#000" d="M-11-4L1 0l-12 4c2-2 2-6 0-8z" id="path5247-3"/>
+  </marker>
+  <marker overflow="visible" id="Arrow2Lend-62-1" refX="0" refY="0" orient="auto">
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-width="1" stroke="#000" fill-rule="evenodd" fill-opacity="1" fill="#000" d="M-11-4L1 0l-12 4c2-2 2-6 0-8z" id="path5247-2-6"/>
+  </marker>
+  <marker overflow="visible" id="Arrow2Lend-62-2" refX="0" refY="0" orient="auto">
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-width="1" stroke="#000" fill-rule="evenodd" fill-opacity="1" fill="#000" d="M-11-4L1 0l-12 4c2-2 2-6 0-8z" id="path5247-2-7"/>
+  </marker>
+  <marker stroke-linejoin="miter" color="#000" markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_2-1" markerUnits="strokeWidth" overflow="visible" orient="auto">
+   <g id="g11-9">
+    <path stroke-width="1" stroke="currentColor" fill="currentColor" id="path9-5" d="M8 0L0-3v6z"/>
+   </g>
+  </marker>
+  <marker stroke-linejoin="miter" color="#000" markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_2-1-1" markerUnits="strokeWidth" overflow="visible" orient="auto">
+   <g id="g11-9-5">
+    <path stroke-width="1" stroke="currentColor" fill="currentColor" id="path9-5-5" d="M8 0L0-3v6z"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_4-5" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#ff5a01" stroke-linejoin="miter">
+   <g id="g21-4">
+    <path d="M8 0L0-3v6z" id="path19-1" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-8" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#ff5a01" stroke-linejoin="miter">
+   <g id="g16-8">
+    <path d="M12 0L0-4v9z" id="path14-3" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+ </defs>
+ <g id="layer1" transform="translate(577.84 127.26)">
+  <rect y="29.49" x="-324.81" height="7.52" width="56.02" id="rect97769" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".4" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <path id="path46" d="M-508-5.66h41.27c5.03 0 9 3.44 9 7.67s-3.97 7.67-9 7.67H-508c-4.76 0-8.73-3.44-8.73-7.67s3.97-7.67 8.73-7.67z" fill="#fff" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <rect id="rect11391" width="60.69" height="15.17" x="-516.53" y="-5.59" ry="7.59" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <circle r="6.09" id="ellipse102" cy="2.13" cx="-506.56" fill="#6cb33e" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <circle r="6.09" id="ellipse107" cy="1.86" cx="-492.98" fill="#e6ba31" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <circle r="6.09" id="ellipse112" cy="1.86" cx="-479.4" fill="#45b8de" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <circle r="6.09" id="ellipse117" cy="1.86" cx="-465.81" fill="#ff5a01" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <text xml:space="preserve" style="line-height:125%" x="-572.84" y="4.95" id="text18289" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan18287" x="-572.84" y="4.95" stroke-width=".26">buffer/list</tspan>
+  </text>
+  <path id="line1113" d="M-536.83-26.83l-.26-38.63" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-3)"/>
+  <text id="text91" transform="rotate(-90)" x="27.89" y="-542.38" font-size="3.17" fill="#45b8de" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan89" y="-538.94" x="27.89" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#45b8de" stroke-width=".26">request(<tspan id="tspan928" font-weight="700" stroke-width=".26">unbounded</tspan> )</tspan>
+  </text>
+  <path d="M-515.52-35.25v-22.49" id="line1337" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-3-5)"/>
+  <text y="-521.08" x="37.1" transform="rotate(-90)" id="text1343" font-size="3.17" fill="#45b8de" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan font-size="3.7" font-weight="400" x="37.1" y="-517.64" id="tspan1341" font-family="Tahoma, 'Nimbus Sans L'" fill="#45b8de" stroke-width=".26">request(1)</tspan>
+  </text>
+  <path d="M-526.11-35.25v-23.28" id="line1366" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-3-5)"/>
+  <text id="text1370" transform="rotate(-90)" x="37.1" y="-531.66" font-size="3.17" fill="#45b8de" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan1368" y="-528.22" x="37.1" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#45b8de" stroke-width=".26">subscribe()</tspan>
+  </text>
+  <path d="M-504.52-33.65V-57.2" id="line1372" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-3-5)"/>
+  <text y="-510.07" x="35.5" transform="rotate(-90)" id="text1376" font-size="3.17" fill="#45b8de" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan font-size="3.7" font-weight="400" x="35.5" y="-506.63" id="tspan1374" font-family="Tahoma, 'Nimbus Sans L'" fill="#45b8de" stroke-width=".26">cancel()</tspan>
+  </text>
+  <path d="M-430.31-40.85V-57.6" id="line1360-5" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray="0.529, 1.587" stroke-dashoffset="0" stroke-opacity="1" marker-start="url(#DotM)" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3)"/>
+  <text id="text1364-9" x="-441.15" y="-37.34" font-size="3.17" fill="#5b1d88" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan1362-2" y="-33.9" x="-441.15" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#5b1d88" fill-opacity="1" stroke-width=".26">addListener()</tspan>
+  </text>
+  <text xml:space="preserve" style="line-height:125%" x="-568.79" y="-77.9" id="text20537" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   u <tspan id="tspan20535" x="-568.79" y="-77.9" stroke-width=".26">upstream signals</tspan>
+  </text>
+  <text xml:space="preserve" style="line-height:125%" x="-474.3" y="-66.14" id="text20541" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan20539" x="-474.3" y="-66.14" stroke-width=".26">vs external API calls</tspan>
+  </text>
+  <g id="g26536" transform="translate(-380.49 71.7)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
+   <circle id="ellipse1137" cy="-45.01" cx="-125.42" r="6.09" fill="#6cb33e" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1139" cy="-45.01" cx="-125.42" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1141" cy="-45.01" cx="-110.08" r="6.09" fill="#e6ba31" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1143" cy="-45.01" cx="-110.08" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1145" cy="-45.01" cx="-95" r="6.09" fill="#45b8de" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1147" cy="-45.01" cx="-95" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1149" cy="-45.01" cx="-64.3" r="6.09" fill="#ff5a01" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1151-9" cy="-45.01" cx="-64.3" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1153" cy="-45.01" cx="-79.65" r="6.09" fill="#e739ce" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1155-6" cy="-45.01" cx="-79.65" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <text y="-48.72" x="-123.57" id="text1315" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan id="tspan1313" y="-42.9" x="-54.78" font-weight="700" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">}</tspan>
+   </text>
+   <text id="text1319" x="-205.59" y="-48.72" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan font-size="6.35" font-weight="700" x="-136.8" y="-42.9" id="tspan1317" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">{</tspan>
+   </text>
+   <text y="-44.75" x="-187.6" id="text1136-6" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan id="tspan1134-7" y="-38.93" x="-118.81" font-weight="700" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+   <text id="text1166" x="-172.25" y="-44.75" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan font-size="6.35" font-weight="700" x="-103.46" y="-38.93" id="tspan1164" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+   <text y="-44.75" x="-156.91" id="text1170" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan id="tspan1168" y="-38.93" x="-88.12" font-weight="700" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+   <text id="text1174" x="-141.56" y="-44.75" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan font-size="6.35" font-weight="700" x="-72.77" y="-38.93" id="tspan1172" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+  </g>
+  <text xml:space="preserve" style="line-height:125%" x="-561.04" y="29.54" id="text26512" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan26510" x="-561.04" y="29.54" stroke-width=".26">iterable</tspan>
+  </text>
+  <g transform="translate(-379 93.9)" id="g26536-1" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
+   <circle id="ellipse1137-9" cy="-45.01" cx="-125.42" r="6.09" fill="#6cb33e" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1139-0" cy="-45.01" cx="-125.42" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1141-1" cy="-45.01" cx="-110.08" r="6.09" fill="#e6ba31" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1143-6" cy="-45.01" cx="-110.08" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1145-7" cy="-45.01" cx="-95" r="6.09" fill="#45b8de" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1147-8" cy="-45.01" cx="-95" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1149-7" cy="-45.01" cx="-64.3" r="6.09" fill="#ff5a01" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1151-9-7" cy="-45.01" cx="-64.3" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ellipse1153-1" cy="-45.01" cx="-79.65" r="6.09" fill="#e739ce" stroke="none" stroke-width=".26"/>
+   <circle id="ellipse1155-6-2" cy="-45.01" cx="-79.65" r="6.09" fill="none" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <text y="-48.72" x="-123.57" id="text1315-2" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan id="tspan1313-3" y="-42.9" x="-54.78" font-weight="700" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">]</tspan>
+   </text>
+   <text id="text1319-6" x="-205.59" y="-48.72" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan font-size="6.35" font-weight="700" x="-136.8" y="-42.9" id="tspan1317-5" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">[</tspan>
+   </text>
+   <text y="-44.75" x="-187.6" id="text1136-6-0" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan id="tspan1134-7-6" y="-38.93" x="-118.81" font-weight="700" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+   <text id="text1166-7" x="-172.25" y="-44.75" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan font-size="6.35" font-weight="700" x="-103.46" y="-38.93" id="tspan1164-8" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+   <text y="-44.75" x="-156.91" id="text1170-2" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan id="tspan1168-1" y="-38.93" x="-88.12" font-weight="700" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+   <text id="text1174-3" x="-141.56" y="-44.75" font-size="3.17" fill="#000" stroke="none" stroke-width=".26">
+    <tspan font-size="6.35" font-weight="700" x="-72.77" y="-38.93" id="tspan1172-6" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">,</tspan>
+   </text>
+  </g>
+  <text xml:space="preserve" style="line-height:125%" x="-548.99" y="51.19" id="text26512-5" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan26510-1" x="-548.99" y="51.19" stroke-width=".26">array</tspan>
+  </text>
+  <path id="path1036-0" d="M-561.92 116h41.8l.27.26v6.62l-.26.26h-41.8l-.27-.26v-6.62z" fill="#6cb33e" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <text xml:space="preserve" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" x="-511.44" y="121.58" id="text18289-4-9-52-1" font-style="normal" font-weight="400" font-size="5.64" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1" font-variant="normal" font-stretch="normal">
+   <tspan x="-511.44" y="121.58" id="tspan22045-8-5" stroke-width=".26" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">timed out</tspan>
+  </text>
+  <text xml:space="preserve" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" x="-511.44" y="102.4" id="text29009" font-style="normal" font-weight="400" font-size="5.64" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1" font-variant="normal" font-stretch="normal">
+   <tspan id="tspan29007" x="-511.44" y="102.4" stroke-width=".26" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">delay/duration</tspan>
+  </text>
+  <g transform="translate(-681.4 2.49) scale(.26458)" id="g1082" fill-opacity="1">
+   <path id="path1078" d="M585 984a9 9 0 100 18h11a9 9 0 100-18z" fill="#fff" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+   <path id="path1080" d="M596 999a6 6 0 100-12 6 6 0 000 12z" fill="#ef2200" stroke-width="1"/>
+  </g>
+  <path d="M-561.41 98.91h41.84l.23.26v6.61l-.23.27h-41.84l-.23-.27v-6.6z" id="path183" fill="none" fill-opacity="1" stroke="#929292" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1"/>
+  <g transform="translate(-631.93 129.86) scale(.26458)" id="g7249">
+   <path d="M399 236h11l8 8v12s0 0 0 0l-8 8-1 1h-10l-1-1-8-8s0 0 0 0v-12l8-8z" id="path1928" fill="none" fill-opacity="1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <path d="M295 236h25l2 1v26l-2 1h-25l-1-1v-26z" id="path1930" fill="none" fill-opacity="1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <circle r="14" cx="262" cy="249" id="ellipse1932" fill="none" fill-opacity="1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <text y="240" x="225" id="text1936" fill="#000" fill-opacity="1" stroke="none" stroke-dasharray="none">
+    <tspan id="tspan1934" y="262" x="281" font-weight="400" font-size="24" font-family="Tahoma, 'Nimbus Sans L'" fill="#000">,</tspan>
+   </text>
+   <text id="text1940" x="-23" y="236" fill="#000" fill-opacity="1" stroke="none" stroke-dasharray="none">
+    <tspan font-size="24" font-weight="400" x="237" y="258" id="tspan1938" font-family="Tahoma, 'Nimbus Sans L'" fill="#000">(</tspan>
+   </text>
+   <text y="236" x="67" id="text1944" fill="#000" fill-opacity="1" stroke="none" stroke-dasharray="none">
+    <tspan id="tspan1942" y="258" x="327" font-weight="400" font-size="24" font-family="Tahoma, 'Nimbus Sans L'" fill="#000">)</tspan>
+   </text>
+   <path d="M340 250h39" id="path4954" fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend)"/>
+  </g>
+  <g id="g94922" transform="translate(-403.97 69.89)" fill="none" stroke="#000">
+   <path d="M-124.5 105.72h6.6l.54.26v6.88l-.53.27h-6.62l-.26-.27v-6.88z" id="path1930-8" fill-opacity="1" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <circle r="3.7" cx="-145.94" cy="109.16" id="ellipse1932-1" fill-opacity="1" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <path d="M-138.53 109.42h10.32" id="path4954-6" fill-rule="evenodd" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-6)"/>
+  </g>
+  <g transform="translate(-631.93 162.86) scale(.26458)" id="g43538">
+   <path d="M399 236h11l8 8v12s0 0 0 0l-8 8-1 1h-10l-1-1-8-8s0 0 0 0v-12l8-8z" id="path1928-8" fill="none" fill-opacity="1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <text id="text1940-9" x="57" y="236" fill="#000" fill-opacity="1" stroke="none" stroke-dasharray="none">
+    <tspan font-size="24" font-weight="400" x="317" y="258" id="tspan1938-8" font-family="Tahoma, 'Nimbus Sans L'" fill="#000">()</tspan>
+   </text>
+   <path d="M340 250h39" id="path4954-7" fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-62)"/>
+  </g>
+  <g id="g43586" transform="translate(-404.22 64.59)">
+   <circle r="3.7" cx="-142.49" cy="148.5" id="ellipse1932-2" fill="none" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"/>
+   <path d="M-136.67 148.77h10.32" id="path4954-5" fill="none" fill-rule="evenodd" stroke="#000" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-9)"/>
+   <text y="144.7" x="-193.54" id="text1940-9-4" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none">
+    <tspan id="tspan1938-8-4" y="150.52" x="-124.75" font-weight="400" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">{ }</tspan>
+   </text>
+  </g>
+  <g id="g28172" transform="translate(-400 57.86)" stroke-width=".26">
+   <text id="text1940-9-8" x="-215.86" y="218.78" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-dasharray="none">
+    <tspan font-size="6.35" font-weight="400" x="-147.06" y="224.6" id="tspan1938-8-8" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">()</tspan>
+   </text>
+   <path d="M-140.98 222.49h10.32" id="path4954-7-5" fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-62-2)"/>
+   <text y="218.53" x="-197.76" id="text1940-9-4-3" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-dasharray="none">
+    <tspan id="tspan1938-8-4-7" y="224.35" x="-128.97" font-weight="400" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">{ }</tspan>
+   </text>
+  </g>
+  <text xml:space="preserve" style="line-height:125%" x="-285.84" y="-111.96" id="text12110" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan12108" x="-285.84" y="-111.96" stroke-width=".26">state:</tspan>
+  </text>
+  <rect id="rect97776" width="31.99" height="7.13" x="-324.64" y="29.68" opacity="1" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".32" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <text y="31.13" x="-289.97" id="text1285-4" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan font-size="3.7" font-weight="400" x="-289.97" y="34.57" id="tspan1283-3" font-family="Tahoma, 'Nimbus Sans L'" fill="#929292" fill-opacity="1" stroke-width=".26">return</tspan>
+  </text>
+  <text id="text982-3" x="-270.92" y="31.13" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan980-9" y="34.57" x="-270.92" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#929292" fill-opacity="1" stroke-width=".26">;</tspan>
+  </text>
+  <path id="path97780" d="M-292.89 17.67v6.27" fill="none" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-1)"/>
+  <circle id="ellipse77-6" cy="33.13" cx="-275.3" r="2.91" fill="#e6ba31" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <rect id="rect97782" width="31.46" height="7.52" x="-258.59" y="29.62" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".4" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <rect y="29.8" x="-258.41" height="7.16" width="10.59" id="rect97784" opacity="1" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".32" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <path id="path104634-2" d="M-252.31 31.85v3.42" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1.06" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+  <path d="M-253.89 31.85v3.42" id="path104632-9" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1.06" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+  <path d="M-247.65 17.8v6.28" id="path97800" fill="none" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-1-1)"/>
+  <rect y="29.62" x="-217.33" height="7.52" width="59.37" id="rect98233" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".4" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <rect id="rect98235" width="38.8" height="7.12" x="-217.14" y="29.83" opacity="1" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".32" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <text y="31.26" x="-246.86" id="text98239" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan font-size="3.7" font-weight="400" x="-246.86" y="34.7" id="tspan98237" font-family="Tahoma, 'Nimbus Sans L'" fill="#929292" fill-opacity="1" stroke-width=".26">return</tspan>
+  </text>
+  <text id="text98243" x="-228.87" y="31.26" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan98241" y="34.7" x="-228.87" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#929292" fill-opacity="1" stroke-width=".26">;</tspan>
+  </text>
+  <path id="path104634-8" d="M-196.93 31.87v3.43" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1.06" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+  <path d="M-198.52 31.87v3.43" id="path104632-0" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1.06" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+  <text id="text98251" x="-235.22" y="31.45" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan98249" y="34.89" x="-235.22" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" fill-opacity="1" stroke-width=".26">null</tspan>
+  </text>
+  <text id="text97790" x="-176.48" y="31.26" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan97788" y="34.7" x="-176.48" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#929292" fill-opacity="1" stroke-width=".26">throw</tspan>
+  </text>
+  <text y="31.26" x="-160.08" id="text97794" font-size="3.17" fill="#929292" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan font-size="3.7" font-weight="400" x="-160.08" y="34.7" id="tspan97792" font-family="Tahoma, 'Nimbus Sans L'" fill="#929292" fill-opacity="1" stroke-width=".26">;</tspan>
+  </text>
+  <path id="path98269" d="M-178.33 17.8v6.28" fill="none" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-1-1)"/>
+  <text id="text100602" y="12.63" x="-292.44" style="line-height:125%" xml:space="preserve" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan y="12.63" x="-292.44" id="tspan100600" stroke-width=".26">blocking outputs:</tspan>
+  </text>
+  <path id="path104634" d="M-308.05 31.67v3.42" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1.06" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+  <path d="M-309.63 31.67v3.42" id="path104632" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1.06" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+  <path d="M-562.5 130.05h35.32l.22.27v6.61l-.22.27h-35.31l-.22-.27v-6.61z" id="path120435" display="inline" fill="#6cb33e" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <text id="text120439" y="135.64" x="-511.95" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-style="normal" font-weight="400" font-size="5.64" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1" font-variant="normal" font-stretch="normal">
+   not timed out
+  </text>
+  <text xml:space="preserve" style="line-height:125%" x="-291.68" y="305.52" id="text20541-1" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan20539-2" x="-291.68" y="305.52" stroke-width=".26">buffer boundaries:</tspan>
+  </text>
+  <path id="path213742" d="M-247.65 17.8v6.28" fill="none" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-1-1)"/>
+  <g id="g107034" transform="translate(-294.73 15.97)" stroke-dasharray="none" fill-opacity="1">
+   <text stroke-width=".26" stroke="none" fill="#000" font-size="3.17" id="text28165" x="-308.57" y="287.47">
+    <tspan stroke-width=".26" fill="#000" font-family="Tahoma, 'Nimbus Sans L'" font-size="6.35" font-weight="400" x="-239.78" y="293.29" id="tspan28163">{</tspan>
+   </text>
+   <g stroke-opacity="1" stroke-width=".26" stroke="none" fill="#000" text-anchor="start" writing-mode="lr-tb" font-family="sans-serif" font-size="4.23" font-stretch="normal" font-weight="400" font-variant="normal" font-style="normal" transform="translate(-98.12 52.75)" id="text1040-3" style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" aria-label="">
+    <path stroke-width=".26" fill-opacity="1" fill="#000" text-anchor="start" writing-mode="lr-tb" font-family="sans-serif" font-size="4.23" font-stretch="normal" font-weight="400" font-variant="normal" font-style="normal" id="path34548" style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" d="M-143.1 237.9a.07.07 0 00-.08-.08h-.15a.07.07 0 00-.08.08v.83h-.52a.07.07 0 00-.08.08v.15c0 .04.03.07.08.07h.75c.04 0 .08-.03.08-.07zm.98.83a1.29 1.29 0 11-2.57 0 1.29 1.29 0 012.57 0zm.53 0a1.81 1.81 0 10-3.63 0 1.81 1.81 0 003.63 0z"/>
+   </g>
+   <text stroke-width=".26" stroke="none" fill="#000" font-size="3.17" y="287.47" x="-297.99" id="text29864">
+    <tspan stroke-width=".26" fill="#000" font-family="Tahoma, 'Nimbus Sans L'" id="tspan29862" y="293.29" x="-229.2" font-weight="400" font-size="6.35">}</tspan>
+   </text>
+   <circle stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#fff" r="3.7" cx="-232.96" cy="291.56" id="ellipse1932-5-0-9"/>
+  </g>
+  <g id="g107044" transform="translate(-315.53 18.62)" stroke-dasharray="none" fill-opacity="1">
+   <circle stroke-opacity="1" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#6cb33e" r="6.09" cx="-216.04" cy="303.2" id="ellipse57-3"/>
+   <text stroke-width=".26" stroke="none" fill="#000" font-size="3.17" id="text28165-4" x="-295.56" y="300.19">
+    <tspan stroke-width=".26" fill="#000" text-anchor="start" writing-mode="lr-tb" font-family="Tahoma, 'Nimbus Sans L'" font-stretch="normal" font-variant="normal" font-style="normal" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-size="8.47" font-weight="400" x="-226.76" y="306.01" id="tspan28163-1">{</tspan>
+   </text>
+   <text stroke-width=".26" stroke="none" fill="#000" font-size="3.17" y="300.19" x="-278.15" id="text29864-7">
+    <tspan stroke-width=".26" fill="#000" text-anchor="start" writing-mode="lr-tb" font-family="Tahoma, 'Nimbus Sans L'" font-stretch="normal" font-variant="normal" font-style="normal" id="tspan29862-0" y="306.01" x="-209.36" font-weight="400" font-size="8.47" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start">}</tspan>
+   </text>
+   <g stroke-opacity="1" stroke-width=".66" stroke="none" fill="#000" text-anchor="start" writing-mode="lr-tb" font-family="sans-serif" font-size="16" font-stretch="normal" font-weight="400" font-variant="normal" font-style="normal" transform="translate(-387.95 212.19) scale(.4005)" aria-label="" style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" id="g33417">
+    <path stroke-width=".66" fill-opacity="1" fill="#000" text-anchor="start" writing-mode="lr-tb" font-family="sans-serif" font-size="16" font-stretch="normal" font-weight="400" font-variant="normal" font-style="normal" d="M362.4 225.1a.28.28 0 00-.29-.28h-.57a.28.28 0 00-.29.28v3.14h-2a.28.28 0 00-.28.29v.57c0 .16.12.29.28.29h2.86c.16 0 .29-.13.29-.29zm3.71 3.14a4.86 4.86 0 11-9.72 0 4.86 4.86 0 019.72 0zm2 0a6.86 6.86 0 10-13.72 0 6.86 6.86 0 0013.72 0z" style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" id="path33415"/>
+   </g>
+   <path stroke-opacity="1" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M-240.22 303.6h13.5" id="line1181-0-3"/>
+  </g>
+  <g id="g99472" transform="translate(-406.08 75.18)">
+   <text y="213.49" x="-215.86" id="text96626" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none">
+    <tspan id="tspan96624" y="219.31" x="-147.06" font-weight="400" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">()</tspan>
+   </text>
+   <path id="path96628" d="M-140.98 217.2h10.32" fill="none" fill-rule="evenodd" stroke="#000" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-62-2)"/>
+   <text id="text96632" x="-197.76" y="213.24" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none">
+    <tspan font-size="6.35" font-weight="400" x="-128.97" y="219.06" id="tspan96630" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">{</tspan>
+   </text>
+   <ellipse cx="-121.69" cy="217.38" rx="3.44" ry="3.17" id="ellipse107-2" fill="#6cb33e" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+   <text y="213.24" x="-186.65" id="text99462" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none">
+    <tspan id="tspan99460" y="219.06" x="-117.85" font-weight="400" font-size="6.35" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" stroke-width=".26">}</tspan>
+   </text>
+  </g>
+  <g transform="translate(-565.5 61.53) scale(.26458)" id="g21906" fill="none" stroke="#fff" stroke-width="2" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1">
+   <circle r="8.17" cy="219.98" cx="97.41" id="path21883" opacity="1" fill-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dashoffset="0"/>
+   <path id="path21885" d="M98 216v4.85h-3.48v0" fill-rule="evenodd" stroke-linecap="butt" stroke-linejoin="miter"/>
+  </g>
+  <g transform="translate(-556.91 75.28) scale(.26458)" id="g21906-9" fill="none" stroke="#fff" stroke-width="2" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1">
+   <circle r="8.17" cy="219.98" cx="97.41" id="path21883-2" opacity="1" fill-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dashoffset="0"/>
+   <path id="path21885-7" d="M98 216v4.85h-3.48v0" fill-rule="evenodd" stroke-linecap="butt" stroke-linejoin="miter"/>
+  </g>
+  <g transform="translate(-566 44.47) scale(.26458)" id="g21906-4" stroke="#929292" stroke-opacity="1" fill="none" stroke-width="2" stroke-miterlimit="4" stroke-dasharray="none">
+   <circle r="8.17" cy="219.98" cx="97.41" id="path21883-1" opacity="1" fill-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dashoffset="0"/>
+   <path id="path21885-79" d="M98 216v4.85h-3.48v0" fill-rule="evenodd" stroke-linecap="butt" stroke-linejoin="miter"/>
+  </g>
+  <text xml:space="preserve" style="line-height:125%" x="-291.44" y="68.55" id="text20541-1-7-8-53" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan20539-2-8-2-2" x="-291.44" y="68.55" stroke-width=".26">materialized signals:</tspan>
+  </text>
+  <path id="path95" d="M-272.34 80.07l-2.38-2.9h-34.13l-2.38 2.9v18.52l2.38 2.65h34.13l2.38-2.65z" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <text id="text99" x="-308.32" y="85.59" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan97" y="91.15" x="-308.32" font-weight="700" font-size="5.82" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" fill-opacity="1" stroke-width=".26">onNext</tspan>
+  </text>
+  <g id="g947" transform="translate(-318.11 .18) scale(.26458)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
+   <circle cx="144" cy="336" id="ellipse102-2" r="23" fill="#6cb33e" stroke="none"/>
+   <circle cx="144" cy="336" id="ellipse104" r="23" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <path id="path963" d="M-219.51 80.07l-2.38-2.9h-34.13l-2.39 2.9v18.52l2.39 2.65h34.13l2.38-2.65z" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <text id="text127" x="-256.52" y="85.34" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan id="tspan125" y="90.63" x="-255.72" font-weight="700" font-size="5.56" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" fill-opacity="1" stroke-width=".26">onComplete</tspan>
+  </text>
+  <path d="M-168.74 80.07l-2.38-2.64h-34.13l-2.38 2.64v18.52l2.38 2.91h34.13l2.38-2.9z" id="path1033" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <text y="85.76" x="-204.45" id="text1039" font-size="3.17" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1">
+   <tspan font-size="5.56" font-weight="700" x="-203.66" y="91.06" id="tspan1037" font-family="Tahoma, 'Nimbus Sans L'" fill="#000" fill-opacity="1" stroke-width=".26">onError</tspan>
+  </text>
+  <path id="path1049" d="M-172.7 93.18l-.53.8h-.8l-8.2-8.2v-.8l.53-.8h.8l8.2 8.47z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <path id="path1051" d="M-173.23 84.19l.53.8v.52l-8.2 8.47h-.8l-.53-.8v-.53l8.2-8.46z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <g transform="translate(-567.54 211.18) scale(.26458)" id="g2151-5" fill-opacity="1">
+   <path id="path2145-7" d="M165.65 162.24a9 9 0 110 18h-11a9 9 0 110-18z" fill="#fff" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+   <path id="path2147-1" d="M154.65 177.24a6 6 0 110-12 6 6 0 010 12z" fill="#6cb33e" stroke-width="1"/>
+  </g>
+  <g id="g107025" transform="translate(-315.47 15.97)">
+   <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill-opacity="1" fill="none" r="3.7" cx="-231.22" cy="229.36" id="ellipse1932-5-0"/>
+   <path marker-end="url(#Arrow2Lend-62-1)" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="#000" fill-rule="evenodd" fill="none" d="M-225.93 229.1h10.32" id="path4954-7-4"/>
+   <g fill-opacity="1" id="g2204" transform="translate(-328.28 174) scale(.26458)">
+    <path stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="#000" fill="#fff" id="path2194" d="M442.71 200.04a9 9 0 100 18h11a9 9 0 100-18z"/>
+    <path stroke-width="1" fill="#000" id="path2196" d="M448.21 215.04a6 6 0 100-12 6 6 0 000 12z"/>
+   </g>
+  </g>
+  <g id="g31850" transform="translate(-602.63 -219.93) scale(.26458)" fill="#45b8de" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+   <path id="path31846" d="M566.6 403.16l-2 2h-3l-31-31v-3l2-2h3l31 31z"/>
+   <path id="path31848" d="M564.6 369.16l2 2v3l-31 31h-3l-2-2v-3l31-31z"/>
+  </g>
+  <g transform="translate(-585.61 -219.93) scale(.26458)" id="g31856" fill="#5b1d88" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+   <path d="M566.6 403.16l-2 2h-3l-31-31v-3l2-2h3l31 31z" id="path31852"/>
+   <path d="M564.6 369.16l2 2v3l-31 31h-3l-2-2v-3l31-31z" id="path31854"/>
+  </g>
+  <text id="text31866" y="-112.92" x="-568.79" style="line-height:125%" xml:space="preserve" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan y="-112.92" x="-568.79" id="tspan31864" stroke-width=".26">Throwable variants</tspan>
+  </text>
+  <g id="g69964" transform="translate(-87.02 48.62)">
+   <g id="g69941">
+    <path id="path1034-4" d="M-332-161.6l-.52.52h-.8l-8.2-8.2v-.8l.53-.52h.8l8.2 8.2z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+   </g>
+   <path d="M-332.52-170.6l.53.53v.8l-8.2 8.2h-.8l-.53-.54v-.79l8.2-8.2z" id="path1036-2" fill="#ef2200" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  </g>
+  <path d="M-161.38 35.5l-.24.25h-.36l-3.74-3.74v-.36l.24-.24h.36l3.74 3.74z" id="path1034-9" fill="#ef2200" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <path d="M-161.62 31.4l.24.25V32l-3.74 3.74h-.36l-.24-.24v-.36l3.74-3.74z" id="path1036-7" fill="#ef2200" fill-opacity="1" stroke="none" stroke-width=".26" stroke-dasharray="none" stroke-opacity="1"/>
+  <g id="g7665" transform="translate(5.49 31.75)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
+   <ellipse id="ellipse68-9-9" cy="287.14" cx="-276.43" rx="4.45" ry="4.39" fill="#fff" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <text font-size="2.11" id="text139441-3" transform="scale(.95644 1.04555)" x="-290.89" y="274.14" fill="#45b8de" stroke="none" stroke-width=".26">
+    <tspan id="tspan139439-0" y="276.45" x="-290.89" font-weight="700" font-size="6.4" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-style="normal" font-variant="normal" font-stretch="normal" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#45b8de" stroke-width=".26">{</tspan>
+   </text>
+  </g>
+  <g id="g7670" transform="translate(5.82 31.75)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
+   <ellipse cx="-276.76" cy="302.84" id="circle3579" rx="4.45" ry="4.39" fill="#fff" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <text y="289.16" x="-291.48" transform="scale(.95644 1.04555)" id="text3583" font-size="2.11" fill="#45b8de" stroke="none" stroke-width=".26">
+    <tspan style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-size="6.4" font-weight="700" x="-291.48" y="291.47" id="tspan3581" font-style="normal" font-variant="normal" font-stretch="normal" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#45b8de" stroke-width=".26">}</tspan>
+   </text>
+  </g>
+  <g id="g7675" transform="translate(5.43 31.75)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
+   <ellipse id="circle3585" cy="320.37" cx="-276.37" rx="4.45" ry="4.39" fill="#fff" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round"/>
+   <text y="305.93" x="-292.03" transform="scale(.95644 1.04555)" id="text3583-9" font-size="2.11" fill="#45b8de" stroke="none" stroke-width=".26">
+    <tspan style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-size="6.4" font-weight="400" x="-292.03" y="308.24" id="tspan3581-0" font-style="normal" font-variant="normal" font-stretch="normal" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#45b8de" stroke-width=".26">}{</tspan>
+   </text>
+  </g>
+  <rect ry="7.59" y="-5.59" x="-452.91" height="15.17" width="20.51" id="rect25807" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+  <circle cx="-442.94" cy="2.13" id="circle25809" r="6.09" fill="#6cb33e" fill-opacity="1" stroke="#000" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+  <g id="g52425" transform="translate(-371.04 -127.13) scale(.26458)" stroke-linejoin="miter" stroke-opacity="1" stroke-width="2" stroke-miterlimit="4" stroke-dasharray="none">
+   <rect id="rect52407" width="38" height="35" x="352" y="81" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-linecap="round" stroke-dashoffset="0"/>
+   <text transform="scale(1.00072 .99929)" xml:space="preserve" style="line-height:125%" x="353.62" y="109.8" id="text52413" font-style="normal" font-weight="400" font-size="36.67" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-linecap="butt">
+    <tspan id="tspan52411" x="353.62" y="109.8" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="36.67" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" stroke-width="2" stroke-miterlimit="4" stroke-dasharray="none">v</tspan>
+   </text>
+   <g id="g52515" stroke="#000" fill="none" fill-rule="evenodd" stroke-linecap="butt">
+    <path d="M381 86.7v7" id="path52417"/>
+    <path d="M377 90.2h8" id="path52419"/>
+   </g>
+   <path d="M378.81 107.1h4.38" id="path52423" fill="none" fill-rule="evenodd" stroke="#000" stroke-linecap="butt"/>
+  </g>
+  <g transform="translate(-371.04 -111.13) scale(.26458)" id="g52445" stroke-linejoin="miter" stroke-opacity="1">
+   <rect y="81" x="352" height="35" width="38" id="rect52427" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0"/>
+   <text id="text52433" y="109.8" x="353.62" style="line-height:125%" xml:space="preserve" transform="scale(1.00072 .99929)" font-style="normal" font-weight="400" font-size="36.67" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt">
+    <tspan style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" y="109.8" x="353.62" id="tspan52431" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="36.67" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" stroke-width="1">v</tspan>
+   </text>
+   <circle r="7.69" cy="90.15" cx="380.89" id="circle52435" opacity="1" fill="#1574e1" fill-opacity="1" stroke="none" stroke-width="4" stroke-linecap="round" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0"/>
+   <g id="g52523" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1" stroke-linecap="butt">
+    <path id="path52437" d="M381 86.7v7"/>
+    <path id="path52439" d="M377 90.2h8"/>
+   </g>
+   <path id="path52443" d="M378.81 107.1h4.38" fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+  </g>
+  <g id="g52465" transform="translate(-371.04 -95.12) scale(.26458)" stroke-linejoin="miter" stroke-opacity="1">
+   <rect id="rect52447" width="38" height="35" x="352" y="81" opacity="1" fill="#fff" fill-opacity="1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0"/>
+   <text transform="scale(1.00072 .99929)" xml:space="preserve" style="line-height:125%" x="353.62" y="109.8" id="text52453" font-style="normal" font-weight="400" font-size="36.67" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt">
+    <tspan id="tspan52451" x="353.62" y="109.8" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="36.67" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" stroke-width="1">v</tspan>
+   </text>
+   <g id="g52527" stroke="#000" fill="none" fill-rule="evenodd" stroke-width="1" stroke-linecap="butt">
+    <path d="M381 86.7v7" id="path52457"/>
+    <path d="M377 90.2h8" id="path52459"/>
+   </g>
+   <circle r="7.69" cy="107.04" cx="380.89" id="circle52461" opacity="1" fill="#1574e1" fill-opacity="1" stroke="none" stroke-width="4" stroke-linecap="round" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0"/>
+   <path d="M378.81 107.1h4.38" id="path52463" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="1" stroke-linecap="butt"/>
+  </g>
+  <g transform="translate(-356.82 -74.63) scale(.26458)" id="g85756" stroke-linejoin="miter" stroke-opacity="1">
+   <rect id="rect85684" width="38" height="35" x="298.24" y="124.51" opacity="1" fill="#fff" fill-opacity="1" stroke="#ef2200" stroke-width="2" stroke-linecap="round" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0"/>
+   <text transform="scale(1.00072 .99929)" xml:space="preserve" style="line-height:125%" x="299.89" y="153.34" id="text85688" font-style="normal" font-weight="400" font-size="36.67" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt">
+    <tspan id="tspan85686" x="299.89" y="153.34" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="36.67" font-family="Tahoma, 'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke-width="1">v</tspan>
+   </text>
+   <g transform="translate(-53.76 43.51)" id="g85694" stroke="#ef2200" fill="none" fill-rule="evenodd" stroke-width="1" stroke-linecap="butt">
+    <path d="M381 86.7v7" id="path85690"/>
+    <path d="M377 90.2h8" id="path85692"/>
+   </g>
+   <path d="M325.05 150.6h4.38" id="path85696" fill="none" fill-rule="evenodd" stroke="#ef2200" stroke-width="1" stroke-linecap="butt"/>
+   <path id="path85731" d="M298.24 124.51l38 35" fill="none" fill-rule="evenodd" stroke="#ef2200" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="4" stroke-dasharray="none"/>
+   <path id="path85733" d="M298.24 159.51l38-35" fill="none" fill-rule="evenodd" stroke="#ef2200" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="4" stroke-dasharray="none"/>
+  </g>
+  <g id="g85823" transform="translate(-356.82 -58.63) scale(.26458)" stroke-linejoin="miter" stroke-opacity="1">
+   <rect id="rect85776" width="38" height="35" x="298.24" y="124.51" opacity="1" fill="#fff" fill-opacity="1" stroke="#ef2200" stroke-width="2" stroke-linecap="round" stroke-miterlimit="4" stroke-dasharray="none" stroke-dashoffset="0"/>
+   <text transform="scale(1.00072 .99929)" xml:space="preserve" style="line-height:125%" x="301.89" y="151.34" id="text85780" font-style="normal" font-weight="400" font-size="36.67" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt">
+    <tspan id="tspan85778" x="301.89" y="151.34" style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="26.67" font-family="sans-serif" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke-width="1">2</tspan>
+   </text>
+   <g transform="translate(-53.76 43.51)" id="g85786" stroke="#ef2200" fill="none" fill-rule="evenodd" stroke-width="1" stroke-linecap="butt">
+    <path d="M381 86.7v7" id="path85782"/>
+    <path d="M377 90.2h8" id="path85784"/>
+   </g>
+   <path d="M325.05 150.6h4.38" id="path85788" fill="none" fill-rule="evenodd" stroke="#ef2200" stroke-width="1" stroke-linecap="butt"/>
+   <path id="path85790" d="M298.24 124.51l38 35" fill="none" fill-rule="evenodd" stroke="#ef2200" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="4" stroke-dasharray="none"/>
+   <path id="path85792" d="M298.24 159.51l38-35" fill="none" fill-rule="evenodd" stroke="#ef2200" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="4" stroke-dasharray="none"/>
+  </g>
+  <g id="g114795" transform="translate(-45.78 46.34)" stroke-width=".53" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1" stroke-linejoin="miter">
+   <rect stroke-dashoffset="0" stroke-linecap="round" stroke-width=".53" stroke="#000" fill-opacity="1" fill="#fff" opacity="1" id="rect52475" width="10.05" height="9.26" x="-232.12" y="-104.03"/>
+   <rect stroke-dashoffset="0" stroke-linecap="round" stroke-width=".53" stroke="none" fill-opacity="1" fill="#1574e1" opacity="1" ry=".65" rx=".86" y="-103.5" x="-231.59" height="8.2" width="5.82" id="rect52477"/>
+   <g stroke-linecap="butt" stroke-width="2" fill-rule="evenodd" fill="none" stroke="#000" id="g52531" transform="translate(-378 -125.46) scale(.26458)">
+    <path d="M580.3 86.7v7" id="path52485"/>
+    <path d="M576.3 90.2h8" id="path52487"/>
+   </g>
+   <path stroke-linecap="butt" stroke-width=".53" stroke="#000" fill-rule="evenodd" fill="none" d="M-225.03-97.12h1.16" id="path52491"/>
+   <text stroke-linecap="butt" stroke-width=".53" stroke="none" fill-opacity="1" fill="#fff" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="7.89" font-weight="400" font-style="normal" id="text51128-8" y="-96.98" x="-230.88" style="line-height:125%" xml:space="preserve" transform="scale(1.00072 .99929)">
+    <tspan stroke-width=".53" fill-opacity="1" fill="#fff" text-anchor="start" writing-mode="lr-tb" font-family="sans-serif" font-size="7.18" font-stretch="normal" font-weight="400" font-variant="normal" font-style="normal" style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" y="-96.98" x="-230.88" id="tspan51126-4" stroke-miterlimit="4" stroke-dasharray="none">1</tspan>
+   </text>
+  </g>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" id="text106935" y="91.97" x="-569.11" style="line-height:125%" xml:space="preserve">
+   time-related:
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text106939" y="108.75" x="-511.94" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   (eg. timeout parameter)
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" id="text106961" y="168.21" x="-569.14" style="line-height:125%" xml:space="preserve">
+   <tspan stroke-width=".26" y="168.21" x="-569.14" id="tspan106959">functional parameters:</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text106990" y="198.33" x="-509.46" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" y="198.33" x="-509.46" id="tspan106988" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">BiFunction</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text106994" y="181.49" x="-509.46" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" y="181.49" x="-509.46" id="tspan106992" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Function</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text106998" y="215.53" x="-509.46" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" y="215.53" x="-509.46" id="tspan106996" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Consumer</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text107002" y="232.09" x="-509.46" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" id="tspan107000" y="232.09" x="-509.46" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Supplier</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text106986" y="265.7" x="-568.05" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   &amp; booleans
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text107006" y="259.52" x="-562.67" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" y="259.52" x="-562.67" id="tspan107004" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Predicate</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text107010" y="283.26" x="-509.46" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" id="tspan107008" y="283.26" x="-509.46" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Runnable</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" xml:space="preserve" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" x="-509.46" y="295.6" id="text107018" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" x="-509.46" y="295.6" id="tspan107016" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Callable</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" xml:space="preserve" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" x="-509.46" y="309.26" id="text107014" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" x="-509.46" y="309.26" id="tspan107012" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Future (already / immediately resolved)</tspan>
+  </text>
+  <text id="text109023" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="258.78" x="-492.16" style="line-height:125%" xml:space="preserve">
+   <tspan style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan109021" stroke-width=".26" y="258.78" x="-492.16" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">vs true</tspan>
+  </text>
+  <path marker-end="url(#marker109029)" stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#f7ac09" fill-opacity="1" fill="none" d="M-493.3 256.64h-26.82" id="path109025" stroke-miterlimit="4" stroke-dashoffset="0"/>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" id="text114801" y="126.76" x="-291.44" style="line-height:125%" xml:space="preserve">
+   threading:
+  </text>
+  <path stroke-opacity="1" stroke-dasharray="none" stroke-width="1" stroke="none" fill-opacity="1" fill="#ff5a01" d="M-280.1 135.26l7.4 3.7a.4.4 0 010 .8l-7.4 3.7a.37.37 0 01-.53-.52v-7.41a.3.3 0 01.53-.27z" id="path90"/>
+  <path stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#34302c" fill-opacity="1" fill="none" d="M-280.1 135.26l7.4 3.7a.4.4 0 010 .8l-7.4 3.7a.37.37 0 01-.53-.52v-7.41a.3.3 0 01.53-.27z" id="path92" stroke-miterlimit="4"/>
+  <path stroke-opacity="1" stroke-dasharray="none" stroke-width="1" stroke="none" fill-opacity="1" fill="#ff5a01" d="M-278.51 135.26l7.4 3.7a.4.4 0 010 .8l-7.4 3.7a.3.3 0 01-.53-.26v-7.4a.37.37 0 01.53-.54z" id="path95-8"/>
+  <path stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#34302c" fill-opacity="1" fill="none" d="M-278.51 135.26l7.4 3.7a.4.4 0 010 .8l-7.4 3.7a.3.3 0 01-.53-.26v-7.4a.37.37 0 01.53-.54z" id="path97" stroke-miterlimit="4"/>
+  <path stroke-opacity="1" stroke-dasharray="none" stroke-width="1" stroke="none" fill-opacity="1" fill="#ff5a01" d="M-276.92 135.26l7.67 3.7a.4.4 0 010 .8l-7.67 3.7a.3.3 0 01-.53-.26v-7.4a.37.37 0 01.53-.54z" id="path100"/>
+  <path stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#34302c" fill-opacity="1" fill="none" d="M-276.92 135.26l7.67 3.7a.4.4 0 010 .8l-7.67 3.7a.3.3 0 01-.53-.26v-7.4a.37.37 0 01.53-.54z" id="path102" fill-rule="nonzero" stroke-miterlimit="4"/>
+  <text id="text115594" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="141" x="-264.78" style="line-height:125%" xml:space="preserve">
+   <tspan style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan115592" stroke-width=".26" y="141" x="-264.78" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">a Scheduler</tspan>
+  </text>
+  <path id="line105" d="M-277.67 177.8h71.43" fill="none" fill-opacity="1" stroke="#ff5a01" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-8)"/>
+  <path id="path123" d="M-217.08 171.45c.26 0 .52 0 .52.53v11.64l-.52.53-.53-.53v-11.64c0-.53.26-.53.53-.53z" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1" stroke-width=".26"/>
+  <path id="line135" fill="none" fill-opacity="1" stroke="#ff5a01" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.529167, 1.5875" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_4-5)" d="M-217.08 143.94v21.7"/>
+  <text id="text7639" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="164.6" x="-279.76" style="line-height:125%" xml:space="preserve">
+   <tspan id="tspan7644" x="-279.76" y="164.6"><tspan style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan7637" stroke-width=".26" y="164.6" x="-279.76" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Flux running on</tspan></tspan>
+  </text>
+  <text id="text7660" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="171.47" x="-279.76" style="line-height:125%" xml:space="preserve">
+   <tspan id="tspan7658" x="-279.76" y="171.47"><tspan style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan7656" stroke-width=".26" y="171.47" x="-279.76" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">the above Scheduler</tspan></tspan>
+  </text>
+  <text id="text7822" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="267.78" x="-492.16" style="line-height:125%" xml:space="preserve">
+   <tspan style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan7820" stroke-width=".26" y="267.78" x="-492.16" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">vs false</tspan>
+  </text>
+  <text id="text109023-0" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="244.88" x="-492.45" style="line-height:125%" xml:space="preserve">
+   <tspan style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan109021-0" stroke-width=".26" y="244.88" x="-492.45" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">&quot;a boolean&quot;</tspan>
+  </text>
+  <text id="text9663" stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="249.73" x="-492.36" style="line-height:125%" xml:space="preserve">
+   <tspan style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan9661" stroke-width=".26" y="249.73" x="-492.36" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="4.23" font-family="sans-serif">(in a Predicate)</tspan>
+  </text>
+  <path marker-end="url(#marker11654)" stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#f7ac09" fill-opacity="1" fill="none" d="M-493.3 265.63h-26.82" id="path11650" stroke-miterlimit="4" stroke-dashoffset="0"/>
+  <path marker-end="url(#marker13519)" stroke-opacity="1" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#f7ac09" fill-opacity="1" fill="none" d="M-493.3 246.06h-26.82" id="path13515" stroke-miterlimit="4" stroke-dashoffset="0"/>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" xml:space="preserve" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" x="-509.46" y="323.55" id="text15330" font-variant="normal" font-stretch="normal">
+   <tspan stroke-width=".26" x="-509.46" y="323.55" id="tspan15328" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">Future (or CompletionStage) with latency</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text16838" y="-98.4" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Stateful object API/parameter (eg. AtomicLong)
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text16846" y="-82.79" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Method reference / invocation (eg. +)
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text16848" y="-66.38" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Method reference / invocation (eg. -)
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text18907" y="-51.04" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Instance with internal value / value read
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text18909" y="-35.16" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Cleanup method reference
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text18911" y="-19.82" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Cleaned up instance
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text18915" y="320.7" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Opening trigger
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text18917" y="336.31" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Closing trigger
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text18919" y="352.72" x="-258.63" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   Boundary trigger (close old, open new)
+  </text>
+  <g id="g18325" transform="translate(61.33 341.79)" stroke-miterlimit="4" stroke="#5b1d88" stroke-dasharray="none" stroke-opacity="1">
+   <path d="M-276.41-120.83h20.9" id="path2863-9" fill="none" fill-rule="evenodd" stroke-width=".53" stroke-linecap="butt" stroke-linejoin="miter"/>
+   <path d="M-340.18-120.83h10.47" id="path2863" fill="none" fill-rule="evenodd" stroke-width=".53" stroke-linecap="butt" stroke-linejoin="miter"/>
+   <g transform="matrix(.34373 0 0 .26458 -354.34 -105.6)" id="g7770" stroke-width="1.75">
+    <path d="M71.28-57.3s35.01-41.08 52.77-39.68c18.85 1.5 18.02 18.01 15.35 24.7-3.93 9.82-19.08 15.4-29.2 12.36C98.57-63.41 88.34-78.21 90-90.24c2.21-16.13 20.81-30.6 37.05-31.81 36.73-2.74 99.56 64.75 99.56 64.75" id="path7749" fill="none" fill-rule="evenodd" stroke="#5b1d88" stroke-width="1.75" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="none" stroke-opacity="1"/>
+   </g>
+  </g>
+  <g id="g27561" stroke-miterlimit="4" fill="none" fill-rule="evenodd" stroke="#5b1d88" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1" transform="translate(111.32 360.64)">
+   <path d="M-326.4-109.73h20.9" id="path2863-9-7" stroke-width=".53"/>
+   <path d="M-390.17-109.73h10.47" id="path2863-6" stroke-width=".53"/>
+   <g transform="matrix(.34373 0 0 .26458 -404.34 -94.5)" id="g7770-3" stroke-width="1.75">
+    <path d="M71.28-57.3s35.01-41.08 52.77-39.68c18.85 1.5 18.02 18.01 15.35 24.7-3.93 9.82-19.08 15.4-29.2 12.36C98.57-63.41 88.34-78.21 90-90.24c2.21-16.13 20.81-30.6 37.05-31.81 36.73-2.74 99.56 64.75 99.56 64.75" id="path7749-11"/>
+    <path d="M71.28-57.3s35.01 41.08 52.77 39.67c18.85-1.48 18.02-18 15.35-24.7-3.93-9.81-19.08-15.39-29.2-12.35C98.57-51.2 88.34-36.4 90-24.36c2.2 16.12 20.8 30.6 37.04 31.81 36.73 2.74 99.56-64.75 99.56-64.75" id="path7749-1"/>
+   </g>
+  </g>
+  <text xml:space="preserve" style="line-height:125%" x="-279.72" y="199.68" id="text16930" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan style="-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan16944" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">non-reactive sources:</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text16932" y="218.7" x="-187.61" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan id="tspan16936" x="-187.61" y="218.7">synchronous</tspan><tspan id="tspan16938" x="-187.61" y="225.76">/single threaded</tspan>
+  </text>
+  <text stroke-opacity="1" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill-opacity="1" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="5.64" font-weight="400" font-style="normal" id="text16934" y="249.4" x="-187.61" style="line-height:125%;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" xml:space="preserve" font-variant="normal" font-stretch="normal">
+   <tspan id="tspan16940" x="-187.61" y="249.4">asynchronous</tspan><tspan id="tspan16942" x="-187.61" y="256.45">/multi threaded</tspan>
+  </text>
+ </g>
+</svg>
