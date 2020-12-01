@@ -13,62 +13,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 configure(rootProject) {
-	apply plugin: 'org.asciidoctor.convert'
+	repositories {
+		jcenter()
+	}
+
+	apply plugin: 'org.asciidoctor.jvm.convert'
+	apply plugin: 'org.asciidoctor.jvm.pdf'
+
+	// This configuration applies both to the asciidoctor & asciidoctorPdf tasks
+	asciidoctorj {
+		options = [doctype: 'book']
+		attributes 'allow-uri-read': '',
+				'attribute-missing': 'warn',
+				'project-version': "${project.version}",
+				'reactorReleaseTrain': "${bomVersion}"
+	}
 
 	asciidoctor {
-		inputs.dir("docs/asciidoc/")
-			.withPropertyName("asciidocFiles")
-			.withPathSensitivity(PathSensitivity.RELATIVE)
-
-		if (!isCiServer && rootProject.version.toString().endsWith("-SNAPSHOT")) {
-			backends = ["html5"]
-		}
-		else {
-			backends = ["html5", "pdf"]
-		}
-
-		sourceDir "$rootDir/docs/asciidoc/"
+		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
 		}
+		baseDirFollowsSourceDir()
 		resources {
 			from(sourceDir) {
 				include 'images/**'
 				include 'highlight/**/*'
 			}
+
 		}
-		outputDir file("$buildDir/docs/asciidoc")
+		outputDir file("$buildDir/docs/asciidoc/html")
 		logDocuments = true
-		options = [doctype: 'book']
-		attributes 'allow-uri-read': '',
-			reactorReleaseTrain: "$bomVersion",
-			imagesdir: "images/",
-			stylesdir: "stylesheets/",
-			stylesheet: 'reactor.css',
-			'source-highlighter': 'highlightjs',
-			'highlightjsdir': "./highlight",
-			'highlightjs-theme': 'railscasts'
+		attributes stylesdir: "stylesheets/",
+				stylesheet: 'reactor.css',
+				'source-highlighter': 'highlightjs',
+				'highlightjsdir': "./highlight",
+				'highlightjs-theme': 'railscasts',
+				'reactorReleaseTrain': "$bomVersion"
 	}
 
-	dependencies {
-		asciidoctor 'org.jruby:jruby-complete:9.2.5.0'
-		asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
+	asciidoctorPdf {
+		onlyIf { isCiServer || !rootProject.version.toString().endsWith("-SNAPSHOT") }
+		sourceDir "docs/asciidoc/"
+		sources {
+			include "index.asciidoc"
+		}
+		baseDirFollowsSourceDir()
+		outputDir file("$buildDir/docs/asciidoc/pdf")
+		logDocuments = true
+		attributes 'source-highlighter': 'rouge'
 	}
 
-	task docsZip(type: Zip, dependsOn: asciidoctor) {
+	task docsZip(type: Zip, dependsOn: [asciidoctor, asciidoctorPdf]) {
 		archiveBaseName.set("reactor-core")
 		archiveClassifier.set('docs')
 		afterEvaluate() {
-			//we copy the pdf late, when a potential customVersion has been applied to rootProject
-			from("$buildDir/docs/asciidoc/pdf/index.pdf") {
+			//we configure the pdf copy late, when a potential customVersion has been applied to rootProject
+			from(asciidoctorPdf) {
 				into ("docs/")
 				rename("index.pdf", "reactor-core-reference-guide-${rootProject.version}.pdf")
 			}
 		}
-		from("$buildDir/docs/asciidoc/html5/index.html") { into("docs/") }
-		from("$buildDir/docs/asciidoc/html5/images") { into("docs/images/") }
-		from("$buildDir/docs/asciidoc/html5/highlight") { into("docs/highlight/") }
+		from(asciidoctor) { into("docs/") }
 	}
 }
 

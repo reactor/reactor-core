@@ -25,7 +25,7 @@ relevant type. For instance, the `count` operator exists in `Flux`, but it retur
 
 The following image shows how a `Flux` transforms items:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/flux.png[Flux]
+image::images/flux.svg[Flux]
 
 A `Flux<T>` is a standard `Publisher<T>` that represents an asynchronous sequence of 0 to N
 emitted items, optionally terminated by either a completion signal or an error.
@@ -44,7 +44,7 @@ produces a `Flux<Long>` that is infinite and emits regular ticks from a clock.
 
 The following image shows how a `Mono` transforms an item:
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.4.0/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mono.svg[Mono]
+image::images/mono.svg[Mono]
 
 A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item _via_ the
 `onNext` signal then terminates with an `onComplete` signal (successful `Mono`,
@@ -201,9 +201,9 @@ immediate scheduling, and so on).
 The https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html[`Schedulers`]
 class has static methods that give access to the following execution contexts:
 
- * No execution context (`Schedulers.immediate()`): at processing time, the submitted `Runnable`
+* No execution context (`Schedulers.immediate()`): at processing time, the submitted `Runnable`
 will be directly executed, effectively running them on the current `Thread` (can be seen as a "null object" or no-op `Scheduler`).
- * A single, reusable thread (`Schedulers.single()`). Note that this method reuses the
+* A single, reusable thread (`Schedulers.single()`). Note that this method reuses the
 same thread for all callers, until the Scheduler is disposed. If you want a per-call
 dedicated thread, use `Schedulers.newSingle()` for each call.
 * An unbounded elastic thread pool (`Schedulers.elastic()`). This one is no longer preferred
