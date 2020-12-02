@@ -2168,6 +2168,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doAfterSuccessOrError.svg" alt="">
+	 * <p>
+	 * The relevant signal is propagated downstream, then the {@link BiConsumer} is executed.
 	 *
 	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
@@ -2184,6 +2186,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * completing downstream successfully or with an error.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doAfterTerminateForMono.svg" alt="">
+	 * <p>
+	 * The relevant signal is propagated downstream, then the {@link Runnable} is executed.
 	 *
 	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
@@ -2263,10 +2267,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Add behavior triggered when the {@link Mono} is cancelled.
-	 *
-	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnCancelForMono.svg" alt="">
+	 * <p>
+	 * The handler is executed first, then the cancel signal is propagated upstream
+	 * to the source.
 	 *
 	 * @param onCancel the callback to call on {@link Subscription#cancel()}
 	 *
@@ -2309,6 +2314,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnNextForMono.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onNext signal is propagated
+	 * downstream.
 	 *
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
@@ -2320,15 +2328,18 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior triggered when the {@link Mono} completes successfully.
+	 * Add behavior triggered as soon as the {@link Mono} can be considered to have completed successfully.
+	 * The value passed to the {@link Consumer} reflects the type of completion:
 	 *
 	 * <ul>
-	 *     <li>null : completed without data</li>
-	 *     <li>T: completed with data</li>
+	 *     <li>null : completed without data. handler is executed right before onComplete is propagated downstream</li>
+	 *     <li>T: completed with data. handler is executed right before onNext is propagated downstream</li>
 	 * </ul>
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnSuccess.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed before propagating either onNext or onComplete downstream.
 	 *
 	 * @param onSuccess the callback to call on, argument is null if the {@link Mono}
 	 * completes without data
@@ -2349,6 +2360,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * These {@link Signal} have a {@link Context} associated to them.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnEachForMono.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the relevant signal is propagated
+	 * downstream.
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -2373,6 +2387,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnErrorForMono.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onError signal is propagated
+	 * downstream.
 	 *
 	 * @param onError the error callback to call on {@link Subscriber#onError(Throwable)}
 	 *
@@ -2388,6 +2405,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Add behavior triggered when the {@link Mono} completes with an error matching the given exception type.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnErrorWithClassPredicateForMono.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onError signal is propagated
+	 * downstream.
 	 *
 	 * @param exceptionType the type of exceptions to handle
 	 * @param onError the error handler for relevant errors
@@ -2411,6 +2431,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Add behavior triggered when the {@link Mono} completes with an error matching the given predicate.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnErrorWithPredicateForMono.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onError signal is propagated
+	 * downstream.
 	 *
 	 * @param predicate the matcher for exceptions to handle
 	 * @param onError the error handler for relevant error
@@ -2436,6 +2459,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnRequestForMono.svg" alt="">
+	 * <p>
+	 * The {@link LongConsumer} is executed first, then the request signal is propagated
+	 * upstream to the parent.
 	 *
 	 * @param consumer the consumer to invoke on each request
 	 *
@@ -2447,9 +2473,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior (side-effect) triggered when the {@link Mono} is done being subscribed,
+	 * Add behavior (side-effect) triggered when the {@link Mono} is being subscribed,
 	 * that is to say when a {@link Subscription} has been produced by the {@link Publisher}
-	 * and passed to the {@link Subscriber#onSubscribe(Subscription)}.
+	 * and is being passed to the {@link Subscriber#onSubscribe(Subscription)}.
 	 * <p>
 	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
 	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
@@ -2457,6 +2483,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnSubscribe.svg" alt="">
 	 * <p>
+	 * The {@link Consumer} is executed first, then the {@link Subscription} is propagated
+	 * downstream to the next subscriber in the chain that is being established.
+	 *
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe(Subscription)}
 	 *
 	 * @return a new {@link Mono}
@@ -2468,16 +2497,19 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior triggered when the {@link Mono} terminates, either by completing successfully or with an error.
-	 *
+	 * Add behavior triggered when the {@link Mono} terminates, either by emitting a value,
+	 * completing empty or failing with an error.
+	 * The value passed to the {@link Consumer} reflects the type of completion:
 	 * <ul>
-	 *     <li>null, null : completing without data</li>
-	 *     <li>T, null : completing with data</li>
-	 *     <li>null, Throwable : failing with/without data</li>
+	 *     <li>null, null : completing without data. handler is executed right before onComplete is propagated downstream</li>
+	 *     <li>T, null : completing with data. handler is executed right before onNext is propagated downstream</li>
+	 *     <li>null, Throwable : failing. handler is executed right before onError is propagated downstream</li>
 	 * </ul>
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnSuccessOrError.svg" alt="">
+	 * <p>
+	 * The {@link BiConsumer} is executed before propagating either onNext, onComplete or onError downstream.
 	 *
 	 * @param onSuccessOrError the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
@@ -2492,12 +2524,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Add behavior triggered when the {@link Mono} terminates, either by completing with a value,
-	 * completing empty or completing with an error. Unlike in {@link Flux#doOnTerminate(Runnable)},
+	 * completing empty or failing with an error. Unlike in {@link Flux#doOnTerminate(Runnable)},
 	 * the simple fact that a {@link Mono} emits {@link Subscriber#onNext(Object) onNext} implies
 	 * completion, so the handler is invoked BEFORE the element is propagated (same as with {@link #doOnSuccess(Consumer)}).
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/doOnTerminateForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/doOnTerminateForMono.svg" alt=""><p>
+	 * The {@link Runnable} is executed first, then the onNext/onComplete/onError signal is propagated
+	 * downstream.
 	 *
 	 * @param onTerminate the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
