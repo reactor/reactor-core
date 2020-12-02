@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="738.88" height="509.16" viewBox="0 0 195.5 134.72" version="1.1" id="svg3340">
+ <defs id="defs3334">
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker-3-8-0" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#000" stroke-linejoin="miter">
+   <g id="g6-6-3-9">
+    <path d="M12 0L0-4v9z" id="path4-7-7" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3216" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#000" stroke-linejoin="miter">
+   <g id="g3214">
+    <path d="M12 0L0-4v9z" id="path3212" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2-5-2-4" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#000" stroke-linejoin="miter">
+   <g id="g11-3-8">
+    <path d="M8 0L0-3v6z" id="path9-5-50-3" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3225" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#000" stroke-linejoin="miter">
+   <g id="g3223">
+    <path d="M8 0L0-3v6z" id="path3221" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3231" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#000" stroke-linejoin="miter">
+   <g id="g3229">
+    <path d="M8 0L0-3v6z" id="path3227" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3237" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#000" stroke-linejoin="miter">
+   <g id="g3235">
+    <path d="M8 0L0-3v6z" id="path3233" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3243" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#000" stroke-linejoin="miter">
+   <g id="g3241">
+    <path d="M8 0L0-3v6z" id="path3239" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3249" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#000" stroke-linejoin="miter">
+   <g id="g3247">
+    <path d="M8 0L0-3v6z" id="path3245" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-3-29-8" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g16-6-8-1">
+    <path d="M8 0L0-3v6z" id="path14-7-7-2" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3258" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g3256">
+    <path d="M8 0L0-3v6z" id="path3254" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker-5-2-1-6-9" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#000" stroke-linejoin="miter">
+   <g id="g4-3-7-2-2-6">
+    <path d="M12 0L0-4v9z" id="path2-5-0-7-9-5" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker-75-2" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#000" stroke-linejoin="miter">
+   <g id="g6-1-3">
+    <path d="M12 0L0-4v9z" id="path4-13-9" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3270" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g3268">
+    <path d="M8 0L0-3v6z" id="path3266" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker3276" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g3274">
+    <path d="M8 0L0-3v6z" id="path3272" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker id="marker80577-1" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M0-1.41L-1.41 0 0 1.41 1.41 0z" id="path80575-0" fill="#f7ac09" fill-opacity="1" fill-rule="evenodd" stroke="#f7ac09" stroke-width=".2pt" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" refY="0" refX="0" id="marker80577-1-1" overflow="visible">
+   <path id="path80575-0-5" d="M0-1.41L-1.41 0 0 1.41 1.41 0z" fill="#f7ac09" fill-opacity="1" fill-rule="evenodd" stroke="#f7ac09" stroke-width=".2pt" stroke-opacity="1"/>
+  </marker>
+ </defs>
+ <g id="layer1" transform="translate(-154.74 -186.64)" stroke-opacity="1" fill-opacity="1">
+  <path stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#fff" id="path38-4" d="M206.63 206.96h134.14l.26.64v59.6l-.26.65H206.62l-.26-.64V207.6z"/>
+  <path marker-end="url(#FilledArrow_Marker-3-8-0)" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M201.33 295.37h136" id="line53-2"/>
+  <path stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#000" d="M332.03 289.02l.53.53v11.64l-.53.53-.52-.53v-11.64z" id="path56"/>
+  <path marker-end="url(#FilledArrow_Marker-3-8-0)" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M201.86 198h136.26" id="line60"/>
+  <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#6cb33e" r="6.09" cx="294.2" cy="198" id="ellipse65"/>
+  <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#e6ba31" r="6.09" cx="314.04" cy="198" id="ellipse70"/>
+  <path stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#000" d="M332.03 191.65l.53.53v11.64l-.53.53-.52-.53v-11.64z" id="path78"/>
+  <path marker-end="url(#FilledArrow_Marker_2-5-2-4)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M294.2 204.09l.26 44.18" id="line81"/>
+  <path marker-end="url(#FilledArrow_Marker_2-5-2-4)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M314.04 204.09l.27 44.45" id="line84-7"/>
+  <path marker-end="url(#FilledArrow_Marker_2-5-2-4)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M332.03 204.35v44.45" id="line118"/>
+  <path marker-end="url(#FilledArrow_Marker_2-5-2-4)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M294.73 268.12v15.6" id="line129"/>
+  <path marker-end="url(#FilledArrow_Marker_2-5-2-4)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M314.57 267.85l.27 15.88" id="line132"/>
+  <path marker-end="url(#FilledArrow_Marker_2-5-2-4)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M332.03 267.85v15.88" id="line138"/>
+  <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#6cb33e" r="6.09" cx="294.73" cy="295.37" id="ellipse143"/>
+  <circle stroke-dasharray="none" stroke-miterlimit="4" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#e6ba31" r="6.09" cx="314.84" cy="295.37" id="ellipse148"/>
+  <path marker-end="url(#FilledArrow_Marker_3-3-29-8)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#45b8de" fill="none" d="M214.56 295.1v-22.75" id="line86"/>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#45b8de" font-size="2.91" y="198.73" x="-308.23" transform="matrix(0 -.95024 1.05236 0 0 0)" id="text91-9">
+   <tspan stroke-width=".26" fill="#45b8de" font-family="Tahoma, 'Nimbus Sans L'" font-size="3.44" font-weight="400" x="-308.23" y="201.91" id="tspan89-5">subscribe()</tspan>
+  </text>
+  <path marker-end="url(#FilledArrow_Marker_3-3-29-8)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#45b8de" fill="none" d="M250.63 223.6v-20.67" id="line1037"/>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#45b8de" font-size="2.91" id="text1041" transform="matrix(0 -.95024 1.05236 0 0 0)" x="-235.43" y="232.89">
+   <tspan stroke-width=".26" fill="#45b8de" font-family="Tahoma, 'Nimbus Sans L'" id="tspan1039" y="236.33" x="-235.43" font-weight="400" font-size="3.44">subscribe()</tspan>
+  </text>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#000" font-size="3.17" y="256.74" x="206.89" id="text42-2">
+   <tspan stroke-width=".26" fill="#000" font-family="Tahoma, 'Nimbus Sans L'" id="tspan40-4" y="262.56" x="225.94" font-weight="700" font-size="6.35">delaySubscription (</tspan>
+  </text>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#000" font-size="3.17" id="text928" x="300.02" y="256.74">
+   <tspan stroke-width=".26" fill="#000" font-family="Tahoma, 'Nimbus Sans L'" font-size="6.35" font-weight="700" x="319.07" y="262.56" id="tspan926">)</tspan>
+  </text>
+  <path marker-end="url(#FilledArrow_Marker-5-2-1-6-9)" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M288.53 260.44h22.07" id="line56-9"/>
+  <path stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#000" d="M306.63 257.27h.27l.53.26v5.82l-.53.27h-.27l-.26-.27v-5.82z" id="path64-0"/>
+  <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#fff" r="3.44" id="ellipse1418" cy="260.44" cx="293.14"/>
+  <path stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M210.06 254.09h127.8" id="line1181-0"/>
+  <path marker-end="url(#FilledArrow_Marker-75-2)" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="none" d="M230.43 230.3h42.98" id="line63-0"/>
+  <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#fff" r="6.09" cx="250.81" cy="230.28" id="ellipse68-9"/>
+  <path marker-end="url(#FilledArrow_Marker_3-3-29-8)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#45b8de" fill="none" d="M230.43 253.6v-17.9" id="line1307-4"/>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#45b8de" font-size="2.91" id="text1311" transform="matrix(0 -.95024 1.05236 0 0 0)" x="-265.89" y="213.82">
+   <tspan stroke-width=".26" fill="#45b8de" font-family="Tahoma, 'Nimbus Sans L'" id="tspan1309" y="216.99" x="-265.89" font-weight="400" font-size="3.44">subscribe()</tspan>
+  </text>
+  <path marker-end="url(#FilledArrow_Marker_3-3-29-8)" stroke-dasharray="0.529167, 1.5875" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#45b8de" fill="none" d="M265.9 253.87V235.6" id="line1364"/>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#45b8de" font-size="2.91" y="247.42" x="-265.89" transform="matrix(0 -.95024 1.05236 0 0 0)" id="text1368">
+   <tspan stroke-width=".26" fill="#45b8de" font-family="Tahoma, 'Nimbus Sans L'" font-size="3.44" font-weight="400" x="-265.89" y="250.6" id="tspan1366">cancel()</tspan>
+  </text>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#45b8de" y="218.65" x="262.34" transform="scale(.95024 1.05236)" id="text139441" font-size="2.91">
+   <tspan stroke-width=".26" fill="#45b8de" text-anchor="start" writing-mode="lr-tb" font-family="Tahoma, 'Nimbus Sans L'" font-stretch="normal" font-variant="normal" font-style="normal" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-size="8.82" font-weight="700" x="262.34" y="221.83" id="tspan139439">!</tspan>
+  </text>
+  <text stroke-dasharray="none" stroke-width=".26" stroke="none" fill="#45b8de" text-anchor="start" writing-mode="lr-tb" font-family="Tahoma, 'Nimbus Sans L'" font-stretch="normal" font-weight="400" font-variant="normal" font-style="normal" font-size="4.23" id="text139445" transform="scale(.95024 1.05236)" x="307.77" y="246" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start">
+   <tspan stroke-width=".26" fill="#45b8de" text-anchor="start" writing-mode="lr-tb" font-family="Tahoma, 'Nimbus Sans L'" font-stretch="normal" font-variant="normal" font-style="normal" id="tspan139443" y="249.18" x="307.77" font-weight="700" font-size="4.23" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start">!</tspan>
+  </text>
+  <circle stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#000" fill="#fff" cx="301.61" cy="260.44" id="circle142979" r="3.44"/>
+  <path id="path80553-5" d="M192.5 230.22h35.83" fill="none" stroke="#f7ac09" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" marker-end="url(#marker80577-1)" stroke-miterlimit="4" stroke-dashoffset="0"/>
+  <text id="text80557-0" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="231.78" x="159.45" style="line-height:125%" xml:space="preserve">
+   <tspan id="tspan80555-4" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" stroke-width=".26" y="231.78" x="159.45" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">example of</tspan>
+  </text>
+  <text xml:space="preserve" style="line-height:125%" x="159.45" y="237.6" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" id="text87932">
+   <tspan x="159.45" y="237.6" stroke-width=".26" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan87930" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">companion Flux</tspan>
+  </text>
+  <text id="text80557-8" stroke-linejoin="miter" stroke-linecap="butt" stroke-width=".26" stroke="none" fill="#000" word-spacing="0" letter-spacing="0" font-family="sans-serif" font-size="10.58" font-weight="400" font-style="normal" y="308.34" x="173.13" style="line-height:125%" xml:space="preserve">
+   <tspan id="tspan80555-6" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" stroke-width=".26" y="308.34" x="173.13" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">representation of the companion as parameter</tspan>
+  </text>
+  <text xml:space="preserve" style="line-height:125%" x="173.13" y="315.22" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" id="text90280">
+   <tspan x="173.13" y="315.22" stroke-width=".26" style="-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" id="tspan90278" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="5.64" font-family="sans-serif">(here it denotes only first element is considered)</tspan>
+  </text>
+  <path marker-end="url(#marker80577-1-1)" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="round" stroke-width=".53" stroke="#f7ac09" fill="none" d="M227.3 302.5l70.56-38.75" id="path80553-5-9" stroke-miterlimit="4" stroke-dashoffset="0"/>
+ </g>
+</svg>
