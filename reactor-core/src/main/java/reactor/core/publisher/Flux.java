@@ -8460,6 +8460,26 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Tag this flux with a key/value pairs. These can be retrieved as a {@link Set} of
+	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
+	 * traversed
+	 * by {@link Scannable#parents()}).
+	 * <p>
+	 * Note that some monitoring systems like Prometheus require to have the exact same set of
+	 * tags for each meter bearing the same name.
+	 *
+	 * @param tags are key value pairs
+	 *
+	 * @return the same sequence, but bearing tags
+	 *
+	 *@see #name(String)
+	 *@see #metrics()
+	 */
+	public final Flux<T> tag(Set<Tuple2<String, String>> tags) {
+		return FluxName.createOrAppend(this, tags);
+	}
+
+	/**
 	 * Take only the first N values from this {@link Flux}, if available.
 	 * <p>
 	 * If N is zero, the resulting {@link Flux} completes as soon as this {@link Flux}

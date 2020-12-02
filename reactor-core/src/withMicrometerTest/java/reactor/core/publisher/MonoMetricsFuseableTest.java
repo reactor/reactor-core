@@ -17,8 +17,12 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
@@ -42,6 +46,8 @@ import reactor.core.publisher.MonoMetricsFuseable.MetricsFuseableSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Metrics;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -270,10 +276,16 @@ public class MonoMetricsFuseableTest {
 
 	@Test
 	public void usesTagsFuseable() {
+		Set<Tuple2<String, String>> tags = Stream.of(
+				Tuples.of("tag3", "B"),
+				Tuples.of("tag4", "bar")
+		).collect(Collectors.toCollection(HashSet::new));
+
 		Mono<Integer> source = Mono.just(8)
 								   .name("usesTags")
 								   .tag("tag1", "A")
-		                           .tag("tag2", "foo");
+								   .tag("tag2", "foo")
+								   .tag(tags);
 
 		new MonoMetricsFuseable<>(source).block();
 
@@ -282,6 +294,8 @@ public class MonoMetricsFuseableTest {
 				.tags(Tags.of(TAG_ON_COMPLETE))
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
+				.tag("tag3", "B")
+				.tag("tag4", "bar")
 				.timer();
 
 		assertThat(meter).isNotNull();

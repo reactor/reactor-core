@@ -69,6 +69,13 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
 
+		return createOrAppend(source, tags);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Flux<T> createOrAppend(Flux<T> source, Set<Tuple2<String, String>> tags) {
+		Objects.requireNonNull(tags, "tags");
+
 		if (source instanceof FluxName) {
 			FluxName<T> s = (FluxName<T>) source;
 			if(s.tags != null) {

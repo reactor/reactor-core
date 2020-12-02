@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -64,6 +65,13 @@ final class MonoName<T> extends InternalMonoOperator<T, T> {
 		Objects.requireNonNull(tagValue, "tagValue");
 
 		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+
+		return createOrAppend(source, tags);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Mono<T> createOrAppend(Mono<T> source, Set<Tuple2<String, String>> tags) {
+		Objects.requireNonNull(tags, "tags");
 
 		if (source instanceof MonoName) {
 			MonoName<T> s = (MonoName<T>) source;

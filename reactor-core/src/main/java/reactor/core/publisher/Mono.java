@@ -4165,6 +4165,26 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Tag this mono with a key/value pairs. These can be retrieved as a {@link Set} of
+	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
+	 * traversed
+	 * by {@link Scannable#parents()}).
+	 * <p>
+	 * Note that some monitoring systems like Prometheus require to have the exact same set of
+	 * tags for each meter bearing the same name.
+	 *
+	 * @param tags are key value pairs
+	 *
+	 * @return the same sequence, but bearing tags
+	 *
+	 * @see #name(String)
+	 * @see #metrics()
+	 */
+	public final Mono<T> tag(Set<Tuple2<String, String>> tags) {
+		return MonoName.createOrAppend(this, tags);
+	}
+
+	/**
 	 * Give this Mono a chance to resolve within a specified time frame but complete if it
 	 * doesn't. This works a bit like {@link #timeout(Duration)} except that the resulting
 	 * {@link Mono} completes rather than errors when the timer expires.

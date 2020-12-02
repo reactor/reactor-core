@@ -18,12 +18,14 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -39,6 +41,8 @@ import reactor.core.publisher.MonoMetrics.MetricsSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.Metrics;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.FluxMetrics.*;
@@ -154,11 +158,17 @@ public class MonoMetricsTest {
 
 	@Test
 	public void usesTags() {
+		Set<Tuple2<String, String>> tags = Stream.of(
+				Tuples.of("tag3", "B"),
+				Tuples.of("tag4", "bar")
+		).collect(Collectors.toCollection(HashSet::new));
+
 		Mono<Integer> source = Mono.just(1)
 								   .name("usesTags")
 								   .tag("tag1", "A")
 								   .tag("tag2", "foo")
-		                           .hide();
+								   .tag(tags)
+								   .hide();
 
 		new MonoMetrics<>(source).block();
 
@@ -167,6 +177,8 @@ public class MonoMetricsTest {
 				.tags(Tags.of(TAG_ON_COMPLETE))
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
+				.tag("tag3", "B")
+				.tag("tag4", "bar")
 				.timer();
 
 		assertThat(meter).isNotNull();
