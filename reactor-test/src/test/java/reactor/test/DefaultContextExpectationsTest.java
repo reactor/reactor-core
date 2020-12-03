@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowableAssertAlternative;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -64,6 +65,11 @@ public class DefaultContextExpectationsTest {
 			Function<DefaultContextExpectations<Integer>, ContextExpectations<Integer>> expectations) {
 		return assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> assertContextExpectation(sourceTransformer, expectations));
+	}
+
+	@AfterEach
+	void tearDown() {
+		Hooks.resetOnOperatorDebug();
 	}
 
 	@Test
@@ -332,14 +338,25 @@ public class DefaultContextExpectationsTest {
 		assertContextExpectationFails(
 				s -> s.doOnEach(__ -> {}),
 				e -> e.hasKey("foo")
-		).withMessageEndingWith("Captured at: doOnEach");
+		).withMessageEndingWith("Captured at: range");
 	}
 
 	@Test
 	public void capturedOperatorWithDebug() {
 		Hooks.onOperatorDebug();
+
 		assertContextExpectationFails(
-				s -> s,
+				s -> s.doOnEach(__ -> {}),
+				e -> e.hasKey("foo")
+		).withMessageContaining("Captured at: Flux.range ⇢ at reactor.test.DefaultContextExpectationsTest.assertContextExpectation(DefaultContextExpectationsTest.java:");
+	}
+
+	@Test
+	public void capturedOperatorWithDebugAndConditionalSubscriber() {
+		Hooks.onOperatorDebug();
+
+		assertContextExpectationFails(
+				s -> s.contextWrite(Context.empty()),
 				e -> e.hasKey("foo")
 		).withMessageContaining("Captured at: Flux.range ⇢ at reactor.test.DefaultContextExpectationsTest.assertContextExpectation(DefaultContextExpectationsTest.java:");
 	}

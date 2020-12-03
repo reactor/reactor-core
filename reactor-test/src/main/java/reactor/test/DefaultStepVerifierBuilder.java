@@ -2558,11 +2558,21 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		static String formatErrorMessage(CoreSubscriber<?> subscriber, String format, Object... args) {
+			Scannable scannable = Scannable.from(subscriber);
+			final String name;
+			// OnAssembly covers both OnAssemblySubscriber and OnAssemblyConditionalSubscriber
+			if (subscriber.getClass().getName().contains("OnAssembly")) {
+				name = scannable.name();
+			}
+			else {
+				name = scannable.scanOrDefault(Scannable.Attr.PARENT, scannable).name();
+			}
+
 			return String.format(
 					"%s\nContext: %s\nCaptured at: %s",
 					String.format(format, args),
 					subscriber.currentContext(),
-					Scannable.from(subscriber).name()
+					name
 			);
 		}
 
