@@ -4295,6 +4295,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered after the {@link Flux} terminates, either by completing downstream successfully or with an error.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doAfterTerminateForFlux.svg" alt="">
+	 * <p>
+	 * The relevant signal is propagated downstream, then the {@link Runnable} is executed.
 	 *
 	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
@@ -4309,6 +4311,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered when the {@link Flux} is cancelled.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnCancelForFlux.svg" alt="">
+	 * <p>
+	 * The handler is executed first, then the cancel signal is propagated upstream
+	 * to the source.
 	 *
 	 * @param onCancel the callback to call on {@link Subscription#cancel}
 	 *
@@ -4323,6 +4328,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered when the {@link Flux} completes successfully.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnComplete.svg" alt="">
+	 * <p>
+	 * The {@link Runnable} is executed first, then the onComplete signal is propagated
+	 * downstream.
 	 *
 	 * @param onComplete the callback to call on {@link Subscriber#onComplete}
 	 *
@@ -4368,6 +4376,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * associated to them.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnEachForFlux.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the relevant signal is propagated
+	 * downstream.
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -4390,6 +4401,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered when the {@link Flux} completes with an error.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnErrorForFlux.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onError signal is propagated
+	 * downstream.
 	 *
 	 * @param onError the callback to call on {@link Subscriber#onError}
 	 *
@@ -4404,6 +4418,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered when the {@link Flux} completes with an error matching the given exception type.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnErrorWithClassPredicateForFlux.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onError signal is propagated
+	 * downstream.
 	 *
 	 * @param exceptionType the type of exceptions to handle
 	 * @param onError the error handler for each error
@@ -4424,6 +4441,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered when the {@link Flux} completes with an error matching the given exception.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnErrorWithPredicateForFlux.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onError signal is propagated
+	 * downstream.
 	 *
 	 * @param predicate the matcher for exceptions to handle
 	 * @param onError the error handler for each error
@@ -4445,6 +4465,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Add behavior (side-effect) triggered when the {@link Flux} emits an item.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnNextForFlux.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the onNext signal is propagated
+	 * downstream.
 	 *
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
@@ -4470,6 +4493,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnRequestForFlux.svg" alt="">
+	 * <p>
+	 * The {@link LongConsumer} is executed first, then the request signal is propagated
+	 * upstream to the parent.
 	 *
 	 * @param consumer the consumer to invoke on each request
 	 *
@@ -4481,15 +4507,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior (side-effect) triggered when the {@link Flux} is done being subscribed,
+	 * Add behavior (side-effect) triggered when the {@link Flux} is being subscribed,
 	 * that is to say when a {@link Subscription} has been produced by the {@link Publisher}
-	 * and passed to the {@link Subscriber#onSubscribe(Subscription)}.
+	 * and is being passed to the {@link Subscriber#onSubscribe(Subscription)}.
 	 * <p>
 	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
 	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
 	 * to call {@link Disposable#dispose()} on the Disposable returned by {@link Flux#subscribe()}.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnSubscribe.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed first, then the {@link Subscription} is propagated
+	 * downstream to the next subscriber in the chain that is being established.
 	 *
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
 	 *
@@ -4503,9 +4532,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Add behavior (side-effect) triggered when the {@link Flux} terminates, either by
-	 * completing successfully or with an error.
+	 * completing successfully or failing with an error.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnTerminateForFlux.svg" alt="">
+	 * <p>
+	 * The {@link Runnable} is executed first, then the onComplete/onError signal is propagated
+	 * downstream.
 	 *
 	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
