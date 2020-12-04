@@ -84,7 +84,6 @@ public class SerializedSubscriberTest {
 
 	//direct transcription of test case exposed in https://github.com/reactor/reactor-core/issues/2077
 	@Test
-	@Tag("flakky")
 	public void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
 		AtomicInteger counter = new AtomicInteger();
 		AtomicInteger discarded = new AtomicInteger();
