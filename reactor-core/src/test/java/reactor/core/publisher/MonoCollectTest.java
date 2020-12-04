@@ -20,12 +20,17 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.MonoCollect.CollectSubscriber;
@@ -342,4 +347,26 @@ public class MonoCollectTest {
 		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
 	}
 
+	@Test
+	// See https://github.com/reactor/reactor-core/issues/2519
+	void cancelPropagatesEvenOnEmptySource() {
+		AtomicBoolean cancel1 = new AtomicBoolean();
+		AtomicBoolean cancel2 = new AtomicBoolean();
+
+		Flux<?> publisher = Flux.never()
+				.hide()
+				.doOnCancel(() -> cancel1.set(true))
+				.collectMultimap(Function.identity())
+				//.hide()
+				.doOnCancel(() -> cancel2.set(true))
+				.flatMapIterable(Map::entrySet)
+				;
+		Disposable d = publisher.subscribe();
+		d.dispose();
+
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThat(cancel1).as("cancel1").isTrue();
+			softly.assertThat(cancel2).as("cancel2").isTrue();
+		});
+	}
 }
