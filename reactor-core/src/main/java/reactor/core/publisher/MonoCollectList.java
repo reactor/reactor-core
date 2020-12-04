@@ -140,6 +140,9 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			List<T> l;
 			synchronized (this) {
 				state = STATE.getAndSet(this, CANCELLED);
+				if (state != CANCELLED) {
+					s.cancel();
+				}
 				if (state <= HAS_REQUEST_NO_VALUE) {
 					l = list;
 					value = null;
@@ -150,7 +153,6 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				}
 			}
 			if (l != null) {
-				s.cancel();
 				discard(l);
 			}
 		}
