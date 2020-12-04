@@ -1,5 +1,10 @@
-name: PR Check
-on: pull_request
+name: CI
+on:
+  push:
+    branches:
+      - master
+      - "[0-9].[0-9]+.x"
+  pull_request: {}
 jobs:
   core-fast:
     name: core fast tests
@@ -17,22 +22,7 @@ jobs:
     - uses: eskatos/gradle-command-action@v1
       name: gradle
       with:
-        arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow&!flakky
-        wrapper-cache-enabled: true
-        dependencies-cache-enabled: true
-        configuration-cache-enabled: true
-  core-flakky:
-    name: core flakky tests
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v1
-      with:
-        java-version: 8
-    - uses: eskatos/gradle-command-action@v1
-      name: gradle
-      with:
-        arguments: :reactor-core:test --no-daemon -Pjunit-tags=flakky
+        arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow
         wrapper-cache-enabled: true
         dependencies-cache-enabled: true
         configuration-cache-enabled: true
