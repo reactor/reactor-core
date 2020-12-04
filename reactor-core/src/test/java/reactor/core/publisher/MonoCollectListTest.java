@@ -18,13 +18,17 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.MonoCollectList.MonoCollectListSubscriber;
 import reactor.test.StepVerifier;
@@ -274,6 +278,29 @@ public class MonoCollectListTest {
 		List<Object> result = new EmptyFluxCallable().collectList().block();
 
 		assertThat(result).isEmpty();
+	}
+
+	@Test
+	// See https://github.com/reactor/reactor-core/issues/2519
+	void cancelPropagatesEvenOnEmptySource() {
+		AtomicBoolean cancel1 = new AtomicBoolean();
+		AtomicBoolean cancel2 = new AtomicBoolean();
+
+		Flux<?> publisher = Flux.never()
+				.hide()
+				.doOnCancel(() -> cancel1.set(true))
+				.collectList()
+				//.hide()
+				.doOnCancel(() -> cancel2.set(true))
+				.flatMapIterable(Function.identity())
+				;
+		Disposable d = publisher.subscribe();
+		d.dispose();
+
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThat(cancel1).as("cancel1").isTrue();
+			softly.assertThat(cancel2).as("cancel2").isTrue();
+		});
 	}
 
 }
