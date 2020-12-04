@@ -126,16 +126,15 @@ configure(subprojects) { p ->
 	group = 'io.projectreactor'
 
 	repositories {
-		mavenLocal()
-		if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
-			maven { url 'https://repo.spring.io/libs-snapshot' }
-		}
-
 		mavenCentral()
 		jcenter()
-		maven { url 'https://repo.spring.io/libs-milestone' }
 		maven { url "https://oss.sonatype.org/content/repositories/releases/" }
 
+		mavenLocal()
+		if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
+			maven { url 'https://repo.spring.io/snapshot' }
+		}
+		maven { url 'https://repo.spring.io/milestone' }
 	}
 
 	jacoco {
