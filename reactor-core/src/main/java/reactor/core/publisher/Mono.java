@@ -4293,13 +4293,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Let this {@link Mono} complete then emit the provided value.
+	 * Let this {@link Mono} complete successfully, then emit the provided value. Error signals are propagated.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/thenReturn.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
-	 * @param value a value to emit after termination
+	 * @param value a value to emit after successful termination
 	 * @param <V> the element type of the supplied value
 	 *
 	 * @return a new {@link Mono} that emits the supplied value
