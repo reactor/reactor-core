@@ -31,12 +31,12 @@ repositories {
 }
 
 dependencies {
-    compile "io.projectreactor:reactor-core:3.2.21.RELEASE"
-    testCompile "io.projectreactor:reactor-test:3.2.21.RELEASE"
+    compile "io.projectreactor:reactor-core:3.2.22.RELEASE"
+    testCompile "io.projectreactor:reactor-test:3.2.22.RELEASE"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.2.22.BUILD-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.2.22.BUILD-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.2.23.BUILD-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.2.23.BUILD-SNAPSHOT"
 }
 ```
 
