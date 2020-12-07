@@ -33,15 +33,15 @@ repositories {
 }
 
 dependencies {
-    compile "io.projectreactor:reactor-core:3.4.0"
-    testCompile "io.projectreactor:reactor-test:3.4.0"
+    compile "io.projectreactor:reactor-core:3.4.1"
+    testCompile "io.projectreactor:reactor-test:3.4.1"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.4.1-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.4.1-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.4.2-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.4.2-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.4.0"
+    // implementation "io.projectreactor:reactor-tools:3.4.1"
 }
 ```
 
@@ -101,7 +101,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.4.0/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mono.svg" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.4.1/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mono.svg" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
 
 Mono in action :
 ```java
