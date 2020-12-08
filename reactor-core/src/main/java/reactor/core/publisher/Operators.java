@@ -1715,8 +1715,15 @@ public abstract class Operators {
 
 		protected final CoreSubscriber<? super O> actual;
 
-		protected O value;
-		volatile int state; //see STATE field updater
+		/**
+		 * The value stored by this Mono operator.
+		 *
+		  @deprecated use {@link #setValue(Object)}, {@link #getValue()} and {@link #nullOutValue()} instead of direct access. to be removed in 3.5
+		 */
+		@Deprecated
+		@Nullable
+		protected O   value;
+		volatile  int state; //see STATE field updater
 
 		public MonoSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
@@ -1753,7 +1760,7 @@ public abstract class Operators {
 		 * Make sure this method is called at most once
 		 * @param v the value to emit
 		 */
-		public final void complete(O v) {
+		public final void complete(@Nullable O v) {
 			for (; ; ) {
 				int state = this.state;
 				if (state == FUSED_EMPTY) {
@@ -1797,7 +1804,7 @@ public abstract class Operators {
 		 *
 		 * @param v the value to discard
 		 */
-		protected void discard(O v) {
+		protected void discard(@Nullable O v) {
 			Operators.onDiscard(v, actual.currentContext());
 		}
 
@@ -1856,6 +1863,9 @@ public abstract class Operators {
 			if (validate(n)) {
 				for (; ; ) {
 					int s = state;
+					if (s == CANCELLED) {
+						return;
+					}
 					// if the any bits 1-31 are set, we are either in fusion mode (FUSED_*)
 					// or request has been called (HAS_REQUEST_*)
 					if ((s & ~NO_REQUEST_HAS_VALUE) != 0) {
@@ -1889,12 +1899,39 @@ public abstract class Operators {
 
 		/**
 		 * Set the value internally, without impacting request tracking state.
+		 * This however discards the provided value when detecting a cancellation, or
+		 * the old value when actually replacing it.
 		 *
 		 * @param value the new value.
 		 * @see #complete(Object)
 		 */
-		public void setValue(O value) {
+		protected void setValue(O value) {
+			if (STATE.get(this) == CANCELLED) {
+				discard(value);
+				return;
+			}
+			O old = this.value;
 			this.value = value;
+			if (old != null) {
+				discard(old);
+			}
+		}
+
+		/**
+		 * Null-out the internal value without triggering discard like in {@link #setValue(Object)}
+		 */
+		protected void nullOutValue() {
+			this.value = null;
+		}
+
+		/**
+		 * Get the currently stored value.
+		 *
+		 * @return the currently stored value
+		 */
+		@Nullable
+		protected O getValue() {
+			return this.value;
 		}
 
 		@Override

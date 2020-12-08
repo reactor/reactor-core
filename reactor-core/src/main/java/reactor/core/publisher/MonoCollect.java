@@ -175,7 +175,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				}
 				if (state <= HAS_REQUEST_NO_VALUE) {
 					c = container;
-					value = null;
+					nullOutValue();
 					container = null;
 				}
 				else {

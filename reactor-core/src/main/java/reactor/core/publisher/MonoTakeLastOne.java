@@ -85,14 +85,14 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 
 		@Override
 		public void onNext(T t) {
-			T old = value;
-			value = t;
+			T old = getValue();
+			setValue(t);
 			Operators.onDiscard(old, actual.currentContext()); //FIXME cache context
 		}
 
 		@Override
 		public void onComplete() {
-			T v = value;
+			T v = getValue();
 			if (v == null) {
 				if (mustEmit) {
 					if(defaultValue != null){
@@ -116,11 +116,6 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		public void cancel() {
 			super.cancel();
 			s.cancel();
-		}
-
-		@Override
-		public void setValue(T value) {
-			this.value = value;
 		}
 	}
 }

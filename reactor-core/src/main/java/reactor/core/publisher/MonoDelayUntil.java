@@ -164,7 +164,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		@Override
 		public void onNext(T t) {
-			if (value == null) {
+			if (getValue() == null) {
 				setValue(t);
 				subscribeNextTrigger(t, done);
 			}
@@ -177,7 +177,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		@Override
 		public void onComplete() {
-			if (value == null && state < HAS_REQUEST_HAS_VALUE) {
+			if (getValue() == null && state < HAS_REQUEST_HAS_VALUE) {
 				actual.onComplete();
 			}
 		}
@@ -224,7 +224,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		void signal() {
 			int nextIndex = DONE.incrementAndGet(this);
 			if (nextIndex != n) {
-				subscribeNextTrigger(this.value, nextIndex);
+				subscribeNextTrigger(getValue(), nextIndex);
 				return;
 			}
 
@@ -256,7 +256,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				actual.onError(error);
 			} else {
 				//emit the value downstream
-				complete(this.value);
+				complete(getValue());
 			}
 		}
 

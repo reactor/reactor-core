@@ -51,7 +51,7 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T value) {
 			super(actual);
-			this.value = value;
+			setValue(value);
 		}
 
 		@Override
@@ -97,7 +97,7 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 			if (hasValue) {
 				actual.onComplete();
 			} else {
-				complete(value);
+				complete(getValue());
 			}
 		}
 

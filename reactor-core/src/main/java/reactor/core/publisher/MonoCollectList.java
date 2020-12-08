@@ -138,7 +138,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				}
 				if (state <= HAS_REQUEST_NO_VALUE) {
 					l = list;
-					value = null;
+					nullOutValue();
 					list = null;
 				}
 				else {
