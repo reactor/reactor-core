@@ -4328,7 +4328,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Let this {@link Mono} complete successfully then play another {@link Publisher}. On an error in the original {@link Mono}, the error signal is propagated instead.
 	 * <p>
-	 * In other words ignore elements from this mono and transform the completion signal into a
+	 * In other words ignore the element from this mono and transform the completion signal into a
 	 * {@code Flux<V>} that will emit elements from the provided {@link Publisher}.
 	 *
 	 * <p>
