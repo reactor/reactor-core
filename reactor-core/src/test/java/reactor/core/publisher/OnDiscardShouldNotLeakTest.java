@@ -81,6 +81,13 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.sinkSource("unicastSink", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer,
 					f -> f.publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("singleOrEmpty", 1, f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
+			DiscardScenario.fluxSource("collect", 1, f -> f.collect(ArrayList::new, ArrayList::add)
+			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
+			                                               .thenReturn(Tracked.RELEASED)),
+			DiscardScenario.fluxSource("collectList", 1, f -> f.collectList()
+			                                                   .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
+			                                                   .thenReturn(Tracked.RELEASED))
 	};
 
 	private static final boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
@@ -117,7 +124,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@BeforeEach
-	private void setUp() {
+	void setUp() {
 		tracker = new MemoryUtils.OffHeapDetector();
 		Hooks.onNextDropped(Tracked::safeRelease);
 		Hooks.onErrorDropped(e -> {});
@@ -125,7 +132,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@AfterEach
-	private void tearDown() {
+	void tearDown() {
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnErrorDropped();
 		Hooks.resetOnNextError();

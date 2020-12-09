@@ -76,7 +76,8 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 				R value) {
 			super(actual);
 			this.accumulator = accumulator;
-			this.value = value;
+			//noinspection deprecation
+			this.value = value; //setValue is made NO-OP in order to ignore redundant writes in base class
 		}
 
 		@Override
@@ -97,7 +98,9 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 
 		@Override
 		public void setValue(R value) {
-			// value already saved
+			// value is updated directly in onNext. writes from the base class are redundant.
+			// if cancel() happens before first reduction, the seed is visible from constructor and will be discarded.
+			// if there was some accumulation in progress post cancel, onNext will take care of it.
 		}
 
 		@Override
@@ -126,7 +129,14 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 					onError(Operators.onOperatorError(this, e, t, actual.currentContext()));
 					return;
 				}
-				value = accumulated;
+				if (STATE.get(this) == CANCELLED) {
+					discard(accumulated);
+					this.value = null;
+				}
+				else {
+					//noinspection deprecation
+					this.value = accumulated; //setValue is made NO-OP in order to ignore redundant writes in base class
+				}
 			} else {
 				Operators.onDiscard(t, actual.currentContext());
 			}
@@ -139,8 +149,8 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			Operators.onDiscard(value, actual.currentContext());
-			value = null;
+			discard(this.value);
+			this.value = null;
 
 			actual.onError(t);
 		}
@@ -152,7 +162,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			complete(value);
+			complete(this.value);
 			//we DON'T null out the value, complete will do that once there's been a request
 		}
 	}

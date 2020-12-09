@@ -199,11 +199,11 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		void innerResult(@Nullable Boolean item) {
 			if (item != null && item) {
 				//will reset the value with itself, but using parent's `value` saves a field
-				complete(value);
+				complete(this.value);
 			}
 			else {
 				super.onComplete();
-				Operators.onDiscard(value, actual.currentContext());
+				discard(this.value);
 			}
 		}
 
@@ -212,7 +212,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 			//always propagate that error directly, as it means that the source Mono
 			//was at least valued rather than in error.
 			super.onError(ex);
-			Operators.onDiscard(value, actual.currentContext());
+			discard(this.value);
 		}
 
 		@Override
