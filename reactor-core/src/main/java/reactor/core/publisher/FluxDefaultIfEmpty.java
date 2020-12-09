@@ -51,7 +51,8 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T value) {
 			super(actual);
-			setValue(value);
+			//noinspection deprecation
+			this.value = value; //we write once, setValue() is NO-OP
 		}
 
 		@Override
@@ -103,7 +104,8 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void setValue(T value) {
-			// value is constant
+			// value is constant. writes from the base class are redundant, and the constant
+			// would always be visible in cancel(), so it will safely be discarded.
 		}
 
 		@Override
