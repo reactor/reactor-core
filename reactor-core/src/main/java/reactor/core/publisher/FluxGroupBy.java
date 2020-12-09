@@ -515,6 +515,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		volatile boolean outputFused;
 
 		int produced;
+		boolean isFirstRequest = true;
 
 		UnicastGroupedFlux(K key,
 				Queue<V> queue,
@@ -572,7 +573,16 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				if (e != 0) {
 					GroupByMain<?, K, V> main = parent;
 					if (main != null) {
-						main.s.request(e);
+						if (this.isFirstRequest) {
+							this.isFirstRequest = false;
+							long toRequest = e - 1;
+
+							if (toRequest > 0) {
+								main.s.request(toRequest);
+							}
+						} else {
+							main.s.request(e);
+						}
 					}
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.addAndGet(this, -e);
@@ -751,7 +761,16 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				produced = 0;
 				GroupByMain<?, K, V> main = parent;
 				if (main != null) {
-					main.s.request(p);
+					if (this.isFirstRequest) {
+						this.isFirstRequest = false;
+						p--;
+
+						if (p > 0) {
+							main.s.request(p);
+						}
+					} else {
+						main.s.request(p);
+					}
 				}
 			}
 		}

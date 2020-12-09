@@ -375,6 +375,37 @@ public class FluxGroupByTest extends
 	}
 
 	@Test
+	public void twoGroupsLongAsyncMergeHidden2() {
+		ForkJoinPool forkJoinPool = new ForkJoinPool();
+
+		for (int j = 0; j < 100; j++) {
+			AssertSubscriber<Long> ts = AssertSubscriber.create();
+			AtomicLong dropped = new AtomicLong();
+
+			Hooks.onNextDropped(__ -> dropped.incrementAndGet());
+			try {
+				final int total = 100_000;
+				Flux.range(0, total)
+				    .groupBy(i -> (i / 2d) * 2d, 42)
+				    .flatMap(it -> it.take(1)
+				                     .hide(), 2)
+				    .publishOn(Schedulers.fromExecutorService(forkJoinPool), 2)
+				    .count()
+				    .subscribe(ts);
+
+				ts.await(Duration.ofSeconds(50));
+
+				ts.assertValues(total - dropped.get())
+				  .assertNoError()
+				  .assertComplete();
+
+			} finally {
+				Hooks.resetOnNextDropped();
+			}
+		}
+	}
+
+	@Test
 	public void twoGroupsConsumeWithSubscribe() {
 		ForkJoinPool forkJoinPool = new ForkJoinPool();
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
