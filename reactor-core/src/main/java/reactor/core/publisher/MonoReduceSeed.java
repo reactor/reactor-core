@@ -89,11 +89,6 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		public void setValue(R value) {
-			// value already saved
-		}
-
-		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
@@ -143,7 +138,6 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			if (done) {
 				return;
 			}
-			this.value = null;
 			done = true;
 
 			complete(getValue());

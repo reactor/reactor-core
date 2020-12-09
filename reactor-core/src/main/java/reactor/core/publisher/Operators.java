@@ -1899,8 +1899,7 @@ public abstract class Operators {
 
 		/**
 		 * Set the value internally, without impacting request tracking state.
-		 * This however discards the provided value when detecting a cancellation, or
-		 * the old value when actually replacing it.
+		 * This however discards the provided value when detecting a cancellation.
 		 *
 		 * @param value the new value.
 		 * @see #complete(Object)
@@ -1910,11 +1909,7 @@ public abstract class Operators {
 				discard(value);
 				return;
 			}
-			O old = this.value;
 			this.value = value;
-			if (old != null) {
-				discard(old);
-			}
 		}
 
 		/**

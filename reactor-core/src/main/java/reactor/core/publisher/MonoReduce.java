@@ -98,7 +98,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 					done = true;
 					Context ctx = actual.currentContext();
 					Operators.onDiscard(t, ctx);
-					discard(getValue());
+					Operators.onDiscard(getValue(), ctx);
 					nullOutValue();
 					actual.onError(Operators.onOperatorError(s, ex, t,
 							actual.currentContext()));
