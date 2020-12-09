@@ -1905,7 +1905,7 @@ public abstract class Operators {
 		 * @param value the new value.
 		 * @see #complete(Object)
 		 */
-		protected void setValue(O value) {
+		public void setValue(O value) {
 			if (STATE.get(this) == CANCELLED) {
 				discard(value);
 				return;
