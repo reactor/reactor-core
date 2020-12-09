@@ -85,7 +85,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			T r = getValue();
+			T r = this.value;
 			if (r == null) {
 				setValue(t);
 			}
@@ -98,8 +98,8 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 					done = true;
 					Context ctx = actual.currentContext();
 					Operators.onDiscard(t, ctx);
-					Operators.onDiscard(getValue(), ctx);
-					nullOutValue();
+					Operators.onDiscard(this.value, ctx);
+					this.value = null;
 					actual.onError(Operators.onOperatorError(s, ex, t,
 							actual.currentContext()));
 					return;
@@ -116,8 +116,8 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			discard(getValue());
-			nullOutValue();
+			discard(this.value);
+			this.value = null;
 			actual.onError(t);
 		}
 
@@ -127,7 +127,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			T r = getValue();
+			T r = this.value;
 			if (r != null) {
 				complete(r);
 			}

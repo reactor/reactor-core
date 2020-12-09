@@ -1716,11 +1716,9 @@ public abstract class Operators {
 		protected final CoreSubscriber<? super O> actual;
 
 		/**
-		 * The value stored by this Mono operator.
-		 *
-		  @deprecated use {@link #setValue(Object)}, {@link #getValue()} and {@link #nullOutValue()} instead of direct access. to be removed in 3.5
+		 * The value stored by this Mono operator. Strongly prefer using {@link #setValue(Object)}
+		 * rather than direct writes to this field, when possible.
 		 */
-		@Deprecated
 		@Nullable
 		protected O   value;
 		volatile  int state; //see STATE field updater
@@ -1904,29 +1902,12 @@ public abstract class Operators {
 		 * @param value the new value.
 		 * @see #complete(Object)
 		 */
-		public void setValue(O value) {
+		public void setValue(@Nullable O value) {
 			if (STATE.get(this) == CANCELLED) {
 				discard(value);
 				return;
 			}
 			this.value = value;
-		}
-
-		/**
-		 * Null-out the internal value without triggering discard like in {@link #setValue(Object)}
-		 */
-		protected void nullOutValue() {
-			this.value = null;
-		}
-
-		/**
-		 * Get the currently stored value.
-		 *
-		 * @return the currently stored value
-		 */
-		@Nullable
-		protected O getValue() {
-			return this.value;
 		}
 
 		@Override

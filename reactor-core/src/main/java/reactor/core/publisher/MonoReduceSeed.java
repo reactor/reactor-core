@@ -109,7 +109,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 
 		@Override
 		public void onNext(T t) {
-			R v = getValue();
+			R v = this.value;
 			R accumulated;
 
 			if (v != null) { //value null when cancelled
@@ -124,7 +124,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 				}
 				if (STATE.get(this) == CANCELLED) {
 					discard(accumulated);
-					nullOutValue();
+					this.value = null;
 				}
 				else {
 					//noinspection deprecation
@@ -142,8 +142,8 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			discard(getValue());
-			nullOutValue();
+			discard(this.value);
+			this.value = null;
 
 			actual.onError(t);
 		}
@@ -155,7 +155,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			complete(getValue());
+			complete(this.value);
 			//we DON'T null out the value, complete will do that once there's been a request
 		}
 	}

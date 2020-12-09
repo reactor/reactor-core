@@ -139,10 +139,10 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			T v = getValue();
+			T v = this.value;
 			if (v != null) {
 				discard(v);
-				nullOutValue();
+				this.value = null;
 			}
 
 			actual.onError(t);
@@ -175,7 +175,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 				}
 			}
 			else if (c == 1) {
-				complete(getValue());
+				complete(this.value);
 			}
 		}
 
