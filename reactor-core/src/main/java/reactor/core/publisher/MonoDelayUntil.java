@@ -164,7 +164,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		@Override
 		public void onNext(T t) {
-			if (value == null) {
+			if (this.value == null) {
 				setValue(t);
 				subscribeNextTrigger(t, done);
 			}
@@ -177,7 +177,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		@Override
 		public void onComplete() {
-			if (value == null && state < HAS_REQUEST_HAS_VALUE) {
+			if (this.value == null && state < HAS_REQUEST_HAS_VALUE) {
 				actual.onComplete();
 			}
 		}
@@ -197,7 +197,10 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 
 		@SuppressWarnings("unchecked")
-		void subscribeNextTrigger(T value, int triggerIndex) {
+		void subscribeNextTrigger(@Nullable T value, int triggerIndex) {
+			if (value == null) {
+				return; //we've been cancelled
+			}
 			if (triggerSubscribers == NO_TRIGGER) {
 				triggerSubscribers = new DelayUntilTrigger[otherGenerators.length];
 			}

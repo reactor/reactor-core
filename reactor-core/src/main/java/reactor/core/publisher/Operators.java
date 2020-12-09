@@ -1715,8 +1715,13 @@ public abstract class Operators {
 
 		protected final CoreSubscriber<? super O> actual;
 
-		protected O value;
-		volatile int state; //see STATE field updater
+		/**
+		 * The value stored by this Mono operator. Strongly prefer using {@link #setValue(Object)}
+		 * rather than direct writes to this field, when possible.
+		 */
+		@Nullable
+		protected O   value;
+		volatile  int state; //see STATE field updater
 
 		public MonoSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
@@ -1753,7 +1758,7 @@ public abstract class Operators {
 		 * Make sure this method is called at most once
 		 * @param v the value to emit
 		 */
-		public final void complete(O v) {
+		public final void complete(@Nullable O v) {
 			for (; ; ) {
 				int state = this.state;
 				if (state == FUSED_EMPTY) {
@@ -1797,7 +1802,7 @@ public abstract class Operators {
 		 *
 		 * @param v the value to discard
 		 */
-		protected void discard(O v) {
+		protected void discard(@Nullable O v) {
 			Operators.onDiscard(v, actual.currentContext());
 		}
 
@@ -1856,6 +1861,9 @@ public abstract class Operators {
 			if (validate(n)) {
 				for (; ; ) {
 					int s = state;
+					if (s == CANCELLED) {
+						return;
+					}
 					// if the any bits 1-31 are set, we are either in fusion mode (FUSED_*)
 					// or request has been called (HAS_REQUEST_*)
 					if ((s & ~NO_REQUEST_HAS_VALUE) != 0) {
@@ -1889,11 +1897,16 @@ public abstract class Operators {
 
 		/**
 		 * Set the value internally, without impacting request tracking state.
+		 * This however discards the provided value when detecting a cancellation.
 		 *
 		 * @param value the new value.
 		 * @see #complete(Object)
 		 */
-		public void setValue(O value) {
+		public void setValue(@Nullable O value) {
+			if (STATE.get(this) == CANCELLED) {
+				discard(value);
+				return;
+			}
 			this.value = value;
 		}
 
