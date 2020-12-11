@@ -96,7 +96,6 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.log);
 	}
 
-	@Override
 	public synchronized void trace() {
 		this.log.format("[TRACE] Message\n");
 	}
@@ -122,7 +121,6 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.log);
 	}
 
-	@Override
 	public synchronized void debug() {
 		this.log.format("[DEBUG] Message\n");
 	}
@@ -148,7 +146,6 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.log);
 	}
 
-	@Override
 	public synchronized void info() {
 		this.log.format("[ INFO] Message\n");
 	}
@@ -174,7 +171,6 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.err);
 	}
 
-	@Override
 	public synchronized void warn() {
 		this.err.format("[ WARN] Message\n");
 	}
@@ -200,7 +196,6 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.err);
 	}
 
-	@Override
 	public synchronized void error() {
 		this.err.format("[ERROR] Message\n");
 	}
