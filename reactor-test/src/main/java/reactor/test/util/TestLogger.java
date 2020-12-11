@@ -97,6 +97,11 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
+	public synchronized void trace() {
+		this.log.format("[TRACE] Message\n");
+	}
+
+	@Override
 	public boolean isDebugEnabled() {
 		return true;
 	}
@@ -115,6 +120,11 @@ public class TestLogger implements Logger {
 	public synchronized void debug(String msg, Throwable t) {
 		this.log.format("[DEBUG] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 		t.printStackTrace(this.log);
+	}
+
+	@Override
+	public synchronized void debug() {
+		this.log.format("[DEBUG] Message\n");
 	}
 
 	@Override
@@ -139,6 +149,11 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
+	public synchronized void info() {
+		this.log.format("[ INFO] Message\n");
+	}
+
+	@Override
 	public boolean isWarnEnabled() {
 		return true;
 	}
@@ -160,6 +175,11 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
+	public synchronized void warn() {
+		this.err.format("[ WARN] Message\n");
+	}
+
+	@Override
 	public boolean isErrorEnabled() {
 		return true;
 	}
@@ -178,5 +198,10 @@ public class TestLogger implements Logger {
 	public synchronized void error(String msg, Throwable t) {
 		this.err.format("[ERROR] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 		t.printStackTrace(this.err);
+	}
+
+	@Override
+	public synchronized void error() {
+		this.err.format("[ERROR] Message\n");
 	}
 }
