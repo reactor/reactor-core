@@ -47,7 +47,7 @@ final class ParallelFluxStats<T> extends ParallelFlux<T> implements Scannable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	protected void subscribe(CoreSubscriber<? super T>[] subscribers) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}

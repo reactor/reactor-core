@@ -81,6 +81,7 @@ public abstract class StatsNode<SELF extends StatsNode<SELF>> {
 		this.produced++;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void attachTo(SELF downstreamNode) {
 		this.downstreamNode = downstreamNode;
 
@@ -89,7 +90,6 @@ public abstract class StatsNode<SELF extends StatsNode<SELF>> {
 			downstreamNode.add(this);
 		}
 		else {
-			//noinspection unchecked
 			downstreamNode.upstreamNode = (SELF) this;
 		}
 	}
