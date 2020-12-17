@@ -65,11 +65,6 @@ public interface Logger {
 	void trace(String msg, Throwable t);
 
 	/**
-	 * Log a static message at the TRACE level.
-	 */
-	void trace();
-
-	/**
 	 * Is the logger instance enabled for the DEBUG level?
 	 *
 	 * @return True if this Logger is enabled for the DEBUG level,
@@ -106,11 +101,6 @@ public interface Logger {
 	 * @param t   the exception (throwable) to log
 	 */
 	void debug(String msg, Throwable t);
-
-	/**
-	 * Log a static message at the DEBUG level.
-	 */
-	void debug();
 
 	/**
 	 * Is the logger instance enabled for the INFO level?
@@ -151,11 +141,6 @@ public interface Logger {
 	void info(String msg, Throwable t);
 
 	/**
-	 * Log a static message at the INFO level.
-	 */
-	void info();
-
-	/**
 	 * Is the logger instance enabled for the WARN level?
 	 *
 	 * @return True if this Logger is enabled for the WARN level,
@@ -194,11 +179,6 @@ public interface Logger {
 	void warn(String msg, Throwable t);
 
 	/**
-	 * Log a static message at the WARN level.
-	 */
-	void warn();
-
-	/**
 	 * Is the logger instance enabled for the ERROR level?
 	 *
 	 * @return True if this Logger is enabled for the ERROR level,
@@ -235,10 +215,5 @@ public interface Logger {
 	 * @param t   the exception (throwable) to log
 	 */
 	void error(String msg, Throwable t);
-
-	/**
-	 * Log a static message at the ERROR level.
-	 */
-	void error();
 
 }

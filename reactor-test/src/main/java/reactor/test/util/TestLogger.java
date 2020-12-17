@@ -36,12 +36,14 @@ public class TestLogger implements Logger {
 	private final ByteArrayOutputStream logContent;
 	private final PrintStream err;
 	private final PrintStream log;
+	private boolean logCurrentThreadName;
 
 	public TestLogger() {
 		this.logContent = new ByteArrayOutputStream();
 		this.log = new PrintStream(logContent);
 		this.errContent = new ByteArrayOutputStream();
 		this.err = new PrintStream(errContent);
+		this.logCurrentThreadName = true;
 	}
 
 	@Override
@@ -83,22 +85,29 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void trace(String msg) {
-		this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), msg);
+		if(logCurrentThreadName){
+			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), msg);
+		} else {
+			this.log.format("[TRACE] %s\n", msg);
+		}
 	}
 
 	@Override
 	public synchronized void trace(String format, Object... arguments) {
-		this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		if(logCurrentThreadName){
+			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		} else {
+			this.log.format("[TRACE] %s\n", format(format, arguments));
+		}
 	}
 	@Override
 	public synchronized void trace(String msg, Throwable t) {
-		this.log.format("[TRACE] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		if(logCurrentThreadName){
+			this.log.format("[TRACE] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		} else {
+			this.log.format("[TRACE] %s - %s\n", msg, t);
+		}
 		t.printStackTrace(this.log);
-	}
-
-	@Override
-	public synchronized void trace() {
-		this.log.format("[TRACE] Message\n");
 	}
 
 	@Override
@@ -108,23 +117,30 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void debug(String msg) {
-		this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), msg);
+		if(logCurrentThreadName){
+			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), msg);
+		} else {
+			this.log.format("[DEBUG] %s\n", msg);
+		}
 	}
 
 	@Override
 	public synchronized void debug(String format, Object... arguments) {
-		this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		if(logCurrentThreadName){
+			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		} else {
+			this.log.format("[DEBUG] %s\n", format(format, arguments));
+		}
 	}
 
 	@Override
 	public synchronized void debug(String msg, Throwable t) {
-		this.log.format("[DEBUG] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		if(logCurrentThreadName){
+			this.log.format("[DEBUG] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		} else {
+			this.log.format("[DEBUG] %s - %s\n", msg, t);
+		}
 		t.printStackTrace(this.log);
-	}
-
-	@Override
-	public synchronized void debug() {
-		this.log.format("[DEBUG] Message\n");
 	}
 
 	@Override
@@ -134,23 +150,30 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void info(String msg) {
-		this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), msg);
+		if(logCurrentThreadName){
+			this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), msg);
+		} else {
+			this.log.format("[ INFO] %s\n", msg);
+		}
 	}
 
 	@Override
 	public synchronized void info(String format, Object... arguments) {
-		this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		if(logCurrentThreadName){
+			this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		} else {
+			this.log.format("[ INFO] %s\n", format(format, arguments));
+		}
 	}
 
 	@Override
 	public synchronized void info(String msg, Throwable t) {
-		this.log.format("[ INFO] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		if(logCurrentThreadName){
+			this.log.format("[ INFO] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		} else {
+			this.log.format("[ INFO] %s - %s\n", msg, t);
+		}
 		t.printStackTrace(this.log);
-	}
-
-	@Override
-	public synchronized void info() {
-		this.log.format("[ INFO] Message\n");
 	}
 
 	@Override
@@ -160,23 +183,30 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void warn(String msg) {
-		this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), msg);
+		if(logCurrentThreadName){
+			this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), msg);
+		} else {
+			this.err.format("[ WARN] %s\n", msg);
+		}
 	}
 
 	@Override
 	public synchronized void warn(String format, Object... arguments) {
-		this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		if(logCurrentThreadName){
+			this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		} else {
+			this.err.format("[ WARN] %s\n", format(format, arguments));
+		}
 	}
 
 	@Override
 	public synchronized void warn(String msg, Throwable t) {
-		this.err.format("[ WARN] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		if(logCurrentThreadName){
+			this.err.format("[ WARN] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		} else {
+			this.err.format("[ WARN] %s - %s\n", msg, t);
+		}
 		t.printStackTrace(this.err);
-	}
-
-	@Override
-	public synchronized void warn() {
-		this.err.format("[ WARN] Message\n");
 	}
 
 	@Override
@@ -186,22 +216,37 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void error(String msg) {
-		this.err.format("[ERROR] (%s) %s\n", Thread.currentThread().getName(), msg);
+		if(logCurrentThreadName){
+			this.err.format("[ERROR] (%s) %s\n", Thread.currentThread().getName(), msg);
+		} else {
+			this.err.format("[ERROR] %s\n", msg);
+		}
 	}
 
 	@Override
 	public synchronized void error(String format, Object... arguments) {
-		this.err.format("[ERROR] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		if(logCurrentThreadName){
+			this.err.format("[ERROR] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		} else {
+			this.err.format("[ERROR] %s\n", format(format, arguments));
+		}
 	}
 
 	@Override
 	public synchronized void error(String msg, Throwable t) {
-		this.err.format("[ERROR] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		if(logCurrentThreadName){
+			this.err.format("[ERROR] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+		} else {
+			this.err.format("[ERROR] %s - %s\n", msg, t);
+		}
 		t.printStackTrace(this.err);
 	}
 
-	@Override
-	public synchronized void error() {
-		this.err.format("[ERROR] Message\n");
+	public boolean isLogCurrentThreadName() {
+		return logCurrentThreadName;
+	}
+
+	public void setLogCurrentThreadName(boolean logCurrentThreadName) {
+		this.logCurrentThreadName = logCurrentThreadName;
 	}
 }
