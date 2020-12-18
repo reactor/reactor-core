@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -64,7 +64,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		if (source instanceof ParallelFluxName) {
 			ParallelFluxName<T> s = (ParallelFluxName<T>) source;
 			if(s.tags != null) {
-				tags = new HashMap<>(s.tags);
+				tags = new LinkedHashMap<>(s.tags);
 				tags.put(tagName, tagValue);
 			}
 			return new ParallelFluxName<>(s.source, s.name, tags);

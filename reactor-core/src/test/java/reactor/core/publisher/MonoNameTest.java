@@ -16,7 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -33,7 +33,7 @@ public class MonoNameTest {
 	public void scanOperator() throws Exception {
 		Tuple2<String, String> tag1 = Tuples.of("foo", "oof");
 		Tuple2<String, String> tag2 = Tuples.of("bar", "rab");
-		Map<String, String> tags = new HashMap<String, String>() {{
+		Map<String, String> tags = new LinkedHashMap<String, String>() {{
 			put(tag1.getT1(), tag1.getT2());
 			put(tag2.getT1(), tag2.getT2());
 		}};

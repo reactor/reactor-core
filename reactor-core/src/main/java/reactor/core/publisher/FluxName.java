@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -71,7 +71,7 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 		if (source instanceof FluxName) {
 			FluxName<T> s = (FluxName<T>) source;
 			if(s.tags != null) {
-				tags = new HashMap<>(s.tags);
+				tags = new LinkedHashMap<>(s.tags);
 				tags.put(tagName, tagValue);
 			}
 			return new FluxName<>(s.source, s.name, tags);
@@ -79,7 +79,7 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 		if (source instanceof FluxNameFuseable) {
 			FluxNameFuseable<T> s = (FluxNameFuseable<T>) source;
 			if (s.tags != null) {
-				tags = new HashMap<>(s.tags);
+				tags = new LinkedHashMap<>(s.tags);
 				tags.put(tagName, tagValue);
 			}
 			return new FluxNameFuseable<>(s.source, s.name, tags);
