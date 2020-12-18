@@ -16,8 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -33,9 +33,10 @@ public class MonoNameTest {
 	public void scanOperator() throws Exception {
 		Tuple2<String, String> tag1 = Tuples.of("foo", "oof");
 		Tuple2<String, String> tag2 = Tuples.of("bar", "rab");
-		Set<Tuple2<String, String>> tags = new HashSet<>();
-		tags.add(tag1);
-		tags.add(tag2);
+		Map<String, String> tags = new HashMap<String, String>() {{
+			put(tag1.getT1(), tag1.getT2());
+			put(tag2.getT1(), tag2.getT2());
+		}};
 
 		Mono<Integer> source = Mono.just(1).map(i -> i);
 		MonoName<Integer> test = new MonoName<>(source, "foo", tags);

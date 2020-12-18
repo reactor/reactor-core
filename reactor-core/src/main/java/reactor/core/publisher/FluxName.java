@@ -17,14 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
@@ -42,7 +41,7 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 	final String name;
 
-	final Set<Tuple2<String, String>> tags;
+	final Map<String, String> tags;
 
 	@SuppressWarnings("unchecked")
 	static <T> Flux<T> createOrAppend(Flux<T> source, String name) {
@@ -67,21 +66,21 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 		Objects.requireNonNull(tagName, "tagName");
 		Objects.requireNonNull(tagValue, "tagValue");
 
-		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+		Map<String, String> tags = Collections.singletonMap(tagName, tagValue);
 
 		if (source instanceof FluxName) {
 			FluxName<T> s = (FluxName<T>) source;
 			if(s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+				tags = new HashMap<>(s.tags);
+				tags.put(tagName, tagValue);
 			}
 			return new FluxName<>(s.source, s.name, tags);
 		}
 		if (source instanceof FluxNameFuseable) {
 			FluxNameFuseable<T> s = (FluxNameFuseable<T>) source;
 			if (s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+				tags = new HashMap<>(s.tags);
+				tags.put(tagName, tagValue);
 			}
 			return new FluxNameFuseable<>(s.source, s.name, tags);
 		}
@@ -93,7 +92,7 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 	FluxName(Flux<? extends T> source,
 			@Nullable String name,
-			@Nullable Set<Tuple2<String, String>> tags) {
+			@Nullable Map<String, String> tags) {
 		super(source);
 		this.name = name;
 		this.tags = tags;
@@ -112,7 +111,9 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 		}
 
 		if (key == Attr.TAGS && tags != null) {
-			return tags.stream();
+			return tags.entrySet()
+			           .stream()
+			           .map(entry -> Tuples.of(entry.getKey(), entry.getValue()));
 		}
 
 		if (key == RUN_STYLE) {
@@ -121,6 +122,4 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 		return super.scanUnsafe(key);
 	}
-
-
 }

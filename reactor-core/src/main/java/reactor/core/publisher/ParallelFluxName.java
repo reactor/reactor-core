@@ -17,14 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
@@ -42,7 +41,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 
 	final String name;
 
-	final Set<Tuple2<String, String>> tags;
+	final Map<String, String> tags;
 
 	@SuppressWarnings("unchecked")
 	static <T> ParallelFlux<T> createOrAppend(ParallelFlux<T> source, String name) {
@@ -60,13 +59,13 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		Objects.requireNonNull(tagName, "tagName");
 		Objects.requireNonNull(tagValue, "tagValue");
 
-		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+		Map<String, String> tags = Collections.singletonMap(tagName, tagValue);
 
 		if (source instanceof ParallelFluxName) {
 			ParallelFluxName<T> s = (ParallelFluxName<T>) source;
 			if(s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+				tags = new HashMap<>(s.tags);
+				tags.put(tagName, tagValue);
 			}
 			return new ParallelFluxName<>(s.source, s.name, tags);
 		}
@@ -75,7 +74,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 
 	ParallelFluxName(ParallelFlux<T> source,
 			@Nullable String name,
-			@Nullable Set<Tuple2<String, String>> tags) {
+			@Nullable Map<String, String> tags) {
 		this.source = source;
 		this.name = name;
 		this.tags = tags;
@@ -99,7 +98,9 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		}
 
 		if (key == Attr.TAGS && tags != null) {
-			return tags.stream();
+			return tags.entrySet()
+			           .stream()
+			           .map(entry -> Tuples.of(entry.getKey(), entry.getValue()));
 		}
 
 		if (key == Attr.PARENT) return source;
