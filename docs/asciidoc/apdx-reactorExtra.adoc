@@ -59,24 +59,6 @@ You can rewrite the preceding example as follows:
 The `reactor.math` package contains a `MathFlux` specialized version of `Flux` that offers
 mathematical operators, including `max`, `min`, `sumInt`, `averageDouble`, and others.
 
-[[extra-repeat-retry]]
-== Repeat and Retry Utilities
-
-The `reactor.retry` package contains utilities to help in writing `Flux#repeatWhen` and
-`Flux#retryWhen` functions. The entry points are factory methods in the `Repeat`
-and `Retry` interfaces, respectively.
-
-You can use both interfaces as a mutative builder, and they implement the correct
-`Function` signature to be used in their counterpart operators.
-
-Since 3.2.0, one of the most advanced retry strategies offered by these utilities is
-also part of the `reactor-core` main artifact directly. Exponential backoff is
-available as the `Flux#retryBackoff` operator.
-
-Since 3.3.4, the `Retry` builder is offered directly in core and has a few more possible
-customizations, being based on a `RetrySignal` that encapsulates additional state than the
-error.
-
 [[extra-schedulers]]
 == Schedulers
 
