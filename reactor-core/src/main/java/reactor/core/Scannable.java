@@ -316,6 +316,11 @@ public interface Scannable {
 			public String toString() {
 				return "UNAVAILABLE_SCAN";
 			}
+
+			@Override
+			public String stepName() {
+				return "UNAVAILABLE_SCAN";
+			}
 		};
 
 		/**
@@ -335,6 +340,11 @@ public interface Scannable {
 
 			@Override
 			public String toString() {
+				return "NULL_SCAN";
+			}
+
+			@Override
+			public String stepName() {
 				return "NULL_SCAN";
 			}
 		};

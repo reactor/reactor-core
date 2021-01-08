@@ -1527,6 +1527,11 @@ public abstract class Operators {
 		public void request(long n) {
 			// deliberately no op
 		}
+
+		@Override
+		public String stepName() {
+			return "cancelledSubscription";
+		}
 	}
 
 	final static class EmptySubscription implements QueueSubscription<Object>, Scannable {
@@ -1576,6 +1581,10 @@ public abstract class Operators {
 			return 0;
 		}
 
+		@Override
+		public String stepName() {
+			return "emptySubscription";
+		}
 	}
 
 	/**
@@ -2375,6 +2384,11 @@ public abstract class Operators {
 		@Override
 		public int size() {
 			return isEmpty() ? 0 : 1;
+		}
+
+		@Override
+		public String stepName() {
+			return "scalarSubscription(" + value + ")";
 		}
 
 		@SuppressWarnings("rawtypes")

@@ -991,7 +991,29 @@ public class OperatorsTest {
 	}
 	
 	@Test
-	public void meaningfulScannableName() {
-		assertThat(Scannable.from(Operators.emptySubscription()).name()).isEqualTo("empty");
+	void meaningfulEmptySubscriptionStepName() {
+		assertThat(Scannable.from(Operators.emptySubscription()).stepName()).isEqualTo("emptySubscription");
 	}
+
+	@Test
+	void meaningfulCancelledSubscriptionStepName() {
+		assertThat(Scannable.from(Operators.cancelledSubscription()).stepName()).isEqualTo("cancelledSubscription");
+	}
+
+	@Test
+	void meaningfulScalarSubscriptionStepName() {
+		assertThat(Scannable.from(Operators.scalarSubscription(new BlockingFirstSubscriber<>(), "foo")).stepName()).isEqualTo("scalarSubscription(foo)");
+	}
+
+	@Test
+	void drainSubscriberNotScannableStepName() {
+		assertThat(Scannable.from(Operators.drainSubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
+	}
+
+	@Test
+	void emptySubscriberNotScannableStepName() {
+		assertThat(Scannable.from(Operators.emptySubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
+	}
+
+
 }
