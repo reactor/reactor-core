@@ -40,4 +40,9 @@ final class BlockingFirstSubscriber<T> extends BlockingSingleSubscriber<T> {
 		}
 		countDown();
 	}
+
+	@Override
+	public String stepName() {
+		return "blockFirst";
+	}
 }

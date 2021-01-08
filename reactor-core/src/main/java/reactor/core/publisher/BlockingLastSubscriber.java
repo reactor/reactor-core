@@ -35,4 +35,9 @@ final class BlockingLastSubscriber<T> extends BlockingSingleSubscriber<T> {
 		error = t;
 		countDown();
 	}
+
+	@Override
+	public String stepName() {
+		return "blockLast";
+	}
 }

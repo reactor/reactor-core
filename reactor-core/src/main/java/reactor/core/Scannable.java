@@ -437,17 +437,19 @@ public interface Scannable {
 	 * its chain of {@link #parents()} and {@link #actuals()}.
 	 */
 	default String stepName() {
-		// /!\ this code is duplicated in `InnerConsumer#stepName` in order to use simple class name instead of toString
-
 		/*
 		 * Strip an operator name of various prefixes and suffixes.
 		 * @param name the operator name, usually simpleClassName or fully-qualified classname.
 		 * @return the stripped operator name
 		 */
-		String name = toString();
-		int at = name.indexOf('@');
-		if (at >= 0) {
-			name = name.substring(0, at);
+		String name = getClass().getName();
+		int innerClassIndex = name.indexOf('$');
+		if (innerClassIndex != -1) {
+			name = name.substring(0, innerClassIndex);
+		}
+		int stripPackageIndex = name.lastIndexOf('.');
+		if (stripPackageIndex != -1) {
+			name = name.substring(stripPackageIndex + 1);
 		}
 		name = name.substring(name.lastIndexOf('$') + 1);
 		name = name.substring(name.lastIndexOf('.') + 1);
