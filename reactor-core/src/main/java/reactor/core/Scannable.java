@@ -56,7 +56,7 @@ public interface Scannable {
      * Used to strip an operator name of various prefixes and suffixes.
      */
 	Pattern OPERATOR_NAME_UNRELATED_WORDS_PATTERN =
-		Pattern.compile("Parallel|Flux|Mono|Publisher|Subscriber|Fuseable|Operator|Conditional");
+		Pattern.compile("Parallel|Flux|Mono|Publisher|Subscriber|Subscription|Fuseable|Operator|Conditional");
 
 	/**
 	 * Base class for {@link Scannable} attributes, which all can define a meaningful
@@ -445,11 +445,12 @@ public interface Scannable {
 		 * @return the stripped operator name
 		 */
 		String name = toString();
-		if (name.contains("@") && name.contains("$")) {
-			name = name
-				.substring(0, name.indexOf('$'))
-				.substring(name.lastIndexOf('.') + 1);
+		int at = name.indexOf('@');
+		if (at >= 0) {
+			name = name.substring(0, at);
 		}
+		name = name.substring(name.lastIndexOf('$') + 1);
+		name = name.substring(name.lastIndexOf('.') + 1);
 		String stripped = OPERATOR_NAME_UNRELATED_WORDS_PATTERN
 			.matcher(name)
 			.replaceAll("");

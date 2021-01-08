@@ -975,15 +975,23 @@ public class OperatorsTest {
 
 	@Test
 	public void onDiscardCallbackErrorsLog() {
-		Context context = Operators.enableOnDiscard(Context.empty(), t -> {throw new RuntimeException("Boom");});
+		Context context = Operators.enableOnDiscard(Context.empty(), t -> {
+			throw new RuntimeException("Boom");
+		});
 
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Operators.onDiscard("Foo", context);
 			assertThat(testLogger.getErrContent()).contains("Error in discard hook - java.lang.RuntimeException: Boom");
-		} finally {
+		}
+		finally {
 			LoggerUtils.disableCapture();
 		}
+	}
+	
+	@Test
+	public void meaningfulScannableName() {
+		assertThat(Scannable.from(Operators.emptySubscription()).name()).isEqualTo("empty");
 	}
 }
