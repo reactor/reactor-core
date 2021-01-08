@@ -51,12 +51,12 @@ import reactor.util.function.Tuple2;
 @FunctionalInterface
 public interface Scannable {
 
-    /**
-     * The pattern for matching words unrelated to operator name.
-     * Used to strip an operator name of various prefixes and suffixes.
-     */
+	/**
+	 * The pattern for matching words unrelated to operator name.
+	 * Used to strip an operator name of various prefixes and suffixes.
+	 */
 	Pattern OPERATOR_NAME_UNRELATED_WORDS_PATTERN =
-		Pattern.compile("Parallel|Flux|Mono|Publisher|Subscriber|Subscription|Fuseable|Operator|Conditional");
+		Pattern.compile("Parallel|Flux|Mono|Publisher|Subscriber|Fuseable|Operator|Conditional");
 
 	/**
 	 * Base class for {@link Scannable} attributes, which all can define a meaningful
