@@ -162,7 +162,7 @@ final class MonoFirstWithValue<T> extends Mono<T> implements SourceProducer<T> {
 		FluxFirstWithValue.RaceValuesCoordinator<T> coordinator =
 				new FluxFirstWithValue.RaceValuesCoordinator<>(n);
 
-		coordinator.subscribe(a, actual);
+		coordinator.subscribe(a, n, actual);
 	}
 
 	@Override

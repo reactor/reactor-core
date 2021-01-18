@@ -171,7 +171,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 
 		RaceValuesCoordinator<T> coordinator = new RaceValuesCoordinator<>(n);
 
-		coordinator.subscribe(a, actual);
+		coordinator.subscribe(a, n, actual);
 	}
 
 	@Override
@@ -218,15 +218,15 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		void subscribe(Publisher<? extends T>[] sources,
-					   CoreSubscriber<? super T> actual) {
+				int n, CoreSubscriber<? super T> actual) {
 
-			for (int i = 0; i < sources.length; i++) {
+			for (int i = 0; i < n; i++) {
 				subscribers[i] = new FirstValuesEmittingSubscriber<T>(actual, this, i);
 			}
 
 			actual.onSubscribe(this);
 
-			for (int i = 0; i < sources.length; i++) {
+			for (int i = 0; i < n; i++) {
 				if (cancelled || winner != Integer.MIN_VALUE) {
 					return;
 				}
