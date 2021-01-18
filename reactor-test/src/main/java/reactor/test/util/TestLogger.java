@@ -134,17 +134,17 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void info(String msg) {
-		this.log.format(logContent("INFO", msg));
+		this.log.format(logContent(" INFO", msg));
 	}
 
 	@Override
 	public synchronized void info(String format, Object... arguments) {
-		this.log.format(logContent("INFO", format(format, arguments)));
+		this.log.format(logContent(" INFO", format(format, arguments)));
 	}
 
 	@Override
 	public synchronized void info(String msg, Throwable t) {
-		this.log.format(logContent("INFO", String.format("%s - %s", msg, t)));
+		this.log.format(logContent(" INFO", String.format("%s - %s", msg, t)));
 		t.printStackTrace(this.err);
 	}
 
@@ -155,17 +155,17 @@ public class TestLogger implements Logger {
 
 	@Override
 	public synchronized void warn(String msg) {
-		this.err.format(logContent("WARN", msg));
+		this.err.format(logContent(" WARN", msg));
 	}
 
 	@Override
 	public synchronized void warn(String format, Object... arguments) {
-		this.err.format(logContent("WARN", format(format, arguments)));
+		this.err.format(logContent(" WARN", format(format, arguments)));
 	}
 
 	@Override
 	public synchronized void warn(String msg, Throwable t) {
-		this.err.format(logContent("WARN", String.format("%s - %s", msg, t)));
+		this.err.format(logContent(" WARN", String.format("%s - %s", msg, t)));
 		t.printStackTrace(this.err);
 	}
 
