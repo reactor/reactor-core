@@ -249,6 +249,12 @@ class FluxFirstWithValueTest {
 						.doesNotContainNull());
 	}
 
+	// See https://github.com/reactor/reactor-core/issues/2557
+	@Test
+	void protectAgainstSparseArray() {
+		Flux.firstWithValue(Arrays.asList(Mono.just(1), Mono.empty())).blockFirst();
+	}
+
 	@Test
 	void scanOperator() {
 		@SuppressWarnings("unchecked") FluxFirstWithValue<Integer>

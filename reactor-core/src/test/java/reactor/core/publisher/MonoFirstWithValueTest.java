@@ -221,6 +221,12 @@ class MonoFirstWithValueTest {
 				.assertError(NullPointerException.class);
 	}
 
+	// See https://github.com/reactor/reactor-core/issues/2557
+	@Test
+	void protectAgainstSparseArray() {
+		Mono.firstWithValue(Arrays.asList(Mono.just(1), Mono.empty())).block();
+	}
+
 	@Test
 	void pairWise() {
 		Mono<Integer> firstValue = Mono.firstWithValue(Mono.just(1), Mono.just(2));
