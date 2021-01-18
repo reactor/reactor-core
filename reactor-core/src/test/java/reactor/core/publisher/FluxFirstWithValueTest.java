@@ -32,6 +32,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FluxFirstWithValueTest {
@@ -252,7 +253,8 @@ class FluxFirstWithValueTest {
 	// See https://github.com/reactor/reactor-core/issues/2557
 	@Test
 	void protectAgainstSparseArray() {
-		Flux.firstWithValue(Arrays.asList(Mono.just(1), Mono.empty())).blockFirst();
+		assertThatCode(() -> Flux.firstWithValue(Arrays.asList(Mono.just(1), Mono.empty())).blockFirst())
+				.doesNotThrowAnyException();
 	}
 
 	@Test

@@ -29,6 +29,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MonoFirstWithValueTest {
@@ -224,7 +225,8 @@ class MonoFirstWithValueTest {
 	// See https://github.com/reactor/reactor-core/issues/2557
 	@Test
 	void protectAgainstSparseArray() {
-		Mono.firstWithValue(Arrays.asList(Mono.just(1), Mono.empty())).block();
+		assertThatCode(() -> Mono.firstWithValue(Arrays.asList(Mono.just(1), Mono.empty())).block())
+				.doesNotThrowAnyException();
 	}
 
 	@Test
