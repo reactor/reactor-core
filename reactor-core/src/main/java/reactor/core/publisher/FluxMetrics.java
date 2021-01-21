@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -298,11 +299,13 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 		Scannable scannable = Scannable.from(source);
 
 		if (scannable.isScanAvailable()) {
-			return scannable.tags()
-			                //Note the combiner below is for parallel streams, which won't be used
-			                //For the identity, `commonTags` should be ok (even if reduce uses it multiple times)
-			                //since it deduplicates
-			                .reduce(tags, TAG_ACCUMULATOR, TAG_COMBINER);
+			LinkedList<Tuple2<String, String>> scannableTags = new LinkedList<>();
+			scannable.tags().forEach(scannableTags::push);
+			return scannableTags.stream()
+			                    //Note the combiner below is for parallel streams, which won't be used
+			                    //For the identity, `commonTags` should be ok (even if reduce uses it multiple times)
+			                    //since it deduplicates
+			                    .reduce(tags, TAG_ACCUMULATOR, TAG_COMBINER);
 		}
 
 		return tags;

@@ -471,4 +471,30 @@ public class MonoMetricsTest {
 		    .expectComplete()
 		    .verify(Duration.ofMillis(500));
 	}
+
+	@Test
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Mono<String> source = Mono
+				.just(1)
+				.name("pipeline")
+				.tag("operation", "range")
+				.metrics()
+				.map(Object::toString)
+				.name("pipeline")
+				.tag("operation", "map")
+				.metrics()
+				.filter(i -> i.equals("one"))
+				.name("pipeline")
+				.tag("operation", "filter")
+				.metrics();
+
+		new MonoMetrics<>(source).block();
+
+		Meter meter = registry
+				.find("pipeline" + METER_FLOW_DURATION)
+				.tag("operation", "filter")
+				.meter();
+
+		assertThat(meter).isNotNull();
+	}
 }

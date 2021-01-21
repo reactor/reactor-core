@@ -538,4 +538,30 @@ public class FluxMetricsTest {
 		    .expectComplete()
 		    .verify(Duration.ofMillis(500));
 	}
+
+	@Test
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Flux<String> source = Flux
+				.range(1, 10)
+				.name("pipeline")
+				.tag("operation", "range")
+				.metrics()
+				.map(Object::toString)
+				.name("pipeline")
+				.tag("operation", "map")
+				.metrics()
+				.filter(i -> i.length() > 3)
+				.name("pipeline")
+				.tag("operation", "filter")
+				.metrics();
+
+		new FluxMetrics<>(source).blockLast();
+
+		Meter meter = registry
+				.find("pipeline" + METER_FLOW_DURATION)
+				.tag("operation", "filter")
+				.meter();
+
+		assertThat(meter).isNotNull();
+	}
 }
