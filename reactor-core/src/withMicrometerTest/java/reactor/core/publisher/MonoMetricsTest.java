@@ -430,19 +430,20 @@ public class MonoMetricsTest {
 	}
 
 	@Test
-	public void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
-		Mono<String> source = Mono.just(1)
-		                          .name("pipeline")
-		                          .tag("operation", "range")
-		                          .metrics()
-		                          .map(Object::toString)
-		                          .name("pipeline")
-		                          .tag("operation", "map")
-		                          .metrics()
-		                          .filter(i -> i.equals("one"))
-		                          .name("pipeline")
-		                          .tag("operation", "filter")
-		                          .metrics();
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Mono<String> source = Mono
+				.just(1)
+				.name("pipeline")
+				.tag("operation", "range")
+				.metrics()
+				.map(Object::toString)
+				.name("pipeline")
+				.tag("operation", "map")
+				.metrics()
+				.filter(i -> i.equals("one"))
+				.name("pipeline")
+				.tag("operation", "filter")
+				.metrics();
 
 		new MonoMetrics<>(source, registry).block();
 		

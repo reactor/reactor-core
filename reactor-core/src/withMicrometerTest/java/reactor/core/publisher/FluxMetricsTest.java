@@ -497,19 +497,20 @@ public class FluxMetricsTest {
 	}
 
 	@Test
-	public void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
-		Flux<String> source = Flux.range(1, 10)
-		                           .name("pipeline")
-		                           .tag("operation", "range")
-		                           .metrics()
-		                           .map(Object::toString)
-		                           .name("pipeline")
-		                           .tag("operation", "map")
-		                           .metrics()
-		                           .filter(i -> i.length() > 3)
-		                           .name("pipeline")
-		                           .tag("operation", "filter")
-		                           .metrics();
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Flux<String> source = Flux
+				.range(1, 10)
+				.name("pipeline")
+				.tag("operation", "range")
+				.metrics()
+				.map(Object::toString)
+				.name("pipeline")
+				.tag("operation", "map")
+				.metrics()
+				.filter(i -> i.length() > 3)
+				.name("pipeline")
+				.tag("operation", "filter")
+				.metrics();
 
 		new FluxMetrics<>(source, registry).blockLast();
 
