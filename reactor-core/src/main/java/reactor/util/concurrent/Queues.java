@@ -19,12 +19,14 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import reactor.util.annotation.Nullable;
@@ -37,6 +39,10 @@ import reactor.util.annotation.Nullable;
 public final class Queues {
 
 	public static final int CAPACITY_UNSURE = Integer.MIN_VALUE;
+
+	private static final LinkedHashMap<String, Function<Queue<?>, Queue<?>>> WRAPPERS = new LinkedHashMap<>(1);
+
+	private static Function<Queue<?>, Queue<?>> WRAPPER = Function.identity();
 
 	/**
 	 * Return the capacity of a given {@link Queue} in a best effort fashion. Queues that
@@ -129,7 +135,7 @@ public final class Queues {
 			return SMALL_UNBOUNDED;
 		}
 		else{
-			return () -> new SpscArrayQueue<>(adjustedBatchSize);
+			return () -> wrap(new SpscArrayQueue<>(adjustedBatchSize));
 		}
 	}
 
@@ -200,7 +206,7 @@ public final class Queues {
 		else if (linkSize == Integer.MAX_VALUE || linkSize == SMALL_BUFFER_SIZE) {
 			return unbounded();
 		}
-		return  () -> new SpscLinkedArrayQueue<>(linkSize);
+		return  () -> wrap(new SpscLinkedArrayQueue<>(linkSize));
 	}
 
 	/**
@@ -221,7 +227,71 @@ public final class Queues {
 	 * @return an unbounded MPSC {@link Queue} {@link Supplier}
 	 */
 	public static <T> Supplier<Queue<T>> unboundedMultiproducer() {
-		return MpscLinkedQueue::new;
+		return () -> wrap(new MpscLinkedQueue<T>());
+	}
+
+	/**
+	 * TODO
+	 *
+	 * @see #removeQueueWrapper(String)
+	 */
+	public static void addQueueWrapper(String key, Function<Queue<?>, Queue<?>> decorator) {
+		synchronized (WRAPPERS) {
+			WRAPPERS.put(key, decorator);
+			Function<Queue<?>, Queue<?>> newHook = null;
+			for (Function<Queue<?>, Queue<?>> function : WRAPPERS.values()) {
+				if (newHook == null) {
+					newHook = function;
+				}
+				else {
+					newHook = newHook.andThen(function);
+				}
+			}
+			WRAPPER = newHook;
+		}
+	}
+
+	/**
+	 * TODO
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 */
+	public static void removeQueueWrapper(String key) {
+		synchronized (WRAPPERS) {
+			WRAPPERS.remove(key);
+			if (WRAPPERS.isEmpty()) {
+				WRAPPER = Function.identity();
+			}
+			else {
+				Function<Queue<?>, Queue<?>> newHook = null;
+				for (Function<Queue<?>, Queue<?>> function : WRAPPERS.values()) {
+					if (newHook == null) {
+						newHook = function;
+					}
+					else {
+						newHook = newHook.andThen(function);
+					}
+				}
+				WRAPPER = newHook;
+			}
+		}
+	}
+
+	/**
+	 * Remove all queue wrappers.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 * @see #removeQueueWrapper(String)
+	 */
+	public static void removeQueueWrappers() {
+		synchronized (WRAPPERS) {
+			WRAPPERS.clear();
+			WRAPPER = Function.identity();
+		}
+	}
+
+	static <T> Queue<T> wrap(Queue<T> queue) {
+		return (Queue) WRAPPER.apply(queue);
 	}
 
 	private Queues() {
@@ -477,16 +547,16 @@ public final class Queues {
 	}
 
     @SuppressWarnings("rawtypes")
-    static final Supplier ZERO_SUPPLIER  = ZeroQueue::new;
+    static final Supplier ZERO_SUPPLIER  = () -> wrap(new ZeroQueue<>());
     @SuppressWarnings("rawtypes")
-    static final Supplier ONE_SUPPLIER   = OneQueue::new;
+    static final Supplier ONE_SUPPLIER   = () -> wrap(new OneQueue<>());
 	@SuppressWarnings("rawtypes")
-    static final Supplier XS_SUPPLIER    = () -> new SpscArrayQueue<>(XS_BUFFER_SIZE);
+    static final Supplier XS_SUPPLIER    = () -> wrap(new SpscArrayQueue<>(XS_BUFFER_SIZE));
 	@SuppressWarnings("rawtypes")
-    static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(SMALL_BUFFER_SIZE);
+    static final Supplier SMALL_SUPPLIER = () -> wrap(new SpscArrayQueue<>(SMALL_BUFFER_SIZE));
 	@SuppressWarnings("rawtypes")
 	static final Supplier SMALL_UNBOUNDED =
-			() -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
+			() -> wrap(new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE));
 	@SuppressWarnings("rawtypes")
-	static final Supplier XS_UNBOUNDED = () -> new SpscLinkedArrayQueue<>(XS_BUFFER_SIZE);
+	static final Supplier XS_UNBOUNDED = () -> wrap(new SpscLinkedArrayQueue<>(XS_BUFFER_SIZE));
 }
