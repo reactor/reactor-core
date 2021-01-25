@@ -65,6 +65,8 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 
 		long index;
 
+		final long target;
+
 		Subscription s;
 
 		boolean done;
@@ -73,6 +75,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 											T defaultValue) {
 			super(actual);
 			this.index = index;
+			this.target = index;
 			this.defaultValue = defaultValue;
 		}
 
@@ -150,8 +153,10 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 				complete(defaultValue);
 			}
 			else{
-				actual.onError(Operators.onOperatorError(new
-						IndexOutOfBoundsException(), actual.currentContext()));
+				long count = target - index;
+				actual.onError(Operators.onOperatorError(new IndexOutOfBoundsException(
+								"source had " + count + " elements, expected at least " + (target + 1)),
+						actual.currentContext()));
 			}
 		}
 	}
