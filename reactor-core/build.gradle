@@ -240,7 +240,7 @@ check.dependsOn japicmp
 if (JavaVersion.current().java9Compatible) {
 	// SharedSecretsCallSiteSupplierFactory is a Java 8 specific optimization.
 	// It uses sun.misc.SharedSecrets which is unavailable on Java 9+, and the compilation would fail with JDK 9.
-	// This workaround allows compiling the main sourceset on JDK 9+ while still referring the Java 8 classes.
+	// This workaround allows compiling the main sourceset on JDK 9+ while still referring to the Java 8 classes.
 
 	sourceSets {
 		java8stubs.java.srcDirs = ['src/main/java8stubs']
