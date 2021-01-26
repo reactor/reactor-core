@@ -25,9 +25,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import reactor.core.publisher.Hooks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -158,7 +157,7 @@ public class QueuesTest {
 	public void testWrapping(String name, Supplier<Queue<Object>> queueSupplier) {
 		assertThat(queueSupplier.get()).as("no wrapper").hasSize(0);
 
-		Queues.addQueueWrapper("test", queue -> {
+		Hooks.addQueueWrapper("test", queue -> {
 			return new AbstractQueue<Object>() {
 
 				@Override
@@ -190,7 +189,7 @@ public class QueuesTest {
 
 		assertThat(queueSupplier.get()).as("with wrapper").hasSize(42);
 
-		Queues.removeQueueWrapper("test");
+		Hooks.removeQueueWrapper("test");
 
 		assertThat(queueSupplier.get()).as("wrapper removed").hasSize(0);
 	}

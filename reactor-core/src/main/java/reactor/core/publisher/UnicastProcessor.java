@@ -109,7 +109,7 @@ public final class UnicastProcessor<T>
 	 * @return a unicast {@link FluxProcessor}
 	 */
 	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
-		return new UnicastProcessor<>(queue);
+		return new UnicastProcessor<>(Hooks.wrapQueue(queue));
 	}
 
 	/**
@@ -122,7 +122,7 @@ public final class UnicastProcessor<T>
 	 * @return a unicast {@link FluxProcessor}
 	 */
 	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
-		return new UnicastProcessor<>(queue, endcallback);
+		return new UnicastProcessor<>(Hooks.wrapQueue(queue), endcallback);
 	}
 
 	/**
@@ -140,7 +140,7 @@ public final class UnicastProcessor<T>
 	public static <E> UnicastProcessor<E> create(Queue<E> queue,
 			Consumer<? super E> onOverflow,
 			Disposable endcallback) {
-		return new UnicastProcessor<>(queue, onOverflow, endcallback);
+		return new UnicastProcessor<>(Hooks.wrapQueue(queue), onOverflow, endcallback);
 	}
 
 	final Queue<T>            queue;

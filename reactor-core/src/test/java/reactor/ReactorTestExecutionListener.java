@@ -24,7 +24,6 @@ import org.junit.platform.launcher.TestPlan;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
-import reactor.util.concurrent.Queues;
 
 public class ReactorTestExecutionListener implements TestExecutionListener {
 
@@ -40,11 +39,11 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 		Hooks.resetOnNextError();
 		Hooks.resetOnOperatorError();
 
+		Hooks.removeQueueWrappers();
+
 		Schedulers.resetOnHandleError();
 		Schedulers.resetFactory();
 		Schedulers.resetOnScheduleHooks();
-
-		Queues.removeQueueWrappers();
 
 		// TODO capture non-default schedulers and shutdown them
 	}
