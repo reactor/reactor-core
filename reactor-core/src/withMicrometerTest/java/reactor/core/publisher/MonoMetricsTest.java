@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -426,5 +427,32 @@ public class MonoMetricsTest {
 		    .expectNext(1, 2, 3)
 		    .expectComplete()
 		    .verify(Duration.ofMillis(500));
+	}
+
+	@Test
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Mono<String> source = Mono
+				.just(1)
+				.name("pipeline")
+				.tag("operation", "range")
+				.metrics()
+				.map(Object::toString)
+				.name("pipeline")
+				.tag("operation", "map")
+				.metrics()
+				.filter(i -> i.equals("one"))
+				.name("pipeline")
+				.tag("operation", "filter")
+				.metrics();
+
+		new MonoMetrics<>(source, registry).block();
+		
+		Meter meter = registry
+				.find(METER_FLOW_DURATION)
+				.tag(TAG_SEQUENCE_NAME, "pipeline")
+				.tag("operation", "filter")
+				.meter();
+
+		assertThat(meter).isNotNull();
 	}
 }

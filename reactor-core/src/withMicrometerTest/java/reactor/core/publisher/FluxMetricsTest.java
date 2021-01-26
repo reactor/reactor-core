@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -494,5 +494,32 @@ public class FluxMetricsTest {
 		    .expectNext(1, 2, 3)
 		    .expectComplete()
 		    .verify(Duration.ofMillis(500));
+	}
+
+	@Test
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Flux<String> source = Flux
+				.range(1, 10)
+				.name("pipeline")
+				.tag("operation", "range")
+				.metrics()
+				.map(Object::toString)
+				.name("pipeline")
+				.tag("operation", "map")
+				.metrics()
+				.filter(i -> i.length() > 3)
+				.name("pipeline")
+				.tag("operation", "filter")
+				.metrics();
+
+		new FluxMetrics<>(source, registry).blockLast();
+
+		Meter meter = registry
+				.find(METER_FLOW_DURATION)
+				.tag(TAG_SEQUENCE_NAME, "pipeline")
+				.tag("operation", "filter")
+				.meter();
+
+		assertThat(meter).isNotNull();
 	}
 }
