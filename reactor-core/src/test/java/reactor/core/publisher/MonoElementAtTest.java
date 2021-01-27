@@ -247,4 +247,26 @@ public class MonoElementAtTest {
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
+
+	@Test
+	public void sourceShorter1() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 10).elementAt(10).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertError(IndexOutOfBoundsException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void sourceShorter2() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 10).elementAt(1000).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertError(IndexOutOfBoundsException.class)
+		  .assertNotComplete();
+	}
 }
