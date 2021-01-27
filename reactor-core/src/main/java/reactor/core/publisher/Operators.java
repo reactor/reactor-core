@@ -2204,6 +2204,7 @@ public abstract class Operators {
 		    int missed = 1;
 
 	        long requestAmount = 0L;
+	        long alreadyInRequestAmount = 0L;
 	        Subscription requestTarget = null;
 
 	        for (; ; ) {
@@ -2258,11 +2259,12 @@ public abstract class Operators {
 	                    }
 		                subscription = ms;
 		                if (r != 0L) {
-			                requestAmount = addCap(requestAmount, r);
+			                requestAmount = addCap(requestAmount, r - alreadyInRequestAmount);
 	                        requestTarget = ms;
 	                    }
 	                } else if (mr != 0L && a != null) {
 	                    requestAmount = addCap(requestAmount, mr);
+	                    alreadyInRequestAmount += mr; 
 	                    requestTarget = a;
 	                }
 	            }
