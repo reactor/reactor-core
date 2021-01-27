@@ -989,7 +989,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * When {@code null}, the {@code asyncComplete} path is used instead.
 	 * @param <T> the type of elements emitted by the resource closure, and thus the main sequence
 	 * @param <D> the type of the resource object
-	 * @return a new {@link Flux} built around a "transactional" resource, with several
+	 * @return a new {@link Mono} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
 	 *
 	 */
@@ -2230,7 +2230,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
-	 * @return an observed  {@link Flux}
+	 * @return an observed  {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
@@ -3185,7 +3185,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 * </p>
 	 *
-	 * @return an instrumented {@link Flux}
+	 * @return an instrumented {@link Mono}
 	 *
 	 * @see #name(String)
 	 * @see #tag(String, String)
@@ -4397,7 +4397,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/timedForMono.svg" alt="">
 	 *
-	 * @return a timed {@link Flux}
+	 * @return a timed {@link Mono}
 	 * @see #elapsed(Scheduler)
 	 * @see #timestamp(Scheduler)
 	 */
