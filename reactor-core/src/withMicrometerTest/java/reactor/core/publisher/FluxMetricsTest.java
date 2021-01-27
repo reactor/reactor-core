@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -541,27 +542,31 @@ public class FluxMetricsTest {
 
 	@Test
 	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
-		Flux<String> source = Flux
-				.range(1, 10)
-				.name("pipeline")
-				.tag("operation", "range")
-				.metrics()
-				.map(Object::toString)
-				.name("pipeline")
-				.tag("operation", "map")
-				.metrics()
-				.filter(i -> i.length() > 3)
-				.name("pipeline")
-				.tag("operation", "filter")
-				.metrics();
+		Flux<Integer> level1 = new FluxMetrics<>(
+				Flux.range(1, 10)
+				    .name("pipelineFlux")
+				    .tag("operation", "rangeFlux"));
 
-		new FluxMetrics<>(source).blockLast();
+		Flux<String> level2 = new FluxMetricsFuseable<>(
+				level1.map(Object::toString)
+				      .name("pipelineFlux")
+				      .tag("operation", "mapFlux"));
 
-		Meter meter = registry
-				.find("pipeline" + METER_FLOW_DURATION)
-				.tag("operation", "filter")
-				.meter();
+		Flux<String> level3 = new FluxMetrics<>(
+				level2.filter(i -> i.length() > 3)
+				      .name("pipelineFlux")
+				      .tag("operation", "filterFlux"));
 
-		assertThat(meter).isNotNull();
+		level3.blockLast();
+
+		Collection<Meter> meters = registry
+				.find("pipelineFlux" + METER_FLOW_DURATION)
+				.tagKeys("operation")
+				.meters();
+
+		assertThat(meters)
+				.isNotEmpty()
+				.extracting(m -> m.getId().getTag("operation"))
+				.containsExactlyInAnyOrder("rangeFlux", "mapFlux", "filterFlux");
 	}
 }
