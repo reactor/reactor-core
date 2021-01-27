@@ -461,8 +461,6 @@ public interface Scannable {
 		if (stripPackageIndex != -1) {
 			name = name.substring(stripPackageIndex + 1);
 		}
-		name = name.substring(name.lastIndexOf('$') + 1);
-		name = name.substring(name.lastIndexOf('.') + 1);
 		String stripped = OPERATOR_NAME_UNRELATED_WORDS_PATTERN
 			.matcher(name)
 			.replaceAll("");
