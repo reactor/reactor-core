@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -431,28 +432,35 @@ public class MonoMetricsTest {
 
 	@Test
 	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
-		Mono<String> source = Mono
-				.just(1)
-				.name("pipeline")
-				.tag("operation", "range")
-				.metrics()
-				.map(Object::toString)
-				.name("pipeline")
-				.tag("operation", "map")
-				.metrics()
-				.filter(i -> i.equals("one"))
-				.name("pipeline")
-				.tag("operation", "filter")
-				.metrics();
+		Mono<Integer> level1 = new MonoMetrics<>(
+				Mono.just(1)
+				    .name("pipelineMono")
+				    .tag("operation", "rangeMono"),
+				registry);
 
-		new MonoMetrics<>(source, registry).block();
-		
-		Meter meter = registry
+		Mono<String> level2 = new MonoMetricsFuseable<>(
+				level1.map(Object::toString)
+				      .name("pipelineMono")
+				      .tag("operation", "mapMono"),
+				registry);
+
+		Mono<String> level3 = new MonoMetrics<>(
+				level2.filter(i -> i.equals("one"))
+				      .name("pipelineMono")
+				      .tag("operation", "filterMono"),
+				registry);
+
+		level3.block();
+
+		Collection<Meter> meters = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_SEQUENCE_NAME, "pipeline")
-				.tag("operation", "filter")
-				.meter();
+				.tag(TAG_SEQUENCE_NAME, "pipelineMono")
+				.tagKeys("operation")
+				.meters();
 
-		assertThat(meter).isNotNull();
+		assertThat(meters)
+				.isNotEmpty()
+				.extracting(m -> m.getId().getTag("operation"))
+				.containsExactlyInAnyOrder("rangeMono", "mapMono", "filterMono");
 	}
 }
