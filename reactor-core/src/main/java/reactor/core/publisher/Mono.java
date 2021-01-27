@@ -965,7 +965,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * When {@code null}, the {@code asyncComplete} path is used instead.
 	 * @param <T> the type of elements emitted by the resource closure, and thus the main sequence
 	 * @param <D> the type of the resource object
-	 * @return a new {@link Flux} built around a "transactional" resource, with several
+	 * @return a new {@link Mono} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
 	 * @see #usingWhen(Publisher, Function, Function, Function)
 	 */
@@ -2182,7 +2182,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
-	 * @return an observed  {@link Flux}
+	 * @return an observed  {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
