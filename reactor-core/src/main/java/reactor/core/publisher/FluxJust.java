@@ -17,8 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -79,7 +79,11 @@ final class FluxJust<T> extends Flux<T>
 	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,
 	                                                        InnerProducer<T>{
 
-		boolean terminado;
+		volatile int terminated;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WeakScalarSubscription> TERMINATED =
+				AtomicIntegerFieldUpdater.newUpdater(WeakScalarSubscription.class, "terminated");
+		
 		final T                     value;
 		final CoreSubscriber<? super T> actual;
 
@@ -90,11 +94,10 @@ final class FluxJust<T> extends Flux<T>
 
 		@Override
 		public void request(long elements) {
-			if (terminado) {
+			if (!TERMINATED.compareAndSet(this, 0, 1)) {
 				return;
 			}
 
-			terminado = true;
 			if (value != null) {
 				actual.onNext(value);
 			}
@@ -103,7 +106,7 @@ final class FluxJust<T> extends Flux<T>
 
 		@Override
 		public void cancel() {
-			terminado = true;
+			TERMINATED.set(this, 1);
 		}
 
 		@Override
@@ -117,8 +120,7 @@ final class FluxJust<T> extends Flux<T>
 		@Override
 		@Nullable
 		public T poll() {
-			if (!terminado) {
-				terminado = true;
+			if (TERMINATED.compareAndSet(this, 0, 1)) {
 				return value;
 			}
 			return null;
@@ -126,7 +128,7 @@ final class FluxJust<T> extends Flux<T>
 
 		@Override
 		public boolean isEmpty() {
-			return terminado;
+			return TERMINATED.get(this) > 0;
 		}
 
 		@Override
@@ -136,7 +138,7 @@ final class FluxJust<T> extends Flux<T>
 
 		@Override
 		public void clear() {
-			terminado = true;
+			TERMINATED.set(this, 1);
 		}
 
 		@Override
@@ -147,7 +149,7 @@ final class FluxJust<T> extends Flux<T>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return terminado;
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return TERMINATED.get(this) == 1;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
