@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.util.context.Context;
 
 public class StressSubscriber<T> extends BaseSubscriber<T> {
 
@@ -44,6 +46,8 @@ public class StressSubscriber<T> extends BaseSubscriber<T> {
 
 	public final AtomicInteger onNextCalls = new AtomicInteger();
 
+	public final AtomicInteger onNextDiscarded = new AtomicInteger();
+
 	public final AtomicInteger onErrorCalls = new AtomicInteger();
 
 	public final AtomicInteger onCompleteCalls = new AtomicInteger();
@@ -66,6 +70,11 @@ public class StressSubscriber<T> extends BaseSubscriber<T> {
 	 */
 	public StressSubscriber(long initRequest) {
 		this.initRequest = initRequest;
+	}
+
+	@Override
+	public Context currentContext() {
+		return Operators.enableOnDiscard(null, (__) -> onNextDiscarded.incrementAndGet());
 	}
 
 	@Override

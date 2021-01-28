@@ -121,6 +121,11 @@ dependencies {
 	withMicrometerTestImplementation "io.micrometer:micrometer-core:$micrometerVersion"
 	withMicrometerTestImplementation sourceSets.test.output
 
+  	jcstressImplementation(project(":reactor-test")) {
+	  exclude module: 'reactor-core'
+	}
+  	jcstressImplementation "ch.qos.logback:logback-classic:$logbackVersion"
+
 }
 
 task downloadBaseline(type: Download) {
@@ -258,6 +263,7 @@ check.dependsOn japicmp
 jcstress {
 	mode = 'quick'
 	jcstressDependency = "org.openjdk.jcstress:jcstress-core:0.7"
+  	forks = 16
 }
 tasks.check.dependsOn(tasks.jcstress)
 
