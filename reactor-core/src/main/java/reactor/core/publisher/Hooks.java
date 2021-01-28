@@ -674,7 +674,12 @@ public abstract class Hooks {
 	}
 
     /**
-     * TODO
+     * Adds a wrapper for every {@link Queue} used in Reactor.
+	 * Note that it won't affect existing instances of {@link Queue}.
+	 *
+	 * Hint: one may use {@link AbstractQueue} to reduce the number of methods to implement.
+	 *
+	 * @implNote the resulting {@link Queue} MUST NOT change {@link Queue}'s behavior. Only side effects are allowed.
      *
      * @see #removeQueueWrapper(String)
      */
@@ -695,7 +700,7 @@ public abstract class Hooks {
     }
 
     /**
-     * TODO
+     * Removes existing {@link Queue} wrapper by key.
      *
      * @see #addQueueWrapper(String, Function)
      */
@@ -733,6 +738,16 @@ public abstract class Hooks {
         }
     }
 
+	/**
+	 * Applies the {@link Queue} wrappers that were previously registered.
+	 * SHOULD NOT change the behavior of the provided {@link Queue}.
+	 *
+	 * @param queue the {@link Queue} to wrap.
+	 * @return the result of applying {@link Queue} wrappers registered with {@link #addQueueWrapper(String, Function)}.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 * @see #removeQueueWrapper(String)
+	 */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> Queue<T> wrapQueue(Queue<T> queue) {
         return (Queue) QUEUE_WRAPPER.apply(queue);
