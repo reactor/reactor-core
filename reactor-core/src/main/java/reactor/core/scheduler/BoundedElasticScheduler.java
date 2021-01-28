@@ -599,7 +599,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * <p>Java Standard library unfortunately doesn't provide any {@link
 	 * ScheduledExecutorService} implementations that one can provide a bound on
 	 * the task queue. This shortcoming is prone to hide backpressure problems. See
-	 * <a href="http://cs.oswego.edu/pipermail/concurrency-interest/2019-April/016861.html">the
+	 * <a href="https://cs.oswego.edu/pipermail/concurrency-interest/2019-April/016861.html">the
 	 * relevant concurrency-interest discussion</a> for {@link java.util.concurrent}
 	 * lead Doug Lea's tip for enforcing a bound via {@link
 	 * ScheduledThreadPoolExecutor#getQueue()}.

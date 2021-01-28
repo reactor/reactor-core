@@ -36,6 +36,7 @@ plugins {
 	//note: build scan plugin now must be applied in settings.gradle
 	id "com.jfrog.artifactory" version "4.15.2" apply false
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
+	id 'io.spring.nohttp' version '0.0.5.RELEASE'
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -91,6 +92,12 @@ if (System.getenv('GRADLE_ENTERPRISE_URL')) {
 			server = System.getenv('GRADLE_ENTERPRISE_URL')
 		}
 	}
+}
+
+nohttp {
+	source.exclude "docs/asciidoc/highlight/**"
+	source.exclude "**/build/reports/tests/**/*.html"
+	allowlistFile = project.file('codequality/nohttp/allowlist.lines')
 }
 
 configure(subprojects) { p ->

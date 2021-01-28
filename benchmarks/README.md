@@ -44,4 +44,4 @@ there is an additional task `jmhBaseline` that will use the latest release:
 
 ## Resources
 - http://tutorials.jenkov.com/java-performance/jmh.html (Introduction)
-- http://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/ (Samples)
+- https://github.com/openjdk/jmh/tree/master/jmh-samples/src/main/java/org/openjdk/jmh/samples (Samples)
