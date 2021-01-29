@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -533,6 +534,7 @@ public class ScannableTest {
 		List<String> downstream = new ArrayList<>();
 		List<String> upstream = new ArrayList<>();
 
+		final int line = Thread.currentThread().getStackTrace()[1].getLineNumber();
 		Mono<?> m=
 				Flux.from(s -> {
 					Scannable thisSubscriber = Scannable.from(s);
@@ -552,19 +554,19 @@ public class ScannableTest {
 		thisOperator.steps().forEach(upstream::add);
 
 		assertThat(downstream).containsExactly(
-				"Flux.from ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:537)",
-				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
-				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
-				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
-				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)",
+				"Flux.from ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+2)+")",
+				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+7)+")",
+				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+8)+")",
+				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+9)+")",
+				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+10)+")",
 				"lambda");
 
 		assertThat(upstream).containsExactly(
-				"Flux.from ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:537)",
-				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
-				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
-				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
-				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)");
+				"Flux.from ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+2)+")",
+				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+7)+")",
+				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+8)+")",
+				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+9)+")",
+				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:"+(line+10)+")");
 	}
 
 	@Test
@@ -613,7 +615,7 @@ public class ScannableTest {
 		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
-						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:610)",
+						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:612)",
 						"map"
 				);
 	}
@@ -669,6 +671,53 @@ public class ScannableTest {
 				"map",
 				"filter",
 				"reduce");
+	}
+
+	@Test
+	void stepNameSmokeTest() {
+		Flux<String> f = Flux.just("foo")
+		                     .filter(i -> true)
+		                     .map(Function.identity());
+		assertThat(Scannable.from(f).steps())
+				.as("publisher chain")
+				.containsExactly("source(FluxJust)", "filter", "map");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		f.doOnSubscribe(subRef::set)
+		 .blockLast();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("subscriber chain")
+				.containsExactly("just", "filter", "map", "peek", "blockLast");
+	}
+
+	@Test
+	void stepNameSmokeTestWithDebugMode() {
+		Hooks.onOperatorDebug();
+
+		final int line = Thread.currentThread().getStackTrace()[1].getLineNumber();
+		Flux<String> f = Flux.just("foo")
+		                     .filter(i -> true)
+		                     .map(Function.identity());
+		assertThat(Scannable.from(f).steps())
+				.as("publisher chain")
+				.containsExactly(
+						"Flux.just ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+1) + ")",
+						"Flux.filter ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+2) + ")",
+						"Flux.map ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+3) + ")"
+				);
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		f.doOnSubscribe(subRef::set)
+		 .blockLast();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("subscriber chain")
+				.containsExactly(
+						"Flux.just ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+1) + ")",
+						"Flux.filter ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+2) + ")",
+						"Flux.map ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+3) + ")",
+						"Flux.doOnSubscribe ⇢ at reactor.core.ScannableTest.stepNameSmokeTestWithDebugMode(ScannableTest.java:"+ (line+13) + ")",
+						"blockLast"
+				);
 	}
 
 }

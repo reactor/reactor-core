@@ -51,10 +51,10 @@ import reactor.util.function.Tuple2;
 @FunctionalInterface
 public interface Scannable {
 
-    /**
-     * The pattern for matching words unrelated to operator name.
-     * Used to strip an operator name of various prefixes and suffixes.
-     */
+	/**
+	 * The pattern for matching words unrelated to operator name.
+	 * Used to strip an operator name of various prefixes and suffixes.
+	 */
 	Pattern OPERATOR_NAME_UNRELATED_WORDS_PATTERN =
 		Pattern.compile("Parallel|Flux|Mono|Publisher|Subscriber|Fuseable|Operator|Conditional");
 
@@ -316,6 +316,11 @@ public interface Scannable {
 			public String toString() {
 				return "UNAVAILABLE_SCAN";
 			}
+
+			@Override
+			public String stepName() {
+				return "UNAVAILABLE_SCAN";
+			}
 		};
 
 		/**
@@ -335,6 +340,11 @@ public interface Scannable {
 
 			@Override
 			public String toString() {
+				return "NULL_SCAN";
+			}
+
+			@Override
+			public String stepName() {
 				return "NULL_SCAN";
 			}
 		};
@@ -437,18 +447,19 @@ public interface Scannable {
 	 * its chain of {@link #parents()} and {@link #actuals()}.
 	 */
 	default String stepName() {
-		// /!\ this code is duplicated in `InnerConsumer#stepName` in order to use simple class name instead of toString
-
 		/*
 		 * Strip an operator name of various prefixes and suffixes.
 		 * @param name the operator name, usually simpleClassName or fully-qualified classname.
 		 * @return the stripped operator name
 		 */
-		String name = toString();
-		if (name.contains("@") && name.contains("$")) {
-			name = name
-				.substring(0, name.indexOf('$'))
-				.substring(name.lastIndexOf('.') + 1);
+		String name = getClass().getName();
+		int innerClassIndex = name.indexOf('$');
+		if (innerClassIndex != -1) {
+			name = name.substring(0, innerClassIndex);
+		}
+		int stripPackageIndex = name.lastIndexOf('.');
+		if (stripPackageIndex != -1) {
+			name = name.substring(stripPackageIndex + 1);
 		}
 		String stripped = OPERATOR_NAME_UNRELATED_WORDS_PATTERN
 			.matcher(name)

@@ -975,15 +975,45 @@ public class OperatorsTest {
 
 	@Test
 	public void onDiscardCallbackErrorsLog() {
-		Context context = Operators.enableOnDiscard(Context.empty(), t -> {throw new RuntimeException("Boom");});
+		Context context = Operators.enableOnDiscard(Context.empty(), t -> {
+			throw new RuntimeException("Boom");
+		});
 
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.enableCaptureWith(testLogger);
 		try {
 			Operators.onDiscard("Foo", context);
 			assertThat(testLogger.getErrContent()).contains("Error in discard hook - java.lang.RuntimeException: Boom");
-		} finally {
+		}
+		finally {
 			LoggerUtils.disableCapture();
 		}
 	}
+	
+	@Test
+	void meaningfulEmptySubscriptionStepName() {
+		assertThat(Scannable.from(Operators.emptySubscription()).stepName()).isEqualTo("emptySubscription");
+	}
+
+	@Test
+	void meaningfulCancelledSubscriptionStepName() {
+		assertThat(Scannable.from(Operators.cancelledSubscription()).stepName()).isEqualTo("cancelledSubscription");
+	}
+
+	@Test
+	void meaningfulScalarSubscriptionStepName() {
+		assertThat(Scannable.from(Operators.scalarSubscription(new BlockingFirstSubscriber<>(), "foo")).stepName()).isEqualTo("scalarSubscription(foo)");
+	}
+
+	@Test
+	void drainSubscriberNotScannableStepName() {
+		assertThat(Scannable.from(Operators.drainSubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
+	}
+
+	@Test
+	void emptySubscriberNotScannableStepName() {
+		assertThat(Scannable.from(Operators.emptySubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
+	}
+
+
 }

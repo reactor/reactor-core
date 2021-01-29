@@ -198,4 +198,9 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	public boolean isDisposed() {
 		return cancelled || getCount() == 0;
 	}
+
+	@Override
+	public String stepName() {
+		return "blockOptional";
+	}
 }
