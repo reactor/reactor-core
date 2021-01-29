@@ -238,6 +238,10 @@ check.dependsOn jacocoTestReport
 check.dependsOn japicmp
 
 if (JavaVersion.current().java9Compatible) {
+	// SharedSecretsCallSiteSupplierFactory is a Java 8 specific optimization.
+	// It uses sun.misc.SharedSecrets which is unavailable on Java 9+, and the compilation would fail with JDK 9.
+	// This workaround allows compiling the main sourceset on JDK 9+ while still referring to the Java 8 classes.
+
 	sourceSets {
 		java8stubs.java.srcDirs = ['src/main/java8stubs']
 	}
@@ -255,6 +259,9 @@ if (JavaVersion.current().java9Compatible) {
 	}
 }
 else {
+	// reactor.core.publisher.Traces contains a strategy that only works with Java 9+.
+	// While compiling on Java 8, we can't access Java 9+ APIs.
+	// To workaround this, we "link" the main sourceset to the stubs of Java 9 APIs without having to use the Java 9 target.
 	sourceSets {
 		java9stubs.java.srcDirs = ['src/main/java9stubs']
 	}
