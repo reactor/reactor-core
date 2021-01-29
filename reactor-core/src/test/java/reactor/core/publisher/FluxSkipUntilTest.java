@@ -15,11 +15,13 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -65,6 +67,19 @@ public class FluxSkipUntilTest extends FluxOperatorTest<String, String> {
 		                        .skipUntil(v -> v > 4))
 		            .expectNext(5, 6, 7, 8, 9, 10)
 		            .verifyComplete();
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/2578
+	@Test
+	@Timeout(5L)
+	public void conditionalOptimization() {
+		StepVerifier.create(
+				Flux.range(1, 5)
+						.skipUntil(v -> v > 1)
+						.flatMap(v -> Mono.just(v), 1) // to request just 1 item
+		)
+				.expectNext(2, 3, 4, 5)
+				.verifyComplete();
 	}
 
 	@Test
