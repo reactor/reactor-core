@@ -128,11 +128,11 @@ final class FluxSkipUntil<T> extends InternalFluxOperator<T, T> {
 			if (b) {
 				doneSkipping = true;
 				actual.onNext(t);
-				return false;
+				return true;
 			}
 
 			Operators.onDiscard(t, ctx);
-			return true;
+			return false;
 		}
 
 		@Override
