@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -148,14 +149,11 @@ public class MonoElementAtTest {
 	}
 
 	@Test
-	public void empty() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.<Integer>empty().elementAt(0).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(IndexOutOfBoundsException.class)
-		  .assertNotComplete();
+	void empty() {
+		StepVerifier.create(Flux.<Integer>empty().elementAt(0))
+		            .expectErrorMatches(e -> e instanceof IndexOutOfBoundsException &&
+				            "source had 0 elements, expected at least 1".equals(e.getMessage()))
+		            .verify();
 	}
 
 	@Test
@@ -249,24 +247,22 @@ public class MonoElementAtTest {
 	}
 
 	@Test
-	public void sourceShorter1() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 10).elementAt(10).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(IndexOutOfBoundsException.class)
-		  .assertNotComplete();
+	void sourceShorter1() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .elementAt(10))
+		            .expectNextCount(0)
+		            .expectErrorMatches(e -> e instanceof IndexOutOfBoundsException &&
+				            "source had 10 elements, expected at least 11".equals(e.getMessage()))
+		            .verify();
 	}
 
 	@Test
-	public void sourceShorter2() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 10).elementAt(1000).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(IndexOutOfBoundsException.class)
-		  .assertNotComplete();
+	void sourceShorter2() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .elementAt(1000))
+		            .expectNextCount(0)
+		            .expectErrorMatches(e -> e instanceof IndexOutOfBoundsException &&
+				            "source had 10 elements, expected at least 1001".equals(e.getMessage()))
+		            .verify();
 	}
 }
