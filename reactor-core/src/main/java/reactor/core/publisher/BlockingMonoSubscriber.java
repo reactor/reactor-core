@@ -41,4 +41,9 @@ final class BlockingMonoSubscriber<T> extends BlockingSingleSubscriber<T> {
 		}
 		countDown();
 	}
+
+	@Override
+	public String stepName() {
+		return "block";
+	}
 }
