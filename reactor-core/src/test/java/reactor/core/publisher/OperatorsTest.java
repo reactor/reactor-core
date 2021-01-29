@@ -1014,6 +1014,4 @@ public class OperatorsTest {
 	void emptySubscriberNotScannableStepName() {
 		assertThat(Scannable.from(Operators.emptySubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
 	}
-
-
 }
