@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -148,14 +149,12 @@ public class MonoElementAtTest {
 	}
 
 	@Test
-	public void empty() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.<Integer>empty().elementAt(0).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(IndexOutOfBoundsException.class)
-		  .assertNotComplete();
+	void empty() {
+		StepVerifier.create(Flux.<Integer>empty().elementAt(0))
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IndexOutOfBoundsException.class)
+				            .hasMessage("source had 0 elements, expected at least 1"))
+		            .verify();
 	}
 
 	@Test
@@ -246,5 +245,27 @@ public class MonoElementAtTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	void sourceShorter1() {
+		StepVerifier.create(Flux.range(1, 10)
+								.elementAt(10))
+					.expectNextCount(0)
+					.expectErrorSatisfies(e -> assertThat(e)
+							.isInstanceOf(IndexOutOfBoundsException.class)
+							.hasMessage("source had 10 elements, expected at least 11"))
+					.verify();
+	}
+
+	@Test
+	void sourceShorter2() {
+		StepVerifier.create(Flux.range(1, 10)
+								.elementAt(1000))
+					.expectNextCount(0)
+					.expectErrorSatisfies(e -> assertThat(e)
+							.isInstanceOf(IndexOutOfBoundsException.class)
+							.hasMessage("source had 10 elements, expected at least 1001"))
+					.verify();
 	}
 }
