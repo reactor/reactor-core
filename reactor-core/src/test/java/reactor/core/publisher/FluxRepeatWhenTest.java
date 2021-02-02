@@ -474,4 +474,15 @@ public class FluxRepeatWhenTest {
 
 		assertThat(contexts).allMatch(ctx -> ctx.hasKey("thirdPartyContext"));
 	}
+
+	@Test
+	void gh2579() {
+		 for (int i = 0; i < 1_000; i++) {
+			AtomicInteger sourceHelper = new AtomicInteger();
+			Flux.just("hello")
+					.filter(m -> sourceHelper.getAndIncrement() >= 9)
+					.repeatWhen(it -> it.delayElements(Duration.ofNanos(1)))
+					.blockFirst(Duration.ofSeconds(1));
+		 }
+	}
 }
