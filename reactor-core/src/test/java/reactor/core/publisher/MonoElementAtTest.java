@@ -151,8 +151,9 @@ public class MonoElementAtTest {
 	@Test
 	void empty() {
 		StepVerifier.create(Flux.<Integer>empty().elementAt(0))
-		            .expectErrorMatches(e -> e instanceof IndexOutOfBoundsException &&
-				            "source had 0 elements, expected at least 1".equals(e.getMessage()))
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IndexOutOfBoundsException.class)
+				            .hasMessage("source had 0 elements, expected at least 1"))
 		            .verify();
 	}
 
@@ -249,20 +250,22 @@ public class MonoElementAtTest {
 	@Test
 	void sourceShorter1() {
 		StepVerifier.create(Flux.range(1, 10)
-		                        .elementAt(10))
-		            .expectNextCount(0)
-		            .expectErrorMatches(e -> e instanceof IndexOutOfBoundsException &&
-				            "source had 10 elements, expected at least 11".equals(e.getMessage()))
-		            .verify();
+								.elementAt(10))
+					.expectNextCount(0)
+					.expectErrorSatisfies(e -> assertThat(e)
+							.isInstanceOf(IndexOutOfBoundsException.class)
+							.hasMessage("source had 10 elements, expected at least 11"))
+					.verify();
 	}
 
 	@Test
 	void sourceShorter2() {
 		StepVerifier.create(Flux.range(1, 10)
-		                        .elementAt(1000))
-		            .expectNextCount(0)
-		            .expectErrorMatches(e -> e instanceof IndexOutOfBoundsException &&
-				            "source had 10 elements, expected at least 1001".equals(e.getMessage()))
-		            .verify();
+								.elementAt(1000))
+					.expectNextCount(0)
+					.expectErrorSatisfies(e -> assertThat(e)
+							.isInstanceOf(IndexOutOfBoundsException.class)
+							.hasMessage("source had 10 elements, expected at least 1001"))
+					.verify();
 	}
 }
