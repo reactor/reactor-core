@@ -233,8 +233,13 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 						t, actual.currentContext());
 				done = true;
+				trySchedule(this, null, t);
 			}
-			trySchedule(this, null, t);
+			else {
+				//the element has been offered to the queue, so we shouldn't try to discard it
+				//individually from a cancelled trySchedule (queue-discarding will suffice)
+				trySchedule(this, null, t, false);
+			}
 		}
 
 		@Override
@@ -294,6 +299,13 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
+			trySchedule(subscription, suppressed, dataSignal, true);
+		}
+		void trySchedule(
+				@Nullable Subscription subscription,
+				@Nullable Throwable suppressed,
+				@Nullable Object dataSignal,
+				boolean discardDataSignalIfCancelled) {
 			if (WIP.getAndIncrement(this) != 0) {
 				if (cancelled) {
 					if (sourceMode == ASYNC) {
@@ -302,7 +314,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 					else {
 						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
-						Operators.onDiscard(dataSignal, actual.currentContext());
+						if (discardDataSignalIfCancelled) {
+							Operators.onDiscard(dataSignal, actual.currentContext());
+						}
 					}
 				}
 				return;
