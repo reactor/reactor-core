@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 
 import reactor.core.Exceptions;
@@ -35,6 +36,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.stats.Stats;
 
 /**
  * A set of overridable lifecycle hooks that can be used for cross-cutting
@@ -516,6 +518,26 @@ public abstract class Hooks {
 		DETECT_CONTEXT_LOSS = false;
 	}
 
+	/**
+	 * Enable operator stats recorder that captures all signals that goes through each
+	 * operator.
+	 *
+	 * When the terminal signal is observed later on, the last operator in the chain
+	 * will invoke stats reporting for the whole pipeline.
+	 */
+	public static void enableStatsRecording() {
+		GLOBAL_STATS_TRACE = true;
+	}
+
+	/**
+	 * Globally disables the {@link Context} loss detection that was previously
+	 * enabled by {@link #enableContextLossTracking()}.
+	 *
+	 */
+	public static void disableStatsRecording() {
+		GLOBAL_STATS_TRACE = false;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -610,6 +632,7 @@ public abstract class Hooks {
 
 	static boolean GLOBAL_TRACE = initStaticGlobalTrace();
 
+	static boolean GLOBAL_STATS_TRACE = initStaticGlobalStatsTrace();
 
 	static boolean DETECT_CONTEXT_LOSS = false;
 
@@ -622,6 +645,12 @@ public abstract class Hooks {
 	//isolated on static method for testing purpose
 	static boolean initStaticGlobalTrace() {
 		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+				"false"));
+	}
+
+	//isolated on static method for testing purpose
+	static boolean initStaticGlobalStatsTrace() {
+		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStats",
 				"false"));
 	}
 
@@ -655,6 +684,17 @@ public abstract class Hooks {
 	}
 
 	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
+		if (GLOBAL_STATS_TRACE) {
+			return addOperatorStatsInfo(publisher, stacktrace);
+		}
+		else {
+			return addOperatorStacktraceInfo(publisher, stacktrace);
+		}
+	}
+
+	static <T, P extends Publisher<T>> Publisher<T> addOperatorStacktraceInfo(P publisher,
+			AssemblySnapshot stacktrace) {
+
 		if (publisher instanceof Callable) {
 			if (publisher instanceof Mono) {
 				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
@@ -668,8 +708,28 @@ public abstract class Hooks {
 			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
 		}
 		if (publisher instanceof ConnectableFlux) {
-			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
+			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
+					stacktrace);
 		}
 		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
+	}
+
+	static <T, P extends Publisher<T>> Publisher<T> addOperatorStatsInfo(P publisher,
+			AssemblySnapshot stacktrace) {
+
+		if (publisher instanceof Mono) {
+			return new MonoStats<>((Mono<T>) publisher,
+					stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+		}
+		if (publisher instanceof ParallelFlux) {
+			return new ParallelFluxStats<>((ParallelFlux<T>) publisher,
+					stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+		}
+		if (publisher instanceof ConnectableFlux) {
+			return new ConnectableFluxStats<>((ConnectableFlux<T>) publisher,
+					stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+		}
+		return new FluxStats<>((Flux<T>) publisher,
+				stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
 	}
 }
