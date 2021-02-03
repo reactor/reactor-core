@@ -6,7 +6,7 @@ Demand is capped at `Long.MAX_VALUE`, representing an unbounded request (meaning
 
 The first request comes from the final subscriber at subscription time, yet the most direct ways of subscribing all immediately trigger an unbounded request of `Long.MAX_VALUE`:
 
-* `subscribe()` and most of its lambda-based variants (to the exception of the one that has a Consumer<Subscription>)
+* `subscribe()` and most of its lambda-based variants (to the exception of the one that has a `Consumer<Subscription>`)
 * `block()`, `blockFirst()` and `blockLast()`
 * iterating over a `toIterable()` or `toStream()`
 
