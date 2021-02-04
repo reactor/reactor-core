@@ -30,6 +30,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.with;
@@ -82,52 +83,70 @@ public class SerializedSubscriberTest {
 		}
 	}
 
-	//direct transcription of test case exposed in https://github.com/reactor/reactor-core/issues/2077
+	//adaptation of test case exposed in https://github.com/reactor/reactor-core/issues/2077
+	//we further attempt to detect double discards, and for now ignore these
 	@Test
-	public void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
+	void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
 		AtomicInteger counter = new AtomicInteger();
 		AtomicInteger discarded = new AtomicInteger();
 		AtomicInteger seen = new AtomicInteger();
+		AtomicInteger doubleDiscarded = new AtomicInteger();
+		AtomicInteger seenAndDiscarded = new AtomicInteger();
 
 		final CountDownLatch latch = new CountDownLatch(4);
-		Flux.<Integer>generate(s -> {
+		Flux.<AtomicInteger>generate(s -> {
 			int i = counter.incrementAndGet();
 			if (i == 100_000) {
-				s.next(i);
+				s.next(new AtomicInteger(i));
 				s.complete();
 			}
 			else {
-				s.next(i);
+				s.next(new AtomicInteger(i));
 			}
 		})
 			.doFinally(sig -> latch.countDown())
-		    .publishOn(Schedulers.single())
+			.publishOn(Schedulers.single())
 			.doFinally(sig -> latch.countDown())
-		    .retryWhen(p -> p.take(3))
+			.retryWhen(Retry.from(p -> p.take(3)))
 			.doFinally(sig -> latch.countDown())
-		    .cancelOn(Schedulers.parallel())
-		    .doOnDiscard(Integer.class, i -> discarded.incrementAndGet())
-		    .doFinally(sig -> latch.countDown())
-            .subscribeWith(new BaseSubscriber<Integer>() {
-	            @Override
-	            protected void hookOnNext(Integer value) {
+			.cancelOn(Schedulers.parallel())
+			.doOnDiscard(AtomicInteger.class, i -> {
+				discarded.incrementAndGet();
+				int status = i.getAndSet(-10);
+				//here we could switch to printing stacktraces with System.identityHashcode to identify where double discard happens
+				if (status == -10) {
+					doubleDiscarded.incrementAndGet();
+				}
+				else if (status == -1) {
+					seenAndDiscarded.incrementAndGet();
+				}
+			})
+			.doFinally(sig -> latch.countDown())
+			.subscribeWith(new BaseSubscriber<AtomicInteger>() {
+				@Override
+				protected void hookOnNext(AtomicInteger value) {
 					seen.incrementAndGet();
-		            cancel();
-	            }
-            });
+					cancel();
+					if (value.getAndSet(-1) < 0) {
+						seenAndDiscarded.incrementAndGet();
+					}
+				}
+			});
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
 		with().pollInterval(50, TimeUnit.MILLISECONDS)
-		      .await().atMost(500, TimeUnit.MILLISECONDS)
-		      .untilAsserted(() -> {
+			  .await().atMost(500, TimeUnit.MILLISECONDS)
+			  .untilAsserted(() -> {
 				  int expectedCnt = counter.get();
 				  int snn = seen.get();
-				  int discrdd = discarded.get();
+				  int discrdd = discarded.get() - doubleDiscarded.get();
+				  assertThat(seenAndDiscarded).as("seen and discarded").hasValue(0);
 				  assertThat(expectedCnt)
-					      .withFailMessage("counter not equal to seen+discarded: Expected <%s>, got <%s+%s>=<%s>",
-							      expectedCnt, seen, discarded, snn + discrdd)
-					      .isEqualTo(snn + discrdd);
-		      });
+						  .withFailMessage("counter not equal to seen+discarded: Expected <%s>, got <%s+%s>=<%s>",
+								  expectedCnt, snn, discrdd, snn + discrdd)
+						  .isEqualTo(snn + discrdd);
+			  });
+
 	}
 
 	@Test
