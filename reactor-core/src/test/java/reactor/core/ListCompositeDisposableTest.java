@@ -226,7 +226,7 @@ public class ListCompositeDisposableTest {
 			final Disposable d1 = new FakeDisposable();
 			final Disposable.Composite cd = new ListCompositeDisposable(d1);
 
-			RaceTestUtils.race(cd::dispose, cd::dispose, Schedulers.elastic());
+			RaceTestUtils.race(cd::dispose, cd::dispose);
 		}
 	}
 
@@ -236,7 +236,7 @@ public class ListCompositeDisposableTest {
 			final Disposable d1 = new FakeDisposable();
 			final Disposable.Composite cd = new ListCompositeDisposable(d1);
 
-			RaceTestUtils.race(() -> cd.remove(d1), cd::dispose, Schedulers.elastic());
+			RaceTestUtils.race(() -> cd.remove(d1), cd::dispose);
 		}
 	}
 
@@ -246,7 +246,7 @@ public class ListCompositeDisposableTest {
 			final Disposable d1 = new FakeDisposable();
 			final Disposable.Composite cd = new ListCompositeDisposable(d1);
 
-			RaceTestUtils.race(cd::size, cd::dispose, Schedulers.elastic());
+			RaceTestUtils.race(cd::size, cd::dispose);
 		}
 	}
 

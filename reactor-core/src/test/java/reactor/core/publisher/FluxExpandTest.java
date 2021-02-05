@@ -424,7 +424,7 @@ public class FluxExpandTest {
 			Runnable r1 = () -> ts.request(1);
 			Runnable r2 = ts::cancel;
 
-			RaceTestUtils.race(r1, r2, Schedulers.single());
+			RaceTestUtils.race(r1, r2);
 		}
 	}
 
@@ -443,7 +443,7 @@ public class FluxExpandTest {
 			Runnable r1 = () -> pp.next(1);
 			Runnable r2 = ts::cancel;
 
-			RaceTestUtils.race(r1, r2, Schedulers.single());
+			RaceTestUtils.race(r1, r2);
 		}
 	}
 
@@ -461,7 +461,7 @@ public class FluxExpandTest {
 			Runnable r1 = pp::complete;
 			Runnable r2 = ts::cancel;
 
-			RaceTestUtils.race(r1, r2, Schedulers.single());
+			RaceTestUtils.race(r1, r2);
 		}
 	}
 
