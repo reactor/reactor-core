@@ -99,24 +99,39 @@ public class RaceTestUtils {
 		}
 	}
 
+	public static void race(final Runnable r1, final Runnable r2) {
+		race(new Runnable[]{r1, r2});
+	}
+	
 	/**
 	 * Synchronizes the execution of two {@link Runnable} as much as possible
 	 * to test race conditions. The method blocks until both have run to completion.
-	 * @param r1 the first runnable
-	 * @param r2 the second runnable
 	 */
-	public static void race(final Runnable r1, final Runnable r2) {
-		race(r1, r2, Schedulers.single());
+	public static void race(final Runnable... rs) {
+		race(Schedulers.boundedElastic(), rs);
 	}
 
 	/**
 	 * Synchronizes the execution of two {@link Runnable} as much as possible
 	 * to test race conditions. The method blocks until both have run to completion.
+	 * @param s the {@link Scheduler} on which to execute the runnables
 	 * @param r1 the first runnable
 	 * @param r2 the second runnable
+	 * @deprecated use {@link #race(Scheduler, Runnable...)}
+	 */
+	@Deprecated
+	public static void race(final Runnable r1, final Runnable r2, Scheduler s) {
+		race(s, r1, r2);
+	}
+
+	/**
+	 * Synchronizes the execution of two {@link Runnable} as much as possible
+	 * to test race conditions. The method blocks until both have run to completion.
 	 * @param s the {@link Scheduler} on which to execute the runnables
 	 */
-	public static void race(final Runnable r1, final Runnable r2, Scheduler s) {
+	public static void race(Scheduler s, final Runnable... rs) {
+		Runnable r1 = rs[0];
+		Runnable r2 = rs[1];
 		final AtomicInteger count = new AtomicInteger(2);
 		final CountDownLatch cdl = new CountDownLatch(2);
 
