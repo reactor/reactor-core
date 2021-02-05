@@ -52,6 +52,8 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 		Hooks.resetOnNextError();
 		Hooks.resetOnOperatorError();
 
+		Hooks.removeQueueWrappers();
+
 		Schedulers.resetOnHandleError();
 		Schedulers.resetFactory();
 		Schedulers.resetOnScheduleHooks();

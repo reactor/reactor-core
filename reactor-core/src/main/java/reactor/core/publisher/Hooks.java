@@ -16,11 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -42,7 +38,7 @@ import reactor.util.context.Context;
  */
 public abstract class Hooks {
 
-	/**
+    /**
 	 * Utility method to convert a {@link Publisher} to a {@link Flux} without applying {@link Hooks}.
 	 *
 	 * @param publisher the {@link Publisher} to convert to a {@link Flux}
@@ -566,6 +562,10 @@ public abstract class Hooks {
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
 
+	private static final LinkedHashMap<String, Function<Queue<?>, Queue<?>>> QUEUE_WRAPPERS = new LinkedHashMap<>(1);
+
+	private static Function<Queue<?>, Queue<?>> QUEUE_WRAPPER = Function.identity();
+
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
 		return Collections.unmodifiableMap(onEachOperatorHooks);
@@ -671,5 +671,85 @@ public abstract class Hooks {
 			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
 		}
 		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
+	}
+
+	/**
+	 * Adds a wrapper for every {@link Queue} used in Reactor.
+	 * Note that it won't affect existing instances of {@link Queue}.
+	 *
+	 * Hint: one may use {@link AbstractQueue} to reduce the number of methods to implement.
+	 *
+	 * @implNote the resulting {@link Queue} MUST NOT change {@link Queue}'s behavior. Only side effects are allowed.
+	 *
+	 * @see #removeQueueWrapper(String)
+	 */
+	public static void addQueueWrapper(String key, Function<Queue<?>, Queue<?>> decorator) {
+		synchronized (QUEUE_WRAPPERS) {
+			QUEUE_WRAPPERS.put(key, decorator);
+			Function<Queue<?>, Queue<?>> newHook = null;
+			for (Function<Queue<?>, Queue<?>> function : QUEUE_WRAPPERS.values()) {
+				if (newHook == null) {
+					newHook = function;
+				}
+				else {
+					newHook = newHook.andThen(function);
+				}
+			}
+			QUEUE_WRAPPER = newHook;
+		}
+	}
+
+	/**
+	 * Removes existing {@link Queue} wrapper by key.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 */
+	public static void removeQueueWrapper(String key) {
+		synchronized (QUEUE_WRAPPERS) {
+			QUEUE_WRAPPERS.remove(key);
+			if (QUEUE_WRAPPERS.isEmpty()) {
+				QUEUE_WRAPPER = Function.identity();
+			}
+			else {
+				Function<Queue<?>, Queue<?>> newHook = null;
+				for (Function<Queue<?>, Queue<?>> function : QUEUE_WRAPPERS.values()) {
+					if (newHook == null) {
+						newHook = function;
+					}
+					else {
+						newHook = newHook.andThen(function);
+					}
+				}
+				QUEUE_WRAPPER = newHook;
+			}
+		}
+	}
+
+	/**
+	 * Remove all queue wrappers.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 * @see #removeQueueWrapper(String)
+	 */
+	public static void removeQueueWrappers() {
+		synchronized (QUEUE_WRAPPERS) {
+			QUEUE_WRAPPERS.clear();
+			QUEUE_WRAPPER = Function.identity();
+		}
+	}
+
+	/**
+	 * Applies the {@link Queue} wrappers that were previously registered.
+	 * SHOULD NOT change the behavior of the provided {@link Queue}.
+	 *
+	 * @param queue the {@link Queue} to wrap.
+	 * @return the result of applying {@link Queue} wrappers registered with {@link #addQueueWrapper(String, Function)}.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 * @see #removeQueueWrapper(String)
+	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <T> Queue<T> wrapQueue(Queue<T> queue) {
+		return (Queue) QUEUE_WRAPPER.apply(queue);
 	}
 }

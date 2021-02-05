@@ -16,15 +16,17 @@
 
 package reactor.util.concurrent;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import reactor.core.publisher.Hooks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -148,6 +150,60 @@ public class QueuesTest {
 		Queue<Integer> emptyQueue = Queues.<Integer>empty().get();
 
 		assertThat(emptyQueue.toArray(new Integer[0])).as("toArray(empty)").isEmpty();
+	}
+
+	@ParameterizedTest(name = "[{index}] {0}")
+	@MethodSource("queues")
+	public void testWrapping(String name, Supplier<Queue<Object>> queueSupplier) {
+		assertThat(queueSupplier.get()).as("no wrapper").hasSize(0);
+
+		Hooks.addQueueWrapper("test", queue -> {
+			return new AbstractQueue<Object>() {
+
+				@Override
+				public int size() {
+					return 42;
+				}
+
+				@Override
+				public boolean offer(Object o) {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public Object poll() {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public Object peek() {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public Iterator<Object> iterator() {
+					throw new UnsupportedOperationException();
+				}
+			};
+		});
+
+		assertThat(queueSupplier.get()).as("with wrapper").hasSize(42);
+
+		Hooks.removeQueueWrapper("test");
+
+		assertThat(queueSupplier.get()).as("wrapper removed").hasSize(0);
+	}
+
+	private static Stream<Arguments> queues() {
+		return Stream.of(
+				Arguments.of("one", Queues.one()),
+				Arguments.of("small", Queues.small()),
+				Arguments.of("xs", Queues.xs()),
+				Arguments.of("unbounded", Queues.unbounded()),
+				Arguments.of("unbounded(42)", Queues.unbounded(42)),
+				Arguments.of("unboundedMultiproducer", Queues.unboundedMultiproducer()),
+				Arguments.of("get(9000)", Queues.get(9000))
+		);
 	}
 
 }

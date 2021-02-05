@@ -9022,7 +9022,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			provider = Queues.get(batchSize);
 		}
 		else{
-			provider = queueProvider;
+			provider = () -> Hooks.wrapQueue(queueProvider.get());
 		}
 		return new BlockingIterable<>(this, batchSize, provider);
 	}
