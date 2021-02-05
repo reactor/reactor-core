@@ -673,70 +673,70 @@ public abstract class Hooks {
 		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 	}
 
-    /**
-     * Adds a wrapper for every {@link Queue} used in Reactor.
+	/**
+	 * Adds a wrapper for every {@link Queue} used in Reactor.
 	 * Note that it won't affect existing instances of {@link Queue}.
 	 *
 	 * Hint: one may use {@link AbstractQueue} to reduce the number of methods to implement.
 	 *
 	 * @implNote the resulting {@link Queue} MUST NOT change {@link Queue}'s behavior. Only side effects are allowed.
-     *
-     * @see #removeQueueWrapper(String)
-     */
-    public static void addQueueWrapper(String key, Function<Queue<?>, Queue<?>> decorator) {
-        synchronized (QUEUE_WRAPPERS) {
-            QUEUE_WRAPPERS.put(key, decorator);
-            Function<Queue<?>, Queue<?>> newHook = null;
-            for (Function<Queue<?>, Queue<?>> function : QUEUE_WRAPPERS.values()) {
-                if (newHook == null) {
-                    newHook = function;
-                }
-                else {
-                    newHook = newHook.andThen(function);
-                }
-            }
-            QUEUE_WRAPPER = newHook;
-        }
-    }
+	 *
+	 * @see #removeQueueWrapper(String)
+	 */
+	public static void addQueueWrapper(String key, Function<Queue<?>, Queue<?>> decorator) {
+		synchronized (QUEUE_WRAPPERS) {
+			QUEUE_WRAPPERS.put(key, decorator);
+			Function<Queue<?>, Queue<?>> newHook = null;
+			for (Function<Queue<?>, Queue<?>> function : QUEUE_WRAPPERS.values()) {
+				if (newHook == null) {
+					newHook = function;
+				}
+				else {
+					newHook = newHook.andThen(function);
+				}
+			}
+			QUEUE_WRAPPER = newHook;
+		}
+	}
 
-    /**
-     * Removes existing {@link Queue} wrapper by key.
-     *
-     * @see #addQueueWrapper(String, Function)
-     */
-    public static void removeQueueWrapper(String key) {
-        synchronized (QUEUE_WRAPPERS) {
-            QUEUE_WRAPPERS.remove(key);
-            if (QUEUE_WRAPPERS.isEmpty()) {
-                QUEUE_WRAPPER = Function.identity();
-            }
-            else {
-                Function<Queue<?>, Queue<?>> newHook = null;
-                for (Function<Queue<?>, Queue<?>> function : QUEUE_WRAPPERS.values()) {
-                    if (newHook == null) {
-                        newHook = function;
-                    }
-                    else {
-                        newHook = newHook.andThen(function);
-                    }
-                }
-                QUEUE_WRAPPER = newHook;
-            }
-        }
-    }
+	/**
+	 * Removes existing {@link Queue} wrapper by key.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 */
+	public static void removeQueueWrapper(String key) {
+		synchronized (QUEUE_WRAPPERS) {
+			QUEUE_WRAPPERS.remove(key);
+			if (QUEUE_WRAPPERS.isEmpty()) {
+				QUEUE_WRAPPER = Function.identity();
+			}
+			else {
+				Function<Queue<?>, Queue<?>> newHook = null;
+				for (Function<Queue<?>, Queue<?>> function : QUEUE_WRAPPERS.values()) {
+					if (newHook == null) {
+						newHook = function;
+					}
+					else {
+						newHook = newHook.andThen(function);
+					}
+				}
+				QUEUE_WRAPPER = newHook;
+			}
+		}
+	}
 
-    /**
-     * Remove all queue wrappers.
-     *
-     * @see #addQueueWrapper(String, Function)
-     * @see #removeQueueWrapper(String)
-     */
-    public static void removeQueueWrappers() {
-        synchronized (QUEUE_WRAPPERS) {
-            QUEUE_WRAPPERS.clear();
-            QUEUE_WRAPPER = Function.identity();
-        }
-    }
+	/**
+	 * Remove all queue wrappers.
+	 *
+	 * @see #addQueueWrapper(String, Function)
+	 * @see #removeQueueWrapper(String)
+	 */
+	public static void removeQueueWrappers() {
+		synchronized (QUEUE_WRAPPERS) {
+			QUEUE_WRAPPERS.clear();
+			QUEUE_WRAPPER = Function.identity();
+		}
+	}
 
 	/**
 	 * Applies the {@link Queue} wrappers that were previously registered.
@@ -748,8 +748,8 @@ public abstract class Hooks {
 	 * @see #addQueueWrapper(String, Function)
 	 * @see #removeQueueWrapper(String)
 	 */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> Queue<T> wrapQueue(Queue<T> queue) {
-        return (Queue) QUEUE_WRAPPER.apply(queue);
-    }
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public static <T> Queue<T> wrapQueue(Queue<T> queue) {
+		return (Queue) QUEUE_WRAPPER.apply(queue);
+	}
 }
