@@ -106,8 +106,9 @@ public class RaceTestUtils {
 	}
 
 	/**
-	 * Synchronizes the execution of two {@link Runnable} as much as possible
-	 * to test race conditions. The method blocks until both have run to completion.
+	 * Synchronizes the execution of several {@link Runnable}s as much as possible
+	 * to test race conditions. The method blocks until all have run to completion.
+	 * @param rs the runnables to execute
 	 */
 	public static void race(final Runnable... rs) {
 		race(Schedulers.parallel(), rs);
@@ -127,9 +128,10 @@ public class RaceTestUtils {
 	}
 
 	/**
-	 * Synchronizes the execution of two {@link Runnable} as much as possible
+	 * Synchronizes the execution of several {@link Runnable}s as much as possible
 	 * to test race conditions. The method blocks until both have run to completion.
 	 * @param s the {@link Scheduler} on which to execute the runnables
+	 * @param rs the runnables to execute
 	 */
 	public static void race(Scheduler s, final Runnable... rs) {
 		final AtomicInteger count = new AtomicInteger(rs.length);
