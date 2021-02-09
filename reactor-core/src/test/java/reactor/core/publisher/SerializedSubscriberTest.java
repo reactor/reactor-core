@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
@@ -30,6 +29,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.with;
@@ -82,52 +82,82 @@ public class SerializedSubscriberTest {
 		}
 	}
 
-	//direct transcription of test case exposed in https://github.com/reactor/reactor-core/issues/2077
+	//adaptation of test case exposed in https://github.com/reactor/reactor-core/issues/2077
+	//we further attempt to detect double discards, and for now ignore these
 	@Test
-	public void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
-		AtomicInteger counter = new AtomicInteger();
-		AtomicInteger discarded = new AtomicInteger();
-		AtomicInteger seen = new AtomicInteger();
+	void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
+		//let's improve readability by using constants for magic number:
+		// A given element has been discarded before the current operation
+		final int STATE_DISCARDED = -10;
+		// A given element has been seen by end Subscriber before the current operation
+		final int STATE_SEEN      = -1;
+
+		AtomicInteger createdCount = new AtomicInteger();
+		AtomicInteger discardedCount = new AtomicInteger();
+		AtomicInteger seenCount = new AtomicInteger();
+		AtomicInteger doubleDiscardedCount = new AtomicInteger();
+		//unacceptable state: both seen and discarded (in any order)
+		AtomicInteger unacceptableStateCount = new AtomicInteger();
 
 		final CountDownLatch latch = new CountDownLatch(4);
-		Flux.<Integer>generate(s -> {
-			int i = counter.incrementAndGet();
+		Flux.<AtomicInteger>generate(s -> {
+			int i = createdCount.incrementAndGet();
 			if (i == 100_000) {
-				s.next(i);
+				s.next(new AtomicInteger(i));
 				s.complete();
 			}
 			else {
-				s.next(i);
+				s.next(new AtomicInteger(i));
 			}
 		})
 			.doFinally(sig -> latch.countDown())
-		    .publishOn(Schedulers.single())
+			.publishOn(Schedulers.single())
 			.doFinally(sig -> latch.countDown())
-		    .retryWhen(p -> p.take(3))
+			.retryWhen(Retry.from(p -> p.take(3)))
 			.doFinally(sig -> latch.countDown())
-		    .cancelOn(Schedulers.parallel())
-		    .doOnDiscard(Integer.class, i -> discarded.incrementAndGet())
-		    .doFinally(sig -> latch.countDown())
-            .subscribeWith(new BaseSubscriber<Integer>() {
-	            @Override
-	            protected void hookOnNext(Integer value) {
-					seen.incrementAndGet();
-		            cancel();
-	            }
-            });
+			.cancelOn(Schedulers.parallel())
+			.doOnDiscard(AtomicInteger.class, i -> {
+				discardedCount.incrementAndGet();
+				int previousStatus = i.getAndSet(STATE_DISCARDED);
+				//here we could switch to printing stacktraces with System.identityHashcode to identify where double discard happens
+				if (previousStatus == STATE_DISCARDED) {
+					doubleDiscardedCount.incrementAndGet();
+				}
+				else if (previousStatus == STATE_SEEN) {
+					unacceptableStateCount.incrementAndGet();
+				}
+				//otherwise, positive values represent an unseen but discarded value
+			})
+			.doFinally(sig -> latch.countDown())
+			.subscribeWith(new BaseSubscriber<AtomicInteger>() {
+				@Override
+				protected void hookOnNext(AtomicInteger value) {
+					cancel();
+					int previousStatus = value.getAndSet(STATE_SEEN);
+					if (previousStatus >= 0) {
+						//this is a raw value, hasn't been seen nor discarded yet
+						seenCount.incrementAndGet();
+					}
+					else {
+						//this element has already been seen or discarded, unacceptable
+						unacceptableStateCount.incrementAndGet();
+					}
+				}
+			});
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
 		with().pollInterval(50, TimeUnit.MILLISECONDS)
-		      .await().atMost(500, TimeUnit.MILLISECONDS)
-		      .untilAsserted(() -> {
-				  int expectedCnt = counter.get();
-				  int snn = seen.get();
-				  int discrdd = discarded.get();
-				  assertThat(expectedCnt)
-					      .withFailMessage("counter not equal to seen+discarded: Expected <%s>, got <%s+%s>=<%s>",
-							      expectedCnt, seen, discarded, snn + discrdd)
-					      .isEqualTo(snn + discrdd);
-		      });
+			  .await().atMost(500, TimeUnit.MILLISECONDS)
+			  .untilAsserted(() -> {
+				  int expected = createdCount.get();
+				  int seen = seenCount.get();
+				  int discarded = discardedCount.get() - doubleDiscardedCount.get();
+				  assertThat(unacceptableStateCount).as("unacceptable").hasValue(0);
+				  assertThat(expected)
+						  .withFailMessage("counter not equal to seen+discarded: Expected <%s>, got <%s+%s>=<%s>",
+								  expected, seen, discarded, seen + discarded)
+						  .isEqualTo(seen + discarded);
+			  });
 	}
 
 	@Test
