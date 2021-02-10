@@ -620,22 +620,20 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 	 * Atomically add increment hasRequest value to indicate that we added capacity to
 	 * {@link SwitchMapMain#requested}
 	 *
-	 * @param previousRequested received from {@link Operators#addCap} method. If
-	 *                             the given value is greater than zero
-	 *                             it works as an indicator that prevents setting
-	 *                             HasRequest to 1. Due to racing nature the
-	 *                             {@link SwitchMapMain#requested} may be incremented
-	 *                             but the following addRequest may be delayed. Hence,
-	 *                             that will lead that Inner may read the new value and
-	 *                             request more data from the inner upstream. In turn,
-	 *                             the delay may be that big that inner may fulfill new
-	 *                             demand and set hasRequest to 0 faster that
-	 *                             addRequest happens and leave
-	 *                             {@link SwitchMapMain#requested} at zero as well.
-	 *                             Thus, we use previousRequested to check if inner was
-	 *                             requested, and if it was, we assume the explained
-	 *                             case may happen
+	 * <p>
+	 * Note, If the given {@code previousRequested} param value is greater than zero it
+	 * works as an indicator that in some scenarios prevents setting HasRequest to 1.
+	 * Due to racing nature, the {@link SwitchMapMain#requested} may be incremented but
+	 * the following addRequest may be delayed. That will lead that Inner may
+	 * read the new value and request more data from the inner upstream. In turn, the
+	 * delay may be that big that inner may fulfill new demand and set hasRequest to 0
+	 * faster that addRequest happens and leave {@link SwitchMapMain#requested} at
+	 * zero as well. Thus, we use previousRequested to check if inner was requested,
+	 * and if it was, we assume the explained case happened and newly added demand was
+	 * already fulfilled
+	 * </p>
 	 *
+	 * @param previousRequested received from {@link Operators#addCap} method.
 	 * @return next state
 	 */
 	static long addRequest(SwitchMapMain<?, ?> instance, long previousRequested) {
