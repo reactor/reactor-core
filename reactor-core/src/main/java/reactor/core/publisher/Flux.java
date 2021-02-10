@@ -1830,6 +1830,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
 	 * behavior of the single-parameter variant will then change to prefetch=0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		if (prefetch == 0) {
 			return onAssembly(new FluxSwitchMap<>(from(mergedPublishers), identityFunction()));
