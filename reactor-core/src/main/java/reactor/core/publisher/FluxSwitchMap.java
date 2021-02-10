@@ -223,7 +223,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			final long state = setTerminated(this);
 			if (state == TERMINATED) {
-				Operators.onErrorDropped(t, this.actual.currentContext());
 				return;
 			}
 
@@ -486,7 +485,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			final long state = setTerminated(parent);
 			if (state == TERMINATED) {
-				Operators.onErrorDropped(t, this.actual.currentContext());
 				return;
 			}
 

@@ -16,50 +16,61 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import reactor.core.Exceptions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSwitchMapTest {
-	@Test
+
+	@ParameterizedTest
+	@ValueSource(ints = {0}) // TODO: add for prefetch one
 	@Timeout(120_000)
-	public void test() {
+	// test for issue https://github.com/reactor/reactor-core/issues/2554
+	public void test2596() {
 		final Scheduler scheduler = Schedulers.newSingle("test");
 		final Scheduler scheduler2 = Schedulers.newParallel("test2");
-		Flux<Integer> integerFlux = Flux.defer(() -> Flux.range(0, 20)
-		                                .hide()
-		                                .publishOn(Schedulers.single(), 1)
-		                                .switchMap(s -> Flux.range(s * 20, 20)
-		                                                    .hide()
-		                                                    .publishOn(scheduler, 1))
-		                                .publishOn(scheduler2, 1)
-										.doOnNext(new Consumer<Integer>() {
-											int last = -1;
+		Flux<Integer> integerFlux = Flux.defer(() ->  {
+			return Flux.range(0, 20)
+			    .hide()
+			    .publishOn(Schedulers.single(), 1)
+			    .switchMap(s ->  {
+				    return Flux.range(s * 20, 20)
+				               .hide()
+				               .publishOn(scheduler, 1);
+			    }, 0)
+			    .publishOn(scheduler2, 1)
+			    .doOnNext(new Consumer<Integer>() {
+				    int last = -1;
 
-											@Override
-											public void accept(Integer next) {
-												final int last = this.last;
-												this.last = next;
+				    @Override
+				    public void accept(Integer next) {
+					    final int last = this.last;
+					    this.last = next;
 
-												if (last >= next) {
-													System.out.println("last: " + last + "; next: " + next);
-												}
-											}
-										}))
-		                                .onErrorResume(e -> e instanceof RejectedExecutionException ? Mono.empty() : Mono.error(e));
+					    if (last >= next) {
+						    System.out.println("last: " + last + "; next: " + next);
+					    }
+				    }
+			    })
+	           .onErrorResume(e -> e instanceof RejectedExecutionException ? Mono.empty() : Mono.error(e));
+		});
 
 		for (int i = 0; i < 100000; i++) {
 			StepVerifier.create(integerFlux)
@@ -77,15 +88,16 @@ public class FluxSwitchMapTest {
 		}
 	}
 
-	@Test
-	public void noswitch() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void noswitch(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
-		   .switchMap(v -> sp2.asFlux())
+		   .switchMap(v -> sp2.asFlux(), prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -151,8 +163,9 @@ public class FluxSwitchMapTest {
 
 	}
 
-	@Test
-	public void doswitch() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void doswitch(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
@@ -160,7 +173,7 @@ public class FluxSwitchMapTest {
 		Sinks.Many<Integer> sp3 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
-		   .switchMap(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
+		   .switchMap(v -> v == 1 ? sp2.asFlux() : sp3.asFlux(), prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -193,22 +206,24 @@ public class FluxSwitchMapTest {
 	@Test
 	public void switchRegularQueue() {
 		Flux<String> source = Flux.just("a", "bb", "ccc");
-		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
-				source, s -> Flux.range(1, s.length()));
+		FluxSwitchMapWithPrefetch<String, Integer> test = new FluxSwitchMapWithPrefetch<>(
+				source, s -> Flux.range(1, s.length()),
+				ConcurrentLinkedQueue::new, 128);
 
 		StepVerifier.create(test)
 		            .expectNext(1, 1, 2, 1, 2, 3)
 		            .verifyComplete();
 	}
 
-	@Test
-	public void mainCompletesBefore() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void mainCompletesBefore(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		sp1.asFlux().switchMap(v -> sp2.asFlux())
+		sp1.asFlux().switchMap(v -> sp2.asFlux(), prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -230,14 +245,15 @@ public class FluxSwitchMapTest {
 
 	}
 
-	@Test
-	public void mainError() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void mainError(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		sp1.asFlux().switchMap(v -> sp2.asFlux())
+		sp1.asFlux().switchMap(v -> sp2.asFlux(), prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -255,14 +271,15 @@ public class FluxSwitchMapTest {
 		  .assertNotComplete();
 	}
 
-	@Test
-	public void innerError() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void innerError(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		sp1.asFlux().switchMap(v -> sp2.asFlux())
+		sp1.asFlux().switchMap(v -> sp2.asFlux(), prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -282,16 +299,17 @@ public class FluxSwitchMapTest {
 		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
-	@Test
-	public void mapperThrows() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void mapperThrows(int prefetch) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .switchMap(v -> {
-			throw new RuntimeException("forced failure");
-		})
+			   throw new RuntimeException("forced failure");
+		   }, prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -302,14 +320,15 @@ public class FluxSwitchMapTest {
 		  .assertNotComplete();
 	}
 
-	@Test
-	public void mapperReturnsNull() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void mapperReturnsNull(int prefetch) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
-		   .switchMap(v -> null)
+		   .switchMap(v -> null, prefetch)
 		   .subscribe(ts);
 
 		sp1.emitNext(1, FAIL_FAST);
@@ -319,22 +338,24 @@ public class FluxSwitchMapTest {
 		  .assertNotComplete();
 	}
 
-	@Test
-	public void switchOnNextDynamically() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void switchOnNextDynamically(int prefetch) {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .switchMap(s -> Flux.range(s, 3)))
+		                        .switchMap(s -> Flux.range(s, 3), prefetch))
 		            .expectNext(1, 2, 3, 2, 3, 4, 3, 4, 5)
 		            .verifyComplete();
 	}
 
-	@Test
-	public void switchOnNextDynamicallyOnNext() {
+	@ParameterizedTest
+	@ValueSource(ints = {0, 32})
+	public void switchOnNextDynamicallyOnNext(int prefetch) {
 		Sinks.Many<Flux<Integer>> up = Sinks.many().unicast().onBackpressureBuffer();
 		up.emitNext(Flux.range(1, 3), FAIL_FAST);
 		up.emitNext(Flux.range(2, 3).concatWith(Mono.never()), FAIL_FAST);
 		up.emitNext(Flux.range(4, 3), FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
-		StepVerifier.create(Flux.switchOnNext(up.asFlux()))
+		StepVerifier.create(Flux.switchOnNext(up.asFlux(), prefetch))
 		            .expectNext(1, 2, 3, 2, 3, 4, 4, 5, 6)
 		            .verifyComplete();
 	}
@@ -342,57 +363,59 @@ public class FluxSwitchMapTest {
 	@Test
 	public void scanOperator(){
 		Flux<String> parent = Flux.just("a", "bb", "ccc");
-		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
-				parent, s -> Flux.range(1, s.length()));
+		FluxSwitchMapWithPrefetch<String, Integer> test = new FluxSwitchMapWithPrefetch<>(
+				parent, s -> Flux.range(1, s.length()),
+				ConcurrentLinkedQueue::new, 128);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
-//	@Test
-//    public void scanMain() {
-//        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-//        FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
-//        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i));
-//        Subscription parent = Operators.emptySubscription();
-//        test.onSubscribe(parent);
-//
-//        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-//        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-//		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-//        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
-//        test.requested = 35;
-//        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-//        test.queue.add(new FluxSwitchMap.SwitchMapInner<Integer>(test, 1, 0));
-//        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
-//
-//        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-//        test.error = new IllegalStateException("boom");
-//        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
-//        test.onComplete();
-//        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-//
-//        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-//        test.cancel();
-//        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-//    }
+	@Test
+    public void scanMain() {
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxSwitchMapWithPrefetch.SwitchMapMain<Integer, Integer> test =
+        		new FluxSwitchMapWithPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
 
-//	@Test
-//    public void scanInner() {
-//        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-//        FluxSwitchMap.SwitchMapMain<Integer, Integer> main =
-//        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i));
-//        FluxSwitchMap.SwitchMapInner<Integer> test = new FluxSwitchMap.SwitchMapInner<Integer>(main, 1, 0);
-//        Subscription parent = Operators.emptySubscription();
-//        test.onSubscribe(parent);
-//
-//        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-//        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
-//		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-//        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
-//
-//        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-//        test.cancel();
-//        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-//    }
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
+        test.requested = 35;
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        test.queue.add(new FluxSwitchMapWithPrefetch.SwitchMapInner<Integer>(test, 1, 0));
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        test.error = new IllegalStateException("boom");
+        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+        test.onComplete();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanInner() {
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxSwitchMapWithPrefetch.SwitchMapMain<Integer, Integer> main =
+        		new FluxSwitchMapWithPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i),
+				        Queues.unbounded().get(), 234);
+		FluxSwitchMapWithPrefetch.SwitchMapInner<Integer> test = new FluxSwitchMapWithPrefetch.SwitchMapInner<Integer>(main, 1, 0);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
+
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
 }
