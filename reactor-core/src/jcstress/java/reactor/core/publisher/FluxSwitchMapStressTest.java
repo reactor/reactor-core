@@ -141,6 +141,7 @@ public abstract class FluxSwitchMapStressTest {
 
 		{
 			Hooks.onErrorDropped(this);
+			switchMapMain.onSubscribe(stressSubscription);
 			switchMapMain.onNext("1");
 			switchMapMain.request(1);
 		}
@@ -194,6 +195,7 @@ public abstract class FluxSwitchMapStressTest {
 
 		{
 			Hooks.onErrorDropped(this);
+			switchMapMain.onSubscribe(stressSubscription);
 			switchMapMain.onNext("1");
 			switchMapMain.request(1);
 		}
