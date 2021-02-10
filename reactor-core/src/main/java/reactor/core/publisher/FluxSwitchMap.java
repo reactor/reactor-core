@@ -391,28 +391,40 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			this.actual.onNext(t);
 
-			long produced = this.produced + 1;
-			this.produced = produced;
-
+			long produced = 0;
+			boolean isDemandFulfilled = false;
 			int expectedHasRequest = hasRequest(state);
-			if (expectedHasRequest > 1) {
-				long actualRequested = parent.requested;
-				long toRequestInAddition = actualRequested - requested;
-				if (toRequestInAddition > 0) {
-					this.requested = requested = actualRequested;
-					s.request(toRequestInAddition);
+
+			if (requested != Long.MAX_VALUE) {
+				produced = this.produced + 1;
+				this.produced = produced;
+
+				if (expectedHasRequest > 1) {
+					long actualRequested = parent.requested;
+					long toRequestInAddition = actualRequested - requested;
+					if (toRequestInAddition > 0) {
+						this.requested = requested = actualRequested;
+						if (requested == Long.MAX_VALUE) {
+							// we need to reset stats if unbounded requested
+							this.produced = produced = 0;
+							s.request(Long.MAX_VALUE);
+						}
+						else {
+							s.request(toRequestInAddition);
+						}
+					}
 				}
-			}
 
-			boolean isDemandFulfilled = produced == requested;
-			if (isDemandFulfilled) {
-				this.produced = 0;
-				this.requested = requested = SwitchMapMain.REQUESTED.addAndGet(parent, -produced);
+				isDemandFulfilled = produced == requested;
+				if (isDemandFulfilled) {
+					this.produced = 0;
+					this.requested = requested = SwitchMapMain.REQUESTED.addAndGet(parent, -produced);
 
-				produced = 0;
-				isDemandFulfilled = requested == 0;
-				if (!isDemandFulfilled) {
-					s.request(requested);
+					produced = 0;
+					isDemandFulfilled = requested == 0;
+					if (!isDemandFulfilled) {
+						s.request(requested);
+					}
 				}
 			}
 
@@ -444,7 +456,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 					if (toRequestInAddition > 0) {
 						this.requested = requested = currentRequest;
 						isDemandFulfilled = false;
-						s.request(toRequestInAddition);
+						s.request(requested == Long.MAX_VALUE ? Long.MAX_VALUE : toRequestInAddition);
 					}
 
 					continue;
