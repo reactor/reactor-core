@@ -148,7 +148,7 @@ public abstract class FluxSwitchMapStressTest {
 
 		@Override
 		public void accept(Throwable throwable) {
-			errorDroppedCounter.incrementAndGet();
+			throw (RuntimeException) throwable;
 		}
 
 		@Override
@@ -163,13 +163,21 @@ public abstract class FluxSwitchMapStressTest {
 
 		@Actor
 		public void outerProducer() {
-			switchMapMain.cancel();
+			try {
+				switchMapMain.cancel();
+			} catch (Throwable t) {
+				errorDroppedCounter.incrementAndGet();
+			}
 		}
 
 		@Actor
 		public void innerProducer() {
 			subscription.actual.onNext(1);
-			subscription.actual.onError(t);
+			try {
+				subscription.actual.onError(t);
+			} catch (Throwable t) {
+				errorDroppedCounter.incrementAndGet();
+			}
 		}
 
 		@Arbiter
@@ -202,7 +210,7 @@ public abstract class FluxSwitchMapStressTest {
 
 		@Override
 		public void accept(Throwable throwable) {
-			errorDroppedCounter.incrementAndGet();
+			throw (RuntimeException) throwable;
 		}
 
 		@Override
@@ -217,13 +225,21 @@ public abstract class FluxSwitchMapStressTest {
 
 		@Actor
 		public void outerProducer() {
-			switchMapMain.onError(t1);
+			try {
+				switchMapMain.onError(t1);
+			} catch (Throwable t) {
+				errorDroppedCounter.incrementAndGet();
+			}
 		}
 
 		@Actor
 		public void innerProducer() {
 			subscription.actual.onNext(1);
-			subscription.actual.onError(t2);
+			try {
+				subscription.actual.onError(t2);
+			} catch (Throwable t) {
+				errorDroppedCounter.incrementAndGet();
+			}
 		}
 
 		@Arbiter

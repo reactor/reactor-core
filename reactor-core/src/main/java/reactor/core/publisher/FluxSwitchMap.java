@@ -280,6 +280,11 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
+			final SwitchMapInner<T, R> inner = this.inner;
+			if (inner != null && isInnerSubscribed(state) && !hasInnerCompleted(state) && inner.index == index(state)) {
+				inner.cancel();
+			}
+
 			if (!hasMainCompleted(state)) {
 				this.s.cancel();
 
@@ -288,11 +293,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 				if (e != null) {
 					Operators.onErrorDropped(e, this.actual.currentContext());
 				}
-			}
-
-			final SwitchMapInner<T, R> inner = this.inner;
-			if (inner != null && isInnerSubscribed(state) && !hasInnerCompleted(state) && inner.index == index(state)) {
-				inner.cancel();
 			}
 		}
 	}
