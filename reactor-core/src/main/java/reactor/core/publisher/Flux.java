@@ -8471,9 +8471,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
 	 * for each source onNext
 	 *
-	 * @deprecated to be removed in 3.6. In 3.5 the default value for {@code prefetch}
-	 * will be set to 0 changing prefetchAndReplenish demand behaviour for inner
-	 * producer to straightforward "what downstream demanded" one
+	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
+	 * calls with prefetch=0 with calls to switchMap(fn), as the default behavior of the
+	 * single-parameter variant will then change to prefetch=0.
 	 */
 	@Deprecated
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
