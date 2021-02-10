@@ -1825,6 +1825,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the produced type
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 *
+	 * @deprecated to be removed in 3.6. In 3.5 the default value for {@code prefetch}
+	 * will be set to 0 changing prefetchAndReplenish demand behaviour for inner
+	 * producer to straightforward "what downstream demanded" one
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		if (prefetch == 0) {
@@ -8466,7 +8470,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
 	 * for each source onNext
+	 *
+	 * @deprecated to be removed in 3.6. In 3.5 the default value for {@code prefetch}
+	 * will be set to 0 changing prefetchAndReplenish demand behaviour for inner
+	 * producer to straightforward "what downstream demanded" one
 	 */
+	@Deprecated
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
 		if (prefetch == 0) {
 			return onAssembly(new FluxSwitchMap<>(this, fn));
