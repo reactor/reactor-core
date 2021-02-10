@@ -221,7 +221,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			try {
 				p = Objects.requireNonNull(mapper.apply(t),
-						"The mapper returned a null publisher");
+				"The mapper returned a null publisher");
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));

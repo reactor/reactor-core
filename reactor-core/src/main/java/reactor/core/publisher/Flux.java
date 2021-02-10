@@ -1833,9 +1833,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Deprecated
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers), identityFunction()));
+			return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
+					identityFunction()));
 		}
-		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers), identityFunction(), Queues.unbounded(prefetch), prefetch));
+		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
+				identityFunction(),
+				Queues.unbounded(prefetch), prefetch));
 	}
 
 	/**
