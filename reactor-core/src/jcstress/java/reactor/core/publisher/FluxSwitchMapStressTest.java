@@ -15,11 +15,15 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
+import org.openjdk.jcstress.infra.results.III_Result;
 import org.openjdk.jcstress.infra.results.IIL_Result;
 import org.openjdk.jcstress.infra.results.II_Result;
 import org.openjdk.jcstress.infra.results.IZL_Result;
@@ -28,6 +32,7 @@ import org.openjdk.jcstress.infra.results.JI_Result;
 import org.openjdk.jcstress.infra.results.JJJJJJJ_Result;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.publisher.FluxSwitchMap.SwitchMapMain;
 import reactor.test.publisher.TestPublisher;
 
@@ -48,7 +53,6 @@ public abstract class FluxSwitchMapStressTest {
 	@Outcome(id = {"1"}, expect = ACCEPTABLE, desc = "Exactly one onComplete")
 	@State
 	public static class OnCompleteStressTest extends FluxSwitchMapStressTest {
-
 
 		final TestPublisher<Object> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 
@@ -120,6 +124,114 @@ public abstract class FluxSwitchMapStressTest {
 			r.r1 = stressSubscriber.onCompleteCalls.get();
 			r.r2 = stressSubscription.cancelled.get();
 			r.r3 = switchMapMain.state;
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"0, 1"}, expect = ACCEPTABLE, desc = "Cancellation with no onError and dropped Error")
+	@Outcome(id = {"1, 0"}, expect = ACCEPTABLE, desc = "onError happened first")
+	@State
+	public static class CancelInnerErrorStressTest extends FluxSwitchMapStressTest implements
+	                                                                               Consumer<Throwable> {
+
+		final Throwable t = new RuntimeException("test");
+		final AtomicInteger errorDroppedCounter = new AtomicInteger();
+
+		StressSubscription<Integer> subscription;
+
+		{
+			Hooks.onErrorDropped(this);
+			switchMapMain.onNext("1");
+			switchMapMain.request(1);
+		}
+
+		@Override
+		public void accept(Throwable throwable) {
+			errorDroppedCounter.incrementAndGet();
+		}
+
+		@Override
+		Publisher<Object> handle(Object value) {
+			return s -> {
+				final StressSubscription subscription =
+						new StressSubscription<>((CoreSubscriber) s);
+				this.subscription = subscription;
+				s.onSubscribe(subscription);
+			};
+		}
+
+		@Actor
+		public void outerProducer() {
+			switchMapMain.cancel();
+		}
+
+		@Actor
+		public void innerProducer() {
+			subscription.actual.onNext(1);
+			subscription.actual.onError(t);
+		}
+
+		@Arbiter
+		public void arbiter(II_Result r) {
+			Hooks.resetOnErrorDropped();
+			r.r1 = stressSubscriber.onErrorCalls.get();
+			r.r2 = errorDroppedCounter.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"1, 2, 0"}, expect = ACCEPTABLE, desc = "onError happened, bot error are as causes, zero dropped")
+	@Outcome(id = {"1, 1, 1"}, expect = ACCEPTABLE, desc = "onError happened, only one error appeared and another was dropped")
+	@State
+	public static class MainErrorInnerErrorStressTest extends FluxSwitchMapStressTest implements
+	                                                                                  Consumer<Throwable> {
+
+		final Throwable t1 = new RuntimeException("test1");
+		final Throwable t2 = new RuntimeException("test2");
+		final AtomicInteger errorDroppedCounter = new AtomicInteger();
+
+		StressSubscription<Integer> subscription;
+
+		{
+			Hooks.onErrorDropped(this);
+			switchMapMain.onNext("1");
+			switchMapMain.request(1);
+		}
+
+		@Override
+		public void accept(Throwable throwable) {
+			errorDroppedCounter.incrementAndGet();
+		}
+
+		@Override
+		Publisher<Object> handle(Object value) {
+			return s -> {
+				final StressSubscription subscription =
+						new StressSubscription<>((CoreSubscriber) s);
+				this.subscription = subscription;
+				s.onSubscribe(subscription);
+			};
+		}
+
+		@Actor
+		public void outerProducer() {
+			switchMapMain.onError(t1);
+		}
+
+		@Actor
+		public void innerProducer() {
+			subscription.actual.onNext(1);
+			subscription.actual.onError(t2);
+		}
+
+		@Arbiter
+		public void arbiter(III_Result r) {
+			Hooks.resetOnErrorDropped();
+			r.r1 = stressSubscriber.onErrorCalls.get();
+			r.r2 = Exceptions.isMultiple(stressSubscriber.error)
+					? stressSubscriber.error.getSuppressed().length
+					: 1;
+			r.r3 = errorDroppedCounter.get();
 		}
 	}
 

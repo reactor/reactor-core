@@ -18,12 +18,14 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -77,9 +79,12 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		boolean done;
 
-		Throwable error;
-
 		SwitchMapInner<T, R> inner;
+
+		volatile Throwable throwable;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> THROWABLE =
+				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class, Throwable.class, "throwable");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -109,7 +114,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.CANCELLED) return !this.done && state == TERMINATED;
 			if (key == Attr.PARENT) return this.s;
 			if (key == Attr.TERMINATED) return this.done;
-			if (key == Attr.ERROR) return this.error;
+			if (key == Attr.ERROR) return this.throwable;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return this.requested;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -210,6 +215,11 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			this.done = true;
 
+			if (!Exceptions.addThrowable(THROWABLE, this, t)) {
+				Operators.onErrorDropped(t, this.actual.currentContext());
+				return;
+			}
+
 			final long state = setTerminated(this);
 			if (state == TERMINATED) {
 				Operators.onErrorDropped(t, this.actual.currentContext());
@@ -221,7 +231,8 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 				inner.cancel();
 			}
 
-			this.actual.onError(t);
+			//noinspection ConstantConditions
+			this.actual.onError(Exceptions.terminate(THROWABLE, this));
 		}
 
 		@Override
@@ -233,7 +244,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 			this.done = true;
 
 			final long state = setMainCompleted(this);
-
 			if (state == TERMINATED) {
 				return;
 			}
@@ -272,6 +282,12 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			if (!hasMainCompleted(state)) {
 				this.s.cancel();
+
+				//ensure that onError which races with cancel has its error dropped
+				final Throwable e = Exceptions.terminate(THROWABLE, this);
+				if (e != null) {
+					Operators.onErrorDropped(e, this.actual.currentContext());
+				}
 			}
 
 			final SwitchMapInner<T, R> inner = this.inner;
@@ -440,7 +456,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void onError(Throwable t) {
-			// FIXME: include scenario where main and inner calling onError at the time
 			if (this.done) {
 				Operators.onErrorDropped(t, this.actual.currentContext());
 				return;
@@ -449,6 +464,12 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 			this.done = true;
 
 			final SwitchMapMain<T, R> parent = this.parent;
+
+			// ensures that racing on setting error will pass smoothly
+			if (!Exceptions.addThrowable(SwitchMapMain.THROWABLE, parent, t)) {
+				Operators.onErrorDropped(t, this.actual.currentContext());
+				return;
+			}
 
 			final long state = setTerminated(parent);
 			if (state == TERMINATED) {
@@ -460,7 +481,8 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 				parent.s.cancel();
 			}
 
-			this.actual.onError(t);
+			//noinspection ConstantConditions
+			this.actual.onError(Exceptions.terminate(SwitchMapMain.THROWABLE, parent));
 		}
 
 		@Override

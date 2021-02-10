@@ -34,6 +34,8 @@ public class StressSubscriber<T> extends BaseSubscriber<T> {
 
 	final long initRequest;
 
+	public Throwable error;
+
 	public AtomicReference<Operation> guard = new AtomicReference<>(null);
 
 	public AtomicBoolean concurrentOnNext = new AtomicBoolean(false);
@@ -107,6 +109,7 @@ public class StressSubscriber<T> extends BaseSubscriber<T> {
 		} else {
 			guard.compareAndSet(Operation.ON_ERROR, null);
 		}
+		error = throwable;
 		onErrorCalls.incrementAndGet();
 	}
 

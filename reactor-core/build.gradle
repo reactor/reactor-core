@@ -263,7 +263,6 @@ check.dependsOn japicmp
 jcstress {
 	mode = 'quick'
 	jcstressDependency = "org.openjdk.jcstress:jcstress-core:0.7"
-  	forks = 16
 }
 tasks.check.dependsOn(tasks.jcstress)
 
