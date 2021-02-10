@@ -171,12 +171,13 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 				si.cancel();
 
 				if (!isWip(state)) {
-					// TODO: add check for Long.MAX_VALUE requested
 					final long produced = si.produced;
 					if (produced > 0) {
-						si.requested = 0;
 						si.produced = 0;
-						REQUESTED.addAndGet(this, -produced);
+						if (this.requested != Long.MAX_VALUE) {
+							si.requested = 0;
+							REQUESTED.addAndGet(this, -produced);
+						}
 					}
 					subscribeInner(t, nsi, nextIndex);
 				}
