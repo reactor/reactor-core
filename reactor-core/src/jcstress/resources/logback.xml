@@ -19,20 +19,8 @@
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
-                %d{HH:mm:ss.SSS} [%thread] [ID=%X{id}] %-5level %logger{36} - %msg%n
+                %d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
             </pattern>
-        </encoder>
-    </appender>
-
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>/Users/olehdokuka/Documents/Workspace/Java/Reactive/reactor-core/reactor-core/build/testFile.log</file>
-        <append>true</append>
-        <!-- set immediateFlush to false for much higher logging throughput -->
-        <immediateFlush>false</immediateFlush>
-        <!-- encoders are assigned the type
-             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
-        <encoder>
-          <pattern>%-4relative [%thread] [ID=%X{id}] %-5level %logger{35} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -45,7 +33,7 @@
     <logger name="logError.finest" level="trace"/>
 
     <root level="info">
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="stdout"/>
     </root>
 
 </configuration>
