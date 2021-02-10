@@ -1826,9 +1826,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 *
-	 * @deprecated to be removed in 3.6. In 3.5 the default value for {@code prefetch}
-	 * will be set to 0 changing prefetchAndReplenish demand behaviour for inner
-	 * producer to straightforward "what downstream demanded" one
+	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
+	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
+	 * behavior of the single-parameter variant will then change to prefetch=0.
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		if (prefetch == 0) {
