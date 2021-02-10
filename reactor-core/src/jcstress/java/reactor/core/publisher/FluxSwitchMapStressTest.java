@@ -33,7 +33,7 @@ import org.openjdk.jcstress.infra.results.JJJJJJJ_Result;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.publisher.FluxSwitchMap.SwitchMapMain;
+import reactor.core.publisher.FluxSwitchMapNoPrefetch.SwitchMapMain;
 import reactor.test.publisher.TestPublisher;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;

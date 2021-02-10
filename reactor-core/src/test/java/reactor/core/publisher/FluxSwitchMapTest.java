@@ -206,7 +206,7 @@ public class FluxSwitchMapTest {
 	@Test
 	public void switchRegularQueue() {
 		Flux<String> source = Flux.just("a", "bb", "ccc");
-		FluxSwitchMapWithPrefetch<String, Integer> test = new FluxSwitchMapWithPrefetch<>(
+		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
 				source, s -> Flux.range(1, s.length()),
 				ConcurrentLinkedQueue::new, 128);
 
@@ -363,7 +363,7 @@ public class FluxSwitchMapTest {
 	@Test
 	public void scanOperator(){
 		Flux<String> parent = Flux.just("a", "bb", "ccc");
-		FluxSwitchMapWithPrefetch<String, Integer> test = new FluxSwitchMapWithPrefetch<>(
+		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
 				parent, s -> Flux.range(1, s.length()),
 				ConcurrentLinkedQueue::new, 128);
 
@@ -374,8 +374,8 @@ public class FluxSwitchMapTest {
 	@Test
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxSwitchMapWithPrefetch.SwitchMapMain<Integer, Integer> test =
-        		new FluxSwitchMapWithPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
+		FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
+        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -385,7 +385,7 @@ public class FluxSwitchMapTest {
         assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-        test.queue.add(new FluxSwitchMapWithPrefetch.SwitchMapInner<Integer>(test, 1, 0));
+        test.queue.add(new FluxSwitchMap.SwitchMapInner<Integer>(test, 1, 0));
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -402,10 +402,10 @@ public class FluxSwitchMapTest {
 	@Test
     public void scanInner() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxSwitchMapWithPrefetch.SwitchMapMain<Integer, Integer> main =
-        		new FluxSwitchMapWithPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i),
+		FluxSwitchMap.SwitchMapMain<Integer, Integer> main =
+        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i),
 				        Queues.unbounded().get(), 234);
-		FluxSwitchMapWithPrefetch.SwitchMapInner<Integer> test = new FluxSwitchMapWithPrefetch.SwitchMapInner<Integer>(main, 1, 0);
+		FluxSwitchMap.SwitchMapInner<Integer> test = new FluxSwitchMap.SwitchMapInner<Integer>(main, 1, 0);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

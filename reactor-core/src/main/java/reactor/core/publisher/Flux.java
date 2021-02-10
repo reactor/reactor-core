@@ -1833,9 +1833,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Deprecated
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMap<>(from(mergedPublishers), identityFunction()));
+			return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers), identityFunction()));
 		}
-		return onAssembly(new FluxSwitchMapWithPrefetch<>(from(mergedPublishers), identityFunction(), Queues.unbounded(prefetch), prefetch));
+		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers), identityFunction(), Queues.unbounded(prefetch), prefetch));
 	}
 
 	/**
@@ -8479,9 +8479,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Deprecated
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
 		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMap<>(this, fn));
+			return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
 		}
-		return onAssembly(new FluxSwitchMapWithPrefetch<>(this, fn, Queues.unbounded(prefetch), prefetch));
+		return onAssembly(new FluxSwitchMap<>(this, fn, Queues.unbounded(prefetch), prefetch));
 	}
 
 	/**
