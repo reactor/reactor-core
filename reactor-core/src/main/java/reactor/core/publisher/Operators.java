@@ -1099,11 +1099,12 @@ public abstract class Operators {
 
 	/**
 	 * Represents a fuseable Subscription that emits a single constant value synchronously
-	 * to a Subscriber or consumer.
+	 * to a Subscriber or consumer. Also give the subscription a user-defined {@code stepName}
+	 * for the purpose of {@link Scannable#stepName()}.
 	 *
 	 * @param subscriber the delegate {@link Subscriber} that will be requesting the value
 	 * @param value the single value to be emitted
-	 * @param stepName step name
+	 * @param stepName the {@link String} to represent the {@link Subscription} in {@link Scannable#stepName()}
 	 * @param <T> the value type
 	 * @return a new scalar {@link Subscription}
 	 */
@@ -2324,10 +2325,11 @@ public abstract class Operators {
 
 		final T value;
 
+		@Nullable
+		final String stepName;
+
 		volatile int once;
-		
-		String stepName;
-		
+
 		ScalarSubscription(CoreSubscriber<? super T> actual, T value) {
 			this(actual, value, null);
 		}
@@ -2337,7 +2339,7 @@ public abstract class Operators {
 			this.actual = Objects.requireNonNull(actual, "actual");
 			this.stepName = stepName;
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (once == 0) {
