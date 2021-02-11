@@ -27,7 +27,6 @@ import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
@@ -51,40 +50,40 @@ public class OnDiscardShouldNotLeakTest {
 	// add DiscardScenarios here to test more operators
 	private static final DiscardScenario[] SCENARIOS = new DiscardScenario[] {
 			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
-			DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
-			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", 1, f -> f
+			DiscardScenario.fluxSource("onBackpressureBuffer", Flux::onBackpressureBuffer),
+			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", f -> f
 					.onBackpressureBuffer()
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOnWithMaps", 1, f -> f
+			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOnWithMaps", f -> f
 					.onBackpressureBuffer()
 					.map(Function.identity())
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
-			DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
-			DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
-			DiscardScenario.fluxSource("publishOnAndPublishOn", 1, main -> main
+			DiscardScenario.rawSource("flatMapInner", raw -> Flux.just(1).flatMap(f -> raw)),
+			DiscardScenario.fluxSource("flatMap", main -> main.flatMap(f -> Mono.just(f).hide().flux())),
+			DiscardScenario.fluxSource("flatMapIterable", f -> f.flatMapIterable(Arrays::asList)),
+			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
+			DiscardScenario.fluxSource("publishOnAndPublishOn", main -> main
 					.publishOn(Schedulers.immediate())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps", 1, main -> main
+			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps", main -> main
 					.publishOn(Schedulers.immediate())
 					.map(Function.identity())
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(UnicastProcessor.create())),
-			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", 1, f -> f
+			DiscardScenario.fluxSource("unicastProcessor", f -> f.subscribeWith(UnicastProcessor.create())),
+			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", f -> f
 					.subscribeWith(UnicastProcessor.create())
 					.publishOn(Schedulers.immediate())),
 			//FIXME known issue in 3.3.14.RELEASE and 3.4.3
-//			DiscardScenario.fluxSource("singleOrEmpty", 1, f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
-			DiscardScenario.fluxSource("collect", 1, f -> f.collect(ArrayList::new, ArrayList::add)
+//			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
+			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
-			DiscardScenario.fluxSource("collectList", 1, f -> f.collectList()
+			DiscardScenario.fluxSource("collectList", f -> f.collectList()
 			                                                   .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                                   .thenReturn(Tracked.RELEASED))
 	};
@@ -524,12 +523,12 @@ public class OnDiscardShouldNotLeakTest {
 
 	static class DiscardScenario {
 
-		static DiscardScenario rawSource(String desc, int subs, Function<TestPublisher<Tracked>, Publisher<Tracked>> rawToPublisherProducer) {
-			return new DiscardScenario(desc, subs, (main, others) -> rawToPublisherProducer.apply(main));
+		static DiscardScenario rawSource(String desc, Function<TestPublisher<Tracked>, Publisher<Tracked>> rawToPublisherProducer) {
+			return new DiscardScenario(desc, 1, (main, others) -> rawToPublisherProducer.apply(main));
 		}
 
-		static DiscardScenario fluxSource(String desc, int subs, Function<Flux<Tracked>, Publisher<Tracked>> fluxToPublisherProducer) {
-			return new DiscardScenario(desc, subs, (main, others) -> fluxToPublisherProducer.apply(main.flux()));
+		static DiscardScenario fluxSource(String desc, Function<Flux<Tracked>, Publisher<Tracked>> fluxToPublisherProducer) {
+			return new DiscardScenario(desc, 1, (main, others) -> fluxToPublisherProducer.apply(main.flux()));
 		}
 
 		static DiscardScenario allFluxSourceArray(String desc, int subs,
