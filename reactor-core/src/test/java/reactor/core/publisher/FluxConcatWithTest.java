@@ -16,6 +16,8 @@
 package reactor.core.publisher;
 
 import org.junit.jupiter.api.Test;
+
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -106,4 +108,35 @@ public class FluxConcatWithTest {
           .expectNext(1, 2, 4, 5, 6)
           .verifyComplete();
     }
+	
+	@Test
+	public void testConcurrencyCausingOverflow() {
+		// See https://github.com/reactor/reactor-core/pull/2576
+		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
+		for (int round = 0; round < 20000; round++) {
+			Flux.range(0, 10)
+			.concatWithValues(10, 11, 12, 13)
+			.concatWith(Flux.range(14, 100 - 14))
+			.limitRate(16, 2)
+			.publishOn(Schedulers.boundedElastic(), 16)
+			.subscribeOn(Schedulers.boundedElastic())
+			.blockLast();
+		}
+	}
+
+	@Test
+	public void testConcurrencyCausingOverflow2() {
+		// See https://github.com/reactor/reactor-core/pull/2576
+		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
+		for (int round = 0; round < 20000; round++) {
+			Flux.range(0,10)
+			.publishOn(Schedulers.boundedElastic())
+			.concatWithValues(10, 11, 12, 13)
+			.concatWith(Flux.range(14, 100-14))
+			.publishOn(Schedulers.boundedElastic(), 16)
+			.subscribeOn(Schedulers.boundedElastic())
+			.blockLast();
+		}
+	}
+	
 }

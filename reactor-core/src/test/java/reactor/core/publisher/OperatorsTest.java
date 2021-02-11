@@ -293,6 +293,9 @@ public class OperatorsTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.poll();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
