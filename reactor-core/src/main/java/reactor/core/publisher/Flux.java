@@ -1825,8 +1825,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the produced type
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 *
+	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
+	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
+	 * behavior of the single-parameter variant will then change to prefetch=0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
+		if (prefetch == 0) {
+			return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
+					identityFunction()));
+		}
 		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
 				identityFunction(),
 				Queues.unbounded(prefetch), prefetch));
@@ -8465,8 +8474,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
 	 * for each source onNext
+	 *
+	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
+	 * calls with prefetch=0 with calls to switchMap(fn), as the default behavior of the
+	 * single-parameter variant will then change to prefetch=0.
 	 */
+	@Deprecated
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
+		if (prefetch == 0) {
+			return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
+		}
 		return onAssembly(new FluxSwitchMap<>(this, fn, Queues.unbounded(prefetch), prefetch));
 	}
 

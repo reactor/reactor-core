@@ -121,6 +121,11 @@ dependencies {
 	withMicrometerTestImplementation "io.micrometer:micrometer-core:$micrometerVersion"
 	withMicrometerTestImplementation sourceSets.test.output
 
+  	jcstressImplementation(project(":reactor-test")) {
+	  exclude module: 'reactor-core'
+	}
+  	jcstressImplementation "ch.qos.logback:logback-classic:$logbackVersion"
+
 }
 
 task downloadBaseline(type: Download) {
