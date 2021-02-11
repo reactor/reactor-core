@@ -17,11 +17,9 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * A Stream that emits only one value and then complete.
@@ -67,7 +65,7 @@ final class FluxJust<T> extends Flux<T>
 
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
-		actual.onSubscribe(new WeakScalarSubscription<>(value, actual));
+		actual.onSubscribe(Operators.scalarSubscription(actual, value));
 	}
 
 	@Override
@@ -76,82 +74,4 @@ final class FluxJust<T> extends Flux<T>
 		return null;
 	}
 
-	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,
-	                                                        InnerProducer<T>{
-
-		volatile int terminated;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WeakScalarSubscription> TERMINATED =
-				AtomicIntegerFieldUpdater.newUpdater(WeakScalarSubscription.class, "terminated");
-		
-		final T                     value;
-		final CoreSubscriber<? super T> actual;
-
-		WeakScalarSubscription(@Nullable T value, CoreSubscriber<? super T> actual) {
-			this.value = value;
-			this.actual = actual;
-		}
-
-		@Override
-		public void request(long elements) {
-			if (!TERMINATED.compareAndSet(this, 0, 1)) {
-				return;
-			}
-
-			if (value != null) {
-				actual.onNext(value);
-			}
-			actual.onComplete();
-		}
-
-		@Override
-		public void cancel() {
-			TERMINATED.set(this, 1);
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			if ((requestedMode & Fuseable.SYNC) != 0) {
-				return Fuseable.SYNC;
-			}
-			return 0;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			if (TERMINATED.compareAndSet(this, 0, 1)) {
-				return value;
-			}
-			return null;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return TERMINATED.get(this) > 0;
-		}
-
-		@Override
-		public int size() {
-			return isEmpty() ? 0 : 1;
-		}
-
-		@Override
-		public void clear() {
-			TERMINATED.set(this, 1);
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return TERMINATED.get(this) == 1;
-
-			return InnerProducer.super.scanUnsafe(key);
-		}
-	}
 }

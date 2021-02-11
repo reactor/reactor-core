@@ -2354,8 +2354,12 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
-				return once == 1;
+			if (key == Attr.TERMINATED) {
+				return once == 1 || once == 2;
+			}
+			if (key == Attr.CANCELLED) {
+				return once == 2;
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
