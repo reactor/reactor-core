@@ -403,7 +403,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 					long actualRequested = parent.requested;
 					long toRequestInAddition = actualRequested - requested;
 					if (toRequestInAddition > 0) {
-						this.requested = requested = actualRequested;
+						requested = actualRequested;
+						this.requested = requested;
+
 						if (requested == Long.MAX_VALUE) {
 							// we need to reset stats if unbounded requested
 							this.produced = produced = 0;
@@ -418,7 +420,8 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				isDemandFulfilled = produced == requested;
 				if (isDemandFulfilled) {
 					this.produced = 0;
-					this.requested = requested = SwitchMapMain.REQUESTED.addAndGet(parent, -produced);
+					requested = SwitchMapMain.REQUESTED.addAndGet(parent, -produced);
+					this.requested = requested;
 
 					produced = 0;
 					isDemandFulfilled = requested == 0;
@@ -454,7 +457,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 					long currentRequest = parent.requested;
 					long toRequestInAddition = currentRequest - requested;
 					if (toRequestInAddition > 0) {
-						this.requested = requested = currentRequest;
+						requested = currentRequest;
+						this.requested = requested;
+
 						isDemandFulfilled = false;
 						s.request(requested == Long.MAX_VALUE ? Long.MAX_VALUE : toRequestInAddition);
 					}
