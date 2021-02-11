@@ -19,9 +19,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Operators.ScalarSubscription;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -99,7 +103,7 @@ public class FluxJustTest {
 	@Test
 	public void scanSubscription() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
-		FluxJust.WeakScalarSubscription<Integer> test = new FluxJust.WeakScalarSubscription<>(1, actual);
+		ScalarSubscription<Integer> test = new ScalarSubscription<>(actual, 1);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -108,4 +112,26 @@ public class FluxJustTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
+	
+	@Test
+	public void testConcurrencyCausingDuplicate() {
+		// See https://github.com/reactor/reactor-core/pull/2576
+		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
+		for (int round = 0; round < 20000; round++) {
+			Mono.just(0).flatMapMany(i -> {
+				return Flux.range(0, 10)
+						.publishOn(Schedulers.boundedElastic())
+						.concatWithValues(10)
+						.concatWithValues(11)
+						.concatWithValues(12)
+						.concatWithValues(13)
+						.concatWithValues(14)
+						.concatWithValues(15)
+						.concatWithValues(16)
+						.concatWithValues(17)
+						.concatWith(Flux.range(18, 100 - 18));
+			}).publishOn(Schedulers.boundedElastic(), 16).subscribeOn(Schedulers.boundedElastic()).blockLast();
+		}
+	}
+
 }

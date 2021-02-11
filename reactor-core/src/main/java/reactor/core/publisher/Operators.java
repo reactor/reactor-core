@@ -1098,6 +1098,22 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Represents a fuseable Subscription that emits a single constant value synchronously
+	 * to a Subscriber or consumer. Also give the subscription a user-defined {@code stepName}
+	 * for the purpose of {@link Scannable#stepName()}.
+	 *
+	 * @param subscriber the delegate {@link Subscriber} that will be requesting the value
+	 * @param value the single value to be emitted
+	 * @param stepName the {@link String} to represent the {@link Subscription} in {@link Scannable#stepName()}
+	 * @param <T> the value type
+	 * @return a new scalar {@link Subscription}
+	 */
+	public static <T> Subscription scalarSubscription(CoreSubscriber<? super T> subscriber,
+			T value, String stepName){
+		return new ScalarSubscription<>(subscriber, value, stepName);
+	}
+	
+	/**
 	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
 	 * sequentially (serialized).
 	 * Serialization uses thread-stealing and a potentially unbounded queue that might
@@ -2204,6 +2220,7 @@ public abstract class Operators {
 		    int missed = 1;
 
 	        long requestAmount = 0L;
+	        long alreadyInRequestAmount = 0L;
 	        Subscription requestTarget = null;
 
 	        for (; ; ) {
@@ -2258,11 +2275,12 @@ public abstract class Operators {
 	                    }
 		                subscription = ms;
 		                if (r != 0L) {
-			                requestAmount = addCap(requestAmount, r);
+			                requestAmount = addCap(requestAmount, r - alreadyInRequestAmount);
 	                        requestTarget = ms;
 	                    }
 	                } else if (mr != 0L && a != null) {
 	                    requestAmount = addCap(requestAmount, mr);
+	                    alreadyInRequestAmount += mr; 
 	                    requestTarget = a;
 	                }
 	            }
@@ -2307,10 +2325,19 @@ public abstract class Operators {
 
 		final T value;
 
+		@Nullable
+		final String stepName;
+
 		volatile int once;
+
 		ScalarSubscription(CoreSubscriber<? super T> actual, T value) {
+			this(actual, value, null);
+		}
+
+		ScalarSubscription(CoreSubscriber<? super T> actual, T value, String stepName) {
 			this.value = Objects.requireNonNull(value, "value");
 			this.actual = Objects.requireNonNull(actual, "actual");
+			this.stepName = stepName;
 		}
 
 		@Override
@@ -2352,8 +2379,12 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
-				return once == 1;
+			if (key == Attr.TERMINATED) {
+				return once == 1 || once == 2;
+			}
+			if (key == Attr.CANCELLED) {
+				return once == 2;
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -2386,7 +2417,7 @@ public abstract class Operators {
 
 		@Override
 		public String stepName() {
-			return "scalarSubscription(" + value + ")";
+			return stepName != null ? stepName : ("scalarSubscription(" + value + ")");
 		}
 
 		@SuppressWarnings("rawtypes")

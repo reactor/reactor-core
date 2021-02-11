@@ -18,10 +18,8 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * A Stream that emits only one value and then complete.
@@ -67,7 +65,7 @@ final class FluxJust<T> extends Flux<T>
 
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
-		actual.onSubscribe(new WeakScalarSubscription<>(value, actual));
+		actual.onSubscribe(Operators.scalarSubscription(actual, value, "just"));
 	}
 
 	@Override
@@ -76,80 +74,4 @@ final class FluxJust<T> extends Flux<T>
 		return null;
 	}
 
-	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,
-	                                                        InnerProducer<T>{
-
-		boolean terminado;
-		final T                     value;
-		final CoreSubscriber<? super T> actual;
-
-		WeakScalarSubscription(@Nullable T value, CoreSubscriber<? super T> actual) {
-			this.value = value;
-			this.actual = actual;
-		}
-
-		@Override
-		public void request(long elements) {
-			if (terminado) {
-				return;
-			}
-
-			terminado = true;
-			if (value != null) {
-				actual.onNext(value);
-			}
-			actual.onComplete();
-		}
-
-		@Override
-		public void cancel() {
-			terminado = true;
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			if ((requestedMode & Fuseable.SYNC) != 0) {
-				return Fuseable.SYNC;
-			}
-			return 0;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			if (!terminado) {
-				terminado = true;
-				return value;
-			}
-			return null;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return terminado;
-		}
-
-		@Override
-		public int size() {
-			return isEmpty() ? 0 : 1;
-		}
-
-		@Override
-		public void clear() {
-			terminado = true;
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return terminado;
-
-			return InnerProducer.super.scanUnsafe(key);
-		}
-	}
 }
