@@ -108,11 +108,15 @@ public class FluxJustTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED initial").isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED initial").isFalse();
+		test.poll();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after poll").isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after poll").isFalse();
 		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel").isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel").isTrue();
 	}
 	
 	@Test
