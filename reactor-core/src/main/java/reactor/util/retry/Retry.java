@@ -41,7 +41,7 @@ import static reactor.util.retry.RetrySpec.*;
  * </ul>
  * <p>
  * Users are encouraged to provide either concrete custom {@link Retry} strategies or builders that produce
- * such concrete {@link Retry}. The {@link RetrySpec} returned by eg. {@link #max(long)} is a good inspiration
+ * such concrete {@link Retry}. The {@link RetrySpec} returned by e.g. {@link #max(long)} is a good inspiration
  * for a fluent approach that generates a {@link Retry} at each step and uses immutability/copy-on-write to enable
  * sharing of intermediate steps (that can thus be considered templates).
  *
@@ -60,15 +60,30 @@ public abstract class Retry {
 	}
 
 	/**
-	 * The intent of the functional {@link Retry} class is to let users configure how to react to {@link RetrySignal}
-	 * by providing the operator with a companion publisher. Any {@link org.reactivestreams.Subscriber#onNext(Object) onNext}
-	 * emitted by this publisher will trigger a retry, but if that emission is delayed compared to the original signal then
-	 * the attempt is delayed as well. This method generates the companion, out of a {@link Flux} of {@link RetrySignal},
-	 * which itself can serve as the simplest form of retry companion (indefinitely and immediately retry on any error).
+	 * Generates the companion publisher responsible for reacting to incoming {@link RetrySignal} emissions, effectively
+	 * deciding when to retry.
+	 * <p>
+	 * When the source signals an error, that {@link org.reactivestreams.Subscriber#onError(Throwable) onError} signal
+	 * will be suppressed. Its {@link Throwable} will instead be attached to a {@link RetrySignal}, immediately emitted
+	 * on the {@code retrySignals} publisher. Right after that emission,
+	 * {@link org.reactivestreams.Subscription#request(long) request(1)} is called on the companion publisher.
+	 * <p>
+	 * The response to that request decides if a retry should be made. Thus, the outer publisher will wait until a signal
+	 * is emitted by the companion publisher, making it possible to delay retry attempts.
+	 * <p>
+	 * Any
+	 * {@link org.reactivestreams.Subscriber#onNext(Object) onNext} emitted by the companion publisher triggers a retry,
+	 * {@link org.reactivestreams.Subscriber#onError(Throwable) onError} will fail the outer publisher and
+	 * {@link org.reactivestreams.Subscriber#onComplete() onComplete} will complete the outer publisher (effectively
+	 * suppressing the original error/{@link Throwable}).
+	 * <p>
+	 * As an example, the simplest form of retry companion would be to return the incoming {@link Flux} of {@link RetrySignal}
+	 * without modification. This would render a retry strategy that immediately retries, forever.
 	 *
-	 * @param retrySignals the original {@link Flux} of {@link RetrySignal}, notifying of each source error that
-	 * <i>might</i> result in a retry attempt, with context around the error and current retry cycle.
-	 * @return the actual companion to use, which might delay or limit retry attempts
+	 * @param retrySignals the errors from the outer publisher as {@link RetrySignal} objects,
+	 * containing the {@link Throwable} causing the error as well as retry counter metadata.
+	 * @return the companion publisher responsible for reacting to incoming {@link RetrySignal} emissions,
+	 * effectively deciding when to retry.
 	 */
 	public abstract Publisher<?> generateCompanion(Flux<RetrySignal> retrySignals);
 
@@ -83,40 +98,40 @@ public abstract class Retry {
 
 
 	/**
-	 * State for a {@link Flux#retryWhen(Retry)} Flux retry} or {@link reactor.core.publisher.Mono#retryWhen(Retry) Mono retry}.
-	 * A flux of states is passed to the user, which gives information about the {@link #failure()} that potentially triggers
-	 * a retry as well as two indexes: the number of errors that happened so far (and were retried) and the same number,
-	 * but only taking into account <strong>subsequent</strong> errors (see {@link #totalRetriesInARow()}).
+	 * State used in {@link Flux#retryWhen(Retry)} and {@link reactor.core.publisher.Mono#retryWhen(Retry)},
+	 * providing the {@link Throwable} that caused the source to fail as well as counters keeping track of retries.
 	 */
 	public interface RetrySignal {
 
 		/**
-		 * The ZERO BASED index number of this error (can also be read as how many retries have occurred
-		 * so far), since the source was first subscribed to.
+		 * The total number of retries since the source first was subscribed to (in other words the number of errors -1
+		 * since the source was first subscribed to).
 		 *
-		 * @return a 0-index for the error, since original subscription
+		 * @return the total number of retries since the source first was subscribed to.
 		 */
 		long totalRetries();
 
 		/**
-		 * The ZERO BASED index number of this error since the beginning of the current burst of errors.
-		 * This is reset to zero whenever a retry is made that is followed by at least one
-		 * {@link org.reactivestreams.Subscriber#onNext(Object) onNext}.
+		 * Retry counter resetting after each {@link org.reactivestreams.Subscriber#onNext(Object) onNext} (in other
+		 * words the number of errors -1 since the latest {@link org.reactivestreams.Subscriber#onNext(Object) onNext}).
 		 *
-		 * @return a 0-index for the error in the current burst of subsequent errors
+		 * @return the number of retries since the latest {@link org.reactivestreams.Subscriber#onNext(Object) onNext},
+		 * or the number of retries since the source first was subscribed to if there hasn't been any
+		 * {@link org.reactivestreams.Subscriber#onNext(Object) onNext} signals (in which case
+		 * {@link RetrySignal#totalRetries()} and {@link RetrySignal#totalRetriesInARow()} are equivalent).
 		 */
 		long totalRetriesInARow();
 
 		/**
-		 * The current {@link Throwable} that needs to be evaluated for retry.
+		 * The {@link Throwable} that caused the current {@link org.reactivestreams.Subscriber#onError(Throwable) onError} signal.
 		 *
-		 * @return the current failure {@link Throwable}
+		 * @return the current failure.
 		 */
 		Throwable failure();
 
 		/**
 		 * Return a read-only view of the user provided context, which may be used to store
-		 * objects to be reset/rollbacked or otherwise mutated before or after a retry.
+		 * objects to be reset/rolled-back or otherwise mutated before or after a retry.
 		 *
 		 * @return a read-only view of a user provided context.
 		 */
@@ -125,10 +140,10 @@ public abstract class Retry {
 		}
 
 		/**
-		 * Return an immutable copy of this {@link RetrySignal} which is guaranteed to give a consistent view
+		 * An immutable copy of this {@link RetrySignal} which is guaranteed to give a consistent view
 		 * of the state at the time at which this method is invoked.
 		 * This is especially useful if this {@link RetrySignal} is a transient view of the state of the underlying
-		 * retry subscriber,
+		 * retry subscriber.
 		 *
 		 * @return an immutable copy of the current {@link RetrySignal}, always safe to use
 		 */
