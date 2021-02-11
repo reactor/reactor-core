@@ -1098,6 +1098,21 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Represents a fuseable Subscription that emits a single constant value synchronously
+	 * to a Subscriber or consumer.
+	 *
+	 * @param subscriber the delegate {@link Subscriber} that will be requesting the value
+	 * @param value the single value to be emitted
+	 * @param stepName step name
+	 * @param <T> the value type
+	 * @return a new scalar {@link Subscription}
+	 */
+	public static <T> Subscription scalarSubscription(CoreSubscriber<? super T> subscriber,
+			T value, String stepName){
+		return new ScalarSubscription<>(subscriber, value, stepName);
+	}
+	
+	/**
 	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
 	 * sequentially (serialized).
 	 * Serialization uses thread-stealing and a potentially unbounded queue that might
@@ -2310,11 +2325,19 @@ public abstract class Operators {
 		final T value;
 
 		volatile int once;
+		
+		String stepName;
+		
 		ScalarSubscription(CoreSubscriber<? super T> actual, T value) {
-			this.value = Objects.requireNonNull(value, "value");
-			this.actual = Objects.requireNonNull(actual, "actual");
+			this(actual, value, null);
 		}
 
+		ScalarSubscription(CoreSubscriber<? super T> actual, T value, String stepName) {
+			this.value = Objects.requireNonNull(value, "value");
+			this.actual = Objects.requireNonNull(actual, "actual");
+			this.stepName = stepName;
+		}
+		
 		@Override
 		public void cancel() {
 			if (once == 0) {
@@ -2392,7 +2415,7 @@ public abstract class Operators {
 
 		@Override
 		public String stepName() {
-			return "scalarSubscription(" + value + ")";
+			return stepName != null ? stepName : ("scalarSubscription(" + value + ")");
 		}
 
 		@SuppressWarnings("rawtypes")

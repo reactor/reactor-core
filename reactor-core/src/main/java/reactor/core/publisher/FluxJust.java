@@ -65,7 +65,7 @@ final class FluxJust<T> extends Flux<T>
 
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
-		actual.onSubscribe(Operators.scalarSubscription(actual, value));
+		actual.onSubscribe(Operators.scalarSubscription(actual, value, "just"));
 	}
 
 	@Override
