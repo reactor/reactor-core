@@ -356,8 +356,8 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				}
 
 				if (hasRequest(state) > 0) {
-					long requested;
-					this.requested = requested = parent.requested;
+					long requested = parent.requested;
+					this.requested = requested;
 
 					s.request(requested);
 				}
