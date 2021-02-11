@@ -34,6 +34,8 @@ public class StressSubscriber<T> extends BaseSubscriber<T> {
 
 	final long initRequest;
 
+	final Context context;
+
 	public Throwable error;
 
 	public AtomicReference<Operation> guard = new AtomicReference<>(null);
@@ -72,11 +74,12 @@ public class StressSubscriber<T> extends BaseSubscriber<T> {
 	 */
 	public StressSubscriber(long initRequest) {
 		this.initRequest = initRequest;
+		this.context = Operators.enableOnDiscard(null, (__) -> onNextDiscarded.incrementAndGet());
 	}
 
 	@Override
 	public Context currentContext() {
-		return Operators.enableOnDiscard(null, (__) -> onNextDiscarded.incrementAndGet());
+		return this.context;
 	}
 
 	@Override
