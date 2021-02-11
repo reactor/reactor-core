@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,7 +51,6 @@ import reactor.core.publisher.Operators.EmptySubscription;
 import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
-import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
@@ -292,6 +290,9 @@ public class OperatorsTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.poll();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}

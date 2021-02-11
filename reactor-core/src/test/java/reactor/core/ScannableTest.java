@@ -587,7 +587,7 @@ public class ScannableTest {
 
 		Stream<String> chain = lastSubscriber.steps();
 
-		assertThat(chain).containsExactly("just", "map", "filter", "reduce", "peek", "lambda");
+		assertThat(chain).containsExactly("scalarSubscription(foo)", "map", "filter", "reduce", "peek", "lambda");
 	}
 
 	@Test
@@ -687,7 +687,7 @@ public class ScannableTest {
 		 .blockLast();
 		assertThat(Scannable.from(subRef.get()).steps())
 				.as("subscriber chain")
-				.containsExactly("just", "filter", "map", "peek", "blockLast");
+				.containsExactly("scalarSubscription(foo)", "filter", "map", "peek", "blockLast");
 	}
 
 	@Test
