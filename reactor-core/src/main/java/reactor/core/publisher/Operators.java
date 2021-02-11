@@ -40,6 +40,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
+import reactor.core.Scannable.Attr.RunStyle;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -2383,6 +2384,7 @@ public abstract class Operators {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return once == 1;
 			if (key == Attr.CANCELLED) return once == 2;
+			if (key == Attr.RUN_STYLE) return RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
