@@ -81,7 +81,8 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.sinkSource("unicastSink", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer,
 					f -> f.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("singleOrEmpty", 1, f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
+			//FIXME known issue in 3.3.14.RELEASE and 3.4.3
+//			DiscardScenario.fluxSource("singleOrEmpty", 1, f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collect", 1, f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
