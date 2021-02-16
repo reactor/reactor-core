@@ -101,17 +101,24 @@ public class RaceTestUtils {
 		}
 	}
 
-	public static void race(final Runnable r1, final Runnable r2) {
-		race(new Runnable[]{r1, r2});
-	}
-
 	/**
 	 * Synchronizes the execution of several {@link Runnable}s as much as possible
 	 * to test race conditions. The method blocks until all have run to completion.
 	 * @param rs the runnables to execute
 	 */
 	public static void race(final Runnable... rs) {
-		race(Schedulers.parallel(), rs);
+		race(Schedulers.elastic(), rs);
+	}
+
+	/**
+	 * Synchronizes the execution of two {@link Runnable}s as much as possible
+	 * to test race conditions. The method blocks until both have run to completion.
+	 * Kept for binary compatibility, see the varargs variant.
+	 * @param r1 the first runnable to execute
+	 * @param r2 the second runnable to execute
+	 */
+	public static void race(final Runnable r1, final Runnable r2) {
+		race(new Runnable[]{r1, r2});
 	}
 
 	/**
@@ -129,7 +136,7 @@ public class RaceTestUtils {
 
 	/**
 	 * Synchronizes the execution of several {@link Runnable}s as much as possible
-	 * to test race conditions. The method blocks until both have run to completion.
+	 * to test race conditions. The method blocks until all have run to completion.
 	 * @param s the {@link Scheduler} on which to execute the runnables
 	 * @param rs the runnables to execute
 	 */
@@ -157,7 +164,7 @@ public class RaceTestUtils {
 		}
 
 		try {
-			if (!cdl.await(50, TimeUnit.SECONDS)) {
+			if (!cdl.await(5, TimeUnit.SECONDS)) {
 				throw new AssertionError("The wait timed out!");
 			}
 		} catch (InterruptedException ex) {
