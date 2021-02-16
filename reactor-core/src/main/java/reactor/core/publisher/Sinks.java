@@ -572,7 +572,7 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
+		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered until their {@code maxAge} is reached,
 		 *     even when there is no subscriber. Older elements are discarded</li>
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
