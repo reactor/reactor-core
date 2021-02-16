@@ -107,7 +107,7 @@ public class RaceTestUtils {
 	 * @param rs the runnables to execute
 	 */
 	public static void race(final Runnable... rs) {
-		race(Schedulers.elastic(), rs);
+		race(Schedulers.boundedElastic(), rs);
 	}
 
 	/**
@@ -116,7 +116,7 @@ public class RaceTestUtils {
 	 * Kept for binary compatibility, see the varargs variant.
 	 * @param r1 the first runnable to execute
 	 * @param r2 the second runnable to execute
-	 * @see #race(Runnable...)    
+	 * @see #race(Runnable...)
 	 */
 	public static void race(final Runnable r1, final Runnable r2) {
 		race(new Runnable[]{r1, r2});
@@ -128,7 +128,7 @@ public class RaceTestUtils {
 	 * @param s the {@link Scheduler} on which to execute the runnables
 	 * @param r1 the first runnable
 	 * @param r2 the second runnable
-	 * @deprecated use {@link #race(Scheduler, Runnable...)}. To be removed no sooner than 3.6.0.
+	 * @deprecated Use {@link #race(Scheduler, Runnable...)}. To be removed in 3.6.0, at the earliest.
 	 */
 	@Deprecated
 	public static void race(final Runnable r1, final Runnable r2, Scheduler s) {
