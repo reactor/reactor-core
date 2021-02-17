@@ -536,7 +536,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
-	 * @param prefetch the number of Publishers to prefetch from the outer {@link Publisher}
+	 * @param prefetch number of elements to prefetch from the source, to be turned into inner Publishers
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
@@ -3836,7 +3836,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
-	 * concatenating them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
+	 * concatenating them into a single {@link Flux}.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
 	 * For each iterable, {@link Iterable#iterator()} will be called at least once and at most twice.
 	 *
 	 * <p>
@@ -5177,7 +5178,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 * arbitrary prefetch size to the upstream source.
 	 * For each iterable, {@link Iterable#iterator()} will be called at least once and at most twice.
 	 *
 	 * <p>
