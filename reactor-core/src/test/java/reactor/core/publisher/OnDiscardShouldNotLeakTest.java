@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
@@ -48,45 +48,45 @@ import reactor.util.concurrent.Queues;
 // test count did not regress.
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
-@Tag("slow")
 public class OnDiscardShouldNotLeakTest {
 
+	private static final int NB_ITERATIONS = 100;
 	// add DiscardScenarios here to test more operators
 	private static final DiscardScenario[] SCENARIOS = new DiscardScenario[] {
 			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
-			DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
-			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", 1, f -> f
+			DiscardScenario.fluxSource("onBackpressureBuffer", Flux::onBackpressureBuffer),
+			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", f -> f
 					.onBackpressureBuffer()
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOnWithMaps", 1, f -> f
+			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOnWithMaps", f -> f
 					.onBackpressureBuffer()
 					.map(Function.identity())
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
-			DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
-			DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
-			DiscardScenario.fluxSource("publishOnAndPublishOn", 1, main -> main
+			DiscardScenario.rawSource("flatMapInner", raw -> Flux.just(1).flatMap(f -> raw)),
+			DiscardScenario.fluxSource("flatMap", main -> main.flatMap(f -> Mono.just(f).hide().flux())),
+			DiscardScenario.fluxSource("flatMapIterable", f -> f.flatMapIterable(Arrays::asList)),
+			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
+			DiscardScenario.fluxSource("publishOnAndPublishOn", main -> main
 					.publishOn(Schedulers.immediate())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps", 1, main -> main
+			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps", main -> main
 					.publishOn(Schedulers.immediate())
 					.map(Function.identity())
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.sinkSource("unicastSink", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
-			DiscardScenario.sinkSource("unicastSinkAndPublishOn", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer,
+			DiscardScenario.sinkSource("unicastSink",  Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
+			DiscardScenario.sinkSource("unicastSinkAndPublishOn",  Sinks.unsafe().many().unicast()::onBackpressureBuffer,
 					f -> f.publishOn(Schedulers.immediate())),
 			//FIXME known issue in 3.3.14.RELEASE and 3.4.3
-//			DiscardScenario.fluxSource("singleOrEmpty", 1, f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
-			DiscardScenario.fluxSource("collect", 1, f -> f.collect(ArrayList::new, ArrayList::add)
+//			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
+			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
-			DiscardScenario.fluxSource("collectList", 1, f -> f.collectList()
+			DiscardScenario.fluxSource("collectList", f -> f.collectList()
 			                                                   .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                                   .thenReturn(Tracked.RELEASED))
 	};
@@ -108,19 +108,11 @@ public class OnDiscardShouldNotLeakTest {
 		return parameters;
 	}
 
-	private boolean conditional;
-	private boolean fused;
-	private DiscardScenario discardScenario;
-
 	private Scheduler scheduler;
 	private MemoryUtils.OffHeapDetector tracker;
 
-	private void installScheduler(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		this.conditional = conditional;
-		this.fused = fused;
-		this.discardScenario = discardScenario;
-
-		scheduler = Schedulers.newParallel(discardScenario.scenarioDescription + "DiscardScheduler", discardScenario.subscriptionsNumber + 1);
+	private void installScheduler(String description, int size) {
+		scheduler = Schedulers.newParallel(description + "DiscardScheduler", size);
 		scheduler.start();
 	}
 
@@ -143,18 +135,18 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Multiple Subscribers racing Cancel/OnNext/Request")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureMultipleSubscribersSupportWithNoLeaksWhenRacingCancelAndOnNextAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, discardScenario.numberOfSubscriptions + 2 /* Cancel, request*/);
 
-		int subscriptionsNumber = discardScenario.subscriptionsNumber;
-		for (int i = 0; i < 10000; i++) {
+		int numberOfSubscriptions = discardScenario.numberOfSubscriptions;
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
-			int[] index = new int[]{subscriptionsNumber};
-			List<TestPublisher<Tracked>> testPublishers = new ArrayList<>(subscriptionsNumber);
+			List<TestPublisher<Tracked>> testPublishers = new ArrayList<>(numberOfSubscriptions);
 
-			for (int i1 = 0; i1 < subscriptionsNumber; i1++) {
+			for (int i1 = 0; i1 < numberOfSubscriptions; i1++) {
 				testPublishers.add(TestPublisher.createNoncompliant(
 						TestPublisher.Violation.DEFER_CANCELLATION,
 						TestPublisher.Violation.REQUEST_OVERFLOW)
@@ -178,43 +170,16 @@ public class OnDiscardShouldNotLeakTest {
 			}
 			source.subscribe(assertSubscriber);
 
-			if (subscriptionsNumber == 1) {
-				Tracked value = tracker.track(1);
-				RaceTestUtils.race(
-						() -> RaceTestUtils.race(
-								assertSubscriber::cancel,
-								() -> assertSubscriber.request(Long.MAX_VALUE),
-								scheduler),
-						() -> testPublishers.get(0).next(value),
-						scheduler);
+			Tracked[] tvalues = new Tracked[numberOfSubscriptions];
+			Runnable[] runnables = new Runnable[numberOfSubscriptions + 2];
+			runnables[0] = assertSubscriber::cancel;
+			runnables[1] = () -> assertSubscriber.request(Long.MAX_VALUE);
+			for (int j = 0 ; j < numberOfSubscriptions ; j++) {
+				int jj = j;
+				tvalues[j] = tracker.track(j);
+				runnables[j + 2] = () -> testPublishers.get(jj).next(tvalues[jj]);
 			}
-			else {
-				int startIndex = --index[0];
-				Tracked value1 = tracker.track(startIndex);
-				int secondIndex = --index[0];
-				Tracked value2 = tracker.track(secondIndex);
-				Runnable action = () -> RaceTestUtils.race(
-						() -> testPublishers.get(startIndex).next(value1),
-						() -> testPublishers.get(secondIndex).next(value2),
-						scheduler);
-
-				while (index[0] > 0) {
-					int nextIndex = --index[0];
-					Tracked nextValue = tracker.track(nextIndex);
-					Runnable nextAction = action;
-					action = () -> RaceTestUtils.race(
-							nextAction,
-							() -> testPublishers.get(nextIndex).next(nextValue),
-							scheduler);
-				}
-				RaceTestUtils.race(() ->
-						RaceTestUtils.race(
-								assertSubscriber::cancel,
-								() -> assertSubscriber.request(Long.MAX_VALUE),
-								scheduler),
-						action,
-						scheduler);
-			}
+			RaceTestUtils.race(scheduler, runnables);
 
 			List<Tracked> values = assertSubscriber.values();
 			values.forEach(Tracked::release);
@@ -223,21 +188,21 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Multiple Subscribers with populated queue racing Cancel/OnNext/Request")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureMultipleSubscribersSupportWithNoLeaksWhenPopulatedQueueRacingCancelAndOnNextAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		Assumptions.assumeThat(discardScenario.subscriptionsNumber).isGreaterThan(1);
+		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isGreaterThan(1);
 
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, discardScenario.numberOfSubscriptions + 2 /* Cancel, Request */);
 
-		int subscriptionsNumber = discardScenario.subscriptionsNumber;
+		int numberOfSubscriptions = discardScenario.numberOfSubscriptions;
 
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
-			int[] index = new int[]{subscriptionsNumber};
-			List<TestPublisher<Tracked>> testPublishers = new ArrayList<>(subscriptionsNumber);
+			List<TestPublisher<Tracked>> testPublishers = new ArrayList<>(numberOfSubscriptions);
 
-			for (int i1 = 0; i1 < subscriptionsNumber; i1++) {
+			for (int i1 = 0; i1 < numberOfSubscriptions; i1++) {
 				testPublishers.add(TestPublisher.createNoncompliant(
 						TestPublisher.Violation.DEFER_CANCELLATION,
 						TestPublisher.Violation.REQUEST_OVERFLOW)
@@ -260,40 +225,20 @@ public class OnDiscardShouldNotLeakTest {
 				assertSubscriber.requestedFusionMode(Fuseable.ANY);
 			}
 			source.subscribe(assertSubscriber);
-			int startIndex = --index[0];
-			Tracked value11 = tracker.track(startIndex+"1");
-			Tracked value12 = tracker.track(startIndex+"2");
-			Tracked value13 = tracker.track(startIndex+"3");
-			Tracked value14 = tracker.track(startIndex+"4");
-			int secondIndex = --index[0];
-			Tracked value21 = tracker.track(secondIndex+"1");
-			Tracked value22 = tracker.track(secondIndex+"2");
-			Tracked value23 = tracker.track(secondIndex+"3");
-			Tracked value24 = tracker.track(secondIndex+"4");
-			Runnable action = () -> RaceTestUtils.race(
-					() -> testPublishers.get(startIndex).next(value11, value12, value13, value14),
-					() -> testPublishers.get(secondIndex).next(value21, value22, value23, value24),
-					scheduler);
 
-			while (index[0] > 0) {
-				int nextIndex = --index[0];
-				Tracked nextValue1 = tracker.track(nextIndex+"1");
-				Tracked nextValue2 = tracker.track(nextIndex+"2");
-				Tracked nextValue3 = tracker.track(nextIndex+"3");
-				Tracked nextValue4 = tracker.track(nextIndex+"4");
-				Runnable nextAction = action;
-				action = () -> RaceTestUtils.race(
-						nextAction,
-						() -> testPublishers.get(nextIndex).next(nextValue1, nextValue2, nextValue3, nextValue4),
-						scheduler);
+			Tracked[][] tvalues = new Tracked[numberOfSubscriptions][4];
+			Runnable[] runnables = new Runnable[numberOfSubscriptions + 2];
+			runnables[0] = assertSubscriber::cancel;
+			runnables[1] = () -> assertSubscriber.request(Long.MAX_VALUE);
+			for (int j = 0; j < numberOfSubscriptions; j++) {
+				for (int jj = 0; jj < 4; jj++) {
+					tvalues[j][jj] = tracker.track(String.format("%d-%d", j, jj));
+				}
+				int fj = j;
+				runnables[j + 2] = () -> testPublishers.get(fj).next(tvalues[fj][0], tvalues[fj][1], tvalues[fj][2], tvalues[fj][3]);
 			}
-			RaceTestUtils.race(() ->
-					RaceTestUtils.race(
-							assertSubscriber::cancel,
-							() -> assertSubscriber.request(Long.MAX_VALUE),
-							scheduler),
-					action,
-					scheduler);
+
+			RaceTestUtils.race(scheduler, runnables);
 			List<Tracked> values = assertSubscriber.values();
 			values.forEach(Tracked::release);
 
@@ -301,14 +246,15 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Populated queue racing Cancel/OnNext")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnNext(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
+		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
 
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, 2 /* Cancel, OnNext*3 */);
 
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
 			TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(
 					TestPublisher.Violation.DEFER_CANCELLATION,
@@ -342,11 +288,11 @@ public class OnDiscardShouldNotLeakTest {
 			Tracked value4 = tracker.track(4);
 			Tracked value5 = tracker.track(5);
 
-			RaceTestUtils.race(assertSubscriber::cancel, () -> {
+			RaceTestUtils.race(scheduler, assertSubscriber::cancel, () -> {
 				testPublisher.next(value3);
 				testPublisher.next(value4);
 				testPublisher.next(value5);
-			}, scheduler);
+			});
 
 			List<Tracked> values = assertSubscriber.values();
 			values.forEach(Tracked::release);
@@ -355,14 +301,15 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Populated queue racing Cancel/OnComplete")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnComplete(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
+		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
 
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, 2 /* Cancel, Complete*/);
 
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
 			TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(
 					TestPublisher.Violation.DEFER_CANCELLATION,
@@ -395,9 +342,9 @@ public class OnDiscardShouldNotLeakTest {
 			testPublisher.next(tracker.track(4));
 
 			RaceTestUtils.race(
-					assertSubscriber::cancel,
-					() -> testPublisher.complete(),
-					scheduler);
+					scheduler, assertSubscriber::cancel,
+					() -> testPublisher.complete()
+			);
 
 			List<Tracked> values = assertSubscriber.values();
 			values.forEach(Tracked::release);
@@ -406,14 +353,15 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Populated queue racing Cancel/OnError")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnError(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
+		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
 
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, 2 /* Cancel, Error */);
 
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
 			TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(
 					TestPublisher.Violation.DEFER_CANCELLATION,
@@ -446,9 +394,9 @@ public class OnDiscardShouldNotLeakTest {
 			testPublisher.next(tracker.track(4));
 
 			RaceTestUtils.race(
-					assertSubscriber::cancel,
-					() -> testPublisher.error(new RuntimeException("test")),
-					scheduler);
+					scheduler, assertSubscriber::cancel,
+					() -> testPublisher.error(new RuntimeException("test"))
+			);
 
 			List<Tracked> values = assertSubscriber.values();
 			values.forEach(Tracked::release);
@@ -461,14 +409,15 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Populated queue racing Cancel/overflow Error")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOverflowError(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
+		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
 
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, 2 /* Cancel, overflow error */);
 
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
 			TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(
 					TestPublisher.Violation.DEFER_CANCELLATION,
@@ -522,14 +471,15 @@ public class OnDiscardShouldNotLeakTest {
 		}
 	}
 
-	@ParameterizedTest
+	@DisplayName("Populated queue racing Cancel/Request")
+	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
-		Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
+		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
 
-		installScheduler(conditional, fused, discardScenario);
+		installScheduler(discardScenario.description, 2 /* Cancel, request */);
 
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
 			TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(
 					TestPublisher.Violation.DEFER_CANCELLATION,
@@ -562,9 +512,9 @@ public class OnDiscardShouldNotLeakTest {
 			testPublisher.next(tracker.track(4));
 
 			RaceTestUtils.race(
-					assertSubscriber::cancel,
-					() -> assertSubscriber.request(Long.MAX_VALUE),
-					scheduler);
+					scheduler, assertSubscriber::cancel,
+					() -> assertSubscriber.request(Long.MAX_VALUE)
+			);
 
 			List<Tracked> values = assertSubscriber.values();
 			values.forEach(Tracked::release);
@@ -575,18 +525,18 @@ public class OnDiscardShouldNotLeakTest {
 
 	static class DiscardScenario {
 
-		static DiscardScenario rawSource(String desc, int subs, Function<TestPublisher<Tracked>, Publisher<Tracked>> rawToPublisherProducer) {
-			return new DiscardScenario(desc, subs, (main, others) -> rawToPublisherProducer.apply(main));
+		static DiscardScenario rawSource(String desc, Function<TestPublisher<Tracked>, Publisher<Tracked>> rawToPublisherProducer) {
+			return new DiscardScenario(desc, 1, (main, others) -> rawToPublisherProducer.apply(main));
 		}
 
-		static DiscardScenario fluxSource(String desc, int subs, Function<Flux<Tracked>, Publisher<Tracked>> fluxToPublisherProducer) {
-			return new DiscardScenario(desc, subs, (main, others) -> fluxToPublisherProducer.apply(main.flux()));
+		static DiscardScenario fluxSource(String desc, Function<Flux<Tracked>, Publisher<Tracked>> fluxToPublisherProducer) {
+			return new DiscardScenario(desc, 1, (main, others) -> fluxToPublisherProducer.apply(main.flux()));
 		}
 
-		static DiscardScenario sinkSource(String desc, int subs,
+		static DiscardScenario sinkSource(String desc,
 				Supplier<Sinks.Many<Tracked>> sinksManySupplier,
 				@Nullable Function<Flux<Tracked>, Flux<Tracked>> furtherTransformation) {
-			return new DiscardScenario(desc, subs, (main, others) -> {
+			return new DiscardScenario(desc, 1, (main, others) -> {
 				Sinks.Many<Tracked> sink = sinksManySupplier.get();
 				//noinspection CallingSubscribeInNonBlockingScope
 				main.flux().subscribe(
@@ -613,15 +563,15 @@ public class OnDiscardShouldNotLeakTest {
 			});
 		}
 
-		final String scenarioDescription;
-		final int    subscriptionsNumber;
+		final String description;
+		final int numberOfSubscriptions;
 
 		private final BiFunction<TestPublisher<Tracked>, List<TestPublisher<Tracked>>, Publisher<Tracked>>
 				publisherProducer;
 
-		DiscardScenario(String description, int subscriptionsNumber, BiFunction<TestPublisher<Tracked>, List<TestPublisher<Tracked>>, Publisher<Tracked>> publisherProducer) {
-			this.scenarioDescription = description;
-			this.subscriptionsNumber = subscriptionsNumber;
+		DiscardScenario(String description, int numberOfSubscriptions, BiFunction<TestPublisher<Tracked>, List<TestPublisher<Tracked>>, Publisher<Tracked>> publisherProducer) {
+			this.description = description;
+			this.numberOfSubscriptions = numberOfSubscriptions;
 			this.publisherProducer = publisherProducer;
 		}
 
@@ -631,7 +581,7 @@ public class OnDiscardShouldNotLeakTest {
 
 		@Override
 		public String toString() {
-			return scenarioDescription;
+			return description;
 		}
 	}
 }

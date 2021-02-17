@@ -1618,7 +1618,7 @@ public class FluxSwitchOnFirstTest {
                 InnerOperator switchOnFirstControlSubscriber = factory.apply(mockParent, Operators.toConditionalSubscriber(subscriber));
 
                 switchOnFirstControlSubscriber.request(10);
-                RaceTestUtils.race(() -> switchOnFirstControlSubscriber.request(10), () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription), Schedulers.parallel());
+                RaceTestUtils.race(() -> switchOnFirstControlSubscriber.request(10), () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription));
 
                 assertThat(longArgumentCaptor.getAllValues().size()).isBetween(1, 2);
                 if (longArgumentCaptor.getAllValues().size() == 1) {
@@ -1661,8 +1661,7 @@ public class FluxSwitchOnFirstTest {
                             switchOnFirstControlSubscriber.request(10);
                             switchOnFirstControlSubscriber.request(10);
                         },
-                        () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription),
-                        Schedulers.parallel());
+                        () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription));
 
                 switchOnFirstControlSubscriber.request(10);
                 assertThat(valueHolder[0])
@@ -1693,7 +1692,7 @@ public class FluxSwitchOnFirstTest {
                 InnerOperator switchOnFirstControlSubscriber = factory.apply(mockParent, Operators.toConditionalSubscriber(subscriber));
 
                 switchOnFirstControlSubscriber.request(10);
-                RaceTestUtils.race(() -> switchOnFirstControlSubscriber.cancel(), () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription), Schedulers.parallel());
+                RaceTestUtils.race(() -> switchOnFirstControlSubscriber.cancel(), () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription));
 
                 assertThat(longArgumentCaptor.getAllValues().size()).isBetween(0, 1);
                 Mockito.verify(mockParent).cancel();
