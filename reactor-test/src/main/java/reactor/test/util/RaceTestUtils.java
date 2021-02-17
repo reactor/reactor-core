@@ -16,6 +16,8 @@
 
 package reactor.test.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -100,56 +102,66 @@ public class RaceTestUtils {
 	}
 
 	/**
-	 * Synchronizes the execution of two {@link Runnable} as much as possible
+	 * Synchronizes the execution of several {@link Runnable}s as much as possible
+	 * to test race conditions. The method blocks until all have run to completion.
+	 * @param rs the runnables to execute
+	 */
+	public static void race(final Runnable... rs) {
+		race(Schedulers.boundedElastic(), rs);
+	}
+
+	/**
+	 * Synchronizes the execution of two {@link Runnable}s as much as possible
 	 * to test race conditions. The method blocks until both have run to completion.
-	 * @param r1 the first runnable
-	 * @param r2 the second runnable
+	 * Kept for binary compatibility, see the varargs variant.
+	 * @param r1 the first runnable to execute
+	 * @param r2 the second runnable to execute
+	 * @see #race(Runnable...)
 	 */
 	public static void race(final Runnable r1, final Runnable r2) {
-		race(r1, r2, Schedulers.single());
+		race(new Runnable[]{r1, r2});
 	}
 
 	/**
 	 * Synchronizes the execution of two {@link Runnable} as much as possible
 	 * to test race conditions. The method blocks until both have run to completion.
+	 * @param s the {@link Scheduler} on which to execute the runnables
 	 * @param r1 the first runnable
 	 * @param r2 the second runnable
-	 * @param s the {@link Scheduler} on which to execute the runnables
+	 * @deprecated Use {@link #race(Scheduler, Runnable...)}. To be removed in 3.6.0, at the earliest.
 	 */
+	@Deprecated
 	public static void race(final Runnable r1, final Runnable r2, Scheduler s) {
-		final AtomicInteger count = new AtomicInteger(2);
-		final CountDownLatch cdl = new CountDownLatch(2);
+		race(s, r1, r2);
+	}
 
-		final Throwable[] errors = { null, null };
-
-		s.schedule(() -> {
-			if (count.decrementAndGet() != 0) {
-				while (count.get() != 0) { }
-			}
-
-			try {
-				try {
-					r1.run();
-				} catch (Throwable ex) {
-					errors[0] = ex;
+	/**
+	 * Synchronizes the execution of several {@link Runnable}s as much as possible
+	 * to test race conditions. The method blocks until all have run to completion.
+	 * @param s the {@link Scheduler} on which to execute the runnables
+	 * @param rs the runnables to execute
+	 */
+	public static void race(Scheduler s, final Runnable... rs) {
+		final AtomicInteger count = new AtomicInteger(rs.length);
+		final CountDownLatch cdl = new CountDownLatch(rs.length);
+		final Throwable[] errors = new Throwable[rs.length];
+		for (int i = 0; i < rs.length; i++) {
+			final int index = i;
+			s.schedule(() -> {
+				if (count.decrementAndGet() != 0) {
+					while (count.get() != 0) { }
 				}
-			} finally {
-				cdl.countDown();
-			}
-		});
 
-		if (count.decrementAndGet() != 0) {
-			while (count.get() != 0) { }
-		}
-
-		try {
-			try {
-				r2.run();
-			} catch (Throwable ex) {
-				errors[1] = ex;
-			}
-		} finally {
-			cdl.countDown();
+				try {
+					try {
+						rs[index].run();
+					} catch (Throwable ex) {
+						errors[index] = ex;
+					}
+				} finally {
+					cdl.countDown();
+				}
+			});
 		}
 
 		try {
@@ -159,17 +171,17 @@ public class RaceTestUtils {
 		} catch (InterruptedException ex) {
 			throw new RuntimeException(ex);
 		}
-		if (errors[0] != null && errors[1] == null) {
-			throw Exceptions.propagate(errors[0]);
-		}
 
-		if (errors[0] == null && errors[1] != null) {
-			throw Exceptions.propagate(errors[1]);
+		List<Throwable> es = new ArrayList<>(rs.length);
+		for (Throwable t : errors) {
+			if (t != null) {
+				es.add(t);
+			}
 		}
-
-		if (errors[0] != null && errors[1] != null) {
-			throw Exceptions.multiple(errors);
+		if (es.size() == 1) {
+			throw Exceptions.propagate(es.get(0));
+		} else if (es.size() > 1) {
+			throw Exceptions.multiple(es.toArray(new Throwable[0]));
 		}
 	}
-
 }
