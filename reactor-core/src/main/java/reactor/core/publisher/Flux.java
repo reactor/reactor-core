@@ -467,7 +467,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
-	 * @param prefetch the inner source request size
+	 * @param prefetch the number of Publishers to prefetch from the outer {@link Publisher}
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences
@@ -534,7 +534,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
-	 * @param prefetch the inner source request size
+	 * @param prefetch number of elements to prefetch from the source, to be turned into inner Publishers
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
@@ -563,7 +563,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
 	 * @param delayUntilEnd delay error until all sources have been consumed instead of
 	 * after the current source
-	 * @param prefetch the inner source request size
+	 * @param prefetch the number of Publishers to prefetch from the outer {@link Publisher}
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
@@ -3654,7 +3654,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors will immediately short circuit current concat backlog. The prefetch argument
-	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
+	 * allows to give an arbitrary prefetch size to the upstream source.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3662,7 +3662,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
-	 * @param prefetch the inner source produced demand (set it to 0 if you don't want it to prefetch)
+	 * @param prefetch the number of values to prefetch from upstream source (set it to 0 if you don't want it to prefetch)
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
@@ -3734,7 +3734,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
 	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
 	 * if several sources error.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the inner {@link Publisher}.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3742,7 +3742,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
-	 * @param prefetch the inner source produced demand
+	 * @param prefetch the number of values to prefetch from upstream source
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
@@ -3773,7 +3773,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Errors in the individual publishers will be delayed after the current concat
 	 * backlog if delayUntilEnd is false or after all sources if delayUntilEnd is true.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the inner {@link Publisher}.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3783,7 +3783,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param delayUntilEnd delay error until all sources have been consumed instead of
 	 * after the current source
-	 * @param prefetch the inner source produced demand
+	 * @param prefetch the number of values to prefetch from upstream source
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
@@ -3839,7 +3839,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
-	 * concatenating them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
+	 * concatenating them into a single {@link Flux}.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
 	 * For each iterable, {@link Iterable#iterator()} will be called at least once and at most twice.
 	 *
 	 * <p>
@@ -3868,7 +3869,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * signal is then propagated as normal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
-	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
+	 * @param prefetch the number of values to request from the source upon subscription, to be transformed to {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
@@ -5231,7 +5232,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 * arbitrary prefetch size to the upstream source.
 	 * For each iterable, {@link Iterable#iterator()} will be called at least once and at most twice.
 	 *
 	 * <p>
