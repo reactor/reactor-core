@@ -41,10 +41,6 @@ test {
 
 gradlePlugin {
 	plugins {
-		customVersionPlugin {
-			id = "io.reactor.gradle.custom-version"
-			implementationClass = "io.reactor.gradle.CustomVersionPlugin"
-		}
 		detectCIPlugin {
 			id = "io.reactor.gradle.detect-ci"
 			implementationClass = "io.reactor.gradle.DetectCiPlugin"

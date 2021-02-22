@@ -205,10 +205,6 @@ configure(subprojects) { p ->
 
 assemble.dependsOn docsZip
 
-gradle.allprojects() { p ->
-	apply plugin: "io.reactor.gradle.custom-version"
-}
-
 configure(subprojects) { p ->
 	//these apply once the above configure is done, but before project-specific build.gradle have applied
 	apply plugin: "io.reactor.gradle.java-conventions"
