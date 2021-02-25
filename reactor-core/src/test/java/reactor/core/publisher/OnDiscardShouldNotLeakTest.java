@@ -46,7 +46,7 @@ import reactor.util.concurrent.Queues;
 // test count did not regress.
 public class OnDiscardShouldNotLeakTest {
 
-	private static final int NB_ITERATIONS = 100;
+	private static final int NB_ITERATIONS = 10_000;
 	// add DiscardScenarios here to test more operators
 	private static final DiscardScenario[] SCENARIOS = new DiscardScenario[] {
 			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
@@ -78,8 +78,7 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", f -> f
 					.subscribeWith(UnicastProcessor.create())
 					.publishOn(Schedulers.immediate())),
-			//FIXME known issue in 3.3.14.RELEASE and 3.4.3
-//			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
+			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),

@@ -184,8 +184,8 @@ public class MonoSubscriberTest {
 					(sink) -> Schedulers.elastic().schedule(() -> sink.success(2))));
 			input.put("three", Mono.just(3));
 			int sum = Flux.fromIterable(input.entrySet())
-			              .flatMap((entry) -> Mono.zip(Mono.just(entry.getKey()), entry.getValue()))
-			              .collectMap(Tuple2::getT1, Tuple2::getT2).map((items) -> {
+					.flatMap((entry) -> Mono.zip(Mono.just(entry.getKey()), entry.getValue()))
+					.collectMap(Tuple2::getT1, Tuple2::getT2).map((items) -> {
 						AtomicInteger result = new AtomicInteger();
 						items.values().forEach(result::addAndGet);
 						return result.get();

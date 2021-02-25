@@ -23,10 +23,11 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Expects and emits a single item from the source or signals
- * NoSuchElementException(or a default generated value) for empty source,
+ * NoSuchElementException (or a default generated value) for empty source,
  * IndexOutOfBoundsException for a multi-item source.
  *
  * @param <T> the value type
@@ -58,7 +59,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		return new SingleSubscriber<>(actual, defaultValue, completeOnEmpty);
 	}
 
-	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>  {
+	static final class SingleSubscriber<T> extends Operators.MonoInnerProducerBase<T> implements InnerConsumer<T> {
 
 		@Nullable
 		final T       defaultValue;
@@ -79,6 +80,11 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 			return super.scanUnsafe(key);
 		}
 
+		@Override
+		public Context currentContext() {
+			return actual().currentContext();
+		}
+
 		SingleSubscriber(CoreSubscriber<? super T> actual,
 				@Nullable T defaultValue,
 				boolean completeOnEmpty) {
@@ -88,16 +94,12 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		public void request(long n) {
-			super.request(n);
-			if (n > 0L) {
-				s.request(Long.MAX_VALUE);
-			}
+		public void doOnRequest(long n) {
+			s.request(Long.MAX_VALUE);
 		}
 
 		@Override
-		public void cancel() {
-			super.cancel();
+		public void doOnCancel() {
 			s.cancel();
 		}
 
@@ -105,8 +107,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-
-				actual.onSubscribe(this);
+				actual().onSubscribe(this);
 			}
 		}
 
@@ -118,7 +119,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, actual().currentContext());
 				return;
 			}
 			if (++count > 1) {
@@ -135,17 +136,13 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, actual().currentContext());
 				return;
 			}
 			done = true;
-			T v = this.value;
-			if (v != null) {
-				discard(v);
-				this.value = null;
-			}
+			discardTheValue();
 
-			actual.onError(t);
+			actual().onError(t);
 		}
 
 		@Override
@@ -159,7 +156,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 			if (c == 0) {
 
 				if (completeOnEmpty) {
-					actual.onComplete();
+					actual().onComplete();
 					return;
 				}
 
@@ -169,13 +166,13 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 					complete(t);
 				}
 				else {
-					actual.onError(Operators.onOperatorError(this,
+					actual().onError(Operators.onOperatorError(this,
 							new NoSuchElementException("Source was empty"),
-							actual.currentContext()));
+							actual().currentContext()));
 				}
 			}
 			else if (c == 1) {
-				complete(this.value);
+				complete();
 			}
 		}
 
