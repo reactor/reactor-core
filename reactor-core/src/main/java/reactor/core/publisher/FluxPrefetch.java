@@ -212,7 +212,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 
-			if (requestMode == RequestMode.LAZY && firstRequest) {
+			if (fusionMode != Fuseable.SYNC && requestMode == RequestMode.LAZY && firstRequest) {
 				firstRequest = false;
 				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
