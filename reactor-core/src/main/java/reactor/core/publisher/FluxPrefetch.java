@@ -150,7 +150,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				queue = queueSupplier.get();
 			}
 
-			 actual.onSubscribe(this);
+			actual.onSubscribe(this);
 			if (requestMode == RequestMode.EAGER) {
 				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
@@ -206,7 +206,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		private void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
-				// TODO: check cancelled?
+				if (cancelled) {
+					terminate();
+				}
 				return;
 			}
 
@@ -229,14 +231,12 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		private void drainOutput() {
 			int missed = 1;
 
-//			TODO
-			for (; ; ) {
+			do {
 				if (cancelled) {
 					clear();
 					return;
 				}
 
-//              TODO: check queue.isEmpty()??
 				actual.onNext(null);
 
 				if (done) {
@@ -251,10 +251,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				}
 
 				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
-					break;
-				}
 			}
+			while (missed != 0);
 		}
 
 		private void drainSync() {
@@ -394,7 +392,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			}
 			// TODO: What to do if fusionMode == SYNC?
 			else if (!outputFused) {
-				// TODO: What to do?
 				// discard MUST be happening only and only if there is no racing on elements consumption
 				// which is guaranteed by the WIP guard here in case non-fused output
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
@@ -643,7 +640,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		private void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
-				// TODO: check cancelled?
+				if (cancelled) {
+					terminate();
+				}
 				return;
 			}
 
@@ -666,14 +665,12 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		private void drainOutput() {
 			int missed = 1;
 
-//			TODO
-			for (; ; ) {
+			do {
 				if (cancelled) {
 					clear();
 					return;
 				}
 
-//              TODO: check queue.isEmpty()??
 				actual.onNext(null);
 
 				if (done) {
@@ -688,10 +685,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				}
 
 				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
-					break;
-				}
 			}
+			while (missed != 0);
 		}
 
 		private void drainSync() {
@@ -836,7 +831,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			}
 			// TODO: What to do if fusionMode == SYNC?
 			else if (!outputFused) {
-				// TODO: What to do?
 				// discard MUST be happening only and only if there is no racing on elements consumption
 				// which is guaranteed by the WIP guard here in case non-fused output
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
