@@ -235,28 +235,29 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 							return;
 						}
 
-						if (v == null) {
-							@SuppressWarnings("unchecked")
-							PublishMulticastInner<T>[] castedArray = SUBSCRIBERS.getAndSet(this, TERMINATED);
-							a = castedArray;
-							n = a.length;
+						@SuppressWarnings("unchecked")
+						PublishMulticastInner<T>[] castedArray = SUBSCRIBERS.getAndSet(this, TERMINATED);
+						a = castedArray;
+						n = a.length;
+						Throwable ex = error;
+						if (ex != null) {
+							for (int i = 0; i < n; i++) {
+								a[i].actual.onError(ex);
+							}
+						}
+						else if (v == null) {
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onComplete();
 							}
-							return;
 						}
 						else {
-							@SuppressWarnings("unchecked")
-							PublishMulticastInner<T>[] castedArray = SUBSCRIBERS.getAndSet(this, TERMINATED);
-							a = castedArray;
-							n = a.length;
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onNext(v);
 								a[i].actual.onComplete();
 							}
 							value = null;
-							return;
 						}
+						return;
 					}
 				}
 
