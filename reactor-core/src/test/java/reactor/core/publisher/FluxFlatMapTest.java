@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,7 +31,9 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -42,6 +46,8 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.test.util.TestLogger;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +56,63 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxFlatMapTest {
 
+	private static final Logger LOGGER = Loggers.getLogger(FluxFlatMapTest.class);
+
+	@Test
+	void completeVsErrorLoop() throws InterruptedException {
+		final int ROUNDS = 10_000;
+		final int TIMEOUT = 5; //change to something greater like 120 if step-debugging
+
+		AtomicReference<RuntimeException> droppedRef = new AtomicReference<>();
+		Hooks.onErrorDropped(t -> droppedRef.set(new IllegalStateException("dropped", t)));
+		for (int round = 0; round < ROUNDS; round++) {
+			if (LOGGER.isDebugEnabled() && round % (ROUNDS / 10) == 0) {
+				LOGGER.debug("completeVsErrorLoop " + (100 * round / ROUNDS) + "%");
+			}
+			droppedRef.set(null);
+
+			AtomicInteger terminalState = new AtomicInteger();
+			AtomicReference<Subscriber<? super Integer>> sub1 = new AtomicReference<>();
+			AtomicReference<Subscriber<? super Integer>> sub2 = new AtomicReference<>();
+
+			CountDownLatch latch = new CountDownLatch(1);
+			Flux.merge((Publisher<Integer>) sub1::set, (Publisher<Integer>) sub2::set)
+			    .subscribe(v -> {},
+					    err -> {
+						    terminalState.addAndGet(10);
+						    latch.countDown();
+					    },
+					    () -> {
+						    terminalState.addAndGet(100);
+						    latch.countDown();
+					    });
+
+			String failMessage;
+			if (round % 2 == 0) {
+				failMessage = "onComplete+onError, expected onError, got onComplete? (state %s) in round %s";
+				RaceTestUtils.race(
+						TIMEOUT, Schedulers.boundedElastic(),
+						() -> sub1.get().onComplete(),
+						() -> sub2.get().onError(new IllegalStateException("expected"))
+				);
+			}
+			else {
+				failMessage = "onError+onComplete, expected onError, got onComplete? (state %s) in round %s";
+				RaceTestUtils.race(
+						TIMEOUT, Schedulers.boundedElastic(),
+						() -> sub2.get().onError(new IllegalStateException("expected")),
+						() -> sub1.get().onComplete()
+				);
+
+			}
+
+			assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).as("latch in round " + round).isTrue();
+			if (droppedRef.get() != null) {
+				throw droppedRef.get();
+			}
+			assertThat(terminalState).withFailMessage(failMessage, terminalState, round).hasValue(10);
+		}
+	}
 
 	@Test
 	public void flatmapInnerShouldntRequestInFusionModeSync() {

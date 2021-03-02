@@ -261,7 +261,7 @@ check.dependsOn jacocoTestReport
 check.dependsOn japicmp
 
 jcstress {
-	mode = 'quick'
+	mode = 'quick' //quick, default, tough
 	jcstressDependency = "org.openjdk.jcstress:jcstress-core:0.7"
 }
 tasks.check.dependsOn(tasks.jcstress)
