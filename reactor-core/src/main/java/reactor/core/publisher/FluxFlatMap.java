@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -846,19 +847,21 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		void innerError(FlatMapInner<R> inner, Throwable e) {
 			e = Operators.onNextInnerError(e, currentContext(), s);
-			if(e != null) {
+			if (e != null) {
 				if (Exceptions.addThrowable(ERROR, this, e)) {
-					inner.done = true;
 					if (!delayError) {
 						done = true;
 					}
+					inner.done = true;
 					drain(null);
 				}
 				else {
+					inner.done = true;
 					Operators.onErrorDropped(e, actual.currentContext());
 				}
 			}
 			else {
+				inner.done = true;
 				drain(null);
 			}
 		}
@@ -878,34 +881,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		void innerComplete(FlatMapInner<R> inner) {
-			//FIXME temp. reduce the case to empty regular inners
-//			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-//				Queue<R> queue = inner.queue;
-//				if (queue == null || queue.isEmpty()) {
-//					remove(inner.index);
-//
-//					boolean d = done;
-//					Queue<R> sq = scalarQueue;
-//					boolean noSources = isEmpty();
-//
-//					if (checkTerminated(d,
-//							noSources && (sq == null || sq.isEmpty()),
-//							actual)) {
-//						return;
-//					}
-//
-//					s.request(1);
-//					if (WIP.decrementAndGet(this) != 0) {
-//						drainLoop();
-//					}
-//					return;
-//				}
-//			}
-//			else {
-				if (WIP.getAndIncrement(this) != 0) {
-					return;
-				}
-//			}
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
 			drainLoop();
 		}
 
@@ -1002,8 +980,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void onError(Throwable t) {
-			done = true;
-			parent.innerError(this, t);
+			parent.innerError(this, t); //we want to delay the marking as done
 		}
 
 		@Override
