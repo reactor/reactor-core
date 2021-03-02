@@ -137,11 +137,24 @@ public class RaceTestUtils {
 
 	/**
 	 * Synchronizes the execution of several {@link Runnable}s as much as possible
-	 * to test race conditions. The method blocks until all have run to completion.
+	 * to test race conditions. The method blocks until all have run to completion,
+	 * with a 5s timeout.
 	 * @param s the {@link Scheduler} on which to execute the runnables
 	 * @param rs the runnables to execute
 	 */
 	public static void race(Scheduler s, final Runnable... rs) {
+		race(5, s, rs);
+	}
+
+	/**
+	 * Synchronizes the execution of several {@link Runnable}s as much as possible
+	 * to test race conditions. The method blocks until all have run to completion,
+	 * with a configurable timeout (allowing for debugging sessions to use a larger timeout).
+	 * @param timeoutSeconds the number of seconds after which the race is considered timed out. intended for debugging purposes.
+	 * @param s the {@link Scheduler} on which to execute the runnables
+	 * @param rs the runnables to execute
+	 */
+	public static void race(int timeoutSeconds, Scheduler s, final Runnable... rs) {
 		final AtomicInteger count = new AtomicInteger(rs.length);
 		final CountDownLatch cdl = new CountDownLatch(rs.length);
 		final Throwable[] errors = new Throwable[rs.length];
@@ -165,8 +178,8 @@ public class RaceTestUtils {
 		}
 
 		try {
-			if (!cdl.await(5, TimeUnit.SECONDS)) {
-				throw new AssertionError("The wait timed out!");
+			if (!cdl.await(timeoutSeconds, TimeUnit.SECONDS)) {
+				throw new AssertionError("RaceTestUtils.race wait timed out after " + timeoutSeconds + "s");
 			}
 		} catch (InterruptedException ex) {
 			throw new RuntimeException(ex);
