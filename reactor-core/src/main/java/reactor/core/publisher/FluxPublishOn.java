@@ -31,12 +31,12 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
  *
  * @param <T> the value type
- *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fuseable {
@@ -45,40 +45,24 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 	final boolean delayError;
 
-	final Supplier<? extends Queue<T>> queueSupplier;
+	final Supplier<? extends Queue<T>> queueSupplier = Queues.one();
 
-	final int prefetch;
-
-	final int lowTide;
-
-	FluxPublishOn(Flux<? extends T> source,
-			Scheduler scheduler,
-			boolean delayError,
-			int prefetch,
-			int lowTide,
-			Supplier<? extends Queue<T>> queueSupplier) {
+	FluxPublishOn(Flux<? extends T> source, Scheduler scheduler, boolean delayError) {
 		super(source);
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
-		}
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 		this.delayError = delayError;
-		this.prefetch = prefetch;
-		this.lowTide = lowTide;
-		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.RUN_ON) return scheduler;
-		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+		if (key == Attr.RUN_ON) {
+			return scheduler;
+		}
+		if (key == Attr.RUN_STYLE) {
+			return Attr.RunStyle.ASYNC;
+		}
 
 		return super.scanUnsafe(key);
-	}
-
-	@Override
-	public int getPrefetch() {
-		return prefetch;
 	}
 
 	@Override
@@ -88,13 +72,12 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				"The scheduler returned a null worker");
 
 		if (actual instanceof ConditionalSubscriber) {
-			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
+			ConditionalSubscriber<? super T> cs =
+					(ConditionalSubscriber<? super T>) actual;
 			source.subscribe(new PublishOnConditionalSubscriber<>(cs,
 					scheduler,
 					worker,
 					delayError,
-					prefetch,
-					lowTide,
 					queueSupplier));
 			return null;
 		}
@@ -102,8 +85,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				scheduler,
 				worker,
 				delayError,
-				prefetch,
-				lowTide,
 				queueSupplier);
 	}
 
@@ -118,9 +99,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		final boolean delayError;
 
-		final int prefetch;
-
-		final int limit;
+		final int limit = 1;
 
 		final Supplier<? extends Queue<T>> queueSupplier;
 
@@ -134,17 +113,18 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		Throwable error;
 
-		volatile int wip;
+		volatile     int                                            wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "wip");
 
-		volatile int discardGuard;
+		volatile     int                                            discardGuard;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> DISCARD_GUARD =
-				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "discardGuard");
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class,
+						"discardGuard");
 
-		volatile long requested;
+		volatile     long                                        requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PublishOnSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PublishOnSubscriber.class, "requested");
@@ -166,9 +146,19 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			this.worker = worker;
 			this.scheduler = scheduler;
 			this.delayError = delayError;
-			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			this.limit = Operators.unboundedOrLimit(prefetch, lowTide);
+		}
+
+		PublishOnSubscriber(CoreSubscriber<? super T> actual,
+				Scheduler scheduler,
+				Worker worker,
+				boolean delayError,
+				Supplier<? extends Queue<T>> queueSupplier) {
+			this.actual = actual;
+			this.worker = worker;
+			this.scheduler = scheduler;
+			this.delayError = delayError;
+			this.queueSupplier = queueSupplier;
 		}
 
 		@Override
@@ -196,17 +186,15 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 						actual.onSubscribe(this);
 
-						s.request(Operators.unboundedOrPrefetch(prefetch));
+						s.request(Operators.unboundedOrPrefetch(limit));
 
 						return;
 					}
 				}
 
 				queue = queueSupplier.get();
-
 				actual.onSubscribe(this);
-
-				s.request(Operators.unboundedOrPrefetch(prefetch));
+				s.request(Operators.unboundedOrPrefetch(limit));
 			}
 		}
 
@@ -231,7 +219,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				Operators.onDiscard(t, actual.currentContext());
 				error = Operators.onOperatorError(s,
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-						t, actual.currentContext());
+						t,
+						actual.currentContext());
 				done = true;
 			}
 			trySchedule(this, null, t);
@@ -285,13 +274,14 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				else if (!outputFused) {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here in case non-fused output
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
 			}
 		}
 
-		void trySchedule(
-				@Nullable Subscription subscription,
+		void trySchedule(@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
@@ -315,16 +305,22 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				if (sourceMode == ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
-				} else if (outputFused) {
+				}
+				else if (outputFused) {
 					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
 				}
 				else {
 					// In all other modes we are free to discard queue immediately since there is no racing on pooling
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
-				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
+				actual.onError(Operators.onRejectedExecution(ree,
+						subscription,
+						suppressed,
+						dataSignal,
 						actual.currentContext()));
 			}
 		}
@@ -335,6 +331,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final Subscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
+			// TODO: long e = 0L
 			long e = produced;
 
 			for (; ; ) {
@@ -348,14 +345,18 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						v = q.poll();
 					}
 					catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex,
-								actual.currentContext()));
+						doError(a,
+								Operators.onOperatorError(s,
+										ex,
+										actual.currentContext()));
 						return;
 					}
 
 					if (cancelled) {
 						Operators.onDiscard(v, actual.currentContext());
-						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(q,
+								actual.currentContext(),
+								null);
 						return;
 					}
 					if (v == null) {
@@ -417,13 +418,17 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						if (sourceMode == ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 							queue.clear();
-						} else {
+						}
+						else {
 							// discard MUST be happening only and only if there is no racing on elements consumption
 							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(queue,
+									actual.currentContext(),
+									null);
 						}
 
-						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
+						doError(a,
+								Operators.onOperatorError(ex, actual.currentContext()));
 						return;
 					}
 
@@ -528,16 +533,22 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
+		boolean checkTerminated(boolean d,
+				boolean empty,
+				Subscriber<?> a,
+				@Nullable T v) {
 			if (cancelled) {
 				Operators.onDiscard(v, actual.currentContext());
 				if (sourceMode == ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
-				} else {
+				}
+				else {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
 				return true;
 			}
@@ -561,10 +572,13 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						if (sourceMode == ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 							queue.clear();
-						} else {
+						}
+						else {
 							// discard MUST be happening only and only if there is no racing on elements consumption
 							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(queue,
+									actual.currentContext(),
+									null);
 						}
 						doError(a, e);
 						return true;
@@ -582,16 +596,33 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM ) return requested;
-			if (key == Attr.PARENT ) return s;
-			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == Attr.ERROR) return error;
-			if (key == Attr.DELAY_ERROR) return delayError;
-			if (key == Attr.PREFETCH) return prefetch;
-			if (key == Attr.RUN_ON) return worker;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
+				return requested;
+			}
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			if (key == Attr.CANCELLED) {
+				return cancelled;
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.BUFFERED) {
+				return queue != null ? queue.size() : 0;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
+			if (key == Attr.DELAY_ERROR) {
+				return delayError;
+			}
+			if (key == Attr.RUN_ON) {
+				return worker;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.ASYNC;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -612,7 +643,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			int missed = 1;
 
-			for (;;) {
+			for (; ; ) {
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 
 				int dg = discardGuard;
@@ -652,7 +683,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			if ((requestedMode & ASYNC) != 0) {
+			if (sourceMode != NONE && (requestedMode & ASYNC) != 0) {
 				outputFused = true;
 				return ASYNC;
 			}
@@ -676,9 +707,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		final boolean delayError;
 
-		final int prefetch;
-
-		final int limit;
+		final int limit = 1;
 
 		final Supplier<? extends Queue<T>> queueSupplier;
 
@@ -692,19 +721,20 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		Throwable error;
 
-		volatile int wip;
+		volatile     int                                                       wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
 						"wip");
 
-		volatile int discardGuard;
+		volatile     int discardGuard;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber> DISCARD_GUARD =
-				AtomicIntegerFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
-						"discardGuard");
+		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber>
+		                 DISCARD_GUARD = AtomicIntegerFieldUpdater.newUpdater(
+				PublishOnConditionalSubscriber.class,
+				"discardGuard");
 
-		volatile long requested;
+		volatile     long                                                   requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PublishOnConditionalSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
@@ -729,9 +759,19 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			this.worker = worker;
 			this.scheduler = scheduler;
 			this.delayError = delayError;
-			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			this.limit = Operators.unboundedOrLimit(prefetch, lowTide);
+		}
+
+		PublishOnConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				Scheduler scheduler,
+				Worker worker,
+				boolean delayError,
+				Supplier<? extends Queue<T>> queueSupplier) {
+			this.actual = actual;
+			this.worker = worker;
+			this.scheduler = scheduler;
+			this.delayError = delayError;
+			this.queueSupplier = queueSupplier;
 		}
 
 		@Override
@@ -758,9 +798,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						queue = f;
 
 						actual.onSubscribe(this);
-
-						s.request(Operators.unboundedOrPrefetch(prefetch));
-
+						s.request(Operators.unboundedOrPrefetch(limit));
 						return;
 					}
 				}
@@ -768,8 +806,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				queue = queueSupplier.get();
 
 				actual.onSubscribe(this);
-
-				s.request(Operators.unboundedOrPrefetch(prefetch));
+				s.request(Operators.unboundedOrPrefetch(limit));
 			}
 		}
 
@@ -792,7 +829,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			if (!queue.offer(t)) {
 				Operators.onDiscard(t, actual.currentContext());
-				error = Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
+				error = Operators.onOperatorError(s,
+						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
+						t,
 						actual.currentContext());
 				done = true;
 			}
@@ -845,13 +884,14 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				else if (!outputFused) {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here in case non-fused output
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
 			}
 		}
 
-		void trySchedule(
-				@Nullable Subscription subscription,
+		void trySchedule(@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
@@ -875,16 +915,22 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				if (sourceMode == ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
-				} else if (outputFused) {
+				}
+				else if (outputFused) {
 					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
 				}
 				else {
 					// In all other modes we are free to discard queue immediately since there is no racing on pooling
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
-				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
+				actual.onError(Operators.onRejectedExecution(ree,
+						subscription,
+						suppressed,
+						dataSignal,
 						actual.currentContext()));
 			}
 		}
@@ -895,6 +941,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
+			// TODO: long e = 0L;
 			long e = produced;
 
 			for (; ; ) {
@@ -907,14 +954,18 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						v = q.poll();
 					}
 					catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex,
-								actual.currentContext()));
+						doError(a,
+								Operators.onOperatorError(s,
+										ex,
+										actual.currentContext()));
 						return;
 					}
 
 					if (cancelled) {
 						Operators.onDiscard(v, actual.currentContext());
-						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(q,
+								actual.currentContext(),
+								null);
 						return;
 					}
 					if (v == null) {
@@ -976,7 +1027,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 						q.clear();
 
-						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
+						doError(a,
+								Operators.onOperatorError(ex, actual.currentContext()));
 						return;
 					}
 					boolean empty = v == null;
@@ -1076,16 +1128,33 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == Attr.ERROR) return error;
-			if (key == Attr.DELAY_ERROR) return delayError;
-			if (key == Attr.PREFETCH) return prefetch;
-			if (key == Attr.RUN_ON) return worker;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
+				return requested;
+			}
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			if (key == Attr.CANCELLED) {
+				return cancelled;
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.BUFFERED) {
+				return queue != null ? queue.size() : 0;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
+			if (key == Attr.DELAY_ERROR) {
+				return delayError;
+			}
+			if (key == Attr.RUN_ON) {
+				return worker;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.ASYNC;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -1104,16 +1173,22 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
+		boolean checkTerminated(boolean d,
+				boolean empty,
+				Subscriber<?> a,
+				@Nullable T v) {
 			if (cancelled) {
 				Operators.onDiscard(v, actual.currentContext());
 				if (sourceMode == ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
-				} else {
+				}
+				else {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
 				return true;
 			}
@@ -1137,10 +1212,13 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						if (sourceMode == ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 							queue.clear();
-						} else {
+						}
+						else {
 							// discard MUST be happening only and only if there is no racing on elements consumption
 							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(queue,
+									actual.currentContext(),
+									null);
 						}
 						doError(a, e);
 						return true;
@@ -1166,7 +1244,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			int missed = 1;
 
-			for (;;) {
+			for (; ; ) {
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 
 				int dg = discardGuard;
@@ -1206,7 +1284,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			if ((requestedMode & ASYNC) != 0) {
+			if (sourceMode != NONE && (requestedMode & ASYNC) != 0) {
 				outputFused = true;
 				return ASYNC;
 			}
