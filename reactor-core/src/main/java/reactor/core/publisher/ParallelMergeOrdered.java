@@ -36,17 +36,15 @@ final class ParallelMergeOrdered<T> extends Flux<T> implements Scannable {
 
 	final ParallelFlux<? extends T> source;
 	final int                       prefetch;
-	final Supplier<Queue<T>>        queueSupplier;
 	final Comparator<? super T>     valueComparator;
 
 	ParallelMergeOrdered(ParallelFlux<? extends T> source, int prefetch,
-			Supplier<Queue<T>> queueSupplier, Comparator<? super T> valueComparator) {
+			Comparator<? super T> valueComparator) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 		this.source = source;
 		this.prefetch = prefetch;
-		this.queueSupplier = queueSupplier;
 		this.valueComparator = valueComparator;
 	}
 
