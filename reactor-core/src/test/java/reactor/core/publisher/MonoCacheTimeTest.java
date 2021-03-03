@@ -21,9 +21,15 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -34,7 +40,6 @@ import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
-import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -900,4 +905,57 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
+	@Test
+    public void signalDependentWithSchedulerOperatorTests() {
+	    Duration valueTtl = Duration.ofMillis(1000);
+        Duration errorTtl = Duration.ofMillis(2000);
+        Duration emptyTtl = Duration.ofMillis(3000);
+
+        AtomicInteger subCount = new AtomicInteger();
+        Supplier<Mono<Integer>> valueMonoSupplier = () -> Mono.just(subCount.incrementAndGet());
+        Supplier<Mono<Integer>> errorMonoSupplier = () -> Mono.error(new RuntimeException("Boom #" + subCount.incrementAndGet()));
+        Supplier<Mono<Integer>> emptyMonoSupplier = () -> { subCount.incrementAndGet(); return Mono.empty(); };
+
+        VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+        Function<Supplier<Mono<Integer>>, Mono<Integer>> monoFunction = monoSupplier -> Mono.defer(monoSupplier)
+                .cache(value -> valueTtl, error -> errorTtl, () -> emptyTtl, vts);
+
+        assertCacheTtl(monoFunction.apply(valueMonoSupplier), valueTtl, subCount, vts);
+        assertCacheTtl(monoFunction.apply(errorMonoSupplier), errorTtl, subCount, vts);
+        assertCacheTtl(monoFunction.apply(emptyMonoSupplier), emptyTtl, subCount, vts);
+    }
+
+    private void assertCacheTtl(Mono<Integer> mono, Duration ttl, AtomicInteger subCount, VirtualTimeScheduler vts) {
+	    subCount.set(0);
+
+        mono.subscribe();
+        vts.advanceTimeBy(ttl.minusNanos(1));
+        mono.subscribe();
+        assertThat(subCount.get()).isEqualTo(1);
+
+        vts.advanceTimeBy(Duration.ofNanos(1));
+        mono.subscribe();
+        assertThat(subCount.get()).isEqualTo(2);
+    }
+
+    @ParameterizedTest
+    @MethodSource("nullInvocations")
+    public void nullArgumentsToCacheOperatorsAreImmediatelyRejected(ThrowableAssert.ThrowingCallable nullInvocation) {
+        assertThatExceptionOfType(NullPointerException.class).isThrownBy(nullInvocation);
+    }
+
+    private static Stream<ThrowableAssert.ThrowingCallable> nullInvocations() {
+	    return Stream.of(
+                () -> Mono.empty().cache(null),
+                () -> Mono.empty().cache(null, Schedulers.parallel()),
+                () -> Mono.empty().cache(Duration.ZERO, null),
+                () -> Mono.empty().cache(null, e -> Duration.ZERO, () -> Duration.ZERO),
+                () -> Mono.empty().cache(v -> Duration.ZERO, null, () -> Duration.ZERO),
+                () -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, null),
+                () -> Mono.empty().cache(null, e -> Duration.ZERO, () -> Duration.ZERO, Schedulers.parallel()),
+                () -> Mono.empty().cache(v -> Duration.ZERO, null, () -> Duration.ZERO, Schedulers.parallel()),
+                () -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, null, Schedulers.parallel()),
+                () -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, () -> Duration.ZERO, null)
+        );
+    }
 }

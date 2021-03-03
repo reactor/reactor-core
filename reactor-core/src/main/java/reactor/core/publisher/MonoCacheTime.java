@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -57,6 +58,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 
 	MonoCacheTime(Mono<? extends T> source, Duration ttl, Scheduler clock) {
 		super(source);
+        Objects.requireNonNull(ttl, "ttl must not be null");
+        Objects.requireNonNull(clock, "clock must not be null");
+
 		this.ttlGenerator = ignoredSignal -> ttl;
 		this.clock = clock;
 		@SuppressWarnings("unchecked")
@@ -84,6 +88,11 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 			Supplier<Duration> emptyTtlGenerator,
 			Scheduler clock) {
 		super(source);
+		Objects.requireNonNull(valueTtlGenerator, "valueTtlGenerator must not be null");
+        Objects.requireNonNull(errorTtlGenerator, "errorTtlGenerator must not be null");
+        Objects.requireNonNull(emptyTtlGenerator, "emptyTtlGenerator must not be null");
+        Objects.requireNonNull(clock, "clock must not be null");
+
 		this.ttlGenerator = sig -> {
 			if (sig.isOnNext()) return valueTtlGenerator.apply(sig.get());
 			if (sig.isOnError()) return errorTtlGenerator.apply(sig.getThrowable());
