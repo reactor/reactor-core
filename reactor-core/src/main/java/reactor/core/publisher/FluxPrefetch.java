@@ -101,7 +101,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		static final AtomicLongFieldUpdater<PrefetchSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PrefetchSubscriber.class, "requested");
 
-		private int fusionMode;
+		private int fusionMode = -1;
 
 		private boolean outputFused;
 
@@ -131,34 +131,67 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				if (s instanceof QueueSubscription) {
-					@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
-							(QueueSubscription<T>) s;
+				WIP.lazySet(this, 1);
 
-					int mode = fusion.requestFusion(Fuseable.ANY);
-					if (mode == Fuseable.SYNC) {
-						fusionMode = Fuseable.SYNC;
-						queue = fusion;
-						done = true;
-						actual.onSubscribe(this);
-						return;
-					}
-					if (mode == Fuseable.ASYNC) {
-						fusionMode = Fuseable.ASYNC;
-						queue = fusion;
-						actual.onSubscribe(this);
-						if (requestMode == RequestMode.EAGER) {
-							s.request(Operators.unboundedOrPrefetch(prefetch));
-						}
-						return;
-					}
+				actual.onSubscribe(this);
+
+				if (cancelled) {
+					terminate();
+					return;
 				}
-			}
 
-			queue = queueSupplier.get();
-			actual.onSubscribe(this);
-			if (requestMode == RequestMode.EAGER) {
-				s.request(Operators.unboundedOrPrefetch(prefetch));
+				// fusionMode == -1 if downstream was not calling requestFusion
+				if (fusionMode == -1) {
+					if (s instanceof QueueSubscription) {
+						@SuppressWarnings("unchecked") QueueSubscription<T> fusion = (QueueSubscription<T>) s;
+
+						int mode = fusion.requestFusion(Fuseable.ANY);
+						if (mode == Fuseable.SYNC) {
+							fusionMode = Fuseable.SYNC;
+							queue = fusion;
+							done = true;
+
+							if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+								return;
+							}
+
+							drainSync();
+
+							return;
+						}
+						if (mode == Fuseable.ASYNC) {
+							fusionMode = Fuseable.ASYNC;
+							queue = fusion;
+							if (requestMode == RequestMode.EAGER) {
+								s.request(Operators.unboundedOrPrefetch(prefetch));
+							}
+
+							if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+								return;
+							}
+
+							firstRequest = false;
+							s.request(Operators.unboundedOrPrefetch(prefetch));
+							drainAsync();
+
+							return;
+						}
+					}
+
+					queue = queueSupplier.get();
+					if (requestMode == RequestMode.EAGER) {
+						s.request(Operators.unboundedOrPrefetch(prefetch));
+					}
+
+					if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+						return;
+					}
+
+					firstRequest = false;
+					s.request(Operators.unboundedOrPrefetch(prefetch));
+
+					drainAsync();
+				}
 			}
 		}
 
@@ -471,15 +504,37 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			if ((requestedMode & fusionMode) != 0) {
-				outputFused = true;
-				return fusionMode;
+			if (s instanceof QueueSubscription) {
+				@SuppressWarnings("unchecked") QueueSubscription<T> fusion = (QueueSubscription<T>) s;
+				int mode = fusion.requestFusion(requestedMode);
+
+				if (mode == Fuseable.SYNC) {
+					fusionMode = Fuseable.SYNC;
+					queue = fusion;
+					done = true;
+				}
+				else if (mode == Fuseable.ASYNC) {
+					fusionMode = Fuseable.ASYNC;
+					queue = fusion;
+					if (requestMode == RequestMode.EAGER) {
+						s.request(Operators.unboundedOrPrefetch(prefetch));
+					}
+				}
+
+				WIP.lazySet(this, 0);
+
+				return mode;
 			}
-			else if ((requestedMode & ASYNC) != 0) {
-				outputFused = true;
-				return ASYNC;
+			else {
+				fusionMode = Fuseable.NONE;
+
+				if ((requestedMode & ASYNC) != 0) {
+					outputFused = true;
+					return ASYNC;
+				}
+
+				return NONE;
 			}
-			return NONE;
 		}
 
 		@Override
