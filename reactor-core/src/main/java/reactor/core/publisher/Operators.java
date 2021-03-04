@@ -2651,7 +2651,7 @@ public abstract class Operators {
 				if (STATE.compareAndSet(this, s, s | HAS_COMPLETED)) {
 					if ((s & HAS_VALUE) == HAS_VALUE && (s & HAS_REQUEST) == HAS_REQUEST) {
 						O v = this.value;
-						this.value = null;
+						this.value = null; // aggressively null value to prevent strong ref after complete
 						actual.onNext(v);
 						actual.onComplete();
 						return;
@@ -2668,7 +2668,8 @@ public abstract class Operators {
 		}
 
 		/**
-		 * Discard the given value, generally this.value field. Lets derived subscriber with further knowledge about
+		 * Discard the given value, if the value to discard is not the one held by this instance
+		 * (see {@link #discardTheValue()} for that purpose. Lets derived subscriber with further knowledge about
 		 * the possible types of the value discard such values in a specific way. Note that fields should generally be
 		 * nulled out along the discard call.
 		 *
@@ -2680,7 +2681,7 @@ public abstract class Operators {
 
 		protected final void discardTheValue() {
 			discard(this.value);
-			this.value = null;
+			this.value = null; // aggressively null value to prevent strong ref after complete
 		}
 
 		@Override

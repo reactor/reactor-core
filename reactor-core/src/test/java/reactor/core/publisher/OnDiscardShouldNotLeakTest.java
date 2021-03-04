@@ -46,7 +46,7 @@ import reactor.util.concurrent.Queues;
 // test count did not regress.
 public class OnDiscardShouldNotLeakTest {
 
-	private static final int NB_ITERATIONS = 10_000;
+	private static final int NB_ITERATIONS = 100;
 	// add DiscardScenarios here to test more operators
 	private static final DiscardScenario[] SCENARIOS = new DiscardScenario[] {
 			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
