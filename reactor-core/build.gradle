@@ -15,10 +15,22 @@
  */
 import me.champeau.gradle.japicmp.JapicmpTask
 
+buildscript {
+	repositories {
+		jcenter()
+	}
+
+	dependencies {
+		// when updating this plugin, revisit pinning the version of the jcstress jar near line 356
+		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.6'
+	}
+}
+
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'kotlin'
+apply plugin: 'jcstress'
 
 ext {
 	bndOptions = [
@@ -106,6 +118,11 @@ dependencies {
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
 	withMicrometerTestImplementation "io.micrometer:micrometer-core:$micrometerVersion"
 	withMicrometerTestImplementation sourceSets.test.output
+
+	jcstressImplementation(project(":reactor-test")) {
+		exclude module: 'reactor-core'
+	}
+	jcstressImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 
 }
 
@@ -236,6 +253,12 @@ jar {
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 check.dependsOn japicmp
+
+jcstress {
+	mode = 'quick' //quick, default, tough
+	jcstressDependency = "org.openjdk.jcstress:jcstress-core:0.7"
+}
+tasks.check.dependsOn(tasks.jcstress)
 
 if (JavaVersion.current().java9Compatible) {
 	// SharedSecretsCallSiteSupplierFactory is a Java 8 specific optimization.
