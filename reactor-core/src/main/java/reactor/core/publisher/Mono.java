@@ -1837,7 +1837,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Turn this {@link Mono} into a hot source and cache last emitted signal for further
 	 * {@link Subscriber}, with an expiry timeout (TTL) that depends on said signal.
-	 * An TTL of {@link Long#MAX_VALUE} milliseconds is interpreted as indefinite caching of
+	 * A TTL of {@link Long#MAX_VALUE} milliseconds is interpreted as indefinite caching of
 	 * the signal (no cache cleanup is scheduled, so the signal is retained as long as this
 	 * {@link Mono} is not garbage collected).
 	 * <p>
@@ -1862,11 +1862,41 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> cache(Function<? super T, Duration> ttlForValue,
 			Function<Throwable, Duration> ttlForError,
 			Supplier<Duration> ttlForEmpty) {
-		return onAssembly(new MonoCacheTime<>(this,
-				ttlForValue, ttlForError, ttlForEmpty,
-				Schedulers.parallel()));
+		return cache(ttlForValue, ttlForError, ttlForEmpty, Schedulers.parallel());
 	}
 
+	/**
+	 * Turn this {@link Mono} into a hot source and cache last emitted signal for further
+	 * {@link Subscriber}, with an expiry timeout (TTL) that depends on said signal.
+	 * A TTL of {@link Long#MAX_VALUE} milliseconds is interpreted as indefinite caching of
+	 * the signal (no cache cleanup is scheduled, so the signal is retained as long as this
+	 * {@link Mono} is not garbage collected).
+	 * <p>
+	 * Empty completion and Error will also be replayed according to their respective TTL,
+	 * so transient errors can be "retried" by letting the {@link Function} return
+	 * {@link Duration#ZERO}. Such a transient exception would then be propagated to the first
+	 * subscriber but the following subscribers would trigger a new source subscription.
+	 * <p>
+	 * Exceptions in the TTL generators themselves are processed like the {@link Duration#ZERO}
+	 * case, except the original signal is {@link Exceptions#addSuppressed(Throwable, Throwable)  suppressed}
+	 * (in case of onError) or {@link Hooks#onNextDropped(Consumer) dropped}
+	 * (in case of onNext).
+	 * <p>
+	 * Note that subscribers that come in perfectly simultaneously could receive the same
+	 * cached signal even if the TTL is set to zero.
+	 *
+	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
+	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
+	 * @param ttlForEmpty the TTL-generating {@link Supplier} invoked when source is empty
+	 * @param timer the {@link Scheduler} on which to measure the duration.
+	 * @return a replaying {@link Mono}
+	 */
+	public final Mono<T> cache(Function<? super T, Duration> ttlForValue,
+			Function<Throwable, Duration> ttlForError,
+			Supplier<Duration> ttlForEmpty,
+			Scheduler timer) {
+		return onAssembly(new MonoCacheTime<>(this, ttlForValue, ttlForError, ttlForEmpty, timer));
+	}
 	/**
 	 * Prepare this {@link Mono} so that subscribers will cancel from it on a
 	 * specified
