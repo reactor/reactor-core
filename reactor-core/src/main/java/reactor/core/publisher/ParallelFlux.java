@@ -770,7 +770,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @see ParallelFlux#ordered(Comparator)
 	 */
 	public final Flux<T> ordered(Comparator<? super T> comparator, int prefetch) {
-		return new ParallelMergeOrdered<>(this, prefetch, Queues.get(prefetch), comparator);
+		return new ParallelMergeOrdered<>(this, prefetch, comparator);
 	}
 
 	/**

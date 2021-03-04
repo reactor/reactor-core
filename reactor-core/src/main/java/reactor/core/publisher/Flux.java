@@ -1580,7 +1580,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new FluxMergeOrdered<>(prefetch, Queues.get(prefetch), comparator, sources));
+		return onAssembly(new FluxMergeOrdered<>(prefetch, comparator, sources));
 	}
 
 	/**
