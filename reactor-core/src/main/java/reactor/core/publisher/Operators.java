@@ -483,14 +483,14 @@ public abstract class Operators {
 				if (extract != null) {
 					try {
 						extract.apply(toDiscard)
-								.forEach(elementToDiscard -> {
-									try {
-										hook.accept(elementToDiscard);
-									}
-									catch (Throwable t) {
-										log.warn("Error while discarding item extracted from a queue element, continuing with next item", t);
-									}
-								});
+						       .forEach(elementToDiscard -> {
+							       try {
+								       hook.accept(elementToDiscard);
+							       }
+							       catch (Throwable t) {
+								       log.warn("Error while discarding item extracted from a queue element, continuing with next item", t);
+							       }
+						       });
 					}
 					catch (Throwable t) {
 						log.warn("Error while extracting items to discard from queue element, continuing with next queue element", t);
@@ -511,31 +511,31 @@ public abstract class Operators {
 		}
 	}
 
-	/**
-	 * Invoke a (local or global) hook that processes elements that get discarded en masse.
-	 * This includes elements that are buffered but subsequently discarded due to
-	 * cancellation or error.
-	 *
-	 * @param multiple the collection of elements to discard (possibly extracted from other
-	 * collections/arrays/queues)
-	 * @param context the {@link Context} in which to look for local hook
-	 * @see #onDiscard(Object, Context)
-	 * @see #onDiscardMultiple(Collection, Context)
-	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
-	 */
-	public static void onDiscardMultiple(Stream<?> multiple, Context context) {
+  /**
+   * Invoke a (local or global) hook that processes elements that get discarded en masse.
+   * This includes elements that are buffered but subsequently discarded due to
+   * cancellation or error.
+   *
+   * @param multiple the collection of elements to discard (possibly extracted from other
+   * collections/arrays/queues)
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Collection, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
+  public static void onDiscardMultiple(Stream<?> multiple, Context context) {
 		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.filter(Objects::nonNull)
-						.forEach(v -> {
-							try {
-								hook.accept(v);
-							}
-							catch (Throwable t) {
-								log.warn("Error while discarding a stream element, continuing with next element", t);
-							}
-						});
+				        .forEach(v -> {
+				        	try {
+				        		hook.accept(v);
+					        }
+				        	catch (Throwable t) {
+				        		log.warn("Error while discarding a stream element, continuing with next element", t);
+					        }
+				        });
 			}
 			catch (Throwable t) {
 				log.warn("Error while discarding stream, stopping", t);
@@ -543,17 +543,17 @@ public abstract class Operators {
 		}
 	}
 
-	/**
-	 * Invoke a (local or global) hook that processes elements that get discarded en masse.
-	 * This includes elements that are buffered but subsequently discarded due to
-	 * cancellation or error.
-	 *
-	 * @param multiple the collection of elements to discard
-	 * @param context the {@link Context} in which to look for local hook
-	 * @see #onDiscard(Object, Context)
-	 * @see #onDiscardMultiple(Stream, Context)
-	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
-	 */
+  /**
+   * Invoke a (local or global) hook that processes elements that get discarded en masse.
+   * This includes elements that are buffered but subsequently discarded due to
+   * cancellation or error.
+   *
+   * @param multiple the collection of elements to discard
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Stream, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
 		if (multiple == null) return;
 		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
@@ -579,19 +579,19 @@ public abstract class Operators {
 		}
 	}
 
-	/**
-	 * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Iterator}.
-	 * Since iterators can be infinite, this method requires that you explicitly ensure the iterator is
-	 * {@code knownToBeFinite}. Typically, operating on an {@link Iterable} one can get such a
-	 * guarantee by looking at the {@link Iterable#spliterator() Spliterator's} {@link Spliterator#getExactSizeIfKnown()}.
-	 *
-	 * @param multiple the {@link Iterator} whose remainder to discard
-	 * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
-	 * @param context the {@link Context} in which to look for local hook
-	 * @see #onDiscard(Object, Context)
-	 * @see #onDiscardMultiple(Collection, Context)
-	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
-	 */
+  /**
+   * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Iterator}.
+   * Since iterators can be infinite, this method requires that you explicitly ensure the iterator is
+   * {@code knownToBeFinite}. Typically, operating on an {@link Iterable} one can get such a
+   * guarantee by looking at the {@link Iterable#spliterator() Spliterator's} {@link Spliterator#getExactSizeIfKnown()}.
+   *
+   * @param multiple the {@link Iterator} whose remainder to discard
+   * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Collection, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
 	public static void onDiscardMultiple(@Nullable Iterator<?> multiple, boolean knownToBeFinite, Context context) {
 		if (multiple == null) return;
 		if (!knownToBeFinite) return;
@@ -998,7 +998,7 @@ public abstract class Operators {
 	 * the amount produced by the operator. Any concurrent write will "happen before"
 	 * this operation.
 	 *
-	 * @param <T> the parent instance type
+     * @param <T> the parent instance type
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toSub    delta to subtract
@@ -1112,7 +1112,7 @@ public abstract class Operators {
 			T value, String stepName){
 		return new ScalarSubscription<>(subscriber, value, stepName);
 	}
-
+	
 	/**
 	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
 	 * sequentially (serialized).
@@ -1436,7 +1436,7 @@ public abstract class Operators {
 	}
 
 	static final class CorePublisherAdapter<T> implements CorePublisher<T>,
-			OptimizableOperator<T, T> {
+	                                                      OptimizableOperator<T, T> {
 
 		final Publisher<T> publisher;
 
@@ -1735,8 +1735,8 @@ public abstract class Operators {
 	 */
 	public static class MonoSubscriber<I, O>
 			implements InnerOperator<I, O>,
-			Fuseable, //for constants only
-			QueueSubscription<O> {
+			           Fuseable, //for constants only
+			           QueueSubscription<O> {
 
 		protected final CoreSubscriber<? super O> actual;
 
@@ -2130,74 +2130,74 @@ public abstract class Operators {
 
 		@Override
 		public final void request(long n) {
-			if (validate(n)) {
-				if (unbounded) {
-					return;
-				}
-				if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-					long r = requested;
+		    if (validate(n)) {
+	            if (unbounded) {
+	                return;
+	            }
+	            if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+	                long r = requested;
 
-					if (r != Long.MAX_VALUE) {
-						r = addCap(r, n);
-						requested = r;
-						if (r == Long.MAX_VALUE) {
-							unbounded = true;
-						}
-					}
-					Subscription a = subscription;
+	                if (r != Long.MAX_VALUE) {
+	                    r = addCap(r, n);
+	                    requested = r;
+	                    if (r == Long.MAX_VALUE) {
+	                        unbounded = true;
+	                    }
+	                }
+		            Subscription a = subscription;
 
-					if (WIP.decrementAndGet(this) != 0) {
-						drainLoop();
-					}
+	                if (WIP.decrementAndGet(this) != 0) {
+	                    drainLoop();
+	                }
 
-					if (a != null) {
-						a.request(n);
-					}
+	                if (a != null) {
+	                    a.request(n);
+	                }
 
-					return;
-				}
+	                return;
+	            }
 
-				addCap(MISSED_REQUESTED, this, n);
+	            addCap(MISSED_REQUESTED, this, n);
 
-				drain();
-			}
+	            drain();
+	        }
 		}
 
 		public final void set(Subscription s) {
-			if (cancelled) {
-				s.cancel();
-				return;
-			}
+		    if (cancelled) {
+	            s.cancel();
+	            return;
+	        }
 
-			Objects.requireNonNull(s);
+	        Objects.requireNonNull(s);
 
-			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				Subscription a = subscription;
+	        if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+		        Subscription a = subscription;
 
-				if (a != null && shouldCancelCurrent()) {
-					a.cancel();
-				}
+	            if (a != null && shouldCancelCurrent()) {
+	                a.cancel();
+	            }
 
-				subscription = s;
+		        subscription = s;
 
-				long r = requested;
+	            long r = requested;
 
-				if (WIP.decrementAndGet(this) != 0) {
-					drainLoop();
-				}
+	            if (WIP.decrementAndGet(this) != 0) {
+	                drainLoop();
+	            }
 
-				if (r != 0L) {
-					s.request(r);
-				}
+	            if (r != 0L) {
+	                s.request(r);
+	            }
 
-				return;
-			}
+	            return;
+	        }
 
-			Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
-			if (a != null && shouldCancelCurrent()) {
-				a.cancel();
-			}
-			drain();
+	        Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
+	        if (a != null && shouldCancelCurrent()) {
+	            a.cancel();
+	        }
+	        drain();
 		}
 
 		/**
@@ -2217,99 +2217,99 @@ public abstract class Operators {
 		}
 
 		final void drainLoop() {
-			int missed = 1;
+		    int missed = 1;
 
-			long requestAmount = 0L;
-			long alreadyInRequestAmount = 0L;
-			Subscription requestTarget = null;
+	        long requestAmount = 0L;
+	        long alreadyInRequestAmount = 0L;
+	        Subscription requestTarget = null;
 
-			for (; ; ) {
+	        for (; ; ) {
 
-				Subscription ms = missedSubscription;
+	            Subscription ms = missedSubscription;
 
-				if (ms != null) {
-					ms = MISSED_SUBSCRIPTION.getAndSet(this, null);
-				}
+	            if (ms != null) {
+	                ms = MISSED_SUBSCRIPTION.getAndSet(this, null);
+	            }
 
-				long mr = missedRequested;
-				if (mr != 0L) {
-					mr = MISSED_REQUESTED.getAndSet(this, 0L);
-				}
+	            long mr = missedRequested;
+	            if (mr != 0L) {
+	                mr = MISSED_REQUESTED.getAndSet(this, 0L);
+	            }
 
-				long mp = missedProduced;
-				if (mp != 0L) {
-					mp = MISSED_PRODUCED.getAndSet(this, 0L);
-				}
+	            long mp = missedProduced;
+	            if (mp != 0L) {
+	                mp = MISSED_PRODUCED.getAndSet(this, 0L);
+	            }
 
-				Subscription a = subscription;
+		        Subscription a = subscription;
 
-				if (cancelled) {
-					if (a != null) {
-						a.cancel();
-						subscription = null;
-					}
-					if (ms != null) {
-						ms.cancel();
-					}
-				} else {
-					long r = requested;
-					if (r != Long.MAX_VALUE) {
-						long u = addCap(r, mr);
+	            if (cancelled) {
+	                if (a != null) {
+	                    a.cancel();
+		                subscription = null;
+	                }
+	                if (ms != null) {
+	                    ms.cancel();
+	                }
+	            } else {
+	                long r = requested;
+	                if (r != Long.MAX_VALUE) {
+	                    long u = addCap(r, mr);
 
-						if (u != Long.MAX_VALUE) {
-							long v = u - mp;
-							if (v < 0L) {
-								reportMoreProduced();
-								v = 0;
-							}
-							r = v;
-						} else {
-							r = u;
-						}
-						requested = r;
-					}
+	                    if (u != Long.MAX_VALUE) {
+	                        long v = u - mp;
+	                        if (v < 0L) {
+	                            reportMoreProduced();
+	                            v = 0;
+	                        }
+	                        r = v;
+	                    } else {
+	                        r = u;
+	                    }
+	                    requested = r;
+	                }
 
-					if (ms != null) {
-						if (a != null && shouldCancelCurrent()) {
-							a.cancel();
-						}
-						subscription = ms;
-						if (r != 0L) {
-							requestAmount = addCap(requestAmount, r - alreadyInRequestAmount);
-							requestTarget = ms;
-						}
-					} else if (mr != 0L && a != null) {
-						requestAmount = addCap(requestAmount, mr);
-						alreadyInRequestAmount += mr;
-						requestTarget = a;
-					}
-				}
+	                if (ms != null) {
+	                    if (a != null && shouldCancelCurrent()) {
+	                        a.cancel();
+	                    }
+		                subscription = ms;
+		                if (r != 0L) {
+			                requestAmount = addCap(requestAmount, r - alreadyInRequestAmount);
+	                        requestTarget = ms;
+	                    }
+	                } else if (mr != 0L && a != null) {
+	                    requestAmount = addCap(requestAmount, mr);
+	                    alreadyInRequestAmount += mr; 
+	                    requestTarget = a;
+	                }
+	            }
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
-					if (requestAmount != 0L) {
-						requestTarget.request(requestAmount);
-					}
-					return;
-				}
-			}
+	            missed = WIP.addAndGet(this, -missed);
+	            if (missed == 0) {
+	                if (requestAmount != 0L) {
+	                    requestTarget.request(requestAmount);
+	                }
+	                return;
+	            }
+	        }
 		}
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, Subscription>
 				MISSED_SUBSCRIPTION =
-				AtomicReferenceFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class,
-						Subscription.class,
-						"missedSubscription");
+		  AtomicReferenceFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class,
+			Subscription.class,
+			"missedSubscription");
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<MultiSubscriptionSubscriber>
 				MISSED_REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "missedRequested");
+		  AtomicLongFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "missedRequested");
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<MultiSubscriptionSubscriber> MISSED_PRODUCED =
-				AtomicLongFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "missedProduced");
+		  AtomicLongFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "missedProduced");
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MultiSubscriptionSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "wip");
+		  AtomicIntegerFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "wip");
 	}
 
 	/**
@@ -2771,7 +2771,6 @@ public abstract class Operators {
 		private static final int CANCELLED =      0b10000000;
 
 	}
-
 
 
 	final static Logger log = Loggers.getLogger(Operators.class);
