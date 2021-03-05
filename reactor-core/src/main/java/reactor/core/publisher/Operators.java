@@ -2598,28 +2598,28 @@ public abstract class Operators {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelled();
-			if (key == Attr.TERMINATED) return (state & HAS_COMPLETED) == HAS_COMPLETED ;
+			if (key == Attr.TERMINATED) return hasCompleted(state);
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		/**
-		 * Tries to emit the value and complete the underlying subscriber or
+		 * Tries to emit the provided value and complete the underlying subscriber or
 		 * stores the value away until there is a request for it.
 		 * <p>
-		 * Make sure this method is called at most once
+		 * Make sure this method is called at most once. Can't be used in addition to {@link #complete()}.
 		 * @param v the value to emit
 		 */
 		public final void complete(O v) {
 			doOnComplete(v);
-			while(true) {
+			for (; ; ) {
 				int s = this.state;
-				if (s == CANCELLED) {
+				if (isCancelled(s)) {
 					discard(v);
 					return;
 				}
 
-				if ((s & HAS_REQUEST) == HAS_REQUEST && STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
+				if (hasRequest(s) && STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
 					discardTheValue();
 					actual.onNext(v);
 					actual.onComplete();
@@ -2627,44 +2627,58 @@ public abstract class Operators {
 				}
 
 				this.value = v;
-				if ( /*((state & HAS_REQUEST) == 0) && */ STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
+				if ( /*!hasRequest(s) && */ STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
 					return;
 				}
 			}
 		}
 
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #complete(Object)} is called. Default
+		 * implementation is a no-op.
+		 * @param v the value passed to {@code onComplete(Object)}
+		 */
 		protected void doOnComplete(O v) {
 
 		}
 
-		protected void doOnComplete() {
-
-		}
-
+		/**
+		 * Tries to emit the {@link #value} stored if any, and complete the underlying subscriber.
+		 * <p>
+		 * Make sure this method is called at most once. Can't be used in addition to {@link #complete(Object)}.
+		 */
 		public final void complete() {
 			doOnComplete();
-			while(true) {
+			for (; ; ) {
 				int s = this.state;
-				if (s == CANCELLED) {
+				if (isCancelled(s)) {
 					return;
 				}
 				if (STATE.compareAndSet(this, s, s | HAS_COMPLETED)) {
-					if ((s & HAS_VALUE) == HAS_VALUE && (s & HAS_REQUEST) == HAS_REQUEST) {
+					if (hasValue(s) && hasRequest(s)) {
 						O v = this.value;
 						this.value = null; // aggressively null value to prevent strong ref after complete
 						actual.onNext(v);
 						actual.onComplete();
 						return;
 					}
-					if ((s & HAS_VALUE) == 0) {
+					if (!hasValue(s)) {
 						actual.onComplete();
 						return;
 					}
-					if ((s & HAS_REQUEST) == 0) {
+					if (!hasRequest(s)) {
 						return;
 					}
 				}
 			}
+		}
+
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #complete()} is called. Default
+		 * implementation is a no-op.
+		 */
+		protected void doOnComplete() {
+
 		}
 
 		/**
@@ -2702,16 +2716,16 @@ public abstract class Operators {
 		public void request(long n) {
 			if (validate(n)) {
 				doOnRequest(n);
-				while (true) {
+				for (; ; ) {
 					int s = state;
-					if (s == CANCELLED) {
+					if (isCancelled(s)) {
 						return;
 					}
-					if ((s & HAS_REQUEST) == HAS_REQUEST) {
+					if (hasRequest(s)) {
 						return;
 					}
 					if (STATE.compareAndSet(this, s, s | HAS_REQUEST)) {
-						if ((s & HAS_VALUE) == HAS_VALUE && (s & HAS_COMPLETED) == HAS_COMPLETED) {
+						if (hasValue(s) && hasCompleted(s)) {
 							O v = this.value;
 							this.value = null; // aggressively null value to prevent strong ref after complete
 							actual.onNext(v);
@@ -2724,6 +2738,11 @@ public abstract class Operators {
 			}
 		}
 
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #request(long)} is called. Default
+		 * implementation is a no-op.
+		 * @param n the value passed to {@code request(long)}
+		 */
 		protected void doOnRequest(long n) {
 
 		}
@@ -2737,13 +2756,13 @@ public abstract class Operators {
 		 */
 		protected final void setValue(@Nullable O value) {
 			this.value = value;
-			while(true) {
+			for (; ; ) {
 				int s = this.state;
-				if (s == CANCELLED) {
+				if (isCancelled(s)) {
 					discardTheValue();
 					return;
 				}
-				if (STATE.compareAndSet(this, s, s|HAS_VALUE)) {
+				if (STATE.compareAndSet(this, s, s | HAS_VALUE)) {
 					return;
 				}
 			}
@@ -2753,13 +2772,17 @@ public abstract class Operators {
 		public final void cancel() {
 			doOnCancel();
 			int previous = STATE.getAndSet(this, CANCELLED);
-			if ((previous & HAS_VALUE) == HAS_VALUE // Had a value...
+			if (hasValue(previous) // Had a value...
 					&& (previous & (HAS_COMPLETED|HAS_REQUEST)) != (HAS_COMPLETED|HAS_REQUEST) // ... but did not use it
 			) {
 				discardTheValue();
 			}
 		}
 
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #cancel()} is called. Default
+		 * implementation is a no-op.
+		 */
 		protected void doOnCancel() {
 
 		}
@@ -2770,6 +2793,22 @@ public abstract class Operators {
 		private static final int HAS_COMPLETED =  0b00000100;
 		// The following are to be used as value (ie using == or !=).
 		private static final int CANCELLED =      0b10000000;
+
+		private static boolean isCancelled(int s) {
+			return s == CANCELLED;
+		}
+
+		private static boolean hasRequest(int s) {
+			return (s & HAS_REQUEST) == HAS_REQUEST;
+		}
+
+		private static boolean hasValue(int s) {
+			return (s & HAS_VALUE) == HAS_VALUE;
+		}
+
+		private static boolean hasCompleted(int s) {
+			return (s & HAS_COMPLETED) == HAS_COMPLETED;
+		}
 
 	}
 
