@@ -2583,7 +2583,7 @@ public abstract class Operators {
 		 * The value stored by this Mono operator.
 		 */
 		@Nullable
-		private volatile O   value;
+		private O value;
 
 		private volatile  int state; //see STATE field updater
 		@SuppressWarnings("rawtypes")
