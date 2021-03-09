@@ -2578,6 +2578,244 @@ public abstract class Operators {
 		}
 	}
 
+	/*package*/ static class MonoInnerProducerBase<O>
+			implements InnerProducer<O> {
+
+		private final CoreSubscriber<? super O> actual;
+
+		/**
+		 * The value stored by this Mono operator.
+		 */
+		@Nullable
+		private O value;
+
+		private volatile  int state; //see STATE field updater
+		@SuppressWarnings("rawtypes")
+		private static final AtomicIntegerFieldUpdater<MonoInnerProducerBase> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(MonoInnerProducerBase.class, "state");
+
+		public MonoInnerProducerBase(CoreSubscriber<? super O> actual) {
+			this.actual = actual;
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.CANCELLED) return isCancelled();
+			if (key == Attr.TERMINATED) return hasCompleted(state);
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			return InnerProducer.super.scanUnsafe(key);
+		}
+
+		/**
+		 * Tries to emit the provided value and complete the underlying subscriber or
+		 * stores the value away until there is a request for it.
+		 * <p>
+		 * Make sure this method is called at most once. Can't be used in addition to {@link #complete()}.
+		 * @param v the value to emit
+		 */
+		public final void complete(O v) {
+			doOnComplete(v);
+			for (; ; ) {
+				int s = this.state;
+				if (isCancelled(s)) {
+					discard(v);
+					return;
+				}
+
+				if (hasRequest(s) && STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
+					discardTheValue();
+					actual.onNext(v);
+					actual.onComplete();
+					return;
+				}
+
+				this.value = v;
+				if ( /*!hasRequest(s) && */ STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
+					return;
+				}
+			}
+		}
+
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #complete(Object)} is called. Default
+		 * implementation is a no-op.
+		 * @param v the value passed to {@code onComplete(Object)}
+		 */
+		protected void doOnComplete(O v) {
+
+		}
+
+		/**
+		 * Tries to emit the {@link #value} stored if any, and complete the underlying subscriber.
+		 * <p>
+		 * Make sure this method is called at most once. Can't be used in addition to {@link #complete(Object)}.
+		 */
+		public final void complete() {
+			doOnComplete();
+			for (; ; ) {
+				int s = this.state;
+				if (isCancelled(s)) {
+					return;
+				}
+				if (STATE.compareAndSet(this, s, s | HAS_COMPLETED)) {
+					if (hasValue(s) && hasRequest(s)) {
+						O v = this.value;
+						this.value = null; // aggressively null value to prevent strong ref after complete
+						actual.onNext(v);
+						actual.onComplete();
+						return;
+					}
+					if (!hasValue(s)) {
+						actual.onComplete();
+						return;
+					}
+					if (!hasRequest(s)) {
+						return;
+					}
+				}
+			}
+		}
+
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #complete()} is called. Default
+		 * implementation is a no-op.
+		 */
+		protected void doOnComplete() {
+
+		}
+
+		/**
+		 * Discard the given value, if the value to discard is not the one held by this instance
+		 * (see {@link #discardTheValue()} for that purpose. Lets derived subscriber with further knowledge about
+		 * the possible types of the value discard such values in a specific way. Note that fields should generally be
+		 * nulled out along the discard call.
+		 *
+		 * @param v the value to discard
+		 */
+		protected final void discard(@Nullable O v) {
+			Operators.onDiscard(v, actual.currentContext());
+		}
+
+		protected final void discardTheValue() {
+			discard(this.value);
+			this.value = null; // aggressively null value to prevent strong ref after complete
+		}
+
+		@Override
+		public final CoreSubscriber<? super O> actual() {
+			return actual;
+		}
+
+		/**
+		 * Returns true if this Subscription has been cancelled.
+		 * @return true if this Subscription has been cancelled
+		 */
+		public final boolean isCancelled() {
+			return state == CANCELLED;
+		}
+
+
+		@Override
+		public void request(long n) {
+			if (validate(n)) {
+				doOnRequest(n);
+				for (; ; ) {
+					int s = state;
+					if (isCancelled(s)) {
+						return;
+					}
+					if (hasRequest(s)) {
+						return;
+					}
+					if (STATE.compareAndSet(this, s, s | HAS_REQUEST)) {
+						if (hasValue(s) && hasCompleted(s)) {
+							O v = this.value;
+							this.value = null; // aggressively null value to prevent strong ref after complete
+							actual.onNext(v);
+							actual.onComplete();
+							return;
+						}
+
+					}
+				}
+			}
+		}
+
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #request(long)} is called. Default
+		 * implementation is a no-op.
+		 * @param n the value passed to {@code request(long)}
+		 */
+		protected void doOnRequest(long n) {
+
+		}
+
+		/**
+		 * Set the value internally, without impacting request tracking state.
+		 * This however discards the provided value when detecting a cancellation.
+		 *
+		 * @param value the new value.
+		 * @see #complete(Object)
+		 */
+		protected final void setValue(@Nullable O value) {
+			this.value = value;
+			for (; ; ) {
+				int s = this.state;
+				if (isCancelled(s)) {
+					discardTheValue();
+					return;
+				}
+				if (STATE.compareAndSet(this, s, s | HAS_VALUE)) {
+					return;
+				}
+			}
+		}
+
+		@Override
+		public final void cancel() {
+			doOnCancel();
+			int previous = STATE.getAndSet(this, CANCELLED);
+			if (hasValue(previous) // Had a value...
+					&& (previous & (HAS_COMPLETED|HAS_REQUEST)) != (HAS_COMPLETED|HAS_REQUEST) // ... but did not use it
+			) {
+				discardTheValue();
+			}
+		}
+
+		/**
+		 * Hook for subclasses, called as the first operation when {@link #cancel()} is called. Default
+		 * implementation is a no-op.
+		 */
+		protected void doOnCancel() {
+
+		}
+
+		// The following are to be used as bit masks, not as values per se.
+		private static final int HAS_VALUE =      0b00000001;
+		private static final int HAS_REQUEST =    0b00000010;
+		private static final int HAS_COMPLETED =  0b00000100;
+		// The following are to be used as value (ie using == or !=).
+		private static final int CANCELLED =      0b10000000;
+
+		private static boolean isCancelled(int s) {
+			return s == CANCELLED;
+		}
+
+		private static boolean hasRequest(int s) {
+			return (s & HAS_REQUEST) == HAS_REQUEST;
+		}
+
+		private static boolean hasValue(int s) {
+			return (s & HAS_VALUE) == HAS_VALUE;
+		}
+
+		private static boolean hasCompleted(int s) {
+			return (s & HAS_COMPLETED) == HAS_COMPLETED;
+		}
+
+	}
+
 
 	final static Logger log = Loggers.getLogger(Operators.class);
 }
