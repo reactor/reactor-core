@@ -75,7 +75,7 @@ I want to deal with:
 
 * I want to add pre-set elements to an existing sequence:
 ** at the start: `Flux#startWith(T...)`
-** at the end: `Flux#concatWith(T...)`
+** at the end: `Flux#concatWithValues(T...)`
 
 * I want to aggregate a `Flux`: (the `Flux#` prefix is assumed below)
 ** into a List: `collectList`, `collectSortedList`
@@ -321,7 +321,7 @@ within a `Scheduler` marked as "non-blocking only" (by default `parallel()` and 
 ** and trigger the source immediately (late subscribers see later data): `share()`
 ** and permanently connect the source when enough subscribers have registered: `.publish().autoConnect(n)`
 ** and automatically connect and cancel the source when subscribers go above/below the threshold: `.publish().refCount(n)`
-*** ...but giving a chance for new subscribers to come in before cancelling: `.publish().refCountGrace(n, Duration)`
+*** ...but giving a chance for new subscribers to come in before cancelling: `.publish().refCount(n, Duration)`
 
 * I want to cache data from a `Publisher` and replay it to later subscribers:
 ** up to `n` elements: `cache(int)`
