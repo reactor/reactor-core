@@ -6086,6 +6086,34 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Transform the items emitted by this {@link Flux} by applying a synchronous function
+	 * to each item, which may produce {@code null} values. In that case, no value is emitted.
+	 * This operator effectively behaves like {@link #map(Function)} followed by {@link #filter(Predicate)}
+	 * although {@code null} is not a supported value, so it can't be filtered out.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mapNotNullForFlux.svg" alt="">
+	 *
+	 * @param mapper the synchronous transforming {@link Function}
+	 * @param <V> the transformed type
+	 *
+	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the mapper then cause the
+	 * source value to be dropped and a new element ({@code request(1)}) being requested
+	 * from upstream.
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final <V> Flux<V> mapNotNull(Function <? super T, ? extends V> mapper) {
+		return this.handle((t, sink) -> {
+			V v = mapper.apply(t);
+			if (v != null) {
+				sink.next(v);
+			}
+		});
+	}
+
+	/**
 	 * Transform incoming onNext, onError and onComplete signals into {@link Signal} instances,
 	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be

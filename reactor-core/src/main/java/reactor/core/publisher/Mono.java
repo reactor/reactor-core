@@ -3169,6 +3169,29 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Transform the item emitted by this {@link Mono} by applying a synchronous function to it, which is allowed
+	 * to produce a {@code null} value. In that case, the resulting Mono completes immediately.
+	 * This operator effectively behaves like {@link #map(Function)} followed by {@link #filter(Predicate)}
+	 * although {@code null} is not a supported value, so it can't be filtered out.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mapNotNullForMono.svg" alt="">
+	 *
+	 * @param mapper the synchronous transforming {@link Function}
+	 * @param <R> the transformed type
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final <R> Mono<R> mapNotNull(Function <? super T, ? extends R> mapper) {
+		return this.handle((t, sink) -> {
+			R r = mapper.apply(t);
+			if (r != null) {
+				sink.next(r);
+			}
+		});
+	}
+
+	/**
 	 * Transform incoming onNext, onError and onComplete signals into {@link Signal} instances,
 	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
