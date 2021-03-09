@@ -78,8 +78,7 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", f -> f
 					.subscribeWith(UnicastProcessor.create())
 					.publishOn(Schedulers.immediate())),
-			//FIXME known issue in 3.3.14.RELEASE and 3.4.3
-//			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
+			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
