@@ -15,10 +15,13 @@
  */
 package reactor.core.publisher;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -43,6 +46,8 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 			AtomicReferenceFieldUpdater.newUpdater(StressSubscriber.class, Subscription.class, "subscription");
 
 	public Throwable error;
+
+	public List<Throwable> droppedErrors = new CopyOnWriteArrayList<>();
 
 	public AtomicReference<Operation> guard = new AtomicReference<>(null);
 
@@ -80,7 +85,11 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 	 */
 	public StressSubscriber(long initRequest) {
 		this.initRequest = initRequest;
-		this.context = Operators.enableOnDiscard(null, (__) -> onNextDiscarded.incrementAndGet());
+		this.context = Operators.enableOnDiscard(Context.of(Hooks.KEY_ON_ERROR_DROPPED,
+				(Consumer<Throwable>) throwable -> {
+					droppedErrors.add(throwable);
+				}),
+				(__) -> onNextDiscarded.incrementAndGet());
 	}
 
 	@Override
