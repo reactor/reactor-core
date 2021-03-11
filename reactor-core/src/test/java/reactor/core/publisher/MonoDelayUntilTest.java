@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -31,6 +32,21 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDelayUntilTest {
+
+	@Test
+	// sanity check for https://github.com/reactor/reactor-core/issues/2597
+	public void ensuresThatOnCompleteIsPropagated() {
+		Flux.merge(Mono.empty(),
+				Mono.just("A")
+				    .filter(s -> false)
+				    .delayUntil(s -> Mono.empty())
+		)
+		    .collectList()
+		    .as(StepVerifier::create)
+		    .expectNext(Collections.emptyList())
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(1));
+	}
 
 	@Test
 	public void testMonoValuedAndPublisherVoid() {
@@ -216,12 +232,13 @@ public class MonoDelayUntilTest {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.done = 2;
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.done = 3;
+		test.done = true;
+		test.state = MonoDelayUntil.DelayUntilCoordinator.TERMINATED;
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.done = false;
+		test.state = MonoDelayUntil.DelayUntilCoordinator.TERMINATED;
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
@@ -235,6 +252,7 @@ public class MonoDelayUntilTest {
 				actual, otherGenerators);
 
 		MonoDelayUntil.DelayUntilTrigger<String> test = new MonoDelayUntil.DelayUntilTrigger<>(main);
+		main.triggerSubscriber = test;
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -245,7 +263,7 @@ public class MonoDelayUntilTest {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
+		main.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
 		test.error = new IllegalStateException("boom");
