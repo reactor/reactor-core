@@ -125,92 +125,170 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		return null; //no particular key to be represented, still useful in hooks
 	}
 
-	static final class DelayUntilCoordinator<T>
-			extends Operators.MonoSubscriber<T, T> {
+	static final class DelayUntilCoordinator<T> implements InnerOperator<T, T> {
 
-		static final DelayUntilTrigger[] NO_TRIGGER = new DelayUntilTrigger[0];
-
-		final int                                                n;
 		final Function<? super T, ? extends Publisher<?>>[] otherGenerators;
+		final CoreSubscriber<? super T> actual;
 
-		volatile int done;
-		static final AtomicIntegerFieldUpdater<DelayUntilCoordinator> DONE =
-				AtomicIntegerFieldUpdater.newUpdater(DelayUntilCoordinator.class, "done");
+		int index;
 
-		volatile Subscription s;
+		T value;
+		boolean done;
+
+		Subscription s;
+		DelayUntilTrigger<?> triggerSubscriber;
+
+		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DelayUntilCoordinator, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(DelayUntilCoordinator.class, Subscription.class, "s");
+		static final AtomicReferenceFieldUpdater<DelayUntilCoordinator, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(DelayUntilCoordinator.class, Throwable.class, "error");
 
-		DelayUntilTrigger[] triggerSubscribers;
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<DelayUntilCoordinator> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(DelayUntilCoordinator.class, "state");
+
+		static final int HAS_SUBSCRIPTION = 0b00000000000000000000000000000001;
+		static final int HAS_INNER        = 0b00000000000000000000000000000010;
+		static final int HAS_REQUEST      = 0b00000000000000000000000000000100;
+		static final int HAS_VALUE        = 0b00000000000000000000000000001000;
+		static final int TERMINATED       = 0b10000000000000000000000000000000;
 
 		DelayUntilCoordinator(CoreSubscriber<? super T> subscriber,
 				Function<? super T, ? extends Publisher<?>>[] otherGenerators) {
-			super(subscriber);
+			this.actual = subscriber;
 			this.otherGenerators = otherGenerators;
-			//don't consider the source as this is only used from when there is a value
-			this.n = otherGenerators.length;
-			triggerSubscribers = NO_TRIGGER;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				int previousState = markHasSubscription();
+				if (isTerminated(previousState)) {
+					s.cancel();
+					return;
+				}
+
 				s.request(Long.MAX_VALUE);
-			} else {
-				s.cancel();
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			if (this.value == null) {
-				setValue(t);
-				subscribeNextTrigger(t, done);
+			if (this.done) {
+				Operators.onDiscard(t, this.actual.currentContext());
+				return;
 			}
+
+			this.value = t;
+			subscribeNextTrigger();
 		}
 
 		@Override
+		@SuppressWarnings("ConstantConditions")
 		public void onError(Throwable t) {
-			actual.onError(t);
+			if (this.done) {
+				Operators.onErrorDropped(t, this.actual.currentContext());
+				return;
+			}
+
+			this.done = true;
+
+			if (this.value == null) {
+				this.actual.onError(t);
+				return;
+			}
+
+			if (!Exceptions.addThrowable(ERROR, this, t)) {
+				Operators.onErrorDropped(t, this.actual.currentContext());
+				return;
+			}
+
+			final int previousState = markTerminated();
+			if (isTerminated(previousState)) {
+				return;
+			}
+
+			if (hasInner(previousState)) {
+				Operators.onDiscard(this.value, this.actual.currentContext());
+				this.triggerSubscriber.cancel();
+			}
+
+			final Throwable e = Exceptions.terminate(ERROR, this);
+			this.actual.onError(e);
 		}
 
 		@Override
 		public void onComplete() {
-			if (this.value == null && state < HAS_REQUEST_HAS_VALUE) {
-				actual.onComplete();
+			if (this.done) {
+				return;
+			}
+
+			if (this.value == null) {
+				this.done = true;
+				this.actual.onComplete();
 			}
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED) return done == n;
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				final int previousState = markHasRequest();
 
-			return super.scanUnsafe(key);
+				if (isTerminated(previousState)) {
+					return;
+				}
+
+				if (hasRequest(previousState)) {
+					return;
+				}
+
+				if (hasValue(previousState)) {
+					this.done = true;
+					final CoreSubscriber<? super T> actual = this.actual;
+					final T v = this.value;
+
+					actual.onNext(v);
+					actual.onComplete();
+				}
+			}
 		}
 
 		@Override
-		public Stream<? extends Scannable> inners() {
-			return Stream.of(triggerSubscribers);
+		public void cancel() {
+			final int previousState = markTerminated();
+
+			if (isTerminated(previousState)) {
+				return;
+			}
+
+			final Throwable t = Exceptions.terminate(ERROR, this);
+			if (t != null) {
+				Operators.onErrorDropped(t, this.actual.currentContext());
+			}
+
+			if (hasSubscription(previousState)) {
+				this.s.cancel();
+			}
+
+			if (hasInner(previousState)) {
+				Operators.onDiscard(this.value, this.actual.currentContext());
+
+				this.triggerSubscriber.cancel();
+		    }
 		}
 
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		void subscribeNextTrigger() {
+			final Function<? super T, ? extends Publisher<?>> generator =
+					this.otherGenerators[this.index];
 
-		@SuppressWarnings("unchecked")
-		void subscribeNextTrigger(@Nullable T value, int triggerIndex) {
-			if (value == null) {
-				return; //we've been cancelled
-			}
-			if (triggerSubscribers == NO_TRIGGER) {
-				triggerSubscribers = new DelayUntilTrigger[otherGenerators.length];
-			}
-
-			Function<? super T, ? extends Publisher<?>> generator = otherGenerators[triggerIndex];
-
-			Publisher<?> p;
+			final Publisher<?> p;
 
 			try {
-				p = generator.apply(value);
+				p = generator.apply(this.value);
 				Objects.requireNonNull(p, "mapper returned null value");
 			}
 			catch (Throwable t) {
@@ -218,61 +296,103 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				return;
 			}
 
-			DelayUntilTrigger triggerSubscriber = new DelayUntilTrigger<>(this);
+			final DelayUntilTrigger triggerSubscriber;
+			if (this.triggerSubscriber == null) {
+				triggerSubscriber = new DelayUntilTrigger<>(this);
+				this.triggerSubscriber = triggerSubscriber;
+			} else {
+				triggerSubscriber = this.triggerSubscriber;
+			}
 
-			this.triggerSubscribers[triggerIndex] = triggerSubscriber;
 			p.subscribe(triggerSubscriber);
 		}
 
-		void signal() {
-			int nextIndex = DONE.incrementAndGet(this);
-			if (nextIndex != n) {
-				subscribeNextTrigger(this.value, nextIndex);
-				return;
-			}
-
-			Throwable error = null;
-			Throwable compositeError = null;
-
-			//check for errors in the triggers
-			for (int i = 0; i < n; i++) {
-				DelayUntilTrigger mt = triggerSubscribers[i];
-				Throwable e = mt.error;
-				if (e != null) {
-					if (compositeError != null) {
-						//this is ok as the composite created by multiple is never a singleton
-						compositeError.addSuppressed(e);
-					} else
-					if (error != null) {
-						compositeError = Exceptions.multiple(error, e);
-					} else {
-						error = e;
-					}
-					//else the trigger publisher was empty, but we'll ignore that
-				}
-			}
-
-			if (compositeError != null) {
-				actual.onError(compositeError);
-			}
-			else if (error != null) {
-				actual.onError(error);
-			} else {
-				//emit the value downstream
-				complete(this.value);
-			}
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return this.actual;
 		}
 
 		@Override
-		public void cancel() {
-			if (!isCancelled()) {
-				super.cancel();
-				//source is always cancellable...
-				Operators.terminate(S, this);
-				//...but triggerSubscribers could be partially initialized
-				for (int i = 0; i < triggerSubscribers.length; i++) {
-					DelayUntilTrigger ts = triggerSubscribers[i];
-					if (ts != null) ts.cancel();
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.CANCELLED) return isTerminated(this.state) && !this.done;
+			if (key == Attr.TERMINATED) return isTerminated(this.state) && this.done;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			final DelayUntilTrigger<?> subscriber = this.triggerSubscriber;
+			return subscriber == null ? Stream.empty() : Stream.of(subscriber);
+		}
+
+
+		int markHasSubscription() {
+			for (;;) {
+				final int state = this.state;
+
+				if (isTerminated(state)) {
+					return TERMINATED;
+				}
+
+				if (STATE.compareAndSet(this, state, state | HAS_SUBSCRIPTION)) {
+					return state;
+				}
+			}
+		}
+
+		int markHasRequest() {
+			for (; ; ) {
+				final int state = this.state;
+				if (isTerminated(state)) {
+					return TERMINATED;
+				}
+
+				if (hasRequest(state)) {
+					return state;
+				}
+
+				if (STATE.compareAndSet(this, state, hasValue(state) ? TERMINATED : state | HAS_REQUEST)) {
+					return state;
+				}
+			}
+		}
+
+		void complete() {
+			for (; ; ) {
+				int s = this.state;
+				if (isTerminated(s)) {
+					return;
+				}
+
+				if (hasRequest(s) && STATE.compareAndSet(this, s, TERMINATED)) {
+					final CoreSubscriber<? super T> actual = this.actual;
+					final T v = this.value;
+
+					actual.onNext(v);
+					actual.onComplete();
+
+					return;
+				}
+
+				if (STATE.compareAndSet(this, s, s | HAS_VALUE)) {
+					return;
+				}
+			}
+		}
+
+		int markTerminated() {
+			for (;;) {
+				final int state = this.state;
+
+				if (state == TERMINATED) {
+					return TERMINATED;
+				}
+
+				if (STATE.compareAndSet(this, state, TERMINATED)) {
+					return state;
 				}
 			}
 		}
@@ -282,13 +402,9 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		final DelayUntilCoordinator<?> parent;
 
-		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DelayUntilTrigger, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(DelayUntilTrigger.class, Subscription.class, "s");
-
+		Subscription s;
 		boolean done;
-		volatile Throwable error;
+		Throwable error;
 
 		DelayUntilTrigger(DelayUntilCoordinator<?> parent) {
 			this.parent = parent;
@@ -302,10 +418,10 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.ACTUAL) return parent;
-			if (key == Attr.ERROR) return error;
+			if (key == Attr.CANCELLED) return isTerminated(this.parent.state) && !this.done;
+			if (key == Attr.PARENT) return this.s;
+			if (key == Attr.ACTUAL) return this.parent;
+			if (key == Attr.ERROR) return this.error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
 			return null;
@@ -313,37 +429,150 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				int previousState = markInnerActive();
+				if (isTerminated(previousState)) {
+					s.cancel();
+
+					final DelayUntilCoordinator<?> parent = this.parent;
+					Operators.onDiscard(parent.value, parent.currentContext());
+
+					return;
+				}
+
 				s.request(Long.MAX_VALUE);
-			} else {
-				s.cancel();
 			}
 		}
 
 		@Override
-		public void onNext(Object t) {
+		public void onNext(T t) {
 			//NO-OP
+			Operators.onDiscard(t, this.parent.currentContext());
 		}
 
 		@Override
+		@SuppressWarnings("ConstantConditions")
 		public void onError(Throwable t) {
-			error = t;
-			if (DelayUntilCoordinator.DONE.getAndSet(parent, parent.n) != parent.n) {
-				parent.cancel();
-				parent.actual.onError(t);
+			if (this.done) {
+				Operators.onErrorDropped(t, parent.currentContext());
+				return;
 			}
+
+			final DelayUntilCoordinator<?> parent = this.parent;
+
+			this.done = true;
+			parent.done = true;
+
+			if (!Exceptions.addThrowable(DelayUntilCoordinator.ERROR, parent, t)) {
+				Operators.onErrorDropped(t, parent.currentContext());
+				return;
+			}
+
+			final int previousState = parent.markTerminated();
+			if (isTerminated(previousState)) {
+				return;
+			}
+
+			Operators.onDiscard(parent.value, parent.currentContext());
+
+			parent.s.cancel();
+
+			final Throwable e = Exceptions.terminate(DelayUntilCoordinator.ERROR, parent);
+			parent.actual.onError(e);
 		}
 
 		@Override
 		public void onComplete() {
-			if (!done) {
-				done = true;
-				parent.signal();
+			if (this.done) {
+				return;
 			}
+
+			this.done = true;
+
+			final DelayUntilCoordinator<?> parent = this.parent;
+			final int nextIndex = parent.index + 1;
+
+			parent.index = nextIndex;
+
+			if (nextIndex == parent.otherGenerators.length) {
+				parent.complete();
+				return;
+			}
+
+			final int previousState = markInnerInactive();
+			if (isTerminated(previousState)) {
+				return;
+			}
+
+			this.done = false;
+			this.s = null;
+
+			parent.subscribeNextTrigger();
 		}
 
 		void cancel() {
-			Operators.terminate(S, this);
+			this.s.cancel();
 		}
+
+		int markInnerActive() {
+			final DelayUntilCoordinator<?> parent = this.parent;
+			for (;;) {
+				final int state = parent.state;
+
+				if (state == DelayUntilCoordinator.TERMINATED) {
+					return DelayUntilCoordinator.TERMINATED;
+				}
+
+				if ((state & DelayUntilCoordinator.HAS_INNER) == DelayUntilCoordinator.HAS_INNER) {
+					return state;
+				}
+
+				if (DelayUntilCoordinator.STATE.compareAndSet(parent, state, state | DelayUntilCoordinator.HAS_INNER)) {
+					return state;
+				}
+			}
+		}
+
+		int markInnerInactive() {
+			final DelayUntilCoordinator<?> parent = this.parent;
+			for (;;) {
+				final int state = parent.state;
+
+				if (state == DelayUntilCoordinator.TERMINATED) {
+					return DelayUntilCoordinator.TERMINATED;
+				}
+
+				if ((state & DelayUntilCoordinator.HAS_INNER) != DelayUntilCoordinator.HAS_INNER) {
+					return state;
+				}
+
+				if (DelayUntilCoordinator.STATE.compareAndSet(parent, state, state & ~DelayUntilCoordinator.HAS_INNER)) {
+					return state;
+				}
+			}
+		}
+	}
+
+
+	static boolean isTerminated(int state) {
+		return state == DelayUntilCoordinator.TERMINATED;
+	}
+
+	static boolean hasValue(int state) {
+		return (state & DelayUntilCoordinator.HAS_VALUE) == DelayUntilCoordinator.HAS_VALUE;
+	}
+
+	static boolean hasInner(int state) {
+		return (state & DelayUntilCoordinator.HAS_INNER) == DelayUntilCoordinator.HAS_INNER;
+	}
+
+	static boolean hasRequest(int state) {
+		return (state & DelayUntilCoordinator.HAS_REQUEST) == DelayUntilCoordinator.HAS_REQUEST;
+	}
+
+	static boolean hasSubscription(int state) {
+		return (state & DelayUntilCoordinator.HAS_SUBSCRIPTION) == DelayUntilCoordinator.HAS_SUBSCRIPTION;
 	}
 }
