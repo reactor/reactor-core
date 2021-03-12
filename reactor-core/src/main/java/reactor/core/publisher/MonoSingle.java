@@ -21,7 +21,6 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -33,8 +32,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
-		implements Fuseable {
+final class MonoSingle<T> extends MonoFromFluxOperator<T, T> {
 
 	final T       defaultValue;
 	final boolean completeOnEmpty;
