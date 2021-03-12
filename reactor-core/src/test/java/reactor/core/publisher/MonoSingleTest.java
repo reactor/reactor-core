@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
+import java.util.concurrent.Callable;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -27,8 +28,34 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class MonoSingleTest {
+
+	@Test
+	//  https://github.com/reactor/reactor-core/issues/2635
+	void ensureCallableFusedSingleFailOnEmptySource() {
+		StepVerifier.create(
+				Mono.fromSupplier(() -> null)
+				    .single())
+		            .expectErrorMatches(err -> err instanceof NoSuchElementException)
+		            .verify();
+	}
+
+	@Test
+	void ensureCallableFusedSingleFailOnEmptySourceOnBlock() {
+		assertThatThrownBy(Mono.fromSupplier(() -> null)
+		                       .single()::block)
+						.isInstanceOf(NoSuchElementException.class);
+	}
+
+	@Test
+	void ensureCallableFusedSingleFailOnEmptySourceOnCall() {
+		assertThatThrownBy(((Callable)Mono.fromSupplier(() -> null)
+		                                 .single())::call)
+				.isInstanceOf(NoSuchElementException.class);
+	}
+
 	@Test
 	public void source1Null() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
