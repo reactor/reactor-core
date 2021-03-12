@@ -55,7 +55,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertJVersion"
     testImplementation 'cglib:cglib:3.3.0'
 
-    jarFileTestImplementation 'org.assertj:assertj-core:3.12.2' //FIXME bump in root and use property
+    jarFileTestImplementation 'org.assertj:assertj-core:3.12.2' // FIXME bump in root and use property
 }
 
 test {
@@ -193,5 +193,5 @@ tasks.withType(Test).all {
 }
 configurations.runtime.outgoing.artifacts.clear()
 
-//add original jar to the publication
+// add original jar to the publication
 publishing.publications.mavenJava.artifact(jar)

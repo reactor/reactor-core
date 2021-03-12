@@ -27,7 +27,7 @@ buildscript {
 	}
 }
 
-apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
+apply plugin: 'idea' // needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'kotlin'
@@ -69,7 +69,7 @@ dependencies {
 	// Reactive Streams
 	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
 	testImplementation ("org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}") {
-		// without this exclusion, testng brings an old version of junit which *embeds* an old version of hamcrest
+		// without this exclusion, testing brings an old version of junit which *embeds* an old version of hamcrest
 		// which gets picked up first and that we don't want. TCK runs fine w/o (old) junit 4.
 		exclude group: 'junit', module: 'junit'
 	}
@@ -78,23 +78,23 @@ dependencies {
 	compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
 	testCompileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
 
-	//Optional Logging Operator
+	// Optional Logging Operator
 	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
 	testCompileOnly "org.slf4j:slf4j-api:$slf4jVersion"
 
-	//Optional Metrics
+	// Optional Metrics
 	compileOnly "io.micrometer:micrometer-core:$micrometerVersion"
 
 	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
 	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
-	//Optional BlockHound support
+	// Optional BlockHound support
 	compileOnly "io.projectreactor.tools:blockhound:$blockhoundVersion"
 	// Also make BlockHound visible in the CP of dedicated testset
 	blockHoundTestImplementation "io.projectreactor.tools:blockhound:$blockhoundVersion"
 
-	//Optional JDK 9 Converter
+	// Optional JDK 9 Converter
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
 	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
@@ -159,8 +159,8 @@ task japicmp(type: JapicmpTask) {
 	ignoreMissingClasses = true
 	includeSynthetic = true
 
-	//TODO after a .0 release, bump the gradle.properties baseline
-	//TODO after a .0 release, remove the reactor-core exclusions below if any
+	// TODO after a .0 release, bump the gradle.properties baseline
+	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [ ]
 	methodExcludes = [ ]
 }
@@ -172,7 +172,7 @@ gradle.taskGraph.afterTask { task, state ->
 	}
 }
 
-//complements the javadoc.gradle common configuration
+// complements the javadoc.gradle common configuration
 javadoc {
 	options.overview = "$rootDir/docs/api/overview.html"
 	excludes = [
@@ -227,9 +227,9 @@ blockHoundTest {
 	maxParallelForks = 1
 }
 
-//inherit basic test task + common configuration in root
-//always depend on testNoMicrometer, skip reactivestreamsTCK on Travis, skip loops when not releasing
-//note that this way the tasks can be run individually
+// inherit basic test task + common configuration in root
+// always depend on testNoMicrometer, skip reactivestreamsTCK on Travis, skip loops when not releasing
+// note that this way the tasks can be run individually
 check {
 	dependsOn withMicrometerTest
 	if (!detectedCiServers.contains("TRAVIS")) {
@@ -240,7 +240,7 @@ check {
 	}
 }
 
-//TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?
+// TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?
 if (!JavaVersion.current().isJava9Compatible()) {
 	test {
 		jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
@@ -300,5 +300,5 @@ else {
 	}
 }
 
-//add docs.zip to the publication
+// add docs.zip to the publication
 publishing.publications.mavenJava.artifact(rootProject.tasks.docsZip)
