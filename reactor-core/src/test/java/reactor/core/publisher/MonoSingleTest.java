@@ -38,7 +38,6 @@ public class MonoSingleTest {
 		StepVerifier.create(
 				Mono.fromSupplier(() -> null)
 				    .single())
-		            .expectFusion()
 		            .expectErrorMatches(err -> err instanceof NoSuchElementException)
 		            .verify();
 	}
