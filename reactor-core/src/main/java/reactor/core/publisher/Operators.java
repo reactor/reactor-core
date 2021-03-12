@@ -2582,7 +2582,6 @@ public abstract class Operators {
 		/**
 		 * The value stored by this Mono operator.
 		 */
-		@Nullable
 		private O value;
 
 		private volatile  int state; //see STATE field updater
@@ -2611,7 +2610,6 @@ public abstract class Operators {
 		 * @param v the value to emit
 		 */
 		public final void complete(O v) {
-			doOnComplete(v);
 			for (; ; ) {
 				int s = this.state;
 				if (isCancelled(s)) {
@@ -2620,7 +2618,10 @@ public abstract class Operators {
 				}
 
 				if (hasRequest(s) && STATE.compareAndSet(this, s, s | (HAS_VALUE | HAS_COMPLETED))) {
-					discardTheValue();
+					this.value = null;
+
+					doOnComplete(v);
+
 					actual.onNext(v);
 					actual.onComplete();
 					return;
@@ -2634,21 +2635,11 @@ public abstract class Operators {
 		}
 
 		/**
-		 * Hook for subclasses, called as the first operation when {@link #complete(Object)} is called. Default
-		 * implementation is a no-op.
-		 * @param v the value passed to {@code onComplete(Object)}
-		 */
-		protected void doOnComplete(O v) {
-
-		}
-
-		/**
 		 * Tries to emit the {@link #value} stored if any, and complete the underlying subscriber.
 		 * <p>
 		 * Make sure this method is called at most once. Can't be used in addition to {@link #complete(Object)}.
 		 */
 		public final void complete() {
-			doOnComplete();
 			for (; ; ) {
 				int s = this.state;
 				if (isCancelled(s)) {
@@ -2658,6 +2649,9 @@ public abstract class Operators {
 					if (hasValue(s) && hasRequest(s)) {
 						O v = this.value;
 						this.value = null; // aggressively null value to prevent strong ref after complete
+
+						doOnComplete(v);
+
 						actual.onNext(v);
 						actual.onComplete();
 						return;
@@ -2674,10 +2668,11 @@ public abstract class Operators {
 		}
 
 		/**
-		 * Hook for subclasses, called as the first operation when {@link #complete()} is called. Default
-		 * implementation is a no-op.
+		 * Hook for subclasses when the actual completion appears
+		 *
+		 * @param v the value passed to {@code onComplete(Object)}
 		 */
-		protected void doOnComplete() {
+		protected void doOnComplete(O v) {
 
 		}
 
@@ -2715,7 +2710,6 @@ public abstract class Operators {
 		@Override
 		public void request(long n) {
 			if (validate(n)) {
-				doOnRequest(n);
 				for (; ; ) {
 					int s = state;
 					if (isCancelled(s)) {
@@ -2725,22 +2719,24 @@ public abstract class Operators {
 						return;
 					}
 					if (STATE.compareAndSet(this, s, s | HAS_REQUEST)) {
+						doOnRequest(n);
 						if (hasValue(s) && hasCompleted(s)) {
 							O v = this.value;
 							this.value = null; // aggressively null value to prevent strong ref after complete
+
+							doOnComplete(v);
+
 							actual.onNext(v);
 							actual.onComplete();
-							return;
 						}
-
+						return;
 					}
 				}
 			}
 		}
 
 		/**
-		 * Hook for subclasses, called as the first operation when {@link #request(long)} is called. Default
-		 * implementation is a no-op.
+		 * Hook for subclasses on the first request successfully marked on the state
 		 * @param n the value passed to {@code request(long)}
 		 */
 		protected void doOnRequest(long n) {
@@ -2770,8 +2766,14 @@ public abstract class Operators {
 
 		@Override
 		public final void cancel() {
-			doOnCancel();
 			int previous = STATE.getAndSet(this, CANCELLED);
+
+			if (isCancelled(previous)) {
+				return;
+			}
+
+			doOnCancel();
+
 			if (hasValue(previous) // Had a value...
 					&& (previous & (HAS_COMPLETED|HAS_REQUEST)) != (HAS_COMPLETED|HAS_REQUEST) // ... but did not use it
 			) {
