@@ -3904,7 +3904,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> thiz = (Callable<T>)this;
-			return Mono.onAssembly(new MonoCallable<>(thiz));
+			return Mono.onAssembly(new MonoSingleCallable<>(thiz));
 		}
 		return Mono.onAssembly(new MonoSingleMono<>(this));
 	}
