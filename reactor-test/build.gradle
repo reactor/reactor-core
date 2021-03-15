@@ -86,7 +86,7 @@ task japicmp(type: JapicmpTask) {
 	ignoreMissingClasses = true
 	includeSynthetic = true
 
-	//TODO after a .0 release, remove the reactor-test exclusions below if any
+	// TODO after a .0 release, remove the reactor-test exclusions below if any
 	methodExcludes = [ ]
 }
 
@@ -94,7 +94,7 @@ tasks.withType(Test).all {
   useJUnitPlatform()
 }
 
-//javadoc is configured in gradle/javadoc.gradle
+// javadoc is configured in gradle/javadoc.gradle
 
 jar {
 	manifest {
