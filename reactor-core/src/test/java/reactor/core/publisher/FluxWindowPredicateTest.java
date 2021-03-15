@@ -1044,19 +1044,19 @@ public class FluxWindowPredicateTest extends
 		List<Object> discardWindow = new ArrayList<>();
 
 		Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
-			.log("source", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-			.windowWhile(i -> i > 0, 1)
-			.concatMap(w -> w.log("win", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-				.take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
-			.log("out", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-			.subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
-			// stalls and times out without the fix due to insufficient request to upstream
-			.timeout(ofMillis(200))
-			.as(StepVerifier::create)
-			.expectNext(1, 4, 6)
-			.expectComplete()
-			.verifyThenAssertThat()
-			.hasNotDiscardedElements();
+		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .windowWhile(i -> i > 0, 1)
+		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		                     .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		    .log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
+		    // stalls and times out without the fix due to insufficient request to upstream
+		    .timeout(ofMillis(200))
+		    .as(StepVerifier::create)
+		    .expectNext(1, 4, 6)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements();
 
 		assertThat(discardMain).containsExactly(2, 3, 0, 5, 0, 0);
 		assertThat(discardWindow).isEmpty();
@@ -1069,19 +1069,19 @@ public class FluxWindowPredicateTest extends
 		List<Object> discardWindow = new ArrayList<>();
 
 		Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
-			.log("source", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-			.windowUntil(i -> i == 0, false, 1)
-			.concatMap(w -> w.log("win", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-							 .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
-			.log("out", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-			.subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
-			// stalls and times out without the fix due to insufficient request to upstream
-			.timeout(ofMillis(200))
-			.as(StepVerifier::create)
-			.expectNext(1, 4, 0, 6)
-			.expectComplete()
-			.verifyThenAssertThat()
-			.hasNotDiscardedElements();
+		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .windowUntil(i -> i == 0, false, 1)
+		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		                     .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		    .log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
+		    // stalls and times out without the fix due to insufficient request to upstream
+		    .timeout(ofMillis(200))
+		    .as(StepVerifier::create)
+		    .expectNext(1, 4, 0, 6)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements();
 
 		assertThat(discardMain).containsExactly(2, 3, 0, 5, 0);
 		assertThat(discardWindow).isEmpty();
@@ -1094,17 +1094,19 @@ public class FluxWindowPredicateTest extends
 		List<Object> discardWindow = new ArrayList<>();
 
 		Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
-			.log("source", Level.INFO, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-			.windowUntil(i -> i == 0, true, 1)
-			.concatMap(w -> w.take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
-			.subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
-			// stalls and times out without the fix due to insufficient request to upstream
-			.timeout(ofMillis(200))
-			.as(StepVerifier::create)
-			.expectNext(1, 0, 0, 0)
-			.expectComplete()
-			.verifyThenAssertThat()
-			.hasNotDiscardedElements();
+		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .windowUntil(i -> i == 0, true, 1)
+		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		                     .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+			.log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
+		    // stalls and times out without the fix due to insufficient request to upstream
+		    .timeout(ofMillis(200))
+		    .as(StepVerifier::create)
+		    .expectNext(1, 0, 0, 0)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements();
 
 		assertThat(discardMain).containsExactly(2, 3, 4, 5, 6);
 		assertThat(discardWindow).isEmpty();
