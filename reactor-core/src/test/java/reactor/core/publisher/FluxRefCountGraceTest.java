@@ -165,23 +165,6 @@ public class FluxRefCountGraceTest {
 		assertThat(sourceSubscriptions).as("source subscriptions").hasValue(1);
 	}
 
-	@Test
-	void shouldReconnect() {
-		StepVerifier.withVirtualTime(() -> Flux.concat(Flux.just("hello"),
-				Flux.error(() -> new RuntimeException("boom"))
-				    .delayElements(Duration.ofSeconds(5)))
-                                               .publish()
-                                               .refCount(1, Duration.ofSeconds(10))
-                                               .take(1)
-                                               .repeat(1)
-		)
-		            .expectNext("hello")
-		            .thenAwait(Duration.ofSeconds(7))
-		            .expectNext("hello")
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(1));
-	}
-
 	//see https://github.com/reactor/reactor-core/issues/1738
 	@Test
 	public void avoidUnexpectedDoubleCancel() {
