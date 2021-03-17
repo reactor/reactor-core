@@ -74,7 +74,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		boolean connect = false;
 		synchronized (this) {
 			conn = connection;
-			if (conn == null || conn.terminated) {
+			if (conn == null || conn.isTerminated()) {
 				conn = new RefConnection(this);
 				connection = conn;
 			}
@@ -167,6 +167,15 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		RefConnection(FluxRefCountGrace<?> parent) {
 			this.parent = parent;
+		}
+
+		/**
+		 * Indicates whether the RefConnection is terminated OR the source's connection has been disposed
+		 * @return true if the connection can be considered as terminated, either by this operator or by the source
+		 */
+		boolean isTerminated() {
+			Disposable sd = sourceDisconnector;
+			return terminated || (sd != null && sd.isDisposed());
 		}
 
 		@Override
