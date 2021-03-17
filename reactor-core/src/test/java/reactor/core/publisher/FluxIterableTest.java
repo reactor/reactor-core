@@ -16,17 +16,24 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -241,5 +248,88 @@ public class FluxIterableTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	void infiniteGeneratorDoesntHangFusedDiscard() {
+		class Generator implements Iterable<Integer> {
+
+			final int seed;
+
+			Generator(int seed) {
+				this.seed = seed;
+			}
+
+			@NotNull
+			@Override
+			public Iterator<Integer> iterator() {
+				return new Iterator<Integer>() {
+					int value = seed;
+
+					@Override
+					public boolean hasNext() {
+						return true;
+					}
+
+					@Override
+					public Integer next() {
+						return value++;
+					}
+				};
+			}
+		}
+
+		Generator one = new Generator(1);
+
+		//smoke test: this Iterable is indeed NOT SIZED
+		assertThat(one.spliterator().hasCharacteristics(Spliterator.SIZED)).as("spliterator not sized").isFalse();
+
+		AtomicInteger discardCount = new AtomicInteger();
+
+		Flux.fromIterable(one)
+		    .publishOn(Schedulers.single())
+		    .take(10)
+		    .doOnDiscard(Integer.class, i -> discardCount.incrementAndGet())
+		    .blockLast(Duration.ofSeconds(1));
+
+		assertThat(discardCount)
+				.as("discardCount")
+				.hasValue(0);
+	}
+
+	@Test
+	@Timeout(5)
+	void smokeTestIterableConditionalSubscriptionWithInfiniteIterable() {
+		//this test is simulating a poll() loop over an infinite iterable with conditional fusion enabled
+
+		AtomicInteger backingAtomic = new AtomicInteger();
+		Context discardingContext = Operators.enableOnDiscard(Context.empty(), v -> { });
+
+		@SuppressWarnings("unchecked")
+		Fuseable.ConditionalSubscriber<Integer> testSubscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+
+		Iterator<Integer> iterator = new Iterator<Integer>() {
+			@Override
+			public boolean hasNext() {
+				//approximate infinite source with a large upper bound instead
+				return backingAtomic.get() < 10_000;
+			}
+
+			@Override
+			public Integer next() {
+				return backingAtomic.incrementAndGet();
+			}
+		};
+
+		FluxIterable.IterableSubscriptionConditional<Integer> subscription = new FluxIterable.IterableSubscriptionConditional<>(
+				testSubscriber,
+				iterator, false);
+
+		subscription.cancel();
+
+		//protected by @Timeout(5)
+		Operators.onDiscardQueueWithClear(subscription, discardingContext, null);
+
+		assertThat(backingAtomic).hasValue(0);
 	}
 }
