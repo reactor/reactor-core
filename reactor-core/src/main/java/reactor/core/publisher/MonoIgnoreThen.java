@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
@@ -34,7 +33,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the final value type
  */
-final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
+final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
 
     final Publisher<?>[] ignore;
     
@@ -322,7 +321,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
                     return state;
                 }
 
-                if (STATE.compareAndSet(this, state, state | HAS_SUBSCRIPTION)) {
+                if (STATE.compareAndSet(this, state, state &~ HAS_SUBSCRIPTION)) {
                     return state;
                 }
             }
