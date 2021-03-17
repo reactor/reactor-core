@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,7 +25,9 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -453,6 +456,24 @@ public class FluxStreamTest {
 		            .verifyComplete();
 
 		assertThat(closed).hasValue(1); //no double close
+	}
+
+	@Test
+	void infiniteStreamDoesntHangDiscardFused() {
+		AtomicInteger source = new AtomicInteger();
+		Stream<Integer> stream = Stream.generate(source::incrementAndGet);
+
+		//note: we cannot check the spliterator, otherwise the stream will be considered used up
+
+		Flux.fromStream(stream)
+		    .publishOn(Schedulers.single())
+		    .take(10)
+		    .doOnDiscard(Integer.class, i -> {})
+		    .blockLast(Duration.ofSeconds(1));
+
+		assertThat(source)
+				.as("polled (avoid discard loop)")
+				.hasValue(10);
 	}
 
 	@Test

@@ -399,6 +399,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			if (s == STATE_NO_NEXT) {
 				return true;
 			}
+			else if (cancelled && !knownToBeFinite) {
+				return true; //interrupts poll in discard loops due to cancellation
+			}
 			else if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
 				return false;
 			}
@@ -677,6 +680,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			int s = state;
 			if (s == STATE_NO_NEXT) {
 				return true;
+			}
+			else if (cancelled && !knownToBeFinite) {
+				return true; //interrupts poll() during discard loop if cancelled
 			}
 			else if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
 				return false;
