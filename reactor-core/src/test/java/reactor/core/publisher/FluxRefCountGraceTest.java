@@ -36,6 +36,136 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRefCountGraceTest {
 
+	@Test
+	void errorInterruptsGracePeriodPublish() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		StepVerifier.withVirtualTime(() -> {
+			Flux<String> multiplex = Flux
+					.concat(
+							Flux.just("hello"),
+							Mono.delay(Duration.ofSeconds(3))
+							    .then(Mono.error(new RuntimeException("boom")))
+					)
+					.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+					//here we use publish
+					.publish()
+					.refCount(1, Duration.ofSeconds(200));
+
+			return Flux.merge(
+					multiplex.take(1),
+					Mono.delay(Duration.ofSeconds(5))
+					    .flatMapMany(ignore -> multiplex
+					    .materialize().elapsed().map(Object::toString))
+			);
+				})
+		            .expectNext("hello")
+		            .thenAwait(Duration.ofSeconds(5))
+		            //here we expect that there is a reconnection, so the hello is followed by a 3s pause and onError
+		            .expectNext("[0,onNext(hello)]")
+		            .expectNoEvent(Duration.ofSeconds(3))
+		            .expectNext("[3000,onError(java.lang.RuntimeException: boom)]")
+		            .expectComplete()
+		            .verify(Duration.ofMillis(500));
+
+		assertThat(sourceSubscriptions).as("source subscriptions").hasValue(2);
+	}
+
+	@Test
+	void errorInterruptsGracePeriodReplay() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		StepVerifier.withVirtualTime(() -> {
+			Flux<String> multiplex = Flux
+					.concat(
+							Flux.just("hello"),
+							Mono.delay(Duration.ofSeconds(3))
+							    .then(Mono.error(new RuntimeException("boom")))
+					)
+					.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+					//here we use replay
+					.replay()
+					.refCount(1, Duration.ofSeconds(200));
+
+			return Flux.merge(
+					multiplex.take(1),
+					Mono.delay(Duration.ofSeconds(5)).flatMapMany(ignore -> multiplex
+							.materialize().elapsed().map(Object::toString))
+			);
+		})
+		            .expectNext("hello")
+		            .thenAwait(Duration.ofSeconds(5))
+		            //here we expect an immediate replay of the hello + error
+		            .expectNext("[0,onNext(hello)]")
+		            .expectNext("[0,onError(java.lang.RuntimeException: boom)]")
+		            .expectComplete()
+		            .verify(Duration.ofMillis(500));
+
+		assertThat(sourceSubscriptions).as("source subscriptions").hasValue(1);
+	}
+
+	@Test
+	void completeInterruptsGracePeriodPublish() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		StepVerifier.withVirtualTime(() -> {
+			Flux<Object> multiplex = Flux
+					.concat(
+							Flux.just("hello"),
+							Mono.delay(Duration.ofSeconds(3)).then()
+					)
+					.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+					//here we use publish
+					.publish()
+					.refCount(1, Duration.ofSeconds(200));
+
+			return Flux.merge(
+					multiplex.take(1),
+					Mono.delay(Duration.ofSeconds(5))
+					    .flatMapMany(ignore -> multiplex
+					    .materialize().elapsed().map(Object::toString))
+			);
+				})
+		            .expectNext("hello")
+		            .thenAwait(Duration.ofSeconds(5))
+		            //here we expect that there is a reconnection, so the hello is followed by a 3s pause and onComplete
+		            .expectNext("[0,onNext(hello)]")
+		            .expectNoEvent(Duration.ofSeconds(3))
+		            .expectNext("[3000,onComplete()]")
+		            .expectComplete()
+		            .verify(Duration.ofMillis(500));
+
+		assertThat(sourceSubscriptions).as("source subscriptions").hasValue(2);
+	}
+
+	@Test
+	void completeInterruptsGracePeriodReplay() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		StepVerifier.withVirtualTime(() -> {
+			Flux<Object> multiplex = Flux
+					.concat(
+							Flux.just("hello"),
+							Mono.delay(Duration.ofSeconds(3)).then()
+					)
+					.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+					//here we use replay
+					.replay()
+					.refCount(1, Duration.ofSeconds(200));
+
+			return Flux.merge(
+					multiplex.take(1),
+					Mono.delay(Duration.ofSeconds(5)).flatMapMany(ignore -> multiplex
+							.materialize().elapsed().map(Object::toString))
+			);
+		})
+		            .expectNext("hello")
+		            .thenAwait(Duration.ofSeconds(5))
+		            //here we expect an immediate replay of the hello + complete
+		            .expectNext("[0,onNext(hello)]")
+		            .expectNext("[0,onComplete()]")
+		            .expectComplete()
+		            .verify(Duration.ofMillis(500));
+
+		assertThat(sourceSubscriptions).as("source subscriptions").hasValue(1);
+	}
+
 	//see https://github.com/reactor/reactor-core/issues/1738
 	@Test
 	public void avoidUnexpectedDoubleCancel() {
