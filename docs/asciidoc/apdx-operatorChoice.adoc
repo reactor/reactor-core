@@ -1,10 +1,7 @@
 [[which-operator]]
 = Which operator do I need?
 
-TIP: In this section, if an operator is specific to https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux] or https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono], it is
-prefixed accordingly. Common operators have no prefix. When a specific use case
-is covered by a combination of operators, it is presented as a method call, with
-leading dot and parameters in parentheses, as follows: `.methodCall(parameter)`.
+TIP: In this section, if an operator is specific to https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux] or https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono], it is prefixed and linked accordingly, like this: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#fromArray-T:A-[Flux#fromArray]. Common operators have no prefix, and links to both implementations are provided, for example: `just` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#just-T%2E%2E%2E-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#just-T-[Mono]). When a specific use case is covered by a combination of operators, it is presented as a method call, with a leading dot and parameters in parentheses, as follows: `.methodCall(parameter)`.
 
 //TODO flux:  publishOn/subscribeOn/cancelOn
 //transformDeferred/transform, repeatWhen, sort, startWith
