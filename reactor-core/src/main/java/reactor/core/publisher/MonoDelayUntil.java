@@ -534,6 +534,9 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				return;
 			}
 
+			// we have to reset the state since we reuse the same object for the
+			// optimization purpose and at this stage we know that there is another
+			// delayer Publisher to subscribe to
 			this.done = false;
 			this.s = null;
 
