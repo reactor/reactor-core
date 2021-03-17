@@ -187,7 +187,6 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		}
 
 		@Override
-		@SuppressWarnings("ConstantConditions")
 		public void onError(Throwable t) {
 			if (this.done) {
 				Operators.onErrorDropped(t, this.actual.currentContext());
@@ -217,6 +216,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			}
 
 			final Throwable e = Exceptions.terminate(ERROR, this);
+			//noinspection ConstantConditions
 			this.actual.onError(e);
 		}
 
@@ -481,7 +481,6 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		}
 
 		@Override
-		@SuppressWarnings("ConstantConditions")
 		public void onError(Throwable t) {
 			if (this.done) {
 				Operators.onErrorDropped(t, parent.currentContext());
@@ -508,6 +507,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			parent.s.cancel();
 
 			final Throwable e = Exceptions.terminate(DelayUntilCoordinator.ERROR, parent);
+			//noinspection ConstantConditions
 			parent.actual.onError(e);
 		}
 
