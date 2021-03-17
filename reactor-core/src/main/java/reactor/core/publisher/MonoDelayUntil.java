@@ -326,7 +326,12 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			return subscriber == null ? Stream.empty() : Stream.of(subscriber);
 		}
 
-
+		/**
+		 * Sets flag has subscription to indicate that we have already received
+		 * subscription from the value upstream
+		 *
+		 * @return previous state
+		 */
 		int markHasSubscription() {
 			for (;;) {
 				final int state = this.state;
@@ -341,6 +346,12 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			}
 		}
 
+		/**
+		 * Sets {@link #HAS_REQUEST} flag which indicates that there is a demand from
+		 * the downstream
+		 *
+		 * @return previous state
+		 */
 		int markHasRequest() {
 			for (; ; ) {
 				final int state = this.state;
@@ -366,6 +377,11 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			}
 		}
 
+		/**
+		 * Sets current state to {@link #TERMINATED}
+		 *
+		 * @return previous state
+		 */
 		int markTerminated() {
 			for (;;) {
 				final int state = this.state;
@@ -380,6 +396,11 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			}
 		}
 
+		/**
+		 * Terminates execution if there is a demand from the downstream or sets
+		 * {@link #HAS_VALUE} flag indicating that the delay process is completed
+		 * however there is no demand from the downstream yet
+		 */
 		void complete() {
 			for (; ; ) {
 				int s = this.state;
@@ -523,6 +544,12 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			this.s.cancel();
 		}
 
+		/**
+		 * Sets flag {@link DelayUntilCoordinator#HAS_INNER} which indicates that there
+		 * is an active delayer Publisher
+		 *
+		 * @return previous state
+		 */
 		int markInnerActive() {
 			final DelayUntilCoordinator<?> parent = this.parent;
 			for (;;) {
@@ -542,6 +569,11 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			}
 		}
 
+		/**
+		 * Unsets flag {@link DelayUntilCoordinator#HAS_INNER}
+		 *
+		 * @return previous state
+		 */
 		int markInnerInactive() {
 			final DelayUntilCoordinator<?> parent = this.parent;
 			for (;;) {
@@ -562,7 +594,9 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		}
 	}
 
-
+	/**
+	 * Indicates if state is ended with cancellation | error | complete
+	 */
 	static boolean isTerminated(int state) {
 		return state == DelayUntilCoordinator.TERMINATED;
 	}
