@@ -296,12 +296,10 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				return;
 			}
 
-			final DelayUntilTrigger triggerSubscriber;
-			if (this.triggerSubscriber == null) {
+			DelayUntilTrigger triggerSubscriber = this.triggerSubscriber;
+			if (triggerSubscriber == null) {
 				triggerSubscriber = new DelayUntilTrigger<>(this);
 				this.triggerSubscriber = triggerSubscriber;
-			} else {
-				triggerSubscriber = this.triggerSubscriber;
 			}
 
 			p.subscribe(triggerSubscriber);
@@ -354,7 +352,29 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 					return state;
 				}
 
-				if (STATE.compareAndSet(this, state, hasValue(state) ? TERMINATED : state | HAS_REQUEST)) {
+				final int nextState;
+				if (hasValue(state)) {
+					nextState = TERMINATED;
+				}
+				else {
+					nextState = state | HAS_REQUEST;
+				}
+
+				if (STATE.compareAndSet(this, state, nextState)) {
+					return state;
+				}
+			}
+		}
+
+		int markTerminated() {
+			for (;;) {
+				final int state = this.state;
+
+				if (isTerminated(state)) {
+					return TERMINATED;
+				}
+
+				if (STATE.compareAndSet(this, state, TERMINATED)) {
 					return state;
 				}
 			}
@@ -363,6 +383,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		void complete() {
 			for (; ; ) {
 				int s = this.state;
+
 				if (isTerminated(s)) {
 					return;
 				}
@@ -379,20 +400,6 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 				if (STATE.compareAndSet(this, s, s | HAS_VALUE)) {
 					return;
-				}
-			}
-		}
-
-		int markTerminated() {
-			for (;;) {
-				final int state = this.state;
-
-				if (state == TERMINATED) {
-					return TERMINATED;
-				}
-
-				if (STATE.compareAndSet(this, state, TERMINATED)) {
-					return state;
 				}
 			}
 		}
@@ -521,11 +528,11 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			for (;;) {
 				final int state = parent.state;
 
-				if (state == DelayUntilCoordinator.TERMINATED) {
+				if (isTerminated(state)) {
 					return DelayUntilCoordinator.TERMINATED;
 				}
 
-				if ((state & DelayUntilCoordinator.HAS_INNER) == DelayUntilCoordinator.HAS_INNER) {
+				if (hasInner(state)) {
 					return state;
 				}
 
@@ -540,15 +547,15 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			for (;;) {
 				final int state = parent.state;
 
-				if (state == DelayUntilCoordinator.TERMINATED) {
+				if (isTerminated(state)) {
 					return DelayUntilCoordinator.TERMINATED;
 				}
 
-				if ((state & DelayUntilCoordinator.HAS_INNER) != DelayUntilCoordinator.HAS_INNER) {
+				if (!hasInner(state)) {
 					return state;
 				}
 
-				if (DelayUntilCoordinator.STATE.compareAndSet(parent, state, state & ~DelayUntilCoordinator.HAS_INNER)) {
+				if (DelayUntilCoordinator.STATE.compareAndSet(parent, state, state &~ DelayUntilCoordinator.HAS_INNER)) {
 					return state;
 				}
 			}
