@@ -15,9 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
@@ -131,24 +128,16 @@ public abstract class FluxSwitchMapStressTest {
 	@Outcome(id = {"0, 1"}, expect = ACCEPTABLE, desc = "Cancellation with no onError and dropped Error")
 	@Outcome(id = {"1, 0"}, expect = ACCEPTABLE, desc = "onError happened first")
 	@State
-	public static class CancelInnerErrorStressTest extends FluxSwitchMapStressTest implements
-	                                                                               Consumer<Throwable> {
+	public static class CancelInnerErrorStressTest extends FluxSwitchMapStressTest {
 
 		final Throwable t = new RuntimeException("test");
-		final AtomicInteger errorDroppedCounter = new AtomicInteger();
 
 		StressSubscription<Integer> subscription;
 
 		{
-			Hooks.onErrorDropped(this);
 			switchMapMain.onSubscribe(stressSubscription);
 			switchMapMain.onNext("1");
 			switchMapMain.request(1);
-		}
-
-		@Override
-		public void accept(Throwable throwable) {
-			throw (RuntimeException) throwable;
 		}
 
 		@Override
@@ -163,28 +152,20 @@ public abstract class FluxSwitchMapStressTest {
 
 		@Actor
 		public void outerProducer() {
-			try {
-				switchMapMain.cancel();
-			} catch (Throwable t) {
-				errorDroppedCounter.incrementAndGet();
-			}
+			switchMapMain.cancel();
 		}
 
 		@Actor
 		public void innerProducer() {
 			subscription.actual.onNext(1);
-			try {
-				subscription.actual.onError(t);
-			} catch (Throwable t) {
-				errorDroppedCounter.incrementAndGet();
-			}
+			subscription.actual.onError(t);
 		}
 
 		@Arbiter
 		public void arbiter(II_Result r) {
 			Hooks.resetOnErrorDropped();
 			r.r1 = stressSubscriber.onErrorCalls.get();
-			r.r2 = errorDroppedCounter.get();
+			r.r2 = stressSubscriber.droppedErrors.size();
 		}
 	}
 
@@ -192,25 +173,17 @@ public abstract class FluxSwitchMapStressTest {
 	@Outcome(id = {"1, 2, 0"}, expect = ACCEPTABLE, desc = "onError happened, bot error are as causes, zero dropped")
 	@Outcome(id = {"1, 1, 1"}, expect = ACCEPTABLE, desc = "onError happened, only one error appeared and another was dropped")
 	@State
-	public static class MainErrorInnerErrorStressTest extends FluxSwitchMapStressTest implements
-	                                                                                  Consumer<Throwable> {
+	public static class MainErrorInnerErrorStressTest extends FluxSwitchMapStressTest {
 
 		final Throwable t1 = new RuntimeException("test1");
 		final Throwable t2 = new RuntimeException("test2");
-		final AtomicInteger errorDroppedCounter = new AtomicInteger();
 
 		StressSubscription<Integer> subscription;
 
 		{
-			Hooks.onErrorDropped(this);
 			switchMapMain.onSubscribe(stressSubscription);
 			switchMapMain.onNext("1");
 			switchMapMain.request(1);
-		}
-
-		@Override
-		public void accept(Throwable throwable) {
-			throw (RuntimeException) throwable;
 		}
 
 		@Override
@@ -225,21 +198,13 @@ public abstract class FluxSwitchMapStressTest {
 
 		@Actor
 		public void outerProducer() {
-			try {
-				switchMapMain.onError(t1);
-			} catch (Throwable t) {
-				errorDroppedCounter.incrementAndGet();
-			}
+			switchMapMain.onError(t1);
 		}
 
 		@Actor
 		public void innerProducer() {
 			subscription.actual.onNext(1);
-			try {
-				subscription.actual.onError(t2);
-			} catch (Throwable t) {
-				errorDroppedCounter.incrementAndGet();
-			}
+			subscription.actual.onError(t2);
 		}
 
 		@Arbiter
@@ -249,12 +214,11 @@ public abstract class FluxSwitchMapStressTest {
 			r.r2 = Exceptions.isMultiple(stressSubscriber.error)
 					? stressSubscriber.error.getSuppressed().length
 					: 1;
-			r.r3 = errorDroppedCounter.get();
+			r.r3 = stressSubscriber.droppedErrors.size();
 		}
 	}
 
-//	FIXME: test does not work due to bug in ColdTestPublisher
-//	@JCStressTest
+	@JCStressTest
 	@Outcome(id = {"200, 1"}, expect = ACCEPTABLE, desc = "Should produced and remaining requested result in total requested number of elements")
 	@State
 	public static class RequestAndProduceStressTest1 extends FluxSwitchMapStressTest {
@@ -301,8 +265,7 @@ public abstract class FluxSwitchMapStressTest {
 		}
 	}
 
-//	FIXME: test does not work due to bug in ColdTestPublisher
-//	@JCStressTest
+	@JCStressTest
 	@Outcome(id = {"200, 0, 0", "200, 1, 0"}, expect = ACCEPTABLE, desc = "Should produced exactly what was requested")
 	@State
 	public static class RequestAndProduceStressTest2 extends FluxSwitchMapStressTest {
