@@ -84,8 +84,8 @@ I want to deal with:
 ** into a boolean value from a predicate:
 *** applied to all values (AND): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#all-java.util.function.Predicate-[all]
 *** applied to at least one value (OR): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#any-java.util.function.Predicate-[any]
-*** testing the presence of any value: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#hasElement--[hasElements]
-*** testing the presence of a specific value: `hasElement` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#hasElement-T-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#hasElement--[Mono])
+*** testing the presence of any value: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#hasElements--[hasElements]
+*** testing the presence of a specific value: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#hasElement-T-[hasElement(T)]
 
 
 * I want to combine publishers...
@@ -116,8 +116,8 @@ I want to deal with:
 ** I want a value instead: `defaultIfEmpty` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#defaultIfEmpty-T-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#defaultIfEmpty-T-[Mono])
 ** I want another sequence instead: `switchIfEmpty` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#switchIfEmpty-org.reactivestreams.Publisher-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#switchIfEmpty-reactor.core.publisher.Mono-[Mono])
 
-* I have a sequence but I am not interested in values: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElements-org.reactivestreams.Publisher-[Mono])
-** ...and I want the completion represented as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono]: `then` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#then--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#then--[Mono])
+* I have a sequence but I am not interested in values: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElement--[Mono])
+** ...and I want the completion represented as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono<Void>]: `then` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#then--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#then--[Mono])
 ** ...and I want to wait for another task to complete at the end: `thenEmpty` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#thenEmpty-org.reactivestreams.Publisher-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#thenEmpty-org.reactivestreams.Publisher-[Mono])
 ** ...and I want to switch to another https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono] at the end: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#then-reactor.core.publisher.Mono-[Mono#then(mono)]
 ** ...and I want to emit a single value at the end: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#thenReturn-V-[Mono#thenReturn(T)]
@@ -142,12 +142,12 @@ I want to deal with:
 *** "start" of the sequence: `doFirst` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doFirst-java.lang.Runnable-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doFirst-java.lang.Runnable-[Mono])
 **** this is tied to https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Publisher.html?is-external=true#subscribe(org.reactivestreams.Subscriber)[Publisher#subscribe(Subscriber)]
 *** post-subscription : `doOnSubscribe` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doOnSubscribe-java.util.function.Consumer-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doOnSubscribe-java.util.function.Consumer-[Mono])
-**** as in https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscription.html[Subscription] acknowledgment after `subscribe` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#subscribe--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#subscribe--[Mono])
+**** `Subscription` acknowledgment after `subscribe`
 **** this is tied to https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscriber.html?is-external=true#onSubscribe(org.reactivestreams.Subscription)[Subscriber#onSubscribe(Subscription)]
 *** request: `doOnRequest` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doOnRequest-java.util.function.LongConsumer-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doOnRequest-java.util.function.LongConsumer-[Mono])
-*** completion or error: `doOnTerminate` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doOnTerminate-java.lang.Runnable-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doOnTerminate-java.lang.Runnable-[Mono]) (Mono version includes the result, if any)
+*** completion or error: `doOnTerminate` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doOnTerminate-java.lang.Runnable-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doOnTerminate-java.lang.Runnable-[Mono])
 **** but *after* it has been propagated downstream: `doAfterTerminate` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doAfterTerminate-java.lang.Runnable-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doAfterTerminate-java.lang.Runnable-[Mono])
-*** any type of signal, represented as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Signal.html[Signal]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doOnEach-java.util.function.Consumer-[Flux#doOnEach]
+*** any type of signal, represented as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Signal.html[Signal]: `doOnEach` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doOnEach-java.util.function.Consumer-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doOnEach-java.util.function.Consumer-[Mono])
 *** any terminating condition (complete, error, cancel): `doFinally` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#doFinally-java.util.function.Consumer-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#doFinally-java.util.function.Consumer-[Mono])
 ** log what happens internally: `log` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#log--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#log--[Mono])
 
@@ -165,7 +165,7 @@ I want to deal with:
 ** based on an arbitrary criteria: `filter` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#filter-java.util.function.Predicate-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#filter-java.util.function.Predicate-[Mono])
 *** ...that is asynchronously computed: `filterWhen` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#filterWhen-java.util.function.Function-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#filterWhen-java.util.function.Function-[Mono])
 ** restricting on the type of the emitted objects: `ofType` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ofType-java.lang.Class-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ofType-java.lang.Class-[Mono])
-** by ignoring the values altogether: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElements-org.reactivestreams.Publisher-[Mono])
+** by ignoring the values altogether: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElement--[Mono])
 ** by ignoring duplicates:
 *** in the whole sequence (logical set): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#distinct--[Flux#distinct]
 *** between subsequently emitted items (deduplication): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#distinctUntilChanged--[Flux#distinctUntilChanged]
@@ -177,7 +177,7 @@ I want to deal with:
 **** ...only the first element, as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#next--[Flux#next()]
 **** ...using https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscription.html#request(long)[request(N)] rather than cancellation: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#limitRequest-long-[Flux#limitRequest(long)]
 *** at the end of the sequence: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeLast-int-[Flux#takeLast]
-*** until a criteria is met (inclusive): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeUntilOther-org.reactivestreams.Publisher-[Flux#takeUntil] (predicate-based), https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeUntilOther-org.reactivestreams.Publisher-[Flux#takeUntilOther] (companion publisher-based)
+*** until a criteria is met (inclusive): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeUntil-java.util.function.Predicate-[Flux#takeUntil] (predicate-based), https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeUntilOther-org.reactivestreams.Publisher-[Flux#takeUntilOther] (companion publisher-based)
 *** while a criteria is met (exclusive): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeWhile-java.util.function.Predicate-[Flux#takeWhile]
 ** by taking at most 1 element:
 *** at a specific position: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#elementAt-int-[Flux#elementAt]
@@ -193,7 +193,7 @@ I want to deal with:
 ** by sampling items:
 *** by duration: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#sample-java.time.Duration-[Flux#sample(Duration)]
 **** but keeping the first element in the sampling window instead of the last: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#sampleFirst-java.time.Duration-[sampleFirst]
-*** by a publisher-based window: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#sample-java.time.Duration-[Flux#sample(Publisher)]
+*** by a publisher-based window: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#sample-org.reactivestreams.Publisher-[Flux#sample(Publisher)]
 *** based on a publisher "timing out": https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#sampleTimeout-java.util.function.Function-[Flux#sampleTimeout] (each element triggers a publisher, and is emitted if that publisher does not overlap with the next)
 
 * I expect at most 1 element (error if more than one)...
@@ -207,8 +207,8 @@ I want to deal with:
 == Handling Errors
 
 * I want to create an erroring sequence: `error` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#error-java.lang.Throwable-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#error-java.lang.Throwable-[Mono])...
-** ...to replace the completion of a successful https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#concat-org.reactivestreams.Publisher%2E%2E%2E-[.concat(Flux.error(e))]
-** ...to replace the *emission* of a successful https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono]: `.then(Mono.error(e))` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#then-reactor.core.publisher.Mono-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#then-reactor.core.publisher.Mono-[Mono])
+** ...to replace the completion of a successful https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux]: `.concat(Flux.error(e))`
+** ...to replace the *emission* of a successful https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono]: `.then(Mono.error(e))`
 ** ...if too much time elapses between onNexts: `timeout` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#timeout-java.time.Duration-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#timeout-java.time.Duration-[Mono])
 ** ...lazily: `error(Supplier<Throwable>)` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#error-java.util.function.Supplier-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#error-java.util.function.Supplier-[Mono])
 
@@ -227,15 +227,15 @@ I want to deal with:
 *** to a https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Publisher.html?is-external=true[Publisher] or https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono], possibly different ones depending on the error: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onErrorResume-java.lang.Class-java.util.function.Function-[Flux#onErrorResume] and https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#onErrorResume-java.lang.Class-java.util.function.Function-[Mono#onErrorResume]
 ** by retrying...
 *** ...with a simple policy (max number of attempts): `retry()` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#retry--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retry--[Mono]), `retry(long)` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#retry-long-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retry-long-[Mono])
-*** ...triggered by a companion control Flux: `retryWhen` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retry--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retry--[Mono])
-*** ...using a standard backoff strategy (exponential backoff with jitter): `retryWhen(Retry.backoff(...))` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retry--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retry--[Mono]) (see also other factory methods in https://projectreactor.io/docs/core/release/api/reactor/util/retry/Retry.html[Retry])
+*** ...triggered by a companion control Flux: `retryWhen` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#retryWhen-reactor.util.retry.Retry-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retryWhen-reactor.util.retry.Retry-[Mono])
+*** ...using a standard backoff strategy (exponential backoff with jitter): `retryWhen(Retry.backoff(...))` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#retryWhen-reactor.util.retry.Retry-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#retryWhen-reactor.util.retry.Retry-[Mono]) (see also other factory methods in https://projectreactor.io/docs/core/release/api/reactor/util/retry/Retry.html[Retry])
 
 * I want to deal with backpressure "errors" (request max from upstream and apply the strategy when downstream does not produce enough request)...
 ** by throwing a special https://docs.oracle.com/javase/8/docs/api/java/lang/IllegalStateException.html?is-external=true[IllegalStateException]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureError--[Flux#onBackpressureError]
 ** by dropping excess values: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureDrop--[Flux#onBackpressureDrop]
 *** ...except the last one seen: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureLatest--[Flux#onBackpressureLatest]
 ** by buffering excess values (bounded or unbounded): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureBuffer--[Flux#onBackpressureBuffer]
-*** ...and applying a strategy when bounded buffer also overflows: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureBuffer--[Flux#onBackpressureBuffer] with a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/BufferOverflowStrategy.html[BufferOverflowStrategy]
+*** ...and applying a strategy when bounded buffer also overflows: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureBuffer-int-reactor.core.publisher.BufferOverflowStrategy-[Flux#onBackpressureBuffer] with a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/BufferOverflowStrategy.html[BufferOverflowStrategy]
 
 [[which.time]]
 == Working with Time
@@ -288,14 +288,14 @@ I want to deal with:
 *** driven by an arbitrary boundary represented by onNexts in a control Publisher: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#buffer-org.reactivestreams.Publisher-[buffer(Publisher)], https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#bufferWhen-org.reactivestreams.Publisher-java.util.function.Function-[bufferWhen]
 ** into an arbitrary "collection" type `C`: use variants like https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#buffer-int-java.util.function.Supplier-[buffer(int, Supplier<C>)]
 
-* I want to split a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux<T>] so that element that share a characteristic end up in the same sub-flux: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#flatMap-java.util.function.Function-[groupBy(Function<T,K>)]
+* I want to split a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux<T>] so that element that share a characteristic end up in the same sub-flux: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#groupBy-java.util.function.Function-[groupBy(Function<T,K>)]
 TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner https://projectreactor.io/docs/core/release/api/reactor/core/publisher/GroupedFlux.html[GroupedFlux] shares the same `K` key accessible through https://projectreactor.io/docs/core/release/api/reactor/core/publisher/GroupedFlux.html#key--[key()].
 
 [[which.blocking]]
 == Going Back to the Synchronous World
 
 Note: all of these methods except https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#toFuture--[Mono#toFuture] will throw an https://docs.oracle.com/javase/8/docs/api/java/lang/UnsupportedOperationException.html?is-external=true[UnsupportedOperatorException] if called from
-within a https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html[Scheduler] marked as "non-blocking only" (by default https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#parallel--[parallel()] and `single()` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#single--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#single--[Mono])).
+within a https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html[Scheduler] marked as "non-blocking only" (by default https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#parallel--[parallel()] and https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#single--[single()]).
 
 * I have a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux<T>] and I want to:
 ** block until I can get the first element: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#blockFirst--[Flux#blockFirst]
@@ -318,7 +318,7 @@ within a https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/
 ** and trigger the source immediately (late subscribers see later data): `share()` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#share--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#share--[Mono])
 ** and permanently connect the source when enough subscribers have registered: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ConnectableFlux.html#autoConnect-int-[.publish().autoConnect(n)]
 ** and automatically connect and cancel the source when subscribers go above/below the threshold: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ConnectableFlux.html#refCount-int-[.publish().refCount(n)]
-*** ...but giving a chance for new subscribers to come in before cancelling: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ConnectableFlux.html#refCount-int-[.publish().refCount(n, Duration)]
+*** ...but giving a chance for new subscribers to come in before cancelling: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ConnectableFlux.html#refCount-int-java.time.Duration-[.publish().refCount(n, Duration)]
 
 * I want to cache data from a https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Publisher.html?is-external=true[Publisher] and replay it to later subscribers:
 ** up to `n` elements: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#cache-int-[cache(int)]
