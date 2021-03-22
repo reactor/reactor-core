@@ -191,12 +191,4 @@ class MonoSingleCallableTest {
 		assertThat(single.call()).isEqualTo(2);
 	}
 
-	@Test
-	void scanOperator(){
-		MonoSingleCallable<String> test = new MonoSingleCallable<>(() -> "foo");
-
-		//FIXME scan for RUN_STYLE in master
-//		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-	}
-
 }
