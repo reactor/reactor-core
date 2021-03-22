@@ -7683,28 +7683,28 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Mono} with the single item or an error signal
 	 */
-    public final Mono<T> single() {
-	    if (this instanceof Callable) {
-	        if (this instanceof Fuseable.ScalarCallable) {
-		        @SuppressWarnings("unchecked")
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+	public final Mono<T> single() {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-		        T v;
-		        try {
-			        v = scalarCallable.call();
-		        }
-		        catch (Exception e) {
-			        return Mono.error(Exceptions.unwrap(e));
-		        }
-		        if (v == null) {
-                    return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
-                }
-                return Mono.just(v);
-	        }
-		    @SuppressWarnings("unchecked")
-		    Callable<T> thiz = (Callable<T>)this;
-		    return Mono.onAssembly(new MonoCallable<>(thiz));
-	    }
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(Exceptions.unwrap(e));
+				}
+				if (v == null) {
+					return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+				}
+				return Mono.just(v);
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoSingleCallable<>(thiz));
+		}
 		return Mono.onAssembly(new MonoSingle<>(this));
 	}
 
@@ -7721,28 +7721,28 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} with the expected single item, the supplied default value or
 	 * an error signal
 	 */
-    public final Mono<T> single(T defaultValue) {
-        if (this instanceof Callable) {
-            if (this instanceof Fuseable.ScalarCallable) {
-	            @SuppressWarnings("unchecked")
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+	public final Mono<T> single(T defaultValue) {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-	            T v;
-	            try {
-		            v = scalarCallable.call();
-	            }
-	            catch (Exception e) {
-		            return Mono.error(Exceptions.unwrap(e));
-	            }
-	            if (v == null) {
-	                return Mono.just(defaultValue);
-                }
-                return Mono.just(v);
-            }
-	        @SuppressWarnings("unchecked")
-	        Callable<T> thiz = (Callable<T>)this;
-	        return Mono.onAssembly(new MonoCallable<>(thiz));
-        }
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(Exceptions.unwrap(e));
+				}
+				if (v == null) {
+					return Mono.just(defaultValue);
+				}
+				return Mono.just(v);
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoSingleCallable<>(thiz, defaultValue));
+		}
 		return Mono.onAssembly(new MonoSingle<>(this, defaultValue, false));
 	}
 

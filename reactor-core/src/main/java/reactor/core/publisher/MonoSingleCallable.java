@@ -18,11 +18,13 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Expects and emits a single item from the source Callable or signals
@@ -35,9 +37,17 @@ final class MonoSingleCallable<T> extends Mono<T>
 		implements Callable<T>, Fuseable, SourceProducer<T> {
 
 	final Callable<? extends T> callable;
+	@Nullable
+	final T defaultValue;
 
 	MonoSingleCallable(Callable<? extends T> source) {
-		this.callable = source;
+		this.callable = Objects.requireNonNull(source, "source");
+		this.defaultValue = null;
+	}
+
+	MonoSingleCallable(Callable<? extends T> source, T defaultValue) {
+		this.callable = Objects.requireNonNull(source, "source");
+		this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");
 	}
 
 	@Override
@@ -53,8 +63,11 @@ final class MonoSingleCallable<T> extends Mono<T>
 
 		try {
 			T t = callable.call();
-			if (t == null) {
+			if (t == null && defaultValue == null) {
 				actual.onError(new NoSuchElementException("Source was empty"));
+			}
+			else if (t == null) {
+				sds.complete(defaultValue);
 			}
 			else {
 				sds.complete(t);
@@ -83,8 +96,11 @@ final class MonoSingleCallable<T> extends Mono<T>
 			throw Exceptions.propagate(e);
 		}
 
-		if (v == null) {
+		if (v == null && this.defaultValue == null) {
 			throw new NoSuchElementException("Source was empty");
+		}
+		else if (v == null) {
+			return this.defaultValue;
 		}
 
 		return v;
@@ -94,8 +110,11 @@ final class MonoSingleCallable<T> extends Mono<T>
 	public T call() throws Exception {
 		final T v = callable.call();
 
-		if (v == null) {
+		if (v == null && this.defaultValue == null) {
 			throw new NoSuchElementException("Source was empty");
+		}
+		else if (v == null) {
+			return this.defaultValue;
 		}
 
 		return v;

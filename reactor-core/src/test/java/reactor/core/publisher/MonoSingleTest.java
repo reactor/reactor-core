@@ -19,57 +19,226 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 public class MonoSingleTest {
 
-	@Test
-	//  https://github.com/reactor/reactor-core/issues/2635
-	void ensureCallableFusedSingleFailOnEmptySource() {
-		StepVerifier.create(
-				Mono.fromSupplier(() -> null)
-				    .single())
-		            .expectErrorMatches(err -> err instanceof NoSuchElementException)
-		            .verify();
+	@Nested
+	class ConcreteClassConsistency {
+		//tests Flux.single, Flux.single(T) and Mono.single API consistency over returned classes
+
+		@Test
+		void monoWithScalarEmpty() {
+			Mono<Integer> source = Mono.empty();
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoError.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void monoWithScalarError() {
+			Mono<Integer> source = Mono.error(new IllegalStateException("test"));
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoError.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void monoWithScalarValue() {
+			Mono<Integer> source = Mono.just(1);
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoJust.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void monoWithCallable() {
+			Mono<Integer> source = Mono.fromSupplier(() -> 1);
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source")
+			                  .isInstanceOf(Callable.class)
+			                  .isNotInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single").isInstanceOf(MonoSingleCallable.class);
+		}
+
+		@Test
+		void monoWithNormal() {
+			Mono<Integer> source = Mono.just(1).hide();
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isNotInstanceOf(Callable.class); //excludes ScalarCallable too
+			assertThat(single).as("single").isInstanceOf(MonoSingleMono.class);
+		}
+
+		@Test
+		void fluxWithScalarEmpty() {
+			Flux<Integer> source = Flux.empty();
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoError.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void fluxWithScalarError() {
+			Flux<Integer> source = Flux.error(new IllegalStateException("test"));
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoError.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void fluxWithScalarValue() {
+			Flux<Integer> source = Flux.just(1);
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoJust.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void fluxWithCallable() {
+			Flux<Integer> source = Mono.fromSupplier(() -> 1).flux();
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source")
+			                  .isInstanceOf(Callable.class)
+			                  .isNotInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single").isInstanceOf(MonoSingleCallable.class);
+		}
+
+		@Test
+		void fluxWithNormal() {
+			Flux<Integer> source = Flux.range(1, 10);
+			Mono<Integer> single = source.single();
+
+			assertThat(source).as("source").isNotInstanceOf(Callable.class); //excludes ScalarCallable too
+			assertThat(single).as("single").isInstanceOf(MonoSingle.class);
+		}
+
+		@Test
+		void fluxDefaultValueWithScalarEmpty() {
+			Flux<Integer> source = Flux.empty();
+			Mono<Integer> single = source.single(2);
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoJust.class) //2
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void fluxDefaultValueWithScalarError() {
+			Flux<Integer> source = Flux.error(new IllegalStateException("test"));
+			Mono<Integer> single = source.single(2);
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoError.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void fluxDefaultValueWithScalarValue() {
+			Flux<Integer> source = Flux.just(1);
+			Mono<Integer> single = source.single(2);
+
+			assertThat(source).as("source").isInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single")
+			                  .isInstanceOf(MonoJust.class)
+			                  .isInstanceOf(Fuseable.ScalarCallable.class);
+		}
+
+		@Test
+		void fluxDefaultValueWithCallable() {
+			Flux<Integer> source = Mono.fromSupplier(() -> 1).flux();
+			Mono<Integer> single = source.single(2);
+
+			assertThat(source).as("source")
+			                  .isInstanceOf(Callable.class)
+			                  .isNotInstanceOf(Fuseable.ScalarCallable.class);
+			assertThat(single).as("single").isInstanceOf(MonoSingleCallable.class);
+		}
+
+		@Test
+		void fluxDefaultValueWithNormal() {
+			Flux<Integer> source = Flux.range(1, 10);
+			Mono<Integer> single = source.single(2);
+
+			assertThat(source).as("source").isNotInstanceOf(Callable.class); //excludes ScalarCallable too
+			assertThat(single).as("single").isInstanceOf(MonoSingle.class);
+		}
+
+		@Test
+		void fluxDefaultValueNullRejectedInAllSourceCases() {
+			Flux<Integer> sourceScalar = Flux.empty();
+			Flux<Integer> sourceCallable = Mono.fromSupplier(() -> 1).flux();
+			Flux<Integer> sourceNormal = Flux.range(1, 10);
+
+			assertThatNullPointerException().as("sourceScalar").isThrownBy(() -> sourceScalar.single(null));
+			assertThatNullPointerException().as("sourceCallable").isThrownBy(() -> sourceCallable.single(null));
+			assertThatNullPointerException().as("sourceNormal").isThrownBy(() -> sourceNormal.single(null));
+		}
+
+		@Test
+		void fluxDefaultValueIsUsedForScalarSource() {
+			Flux<Integer> sourceScalar = Flux.empty();
+
+			StepVerifier.create(sourceScalar.single(2))
+			            .expectNext(2)
+			            .verifyComplete();
+		}
+
+		@Test
+		void fluxDefaultValueIsUsedForCallableSource() {
+			Flux<Integer> sourceCallable = Mono.<Integer>fromSupplier(() -> null).flux();
+			StepVerifier.create(sourceCallable.single(2))
+			            .expectNext(2)
+			            .verifyComplete();
+		}
+
+		@Test
+		void fluxDefaultValueIsUsedForNormalSource() {
+			Flux<Integer> sourceNormal = Flux.<Integer>empty().hide();
+
+			StepVerifier.create(sourceNormal.single(2))
+			            .expectNext(2)
+			            .verifyComplete();
+		}
 	}
 
 	@Test
-	void ensureCallableFusedSingleFailOnEmptySourceOnBlock() {
-		assertThatThrownBy(Mono.fromSupplier(() -> null)
-		                       .single()::block)
-						.isInstanceOf(NoSuchElementException.class);
-	}
-
-	@Test
-	void ensureCallableFusedSingleFailOnEmptySourceOnCall() {
-		assertThatThrownBy(((Callable)Mono.fromSupplier(() -> null)
-		                                 .single())::call)
-				.isInstanceOf(NoSuchElementException.class);
-	}
-
-	@Test
-	public void source1Null() {
+	void source1Null() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
 			new MonoSingle<>(null, 1, false);
 		});
 	}
-
-	@Test
-	public void defaultSupplierNull() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
-			Flux.never().single(null);
-		});
-	}
-
 
 	@Test
 	public void normal() {
