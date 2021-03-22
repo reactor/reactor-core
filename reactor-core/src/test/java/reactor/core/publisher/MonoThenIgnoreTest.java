@@ -22,12 +22,32 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoThenIgnoreTest {
+
+	@Test
+	// https://github.com/reactor/reactor-core/issues/2561
+	public void raceTest2561() {
+		final Scheduler scheduler = Schedulers.newSingle("non-test-thread");
+		final Mono<String> getCurrentThreadName =
+				Mono.fromSupplier(() -> Thread.currentThread().getName());
+		for (int i = 0; i < 100000; i++) {
+			StepVerifier.create(getCurrentThreadName.publishOn(scheduler)
+			                                        .then(getCurrentThreadName)
+			                                        .then(getCurrentThreadName)
+			                                        .then(getCurrentThreadName))
+			            .assertNext(threadName -> {
+				            assertThat(threadName).startsWith("non-test-thread");
+			            })
+			            .verifyComplete();
+		}
+	}
 
 	@Test
 	public void normal() {
@@ -83,44 +103,6 @@ public class MonoThenIgnoreTest {
 		processor.cancel();
 
 		cancelTester.assertCancelled();
-	}
-
-	@Test
-	public void scanThenAcceptInner() {
-		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoIgnoreThen.ThenIgnoreMain<String> main = new MonoIgnoreThen.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
-
-		MonoIgnoreThen.ThenAcceptInner<String> test = new MonoIgnoreThen.ThenAcceptInner<>(main);
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
-
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
-
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-	}
-
-	@Test
-	public void scanThenIgnoreInner() {
-		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoIgnoreThen.ThenIgnoreMain<String> main = new MonoIgnoreThen.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
-
-		MonoIgnoreThen.ThenIgnoreInner test = new MonoIgnoreThen.ThenIgnoreInner(main);
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
-
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/661
