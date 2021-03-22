@@ -9446,7 +9446,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/windowUntil.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
-	 * upon cancellation or error triggered by a data signal.
+	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
+	 * it also discards the remaining elements that were bound for it until the main sequence completes
+	 * or creation of a new window is triggered.
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
@@ -9474,7 +9476,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/windowUntilWithCutBefore.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
-	 * upon cancellation or error triggered by a data signal.
+	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
+	 * it also discards the remaining elements that were bound for it until the main sequence completes
+	 * or creation of a new window is triggered.
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
@@ -9504,7 +9508,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/windowUntilWithCutBefore.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
-	 * upon cancellation or error triggered by a data signal.
+	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
+	 * it also discards the remaining elements that were bound for it until the main sequence completes
+	 * or creation of a new window is triggered.
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
@@ -9530,7 +9536,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
-	 * upon cancellation or error triggered by a data signal.
+	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
+	 * it also discards the remaining elements that were bound for it until the main sequence completes
+	 * or creation of a new window is triggered.
 	 *
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
 	 */
@@ -9548,7 +9556,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
-	 * upon cancellation or error triggered by a data signal.
+	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
+	 * it also discards the remaining elements that were bound for it until the main sequence completes
+	 * or creation of a new window is triggered.
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
@@ -9568,7 +9578,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
-	 * upon cancellation or error triggered by a data signal.
+	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
+	 * it also discards the remaining elements that were bound for it until the main sequence completes
+	 * or creation of a new window is triggered.
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param keyComparator predicate used to compare keys
@@ -9595,7 +9607,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
-	 * the predicate).
+	 * the predicate). Upon cancellation of the current window, it also discards the remaining elements
+	 * that were bound for it until the main sequence completes or creation of a new window is triggered.
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @return a {@link Flux} of {@link Flux} windows, each containing
@@ -9620,7 +9633,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
-	 * the predicate).
+	 * the predicate). Upon cancellation of the current window, it also discards the remaining elements
+	 * that were bound for it until the main sequence completes or creation of a new window is triggered.
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @param prefetch the request size to use for this {@link Flux}.

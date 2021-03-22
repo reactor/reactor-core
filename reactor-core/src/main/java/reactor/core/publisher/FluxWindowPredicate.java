@@ -231,7 +231,13 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			drain();
 
 			if (mode == Mode.UNTIL && match) {
-				g.onNext(t);
+				if(g.cancelled) {
+					// so it's consistent with the previously discarded elements when (mode == UNTIL && !match) was satisfied
+					Operators.onDiscard(t, ctx);
+					s.request(1);
+				} else {
+					g.onNext(t);
+				}
 				g.onComplete();
 				newWindowDeferred();
 			}
@@ -249,6 +255,10 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 				newWindowDeferred();
 				Operators.onDiscard(t, ctx);
 				//compensate for the dropped delimiter
+				s.request(1);
+			}
+			else if(g.cancelled) {
+				Operators.onDiscard(t, ctx);
 				s.request(1);
 			}
 			else {
