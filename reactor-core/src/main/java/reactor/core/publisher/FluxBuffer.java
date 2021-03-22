@@ -59,7 +59,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		}
 
 		if (skip <= 0) {
-			throw new IllegalArgumentException("skip > 0 required but it was " + size);
+			throw new IllegalArgumentException("skip > 0 required but it was " + skip);
 		}
 
 		this.size = size;
