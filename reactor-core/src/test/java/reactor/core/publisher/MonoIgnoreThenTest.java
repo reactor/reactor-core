@@ -17,11 +17,11 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
+
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -29,11 +29,48 @@ import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MonoThenIgnoreTest {
+class MonoIgnoreThenTest {
+
+	@Nested
+	class ThenIgnoreVariant {
+
+		Publisher<Void> scenario(){
+			return Mono.just(1)
+			           .thenEmpty(Mono.delay(Duration.ofSeconds(123)).then());
+		}
+
+		@Test
+		void justThenIgnore() {
+			StepVerifier.create(Mono.just(1)
+			                        .then())
+			            .verifyComplete();
+		}
+
+		@Test
+		void justThenEmptyThenIgnoreWithTime() {
+			StepVerifier.withVirtualTime(this::scenario)
+			            .thenAwait(Duration.ofSeconds(123))
+			            .verifyComplete();
+		}
+
+		@Test
+		void justThenIgnoreWithCancel() {
+			TestPublisher<String> cancelTester = TestPublisher.create();
+
+			Disposable disposable = cancelTester
+					.flux()
+					.then()
+					.subscribe();
+
+			disposable.dispose();
+
+			cancelTester.assertCancelled();
+		}
+	}
 
 	@Test
 	// https://github.com/reactor/reactor-core/issues/2561
-	public void raceTest2561() {
+	void raceTest2561() {
 		final Scheduler scheduler = Schedulers.newSingle("non-test-thread");
 		final Mono<String> getCurrentThreadName =
 				Mono.fromSupplier(() -> Thread.currentThread().getName());
@@ -50,26 +87,14 @@ public class MonoThenIgnoreTest {
 	}
 
 	@Test
-	public void normal() {
+	void justThenEmpty() {
 		StepVerifier.create(Mono.just(1)
 		                        .thenEmpty(Flux.empty()))
 		            .verifyComplete();
 	}
 
-	Publisher<Void> scenario(){
-		return Mono.just(1)
-		    .thenEmpty(Mono.delay(Duration.ofSeconds(123)).then());
-	}
-
 	@Test
-	public void normal3() {
-		StepVerifier.create(Mono.just(1)
-		                        .then())
-		            .verifyComplete();
-	}
-
-	@Test
-	public void chained() {
+	void justThenThen() {
 		StepVerifier.create(Mono.just(0)
 		                        .then(Mono.just(1))
 		                        .then(Mono.just(2)))
@@ -79,35 +104,15 @@ public class MonoThenIgnoreTest {
 
 
 	@Test
-    public void thenReturn() {
+    void justThenReturn() {
 	    StepVerifier.create(Mono.just(0).thenReturn(2))
                     .expectNext(2)
                     .verifyComplete();
     }
 
-	@Test
-	public void normalTime() {
-		StepVerifier.withVirtualTime(this::scenario)
-		            .thenAwait(Duration.ofSeconds(123))
-		            .verifyComplete();
-	}
-
-	@Test
-	public void cancel() {
-		TestPublisher<String> cancelTester = TestPublisher.create();
-
-		MonoProcessor<Void> processor = cancelTester.flux()
-		                                            .then()
-		                                            .toProcessor();
-		processor.subscribe();
-		processor.cancel();
-
-		cancelTester.assertCancelled();
-	}
-
 	//see https://github.com/reactor/reactor-core/issues/661
 	@Test
-	public void fluxThenMonoAndShift() {
+	void fluxThenMonoAndShift() {
 		StepVerifier.create(Flux.just("Good Morning", "Hello")
 		                        .then(Mono.just("Good Afternoon"))
 		                        .then(Mono.just("Bye")))
@@ -117,7 +122,7 @@ public class MonoThenIgnoreTest {
 
 	//see https://github.com/reactor/reactor-core/issues/661
 	@Test
-	public void monoThenMonoAndShift() {
+	void monoThenMonoAndShift() {
 		StepVerifier.create(Mono.just("Good Morning")
 		                        .then(Mono.just("Good Afternoon"))
 		                        .then(Mono.just("Bye")))
