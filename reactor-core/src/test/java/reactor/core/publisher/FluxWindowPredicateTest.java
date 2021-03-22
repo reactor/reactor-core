@@ -46,9 +46,11 @@ import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
+import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
+import static reactor.core.publisher.SignalType.*;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
@@ -681,28 +683,28 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(() -> sp1.onNext(1)) //closes initial, open 2nd
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(2)) //closes second, open 3rd
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(3)) //emits 3
 		            .expectNext(Signal.next(3))
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(() -> sp1.onNext(4)) //closes 3rd, open 4th
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(5)) //closes 4th, open 5th
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(6)) //emits 6
 		            .expectNext(Signal.next(6))
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(() -> sp1.onNext(7)) //closes 5th, open 6th
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(8)) //closes 6th, open 7th
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(9)) //emits 9
 		            .expectNext(Signal.next(9))
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(sp1::onComplete) // completion triggers completion of the last window (7th)
 		            .expectNext(Signal.complete())
 		            .expectComplete()
@@ -719,7 +721,7 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(() -> sp1.onNext(1))
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(2))
@@ -728,7 +730,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(4))
 		            .expectNext(Signal.complete())
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(() -> sp1.onNext(1))
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(2))
@@ -737,7 +739,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(4))
 		            .expectNext(Signal.complete()) //closing window opened by 3
-		            .expectNoEvent(Duration.ofMillis(10))
+		            .expectNoEvent(ofMillis(10))
 		            .then(sp1::onComplete)
 		            //remainder window, not emitted
 		            .expectComplete()
@@ -764,7 +766,7 @@ public class FluxWindowPredicateTest extends
 		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
-		            .verify(Duration.ofMillis(100));
+		            .verify(ofMillis(100));
 		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
@@ -816,7 +818,7 @@ public class FluxWindowPredicateTest extends
 					.then(() -> sp1.onNext(5)) //fails, the empty window receives onError
 					//error in the window:
 					.expectErrorMessage("predicate failure")
-					.verify(Duration.ofMillis(100));
+					.verify(ofMillis(100));
 		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
@@ -917,7 +919,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(1, 2)
 		            .thenRequest(6)
 		            .expectNext(3, 4, 5, 6, 7, 8)
-		            .expectNoEvent(Duration.ofMillis(100))
+		            .expectNoEvent(ofMillis(100))
 		            .thenCancel()
 		            .verify();
 
@@ -941,7 +943,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(1, 2)
 		            .thenRequest(6)
 		            .expectNext(3, 4, 6, 7, 8, 9)
-		            .expectNoEvent(Duration.ofMillis(100))
+		            .expectNoEvent(ofMillis(100))
 		            .thenCancel()
 		            .verify();
 
@@ -1036,23 +1038,78 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	public void discardOnWindowCancel() {
+	// see https://github.com/reactor/reactor-core/issues/2585
+	public void discardOnCancelWindowWhile() {
 		List<Object> discardMain = new ArrayList<>();
 		List<Object> discardWindow = new ArrayList<>();
 
-		StepVerifier.create(Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
-		                        .windowWhile(i -> i > 0)
-		                        .flatMap(w -> w.take(1)
-		                                       .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add))
-		                        )
-		                        .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add)))
-		            .expectNext(1, 4, 6)
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasNotDiscardedElements();
+		Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
+		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .windowWhile(i -> i > 0, 1)
+		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		                     .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		    .log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
+		    // stalls and times out without the fix due to insufficient request to upstream
+		    .timeout(ofMillis(200))
+		    .as(StepVerifier::create)
+		    .expectNext(1, 4, 6)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements();
 
-		assertThat(discardWindow).containsExactly(2, 3, 5);
-		assertThat(discardMain).containsExactly(0, 0, 0);
+		assertThat(discardMain).containsExactly(2, 3, 0, 5, 0, 0);
+		assertThat(discardWindow).isEmpty();
+	}
+
+	@Test
+	// see https://github.com/reactor/reactor-core/issues/2585
+	public void discardOnCancelWindowUntil() {
+		List<Object> discardMain = new ArrayList<>();
+		List<Object> discardWindow = new ArrayList<>();
+
+		Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
+		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .windowUntil(i -> i == 0, false, 1)
+		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		                     .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		    .log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
+		    // stalls and times out without the fix due to insufficient request to upstream
+		    .timeout(ofMillis(200))
+		    .as(StepVerifier::create)
+		    .expectNext(1, 4, 0, 6)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements();
+
+		assertThat(discardMain).containsExactly(2, 3, 0, 5, 0);
+		assertThat(discardWindow).isEmpty();
+	}
+
+	@Test
+	// see https://github.com/reactor/reactor-core/issues/2585
+	public void discardOnCancelWindowUntilCutBefore() {
+		List<Object> discardMain = new ArrayList<>();
+		List<Object> discardWindow = new ArrayList<>();
+
+		Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
+		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .windowUntil(i -> i == 0, true, 1)
+		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		                     .take(1).subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+			.log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
+		    .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
+		    // stalls and times out without the fix due to insufficient request to upstream
+		    .timeout(ofMillis(200))
+		    .as(StepVerifier::create)
+		    .expectNext(1, 0, 0, 0)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements();
+
+		assertThat(discardMain).containsExactly(2, 3, 4, 5, 6);
+		assertThat(discardWindow).isEmpty();
 	}
 
 	@Test
