@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
@@ -195,8 +196,7 @@ class MonoSingleCallableTest {
 	void scanOperator(){
 		MonoSingleCallable<String> test = new MonoSingleCallable<>(() -> "foo");
 
-		//FIXME scan for RUN_STYLE in master
-//		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 }
