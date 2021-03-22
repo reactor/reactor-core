@@ -84,7 +84,7 @@ I want to deal with:
 ** into a boolean value from a predicate:
 *** applied to all values (AND): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#all-java.util.function.Predicate-[all]
 *** applied to at least one value (OR): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#any-java.util.function.Predicate-[any]
-*** testing the presence of any value: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#hasElements--[hasElements]
+*** testing the presence of any value: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#hasElements--[hasElements] _(there is a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono] equivalent in https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#hasElement--[hasElement])_
 *** testing the presence of a specific value: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#hasElement-T-[hasElement(T)]
 
 
@@ -116,7 +116,7 @@ I want to deal with:
 ** I want a value instead: `defaultIfEmpty` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#defaultIfEmpty-T-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#defaultIfEmpty-T-[Mono])
 ** I want another sequence instead: `switchIfEmpty` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#switchIfEmpty-org.reactivestreams.Publisher-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#switchIfEmpty-reactor.core.publisher.Mono-[Mono])
 
-* I have a sequence but I am not interested in values: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElement--[Mono])
+* I have a sequence but I am not interested in values: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux.ignoreElements()]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElement--[Mono.ignoreElement()])
 ** ...and I want the completion represented as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono<Void>]: `then` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#then--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#then--[Mono])
 ** ...and I want to wait for another task to complete at the end: `thenEmpty` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#thenEmpty-org.reactivestreams.Publisher-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#thenEmpty-org.reactivestreams.Publisher-[Mono])
 ** ...and I want to switch to another https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono] at the end: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#then-reactor.core.publisher.Mono-[Mono#then(mono)]
@@ -165,7 +165,7 @@ I want to deal with:
 ** based on an arbitrary criteria: `filter` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#filter-java.util.function.Predicate-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#filter-java.util.function.Predicate-[Mono])
 *** ...that is asynchronously computed: `filterWhen` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#filterWhen-java.util.function.Function-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#filterWhen-java.util.function.Function-[Mono])
 ** restricting on the type of the emitted objects: `ofType` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ofType-java.lang.Class-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ofType-java.lang.Class-[Mono])
-** by ignoring the values altogether: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElement--[Mono])
+** by ignoring the values altogether: `ignoreElements` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#ignoreElements--[Flux.ignoreElements()]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#ignoreElement--[Mono.ignoreElement()])
 ** by ignoring duplicates:
 *** in the whole sequence (logical set): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#distinct--[Flux#distinct]
 *** between subsequently emitted items (deduplication): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#distinctUntilChanged--[Flux#distinctUntilChanged]
