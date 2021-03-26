@@ -6539,10 +6539,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * that didn't anticipate it (resulting in unintended behaviour.)
 	 * <p>
 	 * In most cases, you should instead handle the error inside the specific function which may cause
-	 * it. Specifically, you can use `onErrorResume(e -> Mono.empty())` on each inner flatMap
-	 * publisher to drop erroneous elements:
+	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
+	 * {@code onErrorResume(e -> Mono.empty())} to drop erroneous elements:
 	 * <p>
-	 * <pre>.flatMap(id -> repository.retrieveById(id).onErrorResume(e -> Mono.empty()))</pre>
+	 * <pre>
+	 * .flatMap(id -> repository.retrieveById(id)
+	 *                          .doOnError(System.err::println)
+	 *                          .onErrorResume(e -> Mono.empty()))
+	 * </pre>
 	 * <p>
 	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
 	 * and cannot leak upstream.
@@ -6575,10 +6579,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * that didn't anticipate it (resulting in unintended behaviour.)
 	 * <p>
 	 * In most cases, you should instead handle the error inside the specific function which may cause
-	 * it. Specifically, you can use `onErrorResume(e -> Mono.empty())` on each inner flatMap
-	 * publisher to drop erroneous elements:
+	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
+	 * {@code onErrorResume(e -> Mono.empty())} to drop erroneous elements:
 	 * <p>
-	 * <pre>.flatMap(id -> repository.retrieveById(id).onErrorResume(e -> Mono.empty()))</pre>
+	 * <pre>
+	 * .flatMap(id -> repository.retrieveById(id)
+	 *                          .doOnError(MyException.class, System.err::println)
+	 *                          .onErrorResume(MyException.class, e -> Mono.empty()))
+	 * </pre>
 	 * <p>
 	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
 	 * and cannot leak upstream.
@@ -6609,10 +6617,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * that didn't anticipate it (resulting in unintended behaviour.)
 	 * <p>
 	 * In most cases, you should instead handle the error inside the specific function which may cause
-	 * it. Specifically, you can use `onErrorResume(e -> Mono.empty())` on each inner flatMap
-	 * publisher to drop erroneous elements:
+	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
+	 * {@code onErrorResume(e -> Mono.empty())} to drop erroneous elements:
 	 * <p>
-	 * <pre>.flatMap(id -> repository.retrieveById(id).onErrorResume(e -> Mono.empty()))</pre>
+	 * <pre>
+	 * .flatMap(id -> repository.retrieveById(id)
+	 *                          .doOnError(errorPredicate, System.err::println)
+	 *                          .onErrorResume(errorPredicate, e -> Mono.empty()))
+	 * </pre>
 	 * <p>
 	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
 	 * and cannot leak upstream.
