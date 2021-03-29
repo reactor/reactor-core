@@ -6533,9 +6533,23 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinue.svg" alt="">
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators
-	 * (look for the <strong>Error Mode Support</strong> javadoc section to find operators that
-	 * support it).
+	 * Note that onErrorContinue() is a specialist operator that can make the behaviour of your
+	 * reactive chain unclear. It operates on upstream, not downstream operators, it requires specific
+	 * operator support to work, and the scope can easily propagate upstream into library code
+	 * that didn't anticipate it (resulting in unintended behaviour.)
+	 * <p>
+	 * In most cases, you should instead handle the error inside the specific function which may cause
+	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
+	 * {@code onErrorResume(e -> Mono.empty())} to drop erroneous elements:
+	 * <p>
+	 * <pre>
+	 * .flatMap(id -> repository.retrieveById(id)
+	 *                          .doOnError(System.err::println)
+	 *                          .onErrorResume(e -> Mono.empty()))
+	 * </pre>
+	 * <p>
+	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
+	 * and cannot leak upstream.
 	 *
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
 	 * that triggered the error.
@@ -6559,9 +6573,23 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinueWithClassPredicate.svg" alt="">
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators
-	 * (look for the <strong>Error Mode Support</strong> javadoc section to find operators that
-	 * support it).
+	 * Note that onErrorContinue() is a specialist operator that can make the behaviour of your
+	 * reactive chain unclear. It operates on upstream, not downstream operators, it requires specific
+	 * operator support to work, and the scope can easily propagate upstream into library code
+	 * that didn't anticipate it (resulting in unintended behaviour.)
+	 * <p>
+	 * In most cases, you should instead handle the error inside the specific function which may cause
+	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
+	 * {@code onErrorResume(e -> Mono.empty())} to drop erroneous elements:
+	 * <p>
+	 * <pre>
+	 * .flatMap(id -> repository.retrieveById(id)
+	 *                          .doOnError(MyException.class, System.err::println)
+	 *                          .onErrorResume(MyException.class, e -> Mono.empty()))
+	 * </pre>
+	 * <p>
+	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
+	 * and cannot leak upstream.
 	 *
 	 * @param type the {@link Class} of {@link Exception} that are resumed from.
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
@@ -6583,9 +6611,23 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinueWithPredicate.svg" alt="">
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators
-	 * (look for the <strong>Error Mode Support</strong> javadoc section to find operators that
-	 * support it).
+	 * Note that onErrorContinue() is a specialist operator that can make the behaviour of your
+	 * reactive chain unclear. It operates on upstream, not downstream operators, it requires specific
+	 * operator support to work, and the scope can easily propagate upstream into library code
+	 * that didn't anticipate it (resulting in unintended behaviour.)
+	 * <p>
+	 * In most cases, you should instead handle the error inside the specific function which may cause
+	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
+	 * {@code onErrorResume(e -> Mono.empty())} to drop erroneous elements:
+	 * <p>
+	 * <pre>
+	 * .flatMap(id -> repository.retrieveById(id)
+	 *                          .doOnError(errorPredicate, System.err::println)
+	 *                          .onErrorResume(errorPredicate, e -> Mono.empty()))
+	 * </pre>
+	 * <p>
+	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
+	 * and cannot leak upstream.
 	 *
 	 * @param errorPredicate a {@link Predicate} used to filter which errors should be resumed from.
 	 * This MUST be idempotent, as it can be used several times.
