@@ -22,8 +22,7 @@ buildscript {
 	}
 
 	dependencies {
-		// when updating this plugin, revisit pinning the version of the jcstress jar near line 356
-		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.6'
+		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.8'
 	}
 }
 
@@ -257,7 +256,6 @@ check.dependsOn japicmp
 
 jcstress {
 	mode = 'quick' //quick, default, tough
-	jcstressDependency = "org.openjdk.jcstress:jcstress-core:0.7"
 }
 tasks.check.dependsOn(tasks.jcstress)
 
