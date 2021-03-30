@@ -17,6 +17,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 buildscript {
 	repositories {
+		//FIXME jcenter is going to be read-only until February 1st 2022, needed for now by jcstress plugin
 		jcenter()
 	}
 
@@ -130,7 +131,7 @@ task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
-	src "${repositories.jcenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
+	src "${repositories.mavenCentral().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
 	dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
 }
 

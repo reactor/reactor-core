@@ -13,9 +13,9 @@ This section describes Reactor's support for Kotlin.
 == Requirements
 
 Reactor supports Kotlin 1.1+ and requires
-https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib[`kotlin-stdlib`]
-(or one of its https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre7[`kotlin-stdlib-jre7`]
-or https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8[`kotlin-stdlib-jre8`] variants).
+https://search.maven.org/artifact/org.jetbrains.kotlin/kotlin-stdlib[`kotlin-stdlib`]
+(or one of its https://search.maven.org/artifact/org.jetbrains.kotlin/kotlin-stdlib-jdk7[`kotlin-stdlib-jdk7`]
+or https://search.maven.org/artifact/org.jetbrains.kotlin/kotlin-stdlib-jdk8[`kotlin-stdlib-jdk8`] variants).
 
 [[kotlin-extensions]]
 == Extensions
