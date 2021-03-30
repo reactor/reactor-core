@@ -23,7 +23,6 @@ import java.util.concurrent.Callable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -34,7 +33,7 @@ import reactor.util.annotation.Nullable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoSingleCallable<T> extends Mono<T>
-		implements Callable<T>, Fuseable, SourceProducer<T> {
+		implements Callable<T>, SourceProducer<T> {
 
 	final Callable<? extends T> callable;
 	@Nullable
