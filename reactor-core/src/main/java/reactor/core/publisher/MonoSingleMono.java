@@ -42,8 +42,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSingleMono<T> extends InternalMonoOperator<T, T>
-		implements Fuseable {
+final class MonoSingleMono<T> extends InternalMonoOperator<T, T> {
 
 	MonoSingleMono(Mono<? extends T> source) {
 		super(source);

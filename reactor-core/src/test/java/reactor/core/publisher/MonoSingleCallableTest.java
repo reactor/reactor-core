@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -190,6 +191,23 @@ class MonoSingleCallableTest {
 		Callable<Integer> single = new MonoSingleCallable<>(source, 2);
 
 		assertThat(single.call()).isEqualTo(2);
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/2663
+	@Test
+	void fusionMonoSingleCallableDoesntTriggerFusion() {
+		Mono<Integer> fusedCase = Mono
+				.fromCallable(() -> 1)
+				.single();
+
+		assertThat(fusedCase)
+				.as("fusedCase assembly check")
+				.isInstanceOf(MonoSingleCallable.class)
+				.isNotInstanceOf(Fuseable.class);
+
+		assertThatCode(() -> fusedCase.filter(v -> true).block())
+				.as("fusedCase fused")
+				.doesNotThrowAnyException();
 	}
 
 	@Test

@@ -1,12 +1,16 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
+
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class MonoSingleMonoTest {
 
@@ -38,6 +42,24 @@ public class MonoSingleMonoTest {
 		StepVerifier.create(Mono.just("foo").hide().single())
 		            .expectNext("foo")
 		            .verifyComplete();
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/2663
+	@Test
+	void fusionMonoSingleMonoDoesntTriggerFusion() {
+		Mono<Integer> fusedCase = Mono
+				.just(1)
+				.map(Function.identity())
+				.single();
+
+		assertThat(fusedCase)
+				.as("fusedCase assembly check")
+				.isInstanceOf(MonoSingleMono.class)
+				.isNotInstanceOf(Fuseable.class);
+
+		assertThatCode(() -> fusedCase.filter(v -> true).block())
+				.as("fusedCase fused")
+				.doesNotThrowAnyException();
 	}
 
 	@Test
