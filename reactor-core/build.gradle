@@ -15,17 +15,6 @@
  */
 import me.champeau.gradle.japicmp.JapicmpTask
 
-buildscript {
-	repositories {
-		//FIXME jcenter is going to be read-only until February 1st 2022, needed for now by jcstress plugin
-		jcenter()
-	}
-
-	dependencies {
-		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.8'
-	}
-}
-
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'

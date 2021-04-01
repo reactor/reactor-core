@@ -37,6 +37,7 @@ plugins {
 	id "com.jfrog.artifactory" version "4.15.2" apply false
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 	id 'io.spring.nohttp' version '0.0.5.RELEASE'
+	id "com.github.erizo.gradle.jcstress" version "0.8.8" apply false
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
