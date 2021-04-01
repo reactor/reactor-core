@@ -55,7 +55,7 @@ task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
-	src "${repositories.jcenter().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
+	src "${repositories.mavenCentral().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
 	dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
 
 	finalizedBy { japicmp }

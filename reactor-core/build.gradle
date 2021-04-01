@@ -15,17 +15,6 @@
  */
 import me.champeau.gradle.japicmp.JapicmpTask
 
-buildscript {
-	repositories {
-		jcenter()
-	}
-
-	dependencies {
-		// when updating this plugin, revisit pinning the version of the jcstress jar near line 356
-		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.6'
-	}
-}
-
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'
@@ -130,7 +119,7 @@ task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
-	src "${repositories.jcenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
+	src "${repositories.mavenCentral().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
 	dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
 }
 
@@ -256,7 +245,6 @@ check.dependsOn japicmp
 
 jcstress {
 	mode = 'quick' //quick, default, tough
-	jcstressDependency = "org.openjdk.jcstress:jcstress-core:0.7"
 }
 tasks.check.dependsOn(tasks.jcstress)
 

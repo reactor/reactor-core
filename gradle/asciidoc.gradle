@@ -15,10 +15,6 @@
  */
 
 configure(rootProject) {
-	repositories {
-		jcenter()
-	}
-
 	apply plugin: 'org.asciidoctor.jvm.convert'
 	apply plugin: 'org.asciidoctor.jvm.pdf'
 
