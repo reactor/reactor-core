@@ -56,6 +56,7 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 		if (key == Attr.PREFETCH) return source.getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
+		if (key == Attr.LIFTER) return lifter.toString();
 		return null;
 	}
 

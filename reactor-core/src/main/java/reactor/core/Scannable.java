@@ -219,6 +219,13 @@ public interface Scannable {
 		public static final Attr<RunStyle> RUN_STYLE = new Attr<>(RunStyle.UNKNOWN);
 
 		/**
+		 * LIFTER attribute exposes name of the lifter function. It is calculated as {@link Object#toString} of a function passed to the
+		 * {@link reactor.core.publisher.Operators#lift} or {@link reactor.core.publisher.Operators#liftPublisher}.
+		 * Defaults to {@literal null}.
+		 */
+		public static final Attr<String> LIFTER = new Attr<>(null);
+
+		/**
 		 * An {@link Enum} enumerating the different styles an operator can run : their {@link #ordinal()} reflects the level of confidence
 		 * in their running mode
 		 */

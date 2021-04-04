@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.CorePublisher;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,10 +40,21 @@ import static reactor.core.Scannable.from;
 public class LiftFunctionTest {
 
 	Publisher<Integer> liftOperator;
+	String lifterName;
 
-	<T> Publisher<T> createPublisherAndApply(CorePublisher<T> source) {
+	<T> Publisher<T> createPublisherAndApplyLiftScannable(CorePublisher<T> source) {
+		BiFunction<Scannable, CoreSubscriber<? super T>, CoreSubscriber<? super T>> lifter = (s, actual) -> actual;
+		this.lifterName = lifter.toString();
 		Operators.LiftFunction<T, T> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+				Operators.LiftFunction.liftScannable(null, lifter);
+		return liftFunction.apply(source);
+	}
+
+	<T> Publisher<T> createPublisherAndApplyLiftPublisher(CorePublisher<T> source) {
+		BiFunction<Publisher, CoreSubscriber<? super T>, CoreSubscriber<? super T>> lifter = (s, actual) -> actual;
+		this.lifterName = lifter.toString();
+		Operators.LiftFunction<T, T> liftFunction =
+				Operators.LiftFunction.liftPublisher(null, lifter);
 		return liftFunction.apply(source);
 	}
 
@@ -69,68 +83,129 @@ public class LiftFunctionTest {
 		assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(source);
 		assertThat(from(liftOperator).scan(Attr.PREFETCH)).isEqualTo(prefetch);
 		assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(runStyle);
+		assertThat(from(liftOperator).scan(Attr.LIFTER)).isEqualTo(lifterName);
 	}
 
 	@Nested
 	class MonoLiftTest {
 
-		Mono<Integer> source = Mono.just(1).hide();
+		abstract class Base {
 
-		@BeforeEach
-		void createMonoAndApply() {
-			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			Mono<Integer> source = Mono.just(1).hide();
+
+			@BeforeEach
+			void init() {
+				createMonoAndApply();
+			}
+
+			abstract  void createMonoAndApply();
+
+			@Test
+			void liftMono() {
+				LiftFunctionTest.this.lift(Mono.class, MonoLift.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+			}
 		}
 
-		@Test
-		void liftMono() {
-			LiftFunctionTest.this.lift(Mono.class, MonoLift.class);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createMonoAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+			}
 		}
 
-		@Test
-		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createMonoAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+			}
 		}
 	}
 
 	@Nested
 	class FluxLiftTest {
+		abstract class Base {
 
-		Flux<Integer> source = Flux.just(1).hide();
+			Flux<Integer> source = Flux.just(1).hide();
 
-		@BeforeEach
-		void createFluxAndApply() {
-			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			@BeforeEach
+			void init() {
+				createFluxAndApply();
+			}
+
+			abstract void createFluxAndApply();
+
+			@Test
+			void liftFlux() {
+				LiftFunctionTest.this.lift(Flux.class, FluxLift.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
+			}
 		}
 
-		@Test
-		void liftFlux() {
-			LiftFunctionTest.this.lift(Flux.class, FluxLift.class);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+			}
 		}
 
-		@Test
-		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+			}
 		}
 	}
 
 	@Nested
 	class ParallelLiftTest {
+		abstract class Base {
+			ParallelFlux<Integer> source = Flux.just(1).parallel(2).hide();
 
-		ParallelFlux<Integer> source = Flux.just(1).parallel(2).hide();
+			@BeforeEach
+			void init() {
+				createFluxAndApply();
+			}
 
-		@BeforeEach
-		void createFluxAndApply() {
-			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			abstract void createFluxAndApply();
+
+			@Test
+			void liftParallelFlux() {
+				LiftFunctionTest.this.lift(ParallelFlux.class, ParallelLift.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
+			}
 		}
 
-		@Test
-		void liftParallelFlux() {
-			LiftFunctionTest.this.lift(ParallelFlux.class, ParallelLift.class);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+			}
 		}
 
-		@Test
-		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+			}
 		}
 	}
 
@@ -139,22 +214,42 @@ public class LiftFunctionTest {
 
 		@Nested
 		class Normal {
+			abstract class Base {
+				ConnectableFlux<Integer> source = Flux.just(1).publish().hide();
 
-			ConnectableFlux<Integer> source = Flux.just(1).publish().hide();
+				@BeforeEach
+				void init() {
+					createFluxAndApply();
+				}
 
-			@BeforeEach
-			void createFluxAndApply() {
-				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+				abstract void createFluxAndApply();
+
+				@Test
+				void liftConnectableFlux() {
+					LiftFunctionTest.this.lift(ConnectableFlux.class, ConnectableLift.class);
+				}
+
+				@Test
+				void scanOperator() {
+					LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
+				}
+
 			}
 
-			@Test
-			void liftConnectableFlux() {
-				LiftFunctionTest.this.lift(ConnectableFlux.class, ConnectableLift.class);
+			@Nested
+			class LiftScannable extends Base {
+				@Override
+				void createFluxAndApply() {
+					liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+				}
 			}
 
-			@Test
-			void scanOperator() {
-				LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
+			@Nested
+			class LiftPublisher extends Base {
+				@Override
+				void createFluxAndApply() {
+					liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+				}
 			}
 		}
 
@@ -168,7 +263,7 @@ public class LiftFunctionTest {
 				ConnectableFlux<Integer> source = Flux.just(1)
 						.publish(); //TODO hide if ConnectableFlux gets a hide function
 
-				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
 
 				assertThat(liftOperator)
 						.isInstanceOf(ConnectableFlux.class)
@@ -208,67 +303,125 @@ public class LiftFunctionTest {
 
 	@Nested
 	class MonoLiftFuseableTest {
+		abstract class Base {
+			Mono<Integer> source = Mono.just(1);
 
-		Mono<Integer> source = Mono.just(1);
+			@BeforeEach
+			void init() {
+				createMonoAndApply();
+			}
 
-		@BeforeEach
-		void createMonoAndApply() {
-			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			abstract void createMonoAndApply();
+
+			@Test
+			void liftMonoFuseable() {
+				LiftFunctionTest.this.liftFuseable(Mono.class, MonoLiftFuseable.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+			}
+
 		}
 
-		@Test
-		void liftMonoFuseable() {
-			LiftFunctionTest.this.liftFuseable(Mono.class, MonoLiftFuseable.class);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createMonoAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+			}
 		}
 
-		@Test
-		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createMonoAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+			}
 		}
 
 	}
 
 	@Nested
 	class FluxLiftFuseableTest {
+		abstract class Base {
+			Flux<Integer> source = Flux.just(1);
 
-		Flux<Integer> source = Flux.just(1);
+			@BeforeEach
+			void init() {
+				createFluxAndApply();
+			}
 
-		@BeforeEach
-		void createFluxAndApply() {
-			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			abstract void createFluxAndApply();
+
+			@Test
+			void liftFluxFuseable() {
+				LiftFunctionTest.this.lift(Flux.class, FluxLiftFuseable.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
+			}
 		}
 
-		@Test
-		void liftFluxFuseable() {
-			LiftFunctionTest.this.lift(Flux.class, FluxLiftFuseable.class);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+			}
 		}
 
-		@Test
-		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+			}
 		}
 	}
 
 	@Nested
 	class ParallelLiftFuseableTest {
+		abstract class Base {
+			ParallelFlux<Integer> source = Flux.just(1)
+					.parallel(2)
+					.reduce(() -> 1, (a, b) -> a);
 
-		ParallelFlux<Integer> source = Flux.just(1)
-				.parallel(2)
-				.reduce(() -> 1, (a, b) -> a);
+			@BeforeEach
+			void init() {
+				createFluxAndApply();
+			}
 
-		@BeforeEach
-		void createFluxAndApply() {
-			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			abstract void createFluxAndApply();
+
+			@Test
+			void liftParallelFluxFuseable() {
+				LiftFunctionTest.this.lift(ParallelFlux.class, ParallelLiftFuseable.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+			}
 		}
 
-		@Test
-		void liftParallelFluxFuseable() {
-			LiftFunctionTest.this.lift(ParallelFlux.class, ParallelLiftFuseable.class);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+			}
 		}
 
-		@Test
-		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+			}
 		}
 	}
 
@@ -277,24 +430,43 @@ public class LiftFunctionTest {
 
 		@Nested
 		class Normal {
+			abstract class Base {
+				ConnectableFlux<Integer> source = Flux.just(1)
+						.publish()
+						.replay(2);
 
-			ConnectableFlux<Integer> source = Flux.just(1)
-					.publish()
-					.replay(2);
+				@BeforeEach
+				void init() {
+					createFluxAndApply();
+				}
 
-			@BeforeEach
-			void createFluxAndApply() {
-				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+				abstract void createFluxAndApply();
+
+				@Test
+				void liftConnectableFluxFuseable() {
+					LiftFunctionTest.this.liftFuseable(ConnectableFlux.class, ConnectableLiftFuseable.class);
+				}
+
+				@Test
+				void scanOperator() {
+					LiftFunctionTest.this.scanOperator(source, 2, Attr.RunStyle.SYNC);
+				}
 			}
 
-			@Test
-			void liftConnectableFluxFuseable() {
-				LiftFunctionTest.this.liftFuseable(ConnectableFlux.class, ConnectableLiftFuseable.class);
+			@Nested
+			class LiftScannable extends Base {
+				@Override
+				void createFluxAndApply() {
+					liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
+				}
 			}
 
-			@Test
-			void scanOperator() {
-				LiftFunctionTest.this.scanOperator(source, 2, Attr.RunStyle.SYNC);
+			@Nested
+			class LiftPublisher extends Base {
+				@Override
+				void createFluxAndApply() {
+					liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftPublisher(source);
+				}
 			}
 		}
 
@@ -309,7 +481,7 @@ public class LiftFunctionTest {
 				ConnectableFlux<Integer> source = Flux.just(1)
 						.replay();
 
-				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+				liftOperator = LiftFunctionTest.this.createPublisherAndApplyLiftScannable(source);
 
 				assertThat(liftOperator)
 						.isExactlyInstanceOf(ConnectableLiftFuseable.class);
@@ -326,40 +498,72 @@ public class LiftFunctionTest {
 
 	@Nested
 	class GroupedLiftFuseableTest {
+		abstract class Base {
+			Flux<GroupedFlux<String, Integer>> sourceGroups = Flux.just(1)
+					.groupBy(i -> "" + i);
+			String groupLifterName;
 
-		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux.just(1)
-				.groupBy(i -> "" + i);
+			Operators.LiftFunction<Integer, Integer> liftFunction;
 
-		@Test
-		public void liftGroupedFluxFuseable() {
-			Operators.LiftFunction<Integer, Integer> liftFunction =
-					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+			@BeforeEach
+			void init() {
+				groupLifterName = null;
+				liftFunction = null;
+				createFluxAndApply();
+			}
 
-			sourceGroups.map(liftFunction)
-					.doOnNext(liftOperator -> assertThat(liftOperator)
-							.isInstanceOf(GroupedFlux.class)
-							.isInstanceOf(Fuseable.class)
-							.isExactlyInstanceOf(GroupedLiftFuseable.class))
-					.blockLast();
+			abstract void createFluxAndApply();
+
+			@Test
+			public void liftGroupedFluxFuseable() {
+				Operators.LiftFunction<Integer, Integer> liftFunction =
+						Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+
+				sourceGroups.map(liftFunction)
+						.doOnNext(liftOperator -> assertThat(liftOperator)
+								.isInstanceOf(GroupedFlux.class)
+								.isInstanceOf(Fuseable.class)
+								.isExactlyInstanceOf(GroupedLiftFuseable.class))
+						.blockLast();
+			}
+
+			@Test
+			public void scanOperator() {
+				sourceGroups.map(g -> {
+					Publisher<Integer> liftOperator = liftFunction.apply(g);
+
+					assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(g);
+					assertThat(from(liftOperator).scan(Attr.PREFETCH)).isSameAs(g.getPrefetch());
+					assertThat(from(liftOperator).scan(Attr.RUN_STYLE))
+							.isSameAs(Attr.RunStyle.SYNC)
+							.isSameAs(from(g).scan(Attr.RUN_STYLE));
+					assertThat(from(liftOperator).scan(Attr.LIFTER)).isEqualTo(groupLifterName);
+
+					return liftOperator;
+				})
+				.blockLast();
+			}
 		}
 
-		@Test
-		public void scanOperator() {
-			Operators.LiftFunction<Integer, Integer> liftFunction =
-					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+		@Nested
+		class LiftScannable extends Base {
+			@Override
+			void createFluxAndApply() {
+				BiFunction<Scannable, CoreSubscriber<? super Integer>, CoreSubscriber<? super Integer>> groupedLifter =
+						(s, actual) -> actual;
+				groupLifterName = groupedLifter.toString();
+				liftFunction = Operators.LiftFunction.liftScannable(null, groupedLifter);
+			}
+		}
 
-			sourceGroups.map(g -> {
-				Publisher<Integer> liftOperator = liftFunction.apply(g);
-
-				assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(g);
-				assertThat(from(liftOperator).scan(Attr.PREFETCH)).isSameAs(g.getPrefetch());
-				assertThat(from(liftOperator).scan(Attr.RUN_STYLE))
-						.isSameAs(Attr.RunStyle.SYNC)
-						.isSameAs(from(g).scan(Attr.RUN_STYLE));
-
-				return liftOperator;
-			})
-			.blockLast();
+		@Nested
+		class LiftPublisher extends Base {
+			@Override
+			void createFluxAndApply() {
+				final BiFunction<Publisher, CoreSubscriber<? super Integer>, CoreSubscriber<? super Integer>> groupedLifter = (s, actual) -> actual;
+				groupLifterName = groupedLifter.toString();
+				liftFunction = Operators.LiftFunction.liftPublisher(null, groupedLifter);
+			}
 		}
 	}
 }

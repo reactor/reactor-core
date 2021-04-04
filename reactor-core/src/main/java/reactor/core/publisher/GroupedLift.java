@@ -62,6 +62,9 @@ final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable 
 		if (key == Attr.RUN_STYLE) {
 			return Scannable.from(source).scanUnsafe(key);
 		}
+		if (key == Attr.LIFTER) {
+			return lifter.toString();
+		}
 
 		return null;
 	}

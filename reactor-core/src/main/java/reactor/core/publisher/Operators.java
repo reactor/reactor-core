@@ -2523,13 +2523,14 @@ public abstract class Operators {
 			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 					effectiveLifter = (pub, sub) -> lifter.apply(Scannable.from(pub), sub);
 
-			return new LiftFunction<>(effectiveFilter, effectiveLifter);
+			return new LiftFunction<>(effectiveFilter, new NamedLifter<>(effectiveLifter, lifter.toString()));
 		}
 
 		static final <I, O> LiftFunction<I, O> liftPublisher(
 				@Nullable Predicate<Publisher> filter,
 				BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
-			return new LiftFunction<>(filter, Objects.requireNonNull(lifter, "lifter"));
+			Objects.requireNonNull(lifter, "lifter");
+			return new LiftFunction<>(filter, new NamedLifter<>(lifter, lifter.toString()));
 		}
 
 		private LiftFunction(@Nullable Predicate<Publisher> filter,
@@ -2574,6 +2575,27 @@ public abstract class Operators {
 					return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
 				}
 				return new FluxLift<>(publisher, lifter);
+			}
+		}
+
+		static class NamedLifter<T, U, R> implements BiFunction<T, U, R> {
+
+			private final BiFunction<T, U, R> delegate;
+			private final String name;
+
+			NamedLifter(BiFunction<T, U, R> delegate, String name) {
+				this.delegate = Objects.requireNonNull(delegate, "delegate");
+				this.name = Objects.requireNonNull(name, "name");
+			}
+
+			@Override
+			public R apply(T t, U u) {
+				return delegate.apply(t, u);
+			}
+
+			@Override
+			public String toString() {
+				return name;
 			}
 		}
 	}

@@ -64,6 +64,9 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 		if (key == Attr.RUN_STYLE) {
 			return Scannable.from(source).scanUnsafe(key);
 		}
+		if (key == Attr.LIFTER) {
+			return lifter.toString();
+		}
 
 		return null;
 	}

@@ -64,6 +64,9 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		if (key == Attr.RUN_STYLE) {
 			return Scannable.from(source).scanUnsafe(key);
 		}
+		if (key == Attr.LIFTER) {
+			return lifter.toString();
+		}
 
 		return null;
 	}
