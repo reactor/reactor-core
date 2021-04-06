@@ -81,9 +81,9 @@ String getOrGenerateBuildNumber() {
 	if (project.hasProperty("buildNumber")) {
 		return project.findProperty("buildNumber")
 	}
-	def jenkinsNumber = System.getenv("BUILD_NUMBER")
-	if (jenkinsNumber != null) {
-		return jenkinsNumber
+	def ciNumber = System.getenv("GITHUB_RUN_ID")
+	if (ciNumber != null) {
+		return ciNumber
 	}
 	ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC)
 	long secondsInDay = now.toEpochSecond() - ZonedDateTime.now(ZoneOffset.UTC).withSecond(0).withHour(0).withMinute(0).toEpochSecond()
@@ -112,8 +112,12 @@ if (project.hasProperty("artifactory_publish_password")) {
 				}
 			}
 			clientConfig.setIncludeEnvVars(false)
-			clientConfig.info.setBuildName('Reactor - Releaser - Core')
+			clientConfig.info.setBuildName('Reactor - Core')
 			clientConfig.info.setBuildNumber(buildNumber)
+			if (System.getenv("GITHUB_ACTIONS") == "true") {
+				clientConfig.info.setBuildUrl(System.getenv("GITHUB_SERVER_URL") + "/" + System.getenv("GITHUB_REPOSITORY") + "/actions/runs/" + System.getenv("GITHUB_RUN_ID"))
+				clientConfig.info.setVcsRevision(System.getenv("GITHUB_SHA"))
+			}
 		}
 	}
 }
