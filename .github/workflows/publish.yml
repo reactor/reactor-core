@@ -31,13 +31,10 @@ jobs:
       run: ./gradlew check
     - name: tag
       if: steps.version.outputs.versionType == 'RELEASE' || steps.version.outputs.versionType == 'MILESTONE'
-      with:
-        tag_name: "v${{ steps.version.outputs.fullVersion }}"
-        tag_comment: "Release version ${{ steps.version.outputs.fullVersion }}"
       run: |
         git config --local user.name 'reactorbot'
         git config --local user.email '32325210+reactorbot@users.noreply.github.com'
-        git tag -m "${{ tag_comment }}" ${{ tag_name }} ${{ github.sha }}
+        git tag -m "Release version ${{ steps.version.outputs.fullVersion }}" v${{ steps.version.outputs.fullVersion }} ${{ github.sha }}
         git push --tags
 
   #deploy the snapshot artifacts to Artifactory
