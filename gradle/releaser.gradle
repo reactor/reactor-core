@@ -81,7 +81,7 @@ String getOrGenerateBuildNumber() {
 	if (project.hasProperty("buildNumber")) {
 		return project.findProperty("buildNumber")
 	}
-	def ciNumber = System.getenv("GITHUB_RUN_ID")
+	def ciNumber = System.getenv("GITHUB_RUN_NUMBER")
 	if (ciNumber != null) {
 		return ciNumber
 	}
