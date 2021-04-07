@@ -102,12 +102,12 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 		if (!guard.compareAndSet(null, Operation.ON_SUBSCRIBE)) {
 			concurrentOnSubscribe.set(true);
 		} else {
-			if (Operators.setOnce(S, this, subscription)) {
-				if (initRequest > 0) {
-					subscription.request(initRequest);
-				}
-			}
+			final boolean wasSet = Operators.setOnce(S, this, subscription);
 			guard.compareAndSet(Operation.ON_SUBSCRIBE, null);
+
+			if (wasSet && initRequest > 0) {
+				subscription.request(initRequest);
+			}
 		}
 		onSubscribeCalls.incrementAndGet();
 	}

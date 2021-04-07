@@ -1392,40 +1392,6 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void racingTest() throws InterruptedException {
-        for (int i = 0; i < 1000; i++) {
-            @SuppressWarnings("unchecked")
-            CoreSubscriber<? super Integer>[] subscribers = new CoreSubscriber[1];
-            Subscription[] downstreamSubscriptions = new Subscription[1];
-            Subscription[] innerSubscriptions = new Subscription[1];
-
-
-            AtomicLong requested = new AtomicLong();
-
-            Flux.range(0, 3)
-                    .doOnRequest(requested::addAndGet)
-                    .switchOnFirst((s, f) -> new Flux<Integer>() {
-
-                        @Override
-                        public void subscribe(CoreSubscriber<? super Integer> actual) {
-                            subscribers[0] = actual;
-                            f.subscribe(new SideEffectSubscriber<>(actual::onNext, actual::onError, actual::onComplete, (s) -> innerSubscriptions[0] = s));
-                        }
-                    })
-                    .subscribe(new SideEffectSubscriber<>(null, null, null, s -> downstreamSubscriptions[0] = s));
-
-            CoreSubscriber<? super Integer> subscriber = subscribers[0];
-            Subscription downstreamSubscription = downstreamSubscriptions[0];
-            Subscription innerSubscription = innerSubscriptions[0];
-            downstreamSubscription.request(1);
-
-            RaceTestUtils.race(() -> subscriber.onSubscribe(innerSubscription), () -> downstreamSubscription.request(1));
-
-            assertThat(requested).hasValue(2);
-        }
-    }
-
-    @Test
     public void racingConditionalTest() {
         for (int i = 0; i < 1000; i++) {
             @SuppressWarnings("unchecked")
@@ -1695,7 +1661,13 @@ public class FluxSwitchOnFirstTest {
                 RaceTestUtils.race(() -> switchOnFirstControlSubscriber.cancel(), () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription));
 
                 assertThat(longArgumentCaptor.getAllValues().size()).isBetween(0, 1);
-                Mockito.verify(mockParent).cancel();
+                try {
+                    Mockito.verify(mockParent)
+                           .cancel();
+                } catch (Throwable t) {
+                    Mockito.verify(mockParent)
+                           .cancelAndError();
+                }
                 if (longArgumentCaptor.getAllValues().size() == 1) {
                     assertThat(longArgumentCaptor.getValue()).isEqualTo(10L);
                 }
