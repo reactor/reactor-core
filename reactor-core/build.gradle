@@ -288,5 +288,5 @@ else {
 	}
 }
 
-// add docs.zip to the publication
-publishing.publications.mavenJava.artifact(rootProject.tasks.docsZip)
+// add docs.zip to the extras publication
+publishing.publications.extras.artifact(rootProject.tasks.docsZip)
