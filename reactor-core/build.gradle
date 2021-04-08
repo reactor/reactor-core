@@ -282,5 +282,4 @@ else {
 	}
 }
 
-//add docs.zip to the extras publication
-publishing.publications.extras.artifact(rootProject.tasks.docsZip)
+// docs.zip is added in afterEvaluate block in setup.gradle
