@@ -83,13 +83,19 @@ publishing {
 	}
 
 	publications {
-		extras(MavenPublication) {
-//			other project-specific artifacts must be added to this publication, in each project's builds
-		}
 		mavenJava(MavenPublication) {
 			from components.java
 			artifact sourcesJar
 			artifact javadocJar
+			//consider adding extra artifacts here, conditionally on submodule's name and perhaps in an afterEvaluate block
+			afterEvaluate {
+				if (project.name == 'reactor-core') {
+					artifact rootProject.tasks.docsZip
+				}
+				// note that reactor-tools has more involved stuff, so we kept it in the submodule's build:
+				// (it replaces the original jar with shadow jar and adds the former as -original.jar)
+			}
+
 
 			pom {
 				afterEvaluate {
@@ -156,11 +162,11 @@ if (rootProject.hasProperty("artifactory_publish_password")) {
 	apply plugin: "com.jfrog.artifactory"
 
 	artifactoryPublish {
-		publications(publishing.publications.mavenJava, publishing.publications.extras)
+		publications(publishing.publications.mavenJava)
 	}
 }
 
-if (qualifyVersion("$version") in ["RELEASE", "MILESTONE"]) {
+if (qualifyVersion("$version") in ["RELEASE", "MILESTONE"] || rootProject.hasProperty("forceSigning")) {
 	apply plugin: 'signing'
 
 	signing {
