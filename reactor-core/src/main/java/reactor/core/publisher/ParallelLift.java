@@ -16,9 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 
-import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -28,15 +26,14 @@ import reactor.util.annotation.Nullable;
  */
 final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 
-	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-			lifter;
+	final Operators.LiftFunction<I, O> liftFunction;
 
 	final ParallelFlux<I> source;
 
 	ParallelLift(ParallelFlux<I> p,
-			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			Operators.LiftFunction<I, O> liftFunction) {
 		this.source = Objects.requireNonNull(p, "source");
-		this.lifter = lifter;
+		this.liftFunction = liftFunction;
 	}
 
 	@Override
@@ -62,7 +59,7 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 			return Scannable.from(source).scanUnsafe(key);
 		}
 		if (key == Attr.LIFTER) {
-			return lifter.toString();
+			return liftFunction.name;
 		}
 
 		return null;
@@ -84,7 +81,7 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 		int i = 0;
 		while (i < subscribers.length) {
 			subscribers[i] =
-					Objects.requireNonNull(lifter.apply(source, s[i]),
+					Objects.requireNonNull(liftFunction.lifter.apply(source, s[i]),
 							"Lifted subscriber MUST NOT be null");
 			i++;
 		}

@@ -17,10 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -31,13 +29,12 @@ import reactor.util.annotation.Nullable;
  */
 final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> implements Scannable {
 
-	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-			lifter;
+	final Operators.LiftFunction<I, O> liftFunction;
 
 	ConnectableLift(ConnectableFlux<I> p,
-			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			Operators.LiftFunction<I, O> liftFunction) {
 		super(Objects.requireNonNull(p, "source"));
-		this.lifter = lifter;
+		this.liftFunction = liftFunction;
 	}
 
 	@Override
@@ -56,7 +53,7 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 		if (key == Attr.PREFETCH) return source.getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
-		if (key == Attr.LIFTER) return lifter.toString();
+		if (key == Attr.LIFTER) return liftFunction.name;
 		return null;
 	}
 
@@ -71,7 +68,7 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 	@Override
 	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
-				lifter.apply(source, actual);
+				liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
