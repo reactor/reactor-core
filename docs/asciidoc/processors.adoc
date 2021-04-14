@@ -77,7 +77,8 @@ draining it.
 TIP: One way of publishing events onto different threads is to use the `EmitterProcessor`
 combined with `publishOn(Scheduler)`. This can for example replace the former `TopicProcessor`,
 which was using `Unsafe` operations and has been moved to
-https://github.com/reactor/reactor-addons/tree/master/reactor-extra/src/main/java/reactor/extra/processor[reactor-extra]
+https://github.com/reactor/reactor-addons/tree/main/reactor-extra/src/main/java/reactor
+/extra/processor[reactor-extra]
 in 3.3.0.
 
 == Direct Processor
