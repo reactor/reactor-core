@@ -6,7 +6,7 @@ automated testing is always a good idea.
 
 Reactor comes with a few elements dedicated to testing, gathered into their own
 artifact: `reactor-test`. You can find that project
-https://github.com/reactor/reactor-core/tree/master/reactor-test/src[on Github],
+https://github.com/reactor/reactor-core/tree/main/reactor-test/src[on Github],
 inside of the `reactor-core` repository.
 
 To use it in your tests, you must add it as a test dependency.
