@@ -37,7 +37,7 @@ Please refer to https://micrometer.io/docs/ref/jvm[Micrometer's documentation] f
 
 Since one scheduler may have multiple executors, every executor metric has a `reactor_scheduler_id` tag.
 
-TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/main/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics.
+TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/master/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics.
 
 == Publisher metrics
 Sometimes it is useful to be able to record metrics at some stage in your reactive pipeline.
