@@ -299,8 +299,14 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				return;
 			}
 			groupMap.remove(key);
-			if (GROUP_COUNT.decrementAndGet(this) == 0) {
+			int groupRemaining = GROUP_COUNT.decrementAndGet(this);
+			if (groupRemaining == 0) {
 				s.cancel();
+			}
+			else if (groupRemaining == 1) {
+				//there is an "extra" group count for the global cancellation, so the operator as a whole is still active
+				//we want at least one more group
+				s.request(1);
 			}
 		}
 
@@ -389,7 +395,6 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				}
 
 				if (e != 0L) {
-
 					s.request(e);
 
 					if (r != Long.MAX_VALUE) {
