@@ -499,7 +499,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					result = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
 				}
 				catch (Throwable e) {
-					o.onError(Exceptions.addSuppressed(e, t));
+					o.onError(Exceptions.addSuppressed(t, e));
 					return;
 				}
 
