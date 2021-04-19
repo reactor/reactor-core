@@ -257,7 +257,8 @@ public class FluxConcatWithTest {
 			.concatWithValues(10, 11, 12, 13)
 			.concatWith(Flux.range(14, 100 - 14))
 			.limitRate(16, 2)
-			.publishOn(Schedulers.boundedElastic(), 16)
+		    .prefetch(16)
+			.publishOn(Schedulers.boundedElastic())
 			.subscribeOn(Schedulers.boundedElastic())
 			.blockLast();
 		}
@@ -269,12 +270,14 @@ public class FluxConcatWithTest {
 		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
 		for (int round = 0; round < 20000; round++) {
 			Flux.range(0,10)
-			.publishOn(Schedulers.boundedElastic())
-			.concatWithValues(10, 11, 12, 13)
-			.concatWith(Flux.range(14, 100-14))
-			.publishOn(Schedulers.boundedElastic(), 16)
-			.subscribeOn(Schedulers.boundedElastic())
-			.blockLast();
+			    .prefetch()
+			    .publishOn(Schedulers.boundedElastic())
+			    .concatWithValues(10, 11, 12, 13)
+			    .concatWith(Flux.range(14, 100 - 14))
+			    .prefetch(16)
+			    .publishOn(Schedulers.boundedElastic())
+			    .subscribeOn(Schedulers.boundedElastic())
+			    .blockLast();
 		}
 	}
 

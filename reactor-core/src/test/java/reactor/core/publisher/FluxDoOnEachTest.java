@@ -135,10 +135,10 @@ public class FluxDoOnEachTest {
 		AtomicInteger invocationCount = new AtomicInteger();
 
 		Flux<String> sourceWithFusionAsync = Flux.just("foo")
+		                                         .prefetch()
 		                                         .publishOn(Schedulers.boundedElastic())
 		                                         .flatMap(v -> Flux.just("flatMap_" + v)
-		                                                           .doOnEach(sig -> invocationCount.incrementAndGet())
-		                                         );
+		                                                           .doOnEach(sig -> invocationCount.incrementAndGet()));
 
 		StepVerifier.create(sourceWithFusionAsync)
 		            .expectNoFusionSupport()
@@ -214,6 +214,7 @@ public class FluxDoOnEachTest {
 		LongAdder state = new LongAdder();
 
 		StepVerifier.create(Flux.just("foo")
+		                        .prefetch()
 		                        .publishOn(Schedulers.immediate())
 		                        .map(s -> s + "_async")
 		                        .doOnEach(s -> {
@@ -245,6 +246,7 @@ public class FluxDoOnEachTest {
 		LongAdder state = new LongAdder();
 
 		StepVerifier.create(Flux.just("foo")
+		                        .prefetch()
 		                        .publishOn(Schedulers.immediate())
 		                        .map(s -> s + "_async")
 		                        .doOnEach(s -> {
@@ -276,6 +278,7 @@ public class FluxDoOnEachTest {
 		LongAdder state = new LongAdder();
 
 		StepVerifier.create(Flux.just("foo")
+		                        .prefetch()
 		                        .publishOn(Schedulers.immediate())
 		                        .map(s -> s + "_async")
 		                        .doOnEach(s -> {

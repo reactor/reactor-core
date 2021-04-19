@@ -437,7 +437,8 @@ public class FluxGroupByTest extends
 				    .groupBy(i -> (i / 2d) * 2d, 42)
 				    .flatMap(it -> it.take(1)
 				                     .hide(), 2)
-				    .publishOn(Schedulers.fromExecutorService(forkJoinPool), 2)
+				    .prefetch(2)
+				    .publishOn(Schedulers.fromExecutorService(forkJoinPool))
 				    .count()
 				    .subscribe(ts);
 
@@ -529,13 +530,13 @@ public class FluxGroupByTest extends
 			    @Override
 			    public void onNext(GroupedFlux<Integer, Integer> t) {
 				    if (t.key() == 0) {
-					    t.publishOn(Schedulers.fromExecutorService(forkJoinPool),
-							    32)
+					    t.prefetch(32)
+					     .publishOn(Schedulers.fromExecutorService(forkJoinPool))
 					     .subscribe(ts1);
 				    }
 				    else {
-					    t.publishOn(Schedulers.fromExecutorService(forkJoinPool),
-							    32)
+					    t.prefetch(32)
+					     .publishOn(Schedulers.fromExecutorService(forkJoinPool))
 					     .subscribe(ts2);
 				    }
 			    }
@@ -597,13 +598,13 @@ public class FluxGroupByTest extends
 			    @Override
 			    public void onNext(GroupedFlux<Integer, Integer> t) {
 				    if (t.key() == 0) {
-					    t.publishOn(Schedulers.fromExecutorService(forkJoinPool),
-							    1024)
+					    t.prefetch(1024)
+					     .publishOn(Schedulers.fromExecutorService(forkJoinPool))
 					     .subscribe(ts1);
 				    }
 				    else {
-					    t.publishOn(Schedulers.fromExecutorService(forkJoinPool),
-							    1024)
+					    t.prefetch(1024)
+					     .publishOn(Schedulers.fromExecutorService(forkJoinPool))
 					     .subscribe(ts2);
 				    }
 			    }
@@ -778,7 +779,8 @@ public class FluxGroupByTest extends
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
-		    .publishOn(Schedulers.fromExecutorService(forkJoinPool), 512)
+		    .prefetch(512)
+		    .publishOn(Schedulers.fromExecutorService(forkJoinPool))
 		    .groupBy(v -> v & 1)
 		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override

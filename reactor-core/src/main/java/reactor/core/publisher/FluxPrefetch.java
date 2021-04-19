@@ -41,7 +41,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		this.requestMode = requestMode;
 	}
 
-	//	TODO: scanUnsafe
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) {
+			return Attr.RunStyle.ASYNC;
+		}
+		return super.scanUnsafe(key);
+	}
 
 	@Override
 	public int getPrefetch() {
@@ -101,7 +107,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		static final AtomicLongFieldUpdater<PrefetchSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PrefetchSubscriber.class, "requested");
 
-		private int fusionMode = -1;
+		private int upstreamFusionMode = -1;
 
 		private boolean outputFused;
 
@@ -140,14 +146,15 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					return;
 				}
 
-				// fusionMode == -1 if downstream was not calling requestFusion
-				if (fusionMode == -1) {
+				// upstreamFusionMode == -1 if downstream was not calling requestFusion
+				if (upstreamFusionMode == -1) {
 					if (s instanceof QueueSubscription) {
-						@SuppressWarnings("unchecked") QueueSubscription<T> fusion = (QueueSubscription<T>) s;
+						@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
+								(QueueSubscription<T>) s;
 
 						int mode = fusion.requestFusion(Fuseable.ANY);
 						if (mode == Fuseable.SYNC) {
-							fusionMode = Fuseable.SYNC;
+							upstreamFusionMode = Fuseable.SYNC;
 							queue = fusion;
 							done = true;
 
@@ -160,7 +167,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							return;
 						}
 						if (mode == Fuseable.ASYNC) {
-							fusionMode = Fuseable.ASYNC;
+							upstreamFusionMode = Fuseable.ASYNC;
 							queue = fusion;
 							if (requestMode == RequestMode.EAGER) {
 								s.request(Operators.unboundedOrPrefetch(prefetch));
@@ -192,12 +199,17 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 					drainAsync();
 				}
+				else if (upstreamFusionMode != SYNC) {
+					if (requestMode == RequestMode.EAGER) {
+						s.request(Operators.unboundedOrPrefetch(prefetch));
+					}
+				}
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			if (fusionMode == ASYNC) {
+			if (upstreamFusionMode == ASYNC) {
 				drain();
 				return;
 			}
@@ -245,13 +257,20 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		private void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
+//				TODO: ask
 				if (cancelled) {
-					terminate();
+					if (upstreamFusionMode == ASYNC) {
+						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+						queue.clear();
+					}
+					else {
+						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+						clear();
+					}
 				}
-				return;
 			}
 
-			if (fusionMode != Fuseable.SYNC && requestMode == RequestMode.LAZY && firstRequest) {
+			if (upstreamFusionMode != Fuseable.SYNC && requestMode == RequestMode.LAZY && firstRequest) {
 				firstRequest = false;
 				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
@@ -259,7 +278,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			if (outputFused) {
 				drainOutput();
 			}
-			else if (fusionMode == Fuseable.SYNC) {
+			else if (upstreamFusionMode == Fuseable.SYNC) {
 				drainSync();
 			}
 			else {
@@ -426,7 +445,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		private void terminate() {
-			if (fusionMode == ASYNC) {
+			if (upstreamFusionMode == ASYNC) {
 				// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 				queue.clear();
 			}
@@ -467,7 +486,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public T poll() {
 			T value = queue.poll();
-			if (value != null && fusionMode != SYNC) {
+			if (value != null && upstreamFusionMode != SYNC) {
 				long p = produced + 1;
 				if (p == limit) {
 					produced = 0;
@@ -505,20 +524,33 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public int requestFusion(int requestedMode) {
 			if (s instanceof QueueSubscription) {
-				@SuppressWarnings("unchecked") QueueSubscription<T> fusion = (QueueSubscription<T>) s;
+				@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
+						(QueueSubscription<T>) s;
 				int mode = fusion.requestFusion(requestedMode);
 
 				if (mode == Fuseable.SYNC) {
-					fusionMode = Fuseable.SYNC;
+					upstreamFusionMode = Fuseable.SYNC;
 					queue = fusion;
+					outputFused = true;
 					done = true;
 				}
 				else if (mode == Fuseable.ASYNC) {
-					fusionMode = Fuseable.ASYNC;
+					upstreamFusionMode = Fuseable.ASYNC;
 					queue = fusion;
-					if (requestMode == RequestMode.EAGER) {
-						s.request(Operators.unboundedOrPrefetch(prefetch));
+					outputFused = true;
+				}
+				else {
+					queue = queueSupplier.get();
+					upstreamFusionMode = Fuseable.NONE;
+
+					if ((requestedMode & ASYNC) != 0) {
+						outputFused = true;
+						WIP.lazySet(this, 0);
+
+						return ASYNC;
 					}
+					WIP.lazySet(this, 0);
+					return NONE;
 				}
 
 				WIP.lazySet(this, 0);
@@ -526,7 +558,10 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return mode;
 			}
 			else {
-				fusionMode = Fuseable.NONE;
+				upstreamFusionMode = Fuseable.NONE;
+// TODO: HERE
+				queue = queueSupplier.get();
+				WIP.lazySet(this, 0);
 
 				if ((requestedMode & ASYNC) != 0) {
 					outputFused = true;
@@ -535,6 +570,36 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 				return NONE;
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			if (key == Attr.CANCELLED) {
+				return cancelled;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.PREFETCH) {
+				return prefetch;
+			}
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
+				return requested;
+			}
+			if (key == Attr.BUFFERED) {
+				return queue != null ? queue.size() : 0;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
+			}
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -973,6 +1038,36 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return ASYNC;
 			}
 			return NONE;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			if (key == Attr.CANCELLED) {
+				return cancelled;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.PREFETCH) {
+				return prefetch;
+			}
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
+				return requested;
+			}
+			if (key == Attr.BUFFERED) {
+				return queue != null ? queue.size() : 0;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
+			}
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

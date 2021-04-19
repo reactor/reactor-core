@@ -6017,8 +6017,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
-		Flux<T> prefetch = onAssembly(this.prefetch(highTide, lowTide));
-		return onAssembly(prefetch.publishOn(Schedulers.immediate(), true));
+		Flux<T> prefetch = this.prefetch(highTide, lowTide);
+		return prefetch.publishOn(Schedulers.immediate(), true);
 	}
 
 	/**

@@ -504,7 +504,8 @@ public class ParallelFluxTest {
 		final ConcurrentHashMap<String, String> processing = new ConcurrentHashMap<>();
 
 		Flux<Integer> test = Flux.range(1, 10)
-		                         .publishOn(Schedulers.single(), false, 1)
+		                         .prefetch(1)
+		                         .publishOn(Schedulers.single(), false)
 		                         .doOnNext(v -> between.add(Thread.currentThread()
 		                                                          .getName()))
 		                         .parallel(2, 1)

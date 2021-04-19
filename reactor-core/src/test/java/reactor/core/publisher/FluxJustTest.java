@@ -119,26 +119,30 @@ public class FluxJustTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel").isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel").isTrue();
 	}
-	
+
 	@Test
 	public void testConcurrencyCausingDuplicate() {
 		// See https://github.com/reactor/reactor-core/pull/2576
 		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
 		for (int round = 0; round < 20000; round++) {
-			Mono.just(0).flatMapMany(i -> {
-				return Flux.range(0, 10)
-						.publishOn(Schedulers.boundedElastic())
-						.concatWithValues(10)
-						.concatWithValues(11)
-						.concatWithValues(12)
-						.concatWithValues(13)
-						.concatWithValues(14)
-						.concatWithValues(15)
-						.concatWithValues(16)
-						.concatWithValues(17)
-						.concatWith(Flux.range(18, 100 - 18));
-			}).publishOn(Schedulers.boundedElastic(), 16).subscribeOn(Schedulers.boundedElastic()).blockLast();
+			Mono.just(0)
+			    .flatMapMany(i -> {
+				    return Flux.range(0, 10)
+				               .publishOn(Schedulers.boundedElastic())
+				               .concatWithValues(10)
+				               .concatWithValues(11)
+				               .concatWithValues(12)
+				               .concatWithValues(13)
+				               .concatWithValues(14)
+				               .concatWithValues(15)
+				               .concatWithValues(16)
+				               .concatWithValues(17)
+				               .concatWith(Flux.range(18, 100 - 18));
+			    })
+			    .prefetch(16)
+			    .publishOn(Schedulers.boundedElastic())
+			    .subscribeOn(Schedulers.boundedElastic())
+			    .blockLast();
 		}
 	}
-
 }

@@ -126,7 +126,10 @@ public class EmitterProcessorTest {
 		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
 
 		StepVerifier.create(processor)
-		            .then(() -> Flux.range(1, 5).publishOn(Schedulers.boundedElastic()).subscribe(processor))
+		            .then(() -> Flux.range(1, 5)
+		                            .prefetch()
+		                            .publishOn(Schedulers.boundedElastic())
+		                            .subscribe(processor))
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
@@ -676,33 +679,46 @@ public class EmitterProcessorTest {
 			latches[i] = new CountDownLatch(expectedCount);
 		}
 		EmitterProcessor<Integer> processor = EmitterProcessor.create();
-		processor.publishOn(schedulers[0])
-			 .share();
-		processor.publishOn(schedulers[1])
-				 .subscribe(i -> {
-						assertThat(Thread.currentThread().getName().contains("scheduler1")).isTrue();
-						latches[1].countDown();
-					});
-		for (int i = 0; i < count; i++)
+		processor.prefetch()
+		         .publishOn(schedulers[0])
+		         .share();
+		processor.prefetch()
+		         .publishOn(schedulers[1])
+		         .subscribe(i -> {
+			         assertThat(Thread.currentThread()
+			                          .getName()
+			                          .contains("scheduler1")).isTrue();
+			         latches[1].countDown();
+		         });
+		for (int i = 0; i < count; i++) {
 			processor.onNext(i);
-		processor.publishOn(schedulers[2])
-				 .map(i -> {
-						assertThat(Thread.currentThread().getName().contains("scheduler2")).isTrue();
-						latches[2].countDown();
-						return i;
-					})
-				 .publishOn(schedulers[3])
-				 .doOnNext(i -> {
-						assertThat(Thread.currentThread().getName().contains("scheduler3")).isTrue();
-						latches[3].countDown();
-					})
-				 .subscribe();
-		for (int i = 0; i < count; i++)
+		}
+		processor.prefetch()
+		         .publishOn(schedulers[2])
+		         .map(i -> {
+			         assertThat(Thread.currentThread()
+			                          .getName()
+			                          .contains("scheduler2")).isTrue();
+			         latches[2].countDown();
+			         return i;
+		         })
+		         .prefetch()
+		         .publishOn(schedulers[3])
+		         .doOnNext(i -> {
+			         assertThat(Thread.currentThread()
+			                          .getName()
+			                          .contains("scheduler3")).isTrue();
+			         latches[3].countDown();
+		         })
+		         .subscribe();
+		for (int i = 0; i < count; i++) {
 			processor.onNext(i);
+		}
 		processor.onComplete();
 
-		for (int i = 1; i < latches.length; i++)
+		for (int i = 1; i < latches.length; i++) {
 			assertThat(latches[i].await(5, TimeUnit.SECONDS)).isTrue();
+		}
 		assertThat(latches[0].getCount()).isEqualTo(count);
 	}
 
