@@ -94,7 +94,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	/**
 	 * Adds a flag which indicate that the first inbound onNext signal has already been
-	 * received. Fails if inbound is cancelled
+	 * received. Fails if inbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -113,8 +113,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the inbound has already been
-	 * subscribed once. Fails if inbound has already been subscribed once
+	 * Adds a flag which indicate that the inbound has already been subscribed once.
+	 * Fails if inbound has already been subscribed once.
 	 *
 	 * @return previous observed state
 	 */
@@ -133,8 +133,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the inbound has already been
-	 * subscriber was set. Fails if inbound is cancelled
+	 * Adds a flag which indicate that the inbound subscriber has already been set.
+	 * Fails if inbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -153,8 +153,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the inbound has already been
-	 * requested once. Fails if inbound is cancelled
+	 * Adds a flag which indicate that the inbound has already been requested once.
+	 * Fails if inbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -174,7 +174,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	/**
 	 * Adds a flag which indicate that the first onNext value has been successfully
-	 * delivered. Fails if inbound is cancelled
+	 * delivered. Fails if inbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -193,8 +193,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the inbound has already been
-	 * terminated with onComplete or onError. Fails if inbound is cancelled
+	 * Adds a flag which indicate that the inbound has already been terminated with
+	 * onComplete or onError. Fails if inbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -213,8 +213,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the inbound has already been
-	 * requested once. Fails if inbound is cancelled or terminated
+	 * Adds a flag which indicate that the inbound has already been cancelled. Fails if
+	 * inbound is cancelled or terminated.
 	 *
 	 * @return previous observed state
 	 */
@@ -232,6 +232,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 	}
 
+	/**
+	 * Adds flags which indicate that the inbound has cancelled upstream and errored
+	 * downstream. Fails if either inbound is cancelled or terminated.
+	 *
+	 * @return previous observed state
+	 */
 	static <T, R> long markInboundCancelledAndErrored(AbstractSwitchOnFirstMain<T, R> instance) {
 		for (;;) {
 			final int state = instance.state;
@@ -247,8 +253,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the outbound has already been
-	 * terminated with onComplete or onError. Fails if inbound is cancelled or terminated
+	 * Adds a flag which indicate that the outbound has received subscription. Fails if
+	 * outbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -269,7 +275,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	/**
 	 * Adds a flag which indicate that the outbound has already been
-	 * terminated with onComplete or onError. Fails if inbound is cancelled or terminated
+	 * terminated with onComplete or onError. Fails if outbound is cancelled or terminated.
 	 *
 	 * @return previous observed state
 	 */
@@ -277,7 +283,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasOutboundCancelled(state)) {
+			if (hasOutboundCancelled(state) || hasOutboundTerminated(state)) {
 				return state;
 			}
 
@@ -288,8 +294,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds a flag which indicate that the outbound has already been
-	 * cancelled. Fails if inbound is cancelled or terminated
+	 * Adds a flag which indicate that the outbound has already been cancelled. Fails
+	 * if outbound is cancelled or terminated.
 	 *
 	 * @return previous observed state
 	 */
@@ -310,7 +316,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static boolean hasInboundCancelled(long state) {
 		return (state & HAS_INBOUND_CANCELLED_FLAG) == HAS_INBOUND_CANCELLED_FLAG;
 	}
-
 
 	static boolean hasInboundTerminated(long state) {
 		return (state & HAS_INBOUND_TERMINATED_FLAG) == HAS_INBOUND_TERMINATED_FLAG;
@@ -351,35 +356,34 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
 			implements InnerOperator<T, R> {
 
-		final ControlSubscriber<? super R>                                     outer;
-		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>>
-		                                                                       transformer;
+		final ControlSubscriber<? super R>                                     outboundSubscriber;
+		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
 		Subscription s;
 
 		boolean isInboundRequestedOnce;
+		boolean isFirstOnNextValueReceivedOnce;
 		T       firstValue;
 
 		Throwable throwable;
 		boolean   done;
 
-		CoreSubscriber<? super T> inner;
+		CoreSubscriber<? super T> inboundSubscriber;
 
-		volatile     int                                                  state;
+		volatile int state;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<AbstractSwitchOnFirstMain> STATE =
 				AtomicIntegerFieldUpdater.newUpdater(AbstractSwitchOnFirstMain.class, "state");
 
 		@SuppressWarnings("unchecked")
-		AbstractSwitchOnFirstMain(CoreSubscriber<? super R> outer,
+		AbstractSwitchOnFirstMain(CoreSubscriber<? super R> outboundSubscriber,
 				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
 				boolean cancelSourceOnComplete) {
-			this.outer = outer instanceof Fuseable.ConditionalSubscriber ?
+			this.outboundSubscriber = outboundSubscriber instanceof Fuseable.ConditionalSubscriber ?
 					new SwitchOnFirstConditionalControlSubscriber<>(this,
-							(Fuseable.ConditionalSubscriber<R>) outer,
+							(Fuseable.ConditionalSubscriber<R>) outboundSubscriber,
 							cancelSourceOnComplete) :
-					new SwitchOnFirstControlSubscriber<>(this,
-							outer,
+					new SwitchOnFirstControlSubscriber<>(this, outboundSubscriber,
 							cancelSourceOnComplete);
 			this.transformer = transformer;
 		}
@@ -387,7 +391,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			final boolean isCancelled = this.inner == Operators.EMPTY_SUBSCRIBER;
+			final boolean isCancelled = this.inboundSubscriber == Operators.EMPTY_SUBSCRIBER;
 
 			if (key == Attr.CANCELLED) {
 				return isCancelled && !this.done;
@@ -404,14 +408,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public final CoreSubscriber<? super R> actual() {
-			return this.outer;
+			return this.outboundSubscriber;
 		}
 
 		@Override
 		public final void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				this.outer.sendSubscription();
+				this.outboundSubscriber.sendSubscription();
 				if (!hasInboundCancelled(this.state)) {
 					s.request(1);
 				}
@@ -429,40 +433,45 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			if (f == null) {
 				this.firstValue = t;
 
-				final long previousState = markFirstValueReceived(this);
+				long previousState = markFirstValueReceived(this);
 				if (hasInboundCancelled(previousState)) {
-					Operators.onDiscard(t, this.outer.currentContext());
+					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return;
 				}
 
-				final Publisher<? extends R> result;
-				final CoreSubscriber<? super R> o = this.outer;
+				final Publisher<? extends R> outboundPublisher;
+				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
-					result = Objects.requireNonNull(
-						this.transformer.apply(Signal.next(t, o.currentContext()), this),
-						"The transformer returned a null value"
-					);
+					final Signal<T> signal = Signal.next(t, o.currentContext());
+					outboundPublisher = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
 				}
 				catch (Throwable e) {
 					this.done = true;
+
+					previousState = markInboundTerminated(this);
+					if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+						Operators.onErrorDropped(e, this.outboundSubscriber.currentContext());
+						return;
+					}
+
 					o.onError(Operators.onOperatorError(this.s, e, t, o.currentContext()));
 					return;
 				}
 
-				result.subscribe(o);
+				outboundPublisher.subscribe(o);
 				return;
 			}
 
 			synchronized (this) {
-				this.inner.onNext(t);
+				this.inboundSubscriber.onNext(t);
 			}
 		}
 
 		@Override
 		public final void onError(Throwable t) {
 			if (this.done) {
-				Operators.onErrorDropped(t, this.outer.currentContext());
+				Operators.onErrorDropped(t, this.outboundSubscriber.currentContext());
 				return;
 			}
 
@@ -471,24 +480,23 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 			final long previousState = markInboundTerminated(this);
 			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
-				Operators.onErrorDropped(t, this.outer.currentContext());
+				Operators.onErrorDropped(t, this.outboundSubscriber.currentContext());
 				return;
 			}
 
 			if (hasFirstValueSent(previousState)) {
 				synchronized (this) {
-					this.inner.onError(t);
+					this.inboundSubscriber.onError(t);
 				}
 				return;
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
 				final Publisher<? extends R> result;
-				final CoreSubscriber<? super R> o = this.outer;
+				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 				try {
-					result = Objects.requireNonNull(this.transformer.apply(Signal.error(t,
-							o.currentContext()), this),
-							"The transformer returned a null value");
+					final Signal<T> signal = Signal.error(t, o.currentContext());
+					result = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
 				}
 				catch (Throwable e) {
 					o.onError(Exceptions.addSuppressed(e, t));
@@ -514,20 +522,18 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 			if (hasFirstValueSent(previousState)) {
 				synchronized (this) {
-					this.inner.onComplete();
+					this.inboundSubscriber.onComplete();
 				}
 				return;
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
 				final Publisher<? extends R> result;
-				final CoreSubscriber<? super R> o = this.outer;
+				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
-					result =
-							Objects.requireNonNull(this.transformer.apply(Signal.complete(
-									o.currentContext()), this),
-									"The transformer returned a null value");
+					final Signal<T> signal = Signal.complete(o.currentContext());
+					result = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
 				}
 				catch (Throwable e) {
 					o.onError(e);
@@ -567,7 +573,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					Operators.onDiscard(f, currentContext());
 
 					if (hasInboundSubscriberSet(previousState)) {
-						this.inner.onError(new CancellationException(
+						this.inboundSubscriber.onError(new CancellationException(
 								"FluxSwitchOnFirst has already been cancelled"));
 					}
 				}
@@ -576,8 +582,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 			if (hasInboundSubscriberSet(previousState)) {
 				synchronized (this) {
-					this.inner.onError(new CancellationException(
-							"FluxSwitchOnFirst has already been cancelled"));
+					this.inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 				}
 			}
 		}
@@ -614,42 +619,36 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public final void subscribe(CoreSubscriber<? super T> actual) {
+		public final void subscribe(CoreSubscriber<? super T> inboundSubscriber) {
 			long previousState = markInboundSubscribedOnce(this);
 			if (hasInboundSubscribedOnce(previousState)) {
-				Operators.error(actual,
-						new IllegalStateException(
-								"FluxSwitchOnFirst allows only one Subscriber"));
+				Operators.error(inboundSubscriber, new IllegalStateException("FluxSwitchOnFirst allows only one Subscriber"));
 				return;
 			}
 
 			if (hasInboundCancelled(previousState)) {
-				Operators.error(actual,
-						new CancellationException(
-								"FluxSwitchOnFirst has already been cancelled"));
+				Operators.error(inboundSubscriber, new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 				return;
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
 				final Throwable t = this.throwable;
 				if (t != null) {
-					Operators.error(actual, t);
+					Operators.error(inboundSubscriber, t);
 				}
 				else {
-					Operators.complete(actual);
+					Operators.complete(inboundSubscriber);
 				}
 				return;
 			}
 
-			this.inner = convert(actual);
+			this.inboundSubscriber = convert(inboundSubscriber);
 
-			actual.onSubscribe(this);
+			inboundSubscriber.onSubscribe(this);
 
 			previousState = markInboundSubscriberSet(this);
-			if (hasInboundCancelled(previousState)) {
-				actual.onError(
-						new CancellationException(
-								"FluxSwitchOnFirst has already been cancelled"));
+			if (hasInboundCancelled(previousState) && hasInboundTerminated(previousState)) {
+				inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 			}
 		}
 
@@ -657,15 +656,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 
 		boolean sendFirst(T firstValue) {
-			final CoreSubscriber<? super T> a = this.inner;
+			final CoreSubscriber<? super T> a = this.inboundSubscriber;
 
-			final boolean sent = tryOnNext(a, firstValue);
+			final boolean sent = tryDirectSend(a, firstValue);
 
 			final long previousState = markFirstValueSent(this);
 			if (hasInboundCancelled(previousState)) {
 				if (hasInboundTerminated(previousState)) {
-					a.onError(new CancellationException(
-							"FluxSwitchOnFirst has already been cancelled"));
+					a.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 				}
 				return sent;
 			}
@@ -683,7 +681,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			return sent;
 		}
 
-		abstract boolean tryOnNext(CoreSubscriber<? super T> actual, T value);
+		abstract boolean tryDirectSend(CoreSubscriber<? super T> actual, T value);
 
 	}
 
@@ -701,7 +699,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		boolean tryOnNext(CoreSubscriber<? super T> actual, T t) {
+		boolean tryDirectSend(CoreSubscriber<? super T> actual, T t) {
 			actual.onNext(t);
 			return true;
 		}
@@ -736,24 +734,21 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 				final long state = markFirstValueReceived(this);
 				if (hasInboundCancelled(state)) {
-					Operators.onDiscard(t, this.outer.currentContext());
+					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return true;
 				}
 
 				final Publisher<? extends R> result;
-				final CoreSubscriber<? super R> o = this.outer;
+				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
-					result = Objects.requireNonNull(this.transformer.apply(Signal.next(t,
-							o.currentContext()), this),
+					final Signal<T> signal = Signal.next(t, o.currentContext());
+					result = Objects.requireNonNull(this.transformer.apply(signal, this),
 							"The transformer returned a null value");
 				}
 				catch (Throwable e) {
 					this.done = true;
-					o.onError(Operators.onOperatorError(this.s,
-							e,
-							t,
-							o.currentContext()));
+					o.onError(Operators.onOperatorError(this.s, e, t, o.currentContext()));
 					return false;
 				}
 
@@ -761,12 +756,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return true;
 			}
 
-			return ((Fuseable.ConditionalSubscriber<? super T>) this.inner).tryOnNext(t);
+			synchronized (this) {
+				return ((Fuseable.ConditionalSubscriber<? super T>) this.inboundSubscriber).tryOnNext(t);
+			}
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
-		boolean tryOnNext(CoreSubscriber<? super T> actual, T t) {
+		boolean tryDirectSend(CoreSubscriber<? super T> actual, T t) {
 			return ((Fuseable.ConditionalSubscriber<? super T>) actual).tryOnNext(t);
 		}
 	}

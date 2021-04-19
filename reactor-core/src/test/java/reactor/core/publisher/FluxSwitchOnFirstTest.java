@@ -1490,7 +1490,7 @@ public class FluxSwitchOnFirstTest {
 
             RaceTestUtils.race(() -> f.subscribe(subscriber), () -> assertSubscriber.cancel());
 
-            assertThat(sofSubscriber[0].inner).isEqualTo(Operators.EMPTY_SUBSCRIBER);
+            assertThat(sofSubscriber[0].inboundSubscriber).isEqualTo(Operators.EMPTY_SUBSCRIBER);
 
             // if cancel first then the upstream observes request(1) and request(1) if cancel later then only a single request
             assertThat(requested.get()).isBetween(1L, 2L);
@@ -1546,7 +1546,7 @@ public class FluxSwitchOnFirstTest {
 
             RaceTestUtils.race(() -> f.subscribe(subscriber), () -> assertSubscriber.cancel());
 
-            assertThat(sofSubscriber[0].inner).isEqualTo(Operators.EMPTY_SUBSCRIBER);
+            assertThat(sofSubscriber[0].inboundSubscriber).isEqualTo(Operators.EMPTY_SUBSCRIBER);
 
             // if cancel first then the upstream observes request(1) and request(1) if cancel later then only a single request
             assertThat(requested.get()).isBetween(1L, 2L);
