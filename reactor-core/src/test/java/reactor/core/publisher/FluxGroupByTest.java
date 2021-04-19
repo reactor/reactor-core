@@ -87,6 +87,18 @@ public class FluxGroupByTest extends
 	}
 
 	@Test
+	void gh2675() {
+		StepVerifier.create(
+				Flux.just(0, 1, 2, 3)
+				    .log()
+				    .groupBy(f -> f / 2, 1)
+				    .flatMap(a -> a.log("group " + a.key()).takeUntil(i -> i % 2 == 1)))
+		            .expectNext(0, 1, 2, 3)
+		            .expectComplete()
+		            .verify(Duration.ofMillis(5000));
+	}
+
+	@Test
 	public void normal() {
 		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
