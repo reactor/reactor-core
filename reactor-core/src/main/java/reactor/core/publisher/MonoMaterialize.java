@@ -139,8 +139,8 @@ final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 
 		@Override
 		public void request(long l) {
-			if (Operators.validate(l)) {
-				this.requested = true;
+			if (!this.requested && Operators.validate(l)) {
+				this.requested = true; //ignore further requests
 				if (drain()) {
 					return; //there was an early completion
 				}

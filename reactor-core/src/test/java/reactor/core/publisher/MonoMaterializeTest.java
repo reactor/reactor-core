@@ -29,6 +29,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MonoMaterializeTest {
 
+	// see https://github.com/reactor/reactor-core/issues/2674
+	@Test
+	void materializeOnlyRequestsOnce() {
+		Mono.error(new RuntimeException("boom"))
+		    .materialize()
+		    .filter(signal -> !signal.isOnError()) // filtering will cause re-request
+		    .as(StepVerifier::create)
+		    .expectSubscription()
+		    .expectComplete()
+		    .verify();
+	}
+
 	@Test
 	void nextOnlyBackpressured() {
 		AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
