@@ -375,7 +375,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
 			implements InnerOperator<T, R> {
 
-		final ControlSubscriber<? super R>                                     outboundSubscriber;
+		final SwitchOnFirstControlSubscriber<? super R>                        outboundSubscriber;
 		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
 		Subscription s;
@@ -408,7 +408,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public final Object scanUnsafe(Attr key) {
 			final boolean isCancelled = this.inboundSubscriber == Operators.EMPTY_SUBSCRIBER;
 
 			if (key == Attr.CANCELLED) {
@@ -458,7 +458,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				}
 
 				final Publisher<? extends R> outboundPublisher;
-				final ControlSubscriber<? super R> o = this.outboundSubscriber;
+				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
 					final Signal<T> signal = Signal.next(t, o.currentContext());
@@ -675,7 +675,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		abstract CoreSubscriber<? super T> convert(CoreSubscriber<? super T> inboundSubscriber);
 
 
-		boolean sendFirst(T firstValue) {
+		final boolean sendFirst(T firstValue) {
 			final CoreSubscriber<? super T> a = this.inboundSubscriber;
 
 			final boolean sent = tryDirectSend(a, firstValue);
@@ -759,7 +759,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				}
 
 				final Publisher<? extends R> result;
-				final ControlSubscriber<? super R> o = this.outboundSubscriber;
+				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
 					final Signal<T> signal = Signal.next(t, o.currentContext());
@@ -799,7 +799,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	static class SwitchOnFirstControlSubscriber<T>
 			extends Operators.DeferredSubscription
-			implements InnerOperator<T, T>, ControlSubscriber<T> {
+			implements InnerOperator<T, T>, CoreSubscriber<T> {
 
 		final AbstractSwitchOnFirstMain<?, T> parent;
 		final CoreSubscriber<? super T>       delegate;
@@ -815,13 +815,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			this.cancelSourceOnComplete = cancelSourceOnComplete;
 		}
 
-		@Override
-		public void sendSubscription() {
+		final void sendSubscription() {
 			delegate.onSubscribe(this);
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
+		public final void onSubscribe(Subscription s) {
 			if (set(s)) {
 				long previousState = markOutboundSubscribed(this.parent);
 
@@ -832,12 +831,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return this.delegate;
 		}
 
 		@Override
-		public void onNext(T t) {
+		public final void onNext(T t) {
 			if (this.done) {
 				Operators.onNextDropped(t, currentContext());
 				return;
@@ -847,7 +846,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public void onError(Throwable throwable) {
+		public final void onError(Throwable throwable) {
 			if (this.done) {
 				Operators.onErrorDropped(throwable, currentContext());
 				return;
@@ -870,15 +869,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			this.delegate.onError(throwable);
 		}
 
-		@Override
-		public void errorDirectly(Throwable t) {
+		final void errorDirectly(Throwable t) {
 			this.done = true;
 
 			this.delegate.onError(t);
 		}
 
 		@Override
-		public void onComplete() {
+		public final void onComplete() {
 			if (this.done) {
 				return;
 			}
@@ -896,158 +894,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public void cancel() {
-			REQUESTED.lazySet(this, STATE_CANCELLED);
-
-			final long previousState = markOutboundCancelled(this.parent);
-			if (hasOutboundCancelled(previousState) || hasOutboundTerminated(previousState)) {
-				return;
-			}
-
-			final boolean shouldCancelInbound =
-					!hasInboundTerminated(previousState) && !hasInboundCancelled(
-							previousState);
-
-			if (!hasOutboundSubscribed(previousState)) {
-				if (shouldCancelInbound) {
-					this.parent.cancel();
-				}
-				return;
-			}
-
-			this.s.cancel();
-
-			if (shouldCancelInbound) {
-				this.parent.cancelAndError();
-			}
-		}
-
-		@Override
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return parent;
-			}
-			if (key == Attr.ACTUAL) {
-				return delegate;
-			}
-			if (key == Attr.RUN_STYLE) {
-				return Attr.RunStyle.SYNC;
-			}
-
-			return null;
-		}
-	}
-
-	static final class SwitchOnFirstConditionalControlSubscriber<T>
-			extends Operators.DeferredSubscription
-			implements InnerOperator<T, T>, ControlSubscriber<T>,
-			           Fuseable.ConditionalSubscriber<T> {
-
-		final AbstractSwitchOnFirstMain<?, T>           parent;
-		final Fuseable.ConditionalSubscriber<? super T> delegate;
-		final boolean                                   cancelSourceOnComplete;
-
-		boolean done;
-
-		SwitchOnFirstConditionalControlSubscriber(AbstractSwitchOnFirstMain<?, T> parent,
-				Fuseable.ConditionalSubscriber<? super T> delegate,
-				boolean cancelSourceOnComplete) {
-			this.parent = parent;
-			this.delegate = delegate;
-			this.cancelSourceOnComplete = cancelSourceOnComplete;
-		}
-
-		@Override
-		public void sendSubscription() {
-			delegate.onSubscribe(this);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (set(s)) {
-				final long previousState = markOutboundSubscribed(this.parent);
-
-				if (hasOutboundCancelled(previousState)) {
-					s.cancel();
-				}
-			}
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return this.delegate;
-		}
-
-		@Override
-		public boolean tryOnNext(T t) {
-			if (this.done) {
-				Operators.onNextDropped(t, currentContext());
-				return true;
-			}
-
-			return this.delegate.tryOnNext(t);
-		}
-
-		@Override
-		public void onNext(T t) {
-			if (this.done) {
-				Operators.onNextDropped(t, currentContext());
-				return;
-			}
-
-			this.delegate.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable throwable) {
-			if (this.done) {
-				Operators.onErrorDropped(throwable, currentContext());
-				return;
-			}
-
-			this.done = true;
-
-			final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
-			long previousState = markOutboundTerminated(parent);
-
-			if (hasOutboundCancelled(previousState) || hasOutboundTerminated(previousState)) {
-				return;
-			}
-
-			if (!hasInboundCancelled(previousState) && !hasInboundTerminated(previousState)) {
-				parent.cancelAndError();
-			}
-
-			this.delegate.onError(throwable);
-		}
-
-		@Override
-		public void errorDirectly(Throwable t) {
-			this.done = true;
-
-			this.delegate.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			if (this.done) {
-				return;
-			}
-
-			this.done = true;
-
-			final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
-			long previousState = markOutboundTerminated(parent);
-
-			if (cancelSourceOnComplete && !hasInboundCancelled(previousState) && !hasInboundTerminated(previousState)) {
-				parent.cancelAndError();
-			}
-
-			this.delegate.onComplete();
-		}
-
-		@Override
-		public void cancel() {
+		public final void cancel() {
 			REQUESTED.lazySet(this, STATE_CANCELLED);
 
 			final long previousState = markOutboundCancelled(this.parent);
@@ -1073,7 +920,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public final Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
 			}
@@ -1088,10 +935,27 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 	}
 
-	interface ControlSubscriber<T> extends CoreSubscriber<T> {
+	static final class SwitchOnFirstConditionalControlSubscriber<T>
+			extends SwitchOnFirstControlSubscriber<T>
+			implements InnerOperator<T, T>, Fuseable.ConditionalSubscriber<T> {
 
-		void sendSubscription();
+		final Fuseable.ConditionalSubscriber<? super T> delegate;
 
-		void errorDirectly(Throwable t);
+		SwitchOnFirstConditionalControlSubscriber(AbstractSwitchOnFirstMain<?, T> parent,
+				Fuseable.ConditionalSubscriber<? super T> delegate,
+				boolean cancelSourceOnComplete) {
+			super(parent, delegate, cancelSourceOnComplete);
+			this.delegate = delegate;
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			if (this.done) {
+				Operators.onNextDropped(t, currentContext());
+				return true;
+			}
+
+			return this.delegate.tryOnNext(t);
+		}
 	}
 }
