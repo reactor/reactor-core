@@ -381,6 +381,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		Subscription s;
 
 		boolean isInboundRequestedOnce;
+		boolean isFirstOnNextReceivedOnce;
 		T       firstValue;
 
 		Throwable throwable;
@@ -439,12 +440,13 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
-			final T f = this.firstValue;
-			if (f == null) {
+			if (!this.isFirstOnNextReceivedOnce) {
+				this.isFirstOnNextReceivedOnce = true;
 				this.firstValue = t;
 
 				long previousState = markFirstValueReceived(this);
 				if (hasInboundCancelled(previousState)) {
+					this.firstValue = null;
 					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return;
 				}
@@ -465,6 +467,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 						return;
 					}
 
+					this.firstValue = null;
 					Operators.onDiscard(t, o.currentContext());
 
 					o.errorDirectly(Operators.onOperatorError(this.s, e, t, o.currentContext()));
@@ -567,6 +570,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 			if (hasFirstValueReceived(previousState) && !hasInboundRequestedOnce(previousState)) {
 				final T f = this.firstValue;
+				this.firstValue = null;
 				Operators.onDiscard(f, currentContext());
 			}
 		}
@@ -582,6 +586,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			if (hasFirstValueReceived(previousState) && !hasFirstValueSent(previousState)) {
 				if (!hasInboundRequestedOnce(previousState)) {
 					final T f = this.firstValue;
+					this.firstValue = null;
 					Operators.onDiscard(f, currentContext());
 
 					if (hasInboundSubscriberSet(previousState)) {
@@ -609,6 +614,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 					final T first = this.firstValue;
 					if (first != null) {
+						this.firstValue = null;
+
 						final long previousState = markInboundRequestedOnce(this);
 						if (hasInboundCancelled(previousState)) {
 							return;
@@ -746,6 +753,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 				long previousState = markFirstValueReceived(this);
 				if (hasInboundCancelled(previousState)) {
+					this.firstValue = null;
 					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return true;
 				}
@@ -767,6 +775,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 						return true;
 					}
 
+					this.firstValue = null;
 					Operators.onDiscard(t, o.currentContext());
 
 					o.errorDirectly(Operators.onOperatorError(this.s, e, t, o.currentContext()));
