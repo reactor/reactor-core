@@ -251,6 +251,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 		}
 	}
+
 	/**
 	 * Adds flags which indicate that the inbound has cancelled upstream and errored
 	 * the outbound downstream. Fails if either inbound is cancelled or outbound is
