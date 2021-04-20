@@ -234,7 +234,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	/**
 	 * Adds flags which indicate that the inbound has cancelled upstream and errored
-	 * downstream. Fails if either inbound is cancelled or terminated.
+	 * the inbound downstream. Fails if either inbound is cancelled or terminated.
 	 *
 	 * @return previous observed state
 	 */
@@ -247,6 +247,25 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG | HAS_INBOUND_TERMINATED_FLAG)) {
+				return state;
+			}
+		}
+	}
+	/**
+	 * Adds flags which indicate that the inbound has cancelled upstream and errored
+	 * the outbound downstream. Fails if either inbound is cancelled or terminated.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundCancelledAndOutboundTerminated(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state) || hasOutboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG | HAS_OUTBOUND_TERMINATED_FLAG)) {
 				return state;
 			}
 		}
@@ -362,7 +381,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		Subscription s;
 
 		boolean isInboundRequestedOnce;
-		boolean isFirstOnNextValueReceivedOnce;
 		T       firstValue;
 
 		Throwable throwable;
@@ -440,7 +458,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				}
 
 				final Publisher<? extends R> outboundPublisher;
-				final CoreSubscriber<? super R> o = this.outboundSubscriber;
+				final ControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
 					final Signal<T> signal = Signal.next(t, o.currentContext());
@@ -449,13 +467,15 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				catch (Throwable e) {
 					this.done = true;
 
-					previousState = markInboundTerminated(this);
-					if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
-						Operators.onErrorDropped(e, this.outboundSubscriber.currentContext());
+					previousState = markInboundCancelledAndOutboundTerminated(this);
+					if (hasInboundCancelled(previousState) || hasOutboundCancelled(previousState)) {
+						Operators.onErrorDropped(e, o.currentContext());
 						return;
 					}
 
-					o.onError(Operators.onOperatorError(this.s, e, t, o.currentContext()));
+					Operators.onDiscard(t, o.currentContext());
+
+					o.errorDirectly(Operators.onOperatorError(this.s, e, t, o.currentContext()));
 					return;
 				}
 
@@ -732,14 +752,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			if (f == null) {
 				this.firstValue = t;
 
-				final long state = markFirstValueReceived(this);
-				if (hasInboundCancelled(state)) {
+				long previousState = markFirstValueReceived(this);
+				if (hasInboundCancelled(previousState)) {
 					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return true;
 				}
 
 				final Publisher<? extends R> result;
-				final CoreSubscriber<? super R> o = this.outboundSubscriber;
+				final ControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
 					final Signal<T> signal = Signal.next(t, o.currentContext());
@@ -748,8 +768,17 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				}
 				catch (Throwable e) {
 					this.done = true;
-					o.onError(Operators.onOperatorError(this.s, e, t, o.currentContext()));
-					return false;
+
+					previousState = markInboundCancelledAndOutboundTerminated(this);
+					if (hasInboundCancelled(previousState) || hasOutboundCancelled(previousState)) {
+						Operators.onErrorDropped(e, o.currentContext());
+						return true;
+					}
+
+					Operators.onDiscard(t, o.currentContext());
+
+					o.errorDirectly(Operators.onOperatorError(this.s, e, t, o.currentContext()));
+					return true;
 				}
 
 				result.subscribe(o);
@@ -768,7 +797,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 	}
 
-	static final class SwitchOnFirstControlSubscriber<T>
+	static class SwitchOnFirstControlSubscriber<T>
 			extends Operators.DeferredSubscription
 			implements InnerOperator<T, T>, ControlSubscriber<T> {
 
@@ -830,6 +859,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			long previousState = markOutboundTerminated(parent);
 
 			if (hasOutboundCancelled(previousState) || hasOutboundTerminated(previousState)) {
+				Operators.onErrorDropped(throwable, this.delegate.currentContext());
 				return;
 			}
 
@@ -838,6 +868,13 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			this.delegate.onError(throwable);
+		}
+
+		@Override
+		public void errorDirectly(Throwable t) {
+			this.done = true;
+
+			this.delegate.onError(t);
 		}
 
 		@Override
@@ -985,6 +1022,13 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
+		public void errorDirectly(Throwable t) {
+			this.done = true;
+
+			this.delegate.onError(t);
+		}
+
+		@Override
 		public void onComplete() {
 			if (this.done) {
 				return;
@@ -1012,8 +1056,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			final boolean shouldCancelInbound =
-					!hasInboundTerminated(previousState) && !hasInboundCancelled(
-							previousState);
+					!hasInboundTerminated(previousState) && !hasInboundCancelled(previousState);
 
 			if (!hasOutboundSubscribed(previousState)) {
 				if (shouldCancelInbound) {
@@ -1048,5 +1091,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	interface ControlSubscriber<T> extends CoreSubscriber<T> {
 
 		void sendSubscription();
+
+		void errorDirectly(Throwable t);
 	}
 }

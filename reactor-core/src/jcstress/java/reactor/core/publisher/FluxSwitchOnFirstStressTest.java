@@ -11,6 +11,7 @@ import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.Result;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.LLLLL_Result;
+import org.openjdk.jcstress.infra.results.LLLL_Result;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 
@@ -105,7 +106,7 @@ public abstract class FluxSwitchOnFirstStressTest {
 		}
 
 		@Actor
-		public void CompleteInbound() {
+		public void completeInbound() {
 			main.onComplete();
 		}
 
@@ -222,6 +223,155 @@ public abstract class FluxSwitchOnFirstStressTest {
 
 	@JCStressTest
 	@Outcome(id = {
+			"1, 2, 0, 1"}, expect = ACCEPTABLE, desc = "inbound next with error happens first")
+	@Outcome(id = {
+			"1, 0, 0, 1"}, expect = ACCEPTABLE, desc = "cancellation happened first")
+	@Outcome(id = {
+			"1, 3, 0, 1"}, expect = ACCEPTABLE, desc = "cancellation in between")
+	@State
+	public static class InboundNextLeadingToErrorAndOutboundCancelStressTest
+			extends FluxSwitchOnFirstStressTest {
+
+		static final RuntimeException DUMMY_ERROR = new RuntimeException("dummy");
+
+		@Override
+		Flux<String> switchOnFirst(Signal<? extends String> signal,
+				Flux<String> inbound) {
+			throw DUMMY_ERROR;
+		}
+
+		@Actor
+		public void nextInbound() {
+			main.onNext("value");
+		}
+
+		@Actor
+		public void cancelOutbound() {
+			outboundSubscriber.cancel();
+		}
+
+		@Arbiter
+		public void arbiter(LLLL_Result result) {
+			result.r1 = inboundSubscription.cancelled ? 1 : 0;
+			result.r2 =
+					outboundSubscriber.onCompleteCalls.get() + outboundSubscriber.onErrorCalls.get() * 2 + outboundSubscriber.droppedErrors.size() * 3;
+			result.r3 = outboundSubscriber.onNextCalls;
+			result.r4 = outboundSubscriber.onNextDiscarded;
+
+			if (outboundSubscriber.concurrentOnError.get()) {
+				throw new RuntimeException("Concurrent OnError");
+			}
+			if (outboundSubscriber.concurrentOnNext.get()) {
+				throw new RuntimeException("Concurrent OnNext");
+			}
+			if (outboundSubscriber.concurrentOnComplete.get()) {
+				throw new RuntimeException("Concurrent OnComplete");
+			}
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {
+			"0, 2, 0, 0"}, expect = ACCEPTABLE, desc = "inbound error with transformation error happens first")
+	@Outcome(id = {
+			"1, 3, 0, 0"}, expect = ACCEPTABLE, desc = "cancellation happened first")
+	@Outcome(id = {
+			"0, 3, 0, 0"}, expect = ACCEPTABLE, desc = "cancellation happened in between")
+	@State
+	public static class InboundErrorLeadingToErrorAndOutboundCancelStressTest
+			extends FluxSwitchOnFirstStressTest {
+
+		static final RuntimeException DUMMY_ERROR_1 = new RuntimeException("dummy1");
+		static final RuntimeException DUMMY_ERROR_2 = new RuntimeException("dummy2");
+
+		@Override
+		Flux<String> switchOnFirst(Signal<? extends String> signal,
+				Flux<String> inbound) {
+			throw DUMMY_ERROR_2;
+		}
+
+		@Actor
+		public void errorInbound() {
+			main.onError(DUMMY_ERROR_1);
+		}
+
+		@Actor
+		public void cancelOutbound() {
+			outboundSubscriber.cancel();
+		}
+
+		@Arbiter
+		public void arbiter(LLLL_Result result) {
+			result.r1 = inboundSubscription.cancelled ? 1 : 0;
+			result.r2 =
+					outboundSubscriber.onCompleteCalls.get() + outboundSubscriber.onErrorCalls.get() * 2 + outboundSubscriber.droppedErrors.size() * 3;
+			result.r3 = outboundSubscriber.onNextCalls;
+			result.r4 = outboundSubscriber.onNextDiscarded;
+
+			if (outboundSubscriber.concurrentOnError.get()) {
+				throw new RuntimeException("Concurrent OnError");
+			}
+			if (outboundSubscriber.concurrentOnNext.get()) {
+				throw new RuntimeException("Concurrent OnNext");
+			}
+			if (outboundSubscriber.concurrentOnComplete.get()) {
+				throw new RuntimeException("Concurrent OnComplete");
+			}
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {
+			"0, 2, 0, 0"}, expect = ACCEPTABLE, desc = "inbound complete with transformation error happens first")
+	@Outcome(id = {
+			"1, 3, 0, 0"}, expect = ACCEPTABLE, desc = "cancellation happened first")
+	@Outcome(id = {
+			"0, 3, 0, 0"}, expect = ACCEPTABLE, desc = "cancellation happened in between")
+	@State
+	public static class InboundCompleteLeadingToErrorAndOutboundCancelStressTest
+			extends FluxSwitchOnFirstStressTest {
+
+		static final RuntimeException DUMMY_ERROR_1 = new RuntimeException("dummy1");
+		static final RuntimeException DUMMY_ERROR_2 = new RuntimeException("dummy2");
+
+		@Override
+		Flux<String> switchOnFirst(Signal<? extends String> signal,
+				Flux<String> inbound) {
+			throw DUMMY_ERROR_2;
+		}
+
+		@Actor
+		public void errorInbound() {
+			main.onError(DUMMY_ERROR_1);
+		}
+
+		@Actor
+		public void cancelOutbound() {
+			outboundSubscriber.cancel();
+		}
+
+		@Arbiter
+		public void arbiter(LLLL_Result result) {
+			result.r1 = inboundSubscription.cancelled ? 1 : 0;
+			result.r2 =
+					outboundSubscriber.onCompleteCalls.get() + outboundSubscriber.onErrorCalls.get() * 2 + outboundSubscriber.droppedErrors.size() * 3;
+			result.r3 = outboundSubscriber.onNextCalls;
+			result.r4 = outboundSubscriber.onNextDiscarded;
+
+			if (outboundSubscriber.concurrentOnError.get()) {
+				throw new RuntimeException("Concurrent OnError");
+			}
+			if (outboundSubscriber.concurrentOnNext.get()) {
+				throw new RuntimeException("Concurrent OnNext");
+			}
+			if (outboundSubscriber.concurrentOnComplete.get()) {
+				throw new RuntimeException("Concurrent OnComplete");
+			}
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {
 			"0, 0, 1, 2, 2, 1, 0, 1, 0"}, expect = ACCEPTABLE, desc = "inbound request happened first. then inbound cancel. then outbound cancel")
 	@Outcome(id = {
 			"0, 0, 1, 2, 2, 1, 2, 1, 0"}, expect = ACCEPTABLE, desc = "inbound request happened first. then outbound cancel with error")
@@ -300,7 +450,8 @@ public abstract class FluxSwitchOnFirstStressTest {
 	@Outcome(id = {
 			"1, 1, 2, 2, 0"}, expect = ACCEPTABLE, desc = "inbound next happened before outbound cancel")
 	@State
-	public static class OutboundCancelAndInboundNextStressTest extends FluxSwitchOnFirstStressTest {
+	public static class OutboundCancelAndInboundNextStressTest
+			extends FluxSwitchOnFirstStressTest {
 
 		Flux<String> inboundStream;
 
@@ -360,7 +511,8 @@ public abstract class FluxSwitchOnFirstStressTest {
 	@Outcome(id = {
 			"1, 1, 2, 1, 0"}, expect = ACCEPTABLE, desc = "outbound cancel happened before inbound complete")
 	@State
-	public static class OutboundCancelAndInboundCompleteStressTest extends FluxSwitchOnFirstStressTest {
+	public static class OutboundCancelAndInboundCompleteStressTest
+			extends FluxSwitchOnFirstStressTest {
 
 		Flux<String> inboundStream;
 
@@ -414,14 +566,14 @@ public abstract class FluxSwitchOnFirstStressTest {
 		}
 	}
 
-
 	@JCStressTest
 	@Outcome(id = {
 			"1, 0, 2, 1, 0"}, expect = ACCEPTABLE, desc = "inbound error happened before outbound cancel")
 	@Outcome(id = {
 			"1, 1, 5, 1, 0"}, expect = ACCEPTABLE, desc = "outbound cancel happened before inbound error")
 	@State
-	public static class OutboundCancelAndInboundErrorStressTest extends FluxSwitchOnFirstStressTest {
+	public static class OutboundCancelAndInboundErrorStressTest
+			extends FluxSwitchOnFirstStressTest {
 
 		static final RuntimeException DUMMY_ERROR = new RuntimeException("dummy");
 
