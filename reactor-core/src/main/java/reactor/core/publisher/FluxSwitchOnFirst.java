@@ -253,7 +253,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 	/**
 	 * Adds flags which indicate that the inbound has cancelled upstream and errored
-	 * the outbound downstream. Fails if either inbound is cancelled or terminated.
+	 * the outbound downstream. Fails if either inbound is cancelled or outbound is
+	 * cancelled.
+	 *
+	 * Note, this is a rare case needed to add cancellation for inbound and
+	 * termination for outbound and can only be occurred during the onNext calling
+	 * transformation function which then throws unexpected error.
 	 *
 	 * @return previous observed state
 	 */
