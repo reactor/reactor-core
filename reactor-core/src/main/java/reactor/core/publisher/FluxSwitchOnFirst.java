@@ -618,14 +618,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				if (!this.isInboundRequestedOnce) {
 					this.isInboundRequestedOnce = true;
 
-					final T first = this.firstValue;
-					if (first != null) {
-						this.firstValue = null;
-
+					if (this.isFirstOnNextReceivedOnce) {
 						final long previousState = markInboundRequestedOnce(this);
 						if (hasInboundCancelled(previousState)) {
 							return;
 						}
+
+						final T first = this.firstValue;
+						this.firstValue = null;
 
 						final boolean wasDelivered = sendFirst(first);
 						if (wasDelivered) {
@@ -753,8 +753,9 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return false;
 			}
 
-			final T f = this.firstValue;
-			if (f == null) {
+
+			if (!this.isFirstOnNextReceivedOnce) {
+				this.isFirstOnNextReceivedOnce = true;
 				this.firstValue = t;
 
 				long previousState = markFirstValueReceived(this);
