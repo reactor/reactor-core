@@ -409,17 +409,9 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		@Nullable
 		public final Object scanUnsafe(Attr key) {
-			final boolean isCancelled = this.inboundSubscriber == Operators.EMPTY_SUBSCRIBER;
-
-			if (key == Attr.CANCELLED) {
-				return isCancelled && !this.done;
-			}
-			if (key == Attr.TERMINATED) {
-				return this.done || isCancelled;
-			}
-			if (key == Attr.RUN_STYLE) {
-				return Attr.RunStyle.SYNC;
-			}
+			if (key == Attr.CANCELLED) return hasInboundCancelled(this.state);
+			if (key == Attr.TERMINATED) return hasInboundTerminated(this.state);
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -921,15 +913,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public final Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return parent;
-			}
-			if (key == Attr.ACTUAL) {
-				return delegate;
-			}
-			if (key == Attr.RUN_STYLE) {
-				return Attr.RunStyle.SYNC;
-			}
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.ACTUAL) return delegate;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.CANCELLED) return hasOutboundCancelled(this.parent.state);
+			if (key == Attr.TERMINATED) return hasOutboundTerminated(this.parent.state);
 
 			return null;
 		}
