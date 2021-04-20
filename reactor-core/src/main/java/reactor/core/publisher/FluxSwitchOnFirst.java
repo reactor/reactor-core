@@ -896,7 +896,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public final void cancel() {
-			REQUESTED.lazySet(this, STATE_CANCELLED);
+			Operators.DeferredSubscription.REQUESTED.lazySet(this, STATE_CANCELLED);
 
 			final long previousState = markOutboundCancelled(this.parent);
 			if (hasOutboundCancelled(previousState) || hasOutboundTerminated(previousState)) {
