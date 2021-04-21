@@ -26,7 +26,7 @@ public class ParallelLiftTest {
 	@Test
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelLift<Integer, Integer> test = new ParallelLift<>(source, (sc, su) -> su);
+		ParallelLift<Integer, Integer> test = new ParallelLift<>(source, Operators.LiftFunction.liftPublisher(null, (sc, su) -> su));
 
 		assertThat(test.parallelism())
 				.isEqualTo(3)
@@ -36,7 +36,7 @@ public class ParallelLiftTest {
 	@Test
 	public void scanOperator() throws Exception {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelLift<Integer, Integer> test = new ParallelLift<>(source, (sc, su) -> su);
+		ParallelLift<Integer, Integer> test = new ParallelLift<>(source, Operators.LiftFunction.liftPublisher(null, (sc, su) -> su));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH))

@@ -32,7 +32,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
@@ -45,13 +44,12 @@ import reactor.core.Scannable;
 final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 		implements Fuseable {
 
-	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-			lifter;
+	final Operators.LiftFunction<I, O> liftFunction;
 
 	FluxLiftFuseable(Publisher<I> p,
-			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			Operators.LiftFunction<I, O> liftFunction) {
 		super(Flux.from(p));
-		this.lifter = lifter;
+		this.liftFunction = liftFunction;
 	}
 
 	@Override
@@ -65,13 +63,14 @@ final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
+		if (key == Attr.LIFTER) return liftFunction.name;
 		return super.scanUnsafe(key);
 	}
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
-				lifter.apply(source, actual);
+				liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

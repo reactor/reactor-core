@@ -2506,6 +2506,7 @@ public abstract class Operators {
 			implements Function<Publisher<I>, Publisher<O>> {
 
 		final Predicate<Publisher> filter;
+		final String name;
 
 		final BiFunction<Publisher, ? super CoreSubscriber<? super O>,
 				? extends CoreSubscriber<? super I>> lifter;
@@ -2523,19 +2524,22 @@ public abstract class Operators {
 			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 					effectiveLifter = (pub, sub) -> lifter.apply(Scannable.from(pub), sub);
 
-			return new LiftFunction<>(effectiveFilter, effectiveLifter);
+			return new LiftFunction<>(effectiveFilter, effectiveLifter, lifter.toString());
 		}
 
 		static final <I, O> LiftFunction<I, O> liftPublisher(
 				@Nullable Predicate<Publisher> filter,
 				BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
-			return new LiftFunction<>(filter, Objects.requireNonNull(lifter, "lifter"));
+			Objects.requireNonNull(lifter, "lifter");
+			return new LiftFunction<>(filter, lifter, lifter.toString());
 		}
 
 		private LiftFunction(@Nullable Predicate<Publisher> filter,
-				BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+				BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter,
+				String name) {
 			this.filter = filter;
 			this.lifter = Objects.requireNonNull(lifter, "lifter");
+			this.name = Objects.requireNonNull(name, "name");
 		}
 
 		@Override
@@ -2547,33 +2551,33 @@ public abstract class Operators {
 
 			if (publisher instanceof Fuseable) {
 				if (publisher instanceof Mono) {
-					return new MonoLiftFuseable<>(publisher, lifter);
+					return new MonoLiftFuseable<>(publisher, this);
 				}
 				if (publisher instanceof ParallelFlux) {
-					return new ParallelLiftFuseable<>((ParallelFlux<I>)publisher, lifter);
+					return new ParallelLiftFuseable<>((ParallelFlux<I>)publisher, this);
 				}
 				if (publisher instanceof ConnectableFlux) {
-					return new ConnectableLiftFuseable<>((ConnectableFlux<I>) publisher, lifter);
+					return new ConnectableLiftFuseable<>((ConnectableFlux<I>) publisher, this);
 				}
 				if (publisher instanceof GroupedFlux) {
-					return new GroupedLiftFuseable<>((GroupedFlux<?, I>) publisher, lifter);
+					return new GroupedLiftFuseable<>((GroupedFlux<?, I>) publisher, this);
 				}
-				return new FluxLiftFuseable<>(publisher, lifter);
+				return new FluxLiftFuseable<>(publisher, this);
 			}
 			else {
 				if (publisher instanceof Mono) {
-					return new MonoLift<>(publisher, lifter);
+					return new MonoLift<>(publisher, this);
 				}
 				if (publisher instanceof ParallelFlux) {
-					return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
+					return new ParallelLift<>((ParallelFlux<I>)publisher, this);
 				}
 				if (publisher instanceof ConnectableFlux) {
-					return new ConnectableLift<>((ConnectableFlux<I>) publisher, lifter);
+					return new ConnectableLift<>((ConnectableFlux<I>) publisher, this);
 				}
 				if (publisher instanceof GroupedFlux) {
-					return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
+					return new GroupedLift<>((GroupedFlux<?, I>) publisher, this);
 				}
-				return new FluxLift<>(publisher, lifter);
+				return new FluxLift<>(publisher, this);
 			}
 		}
 	}

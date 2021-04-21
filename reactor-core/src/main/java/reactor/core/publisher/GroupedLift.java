@@ -16,28 +16,25 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
-import java.util.function.BiFunction;
-
-import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+
+import java.util.Objects;
 
 /**
  * @author Simon Baslé
  */
 final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable {
 
-	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-			lifter;
+	final Operators.LiftFunction<I, O> liftFunction;
 
 	final GroupedFlux<K, I> source;
 
 	GroupedLift(GroupedFlux<K, I> p,
-			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			Operators.LiftFunction<I, O> liftFunction) {
 		this.source = Objects.requireNonNull(p, "source");
-		this.lifter = lifter;
+		this.liftFunction = liftFunction;
 	}
 
 	@Override
@@ -62,6 +59,9 @@ final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable 
 		if (key == Attr.RUN_STYLE) {
 			return Scannable.from(source).scanUnsafe(key);
 		}
+		if (key == Attr.LIFTER) {
+			return liftFunction.name;
+		}
 
 		return null;
 	}
@@ -77,7 +77,7 @@ final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable 
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
-				lifter.apply(source, actual);
+				liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
