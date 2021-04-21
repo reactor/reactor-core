@@ -19,610 +19,947 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
 /**
- * @author Oleh Dokuka
  * @param <T>
  * @param <R>
+ * @author Oleh Dokuka
  */
 final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
-
-    final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
-    final boolean cancelSourceOnComplete;
-
-    FluxSwitchOnFirst(
-            Flux<? extends T> source,
-            BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
-            boolean cancelSourceOnComplete) {
-        super(source);
-        this.transformer = Objects.requireNonNull(transformer, "transformer");
-        this.cancelSourceOnComplete = cancelSourceOnComplete;
-    }
-
-    @Override
-    public int getPrefetch() {
-        return 1;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-        if (actual instanceof Fuseable.ConditionalSubscriber) {
-            return new SwitchOnFirstConditionalMain<>((Fuseable.ConditionalSubscriber<? super R>) actual, transformer, cancelSourceOnComplete);
-        }
-        return new SwitchOnFirstMain<>(actual, transformer, cancelSourceOnComplete);
-    }
-
-    @Override
-    public Object scanUnsafe(Attr key) {
-        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-        return super.scanUnsafe(key);
-    }
-
-    static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
-            implements InnerOperator<T, R> {
-
-        final ControlSubscriber<? super R>                                     outer;
-        final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
-
-        Subscription s;
-        Throwable    throwable;
-        T            first;
-        boolean      requestedOnce;
-        boolean      done;
-
-        volatile CoreSubscriber<? super T> inner;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<AbstractSwitchOnFirstMain, CoreSubscriber> INNER =
-                AtomicReferenceFieldUpdater.newUpdater(AbstractSwitchOnFirstMain.class, CoreSubscriber.class, "inner");
-
-        volatile int wip;
-        @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<AbstractSwitchOnFirstMain> WIP =
-                AtomicIntegerFieldUpdater.newUpdater(AbstractSwitchOnFirstMain.class, "wip");
-
-        @SuppressWarnings("unchecked")
-        AbstractSwitchOnFirstMain(
-                CoreSubscriber<? super R> outer,
-                BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
-                boolean cancelSourceOnComplete) {
-            this.outer = outer instanceof Fuseable.ConditionalSubscriber
-                ? new SwitchOnFirstConditionalControlSubscriber<>(this, (Fuseable.ConditionalSubscriber<R>) outer, cancelSourceOnComplete)
-                : new SwitchOnFirstControlSubscriber<>(this, outer, cancelSourceOnComplete);
-            this.transformer = transformer;
-        }
-
-        @Override
-        @Nullable
-        public Object scanUnsafe(Attr key) {
-            final boolean isCancelled = this.inner == Operators.EMPTY_SUBSCRIBER;
-
-            if (key == Attr.CANCELLED) return isCancelled && !this.done;
-            if (key == Attr.TERMINATED) return this.done || isCancelled;
-            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-
-            return InnerOperator.super.scanUnsafe(key);
-        }
-
-        @Override
-        public CoreSubscriber<? super R> actual() {
-            return this.outer;
-        }
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (Operators.validate(this.s, s)) {
-                this.s = s;
-                this.outer.sendSubscription();
-                if (this.inner != Operators.EMPTY_SUBSCRIBER) {
-                    s.request(1);
-                }
-            }
-        }
-
-        @Override
-        public void onNext(T t) {
-            final CoreSubscriber<? super T> i = this.inner;
-            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
-                Operators.onNextDropped(t, currentContext());
-                return;
-            }
-
-            if (i == null) {
-                final Publisher<? extends R> result;
-                final CoreSubscriber<? super R> o = this.outer;
-
-                try {
-                    result = Objects.requireNonNull(
-                        this.transformer.apply(Signal.next(t, o.currentContext()), this),
-                        "The transformer returned a null value"
-                    );
-                }
-                catch (Throwable e) {
-                    this.done = true;
-                    Operators.error(o, Operators.onOperatorError(this.s, e, t, o.currentContext()));
-                    return;
-                }
-
-                this.first = t;
-                result.subscribe(o);
-                return;
-            }
-
-            i.onNext(t);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            // read of the first should occur before the read of inner since otherwise
-            // first may be nulled while the previous read has shown that inner is still
-            // null hence double invocation of transformer occurs
-            final T f = this.first;
-            final CoreSubscriber<? super T> i = this.inner;
-            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
-                Operators.onErrorDropped(t, currentContext());
-                return;
-            }
-
-            this.throwable = t;
-            this.done = true;
-
-            if (f == null && i == null) {
-                final Publisher<? extends R> result;
-                final CoreSubscriber<? super R> o = this.outer;
-                try {
-                    result = Objects.requireNonNull(
-                        this.transformer.apply(Signal.error(t, o.currentContext()), this),
-                        "The transformer returned a null value"
-                    );
-                }
-                catch (Throwable e) {
-                    this.done = true;
-                    Operators.error(o, Operators.onOperatorError(this.s, e, t, o.currentContext()));
-                    return;
-                }
-
-                result.subscribe(o);
-                return;
-            }
-
-            drain();
-        }
-
-        @Override
-        public void onComplete() {
-            // read of the first should occur before the read of inner since otherwise
-            // first may be nulled while the previous read has shown that inner is still
-            // null hence double invocation of transformer occurs
-            final T f = this.first;
-            final CoreSubscriber<? super T> i = this.inner;
-            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
-                return;
-            }
-
-            this.done = true;
-
-            if (f == null && i == null) {
-                final Publisher<? extends R> result;
-                final CoreSubscriber<? super R> o = outer;
-
-                try {
-                    result = Objects.requireNonNull(
-                            this.transformer.apply(Signal.complete(o.currentContext()), this),
-                        "The transformer returned a null value"
-                    );
-                }
-                catch (Throwable e) {
-                    this.done = true;
-                    Operators.error(o, Operators.onOperatorError(this.s, e, null, o.currentContext()));
-                    return;
-                }
-
-                result.subscribe(o);
-                return;
-            }
-
-            drain();
-        }
-
-        @Override
-        public void cancel() {
-            if (INNER.getAndSet(this, Operators.EMPTY_SUBSCRIBER) == Operators.EMPTY_SUBSCRIBER) {
-                return;
-            }
-
-            this.s.cancel();
-
-            if (WIP.getAndIncrement(this) == 0) {
-                final T f = this.first;
-                if (f != null) {
-                    this.first = null;
-                    Operators.onDiscard(f, currentContext());
-                }
-            }
-        }
-
-        @Override
-        public void request(long n) {
-            if (Operators.validate(n)) {
-                if (this.first != null) {
-                    this.requestedOnce = true;
-                    if (drain() && n != Long.MAX_VALUE) {
-                        if (--n > 0) {
-                            this.s.request(n);
-                            return;
-                        }
-
-                        return;
-                    }
-                }
-
-                this.s.request(n);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        boolean drain() {
-            if (WIP.getAndIncrement(this) != 0) {
-                return false;
-            }
-
-            T f = this.first;
-            int m = 1;
-            boolean sent = false;
-            CoreSubscriber<? super T> a;
-
-            for (;;) {
-                a = this.inner;
-
-                // check for the case where upstream terminates before downstream has subscribed at all
-                if (a != null) {
-                    if (f != null && this.requestedOnce) {
-                        this.first = null;
-
-                        if (a == Operators.EMPTY_SUBSCRIBER) {
-                            Operators.onDiscard(f, currentContext());
-                            return false;
-                        }
-
-                        sent = tryOnNext(a, f);
-                        f = null;
-                        // check if not cancelled if it has just been sent (next + cancel case)
-                        a = this.inner;
-                    }
-
-                    if (a == Operators.EMPTY_SUBSCRIBER) {
-                        return false;
-                    }
-
-                    if (this.done && f == null) {
-                        Throwable t = this.throwable;
-                        if (t != null) {
-                            a.onError(t);
-                        } else {
-                            a.onComplete();
-                        }
-                        INNER.lazySet(this, Operators.EMPTY_SUBSCRIBER);
-                        return sent;
-                    }
-                }
-
-                m = WIP.addAndGet(this, -m);
-                if (m == 0) {
-                    return sent;
-                }
-            }
-        }
-
-        abstract boolean tryOnNext(CoreSubscriber<? super T> actual, T value);
-
-    }
-
-    static final class SwitchOnFirstMain<T, R> extends AbstractSwitchOnFirstMain<T, R> {
-
-        SwitchOnFirstMain(
-                CoreSubscriber<? super R> outer,
-                BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
-                boolean cancelSourceOnComplete) {
-            super(outer, transformer, cancelSourceOnComplete);
-        }
-
-        @Override
-        public void subscribe(CoreSubscriber<? super T> actual) {
-            if (this.inner == null && INNER.compareAndSet(this, null, actual)) {
-                if (this.first == null && this.done) {
-                    final Throwable t = this.throwable;
-                    if (t != null) {
-                        Operators.error(actual, t);
-                    }
-                    else {
-                        Operators.complete(actual);
-                    }
-                    return;
-                }
-                actual.onSubscribe(this);
-            }
-            else if (this.inner != Operators.EMPTY_SUBSCRIBER) {
-                Operators.error(actual, new IllegalStateException("FluxSwitchOnFirst allows only one Subscriber"));
-            } else {
-                Operators.error(actual, new CancellationException("FluxSwitchOnFirst has already been cancelled"));
-            }
-        }
-
-        @Override
-        boolean tryOnNext(CoreSubscriber<? super T> actual, T t) {
-            actual.onNext(t);
-            return true;
-        }
-    }
-
-    static final class SwitchOnFirstConditionalMain<T, R> extends AbstractSwitchOnFirstMain<T, R>
-            implements Fuseable.ConditionalSubscriber<T> {
-
-        SwitchOnFirstConditionalMain(
-                Fuseable.ConditionalSubscriber<? super R> outer,
-                BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
-                boolean cancelSourceOnComplete) {
-            super(outer, transformer, cancelSourceOnComplete);
-        }
-
-        @Override
-        public void subscribe(CoreSubscriber<? super T> actual) {
-            if (this.inner == null && INNER.compareAndSet(this, null, Operators.toConditionalSubscriber(actual))) {
-                if (this.first == null && this.done) {
-                    final Throwable t = this.throwable;
-                    if (t != null) {
-                        Operators.error(actual, t);
-                    }
-                    else {
-                        Operators.complete(actual);
-                    }
-                    return;
-                }
-                actual.onSubscribe(this);
-            }
-            else if (this.inner != Operators.EMPTY_SUBSCRIBER) {
-                Operators.error(actual, new IllegalStateException("FluxSwitchOnFirst allows only one Subscriber"));
-            } else {
-                Operators.error(actual, new CancellationException("FluxSwitchOnFirst has already been cancelled"));
-            }
-        }
-
-        @Override
-        public boolean tryOnNext(T t) {
-            @SuppressWarnings("unchecked")
-            final Fuseable.ConditionalSubscriber<? super T> i =
-                    (Fuseable.ConditionalSubscriber<? super T>) this.inner;
-            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
-                Operators.onNextDropped(t, currentContext());
-                return false;
-            }
-
-            if (i == null) {
-                final Publisher<? extends R> result;
-                final CoreSubscriber<? super R> o = this.outer;
-
-                try {
-                    result = Objects.requireNonNull(
-                        this.transformer.apply(Signal.next(t, o.currentContext()), this),
-                        "The transformer returned a null value"
-                    );
-                }
-                catch (Throwable e) {
-                    this.done = true;
-                    Operators.error(o, Operators.onOperatorError(this.s, e, t, o.currentContext()));
-                    return false;
-                }
-
-                this.first = t;
-                result.subscribe(o);
-                return true;
-            }
-
-            return i.tryOnNext(t);
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        boolean tryOnNext(CoreSubscriber<? super T> actual, T t) {
-            return ((Fuseable.ConditionalSubscriber<? super T>) actual).tryOnNext(t);
-        }
-    }
-
-    static final class SwitchOnFirstControlSubscriber<T> extends Operators.DeferredSubscription implements InnerOperator<T,
-            T>, ControlSubscriber<T> {
-
-        final AbstractSwitchOnFirstMain<?, T> parent;
-        final CoreSubscriber<? super T> delegate;
-        final boolean cancelSourceOnComplete;
-
-        SwitchOnFirstControlSubscriber(
-                AbstractSwitchOnFirstMain<?, T> parent,
-                CoreSubscriber<? super T> delegate,
-                boolean cancelSourceOnComplete) {
-            this.parent = parent;
-            this.delegate = delegate;
-            this.cancelSourceOnComplete = cancelSourceOnComplete;
-        }
-
-        @Override
-        public void sendSubscription() {
-            delegate.onSubscribe(this);
-        }
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            set(s);
-        }
-
-        @Override
-        public CoreSubscriber<? super T> actual() {
-            return this.delegate;
-        }
-
-        @Override
-        public void onNext(T t) {
-            this.delegate.onNext(t);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            if (this.requested == STATE_CANCELLED) {
-                Operators.onErrorDropped(throwable, currentContext());
-                return;
-            }
-
-            final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
-            if (!parent.done) {
-                parent.cancel();
-            }
-
-            this.delegate.onError(throwable);
-        }
-
-        @Override
-        public void onComplete() {
-            if (this.requested == STATE_CANCELLED) {
-                return;
-            }
-
-            final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
-            if (!parent.done && cancelSourceOnComplete) {
-                parent.cancel();
-            }
-
-            this.delegate.onComplete();
-        }
-
-        @Override
-        public void cancel() {
-            final long state = REQUESTED.getAndSet(this, STATE_CANCELLED);
-            if (state == STATE_CANCELLED) {
-                return;
-            }
-
-            if (state == STATE_SUBSCRIBED) {
-                this.s.cancel();
-            }
-
-            this.parent.cancel();
-        }
-
-        @Override
-        public Object scanUnsafe(Attr key) {
-            if (key == Attr.PARENT) return parent;
-            if (key == Attr.ACTUAL) return delegate;
-            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-
-            return null;
-        }
-    }
-
-    static final class SwitchOnFirstConditionalControlSubscriber<T> extends Operators.DeferredSubscription implements InnerOperator<T, T>, ControlSubscriber<T>,
-                                                                             Fuseable.ConditionalSubscriber<T> {
-
-        final AbstractSwitchOnFirstMain<?, T> parent;
-        final Fuseable.ConditionalSubscriber<? super T> delegate;
-        final boolean terminateUpstreamOnComplete;
-
-        SwitchOnFirstConditionalControlSubscriber(
-                AbstractSwitchOnFirstMain<?, T> parent,
-                Fuseable.ConditionalSubscriber<? super T> delegate,
-                boolean terminateUpstreamOnComplete) {
-            this.parent = parent;
-            this.delegate = delegate;
-            this.terminateUpstreamOnComplete = terminateUpstreamOnComplete;
-        }
-
-        @Override
-        public void sendSubscription() {
-            delegate.onSubscribe(this);
-        }
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            set(s);
-        }
-
-        @Override
-        public CoreSubscriber<? super T> actual() {
-            return this.delegate;
-        }
-
-        @Override
-        public void onNext(T t) {
-            this.delegate.onNext(t);
-        }
-
-        @Override
-        public boolean tryOnNext(T t) {
-            return this.delegate.tryOnNext(t);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            if (this.requested == STATE_CANCELLED) {
-                Operators.onErrorDropped(throwable, currentContext());
-                return;
-            }
-
-            final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
-            if (!parent.done) {
-                parent.cancel();
-            }
-
-            this.delegate.onError(throwable);
-        }
-
-        @Override
-        public void onComplete() {
-            if (this.requested == STATE_CANCELLED) {
-                return;
-            }
-
-            final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
-            if (!parent.done && terminateUpstreamOnComplete) {
-                parent.cancel();
-            }
-
-            this.delegate.onComplete();
-        }
-
-        @Override
-        public void cancel() {
-            final long state = REQUESTED.getAndSet(this, STATE_CANCELLED);
-            if (state == STATE_CANCELLED) {
-                return;
-            }
-
-            if (state == STATE_SUBSCRIBED) { // mean subscription happened so we can just cancel upstream only
-                this.s.cancel();
-            }
-
-            this.parent.cancel();
-        }
-
-        @Override
-        public Object scanUnsafe(Attr key) {
-            if (key == Attr.PARENT) return parent;
-            if (key == Attr.ACTUAL) return delegate;
-            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-
-            return null;
-        }
-    }
-
-    interface ControlSubscriber<T> extends CoreSubscriber<T> {
-
-        void sendSubscription();
-    }
+	final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
+	final boolean cancelSourceOnComplete;
+
+	FluxSwitchOnFirst(Flux<? extends T> source,
+			BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+			boolean cancelSourceOnComplete) {
+		super(source);
+		this.transformer = Objects.requireNonNull(transformer, "transformer");
+		this.cancelSourceOnComplete = cancelSourceOnComplete;
+	}
+
+	@Override
+	public int getPrefetch() {
+		return 1;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+		if (actual instanceof Fuseable.ConditionalSubscriber) {
+			return new SwitchOnFirstConditionalMain<>((Fuseable.ConditionalSubscriber<? super R>) actual,
+					transformer,
+					cancelSourceOnComplete);
+		}
+		return new SwitchOnFirstMain<>(actual, transformer, cancelSourceOnComplete);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) {
+			return Attr.RunStyle.SYNC;
+		}
+		return super.scanUnsafe(key);
+	}
+
+	static final int HAS_FIRST_VALUE_RECEIVED_FLAG    =
+			0b0000_0000_0000_0000_0000_0000_0000_0001;
+	static final int HAS_INBOUND_SUBSCRIBED_ONCE_FLAG =
+			0b0000_0000_0000_0000_0000_0000_0000_0010;
+	static final int HAS_INBOUND_SUBSCRIBER_SET_FLAG =
+			0b0000_0000_0000_0000_0000_0000_0000_0100;
+	static final int HAS_INBOUND_REQUESTED_ONCE_FLAG  =
+			0b0000_0000_0000_0000_0000_0000_0000_1000;
+	static final int HAS_FIRST_VALUE_SENT_FLAG        =
+			0b0000_0000_0000_0000_0000_0000_0001_0000;
+	static final int HAS_INBOUND_CANCELLED_FLAG       =
+			0b0000_0000_0000_0000_0000_0000_0010_0000;
+	static final int HAS_INBOUND_TERMINATED_FLAG      =
+			0b0000_0000_0000_0000_0000_0000_0100_0000;
+
+	static final int HAS_OUTBOUND_SUBSCRIBED_FLAG =
+			0b0000_0000_0000_0000_0000_0000_1000_0000;
+	static final int HAS_OUTBOUND_CANCELLED_FLAG  =
+			0b0000_0000_0000_0000_0000_0001_0000_0000;
+	static final int HAS_OUTBOUND_TERMINATED_FLAG =
+			0b0000_0000_0000_0000_0000_0010_0000_0000;
+
+	/**
+	 * Adds a flag which indicate that the first inbound onNext signal has already been
+	 * received. Fails if inbound is cancelled.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markFirstValueReceived(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_FIRST_VALUE_RECEIVED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the inbound has already been subscribed once.
+	 * Fails if inbound has already been subscribed once.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundSubscribedOnce(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundSubscribedOnce(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_SUBSCRIBED_ONCE_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the inbound subscriber has already been set.
+	 * Fails if inbound is cancelled.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundSubscriberSet(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_SUBSCRIBER_SET_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the inbound has already been requested once.
+	 * Fails if inbound is cancelled.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundRequestedOnce(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_REQUESTED_ONCE_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the first onNext value has been successfully
+	 * delivered. Fails if inbound is cancelled.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markFirstValueSent(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_FIRST_VALUE_SENT_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the inbound has already been terminated with
+	 * onComplete or onError. Fails if inbound is cancelled.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundTerminated(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_TERMINATED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the inbound has already been cancelled. Fails if
+	 * inbound is cancelled or terminated.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundCancelled(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundTerminated(state) || hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds flags which indicate that the inbound has cancelled upstream and errored
+	 * the inbound downstream. Fails if either inbound is cancelled or terminated.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundCancelledAndErrored(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundTerminated(state) || hasInboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG | HAS_INBOUND_TERMINATED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds flags which indicate that the inbound has cancelled upstream and errored
+	 * the outbound downstream. Fails if either inbound is cancelled or outbound is
+	 * cancelled.
+	 *
+	 * Note, this is a rare case needed to add cancellation for inbound and
+	 * termination for outbound and can only be occurred during the onNext calling
+	 * transformation function which then throws unexpected error.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markInboundCancelledAndOutboundTerminated(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasInboundCancelled(state) || hasOutboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG | HAS_OUTBOUND_TERMINATED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the outbound has received subscription. Fails if
+	 * outbound is cancelled.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markOutboundSubscribed(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasOutboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_OUTBOUND_SUBSCRIBED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+
+	/**
+	 * Adds a flag which indicate that the outbound has already been
+	 * terminated with onComplete or onError. Fails if outbound is cancelled or terminated.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markOutboundTerminated(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasOutboundCancelled(state) || hasOutboundTerminated(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_OUTBOUND_TERMINATED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	/**
+	 * Adds a flag which indicate that the outbound has already been cancelled. Fails
+	 * if outbound is cancelled or terminated.
+	 *
+	 * @return previous observed state
+	 */
+	static <T, R> long markOutboundCancelled(AbstractSwitchOnFirstMain<T, R> instance) {
+		for (;;) {
+			final int state = instance.state;
+
+			if (hasOutboundTerminated(state) || hasOutboundCancelled(state)) {
+				return state;
+			}
+
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_OUTBOUND_CANCELLED_FLAG)) {
+				return state;
+			}
+		}
+	}
+
+	static boolean hasInboundCancelled(long state) {
+		return (state & HAS_INBOUND_CANCELLED_FLAG) == HAS_INBOUND_CANCELLED_FLAG;
+	}
+
+	static boolean hasInboundTerminated(long state) {
+		return (state & HAS_INBOUND_TERMINATED_FLAG) == HAS_INBOUND_TERMINATED_FLAG;
+	}
+
+	static boolean hasFirstValueReceived(long state) {
+		return (state & HAS_FIRST_VALUE_RECEIVED_FLAG) == HAS_FIRST_VALUE_RECEIVED_FLAG;
+	}
+
+	static boolean hasFirstValueSent(long state) {
+		return (state & HAS_FIRST_VALUE_SENT_FLAG) == HAS_FIRST_VALUE_SENT_FLAG;
+	}
+
+	static boolean hasInboundSubscribedOnce(long state) {
+		return (state & HAS_INBOUND_SUBSCRIBED_ONCE_FLAG) == HAS_INBOUND_SUBSCRIBED_ONCE_FLAG;
+	}
+
+	static boolean hasInboundSubscriberSet(long state) {
+		return (state & HAS_INBOUND_SUBSCRIBER_SET_FLAG) == HAS_INBOUND_SUBSCRIBER_SET_FLAG;
+	}
+
+	static boolean hasInboundRequestedOnce(long state) {
+		return (state & HAS_INBOUND_REQUESTED_ONCE_FLAG) == HAS_INBOUND_REQUESTED_ONCE_FLAG;
+	}
+
+	static boolean hasOutboundSubscribed(long state) {
+		return (state & HAS_OUTBOUND_SUBSCRIBED_FLAG) == HAS_OUTBOUND_SUBSCRIBED_FLAG;
+	}
+
+	static boolean hasOutboundCancelled(long state) {
+		return (state & HAS_OUTBOUND_CANCELLED_FLAG) == HAS_OUTBOUND_CANCELLED_FLAG;
+	}
+
+	static boolean hasOutboundTerminated(long state) {
+		return (state & HAS_OUTBOUND_TERMINATED_FLAG) == HAS_OUTBOUND_TERMINATED_FLAG;
+	}
+
+	static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
+			implements InnerOperator<T, R> {
+
+		final SwitchOnFirstControlSubscriber<? super R>                        outboundSubscriber;
+		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
+
+		Subscription s;
+
+		boolean isInboundRequestedOnce;
+		boolean isFirstOnNextReceivedOnce;
+		T       firstValue;
+
+		Throwable throwable;
+		boolean   done;
+
+		CoreSubscriber<? super T> inboundSubscriber;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<AbstractSwitchOnFirstMain> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(AbstractSwitchOnFirstMain.class, "state");
+
+		@SuppressWarnings("unchecked")
+		AbstractSwitchOnFirstMain(CoreSubscriber<? super R> outboundSubscriber,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete) {
+			this.outboundSubscriber = outboundSubscriber instanceof Fuseable.ConditionalSubscriber ?
+					new SwitchOnFirstConditionalControlSubscriber<>(this,
+							(Fuseable.ConditionalSubscriber<R>) outboundSubscriber,
+							cancelSourceOnComplete) :
+					new SwitchOnFirstControlSubscriber<>(this, outboundSubscriber,
+							cancelSourceOnComplete);
+			this.transformer = transformer;
+		}
+
+		@Override
+		@Nullable
+		public final Object scanUnsafe(Attr key) {
+			if (key == Attr.CANCELLED) return hasInboundCancelled(this.state);
+			if (key == Attr.TERMINATED) return hasInboundTerminated(this.state);
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public final CoreSubscriber<? super R> actual() {
+			return this.outboundSubscriber;
+		}
+
+		@Override
+		public final void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				this.outboundSubscriber.sendSubscription();
+				if (!hasInboundCancelled(this.state)) {
+					s.request(1);
+				}
+			}
+		}
+
+		@Override
+		public final void onNext(T t) {
+			if (this.done) {
+				Operators.onNextDropped(t, currentContext());
+				return;
+			}
+
+			if (!this.isFirstOnNextReceivedOnce) {
+				this.isFirstOnNextReceivedOnce = true;
+				this.firstValue = t;
+
+				long previousState = markFirstValueReceived(this);
+				if (hasInboundCancelled(previousState)) {
+					this.firstValue = null;
+					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
+					return;
+				}
+
+				final Publisher<? extends R> outboundPublisher;
+				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
+
+				try {
+					final Signal<T> signal = Signal.next(t, o.currentContext());
+					outboundPublisher = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
+				}
+				catch (Throwable e) {
+					this.done = true;
+
+					previousState = markInboundCancelledAndOutboundTerminated(this);
+					if (hasInboundCancelled(previousState) || hasOutboundCancelled(previousState)) {
+						Operators.onErrorDropped(e, o.currentContext());
+						return;
+					}
+
+					this.firstValue = null;
+					Operators.onDiscard(t, o.currentContext());
+
+					o.errorDirectly(Operators.onOperatorError(this.s, e, t, o.currentContext()));
+					return;
+				}
+
+				outboundPublisher.subscribe(o);
+				return;
+			}
+
+			synchronized (this) {
+				this.inboundSubscriber.onNext(t);
+			}
+		}
+
+		@Override
+		public final void onError(Throwable t) {
+			if (this.done) {
+				Operators.onErrorDropped(t, this.outboundSubscriber.currentContext());
+				return;
+			}
+
+			this.done = true;
+			this.throwable = t;
+
+			final long previousState = markInboundTerminated(this);
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+				Operators.onErrorDropped(t, this.outboundSubscriber.currentContext());
+				return;
+			}
+
+			if (hasFirstValueSent(previousState)) {
+				synchronized (this) {
+					this.inboundSubscriber.onError(t);
+				}
+				return;
+			}
+
+			if (!hasFirstValueReceived(previousState)) {
+				final Publisher<? extends R> result;
+				final CoreSubscriber<? super R> o = this.outboundSubscriber;
+				try {
+					final Signal<T> signal = Signal.error(t, o.currentContext());
+					result = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
+				}
+				catch (Throwable e) {
+					o.onError(Exceptions.addSuppressed(t, e));
+					return;
+				}
+
+				result.subscribe(o);
+			}
+		}
+
+		@Override
+		public final void onComplete() {
+			if (this.done) {
+				return;
+			}
+
+			this.done = true;
+
+			final long previousState = markInboundTerminated(this);
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+				return;
+			}
+
+			if (hasFirstValueSent(previousState)) {
+				synchronized (this) {
+					this.inboundSubscriber.onComplete();
+				}
+				return;
+			}
+
+			if (!hasFirstValueReceived(previousState)) {
+				final Publisher<? extends R> result;
+				final CoreSubscriber<? super R> o = this.outboundSubscriber;
+
+				try {
+					final Signal<T> signal = Signal.complete(o.currentContext());
+					result = Objects.requireNonNull(this.transformer.apply(signal, this), "The transformer returned a null value");
+				}
+				catch (Throwable e) {
+					o.onError(e);
+					return;
+				}
+
+				result.subscribe(o);
+			}
+		}
+
+		@Override
+		public final void cancel() {
+			long previousState = markInboundCancelled(this);
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+				return;
+			}
+
+			this.s.cancel();
+
+			if (hasFirstValueReceived(previousState) && !hasInboundRequestedOnce(previousState)) {
+				final T f = this.firstValue;
+				this.firstValue = null;
+				Operators.onDiscard(f, currentContext());
+			}
+		}
+
+		final void cancelAndError() {
+			long previousState = markInboundCancelledAndErrored(this);
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+				return;
+			}
+
+			this.s.cancel();
+
+			if (hasFirstValueReceived(previousState) && !hasFirstValueSent(previousState)) {
+				if (!hasInboundRequestedOnce(previousState)) {
+					final T f = this.firstValue;
+					this.firstValue = null;
+					Operators.onDiscard(f, currentContext());
+
+					if (hasInboundSubscriberSet(previousState)) {
+						this.inboundSubscriber.onError(new CancellationException(
+								"FluxSwitchOnFirst has already been cancelled"));
+					}
+				}
+				return;
+			}
+
+			if (hasInboundSubscriberSet(previousState)) {
+				synchronized (this) {
+					this.inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
+				}
+			}
+		}
+
+		@Override
+		public final void request(long n) {
+			if (Operators.validate(n)) {
+				// This is a sanity check to avoid extra volatile read in the request
+				// context
+				if (!this.isInboundRequestedOnce) {
+					this.isInboundRequestedOnce = true;
+
+					if (this.isFirstOnNextReceivedOnce) {
+						final long previousState = markInboundRequestedOnce(this);
+						if (hasInboundCancelled(previousState)) {
+							return;
+						}
+
+						final T first = this.firstValue;
+						this.firstValue = null;
+
+						final boolean wasDelivered = sendFirst(first);
+						if (wasDelivered) {
+							if (n != Long.MAX_VALUE) {
+								if (--n > 0) {
+									this.s.request(n);
+								}
+								return;
+							}
+						}
+					}
+				}
+
+				this.s.request(n);
+			}
+		}
+
+		@Override
+		public final void subscribe(CoreSubscriber<? super T> inboundSubscriber) {
+			long previousState = markInboundSubscribedOnce(this);
+			if (hasInboundSubscribedOnce(previousState)) {
+				Operators.error(inboundSubscriber, new IllegalStateException("FluxSwitchOnFirst allows only one Subscriber"));
+				return;
+			}
+
+			if (hasInboundCancelled(previousState)) {
+				Operators.error(inboundSubscriber, new CancellationException("FluxSwitchOnFirst has already been cancelled"));
+				return;
+			}
+
+			if (!hasFirstValueReceived(previousState)) {
+				final Throwable t = this.throwable;
+				if (t != null) {
+					Operators.error(inboundSubscriber, t);
+				}
+				else {
+					Operators.complete(inboundSubscriber);
+				}
+				return;
+			}
+
+			this.inboundSubscriber = convert(inboundSubscriber);
+
+			inboundSubscriber.onSubscribe(this);
+
+			previousState = markInboundSubscriberSet(this);
+			if (hasInboundCancelled(previousState) && hasInboundTerminated(previousState)) {
+				inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
+			}
+		}
+
+		abstract CoreSubscriber<? super T> convert(CoreSubscriber<? super T> inboundSubscriber);
+
+
+		final boolean sendFirst(T firstValue) {
+			final CoreSubscriber<? super T> a = this.inboundSubscriber;
+
+			final boolean sent = tryDirectSend(a, firstValue);
+
+			final long previousState = markFirstValueSent(this);
+			if (hasInboundCancelled(previousState)) {
+				if (hasInboundTerminated(previousState)) {
+					a.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
+				}
+				return sent;
+			}
+
+			if (hasInboundTerminated(previousState)) {
+				Throwable t = this.throwable;
+				if (t != null) {
+					a.onError(t);
+				}
+				else {
+					a.onComplete();
+				}
+			}
+
+			return sent;
+		}
+
+		abstract boolean tryDirectSend(CoreSubscriber<? super T> actual, T value);
+
+	}
+
+	static final class SwitchOnFirstMain<T, R> extends AbstractSwitchOnFirstMain<T, R> {
+
+		SwitchOnFirstMain(CoreSubscriber<? super R> outer,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete) {
+			super(outer, transformer, cancelSourceOnComplete);
+		}
+
+		@Override
+		CoreSubscriber<? super T> convert(CoreSubscriber<? super T> inboundSubscriber) {
+			return inboundSubscriber;
+		}
+
+		@Override
+		boolean tryDirectSend(CoreSubscriber<? super T> actual, T t) {
+			actual.onNext(t);
+			return true;
+		}
+	}
+
+	static final class SwitchOnFirstConditionalMain<T, R>
+			extends AbstractSwitchOnFirstMain<T, R>
+			implements Fuseable.ConditionalSubscriber<T> {
+
+		SwitchOnFirstConditionalMain(Fuseable.ConditionalSubscriber<? super R> outer,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete) {
+			super(outer, transformer, cancelSourceOnComplete);
+		}
+
+		@Override
+		CoreSubscriber<? super T> convert(CoreSubscriber<? super T> inboundSubscriber) {
+			return Operators.toConditionalSubscriber(inboundSubscriber);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public boolean tryOnNext(T t) {
+			if (this.done) {
+				Operators.onNextDropped(t, currentContext());
+				return false;
+			}
+
+
+			if (!this.isFirstOnNextReceivedOnce) {
+				this.isFirstOnNextReceivedOnce = true;
+				this.firstValue = t;
+
+				long previousState = markFirstValueReceived(this);
+				if (hasInboundCancelled(previousState)) {
+					this.firstValue = null;
+					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
+					return true;
+				}
+
+				final Publisher<? extends R> result;
+				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
+
+				try {
+					final Signal<T> signal = Signal.next(t, o.currentContext());
+					result = Objects.requireNonNull(this.transformer.apply(signal, this),
+							"The transformer returned a null value");
+				}
+				catch (Throwable e) {
+					this.done = true;
+
+					previousState = markInboundCancelledAndOutboundTerminated(this);
+					if (hasInboundCancelled(previousState) || hasOutboundCancelled(previousState)) {
+						Operators.onErrorDropped(e, o.currentContext());
+						return true;
+					}
+
+					this.firstValue = null;
+					Operators.onDiscard(t, o.currentContext());
+
+					o.errorDirectly(Operators.onOperatorError(this.s, e, t, o.currentContext()));
+					return true;
+				}
+
+				result.subscribe(o);
+				return true;
+			}
+
+			synchronized (this) {
+				return ((Fuseable.ConditionalSubscriber<? super T>) this.inboundSubscriber).tryOnNext(t);
+			}
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		boolean tryDirectSend(CoreSubscriber<? super T> actual, T t) {
+			return ((Fuseable.ConditionalSubscriber<? super T>) actual).tryOnNext(t);
+		}
+	}
+
+	static class SwitchOnFirstControlSubscriber<T>
+			extends Operators.DeferredSubscription
+			implements InnerOperator<T, T>, CoreSubscriber<T> {
+
+		final AbstractSwitchOnFirstMain<?, T> parent;
+		final CoreSubscriber<? super T>       delegate;
+		final boolean                         cancelSourceOnComplete;
+
+		boolean done;
+
+		SwitchOnFirstControlSubscriber(AbstractSwitchOnFirstMain<?, T> parent,
+				CoreSubscriber<? super T> delegate,
+				boolean cancelSourceOnComplete) {
+			this.parent = parent;
+			this.delegate = delegate;
+			this.cancelSourceOnComplete = cancelSourceOnComplete;
+		}
+
+		final void sendSubscription() {
+			delegate.onSubscribe(this);
+		}
+
+		@Override
+		public final void onSubscribe(Subscription s) {
+			if (set(s)) {
+				long previousState = markOutboundSubscribed(this.parent);
+
+				if (hasOutboundCancelled(previousState)) {
+					s.cancel();
+				}
+			}
+		}
+
+		@Override
+		public final CoreSubscriber<? super T> actual() {
+			return this.delegate;
+		}
+
+		@Override
+		public final void onNext(T t) {
+			if (this.done) {
+				Operators.onNextDropped(t, currentContext());
+				return;
+			}
+
+			this.delegate.onNext(t);
+		}
+
+		@Override
+		public final void onError(Throwable throwable) {
+			if (this.done) {
+				Operators.onErrorDropped(throwable, currentContext());
+				return;
+			}
+
+			this.done = true;
+
+			final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
+			long previousState = markOutboundTerminated(parent);
+
+			if (hasOutboundCancelled(previousState) || hasOutboundTerminated(previousState)) {
+				Operators.onErrorDropped(throwable, this.delegate.currentContext());
+				return;
+			}
+
+			if (!hasInboundCancelled(previousState) && !hasInboundTerminated(previousState)) {
+				parent.cancelAndError();
+			}
+
+			this.delegate.onError(throwable);
+		}
+
+		final void errorDirectly(Throwable t) {
+			this.done = true;
+
+			this.delegate.onError(t);
+		}
+
+		@Override
+		public final void onComplete() {
+			if (this.done) {
+				return;
+			}
+
+			this.done = true;
+
+			final AbstractSwitchOnFirstMain<?, T> parent = this.parent;
+			long previousState = markOutboundTerminated(parent);
+
+			if (cancelSourceOnComplete && !hasInboundCancelled(previousState) && !hasInboundTerminated(previousState)) {
+				parent.cancelAndError();
+			}
+
+			this.delegate.onComplete();
+		}
+
+		@Override
+		public final void cancel() {
+			Operators.DeferredSubscription.REQUESTED.lazySet(this, STATE_CANCELLED);
+
+			final long previousState = markOutboundCancelled(this.parent);
+			if (hasOutboundCancelled(previousState) || hasOutboundTerminated(previousState)) {
+				return;
+			}
+
+			final boolean shouldCancelInbound =
+					!hasInboundTerminated(previousState) && !hasInboundCancelled(previousState);
+
+			if (!hasOutboundSubscribed(previousState)) {
+				if (shouldCancelInbound) {
+					this.parent.cancel();
+				}
+				return;
+			}
+
+			this.s.cancel();
+
+			if (shouldCancelInbound) {
+				this.parent.cancelAndError();
+			}
+		}
+
+		@Override
+		public final Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.ACTUAL) return delegate;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.CANCELLED) return hasOutboundCancelled(this.parent.state);
+			if (key == Attr.TERMINATED) return hasOutboundTerminated(this.parent.state);
+
+			return null;
+		}
+	}
+
+	static final class SwitchOnFirstConditionalControlSubscriber<T>
+			extends SwitchOnFirstControlSubscriber<T>
+			implements InnerOperator<T, T>, Fuseable.ConditionalSubscriber<T> {
+
+		final Fuseable.ConditionalSubscriber<? super T> delegate;
+
+		SwitchOnFirstConditionalControlSubscriber(AbstractSwitchOnFirstMain<?, T> parent,
+				Fuseable.ConditionalSubscriber<? super T> delegate,
+				boolean cancelSourceOnComplete) {
+			super(parent, delegate, cancelSourceOnComplete);
+			this.delegate = delegate;
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			if (this.done) {
+				Operators.onNextDropped(t, currentContext());
+				return true;
+			}
+
+			return this.delegate.tryOnNext(t);
+		}
+	}
 }
