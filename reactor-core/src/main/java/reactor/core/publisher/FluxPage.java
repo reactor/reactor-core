@@ -45,19 +45,22 @@ final class FluxPage<P, T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		P initialPage = initialPageSupplier.get();
-		Mono.just(initialPage).subscribe(new PageMain<>(actual, nextPageFunction, pageContentFunction));
+		PageMain<P, T> pageMainSubscription = new PageMain<>(actual, nextPageFunction, pageContentFunction);
+		pageMainSubscription.prepareNextPage(Mono.fromSupplier(initialPageSupplier));
+		actual.onSubscribe(pageMainSubscription);
 	}
 
-	static final class PageMain<P, T> implements InnerOperator<P, T> {
+	static final class PageMain<P, T> implements InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Function<? super P, Mono<P>> nextPageFunction;
 		final Function<? super P, ? extends Publisher<T>> pageContentFunction;
 
-		boolean      valued = false;
-		Subscription pageSubscription;
+		@Nullable
 		Subscription pageContentSubscription;
+
+		@Nullable
+		Mono<P> preparedNextPage = null;
 
 		volatile     long                             contentRequested;
 		@SuppressWarnings("rawtypes")
@@ -70,8 +73,6 @@ final class FluxPage<P, T> extends Flux<T> implements SourceProducer<T> {
 			this.actual = actual;
 			this.nextPageFunction = nextPageFunction;
 			this.pageContentFunction = pageContentFunction;
-
-			actual.onSubscribe(this);
 		}
 
 		@Override
@@ -79,51 +80,123 @@ final class FluxPage<P, T> extends Flux<T> implements SourceProducer<T> {
 			return this.actual;
 		}
 
-		@Override
-		public void onSubscribe(Subscription s) {
-			synchronized (this) {
-				this.valued = false;
-				this.pageSubscription = s;
-				this.pageSubscription.request(1);
+		void prepareNextPage(Mono<P> pageMono) {
+			if (CONTENT_REQUESTED.get(this) > 0) {
+				synchronized (this) {
+					this.pageContentSubscription = null;
+					this.preparedNextPage = null;
+				}
+				pageMono.subscribe(new PageSubscriber<>(this));
+			}
+			else {
+				synchronized (this) {
+					this.pageContentSubscription = null;
+					this.preparedNextPage = pageMono;
+				}
 			}
 		}
 
-		@Override
-		public void onNext(P p) {
-			this.valued = true;
-			Publisher<? extends T> pageContentPublisher = pageContentFunction.apply(p);
-			pageContentPublisher.subscribe(new PageContentSubscriber<>(this, p));
+
+
+		void nextPage(P page) {
+			//if we get a next page, it means we have at least outstanding request of 1
+			Publisher<? extends T> pageContentPublisher = pageContentFunction.apply(page);
+			pageContentPublisher.subscribe(new PageContentSubscriber<>(this, page));
 		}
 
-		@Override
-		public void onComplete() {
-			if (!this.valued) {
-				actual.onComplete(); //FIXME called everytime
+		void noMorePages() {
+			actual.onComplete();
+		}
+
+		void nextContent(T content) {
+			if (contentRequested != Long.MAX_VALUE) {
+				CONTENT_REQUESTED.decrementAndGet(this);
 			}
-			// else do nothing
+			actual.onNext(content);
 		}
 
-		@Override
-		public void onError(Throwable t) {
-			//FIXME
+		void errorContent(Throwable error) {
+			actual.onError(error);
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(CONTENT_REQUESTED, this, n);
+
+				Mono<P> prepNextPage;
+				Subscription pageContentSub;
 				synchronized (this) {
-					if (pageContentSubscription != null) {
-						pageContentSubscription.request(n);
-					}
+					prepNextPage = this.preparedNextPage;
+					this.preparedNextPage = null;
+					pageContentSub = pageContentSubscription;
+				}
+
+				if (prepNextPage != null) {
+					prepNextPage.subscribe(new PageSubscriber<>(this));
+					return;
+				}
+				if (pageContentSub != null) {
+					long contentToRequest = CONTENT_REQUESTED.get(this) == Long.MAX_VALUE ? Long.MAX_VALUE : n;
+					pageContentSub.request(contentToRequest);
 				}
 			}
 		}
 
 		@Override
 		public void cancel() {
-			pageContentSubscription.cancel();
-			pageSubscription.cancel();
+			Subscription pageContentSub;
+			synchronized (this) {
+				pageContentSub = this.pageContentSubscription;
+			}
+			if (pageContentSub != null) {
+				pageContentSub.cancel();
+			}
+		}
+	}
+
+	static final class PageSubscriber<P, T> implements InnerConsumer<P> {
+
+		final PageMain<P, T> parent;
+
+		boolean done;
+
+		PageSubscriber(PageMain<P, T> parent) {
+			this.parent = parent;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			s.request(1);
+		}
+
+		@Override
+		public void onNext(P p) {
+			done = true;
+			parent.nextPage(p);
+			//no need to cancel, we enforce upstream being a Mono
+		}
+
+		public void onComplete() {
+			if (!done) {
+				done = true;
+				parent.noMorePages();
+			}
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t, parent.actual.currentContext());
+			}
+			done = true;
+			parent.actual.onError(t);
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return null; //FIXME
 		}
 	}
 
@@ -139,30 +212,29 @@ final class FluxPage<P, T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			long previouslyRequested = PageMain.CONTENT_REQUESTED.get(parent);
+			long previouslyRequested = PageMain.CONTENT_REQUESTED.get(this.parent);
 			synchronized (parent) {
 				parent.pageContentSubscription = s;
-				if (Operators.validate(previouslyRequested)) {
-					s.request(previouslyRequested);
-				}
+				parent.preparedNextPage = null;
+			}
+			if (previouslyRequested > 0) {
+				s.request(previouslyRequested);
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			PageMain.CONTENT_REQUESTED.decrementAndGet(parent);
-			parent.actual.onNext(t);
+			parent.nextContent(t);
 		}
 
 		@Override
 		public void onComplete() {
-			parent.nextPageFunction.apply(this.page)
-			                       .subscribe(parent);
+			parent.prepareNextPage(parent.nextPageFunction.apply(this.page));
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			parent.actual.onError(t);
+			parent.errorContent(t);
 		}
 
 		@Nullable
