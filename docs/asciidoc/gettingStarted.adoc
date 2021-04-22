@@ -261,6 +261,6 @@ repositories {
 [[support]]
 == Support and policies
 
-The entries below are mirroring https://github.com/reactor/.github/blob/master/SUPPORT.adoc
+The entries below are mirroring https://github.com/reactor/.github/blob/main/SUPPORT.adoc
 
-include::https://raw.githubusercontent.com/reactor/.github/master/SUPPORT.adoc[leveloffset=3]
+include::https://raw.githubusercontent.com/reactor/.github/main/SUPPORT.adoc[leveloffset=3]
