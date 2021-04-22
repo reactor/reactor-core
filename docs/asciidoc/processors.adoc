@@ -99,7 +99,11 @@ But there are a few additional `unicast` static factory methods in `Sinks.many()
 For instance, by default, it is unbounded: if you push any amount of data through it while
 its `Subscriber` has not yet requested data, it buffers all of the data.
 You can change this by providing a custom `Queue` implementation for the internal
-buffering in the `Sinks.many().unicast().onBackpressureBuffer(Queue)` factory method.
+buffering in the `Sinks.many().unicast().onBackpressureBuffer(Queue)` factory m
+
+
+
+ethod.
 If that queue is bounded, the sink could reject the push of a value when the buffer
 is full and not enough requests from downstream have been received.
 
