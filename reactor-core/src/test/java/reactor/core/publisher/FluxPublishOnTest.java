@@ -109,45 +109,57 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 
-				scenario(f -> f.prefetch().publishOn(Schedulers.fromExecutor(d -> {
-					throw exception();
-				}))).producerError(new RejectedExecutionException("Scheduler unavailable"))
-				    .receiverDemand(0),
+				scenario(f -> f.prefetch()
+				               .publishOn(Schedulers.fromExecutor(d -> {
+					               throw exception();
+				               }))).producerError(new RejectedExecutionException(
+						"Scheduler unavailable"))
+				                   .receiverDemand(0),
 
-				scenario(f -> f.prefetch().publishOn(new FailWorkerScheduler())).producerEmpty(),
+				scenario(f -> f.prefetch()
+				               .publishOn(new FailWorkerScheduler())).producerEmpty(),
 
-				scenario(f -> f.prefetch().publishOn(new FailNullWorkerScheduler())).producerEmpty(),
+				scenario(f -> f.prefetch()
+				               .publishOn(new FailNullWorkerScheduler())).producerEmpty(),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false,
-						false))).verifier(this::assertNoRejected)
-				                .receiverDemand(0),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(false,
+						               false))).verifier(this::assertNoRejected)
+				                               .receiverDemand(0),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true,
-						false))).verifier(this::assertRejected)
-				                .receiverDemand(0),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(true,
+						               false))).verifier(this::assertRejected)
+				                               .receiverDemand(0),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true,
-						true))).verifier(this::assertNoRejected)
-				               .receiverDemand(0),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(true,
+						               true))).verifier(this::assertNoRejected)
+				                              .receiverDemand(0),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false,
-						true))).verifier(this::assertNoRejected),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(false,
+						               true))).verifier(this::assertNoRejected),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false,
-						false))).verifier(this::assertNoRejected)
-				                .receiverDemand(0),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(false,
+						               false))).verifier(this::assertNoRejected)
+				                               .receiverDemand(0),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false,
-						true))).verifier(this::assertNoRejected)
-				               .producerEmpty(),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(false,
+						               true))).verifier(this::assertNoRejected)
+				                              .producerEmpty(),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true,
-						false))).verifier(this::assertRejected)
-				                .receiverDemand(0),
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(true,
+						               false))).verifier(this::assertRejected)
+				                               .receiverDemand(0),
 
-				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true,
-						true))).verifier(this::assertNoRejected)
-				               .receiverDemand(0));
+				scenario(f -> f.prefetch()
+				               .publishOn(new RejectingWorkerScheduler(true,
+						               true))).verifier(this::assertNoRejected)
+				                              .receiverDemand(0));
 	}
 
 	@Override
@@ -276,7 +288,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<Integer> up = Sinks.unsafe()
 		                              .many()
 		                              .unicast()
-		                              .onBackpressureBuffer(Queues.<Integer>unbounded(1024).get());
+		                              .onBackpressureBuffer(Queues.<Integer>unbounded(1024)
+		                                                          .get());
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.emitNext(0, FAIL_FAST);
@@ -316,9 +329,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty()
-				.prefetch()
-				.publishOn(Schedulers.fromExecutorService(exec))
-				.subscribe(ts);
+		    .prefetch()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
 
@@ -477,7 +490,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void diamond() {
 		Sinks.Many<Integer> sink = Sinks.many()
-		                                .multicast().<Integer>onBackpressureBuffer();
+		                                .multicast()
+		                                .<Integer>onBackpressureBuffer();
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> fork1 = sink.asFlux()
@@ -743,7 +757,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<Integer> up = Sinks.unsafe()
 		                              .many()
 		                              .unicast()
-		                              .onBackpressureBuffer(Queues.<Integer>get(2).get());
+		                              .onBackpressureBuffer(Queues.<Integer>get(2)
+		                                                          .get());
 		up.emitNext(1, FAIL_FAST);
 		up.emitNext(2, FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
@@ -767,7 +782,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<Integer> up = Sinks.unsafe()
 		                              .many()
 		                              .unicast()
-		                              .onBackpressureBuffer(Queues.<Integer>get(2).get());
+		                              .onBackpressureBuffer(Queues.<Integer>get(2)
+		                                                          .get());
 		up.emitNext(1, FAIL_FAST);
 		up.emitNext(2, FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
@@ -858,7 +874,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<Integer> up = Sinks.unsafe()
 		                              .many()
 		                              .unicast()
-		                              .onBackpressureBuffer(Queues.<Integer>get(2).get());
+		                              .onBackpressureBuffer(Queues.<Integer>get(2)
+		                                                          .get());
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -885,7 +902,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<Integer> up = Sinks.unsafe()
 		                              .many()
 		                              .unicast()
-		                              .onBackpressureBuffer(Queues.<Integer>get(2).get());
+		                              .onBackpressureBuffer(Queues.<Integer>get(2)
+		                                                          .get());
 
 		String s = Thread.currentThread()
 		                 .getName();
@@ -1384,8 +1402,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 						Schedulers.single(),
 						Schedulers.single()
 						          .createWorker(),
-						true,
-						Queues.unbounded());
+						true);
+//						Queues.unbounded());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -1409,8 +1427,12 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		//once cancelled, there shouldn't be any draining left
 		// => better place to test that BUFFERED reflects the size of the queue
 		Thread.sleep(50); //"hiccup" to ensure cancellation / draining is done
-		test.queue.add(1);
-		test.queue.add(1);
+
+//		test.queue.add(1);
+//		test.queue.add(1);
+		test.qs.add(1);
+		test.qs.add(1);
+
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 	}
 
@@ -1423,8 +1445,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 						Schedulers.single(),
 						Schedulers.single()
 						          .createWorker(),
-						true,
-						Queues.unbounded());
+						true);
+//						Queues.unbounded());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -1434,7 +1456,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-		test.queue.add(1);
+//		test.queue.add(1);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 

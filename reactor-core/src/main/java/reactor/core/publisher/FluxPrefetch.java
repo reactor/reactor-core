@@ -268,6 +268,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						clear();
 					}
 				}
+				return;
 			}
 
 			if (upstreamFusionMode != Fuseable.SYNC && requestMode == RequestMode.LAZY && firstRequest) {
