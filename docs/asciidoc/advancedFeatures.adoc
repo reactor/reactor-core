@@ -976,12 +976,12 @@ StepVerifier.create(r)
             .expectNext("Hello World Reactor")
             .verifyComplete();
 ----
-<1> This `subscriberContext` does not impact anything outside of its `flatMap`.
-<2> This `subscriberContext` impacts the main sequence's `Context`.
+<1> This `contextWrite` does not impact anything outside of its `flatMap`.
+<2> This `contextWrite` impacts the main sequence's `Context`.
 ====
 
 In the preceding example, the final emitted value is `"Hello World Reactor"` and not "Hello
-Reactor World", because the `subscriberContext` that writes `"Reactor"` does so as part of
+Reactor World", because the `contextWrite` that writes `"Reactor"` does so as part of
 the inner sequence of the second `flatMap`. As a consequence, it is not visible or propagated
 through the main sequence and the first `flatMap` does not see it. Propagation and immutability
 isolate the `Context` in operators that create intermediate inner sequences such as `flatMap`.
@@ -1011,7 +1011,7 @@ doPut("www.example.com", Mono.just("Walter"))
 ----
 ====
 
-As the preceding snippets show, the user code uses `subscriberContext` to populate
+As the preceding snippets show, the user code uses `contextWrite` to populate
 a `Context` with an `HTTP_CORRELATION_ID` key-value pair. The upstream of the operator is
 a `Mono<Tuple2<Integer, String>>` (a simplistic representation of an HTTP response)
 returned by the HTTP client library. So it effectively passes information from the
