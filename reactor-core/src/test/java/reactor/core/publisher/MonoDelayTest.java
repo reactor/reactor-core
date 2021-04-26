@@ -20,11 +20,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
+import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,7 +87,7 @@ public class MonoDelayTest {
 	public void scanDelayRunnable() {
 		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {
 		}, null, null);
-		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
+		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual, true);
 
 		actual.onSubscribe(test);
 
@@ -101,10 +105,36 @@ public class MonoDelayTest {
 	@Test
 	public void scanDelayRunnableCancelled() {
 		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
+		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual, true);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	void simulateDelayShorterThanOnSubscribeToRequestInterval() {
+		StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofNanos(1)), 0)
+				.expectSubscription()
+				.expectNoEvent(Duration.ofMillis(1))
+				.thenRequest(1)
+				.expectNext(0L)
+				.expectComplete()
+				.verify(Duration.ofMillis(100));
+	}
+
+	@Test
+	void simulateDelayShorterThanOnSubscribeToRequestInterval_optInBackpressure() {
+		StepVerifierOptions options = StepVerifierOptions
+				.create()
+				.initialRequest(0L)
+				.virtualTimeSchedulerSupplier(VirtualTimeScheduler::create)
+				.withInitialContext(Context.of("reactor.core.publisher.MonoDelay.failOnBackpressure", true));
+
+		StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofNanos(1)), options)
+				.expectSubscription()
+				.expectNoEvent(Duration.ofNanos(1))
+				.expectErrorMatches(Exceptions::isOverflow)
+				.verify(Duration.ofMillis(100));
 	}
 }
