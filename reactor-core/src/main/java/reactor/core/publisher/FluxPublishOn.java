@@ -625,6 +625,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		@Override
 		public void clear() {
+			if (sourceMode == Fuseable.ASYNC) {
+				qs.clear();
+				return;
+			}
+
 			// use guard on the queue instance as the best way to ensure there is no racing on draining
 			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 			// this should not be performance costly with the assumption the cancel is rare operation
@@ -1265,6 +1270,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		@Override
 		public void clear() {
+			if (sourceMode == Fuseable.ASYNC) {
+				qs.clear();
+				return;
+			}
+
 			// use guard on the queue instance as the best way to ensure there is no racing on draining
 			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 			// this should not be performance costly with the assumption the cancel is rare operation
