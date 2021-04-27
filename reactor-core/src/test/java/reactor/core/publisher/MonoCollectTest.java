@@ -25,15 +25,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import ch.qos.logback.classic.Level;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.reactivestreams.Subscription;
+import org.slf4j.LoggerFactory;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.MonoCollect.CollectSubscriber;
+import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
@@ -48,6 +52,19 @@ public class MonoCollectTest {
 
 	static final Logger LOGGER = Loggers.getLogger(MonoCollectListTest.class);
 
+	@RegisterExtension
+	AutoDisposingExtension afterTest = new AutoDisposingExtension();
+
+	private void lessVerboseLogs(Class<?> clazz) {
+		final ch.qos.logback.classic.Logger logbackLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(clazz);
+
+		Level oldLevel = logbackLogger.getLevel();
+		logbackLogger.setLevel(Level.ERROR);
+		afterTest.autoDispose(() -> {
+			System.out.println("going back to level " + oldLevel);
+			logbackLogger.setLevel(oldLevel);
+		});
+	}
 
 	@Test
 	public void nullSource() {
@@ -291,6 +308,8 @@ public class MonoCollectTest {
 
 	@Test
 	public void discardCancelNextRace() {
+		lessVerboseLogs(Operators.class);
+
 		AtomicInteger doubleDiscardCounter = new AtomicInteger();
 		Context discardingContext = Operators.enableOnDiscard(null, o -> {
 			AtomicBoolean ab = (AtomicBoolean) o;
@@ -321,6 +340,8 @@ public class MonoCollectTest {
 
 	@Test
 	public void discardCancelCompleteRace() {
+		lessVerboseLogs(Operators.class);
+
 		AtomicInteger doubleDiscardCounter = new AtomicInteger();
 		Context discardingContext = Operators.enableOnDiscard(null, o -> {
 			AtomicBoolean ab = (AtomicBoolean) o;
