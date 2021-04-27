@@ -1155,13 +1155,6 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyVirtualTimeNoLookupFails() {
-		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> StepVerifier.withVirtualTime(Flux::empty, null, 1))
-	            .withMessage("vtsLookup");
-	}
-
-	@Test
 	public void verifyVirtualTimeNoScenarioFails() {
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> StepVerifier.withVirtualTime(null, 1))
