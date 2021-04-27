@@ -2408,4 +2408,23 @@ public class StepVerifierTests {
                     .hasMessage("ErrorInSubscribeFlux");
         });
 	}
+
+	@Test
+	void withVirtualTimeCopiesOptionsAddsDefaultVtsIfNoSupplier() {
+		StepVerifierOptions options = StepVerifierOptions.create()
+				.initialRequest(123L);
+
+		assertThatCode(() -> StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofSeconds(1)), options)
+				.expectSubscription()
+				.expectNoEvent(Duration.ofSeconds(1))
+				.expectNext(0L)
+				.expectComplete()
+				.verify(Duration.ofMillis(500))
+		)
+				.doesNotThrowAnyException();
+
+		assertThat(options.getVirtualTimeSchedulerSupplier())
+				.as("copy didn't influence original")
+				.isNull();
+	}
 }

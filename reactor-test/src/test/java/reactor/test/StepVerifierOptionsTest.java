@@ -23,20 +23,23 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Signal;
 import reactor.test.ValueFormatters.Extractor;
+import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class StepVerifierOptionsTest {
+class StepVerifierOptionsTest {
 
 	@Test
-	public void valueFormatterDefaultNull() {
+	void valueFormatterDefaultNull() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
 		assertThat(options.getValueFormatter()).isNull();
 	}
 
 	@Test
-	public void valueFormatterCanSetNull() {
+	void valueFormatterCanSetNull() {
 		ValueFormatters.ToStringConverter formatter = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
 		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter);
 
@@ -48,7 +51,7 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void valueFormatterSetterReplaces() {
+	void valueFormatterSetterReplaces() {
 		ValueFormatters.ToStringConverter formatter1 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
 		ValueFormatters.ToStringConverter formatter2 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
 
@@ -62,7 +65,7 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void extractorsDefaultAtEnd() {
+	void extractorsDefaultAtEnd() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
 		options.extractor(new Extractor<String>() {
@@ -84,7 +87,7 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void extractorReplacingDefaultMovesUp() {
+	void extractorReplacingDefaultMovesUp() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
 		options.extractor(new Extractor<Signal>() {
@@ -132,7 +135,7 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void extractorReplacingCustomInPlace() {
+	void extractorReplacingCustomInPlace() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 		Extractor<String> extractorV1 = new Extractor<String>() {
 			@Override
@@ -171,7 +174,7 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void getExtractorsIsCopy() {
+	void getExtractorsIsCopy() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 		options.extractor(new Extractor<String>() {
 			@Override
@@ -194,6 +197,89 @@ public class StepVerifierOptionsTest {
 
 		assertThat(extractors1).isEmpty();
 		assertThat(extractors2).isNotEmpty();
+	}
+
+	@Test
+	@SuppressWarnings("rawtypes")
+	void copy() {
+		Extractor<Signal> customExtractor1 = new Extractor<Signal>() {
+			@Override
+			public Class<Signal> getTargetClass() {
+				return Signal.class;
+			}
+
+			@Override
+			public boolean matches(Signal value) {
+				return value.isOnNext() && value.hasValue();
+			}
+
+			@Override
+			public Stream<Object> explode(Signal original) {
+				return Stream.of("CUSTOM1", original.get());
+			}
+		};
+		Extractor<Signal> customExtractor2 = new Extractor<Signal>() {
+			@Override
+			public Class<Signal> getTargetClass() {
+				return Signal.class;
+			}
+
+			@Override
+			public boolean matches(Signal value) {
+				return value.isOnNext() && value.hasValue();
+			}
+
+			@Override
+			public Stream<Object> explode(Signal original) {
+				return Stream.of("CUSTOM2", original.get());
+			}
+		};
+
+		StepVerifierOptions options = StepVerifierOptions.create()
+				.initialRequest(123L)
+				.withInitialContext(Context.of("example", true))
+				.scenarioName("scenarioName")
+				.extractor(customExtractor1)
+				.checkUnderRequesting(false)
+				.valueFormatter(ValueFormatters.forClass(Signal.class, s -> "SIGNAL"))
+				.virtualTimeSchedulerSupplier(VirtualTimeScheduler::create);
+
+		StepVerifierOptions copy = options.copy();
+
+		assertThat(copy)
+				.as("deep copy")
+				.isNotSameAs(options)
+				.isEqualToComparingFieldByFieldRecursively(options);
+
+		assertThat(copy.extractorMap)
+				.as("extractorMap not shared")
+				.isNotSameAs(options.extractorMap)
+				.containsOnlyKeys(Signal.class)
+				.containsEntry(Signal.class, customExtractor1);
+
+		copy.initialRequest(234L)
+				.withInitialContext(Context.of("exampleSame", false))
+				.scenarioName("scenarioName2")
+				.extractor(customExtractor2)
+				.checkUnderRequesting(true)
+				.valueFormatter(ValueFormatters.forClass(Signal.class, s -> "SIGNAL2"))
+				.virtualTimeSchedulerSupplier(() -> VirtualTimeScheduler.create(false));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(copy).isEqualToIgnoringGivenFields(options, "extractorMap"))
+				.as("post mutation")
+				.withMessageContaining("in fields:\n" +
+						"  <[\"scenarioName\",\n" +
+						"    \"checkUnderRequesting\",\n" +
+						"    \"initialRequest\",\n" +
+						"    \"vtsLookup\",\n" +
+						"    \"initialContext\",\n" +
+						"    \"objectFormatter\"]>");
+		assertThat(copy.extractorMap)
+				.as("post mutation extractorMap")
+				.containsOnlyKeys(Signal.class)
+				.doesNotContainEntry(Signal.class, customExtractor1)
+				.containsEntry(Signal.class, customExtractor2);
 	}
 
 }
