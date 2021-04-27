@@ -52,9 +52,13 @@ public class MonoDelayTest {
 
 	@Test
 	public void delayedSourceError() {
-		StepVerifier.withVirtualTime(this::scenario_delayedSourceError, 0L)
-		            .thenAwait(Duration.ofSeconds(5))
-		            .verifyErrorMatches(Exceptions::isOverflow);
+		StepVerifier.withVirtualTime(this::scenario_delayedSourceError, StepVerifierOptions.create()
+				.initialRequest(0)
+				.virtualTimeSchedulerSupplier(VirtualTimeScheduler::create)
+				.withInitialContext(Context.of(MonoDelay.CONTEXT_OPT_OUT_NOBACKPRESSURE, true))
+		)
+				.thenAwait(Duration.ofSeconds(5))
+				.verifyErrorMatches(Exceptions::isOverflow);
 	}
 
 	@Test
@@ -129,6 +133,7 @@ public class MonoDelayTest {
 				.create()
 				.initialRequest(0L)
 				.virtualTimeSchedulerSupplier(VirtualTimeScheduler::create)
+				// MonoDelay.CONTEXT_OPT_OUT_NOBACKPRESSURE: true
 				.withInitialContext(Context.of("reactor.core.publisher.MonoDelay.failOnBackpressure", true));
 
 		StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofNanos(1)), options)

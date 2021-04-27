@@ -172,5 +172,5 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		}
 	}
 
-	private static final String CONTEXT_OPT_OUT_NOBACKPRESSURE = "reactor.core.publisher.MonoDelay.failOnBackpressure";
+	static final String CONTEXT_OPT_OUT_NOBACKPRESSURE = "reactor.core.publisher.MonoDelay.failOnBackpressure";
 }
