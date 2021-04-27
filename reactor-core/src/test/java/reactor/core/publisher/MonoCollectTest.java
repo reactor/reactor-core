@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import ch.qos.logback.classic.Level;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -58,8 +57,8 @@ public class MonoCollectTest {
 	private void lessVerboseLogs(Class<?> clazz) {
 		final ch.qos.logback.classic.Logger logbackLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(clazz);
 
-		Level oldLevel = logbackLogger.getLevel();
-		logbackLogger.setLevel(Level.ERROR);
+		ch.qos.logback.classic.Level oldLevel = logbackLogger.getLevel();
+		logbackLogger.setLevel(ch.qos.logback.classic.Level.ERROR);
 		afterTest.autoDispose(() -> {
 			System.out.println("going back to level " + oldLevel);
 			logbackLogger.setLevel(oldLevel);
