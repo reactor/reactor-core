@@ -1180,12 +1180,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxStream<>(streamSupplier));
 	}
 
-
 	/**
 	 * Expand paginated objects into a concatenated {@link Flux} of their content, fetching the next page once
 	 * the whole content of the current page has been emitted. A reactive API is expected for both the fetching
 	 * of the next page and the fetching of one page's content. This allows to obtain a clean {@link Flux} of content
 	 * objects without exposing the "pages" to the downstream.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/fromPaginated_unbounded.svg" alt="">
 	 * <p>
 	 * The downstream demand directly drives the request made to page content publishers, and any excessive demand
 	 * triggers the fetching of the next page then applies to this new page's content publisher.
@@ -1193,6 +1194,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * subscribed to (but in that case it wouldn't see any request). This has the benefit of allowing fast completion
 	 * when one requests exactly the total number of page content elements, provided the last "next page" Mono
 	 * completes without any request.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/fromPaginated_requestDetail.svg" alt="">
 	 * <p>
 	 * Note that if even the first page must be obtained asynchronously, the suggested way is to flatMap from
 	 * that first page, for example: {@code firstPageMono.flatMapMany(fp -> Flux.fromPaginated(fp, fp::nextPageMono, fp::contentFlux)}.
