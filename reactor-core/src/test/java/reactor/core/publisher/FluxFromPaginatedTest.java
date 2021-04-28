@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Simon Baslé
  */
-class FluxPagingTest {
+class FluxFromPaginatedTest {
 
 	private static class Page {
 
@@ -93,7 +93,7 @@ class FluxPagingTest {
 
 	@Test
 	void unboundedRequest() {
-		Flux.paging(PAGES.get("A"),
+		Flux.fromPaginated(PAGES.get("A"),
 				Page::content,
 				p -> Page.clientFetchPage(p.nextPageId)
 		).as(StepVerifier::create)
@@ -109,7 +109,7 @@ class FluxPagingTest {
 		final AtomicInteger pageSub = new AtomicInteger();
 		final AtomicInteger pageReq = new AtomicInteger();
 
-		Flux<String> fluxPage = Flux.paging(PAGES.get("A"),
+		Flux<String> fluxPage = Flux.fromPaginated(PAGES.get("A"),
 				Page::content, p -> Page.clientFetchPage(p.nextPageId)
 						.doOnSubscribe(s -> pageSub.incrementAndGet())
 						.doOnRequest(r -> pageReq.incrementAndGet())
@@ -161,12 +161,12 @@ class FluxPagingTest {
 	@Test
 	void requestingExactlyPageContentNumberWillNotTriggerNextPage() {
 		final AtomicInteger nextPageRequested = new AtomicInteger();
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(PAGES.get("A"),
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
 				Page::content, p -> Page.clientFetchPage(p.nextPageId)
 				         .doOnRequest(r -> nextPageRequested.incrementAndGet())
 		);
 
-		fluxPaging.as(f -> StepVerifier.create(f, 0))
+		fluxFromPaginated.as(f -> StepVerifier.create(f, 0))
 				.expectSubscription()
 				.thenRequest(3)
 				.expectNext("1A", "2A", "3A")
@@ -184,12 +184,12 @@ class FluxPagingTest {
 	@Test
 	void requestingExactlyPageContentWillSubscribeNextPageThusCompleteEarly() {
 		AtomicBoolean requested = new AtomicBoolean();
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(PAGES.get("A"),
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
 				//this triggers immediate completion once we've consumed the first page
 				Page::content, p -> Mono.<Page>empty().doOnRequest(r -> requested.set(true))
 		);
 
-		fluxPaging.as(f -> StepVerifier.create(f, 3))
+		fluxFromPaginated.as(f -> StepVerifier.create(f, 3))
 				.expectNext("1A", "2A", "3A")
 				.verifyComplete();
 
@@ -200,11 +200,11 @@ class FluxPagingTest {
 	void errorInPageFetching() {
 		PAGES.remove("B");
 
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(PAGES.get("A"),
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
 				Page::content, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
 		);
 
-		fluxPaging.as(StepVerifier::create)
+		fluxFromPaginated.as(StepVerifier::create)
 				.expectNext("1A", "2A", "3A")
 				.verifyErrorMessage("Unknown page B");
 	}
@@ -213,18 +213,18 @@ class FluxPagingTest {
 	void errorInPageFetching_withRequestExactlyPageSize() {
 		PAGES.remove("B");
 
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(PAGES.get("A"),
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
 				Page::content, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
 		);
 
-		fluxPaging.as(f -> StepVerifier.create(f, 3))
+		fluxFromPaginated.as(f -> StepVerifier.create(f, 3))
 				.expectNext("1A", "2A", "3A")
 				.verifyErrorMessage("Unknown page B");
 	}
 
 	@Test
 	void errorInPageContent() {
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(PAGES.get("A"),
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
 				p -> {
 					if (p.pageId.equals("B")) {
 						return p.content().concatWith(Mono.error(new IllegalStateException("Error in page content")));
@@ -233,7 +233,7 @@ class FluxPagingTest {
 				}, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
 		);
 
-		fluxPaging.as(StepVerifier::create)
+		fluxFromPaginated.as(StepVerifier::create)
 				.expectNext("1A", "2A", "3A")
 				.expectNext("1B", "2B", "3B")
 				.verifyErrorMessage("Error in page content");
@@ -241,7 +241,7 @@ class FluxPagingTest {
 
 	@Test
 	void errorInPageContent_withRequestExactlyPageSize() {
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(PAGES.get("A"),
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
 				p -> {
 					if (p.pageId.equals("B")) {
 						return p.content().concatWith(Mono.error(new IllegalStateException("Error in page content")));
@@ -250,7 +250,7 @@ class FluxPagingTest {
 				}, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
 		);
 
-		fluxPaging.as(publisher -> StepVerifier.create(publisher, 6))
+		fluxFromPaginated.as(publisher -> StepVerifier.create(publisher, 6))
 				.expectNext("1A", "2A", "3A")
 				.expectNext("1B", "2B", "3B")
 				.verifyErrorMessage("Error in page content");
@@ -258,7 +258,7 @@ class FluxPagingTest {
 
 	@Test
 	void pageFetchCanSeeMainContext() {
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(
 				PAGES.get("A"),
 				Page::content, p -> Mono.deferContextual(ctx -> {
 					String nextPageId = ctx.getOrDefault("forceNextPage", p.nextPageId);
@@ -271,7 +271,7 @@ class FluxPagingTest {
 				})
 		);
 
-		StepVerifier.create(fluxPaging, StepVerifierOptions.create().withInitialContext(Context.of("forceNextPage", "D")))
+		StepVerifier.create(fluxFromPaginated, StepVerifierOptions.create().withInitialContext(Context.of("forceNextPage", "D")))
 				.expectNext("1A", "2A", "3A")
 				.expectNext("1D", "2D", "3D")
 				.verifyComplete();
@@ -279,7 +279,7 @@ class FluxPagingTest {
 
 	@Test
 	void pageContentCanSeeMainContext() {
-		FluxPaging<Page, String> fluxPaging = new FluxPaging<>(
+		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(
 				PAGES.get("A"),
 				p -> Flux.deferContextual(ctx -> {
 					String additionalValue = ctx.getOrDefault("prependValue", null);
@@ -290,7 +290,7 @@ class FluxPagingTest {
 				}), p -> Mono.justOrEmpty(PAGES.get(p.nextPageId))
 		);
 
-		StepVerifier.create(fluxPaging, StepVerifierOptions.create().withInitialContext(Context.of("prependValue", "ADD")))
+		StepVerifier.create(fluxFromPaginated, StepVerifierOptions.create().withInitialContext(Context.of("prependValue", "ADD")))
 				.expectNext("ADD", "1A", "2A", "3A")
 				.expectNext("ADD", "1B", "2B", "3B")
 				.expectNext("ADD", "1C", "2C", "3C")
@@ -301,7 +301,7 @@ class FluxPagingTest {
 	@Test
 	void pageMainCanChangeThreadsDependingOnPageFetch() {
 		Set<String> threadNames = new HashSet<>();
-		Flux<Integer> fluxPaging = new FluxPaging<>(0, i -> Flux.range(i * 10, 2),
+		Flux<Integer> fluxPaging = new FluxFromPaginated<>(0, i -> Flux.range(i * 10, 2),
 				i -> {
 					switch (i) {
 						case 0:
@@ -328,18 +328,19 @@ class FluxPagingTest {
 
 	@Test
 	void scanPublisher() {
-		FluxPaging<Object, Object> fluxPaging = new FluxPaging<>(1, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated<Object, Object> fluxFromPaginated = new FluxFromPaginated<>(1, o -> Mono.empty(), o -> Mono.empty());
 
-		assertThat(fluxPaging.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(Scannable.from(null));
-		assertThat(fluxPaging.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(Scannable.from(null));
-		assertThat(fluxPaging.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.ASYNC);
-		assertThat(fluxPaging.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isZero();
+		assertThat(fluxFromPaginated.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(Scannable.from(null));
+		assertThat(fluxFromPaginated.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(Scannable.from(null));
+		assertThat(fluxFromPaginated.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(fluxFromPaginated.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isZero();
 	}
 
 	@Test
 	void scanMain() {
 		AssertSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxPaging.PageMain<Object, Object> main = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Object>
+				main = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
 		actual.onSubscribe(main);
 
 		assertThat(main.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).as("REQUESTED_FROM_DOWNSTREAM pre-request").isEqualTo(0);
@@ -357,7 +358,8 @@ class FluxPagingTest {
 	@Test
 	void scanMainTerminatedCases() {
 		AssertSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxPaging.PageMain<Object, Object> main = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Object>
+				main = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
 		actual.onSubscribe(main);
 
 		main.done = false;
@@ -376,11 +378,12 @@ class FluxPagingTest {
 	@Test
 	void scanPageSubscriber() {
 		CoreSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxPaging.PageMain<Object, Object> parent = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Object>
+				parent = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
 
 		parent.prepareNextPage(Mono.never());
 
-		FluxPaging.PageSubscriber<Object, Object> pageSubscriber = parent.pageSubscription;
+		FluxFromPaginated.PageSubscriber<Object, Object> pageSubscriber = parent.pageSubscription;
 
 		assertThat(pageSubscriber.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(parent);
 		assertThat(pageSubscriber.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(actual);
@@ -398,11 +401,12 @@ class FluxPagingTest {
 	@Test
 	void scanPageSubscriberTerminatedCases() {
 		CoreSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxPaging.PageMain<Object, Object> parent = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Object>
+				parent = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
 		//we'll use a misbehaving TestPublisher to separately send onNext / onComplete / onError signals to terminate the subscriber
 		TestPublisher<Object> pagePublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		parent.prepareNextPage(pagePublisher.mono());
-		FluxPaging.PageSubscriber<Object, Object> pageSubscriber = parent.pageSubscription;
+		FluxFromPaginated.PageSubscriber<Object, Object> pageSubscriber = parent.pageSubscription;
 
 		parent.request(123);
 		pagePublisher.assertWasRequested();

@@ -691,34 +691,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Expand paginated objects into a concatenated {@link Flux} of their content, fetching the next page once
-	 * the whole content of the current page has been emitted. A reactive API is expected for both the fetching
-	 * of the next page and the fetching of one page's content. This allows to obtain a clean {@link Flux} of content
-	 * objects without exposing the "pages" to the downstream.
-	 * <p>
-	 * The downstream demand directly drives the request made to page content publishers, and any excessive demand
-	 * triggers the fetching of the next page then applies to this new page's content publisher.
-	 * Even if outstanding demand is at zero, upon content completion the next page {@link Mono} is generated and
-	 * subscribed to (but in that case it wouldn't see any request). This has the benefit of allowing completion
-	 * when one requests exactly the total number of page content elements, provided the last "next page" Mono
-	 * completes without any request.
-	 * <p>
-	 * Note that if even the first page must be obtained asynchronously, the suggested way is to flatMap from
-	 * that first page, for example: {@code firstPageMono.flatMapMany(fp -> Flux.paging(fp, fp::nextPageMono, fp::contentFlux)}.
-	 *
-	 * @param firstPage the first paginated object to start from
-	 * @param nextPageFunction a {@link Function} that generates a {@link Mono} for fetching the next page
-	 * @param pageContentFunction a {@link Function} that provides the {@link Publisher} of the page's content
-	 * @param <P> the paginated object type
-	 * @param <T> the content type
-	 * @return a {@link Flux} representing the concatenation of all the pages' content
-	 */
-	public static <P, T> Flux<T> paging(P firstPage, Function<? super P, ? extends Publisher<T>> pageContentFunction,
-	                                    Function<? super P, Mono<P>> nextPageFunction) {
-		return onAssembly(new FluxPaging<>(firstPage, pageContentFunction, nextPageFunction));
-	}
-
-	/**
 	 * Programmatically create a {@link Flux} with the capability of emitting multiple
 	 * elements from a single-threaded producer through the {@link FluxSink} API. For
 	 * a multi-threaded capable alternative, see {@link #create(Consumer)}.
@@ -1206,6 +1178,36 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> fromStream(Supplier<Stream<? extends T>> streamSupplier) {
 		return onAssembly(new FluxStream<>(streamSupplier));
+	}
+
+
+	/**
+	 * Expand paginated objects into a concatenated {@link Flux} of their content, fetching the next page once
+	 * the whole content of the current page has been emitted. A reactive API is expected for both the fetching
+	 * of the next page and the fetching of one page's content. This allows to obtain a clean {@link Flux} of content
+	 * objects without exposing the "pages" to the downstream.
+	 * <p>
+	 * The downstream demand directly drives the request made to page content publishers, and any excessive demand
+	 * triggers the fetching of the next page then applies to this new page's content publisher.
+	 * Even if outstanding demand is at zero, upon content completion the next page {@link Mono} is generated and
+	 * subscribed to (but in that case it wouldn't see any request). This has the benefit of allowing fast completion
+	 * when one requests exactly the total number of page content elements, provided the last "next page" Mono
+	 * completes without any request.
+	 * <p>
+	 * Note that if even the first page must be obtained asynchronously, the suggested way is to flatMap from
+	 * that first page, for example: {@code firstPageMono.flatMapMany(fp -> Flux.fromPaginated(fp, fp::nextPageMono, fp::contentFlux)}.
+	 *
+	 * @param firstPage the first paginated object to start from
+	 * @param nextPageFunction a {@link Function} that generates a {@link Mono} for fetching the next page
+	 * @param pageContentFunction a {@link Function} that provides the {@link Publisher} of the page's content
+	 * @param <P> the paginated object type
+	 * @param <T> the content type
+	 * @return a {@link Flux} representing the concatenation of all the pages' content
+	 */
+	public static <P, T> Flux<T> fromPaginated(P firstPage,
+			Function<? super P, ? extends Publisher<T>> pageContentFunction,
+			Function<? super P, Mono<P>> nextPageFunction) {
+		return onAssembly(new FluxFromPaginated<>(firstPage, pageContentFunction, nextPageFunction));
 	}
 
 	/**

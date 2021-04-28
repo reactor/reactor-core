@@ -31,15 +31,15 @@ import reactor.util.context.Context;
 /**
  * @author Simon Baslé
  */
-final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T> {
 
 	final P                                           initialPage;
 	final Function<? super P, Mono<P>>                nextPageFunction;
 	final Function<? super P, ? extends Publisher<T>> pageContentFunction;
 
-	public FluxPaging(P initialPage,
-	                  Function<? super P, ? extends Publisher<T>> pageContentFunction,
-	                  Function<? super P, Mono<P>> nextPageFunction) {
+	public FluxFromPaginated(P initialPage,
+	                         Function<? super P, ? extends Publisher<T>> pageContentFunction,
+	                         Function<? super P, Mono<P>> nextPageFunction) {
 		this.initialPage = initialPage;
 		this.nextPageFunction = nextPageFunction;
 		this.pageContentFunction = pageContentFunction;
@@ -47,9 +47,9 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		PageMain<P, T> pageMainSubscription = new PageMain<>(actual, pageContentFunction, nextPageFunction);
-		pageMainSubscription.prepareNextPage(Mono.just(initialPage));
-		actual.onSubscribe(pageMainSubscription);
+		PaginatedCoordinator<P, T> paginatedCoordinatorSubscription = new PaginatedCoordinator<>(actual, pageContentFunction, nextPageFunction);
+		paginatedCoordinatorSubscription.prepareNextPage(Mono.just(initialPage));
+		actual.onSubscribe(paginatedCoordinatorSubscription);
 	}
 
 	@Override
@@ -66,7 +66,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		return SourceProducer.super.scanUnsafe(key);
 	}
 
-	static final class PageMain<P, T> implements InnerProducer<T> {
+	static final class PaginatedCoordinator<P, T> implements InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Function<? super P, Mono<P>> nextPageFunction;
@@ -81,14 +81,14 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		boolean done;
 		boolean cancelled;
 
-		volatile     long                             contentRequested;
+		volatile     long                                         requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<PageMain> CONTENT_REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(PageMain.class, "contentRequested");
+		static final AtomicLongFieldUpdater<PaginatedCoordinator> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(PaginatedCoordinator.class, "requested");
 
-		PageMain(CoreSubscriber<? super T> actual,
-		         Function<? super P, ? extends Publisher<T>> pageContentFunction,
-		         Function<? super P, Mono<P>> nextPageFunction) {
+		PaginatedCoordinator(CoreSubscriber<? super T> actual,
+		                     Function<? super P, ? extends Publisher<T>> pageContentFunction,
+		                     Function<? super P, Mono<P>> nextPageFunction) {
 			this.actual = actual;
 			this.nextPageFunction = nextPageFunction;
 			this.pageContentFunction = pageContentFunction;
@@ -110,7 +110,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			}
 			pageMono.subscribe(next);
 
-			if (CONTENT_REQUESTED.get(this) > 0) {
+			if (REQUESTED.get(this) > 0) {
 				next.requestPageOnce();
 			}
 		}
@@ -130,8 +130,8 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		void nextContent(T content) {
-			if (contentRequested != Long.MAX_VALUE) {
-				CONTENT_REQUESTED.decrementAndGet(this);
+			if (requested != Long.MAX_VALUE) {
+				REQUESTED.decrementAndGet(this);
 			}
 			actual.onNext(content);
 		}
@@ -144,9 +144,9 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(CONTENT_REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 
-				long currentRequest = CONTENT_REQUESTED.get(this);
+				long currentRequest = REQUESTED.get(this);
 
 				PageSubscriber<P, T> prepNextPage;
 				Subscription pageContentSub;
@@ -197,7 +197,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return contentRequested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.PARENT) return Scannable.from(null);
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
@@ -207,12 +207,12 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class PageSubscriber<P, T> extends AtomicBoolean implements InnerConsumer<P> {
 
-		final PageMain<P, T> parent;
+		final PaginatedCoordinator<P, T> parent;
 
 		boolean done;
 		Subscription s;
 
-		PageSubscriber(PageMain<P, T> parent) {
+		PageSubscriber(PaginatedCoordinator<P, T> parent) {
 			this.parent = parent;
 		}
 
@@ -226,7 +226,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				long previouslyRequested = PageMain.CONTENT_REQUESTED.get(this.parent);
+				long previouslyRequested = PaginatedCoordinator.REQUESTED.get(this.parent);
 				synchronized (parent) {
 					if (parent.cancelled) {
 						s.cancel();
@@ -286,12 +286,12 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class PageContentSubscriber<P, T> implements InnerConsumer<T> {
 
-		final PageMain<P, T> parent;
-		final P page;
+		final PaginatedCoordinator<P, T> parent;
+		final P                          page;
 
 		boolean done;
 
-		PageContentSubscriber(PageMain<P, T> parent, P page) {
+		PageContentSubscriber(PaginatedCoordinator<P, T> parent, P page) {
 			this.parent = parent;
 			this.page = page;
 		}
@@ -303,7 +303,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			long previouslyRequested = PageMain.CONTENT_REQUESTED.get(this.parent);
+			long previouslyRequested = PaginatedCoordinator.REQUESTED.get(this.parent);
 			synchronized (parent) {
 				if (parent.cancelled) {
 					s.cancel();
