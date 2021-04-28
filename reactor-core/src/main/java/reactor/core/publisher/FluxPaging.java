@@ -16,7 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 
@@ -76,7 +76,10 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		Subscription pageContentSubscription;
 
 		@Nullable
-		PageSubscriber<P, T> nextPageSubscriber;
+		PageSubscriber<P, T> pageSubscription;
+
+		boolean done;
+		boolean cancelled;
 
 		volatile     long                             contentRequested;
 		@SuppressWarnings("rawtypes")
@@ -100,22 +103,29 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			PageSubscriber<P, T> next = new PageSubscriber<>(this);
 			synchronized (this) {
 				this.pageContentSubscription = null;
-				this.nextPageSubscriber = next;
+				this.pageSubscription = next;
+				if (this.cancelled) {
+					return;
+				}
 			}
 			pageMono.subscribe(next);
 
-			if (CONTENT_REQUESTED.get(this) > 0 && next.get() < 2) {
+			if (CONTENT_REQUESTED.get(this) > 0) {
 				next.requestPageOnce();
 			}
 		}
 
 		void nextPage(P page) {
+			if (cancelled) {
+				return;
+			}
 			//if we get a next page, it means we have at least outstanding request of 1
 			Publisher<? extends T> pageContentPublisher = pageContentFunction.apply(page);
 			pageContentPublisher.subscribe(new PageContentSubscriber<>(this, page));
 		}
 
 		void noMorePages() {
+			this.done = true;
 			actual.onComplete();
 		}
 
@@ -126,7 +136,8 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			actual.onNext(content);
 		}
 
-		void errorContent(Throwable error) {
+		void innerError(Throwable error) {
+			this.done = true;
 			actual.onError(error);
 		}
 
@@ -135,11 +146,19 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			if (Operators.validate(n)) {
 				Operators.addCap(CONTENT_REQUESTED, this, n);
 
+				long currentRequest = CONTENT_REQUESTED.get(this);
+
 				PageSubscriber<P, T> prepNextPage;
 				Subscription pageContentSub;
+				boolean cancelled;
 				synchronized (this) {
-					prepNextPage = this.nextPageSubscriber;
-					pageContentSub = pageContentSubscription;
+					prepNextPage = this.pageSubscription;
+					pageContentSub = this.pageContentSubscription;
+					cancelled = this.cancelled;
+				}
+
+				if (cancelled) {
+					return;
 				}
 
 				if (prepNextPage != null) {
@@ -147,7 +166,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 				if (pageContentSub != null) {
-					long contentToRequest = CONTENT_REQUESTED.get(this) == Long.MAX_VALUE ? Long.MAX_VALUE : n;
+					long contentToRequest = currentRequest == Long.MAX_VALUE ? Long.MAX_VALUE : n;
 					pageContentSub.request(contentToRequest);
 				}
 			}
@@ -155,9 +174,18 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void cancel() {
+			PageSubscriber<P, T> prepNextPage;
 			Subscription pageContentSub;
 			synchronized (this) {
-				pageContentSub = this.pageContentSubscription;
+				this.cancelled = true;
+				prepNextPage = this.pageSubscription;
+				pageContentSub = pageContentSubscription;
+				this.pageSubscription = null;
+				this.pageContentSubscription = null;
+			}
+
+			if (prepNextPage != null) {
+				prepNextPage.s.cancel();
 			}
 			if (pageContentSub != null) {
 				pageContentSub.cancel();
@@ -167,9 +195,8 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
-			//TODO
-//			if (key == Attr.TERMINATED) return done;
-//			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return contentRequested;
 			if (key == Attr.PARENT) return Scannable.from(null);
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
@@ -178,7 +205,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		}
 	}
 
-	static final class PageSubscriber<P, T> extends AtomicInteger implements InnerConsumer<P> {
+	static final class PageSubscriber<P, T> extends AtomicBoolean implements InnerConsumer<P> {
 
 		final PageMain<P, T> parent;
 
@@ -194,50 +221,29 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			return parent.actual.currentContext();
 		}
 
-		//0: no Subscription, no request
-		//1: subscription, no request
-		//2: no Subscription, prerequested
-		//3: subscription, requested
-		// onSubscribe transitions
-		// 2 -> 3
-		// 0 -> 1
-		// request transitions
-		// 0 -> 2
-		// 1 -> 3
-
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				for (;;) {
-					if (compareAndSet(2, 3)) {
-						s.request(1);
+				long previouslyRequested = PageMain.CONTENT_REQUESTED.get(this.parent);
+				synchronized (parent) {
+					if (parent.cancelled) {
+						s.cancel();
 						return;
 					}
-					if (compareAndSet(0, 1)) {
-						return;
-					}
-					//that second cas could see 2, so we loop back
+					parent.pageContentSubscription = null;
+					parent.pageSubscription = this;
+				}
+				if (previouslyRequested > 0) {
+					requestPageOnce();
 				}
 			}
 		}
 
 		void requestPageOnce() {
-			for (;;) {
-				if (get() > 2) {
-					return;
-				}
-				if (compareAndSet(1, 3)) {
-					//the subscription was set but never requested
-					this.s.request(1);
-					return;
-				}
-				//try to transition from 0 to 2
-				if (compareAndSet(0, 2)) {
-					return;
-				}
-				//otherwise second CAS has probably seen sub update (1), we loop back
+			if (compareAndSet(false, true)) {
+				this.s.request(1);
 			}
 		}
 
@@ -268,7 +274,8 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return get() >= 2 ? 1L : 0L;
+			if (key == Attr.CANCELLED) return parent.cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return get() ? 1L : 0L;
 			if (key == Attr.ACTUAL) return parent.actual;
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -298,8 +305,12 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		public void onSubscribe(Subscription s) {
 			long previouslyRequested = PageMain.CONTENT_REQUESTED.get(this.parent);
 			synchronized (parent) {
+				if (parent.cancelled) {
+					s.cancel();
+					return;
+				}
 				parent.pageContentSubscription = s;
-				parent.nextPageSubscriber = null;
+				parent.pageSubscription = null;
 			}
 			if (previouslyRequested > 0) {
 				s.request(previouslyRequested);
@@ -327,13 +338,14 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 				return;
 			}
 			this.done = true;
-			parent.errorContent(t);
+			parent.innerError(t);
 		}
 
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return parent.cancelled;
 			if (key == Attr.ACTUAL) return parent.actual;
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.PREFETCH) return 1;
