@@ -18,16 +18,24 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscriber;
 
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
+import reactor.test.publisher.TestPublisher;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -289,6 +297,127 @@ class FluxPagingTest {
 				.expectNext("ADD", "1C", "2C", "3C")
 				.expectNext("ADD", "1D", "2D", "3D")
 				.verifyComplete();
+	}
+
+	@Test
+	void pageMainCanChangeThreadsDependingOnPageFetch() {
+		Set<String> threadNames = new HashSet<>();
+		Flux<Integer> fluxPaging = new FluxPaging<>(0, i -> Flux.range(i * 10, 2),
+				i -> {
+					switch (i) {
+						case 0:
+							return Mono.just(1).publishOn(Schedulers.parallel());
+						case 1:
+							return Mono.just(2);
+						case 2:
+						default:
+							return Mono.empty();
+					}
+				})
+				.doOnNext(i -> threadNames.add(Thread.currentThread().getName()));
+
+		StepVerifier.create(fluxPaging)
+				.expectNext(0, 1, 10, 11, 20, 21)
+				.verifyComplete();
+
+		threadNames.remove(Thread.currentThread().getName());
+		assertThat(threadNames)
+				.hasSize(1)
+				.allSatisfy(tn -> assertThat(tn).startsWith("parallel-"));
+	}
+
+
+	@Test
+	void scanPublisher() {
+		FluxPaging<Object, Object> fluxPaging = new FluxPaging<>(1, o -> Mono.empty(), o -> Mono.empty());
+
+		assertThat(fluxPaging.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(Scannable.from(null));
+		assertThat(fluxPaging.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(Scannable.from(null));
+		assertThat(fluxPaging.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(fluxPaging.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isZero();
+	}
+
+	@Test
+	void scanMain() {
+		AssertSubscriber<Object> actual = AssertSubscriber.create(0);
+		FluxPaging.PageMain<Object, Object> main = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		actual.onSubscribe(main);
+
+		assertThat(main.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).as("REQUESTED_FROM_DOWNSTREAM pre-request").isEqualTo(0);
+		actual.request(123);
+		assertThat(main.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).as("REQUESTED_FROM_DOWNSTREAM").isEqualTo(123);
+
+		assertThat(main.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(Scannable.from(null));
+		assertThat(main.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(actual);
+		assertThat(main.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.ASYNC);
+
+		//TODO
+//		assertThat(main.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before noMorePages()").isFalse();
+//		main.noMorePages();
+//		assertThat(main.scan(Scannable.Attr.TERMINATED)).as("TERMINATED").isTrue();
+//
+		//TODO reset terminated state
+//		main.??? = false;
+//		assertThat(main.scan(Scannable.Attr.TERMINATED) || main.scan(Scannable.Attr.CANCELLED)).as("reset TERMINATED/CANCELLED").isFalse();
+//
+//		main.cancel();
+//		assertThat(main.scan(Scannable.Attr.CANCELLED)).as("CANCELLED").isTrue();
+	}
+
+	@Test
+	void scanPageSubscriber() {
+		CoreSubscriber<Object> actual = AssertSubscriber.create(0);
+		FluxPaging.PageMain<Object, Object> parent = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+
+		parent.prepareNextPage(Mono.never());
+
+		FluxPaging.PageSubscriber<Object, Object> pageSubscriber = parent.nextPageSubscriber;
+
+		assertThat(pageSubscriber.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(parent);
+		assertThat(pageSubscriber.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(actual);
+		assertThat(pageSubscriber.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.SYNC);
+
+		assertThat(pageSubscriber.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM))
+				.as("REQUESTED_FROM_DOWNSTREAM initial")
+				.isZero();
+
+		parent.request(123);
+
+		assertThat(pageSubscriber.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).as("REQUESTED_FROM_DOWNSTREAM").isOne();
+	}
+
+	@Test
+	void scanPageSubscriberTerminatedCases() {
+		CoreSubscriber<Object> actual = AssertSubscriber.create(0);
+		FluxPaging.PageMain<Object, Object> parent = new FluxPaging.PageMain<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		//we'll use a misbehaving TestPublisher to separately send onNext / onComplete / onError signals to terminate the subscriber
+		TestPublisher<Object> pagePublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		parent.prepareNextPage(pagePublisher.mono());
+		FluxPaging.PageSubscriber<Object, Object> pageSubscriber = parent.nextPageSubscriber;
+
+		parent.request(123);
+		pagePublisher.assertWasRequested();
+		assertThat(pageSubscriber.scan(Scannable.Attr.TERMINATED)).as("not terminated 1").isFalse();
+
+		pagePublisher.next("example");
+		assertThat(pageSubscriber.scan(Scannable.Attr.TERMINATED)).as("onNext terminates").isTrue();
+
+		pageSubscriber.done = false;
+		assertThat(pageSubscriber.scan(Scannable.Attr.TERMINATED)).as("not terminated 2").isFalse();
+
+		pagePublisher.complete();
+		assertThat(pageSubscriber.scan(Scannable.Attr.TERMINATED)).as("onComplete terminates").isTrue();
+
+		pageSubscriber.done = false;
+		assertThat(pageSubscriber.scan(Scannable.Attr.TERMINATED)).as("not terminated 3").isFalse();
+
+		pagePublisher.error(new IllegalStateException("intends to terminate pageSubscriber"));
+		assertThat(pageSubscriber.scan(Scannable.Attr.TERMINATED)).as("onError terminates").isTrue();
+	}
+
+	@Test
+	void scanPageContentSubscriber() {
+
 	}
 
 }

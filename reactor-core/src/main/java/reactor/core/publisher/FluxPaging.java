@@ -24,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -49,6 +50,20 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		PageMain<P, T> pageMainSubscription = new PageMain<>(actual, pageContentFunction, nextPageFunction);
 		pageMainSubscription.prepareNextPage(Mono.just(initialPage));
 		actual.onSubscribe(pageMainSubscription);
+	}
+
+	@Override
+	public int getPrefetch() {
+		return 0;
+	}
+
+	@Nullable
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PREFETCH) return 0;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class PageMain<P, T> implements InnerProducer<T> {
@@ -93,7 +108,6 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 				next.requestPageOnce();
 			}
 		}
-
 
 		void nextPage(P page) {
 			//if we get a next page, it means we have at least outstanding request of 1
@@ -148,6 +162,19 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 			if (pageContentSub != null) {
 				pageContentSub.cancel();
 			}
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			//TODO
+//			if (key == Attr.TERMINATED) return done;
+//			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return contentRequested;
+			if (key == Attr.PARENT) return Scannable.from(null);
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 	}
 
@@ -241,7 +268,7 @@ final class FluxPaging<P, T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return get() >= 2 ? 1 : 0;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return get() >= 2 ? 1L : 0L;
 			if (key == Attr.ACTUAL) return parent.actual;
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
