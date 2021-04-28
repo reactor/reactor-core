@@ -715,7 +715,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <P, T> Flux<T> paging(P firstPage, Function<? super P, ? extends Publisher<T>> pageContentFunction,
 	                                    Function<? super P, Mono<P>> nextPageFunction) {
-		return onAssembly(new FluxPage<>(firstPage, pageContentFunction, nextPageFunction));
+		return onAssembly(new FluxPaging<>(firstPage, pageContentFunction, nextPageFunction));
 	}
 
 	/**
