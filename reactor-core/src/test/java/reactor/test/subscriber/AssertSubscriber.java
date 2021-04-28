@@ -37,8 +37,11 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.Operators;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -80,7 +83,7 @@ import reactor.util.context.Context;
  * @author Brian Clozel
  */
 public class AssertSubscriber<T>
-		implements CoreSubscriber<T>, Subscription {
+		implements CoreSubscriber<T>, Subscription, Scannable {
 
 	/**
 	 * Default timeout for waiting next values to be received
@@ -1127,5 +1130,16 @@ public class AssertSubscriber<T>
 	@SafeVarargs
 	public final AssertSubscriber<T> assertIncomplete(T... values) {
 		return assertValues(values).assertNotComplete().assertNoError();
+	}
+
+	@Nullable
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PARENT) return s;
+		if (key == Attr.TERMINATED) return cdl.getCount() == 0;
+		if (key == Attr.ERROR) return Exceptions.multiple(this.errors);
+		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+		return null;
 	}
 }
