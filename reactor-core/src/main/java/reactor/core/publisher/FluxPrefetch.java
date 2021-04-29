@@ -131,6 +131,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			this.limit = Operators.unboundedOrLimit(prefetch, lowTide);
 			this.queueSupplier = queueSupplier;
 			this.requestMode = requestMode;
+
+			REQUESTED.lazySet(this, Long.MIN_VALUE);
 		}
 
 		@Override
@@ -161,6 +163,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 				// sourceMode == -1 if downstream was not calling requestFusion
 				if (sourceMode == -1) {
+					// check if upstream if
+					// fuseable so we can fuse at least with the upstream
 					if (s instanceof QueueSubscription) {
 						@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
 								(QueueSubscription<T>) s;
@@ -171,7 +175,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							queue = fusion;
 							done = true;
 
-							if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+							//check if downstream requested something
+							if (this.wip == 1 && WIP.addAndGet(this, -1) == 0) {
+								// exit if nothing was requested yet
 								return;
 							}
 
@@ -186,14 +192,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 								s.request(Operators.unboundedOrPrefetch(prefetch));
 							}
 
+							// check if something was requested or delivered in the
+							// meantime
 							if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+								// exit if non of the mentioned has happened yet
 								return;
-							}
-
-//							TODO: Duplicate code to avoid extra check of the "requestMode"
-							if (requestMode == RequestMode.LAZY) {
-								firstRequest = false;
-								s.request(Operators.unboundedOrPrefetch(prefetch));
 							}
 
 							drainAsync();
@@ -211,15 +214,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						return;
 					}
 
-//					TODO: Duplicate code to avoid extra check of the "requestMode"
-					if (requestMode == RequestMode.LAZY) {
-						firstRequest = false;
-						s.request(Operators.unboundedOrPrefetch(prefetch));
-					}
-
 					drainAsync();
 				}
-				else if (requestMode == RequestMode.EAGER && sourceMode != Fuseable.SYNC) {
+				else if (requestMode == RequestMode.EAGER && sourceMode == Fuseable.NONE) {
 					s.request(Operators.unboundedOrPrefetch(prefetch));
 				}
 			}
@@ -276,7 +273,26 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
+				long previousState;
+				for (;;) {
+					previousState = this.requested;
+
+					long requested = previousState & Long.MAX_VALUE;
+					long nextRequested = Operators.addCap(requested, n);
+
+					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
+						break;
+					}
+				}
+
+				// check if this is the first request from the downstrea
+				if (previousState == Long.MIN_VALUE) {
+					// check the mode and fusion mode
+					if (this.requestMode == RequestMode.LAZY && this.sourceMode == Fuseable.NONE) {
+						this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+					}
+				}
+
 				drain(null);
 			}
 		}
@@ -314,7 +330,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
-				long requested = this.requested;
+				long requested = this.requested & Long.MAX_VALUE;
 
 				while (emitted != requested) {
 					T value;
@@ -494,13 +510,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 
-//			TODO: order
-//			TODO: make prefetch requests in the "request"
-			if (firstRequest && requestMode == RequestMode.LAZY && sourceMode != Fuseable.SYNC) {
-				firstRequest = false;
-				s.request(Operators.unboundedOrPrefetch(prefetch));
-			}
-
 			if (outputFused) {
 				drainOutput();
 			}
@@ -596,6 +605,10 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		@Nullable
 		public T poll() {
+			if (sourceMode == NONE && requestMode == RequestMode.LAZY && firstRequest) {
+				this.firstRequest = false;
+				this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+			}
 			T value = queue.poll();
 			if (value != null && sourceMode != Fuseable.SYNC) {
 				long p = produced + 1;

@@ -119,15 +119,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		volatile     int                                            discardGuard;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> DISCARD_GUARD =
-				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class,
-						"discardGuard");
-
-		// TODO: or boolean firstRequest = true;
-		volatile     int                                            firstRequest;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> FIRST_REQUEST =
-				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class,
-						"firstRequest");
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "discardGuard");
 
 		int sourceMode;
 
@@ -220,17 +212,26 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
-				if (sourceMode == Fuseable.ASYNC) {
-					s.request(n);
-				}
-				else if (sourceMode == Fuseable.NONE) {
-					if (firstRequest == 0 && requested != 0) {
-						if (FIRST_REQUEST.compareAndSet(this, 0, 1)) {
-							s.request(1);
-						}
+				long previousState;
+				for (;;) {
+					previousState = this.requested;
+
+					long requested = previousState & Long.MAX_VALUE;
+					long nextRequested = Operators.addCap(requested, n);
+
+					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
+						break;
 					}
 				}
+
+				// check if this is the first request from the downstrea
+				if (previousState == Long.MIN_VALUE) {
+					// check the mode and fusion mode
+					if (this.sourceMode == Fuseable.NONE) {
+						this.s.request(1);
+					}
+				}
+
 				// WIP also guards during request and onError is possible
 				trySchedule(this, null, null);
 			}

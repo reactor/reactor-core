@@ -1,21 +1,15 @@
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.annotation.Nullable;
-import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,52 +23,40 @@ public class FluxPrefetchTest {
 //		8. request 0 && error
 //		7. Unbound
 
-	@ParameterizedTest
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.ANY})
+	@ParameterizedTest(name = "Prefetch Value from Non-Fused upstream with downstream with fusion={0}")
+	@DisplayName("Prefetch Value from Non-Fused upstream with downstream with fusion={0}")
+	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.NONE, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
 	public void prefetchValuesFromNonFuseableUpstreamAndEagerRequestMode(int requestedMode) {
 		int prefetch = 256;
 		int limit = 192;
 
 		ArrayList<Long> requests = new ArrayList<>();
-		LongAdder requestCount = new LongAdder();
-		AtomicLong requestLast = new AtomicLong();
 
-		Flux<Integer> nonFuseableSource = Flux.range(1, 100_000_000)
+		Flux<Integer> nonFuseableSource = Flux.range(1, limit * 2 + 1)
 		                                      .hide()
-		                                      .doOnRequest(r -> requestCount.increment())
-//		                                      .doOnRequest(requestLast::set)
 		                                      .doOnRequest(requests::add);
 
 		StepVerifier.create(nonFuseableSource.prefetch(prefetch,
 				limit,
 				FluxPrefetch.RequestMode.EAGER), 0)
 		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
-		            .then(() -> assertThat(requestCount.longValue()).isEqualTo(1))
-		            .then(() -> assertThat(requestLast.get()).isEqualTo(prefetch))
-
-//		            .then(() -> assertThat(requests).containsExactly((long) prefetch))
+		            .then(() -> assertThat(requests).hasSize(1))
 
 		            .thenRequest(limit - 1)
 		            .expectNextCount(limit - 1)
-		            .then(() -> assertThat(requestCount.longValue()).isEqualTo(1))
-//		            .then(() -> assertThat(requestLast.get()).isEqualTo(prefetch))
-
-//		            .then(() -> assertThat(requests).containsExactly((long) prefetch))
+		            .then(() -> assertThat(requests).hasSize(1))
 
 		            .thenRequest(1)
 		            .expectNextCount(1)
-		            .then(() -> assertThat(requestCount.longValue()).isEqualTo(2))
-//		            .then(() -> assertThat(requestLast.get()).isEqualTo(limit))
-//		            .then(() -> assertThat(requests).containsExactly((long) prefetch,
-//				            (long) limit))
+		            .then(() -> assertThat(requests).hasSize(2))
 
 		            .thenRequest(limit + 1)
 		            .expectNextCount(limit + 1)
-		            .then(() -> assertThat(requestCount.longValue()).isEqualTo(3))
-//		            .then(() -> assertThat(requestLast.get()).isEqualTo(limit))
-		            .then(() -> assertThat(requests).containsExactly(prefetch, limit, limit))
-		            .thenCancel()
-		            .verify();
+		            .then(() -> assertThat(requests).hasSize(3))
+		            .then(() -> assertThat(requests).containsExactly((long) prefetch,
+				            (long) limit,
+				            (long) limit))
+		            .verifyComplete();
 	}
 
 	@ParameterizedTest
