@@ -297,17 +297,17 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	void propagatesBoundedDemandGreaterThanTakeLimit() {
+	void propagatesUnboundedDemand() {
 		AtomicLong requested = new AtomicLong();
 		Flux.range(1, 100)
 				.hide()
 				.doOnRequest(requested::set)
-				.take(5)
+				.takeEager(5)
 				.as(f -> StepVerifier.create(f, 40))
 				.expectNextCount(5)
 				.verifyComplete();
 
-		assertThat(requested).hasValue(40L);
+		assertThat(requested).hasValue(Long.MAX_VALUE);
 	}
 
 	@Test
