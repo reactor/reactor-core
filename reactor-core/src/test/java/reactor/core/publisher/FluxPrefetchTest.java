@@ -59,6 +59,32 @@ public class FluxPrefetchTest {
 		            .verifyComplete();
 	}
 
+	@ParameterizedTest(name = "Prefetch Value from Sync-Fused upstream with downstream with fusion={0}")
+	@DisplayName("Prefetch Value from Sync-Fused upstream with downstream with fusion={0}")
+	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.NONE, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
+	public void prefetchValuesFromSyncFuseableUpstreamAndEagerRequestMode(int requestedMode) {
+		int prefetch = 256;
+		int limit = 192;
+
+		Flux<Integer> syncFuseableSource = Flux.range(1, limit * 2 + 1);
+
+		StepVerifier.create(syncFuseableSource.prefetch(prefetch,
+				limit,
+				FluxPrefetch.RequestMode.EAGER).log(), 0)
+		            .expectFusion(requestedMode)
+
+		            .thenRequest(limit - 1)
+		            .expectNextCount(limit - 1)
+
+		            .thenRequest(1)
+		            .expectNextCount(1)
+
+		            .thenRequest(limit + 2)
+		            .expectNextCount(limit + 1)
+
+		            .verifyComplete();
+	}
+
 	@ParameterizedTest
 	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.ANY})
 	public void downstreamFusionWithNonFuseableUpstreamAndEagerRequestMode(int requestedMode) {
