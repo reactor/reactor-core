@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -293,6 +294,20 @@ public class FluxTakeTest {
 		            .thenRequest(1)
 		            .expectNext("test")
 		            .verifyComplete();
+	}
+
+	@Test
+	void propagatesBoundedDemandGreaterThanTakeLimit() {
+		AtomicLong requested = new AtomicLong();
+		Flux.range(1, 100)
+				.hide()
+				.doOnRequest(requested::set)
+				.take(5)
+				.as(f -> StepVerifier.create(f, 40))
+				.expectNextCount(5)
+				.verifyComplete();
+
+		assertThat(requested).hasValue(40L);
 	}
 
 	@Test
