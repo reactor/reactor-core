@@ -2,12 +2,15 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
@@ -32,9 +35,12 @@ public class FluxPrefetchTest {
 
 		ArrayList<Long> requests = new ArrayList<>();
 
+
 		Flux<Integer> nonFuseableSource = Flux.range(1, limit * 2 + 1)
 		                                      .hide()
 		                                      .doOnRequest(requests::add);
+
+
 
 		StepVerifier.create(nonFuseableSource.prefetch(prefetch,
 				limit,
@@ -43,6 +49,9 @@ public class FluxPrefetchTest {
 		            .then(() -> assertThat(requests).hasSize(1))
 
 		            .thenRequest(limit - 1)
+
+		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>)s).sourceMode).isEqualTo(Fuseable.NONE))
+
 		            .expectNextCount(limit - 1)
 		            .then(() -> assertThat(requests).hasSize(1))
 
@@ -61,7 +70,7 @@ public class FluxPrefetchTest {
 
 	@ParameterizedTest(name = "Prefetch Value from Sync-Fused upstream with downstream with fusion={0}")
 	@DisplayName("Prefetch Value from Sync-Fused upstream with downstream with fusion={0}")
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.NONE, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
+	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.NONE/*, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER*/})
 	public void prefetchValuesFromSyncFuseableUpstreamAndEagerRequestMode(int requestedMode) {
 		int prefetch = 256;
 		int limit = 192;
@@ -70,10 +79,13 @@ public class FluxPrefetchTest {
 
 		StepVerifier.create(syncFuseableSource.prefetch(prefetch,
 				limit,
-				FluxPrefetch.RequestMode.EAGER).log(), 0)
+				FluxPrefetch.RequestMode.EAGER), 0)
 		            .expectFusion(requestedMode)
 
 		            .thenRequest(limit - 1)
+
+		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>)s).sourceMode).isEqualTo(requestedMode))
+
 		            .expectNextCount(limit - 1)
 
 		            .thenRequest(1)
