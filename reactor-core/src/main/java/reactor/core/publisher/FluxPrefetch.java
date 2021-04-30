@@ -285,10 +285,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					}
 				}
 
-				// check if this is the first request from the downstrea
+				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {
 					// check the mode and fusion mode
 					if (this.requestMode == RequestMode.LAZY && this.sourceMode == Fuseable.NONE) {
+						this.firstRequest = false;
 						this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
 					}
 				}
@@ -623,6 +624,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			return value;
 		}
 
+		// TODO: doesn't make s.request if sourceMode ASYNC
 		public int requestFusion(int requestedMode) {
 			if (s instanceof QueueSubscription) {
 				@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
