@@ -60,7 +60,7 @@ public enum SignalType {
 	/**
 	 * A context update signal
 	 */
-	ON_CONTEXT_UPDATE("onContextUpdate");
+	ON_CONTEXT("onContextUpdate");
 
 	private String name;
 
