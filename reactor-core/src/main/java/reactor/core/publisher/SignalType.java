@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-
 /**
  * Reactive Stream signal types
  */
@@ -25,67 +24,52 @@ public enum SignalType {
 	/**
 	 * A signal when the subscription is triggered
 	 */
-	SUBSCRIBE,
+	SUBSCRIBE("subscribe"),
 	/**
 	 * A signal when a request is made through the subscription
 	 */
-	REQUEST,
+	REQUEST("request"),
 	/**
 	 * A signal when the subscription is cancelled
 	 */
-	CANCEL,
+	CANCEL("cancel"),
 	/**
 	 * A signal when an operator receives a subscription
 	 */
-	ON_SUBSCRIBE,
+	ON_SUBSCRIBE("onSubscribe"),
 	/**
 	 * A signal when an operator receives an emitted value
 	 */
-	ON_NEXT,
+	ON_NEXT("onNext"),
 	/**
 	 * A signal when an operator receives an error
 	 */
-	ON_ERROR,
+	ON_ERROR("onError"),
 	/**
 	 * A signal when an operator completes
 	 */
-	ON_COMPLETE,
+	ON_COMPLETE("onComplete"),
 	/**
 	 * A signal when an operator completes
 	 */
-	AFTER_TERMINATE,
+	AFTER_TERMINATE("afterTerminate"),
 	/**
 	 * A context read signal
 	 */
-	CURRENT_CONTEXT,
+	CURRENT_CONTEXT("currentContext"),
 	/**
 	 * A context update signal
 	 */
-	ON_CONTEXT;
+	ON_CONTEXT_UPDATE("onContextUpdate");
+
+	private String name;
+
+	SignalType(String name) {
+		this.name = name;
+	}
 
 	@Override
 	public String toString() {
-		switch (this) {
-			case ON_SUBSCRIBE:
-				return "onSubscribe";
-			case ON_NEXT:
-				return "onNext";
-			case ON_ERROR:
-				return "onError";
-			case ON_COMPLETE:
-				return "onComplete";
-			case REQUEST:
-				return "request";
-			case CANCEL:
-				return "cancel";
-			case CURRENT_CONTEXT:
-				return "currentContext";
-			case ON_CONTEXT:
-				return "onContextUpdate";
-			case AFTER_TERMINATE:
-				return "afterTerminate";
-			default:
-				return "subscribe";
-		}
+		return name;
 	}
 }
