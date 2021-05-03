@@ -222,7 +222,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			return false;
 		}
 
-		synchronized (this) {
+		for (;;) {
 			a = subscribers;
 			if (a == TERMINATED) {
 				return false;
@@ -234,9 +234,9 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			System.arraycopy(a, 0, b, 0, len);
 			b[len] = s;
 
-			subscribers = b;
-
-			return true;
+			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				return true;
+			}
 		}
 	}
 
@@ -248,7 +248,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			return;
 		}
 
-		synchronized (this) {
+		for (;;) {
 			a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
@@ -266,16 +266,19 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			if (j < 0) {
 				return;
 			}
+
+			DirectInner<T>[] b;
 			if (len == 1) {
-				subscribers = EMPTY;
-				return;
+				b = EMPTY;
+			} else {
+				b = new DirectInner[len - 1];
+				System.arraycopy(a, 0, b, 0, j);
+				System.arraycopy(a, j + 1, b, j, len - j - 1);
 			}
 
-			DirectInner<T>[] b = new DirectInner[len - 1];
-			System.arraycopy(a, 0, b, 0, j);
-			System.arraycopy(a, j + 1, b, j, len - j - 1);
-
-			subscribers = b;
+			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				return;
+			}
 		}
 	}
 

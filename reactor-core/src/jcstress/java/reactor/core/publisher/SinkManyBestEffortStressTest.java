@@ -189,4 +189,57 @@ public class SinkManyBestEffortStressTest {
 		}
 	}
 
+	@JCStressTest
+	@Outcome(id = {"1"}, expect = ACCEPTABLE, desc = "Complete delivered")
+	@State
+	public static class SubscribeVsEmitCompleteStressTest {
+
+		final SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
+		final StressSubscriber<Integer> sub2 = new StressSubscriber<>(0);
+
+		@Actor
+		public void subscribe() {
+			sink.subscribe(sub2);
+		}
+
+		@Actor
+		public void emitComplete() {
+			sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+		}
+
+		@Arbiter
+		public void arbiter(I_Result r) {
+			r.r1 = sub2.onCompleteCalls.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"1"}, expect = ACCEPTABLE, desc = "Removed Sub1 and Added Sub2")
+	@State
+	public static class AddVsRemoveStressTest {
+
+		final SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
+		final StressSubscriber<Integer> sub1 = new StressSubscriber<>(0);
+		final StressSubscriber<Integer> sub2 = new StressSubscriber<>(0);
+
+		{
+			sink.subscribe(sub1);
+		}
+
+		@Actor
+		public void remove() {
+			sub1.cancel();
+		}
+
+		@Actor
+		public void add() {
+			sink.subscribe(sub2);
+		}
+
+		@Arbiter
+		public void arbiter(I_Result r) {
+			r.r1 = sink.subscribers[0] == sub2.subscription ? 1 : 0;
+		}
+	}
+
 }
