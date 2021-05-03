@@ -2,19 +2,17 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
+import org.openjdk.jcstress.infra.results.IIII_Result;
 import org.openjdk.jcstress.infra.results.III_Result;
-import org.openjdk.jcstress.infra.results.IIZ_Result;
-import org.openjdk.jcstress.infra.results.II_Result;
+import org.reactivestreams.Subscription;
 
-import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
@@ -22,94 +20,98 @@ import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE_INTERESTING;
 
 public abstract class MonoDelayStressTest {
 
+	private static final int REQUEST_BEFORE_TICK                          = 0b0011_0_111; // 55
+	private static final int REQUEST_AFTER_TICK                           = 0b0010_0_111; // 39
+	private static final int CANCELLED_AFTER_REQUEST_FIRST                = 0b0111_0_001; //113
+	private static final int CANCELLED_AFTER_REQUEST_FIRST_AND_DELAY_DONE = 0b0111_0_011; //115
+	private static final int CANCELLED_AFTER_REQUEST_SECOND               = 0b0110_0_011; // 99
+	private static final int CANCELLED_BEFORE_REQUEST_BUT_DELAY_DONE      = 0b0100_0_011; // 67
+	private static final int CANCELLED_EARLY                              = 0b0100_0_001; // 65
+	private static final int CANCELLED_SUPER_EARLY                        = 0b0100_0_000; // 64
+
 	@JCStressTest
-	@Outcome(id = {"1, 0, true"}, expect = ACCEPTABLE, desc = "Request before tick was delivered")
-	@Outcome(id = {"1, 0, false"}, expect = ACCEPTABLE, desc = "Request AFTER tick was delivered")
+	@Outcome(id = {"1, 0, " + REQUEST_BEFORE_TICK}, expect = ACCEPTABLE, desc = "Request before tick was delivered")
+	@Outcome(id = {"1, 0, " + REQUEST_AFTER_TICK}, expect = ACCEPTABLE, desc = "Request AFTER tick was delivered")
 	@State
 	public static class RequestAndRunStressTest {
 
 		/*
 		Implementation notes: in this test we use the VirtualTimeScheduler to better coordinate
-		the triggering of the `run` method. We also use the hasProgressed AtomicBoolean to
-		track whenever the delayTrigger happens before the subscribe actor.
+		the triggering of the `run` method. We directly interpret the end STATE to track what
+		happened.
 		 */
 
-		final StressSubscriber<Long> subscriber = new StressSubscriber<>(1L);
+		final StressSubscriber<Long> subscriber = new StressSubscriber<>(0L);
 		final VirtualTimeScheduler   virtualTimeScheduler;
 		final MonoDelay              monoDelay;
-		final AtomicBoolean          hasProgressed = new AtomicBoolean();
+		final AtomicReference<MonoDelay.MonoDelayRunnable> subscriptionRef = new AtomicReference<>();
 
 		{
 			virtualTimeScheduler = VirtualTimeScheduler.create();
-			monoDelay = new MonoDelay(1, TimeUnit.NANOSECONDS, virtualTimeScheduler);
-			monoDelay.subscribe(subscriber);
+			monoDelay = new MonoDelay(Long.MAX_VALUE, TimeUnit.MILLISECONDS, virtualTimeScheduler);
+			monoDelay.doOnSubscribe(s -> subscriptionRef.set((MonoDelay.MonoDelayRunnable) s)).subscribe(subscriber);
 		}
 
 		@Actor
-		public void delayTrigger(IIZ_Result r) {
-			if (hasProgressed.compareAndSet(false, true)) {
-				r.r3 = true; //requested before trigger
-			}
-			virtualTimeScheduler.advanceTimeBy(Duration.ofNanos(1));
+		public void delayTrigger() {
+			subscriptionRef.get().run();
 		}
 
 		@Actor
-		public void request(IIZ_Result r) {
-			if (hasProgressed.compareAndSet(false, true)) {
-				r.r3 = false; //requested after trigger
-			}
+		public void request() {
 			subscriber.request(1);
 		}
 
 		@Arbiter
-		public void arbiter(IIZ_Result r) {
+		public void arbiter(III_Result r) {
 			r.r1 = subscriber.onNextCalls.get();
 			r.r2 = subscriber.onErrorCalls.get();
+			r.r3 = subscriptionRef.get().state;
 		}
 	}
 
 	@JCStressTest
-	@Outcome(id = {"1, 0, 1"}, expect = ACCEPTABLE, desc = "Tick was delivered, request happened before tick")
-	@Outcome(id = {"1, 0, 2"}, expect = ACCEPTABLE, desc = "Tick was delivered, request happened after tick")
-	@Outcome(id = {"0, 0, 1"}, expect = ACCEPTABLE, desc = "Tick was cancelled, request happened before tick")
-	@Outcome(id = {"0, 0, 2"}, expect = ACCEPTABLE, desc = "Tick was cancelled, request happened after tick")
-	@Outcome(id = {"0, 0, 3"}, expect = ACCEPTABLE, desc = "Tick was cancelled before any interaction")
-	@Outcome(id = {"1, 0, 3"}, expect = ACCEPTABLE_INTERESTING, desc = "Tick was cancelled before any interaction, but the delivery still happened")
+	@Outcome(id = {"1, 0, " + REQUEST_BEFORE_TICK}, expect = ACCEPTABLE, desc = "Tick was delivered, request happened before tick")
+	@Outcome(id = {"1, 0, " + REQUEST_AFTER_TICK}, expect = ACCEPTABLE, desc = "Tick was delivered, request happened after tick")
+	@Outcome(id = {"0, 0, " + CANCELLED_AFTER_REQUEST_FIRST}, expect = ACCEPTABLE, desc = "Cancelled after request, tick not done yet")
+	@Outcome(id = {"0, 0, " + CANCELLED_AFTER_REQUEST_FIRST_AND_DELAY_DONE}, expect = ACCEPTABLE, desc = "Cancelled after (request then tick)")
+	@Outcome(id = {"0, 0, " + CANCELLED_AFTER_REQUEST_SECOND}, expect = ACCEPTABLE, desc = "Cancelled after (tick then request)")
+	@Outcome(id = {"0, 0, " + CANCELLED_BEFORE_REQUEST_BUT_DELAY_DONE}, expect = ACCEPTABLE, desc = "Cancelled before request, but after tick happened")
+	@Outcome(id = {"0, 0, " + CANCELLED_EARLY}, expect = ACCEPTABLE, desc = "Cancelled before request and tick")
+	@Outcome(id = {"0, 0, " + CANCELLED_SUPER_EARLY}, expect = ACCEPTABLE_INTERESTING, desc = "Cancelled before even setCancel")
 	@State
 	public static class RequestAndCancelStressTest {
 
 		/*
 		Implementation notes: in this test we use the VirtualTimeScheduler to better coordinate
-		the triggering of the `run` method. We also use the firstStep AtomicInteger to
-		track which actor gets to run first (1 is request, 2 is delay tick, 3 is cancel)
+		the triggering of the `run` method. We directly interpret STATE to track what happened.
 		 */
 
-		final StressSubscriber<Long> subscriber = new StressSubscriber<>(1L);
-		final VirtualTimeScheduler   virtualTimeScheduler;
-		final MonoDelay              monoDelay;
-		final AtomicInteger          firstStep = new AtomicInteger();
+		final StressSubscriber<Long>                       subscriber      = new StressSubscriber<>(0L);
+		final VirtualTimeScheduler                         virtualTimeScheduler;
+		final MonoDelay                                    monoDelay;
+		final AtomicReference<MonoDelay.MonoDelayRunnable> subscriptionRef = new AtomicReference<>();
 
 		{
 			virtualTimeScheduler = VirtualTimeScheduler.create();
-			monoDelay = new MonoDelay(1, TimeUnit.NANOSECONDS, virtualTimeScheduler);
-			monoDelay.subscribe(subscriber);
+			monoDelay = new MonoDelay(Long.MAX_VALUE, TimeUnit.MILLISECONDS, virtualTimeScheduler);
+			monoDelay
+					.doOnSubscribe(s -> subscriptionRef.set((MonoDelay.MonoDelayRunnable) s))
+					.subscribe(subscriber);
 		}
 
 		@Actor
 		public void request() {
-			firstStep.compareAndSet(0, 1);
 			subscriber.request(1);
 		}
 
 		@Actor
 		public void delayTrigger() {
-			firstStep.compareAndSet(0, 2);
-			virtualTimeScheduler.advanceTimeBy(Duration.ofNanos(1));
+			subscriptionRef.get().run();
 		}
 
 		@Actor
 		public void cancelFromActual() {
-			firstStep.compareAndSet(0, 3);
 			subscriber.cancel();
 		}
 
@@ -117,7 +119,7 @@ public abstract class MonoDelayStressTest {
 		public void arbiter(III_Result r) {
 			r.r1 = subscriber.onNextCalls.get();
 			r.r2 = subscriber.onErrorCalls.get();
-			r.r3 = firstStep.get();
+			r.r3 = subscriptionRef.get().state;
 		}
 	}
 }
