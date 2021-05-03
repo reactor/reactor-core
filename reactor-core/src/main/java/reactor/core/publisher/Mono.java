@@ -520,10 +520,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
 	 * <p>
-	 * Note that the completion stage is not cancelled when that Mono is cancelled, but
-	 * that behavior can be obtained by using {@link #doFinally(Consumer)} that checks
-	 * for a {@link SignalType#CANCEL} and calls eg.
-	 * {@link CompletionStage#toCompletableFuture() .toCompletableFuture().cancel(false)}.
+	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
+	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
+	 * propagation
 	 *
 	 * @param completionStage {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately)
@@ -531,7 +530,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
-		return onAssembly(new MonoCompletionStage<>(completionStage));
+		return onAssembly(new MonoCompletionStage<>(completionStage, false));
 	}
 
 	/**
@@ -541,10 +540,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
 	 * <p>
-	 * Note that the completion stage is not cancelled when that Mono is cancelled, but
-	 * that behavior can be obtained by using {@link #doFinally(Consumer)} that checks
-	 * for a {@link SignalType#CANCEL} and calls eg.
-	 * {@link CompletionStage#toCompletableFuture() .toCompletableFuture().cancel(false)}.
+	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
+	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
+	 * propagation
 	 *
 	 * @param stageSupplier The {@link Supplier} of a {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of CompletionStage-based APIs.
@@ -552,7 +550,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(Supplier<? extends CompletionStage<? extends T>> stageSupplier) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get())));
+		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get(), false)));
 	}
 
 	/**
@@ -599,9 +597,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
 	 * <p>
-	 * Note that the future is not cancelled when that Mono is cancelled, but that behavior
-	 * can be obtained by using a {@link #doFinally(Consumer)} that checks
-	 * for a {@link SignalType#CANCEL} and calls {@link CompletableFuture#cancel(boolean)}.
+	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
+	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
+	 * propagation
 	 *
 	 * @param future {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately)
@@ -610,7 +608,26 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
 	 */
 	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
-		return onAssembly(new MonoCompletionStage<>(future));
+		return fromFuture(future, false);
+	}
+
+	/**
+	 * Create a {@link Mono}, producing its value using the provided {@link CompletableFuture}.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
+	 * <p>
+	 *
+	 * @param future {@link CompletableFuture} that will produce a value (or a null to
+	 * complete immediately)
+	 * @param suppressCancel specifies whether future should have cancellation signal
+	 *                          to be suppressed
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
+	 */
+	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future, boolean suppressCancel) {
+		return onAssembly(new MonoCompletionStage<>(future, suppressCancel));
 	}
 
 	/**
@@ -620,9 +637,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
 	 * <p>
-	 * Note that the future is not cancelled when that Mono is cancelled, but that behavior
-	 * can be obtained by using a {@link #doFinally(Consumer)} that checks
-	 * for a {@link SignalType#CANCEL} and calls {@link CompletableFuture#cancel(boolean)}.
 	 *
 	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of future-based APIs.
@@ -631,7 +645,27 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
 	 */
 	public static <T> Mono<T> fromFuture(Supplier<? extends CompletableFuture<? extends T>> futureSupplier) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(futureSupplier.get())));
+		return fromFuture(futureSupplier, false);
+	}
+
+	/**
+	 * Create a {@link Mono} that wraps a {@link CompletableFuture} on subscription,
+	 * emitting the value produced by the Future.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
+	 * <p>
+	 *
+	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
+	 * complete immediately). This allows lazy triggering of future-based APIs.
+	 * @param suppressCancel specifies whether future should have cancellation signal
+	 *                          to be suppressed
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
+	 */
+	public static <T> Mono<T> fromFuture(Supplier<? extends CompletableFuture<? extends T>> futureSupplier, boolean suppressCancel) {
+		return defer(() -> onAssembly(new MonoCompletionStage<>(futureSupplier.get(), suppressCancel)));
 	}
 
 	/**

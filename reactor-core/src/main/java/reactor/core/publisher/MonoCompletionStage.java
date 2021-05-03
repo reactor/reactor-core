@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 
@@ -43,14 +43,16 @@ final class MonoCompletionStage<T> extends Mono<T>
         implements Fuseable, Scannable {
 
     final CompletionStage<? extends T> future;
+    final boolean suppressCancellation;
 
-    MonoCompletionStage(CompletionStage<? extends T> future) {
+    MonoCompletionStage(CompletionStage<? extends T> future, boolean suppressCancellation) {
         this.future = Objects.requireNonNull(future, "future");
+        this.suppressCancellation = suppressCancellation;
     }
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        actual.onSubscribe(new MonoCompletionStageSubscription<>(actual, future));
+        actual.onSubscribe(new MonoCompletionStageSubscription<>(actual, future, suppressCancellation));
     }
 
     @Override
@@ -66,6 +68,7 @@ final class MonoCompletionStage<T> extends Mono<T>
 
         final CoreSubscriber<? super T>    actual;
         final CompletionStage<? extends T> future;
+        final boolean                      suppressCancellation;
 
         volatile int requestedOnce;
         @SuppressWarnings("rawtypes")
@@ -74,9 +77,10 @@ final class MonoCompletionStage<T> extends Mono<T>
 
         volatile boolean cancelled;
 
-        MonoCompletionStageSubscription(CoreSubscriber<? super T> actual, CompletionStage<? extends T> future) {
+        MonoCompletionStageSubscription(CoreSubscriber<? super T> actual, CompletionStage<? extends T> future, boolean suppressCancellation) {
             this.actual = actual;
             this.future = future;
+            this.suppressCancellation = suppressCancellation;
         }
 
         @Override
@@ -145,9 +149,9 @@ final class MonoCompletionStage<T> extends Mono<T>
             this.cancelled = true;
 
             final CompletionStage<? extends T> future = this.future;
-            if (future instanceof CompletableFuture) {
+            if (!suppressCancellation && future instanceof Future) {
                 //noinspection unchecked
-                ((CompletableFuture<? extends T>) future).cancel(true);
+                ((Future<? extends T>) future).cancel(true);
             }
         }
 
