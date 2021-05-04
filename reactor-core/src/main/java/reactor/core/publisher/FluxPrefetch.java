@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -94,7 +95,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		volatile boolean done;
 
-		// TODO: Why isn't error volatile?
 		Throwable error;
 
 		volatile     long                                       requested;
@@ -115,7 +115,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		int sourceMode = -1;
 
-		boolean outputFused;
+		int outputFused;
 
 		boolean firstRequest = true;
 
@@ -144,9 +144,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				actual.onSubscribe(this);
 
 				if (cancelled) {
-//					TODO: discard queue
-
-//				    TODO: temp implementation
 					if (sourceMode == Fuseable.ASYNC) {
 						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 						queue.clear();
@@ -175,7 +172,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							queue = fusion;
 							done = true;
 
-							//check if downstream requested something
+							// check if downstream requested something
 							if (this.wip == 1 && WIP.addAndGet(this, -1) == 0) {
 								// exit if nothing was requested yet
 								return;
@@ -187,10 +184,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						if (mode == Fuseable.ASYNC) {
 							sourceMode = Fuseable.ASYNC;
 							queue = fusion;
-
-							if (requestMode == RequestMode.EAGER) {
-								s.request(Operators.unboundedOrPrefetch(prefetch));
-							}
 
 							// check if something was requested or delivered in the
 							// meantime
@@ -212,6 +205,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 					if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
 						return;
+					}
+
+					if (requestMode == RequestMode.LAZY) {
+						firstRequest = false;
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 					}
 
 					drainAsync();
@@ -274,7 +272,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				long previousState;
-				for (;;) {
+				for (; ; ) {
 					previousState = this.requested;
 
 					long requested = previousState & Long.MAX_VALUE;
@@ -288,9 +286,28 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {
 					// check the mode and fusion mode
-					if (this.requestMode == RequestMode.LAZY && this.sourceMode == Fuseable.NONE) {
-						this.firstRequest = false;
-						this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+					if (this.requestMode == RequestMode.LAZY) {
+						if (this.sourceMode == -1) {
+							// check if sourceMode was setted
+							if (WIP.incrementAndGet(this) == 1) {
+								if (this.sourceMode == Fuseable.NONE) {
+									firstRequest = false;
+									this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+									drainAsync();
+								}
+								else if (this.sourceMode == Fuseable.ASYNC) {
+									drainAsync();
+								}
+								else {
+									drainSync();
+								}
+							}
+							return;
+						}
+						else if (this.sourceMode == Fuseable.NONE) {
+							firstRequest = false;
+							this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+						}
 					}
 				}
 
@@ -308,14 +325,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			s.cancel();
 
 			if (WIP.getAndIncrement(this) == 0) {
-//				TODO: discard queue
-
-//				TODO: temp implementation
 				if (sourceMode == Fuseable.ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
 				}
-				else if (!outputFused) {
+				else if (outputFused == Fuseable.NONE) {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here in case non-fused output
 					Operators.onDiscardQueueWithClear(queue,
@@ -326,6 +340,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		private void drainAsync() {
+			final Subscriber<? super T> a = actual;
 			final Queue<T> queue = this.queue;
 
 			long emitted = produced;
@@ -341,9 +356,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					catch (Throwable err) {
 						Exceptions.throwIfFatal(err);
 						s.cancel();
-//				        TODO: discard queue
-
-//				        TODO: temp implementation
 						if (sourceMode == Fuseable.ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 							queue.clear();
@@ -356,7 +368,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 									null);
 						}
 
-						actual.onError(Operators.onOperatorError(err,
+						a.onError(Operators.onOperatorError(err,
 								actual.currentContext()));
 						return;
 					}
@@ -371,14 +383,17 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						break;
 					}
 
-					actual.onNext(value);
+					a.onNext(value);
 					emitted++;
 
+//					TODO: limit doesn't need for sourceMode == Fuseable.ASYNC
 					if (emitted == limit) {
 						if (requested != Long.MAX_VALUE) {
 							requested = REQUESTED.addAndGet(this, -emitted);
 						}
-						s.request(emitted);
+						if (sourceMode == Fuseable.NONE) {
+							s.request(emitted);
+						}
 						emitted = 0L;
 					}
 				}
@@ -434,6 +449,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		private void drainSync() {
+			final Subscriber<? super T> a = actual;
 			final Queue<T> queue = this.queue;
 
 			long emitted = produced;
@@ -447,7 +463,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						value = queue.poll();
 					}
 					catch (Throwable err) {
-						actual.onError(Operators.onOperatorError(s,
+						a.onError(Operators.onOperatorError(s,
 								err,
 								actual.currentContext()));
 						return;
@@ -461,11 +477,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						return;
 					}
 					if (value == null) {
-						actual.onComplete();
+						a.onComplete();
 						return;
 					}
 
-					actual.onNext(value);
+					a.onNext(value);
 					emitted++;
 				}
 
@@ -477,7 +493,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				}
 
 				if (queue.isEmpty()) {
-					actual.onComplete();
+					a.onComplete();
 					return;
 				}
 
@@ -511,7 +527,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 
-			if (outputFused) {
+			if (outputFused != Fuseable.NONE) {
 				drainOutput();
 			}
 			else if (sourceMode == Fuseable.SYNC) {
@@ -572,7 +588,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 
-//			TODO: DISCARD_GUARD?
 			// use guard on the queue instance as the best way to ensure there is no racing on draining
 			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 			// this should not be performance costly with the assumption the cancel is rare operation
@@ -606,12 +621,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		@Nullable
 		public T poll() {
-			if (sourceMode == NONE && requestMode == RequestMode.LAZY && firstRequest) {
-				this.firstRequest = false;
-				this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+			if (sourceMode == Fuseable.NONE && requestMode == RequestMode.LAZY && firstRequest) {
+				firstRequest = false;
+				s.request(Operators.unboundedOrPrefetch(this.prefetch));
 			}
+
 			T value = queue.poll();
-			if (value != null && sourceMode != Fuseable.SYNC) {
+			if (value != null && sourceMode == Fuseable.NONE) {
 				long p = produced + 1;
 				if (p == limit) {
 					produced = 0;
@@ -624,7 +640,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			return value;
 		}
 
-		// TODO: doesn't make s.request if sourceMode ASYNC
 		public int requestFusion(int requestedMode) {
 			if (s instanceof QueueSubscription) {
 				@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
@@ -634,21 +649,20 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				if (mode == Fuseable.SYNC) {
 					sourceMode = Fuseable.SYNC;
 					queue = fusion;
-					outputFused = true;
+					outputFused = Fuseable.SYNC;
 					done = true;
 				}
 				else if (mode == Fuseable.ASYNC) {
 					sourceMode = Fuseable.ASYNC;
 					queue = fusion;
-					outputFused = true;
+					outputFused = Fuseable.ASYNC;
 				}
-//				TODO: move to separate method
 				else {
 					sourceMode = Fuseable.NONE;
 					queue = queueSupplier.get();
 
 					if ((requestedMode & Fuseable.ASYNC) != 0) {
-						outputFused = true;
+						outputFused = Fuseable.ASYNC;
 						mode = Fuseable.ASYNC;
 					}
 					else {
@@ -656,27 +670,22 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					}
 				}
 
-//			    TODO: Release WIP in "onSubscribe" to avoid pass-through null value
-//			     (drainOutput)
 				WIP.lazySet(this, 0);
 				return mode;
 			}
-//			TODO: move to separate method
 			else {
 				sourceMode = Fuseable.NONE;
 				queue = queueSupplier.get();
 
 				int mode;
 				if ((requestedMode & Fuseable.ASYNC) != 0) {
-					outputFused = true;
+					outputFused = Fuseable.ASYNC;
 					mode = Fuseable.ASYNC;
 				}
 				else {
 					mode = Fuseable.NONE;
 				}
 
-//			    TODO: Release WIP in "onSubscribe" to avoid pass-through null value
-//			     (drainOutput)
 				WIP.lazySet(this, 0);
 				return mode;
 			}
@@ -728,7 +737,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		volatile boolean done;
 
-		// TODO: Why isn't error volatile?
 		Throwable error;
 
 		volatile     long                                                  requested;
@@ -752,7 +760,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		int sourceMode = -1;
 
-		boolean outputFused;
+		int outputFused;
 
 		boolean firstRequest = true;
 
@@ -770,6 +778,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			this.limit = Operators.unboundedOrLimit(prefetch, lowTide);
 			this.queueSupplier = queueSupplier;
 			this.requestMode = requestMode;
+
+			REQUESTED.lazySet(this, Long.MIN_VALUE);
 		}
 
 		@Override
@@ -781,9 +791,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				actual.onSubscribe(this);
 
 				if (cancelled) {
-//					TODO: discard queue
-
-//				    TODO: temp implementation
 					if (sourceMode == Fuseable.ASYNC) {
 						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 						queue.clear();
@@ -800,6 +807,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 				// sourceMode == -1 if downstream was not calling requestFusion
 				if (sourceMode == -1) {
+					// check if upstream if
+					// fuseable so we can fuse at least with the upstream
 					if (s instanceof QueueSubscription) {
 						@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
 								(QueueSubscription<T>) s;
@@ -810,7 +819,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							queue = fusion;
 							done = true;
 
-							if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+							// check if downstream requested something
+							if (this.wip == 1 && WIP.addAndGet(this, -1) == 0) {
+								// exit if nothing was requested yet
 								return;
 							}
 
@@ -821,18 +832,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							sourceMode = Fuseable.ASYNC;
 							queue = fusion;
 
-							if (requestMode == RequestMode.EAGER) {
-								s.request(Operators.unboundedOrPrefetch(prefetch));
-							}
-
+							// check if something was requested or delivered in the
+							// meantime
 							if (wip == 1 && WIP.addAndGet(this, -1) == 0) {
+								// exit if non of the mentioned has happened yet
 								return;
-							}
-
-//							TODO: Duplicate code to avoid extra check of the "requestMode"
-							if (requestMode == RequestMode.LAZY) {
-								firstRequest = false;
-								s.request(Operators.unboundedOrPrefetch(prefetch));
 							}
 
 							drainAsync();
@@ -850,7 +854,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						return;
 					}
 
-//					TODO: Duplicate code to avoid extra check of the "requestMode"
 					if (requestMode == RequestMode.LAZY) {
 						firstRequest = false;
 						s.request(Operators.unboundedOrPrefetch(prefetch));
@@ -858,7 +861,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 					drainAsync();
 				}
-				else if (requestMode == RequestMode.EAGER && sourceMode != Fuseable.SYNC) {
+				else if (requestMode == RequestMode.EAGER && sourceMode == Fuseable.NONE) {
 					s.request(Operators.unboundedOrPrefetch(prefetch));
 				}
 			}
@@ -915,7 +918,46 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
+				long previousState;
+				for (; ; ) {
+					previousState = this.requested;
+
+					long requested = previousState & Long.MAX_VALUE;
+					long nextRequested = Operators.addCap(requested, n);
+
+					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
+						break;
+					}
+				}
+
+				// check if this is the first request from the downstream
+				if (previousState == Long.MIN_VALUE) {
+					// check the mode and fusion mode
+					if (this.requestMode == RequestMode.LAZY) {
+						if (this.sourceMode == -1) {
+							// check if sourceMode was setted
+							if (WIP.incrementAndGet(this) == 1) {
+								if (this.sourceMode == Fuseable.NONE) {
+									firstRequest = false;
+									this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+									drainAsync();
+								}
+								else if (this.sourceMode == Fuseable.ASYNC) {
+									drainAsync();
+								}
+								else {
+									drainSync();
+								}
+							}
+							return;
+						}
+						else if (this.sourceMode == Fuseable.NONE) {
+							firstRequest = false;
+							this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
+						}
+					}
+				}
+
 				drain(null);
 			}
 		}
@@ -930,14 +972,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			s.cancel();
 
 			if (WIP.getAndIncrement(this) == 0) {
-//				TODO: discard queue
-
-//				TODO: temp implementation
 				if (sourceMode == Fuseable.ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
 				}
-				else if (!outputFused) {
+				else if (outputFused == Fuseable.NONE) {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here in case non-fused output
 					Operators.onDiscardQueueWithClear(queue,
@@ -948,13 +987,14 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		private void drainAsync() {
+			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> queue = this.queue;
 
 			long emitted = produced;
 			int missed = 1;
 			long polled = consumed;
 			for (; ; ) {
-				long requested = this.requested;
+				long requested = this.requested & Long.MAX_VALUE;
 
 				while (emitted != requested) {
 					T value;
@@ -964,9 +1004,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					catch (Throwable err) {
 						Exceptions.throwIfFatal(err);
 						s.cancel();
-//				        TODO: discard queue
-
-//				        TODO: temp implementation
 						if (sourceMode == Fuseable.ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 							queue.clear();
@@ -979,7 +1016,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 									null);
 						}
 
-						actual.onError(Operators.onOperatorError(err,
+						a.onError(Operators.onOperatorError(err,
 								actual.currentContext()));
 						return;
 					}
@@ -994,14 +1031,17 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						break;
 					}
 
-					if (actual.tryOnNext(value)) {
+					if (a.tryOnNext(value)) {
 						emitted++;
 					}
 
 					polled++;
 
+//					TODO: limit doesn't need for sourceMode == Fuseable.ASYNC
 					if (polled == limit) {
-						s.request(polled);
+						if (sourceMode == Fuseable.NONE) {
+							s.request(polled);
+						}
 						polled = 0L;
 					}
 				}
@@ -1058,6 +1098,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		private void drainSync() {
+			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> queue = this.queue;
 
 			long emitted = produced;
@@ -1071,7 +1112,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						value = queue.poll();
 					}
 					catch (Throwable err) {
-						actual.onError(Operators.onOperatorError(s,
+						a.onError(Operators.onOperatorError(s,
 								err,
 								actual.currentContext()));
 						return;
@@ -1085,11 +1126,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						return;
 					}
 					if (value == null) {
-						actual.onComplete();
+						a.onComplete();
 						return;
 					}
 
-					if (actual.tryOnNext(value)) {
+					if (a.tryOnNext(value)) {
 						emitted++;
 					}
 				}
@@ -1102,7 +1143,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				}
 
 				if (queue.isEmpty()) {
-					actual.onComplete();
+					a.onComplete();
 					return;
 				}
 
@@ -1136,14 +1177,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 
-//			TODO: order
-//			TODO: make prefetch requests in the "request"
-			if (firstRequest && requestMode == RequestMode.LAZY && sourceMode != Fuseable.SYNC) {
-				firstRequest = false;
-				s.request(Operators.unboundedOrPrefetch(prefetch));
-			}
-
-			if (outputFused) {
+			if (outputFused != Fuseable.NONE) {
 				drainOutput();
 			}
 			else if (sourceMode == Fuseable.SYNC) {
@@ -1204,7 +1238,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 
-//			TODO: DISCARD_GUARD?
 			// use guard on the queue instance as the best way to ensure there is no racing on draining
 			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 			// this should not be performance costly with the assumption the cancel is rare operation
@@ -1238,8 +1271,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		@Nullable
 		public T poll() {
+			if (sourceMode == Fuseable.NONE && requestMode == RequestMode.LAZY && firstRequest) {
+				firstRequest = false;
+				s.request(Operators.unboundedOrPrefetch(this.prefetch));
+			}
+
 			T value = queue.poll();
-			if (value != null && sourceMode != Fuseable.SYNC) {
+			if (value != null && sourceMode == Fuseable.NONE) {
 				long c = consumed + 1;
 				if (c == limit) {
 					consumed = 0;
@@ -1261,21 +1299,20 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				if (mode == Fuseable.SYNC) {
 					sourceMode = Fuseable.SYNC;
 					queue = fusion;
-					outputFused = true;
+					outputFused = Fuseable.SYNC;
 					done = true;
 				}
 				else if (mode == Fuseable.ASYNC) {
 					sourceMode = Fuseable.ASYNC;
 					queue = fusion;
-					outputFused = true;
+					outputFused = Fuseable.ASYNC;
 				}
-//				TODO: move to separate method
 				else {
 					sourceMode = Fuseable.NONE;
 					queue = queueSupplier.get();
 
 					if ((requestedMode & Fuseable.ASYNC) != 0) {
-						outputFused = true;
+						outputFused = Fuseable.ASYNC;
 						mode = Fuseable.ASYNC;
 					}
 					else {
@@ -1283,27 +1320,22 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					}
 				}
 
-//			    TODO: Release WIP in "onSubscribe" to avoid pass-through null value
-//			     (drainOutput)
 				WIP.lazySet(this, 0);
 				return mode;
 			}
-//			TODO: move to separate method
 			else {
 				sourceMode = Fuseable.NONE;
 				queue = queueSupplier.get();
 
 				int mode;
 				if ((requestedMode & Fuseable.ASYNC) != 0) {
-					outputFused = true;
+					outputFused = Fuseable.ASYNC;
 					mode = Fuseable.ASYNC;
 				}
 				else {
 					mode = Fuseable.NONE;
 				}
 
-//			    TODO: Release WIP in "onSubscribe" to avoid pass-through null value
-//			     (drainOutput)
 				WIP.lazySet(this, 0);
 				return mode;
 			}

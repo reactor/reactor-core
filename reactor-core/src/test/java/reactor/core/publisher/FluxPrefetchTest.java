@@ -122,7 +122,7 @@ public class FluxPrefetchTest {
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isFalse();
+			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
 		            })
 		            .then(() -> assertThat(requests).hasSize(1))
 
@@ -158,7 +158,7 @@ public class FluxPrefetchTest {
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 		            	assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isFalse();
+			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
 		            })
 		            .then(() -> assertThat(requests).isEmpty())
 
@@ -239,7 +239,7 @@ public class FluxPrefetchTest {
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.ASYNC);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isFalse();
+			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
 		            })
 
 		            .thenRequest(500)
@@ -262,7 +262,7 @@ public class FluxPrefetchTest {
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.ASYNC);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isFalse();
+			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
 		            })
 
 		            .thenRequest(500)

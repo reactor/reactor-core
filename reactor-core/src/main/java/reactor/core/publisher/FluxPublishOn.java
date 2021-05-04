@@ -67,7 +67,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		if (actual instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs =
 					(ConditionalSubscriber<? super T>) actual;
-//			TODO: Is the immediate subscription ok?
 			source.subscribe(new PublishOnConditionalSubscriber<>(cs,
 					scheduler,
 					worker,
@@ -103,7 +102,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		volatile boolean done;
 
-		// TODO: Why isn't error volatile?
 		Throwable error;
 
 		volatile     long                                        requested;
@@ -119,7 +117,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		volatile     int                                            discardGuard;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> DISCARD_GUARD =
-				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "discardGuard");
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class,
+						"discardGuard");
 
 		int sourceMode;
 
@@ -133,6 +132,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			this.worker = worker;
 			this.scheduler = scheduler;
 			this.delayError = delayError;
+
+			REQUESTED.lazySet(this, Long.MIN_VALUE);
 		}
 
 		@Override
@@ -213,7 +214,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				long previousState;
-				for (;;) {
+				for (; ; ) {
 					previousState = this.requested;
 
 					long requested = previousState & Long.MAX_VALUE;
@@ -224,7 +225,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 				}
 
-				// check if this is the first request from the downstrea
+				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {
 					// check the mode and fusion mode
 					if (this.sourceMode == Fuseable.NONE) {
@@ -253,7 +254,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					qs.clear();
 				}
 				else if (!outputFused) {
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.SYNC) {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here in case non-fused output
@@ -261,7 +261,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 								actual.currentContext(),
 								null);
 					}
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.NONE) {
 						@SuppressWarnings("unchecked") T v =
 								(T) VALUE.getAndSet(this, null);
@@ -271,9 +270,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		void trySchedule(
-//				TODO: Why does not use just this.s?
-				@Nullable Subscription subscription,
+		void trySchedule(@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
@@ -283,7 +280,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						qs.clear();
 					}
 					else {
-//						TODO: check (not sure)
 						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
 						Operators.onDiscard(dataSignal, actual.currentContext());
 					}
@@ -305,7 +301,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					clear();
 				}
 				else {
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.SYNC) {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here in case non-fused output
@@ -313,7 +308,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 								actual.currentContext(),
 								null);
 					}
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.NONE) {
 						@SuppressWarnings("unchecked") T v =
 								(T) VALUE.getAndSet(this, null);
@@ -335,7 +329,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			int missed = 1;
 			for (; ; ) {
 				long emitted = 0L;
-				long requested = this.requested;
+				long requested = this.requested & Long.MAX_VALUE;
 
 				while (emitted != requested) {
 					boolean d = done;
@@ -346,10 +340,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-//						TODO: Why does not use just queue.clear()?
 						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 						qs.clear();
-//						TODO: Why does not use just a.currentContext()?
 						doError(a,
 								Operators.onOperatorError(ex, actual.currentContext()));
 						return;
@@ -380,7 +372,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					REQUESTED.addAndGet(this, -emitted);
 				}
 
-//				TODO: Why does not use just like in runBackfused?
 				int w = wip;
 				if (missed == w) {
 					missed = WIP.addAndGet(this, -missed);
@@ -440,7 +431,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 					boolean empty = v == null;
 
-//					TODO: check after checkTerminated implementation
 					if (checkTerminated(d, empty, a, v)) {
 						return;
 					}
@@ -453,7 +443,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					s.request(1);
 				}
 
-//				TODO: check after checkTerminated implementation
 				if (emitted == requested && checkTerminated(done,
 						value == null,
 						a,
@@ -465,7 +454,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					REQUESTED.addAndGet(this, -emitted);
 				}
 
-//				TODO: Why does not use just like in runBackfused?
 				int w = wip;
 				if (missed == w) {
 					missed = WIP.addAndGet(this, -missed);
@@ -494,9 +482,10 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						v = queue.poll();
 					}
 					catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex,
-//								TODO: Why does not use just a.currentContext()?
-								actual.currentContext()));
+						doError(a,
+								Operators.onOperatorError(s,
+										ex,
+										actual.currentContext()));
 						return;
 					}
 
@@ -532,7 +521,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					REQUESTED.addAndGet(this, -emitted);
 				}
 
-//				TODO: Why does not use just like in runBackfused?
 				int w = wip;
 				if (missed == w) {
 					missed = WIP.addAndGet(this, -missed);
@@ -581,7 +569,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				Subscriber<?> a,
 				@Nullable T v) {
 			if (cancelled) {
-//				TODO: Why does not use just a.currentContext()?
 				Operators.onDiscard(v, actual.currentContext());
 				if (sourceMode == ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
@@ -605,7 +592,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				else {
 					Throwable e = error;
 					if (e != null) {
-//						TODO: Why does not use just a.currentContext()?
 						Operators.onDiscard(v, actual.currentContext());
 						if (sourceMode == ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
@@ -641,7 +627,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			int missed = 1;
 
 			for (; ; ) {
-//				TODO: Does it need to delegate cleaning to the queue holder (runBackfused)?
 				Operators.onDiscardQueueWithClear(qs, actual.currentContext(), null);
 
 				int dg = discardGuard;
@@ -729,7 +714,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		volatile boolean done;
 
-		// TODO: Why isn't error volatile?
 		Throwable error;
 
 		volatile     long                                                   requested;
@@ -751,14 +735,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				PublishOnConditionalSubscriber.class,
 				"discardGuard");
 
-		// TODO: or boolean firstRequest = true;
-		volatile     int firstRequest;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber>
-		                 FIRST_REQUEST = AtomicIntegerFieldUpdater.newUpdater(
-				PublishOnConditionalSubscriber.class,
-				"firstRequest");
-
 		int sourceMode;
 
 		boolean outputFused;
@@ -771,6 +747,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			this.worker = worker;
 			this.scheduler = scheduler;
 			this.delayError = delayError;
+
+			REQUESTED.lazySet(this, Long.MIN_VALUE);
 		}
 
 		@Override
@@ -850,17 +828,26 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
-				if (sourceMode == Fuseable.ASYNC) {
-					s.request(n);
-				}
-				else if (sourceMode == Fuseable.NONE) {
-					if (firstRequest == 0 && requested != 0) {
-						if (FIRST_REQUEST.compareAndSet(this, 0, 1)) {
-							s.request(1);
-						}
+				long previousState;
+				for (; ; ) {
+					previousState = this.requested;
+
+					long requested = previousState & Long.MAX_VALUE;
+					long nextRequested = Operators.addCap(requested, n);
+
+					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
+						break;
 					}
 				}
+
+				// check if this is the first request from the downstream
+				if (previousState == Long.MIN_VALUE) {
+					// check the mode and fusion mode
+					if (this.sourceMode == Fuseable.NONE) {
+						this.s.request(1);
+					}
+				}
+
 				// WIP also guards during request and onError is possible
 				trySchedule(this, null, null);
 			}
@@ -882,7 +869,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					qs.clear();
 				}
 				else if (!outputFused) {
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.SYNC) {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here in case non-fused output
@@ -890,7 +876,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 								actual.currentContext(),
 								null);
 					}
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.NONE) {
 						@SuppressWarnings("unchecked") T v =
 								(T) VALUE.getAndSet(this, null);
@@ -900,9 +885,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		void trySchedule(
-//				TODO: Why does not use just this.s?
-				@Nullable Subscription subscription,
+		void trySchedule(@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
@@ -912,7 +895,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						qs.clear();
 					}
 					else {
-//						TODO: check (not sure)
 						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
 						Operators.onDiscard(dataSignal, actual.currentContext());
 					}
@@ -934,7 +916,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					clear();
 				}
 				else {
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.SYNC) {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here in case non-fused output
@@ -942,7 +923,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 								actual.currentContext(),
 								null);
 					}
-//					TODO: check (not sure)
 					if (sourceMode == Fuseable.NONE) {
 						@SuppressWarnings("unchecked") T v =
 								(T) VALUE.getAndSet(this, null);
@@ -965,7 +945,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			for (; ; ) {
 				long dropped = 0;
 				long emitted = 0;
-				long requested = this.requested;
+				long requested = this.requested & Long.MAX_VALUE;
 
 				while (emitted != requested) {
 					boolean d = done;
@@ -976,10 +956,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-//						TODO: Why does not use just queue.clear()?
 						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 						queue.clear();
-//						TODO: Why does not use just a.currentContext()?
 						doError(a,
 								Operators.onOperatorError(ex, actual.currentContext()));
 						return;
@@ -1020,7 +998,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					REQUESTED.addAndGet(this, -emitted);
 				}
 
-//				TODO: Why does not use just like in runBackfused?
 				int w = wip;
 				if (missed == w) {
 					missed = WIP.addAndGet(this, -missed);
@@ -1081,7 +1058,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 					boolean empty = v == null;
 
-//					TODO: check after checkTerminated implementation
 					if (checkTerminated(d, empty, a, v)) {
 						return;
 					}
@@ -1097,7 +1073,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					s.request(1);
 				}
 
-//				TODO: check after checkTerminated implementation
 				if (emitted == requested && checkTerminated(done,
 						value == null,
 						a,
@@ -1109,7 +1084,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					REQUESTED.addAndGet(this, -emitted);
 				}
 
-//				TODO: Why does not use just like in runBackfused?
 				int w = wip;
 				if (missed == w) {
 					missed = WIP.addAndGet(this, -missed);
@@ -1138,9 +1112,10 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 						v = queue.poll();
 					}
 					catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex,
-//								TODO: Why does not use just a.currentContext()?
-								actual.currentContext()));
+						doError(a,
+								Operators.onOperatorError(s,
+										ex,
+										actual.currentContext()));
 						return;
 					}
 
@@ -1177,7 +1152,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					REQUESTED.addAndGet(this, -emitted);
 				}
 
-//				TODO: Why does not use just like in runBackfused?
 				int w = wip;
 				if (missed == w) {
 					missed = WIP.addAndGet(this, -missed);
@@ -1226,7 +1200,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				Subscriber<?> a,
 				@Nullable T v) {
 			if (cancelled) {
-//				TODO: Why does not use just a.currentContext()?
 				Operators.onDiscard(v, actual.currentContext());
 				if (sourceMode == ASYNC) {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
@@ -1250,7 +1223,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				else {
 					Throwable e = error;
 					if (e != null) {
-//						TODO: Why does not use just a.currentContext()?
 						Operators.onDiscard(v, actual.currentContext());
 						if (sourceMode == ASYNC) {
 							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
@@ -1286,7 +1258,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			int missed = 1;
 
 			for (; ; ) {
-//				TODO: Does it need to delegate cleaning to the queue holder (runBackfused)?
 				Operators.onDiscardQueueWithClear(qs, actual.currentContext(), null);
 
 				int dg = discardGuard;
