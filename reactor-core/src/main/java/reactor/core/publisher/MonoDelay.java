@@ -272,7 +272,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		@Override
 		public void cancel() {
 			int previousState = markCancelled(this);
-			if (wasCancelled(previousState) || wasPropagated(this.state)) {
+			if (wasCancelled(previousState) || wasPropagated(previousState)) {
 				//ignore
 				return;
 			}
