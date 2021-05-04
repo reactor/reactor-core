@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -43,14 +44,19 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@SuppressWarnings("rawtypes")
 	private static final ColdTestPublisherSubscription[] EMPTY = new ColdTestPublisherSubscription[0];
+	@SuppressWarnings("rawtypes")
+	private static final ColdTestPublisherSubscription[] TERMINATED = new ColdTestPublisherSubscription[0];
 
 	final List<T> values;
-	Throwable     error;
+
+	boolean   done;
+	Throwable error;
 
 	volatile boolean wasRequested;
 
-	@SuppressWarnings("unchecked")
-	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
+	volatile ColdTestPublisherSubscription<T>[] subscribers;
+	static final AtomicReferenceFieldUpdater<ColdTestPublisher, ColdTestPublisherSubscription[]> SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(ColdTestPublisher.class, ColdTestPublisherSubscription[].class, "subscribers");
 
 	volatile int cancelCount;
 	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
@@ -62,6 +68,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	ColdTestPublisher() {
 		this.values = Collections.synchronizedList(new ArrayList<>());
+		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 
 	@Override
@@ -71,35 +78,34 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		ColdTestPublisherSubscription<T> p = new ColdTestPublisherSubscription<>(s, this);
 		s.onSubscribe(p);
 
-		if (add(p)) {
-			if (p.cancelled) {
-				remove(p);
-			}
-			ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
+		add(p);
+		if (p.cancelled) {
+			remove(p);
+		}
+		ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
-			for (T value : values) {
-				p.onNext(value);
-			}
-			if (error == Exceptions.TERMINATED) {
-				p.onComplete();
-			}
-			else if (error != null) {
+		for (T value : values) {
+			p.onNext(value);
+		}
+
+		if (done) {
+			if (error != null) {
 				p.onError(error);
 			}
-		} else {
-			Throwable e = error;
-			if (e != null) {
-				s.onError(e);
-			} else {
-				s.onComplete();
+			else {
+				p.onComplete();
 			}
 		}
 	}
 
 	boolean add(ColdTestPublisherSubscription<T> s) {
-		synchronized (this) {
-
+		for (;;) {
 			ColdTestPublisherSubscription<T>[] a = subscribers;
+
+			if (a == TERMINATED) {
+				return false;
+			}
+
 			int len = a.length;
 
 			@SuppressWarnings("unchecked")
@@ -107,9 +113,9 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			System.arraycopy(a, 0, b, 0, len);
 			b[len] = s;
 
-			subscribers = b;
-
-			return true;
+			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				return true;
+			}
 		}
 	}
 
@@ -117,13 +123,13 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	void remove(ColdTestPublisherSubscription<T> s) {
 		ColdTestPublisherSubscription<T>[] a = subscribers;
 
-		if (a == EMPTY) {
+		if (a == EMPTY || a == TERMINATED) {
 			return;
 		}
 
-		synchronized (this) {
+		for (;;) {
 			a = subscribers;
-			if (a == EMPTY) {
+			if (a == EMPTY || a == TERMINATED) {
 				return;
 			}
 			int len = a.length;
@@ -139,16 +145,20 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			if (j < 0) {
 				return;
 			}
+
+			ColdTestPublisherSubscription<T>[] b;
 			if (len == 1) {
-				subscribers = EMPTY;
-				return;
+				b = EMPTY;
+			}
+			else {
+				b = new ColdTestPublisherSubscription[len - 1];
+				System.arraycopy(a, 0, b, 0, j);
+				System.arraycopy(a, j + 1, b, j, len - j - 1);
 			}
 
-			ColdTestPublisherSubscription<T>[] b = new ColdTestPublisherSubscription[len - 1];
-			System.arraycopy(a, 0, b, 0, j);
-			System.arraycopy(a, j + 1, b, j, len - j - 1);
-
-			subscribers = b;
+			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				return;
+			}
 		}
 	}
 
@@ -365,7 +375,9 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		Objects.requireNonNull(t, "t");
 
 		error = t;
-		ColdTestPublisherSubscription<?>[] subs = subscribers;
+		done = true;
+
+		final ColdTestPublisherSubscription[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 		for (ColdTestPublisherSubscription<?> s : subs) {
 			s.onError(t);
 		}
@@ -374,8 +386,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public ColdTestPublisher<T> complete() {
-		ColdTestPublisherSubscription<?>[] subs = subscribers;
-		error = Exceptions.TERMINATED;
+		error = null;
+		done = true;
+
+		final ColdTestPublisherSubscription[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 		for (ColdTestPublisherSubscription<?> s : subs) {
 			s.onComplete();
 		}
