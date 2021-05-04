@@ -1,18 +1,13 @@
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
-import org.openjdk.jcstress.infra.results.IIII_Result;
 import org.openjdk.jcstress.infra.results.III_Result;
-import org.reactivestreams.Subscription;
-
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
@@ -44,17 +39,18 @@ public abstract class MonoDelayStressTest {
 		final StressSubscriber<Long> subscriber = new StressSubscriber<>(0L);
 		final VirtualTimeScheduler   virtualTimeScheduler;
 		final MonoDelay              monoDelay;
-		final AtomicReference<MonoDelay.MonoDelayRunnable> subscriptionRef = new AtomicReference<>();
+
+		MonoDelay.MonoDelayRunnable> subscription;
 
 		{
 			virtualTimeScheduler = VirtualTimeScheduler.create();
 			monoDelay = new MonoDelay(Long.MAX_VALUE, TimeUnit.MILLISECONDS, virtualTimeScheduler);
-			monoDelay.doOnSubscribe(s -> subscriptionRef.set((MonoDelay.MonoDelayRunnable) s)).subscribe(subscriber);
+			monoDelay.doOnSubscribe(s -> subscription = (MonoDelay.MonoDelayRunnable) s).subscribe(subscriber);
 		}
 
 		@Actor
 		public void delayTrigger() {
-			subscriptionRef.get().run();
+			subscription.run();
 		}
 
 		@Actor
@@ -66,7 +62,7 @@ public abstract class MonoDelayStressTest {
 		public void arbiter(III_Result r) {
 			r.r1 = subscriber.onNextCalls.get();
 			r.r2 = subscriber.onErrorCalls.get();
-			r.r3 = subscriptionRef.get().state;
+			r.r3 = subscription.state;
 		}
 	}
 
@@ -90,13 +86,13 @@ public abstract class MonoDelayStressTest {
 		final StressSubscriber<Long>                       subscriber      = new StressSubscriber<>(0L);
 		final VirtualTimeScheduler                         virtualTimeScheduler;
 		final MonoDelay                                    monoDelay;
-		final AtomicReference<MonoDelay.MonoDelayRunnable> subscriptionRef = new AtomicReference<>();
+		MonoDelay.MonoDelayRunnable subscription;
 
 		{
 			virtualTimeScheduler = VirtualTimeScheduler.create();
 			monoDelay = new MonoDelay(Long.MAX_VALUE, TimeUnit.MILLISECONDS, virtualTimeScheduler);
 			monoDelay
-					.doOnSubscribe(s -> subscriptionRef.set((MonoDelay.MonoDelayRunnable) s))
+					.doOnSubscribe(s -> subscription = (MonoDelay.MonoDelayRunnable) s)
 					.subscribe(subscriber);
 		}
 
@@ -107,7 +103,7 @@ public abstract class MonoDelayStressTest {
 
 		@Actor
 		public void delayTrigger() {
-			subscriptionRef.get().run();
+			subscription.run();
 		}
 
 		@Actor
@@ -119,7 +115,7 @@ public abstract class MonoDelayStressTest {
 		public void arbiter(III_Result r) {
 			r.r1 = subscriber.onNextCalls.get();
 			r.r2 = subscriber.onErrorCalls.get();
-			r.r3 = subscriptionRef.get().state;
+			r.r3 = subscription.state;
 		}
 	}
 }

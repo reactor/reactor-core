@@ -188,10 +188,6 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 			return (state & FLAG_REQUESTED) == FLAG_REQUESTED;
 		}
 
-		static boolean wasRequestedEarly(int state) {
-			return (state & FLAG_REQUESTED) == FLAG_REQUESTED && (state & FLAG_REQUESTED_EARLY) == FLAG_REQUESTED_EARLY;
-		}
-
 		/**
 		 * Mark the operator has emitted the tick. Immediately returns if it
 		 * {@link #wasCancelled(int) was already cancelled}.
