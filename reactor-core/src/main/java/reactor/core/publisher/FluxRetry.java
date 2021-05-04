@@ -36,7 +36,7 @@ final class FluxRetry<T> extends InternalFluxOperator<T, T> {
 	FluxRetry(Flux<? extends T> source, long times) {
 		super(source);
 		if (times < 0L) {
-			throw new IllegalArgumentException("times >= 0 required");
+			throw new IllegalArgumentException("times >= 0 required but it was " + times);
 		}
 		this.times = times;
 	}
