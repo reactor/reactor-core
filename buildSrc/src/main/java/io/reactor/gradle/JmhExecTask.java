@@ -37,6 +37,7 @@ class JmhExecTask extends JavaExec {
 
 	public JmhExecTask() {
 		super();
+		getMainClass().set("org.openjdk.jmh.Main");
 	}
 
 	public String getInclude() {
@@ -104,7 +105,6 @@ class JmhExecTask extends JavaExec {
 
 	@TaskAction
 	public void exec() {
-		setMain("org.openjdk.jmh.Main");
 		File resultFile = getProject().file("build/reports/" + getName() + "/result." + format);
 
 		if (include != null) {
