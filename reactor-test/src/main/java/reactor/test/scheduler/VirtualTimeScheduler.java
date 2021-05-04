@@ -396,7 +396,7 @@ public class VirtualTimeScheduler implements Scheduler {
 					//for the benefit of tasks that call `now()`
 					// if scheduled time is 0 (immediate) use current virtual time
 					nanoTime = current.time == 0 ? nanoTime : current.time;
-					queue.remove();
+					queue.poll();
 
 					// Only execute if not unsubscribed
 					if (!current.scheduler.shutdown) {

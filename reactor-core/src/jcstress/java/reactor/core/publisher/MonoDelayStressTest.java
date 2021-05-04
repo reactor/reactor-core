@@ -1,113 +1,109 @@
 package reactor.core.publisher;
 
+import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
-import org.openjdk.jcstress.infra.results.IIIII_Result;
-import org.openjdk.jcstress.infra.results.IIII_Result;
-import reactor.core.CoreSubscriber;
+import org.openjdk.jcstress.infra.results.III_Result;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
+import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE_INTERESTING;
 
 public abstract class MonoDelayStressTest {
 
+	private static final int REQUEST_BEFORE_TICK                          = 0b0011_0_111; // 55
+	private static final int REQUEST_AFTER_TICK                           = 0b0010_0_111; // 39
+	private static final int CANCELLED_AFTER_REQUEST_FIRST                = 0b0111_0_001; //113
+	private static final int CANCELLED_AFTER_REQUEST_FIRST_AND_DELAY_DONE = 0b0111_0_011; //115
+	private static final int CANCELLED_AFTER_REQUEST_SECOND               = 0b0110_0_011; // 99
+	private static final int CANCELLED_BEFORE_REQUEST_BUT_DELAY_DONE      = 0b0100_0_011; // 67
+	private static final int CANCELLED_EARLY                              = 0b0100_0_001; // 65
+	private static final int CANCELLED_SUPER_EARLY                        = 0b0100_0_000; // 64
+
 	@JCStressTest
-	@Outcome(id = {"1, 1, 0, 0, 0"}, expect = ACCEPTABLE, desc = "No error dropped, composite error delivered. Cancel signal is late in that case")
-	@Outcome(id = {"1, 1, 1, 1, 0", "1, 1, 0, 1, 0"}, expect = ACCEPTABLE, desc = "Main error possibly dropped, inner or composite error delivered. Main is cancelled. Cancel signal is late")
-	@Outcome(id = {"1, 1, 1, 0, 1", "1, 1, 0, 0, 1"}, expect = ACCEPTABLE, desc = "Inner error possibly dropped, main or composite error delivered. Inner is cancelled. Cancel signal is late")
-	@Outcome(id = {"1, 0, 1, 1, 1", "1, 0, 2, 1, 1"}, expect = ACCEPTABLE, desc = "No error delivered. One composite error delivered or both errors are dropped. Cancel signal is propagated to both")
+	@Outcome(id = {"1, 0, " + REQUEST_BEFORE_TICK}, expect = ACCEPTABLE, desc = "Request before tick was delivered")
+	@Outcome(id = {"1, 0, " + REQUEST_AFTER_TICK}, expect = ACCEPTABLE, desc = "Request AFTER tick was delivered")
 	@State
-	public static class InnerOnErrorAndOuterOnErrorAndCancelStressTest {
+	public static class RequestAndRunStressTest {
 
-		final StressSubscriber<Integer> subscriber = new StressSubscriber<Integer>(1L);
+		/*
+		Implementation notes: in this test we use the VirtualTimeScheduler to better coordinate
+		the triggering of the `run` method. We directly interpret the end STATE to track what
+		happened.
+		 */
 
-		StressSubscription<Integer> subscriptionOuter;
-		StressSubscription<Integer> subscriptionInner;
+		final StressSubscriber<Long> subscriber = new StressSubscriber<>(0L);
+		final VirtualTimeScheduler   virtualTimeScheduler;
+		final MonoDelay              monoDelay;
+
+		MonoDelay.MonoDelayRunnable subscription;
 
 		{
-			new Mono<Integer>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super Integer> actual) {
-					subscriptionOuter = new StressSubscription<>(actual);
-					actual.onSubscribe(subscriptionOuter);
-					actual.onNext(1);
-				}
-			}
-			.delayUntil(__ -> new Mono<Integer>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super Integer> actual) {
-					subscriptionInner = new StressSubscription<>(actual);
-					actual.onSubscribe(subscriptionInner);
-				}
-			})
-			.subscribe(subscriber);
+			virtualTimeScheduler = VirtualTimeScheduler.create();
+			monoDelay = new MonoDelay(Long.MAX_VALUE, TimeUnit.MILLISECONDS, virtualTimeScheduler);
+			monoDelay.doOnSubscribe(s -> subscription = (MonoDelay.MonoDelayRunnable) s).subscribe(subscriber);
 		}
 
 		@Actor
-		public void errorOuter() {
-			subscriptionOuter.actual.onError(new RuntimeException("test1"));
+		public void delayTrigger() {
+			subscription.run();
 		}
 
 		@Actor
-		public void errorInner() {
-			subscriptionInner.actual.onError(new RuntimeException("test2"));
-		}
-
-		@Actor
-		public void cancelFromActual() {
-			subscriber.cancel();
+		public void request() {
+			subscriber.request(1);
 		}
 
 		@Arbiter
-		public void arbiter(IIIII_Result r) {
-			r.r1 = subscriber.onNextDiscarded.get();
+		public void arbiter(III_Result r) {
+			r.r1 = subscriber.onNextCalls.get();
 			r.r2 = subscriber.onErrorCalls.get();
-			r.r3 = subscriber.droppedErrors.size();
-			r.r4 = subscriptionOuter.cancelled.get() ? 1 : 0;
-			r.r5 = subscriptionInner.cancelled.get() ? 1 : 0;
+			r.r3 = subscription.state;
 		}
 	}
 
 	@JCStressTest
-	@Outcome(id = {"1, 0, 1, 1"}, expect = ACCEPTABLE, desc = "Value discarded. Subscriptions cancelled")
-	@Outcome(id = {"0, 1, 0, 0"}, expect = ACCEPTABLE, desc = "Value delivered. Cancel signal is late")
+	@Outcome(id = {"1, 0, " + REQUEST_BEFORE_TICK}, expect = ACCEPTABLE, desc = "Tick was delivered, request happened before tick")
+	@Outcome(id = {"1, 0, " + REQUEST_AFTER_TICK}, expect = ACCEPTABLE, desc = "Tick was delivered, request happened after tick")
+	@Outcome(id = {"0, 0, " + CANCELLED_AFTER_REQUEST_FIRST}, expect = ACCEPTABLE, desc = "Cancelled after request, tick not done yet")
+	@Outcome(id = {"0, 0, " + CANCELLED_AFTER_REQUEST_FIRST_AND_DELAY_DONE}, expect = ACCEPTABLE, desc = "Cancelled after (request then tick)")
+	@Outcome(id = {"0, 0, " + CANCELLED_AFTER_REQUEST_SECOND}, expect = ACCEPTABLE, desc = "Cancelled after (tick then request)")
+	@Outcome(id = {"0, 0, " + CANCELLED_BEFORE_REQUEST_BUT_DELAY_DONE}, expect = ACCEPTABLE, desc = "Cancelled before request, but after tick happened")
+	@Outcome(id = {"0, 0, " + CANCELLED_EARLY}, expect = ACCEPTABLE, desc = "Cancelled before request and tick")
+	@Outcome(id = {"0, 0, " + CANCELLED_SUPER_EARLY}, expect = ACCEPTABLE_INTERESTING, desc = "Cancelled before even setCancel")
 	@State
-	public static class CompleteVsCancelStressTest {
+	public static class RequestAndCancelStressTest {
 
-		final StressSubscriber<Integer> subscriber = new StressSubscriber<Integer>(1L);
+		/*
+		Implementation notes: in this test we use the VirtualTimeScheduler to better coordinate
+		the triggering of the `run` method. We directly interpret STATE to track what happened.
+		 */
 
-		StressSubscription<Integer> subscriptionOuter;
-		StressSubscription<Integer> subscriptionInner;
+		final StressSubscriber<Long>                       subscriber      = new StressSubscriber<>(0L);
+		final VirtualTimeScheduler                         virtualTimeScheduler;
+		final MonoDelay                                    monoDelay;
+		MonoDelay.MonoDelayRunnable subscription;
 
 		{
-			new Mono<Integer>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super Integer> actual) {
-					subscriptionOuter = new StressSubscription<>(actual);
-					actual.onSubscribe(subscriptionOuter);
-					actual.onNext(1);
-				}
-			}
-					.delayUntil(__ -> new Mono<Integer>() {
-						@Override
-						public void subscribe(CoreSubscriber<? super Integer> actual) {
-							subscriptionInner = new StressSubscription<>(actual);
-							actual.onSubscribe(subscriptionInner);
-						}
-					})
+			virtualTimeScheduler = VirtualTimeScheduler.create();
+			monoDelay = new MonoDelay(Long.MAX_VALUE, TimeUnit.MILLISECONDS, virtualTimeScheduler);
+			monoDelay
+					.doOnSubscribe(s -> subscription = (MonoDelay.MonoDelayRunnable) s)
 					.subscribe(subscriber);
 		}
 
 		@Actor
-		public void completeOuter() {
-			subscriptionOuter.actual.onComplete();
+		public void request() {
+			subscriber.request(1);
 		}
 
 		@Actor
-		public void completeInner() {
-			subscriptionInner.actual.onComplete();
+		public void delayTrigger() {
+			subscription.run();
 		}
 
 		@Actor
@@ -116,60 +112,10 @@ public abstract class MonoDelayStressTest {
 		}
 
 		@Arbiter
-		public void arbiter(IIII_Result r) {
-			r.r1 = subscriber.onNextDiscarded.get();
-			r.r2 = subscriber.onNextCalls.get();
-			r.r3 = subscriptionOuter.cancelled.get() ? 1 : 0;
-			r.r4 = subscriptionInner.cancelled.get() ? 1 : 0;
-		}
-	}
-
-
-
-	@JCStressTest
-	@Outcome(id = {"1, 0, 1, 1"}, expect = ACCEPTABLE, desc = "Value discarded. Subscriptions cancelled")
-	@State
-	public static class OnNextVsCancelStressTest {
-
-		final StressSubscriber<Integer> subscriber = new StressSubscriber<Integer>(1L);
-
-		StressSubscription<Integer> subscriptionOuter;
-		StressSubscription<Integer> subscriptionInner;
-
-		{
-			new Mono<Integer>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super Integer> actual) {
-					subscriptionOuter = new StressSubscription<>(actual);
-					actual.onSubscribe(subscriptionOuter);
-				}
-			}
-					.delayUntil(__ -> new Mono<Integer>() {
-						@Override
-						public void subscribe(CoreSubscriber<? super Integer> actual) {
-							subscriptionInner = new StressSubscription<>(actual);
-							actual.onSubscribe(subscriptionInner);
-						}
-					})
-					.subscribe(subscriber);
-		}
-
-		@Actor
-		public void nextOuter() {
-			subscriptionOuter.actual.onNext(1);
-		}
-
-		@Actor
-		public void cancelFromActual() {
-			subscriber.cancel();
-		}
-
-		@Arbiter
-		public void arbiter(IIII_Result r) {
-			r.r1 = subscriber.onNextDiscarded.get();
-			r.r2 = subscriber.onNextCalls.get();
-			r.r3 = subscriptionOuter.cancelled.get() ? 1 : 0;
-			r.r4 = subscriptionInner.cancelled.get() ? 1 : 0;
+		public void arbiter(III_Result r) {
+			r.r1 = subscriber.onNextCalls.get();
+			r.r2 = subscriber.onErrorCalls.get();
+			r.r3 = subscription.state;
 		}
 	}
 }
