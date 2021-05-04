@@ -40,7 +40,7 @@ public abstract class MonoDelayStressTest {
 		final VirtualTimeScheduler   virtualTimeScheduler;
 		final MonoDelay              monoDelay;
 
-		MonoDelay.MonoDelayRunnable> subscription;
+		MonoDelay.MonoDelayRunnable subscription;
 
 		{
 			virtualTimeScheduler = VirtualTimeScheduler.create();
