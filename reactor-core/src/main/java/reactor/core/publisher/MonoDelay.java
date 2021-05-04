@@ -81,14 +81,19 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		Disposable cancel;
 
 		volatile int state;
-
 		static final AtomicIntegerFieldUpdater<MonoDelayRunnable> STATE = AtomicIntegerFieldUpdater.newUpdater(MonoDelayRunnable.class, "state");
 
+		/** This bit marks the subscription as cancelled */
 		static final byte FLAG_CANCELLED       = 0b0100_0_000;
+		/** This bit marks the subscription as requested (once) */
 		static final byte FLAG_REQUESTED       = 0b0010_0_000;
+		/** This bit indicates that a request happened before the delay timer was done (utility, especially in tests) */
 		static final byte FLAG_REQUESTED_EARLY = 0b0001_0_000;
+		/** This bit indicates that a Disposable was set corresponding to the timer */
 		static final byte FLAG_CANCEL_SET      = 0b0000_0_001;
+		/** This bit indicates that the timer has expired */
 		static final byte FLAG_DELAY_DONE      = 0b0000_0_010;
+		/** This bit indicates that, following expiry of the timer AND request, onNext(0L) has been propagated downstream */
 		static final byte FLAG_PROPAGATED      = 0b0000_0_100;
 
 		MonoDelayRunnable(CoreSubscriber<? super Long> actual, boolean failOnBackpressure) {
@@ -114,6 +119,9 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 			}
 		}
 
+		/**
+		 * @return true if the {@link #FLAG_CANCEL_SET} bit is set on the given state
+		 */
 		static boolean wasCancelFutureSet(int state) {
 			return (state & FLAG_CANCEL_SET) == FLAG_CANCEL_SET;
 		}
@@ -135,6 +143,9 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 			}
 		}
 
+		/**
+		 * @return true if the {@link #FLAG_CANCELLED} bit is set on the given state
+		 */
 		static boolean wasCancelled(int state) {
 			return (state & FLAG_CANCELLED) == FLAG_CANCELLED;
 		}
@@ -157,6 +168,9 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 			}
 		}
 
+		/**
+		 * @return true if the {@link #FLAG_DELAY_DONE} bit is set on the given state
+		 */
 		static boolean wasDelayDone(int state) {
 			return (state & FLAG_DELAY_DONE) == FLAG_DELAY_DONE;
 		}
@@ -184,6 +198,9 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 			}
 		}
 
+		/**
+		 * @return true if the {@link #FLAG_REQUESTED} bit is set on the given state
+		 */
 		static boolean wasRequested(int state) {
 			return (state & FLAG_REQUESTED) == FLAG_REQUESTED;
 		}
@@ -205,6 +222,9 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 			}
 		}
 
+		/**
+		 * @return true if the {@link #FLAG_PROPAGATED} bit is set on the given state
+		 */
 		static boolean wasPropagated(int state) {
 			return (state & FLAG_PROPAGATED) == FLAG_PROPAGATED;
 		}
