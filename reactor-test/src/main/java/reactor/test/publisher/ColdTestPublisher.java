@@ -91,17 +91,18 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		Objects.requireNonNull(s, "s");
 
 		ColdTestPublisherSubscription<T> p = new ColdTestPublisherSubscription<>(s, this);
-		s.onSubscribe(p); // will trigger drain() via request()
-
 		ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
-		if (p.cancelled) {
+		if (!add(p)) {
+			s.onSubscribe(p); // will trigger drain() via request()
+			if (p.cancelled) {
+				return;
+			}
+			p.drain(); // ensures that empty source terminal signal is propagated without waiting for a request from the subscriber
 			return;
 		}
 
-		if (!add(p)) {
-			p.drain();
-		}
+		s.onSubscribe(p); // will trigger drain() via request()
 	}
 
 	boolean add(ColdTestPublisherSubscription<T> s) {
