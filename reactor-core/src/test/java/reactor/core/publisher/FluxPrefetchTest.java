@@ -6,7 +6,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
@@ -44,9 +46,7 @@ public class FluxPrefetchTest {
 		                                      .hide()
 		                                      .doOnRequest(requests::add);
 
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch,
-				limit,
-				FluxPrefetch.RequestMode.EAGER), 0)
+		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, false), 0)
 		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
 
 		            .thenAwait()
@@ -83,7 +83,7 @@ public class FluxPrefetchTest {
 		                                      .hide()
 		                                      .doOnRequest(requests::add);
 
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, FluxPrefetch.RequestMode.LAZY), 0)
+		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, true), 0)
 		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
 
 		            .thenAwait()
@@ -118,7 +118,7 @@ public class FluxPrefetchTest {
 		                                      .hide()
 		                                      .doOnRequest(requests::add);
 
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, FluxPrefetch.RequestMode.EAGER), 0)
+		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, false), 0)
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
@@ -154,10 +154,10 @@ public class FluxPrefetchTest {
 		                                      .hide()
 		                                      .doOnRequest(requests::add);
 
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, FluxPrefetch.RequestMode.LAZY), 0)
+		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, true), 0)
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
-		            	assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
+			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
 		            })
 		            .then(() -> assertThat(requests).isEmpty())
@@ -187,9 +187,9 @@ public class FluxPrefetchTest {
 		int count = 1000;
 
 		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
-		                                      .onBackpressureBuffer();
+		                                        .onBackpressureBuffer();
 
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, FluxPrefetch.RequestMode.EAGER), 0)
+		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, false), 0)
 		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
 
 		            .thenAwait()
@@ -213,7 +213,7 @@ public class FluxPrefetchTest {
 		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
 		                                        .onBackpressureBuffer();
 
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, FluxPrefetch.RequestMode.LAZY), 0)
+		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, true), 0)
 		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
 
 		            .thenAwait()
@@ -235,7 +235,7 @@ public class FluxPrefetchTest {
 		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
 		                                        .onBackpressureBuffer();
 
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, FluxPrefetch.RequestMode.EAGER), 0)
+		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, false), 0)
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.ASYNC);
@@ -247,7 +247,7 @@ public class FluxPrefetchTest {
 
 		            .thenRequest(500)
 		            .expectNextCount(500)
-		            .verifyComplete();;
+		            .verifyComplete();
 	}
 
 	@Test
@@ -256,9 +256,9 @@ public class FluxPrefetchTest {
 		int count = 1000;
 
 		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
-		                                      .onBackpressureBuffer();
+		                                        .onBackpressureBuffer();
 
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, FluxPrefetch.RequestMode.LAZY), 0)
+		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, true), 0)
 		            .expectSubscription()
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.ASYNC);
@@ -270,7 +270,7 @@ public class FluxPrefetchTest {
 
 		            .thenRequest(500)
 		            .expectNextCount(500)
-		            .verifyComplete();;
+		            .verifyComplete();
 	}
 
 	@DisplayName("Prefetch Value from Sync-Fused upstream in Eager mode")
@@ -282,8 +282,9 @@ public class FluxPrefetchTest {
 
 		Flux<Integer> syncFuseableSource = Flux.range(1, limit * 2 + 1);
 
-		StepVerifier.create(syncFuseableSource.prefetch(prefetch, limit, FluxPrefetch.RequestMode.EAGER), 0)
-		            .expectFusion(requestedMode)
+		StepVerifier.create(syncFuseableSource.prefetch(prefetch, limit, false), 0)
+		            .expectSubscription()
+//		            .expectFusion(requestedMode)
 //		            .thenAwait(Duration.ofMillis(10))
 //		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.SYNC & requestedMode))
 
@@ -308,7 +309,7 @@ public class FluxPrefetchTest {
 		TestPublisher<Integer> publisher = TestPublisher.create();
 
 		StepVerifier.create(publisher.flux()
-		                             .prefetch(256, FluxPrefetch.RequestMode.EAGER), 0)
+		                             .prefetch(256, false), 0)
 		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
 		            .then(() -> publisher.assertMinRequested(256))
 		            .then(publisher::complete)
@@ -321,7 +322,7 @@ public class FluxPrefetchTest {
 		TestPublisher<Integer> publisher = TestPublisher.create();
 
 		StepVerifier.create(publisher.flux()
-		                             .prefetch(256, FluxPrefetch.RequestMode.LAZY), 0)
+		                             .prefetch(256, true), 0)
 		            .expectFusion(requestMode, requestMode & Fuseable.ASYNC)
 		            .then(publisher::assertWasNotRequested)
 		            .then(publisher::complete)

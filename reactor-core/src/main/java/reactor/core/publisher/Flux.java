@@ -7083,26 +7083,26 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	public final Flux<T> prefetch(int prefetch) {
-		return prefetch(prefetch, FluxPrefetch.RequestMode.EAGER);
+		return prefetch(prefetch, false);
 	}
 
 	public final Flux<T> prefetch(int prefetch, int lowTide) {
-		return prefetch(prefetch, lowTide, FluxPrefetch.RequestMode.EAGER);
+		return prefetch(prefetch, lowTide, false);
 	}
 
-	public final Flux<T> prefetch(int prefetch, FluxPrefetch.RequestMode requestMode) {
-		return prefetch(prefetch, prefetch, requestMode);
+	public final Flux<T> prefetch(int prefetch, boolean lazyMode) {
+		return prefetch(prefetch, prefetch, lazyMode);
 	}
 
-	public final Flux<T> prefetch(int prefetch,
-			int lowTide,
-			FluxPrefetch.RequestMode requestMode) {
-//      TODO: if Callable -> FluxPrefetchValue
+	public final Flux<T> prefetch(int prefetch, int lowTide, boolean lazyMode) {
+		FluxPrefetch.RequestMode mode =
+				lazyMode ? FluxPrefetch.RequestMode.LAZY : FluxPrefetch.RequestMode.EAGER;
+
 		return onAssembly(new FluxPrefetch<>(this,
 				prefetch,
 				lowTide,
 				Queues.get(prefetch),
-				requestMode));
+				mode));
 	}
 
 	/**

@@ -171,6 +171,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							sourceMode = Fuseable.SYNC;
 							queue = fusion;
 							done = true;
+							firstRequest = false;
 
 							// check if downstream requested something
 							if (this.wip == 1 && WIP.addAndGet(this, -1) == 0) {
@@ -184,6 +185,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						if (mode == Fuseable.ASYNC) {
 							sourceMode = Fuseable.ASYNC;
 							queue = fusion;
+							firstRequest = false;
 
 							// check if something was requested or delivered in the
 							// meantime
@@ -200,6 +202,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					sourceMode = Fuseable.NONE;
 					queue = queueSupplier.get();
 					if (requestMode == RequestMode.EAGER) {
+						firstRequest = false;
 						s.request(Operators.unboundedOrPrefetch(prefetch));
 					}
 
@@ -215,6 +218,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					drainAsync();
 				}
 				else if (requestMode == RequestMode.EAGER && sourceMode == Fuseable.NONE) {
+					firstRequest = false;
 					s.request(Operators.unboundedOrPrefetch(prefetch));
 				}
 			}
@@ -289,7 +293,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					if (this.requestMode == RequestMode.LAZY) {
 						if (this.sourceMode == -1) {
 							// check if sourceMode was setted
-							if (WIP.incrementAndGet(this) == 1) {
+							if (WIP.getAndIncrement(this) == 0) {
 								if (this.sourceMode == Fuseable.NONE) {
 									firstRequest = false;
 									this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
@@ -342,6 +346,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		private void drainAsync() {
 			final Subscriber<? super T> a = actual;
 			final Queue<T> queue = this.queue;
+			final int sourceMode = this.sourceMode;
 
 			long emitted = produced;
 			int missed = 1;
@@ -386,7 +391,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					a.onNext(value);
 					emitted++;
 
-//					TODO: limit doesn't need for sourceMode == Fuseable.ASYNC
 					if (emitted == limit) {
 						if (requested != Long.MAX_VALUE) {
 							requested = REQUESTED.addAndGet(this, -emitted);
@@ -621,7 +625,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		@Nullable
 		public T poll() {
-			if (sourceMode == Fuseable.NONE && requestMode == RequestMode.LAZY && firstRequest) {
+			if (firstRequest && sourceMode == Fuseable.NONE && requestMode == RequestMode.LAZY) {
 				firstRequest = false;
 				s.request(Operators.unboundedOrPrefetch(this.prefetch));
 			}
@@ -647,48 +651,40 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				int mode = fusion.requestFusion(requestedMode);
 
 				if (mode == Fuseable.SYNC) {
-					sourceMode = Fuseable.SYNC;
+					sourceMode = mode;
+					outputFused = mode;
 					queue = fusion;
-					outputFused = Fuseable.SYNC;
 					done = true;
+					firstRequest = false;
+
+					WIP.lazySet(this, 0);
+					return mode;
 				}
 				else if (mode == Fuseable.ASYNC) {
-					sourceMode = Fuseable.ASYNC;
+					sourceMode = mode;
+					outputFused = mode;
 					queue = fusion;
-					outputFused = Fuseable.ASYNC;
-				}
-				else {
-					sourceMode = Fuseable.NONE;
-					queue = queueSupplier.get();
+					firstRequest = false;
 
-					if ((requestedMode & Fuseable.ASYNC) != 0) {
-						outputFused = Fuseable.ASYNC;
-						mode = Fuseable.ASYNC;
-					}
-					else {
-						mode = Fuseable.NONE;
-					}
+					WIP.lazySet(this, 0);
+					return mode;
 				}
+			}
 
-				WIP.lazySet(this, 0);
-				return mode;
+			int mode;
+			sourceMode = Fuseable.NONE;
+			queue = queueSupplier.get();
+
+			if ((requestedMode & Fuseable.ASYNC) != 0) {
+				outputFused = Fuseable.ASYNC;
+				mode = Fuseable.ASYNC;
 			}
 			else {
-				sourceMode = Fuseable.NONE;
-				queue = queueSupplier.get();
-
-				int mode;
-				if ((requestedMode & Fuseable.ASYNC) != 0) {
-					outputFused = Fuseable.ASYNC;
-					mode = Fuseable.ASYNC;
-				}
-				else {
-					mode = Fuseable.NONE;
-				}
-
-				WIP.lazySet(this, 0);
-				return mode;
+				mode = Fuseable.NONE;
 			}
+
+			WIP.lazySet(this, 0);
+			return mode;
 		}
 
 		@Override
@@ -818,6 +814,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 							sourceMode = Fuseable.SYNC;
 							queue = fusion;
 							done = true;
+							firstRequest = false;
 
 							// check if downstream requested something
 							if (this.wip == 1 && WIP.addAndGet(this, -1) == 0) {
@@ -831,6 +828,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						if (mode == Fuseable.ASYNC) {
 							sourceMode = Fuseable.ASYNC;
 							queue = fusion;
+							firstRequest = false;
 
 							// check if something was requested or delivered in the
 							// meantime
@@ -847,6 +845,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					sourceMode = Fuseable.NONE;
 					queue = queueSupplier.get();
 					if (requestMode == RequestMode.EAGER) {
+						firstRequest = false;
 						s.request(Operators.unboundedOrPrefetch(prefetch));
 					}
 
@@ -862,6 +861,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					drainAsync();
 				}
 				else if (requestMode == RequestMode.EAGER && sourceMode == Fuseable.NONE) {
+					firstRequest = false;
 					s.request(Operators.unboundedOrPrefetch(prefetch));
 				}
 			}
@@ -936,7 +936,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					if (this.requestMode == RequestMode.LAZY) {
 						if (this.sourceMode == -1) {
 							// check if sourceMode was setted
-							if (WIP.incrementAndGet(this) == 1) {
+							if (WIP.getAndIncrement(this) == 0) {
 								if (this.sourceMode == Fuseable.NONE) {
 									firstRequest = false;
 									this.s.request(Operators.unboundedOrPrefetch(this.prefetch));
@@ -989,6 +989,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		private void drainAsync() {
 			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> queue = this.queue;
+			final int sourceMode = this.sourceMode;
 
 			long emitted = produced;
 			int missed = 1;
@@ -1037,7 +1038,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 					polled++;
 
-//					TODO: limit doesn't need for sourceMode == Fuseable.ASYNC
 					if (polled == limit) {
 						if (sourceMode == Fuseable.NONE) {
 							s.request(polled);
@@ -1271,7 +1271,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		@Nullable
 		public T poll() {
-			if (sourceMode == Fuseable.NONE && requestMode == RequestMode.LAZY && firstRequest) {
+			if (firstRequest && sourceMode == Fuseable.NONE && requestMode == RequestMode.LAZY) {
 				firstRequest = false;
 				s.request(Operators.unboundedOrPrefetch(this.prefetch));
 			}
@@ -1297,48 +1297,40 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				int mode = fusion.requestFusion(requestedMode);
 
 				if (mode == Fuseable.SYNC) {
-					sourceMode = Fuseable.SYNC;
+					sourceMode = mode;
+					outputFused = mode;
 					queue = fusion;
-					outputFused = Fuseable.SYNC;
 					done = true;
+					firstRequest = false;
+
+					WIP.lazySet(this, 0);
+					return mode;
 				}
 				else if (mode == Fuseable.ASYNC) {
-					sourceMode = Fuseable.ASYNC;
+					sourceMode = mode;
+					outputFused = mode;
 					queue = fusion;
-					outputFused = Fuseable.ASYNC;
-				}
-				else {
-					sourceMode = Fuseable.NONE;
-					queue = queueSupplier.get();
+					firstRequest = false;
 
-					if ((requestedMode & Fuseable.ASYNC) != 0) {
-						outputFused = Fuseable.ASYNC;
-						mode = Fuseable.ASYNC;
-					}
-					else {
-						mode = Fuseable.NONE;
-					}
+					WIP.lazySet(this, 0);
+					return mode;
 				}
+			}
 
-				WIP.lazySet(this, 0);
-				return mode;
+			int mode;
+			sourceMode = Fuseable.NONE;
+			queue = queueSupplier.get();
+
+			if ((requestedMode & Fuseable.ASYNC) != 0) {
+				outputFused = Fuseable.ASYNC;
+				mode = Fuseable.ASYNC;
 			}
 			else {
-				sourceMode = Fuseable.NONE;
-				queue = queueSupplier.get();
-
-				int mode;
-				if ((requestedMode & Fuseable.ASYNC) != 0) {
-					outputFused = Fuseable.ASYNC;
-					mode = Fuseable.ASYNC;
-				}
-				else {
-					mode = Fuseable.NONE;
-				}
-
-				WIP.lazySet(this, 0);
-				return mode;
+				mode = Fuseable.NONE;
 			}
+
+			WIP.lazySet(this, 0);
+			return mode;
 		}
 
 		@Override
