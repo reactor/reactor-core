@@ -61,6 +61,24 @@ public class StepVerifierOptions {
 	private StepVerifierOptions() { } //disable constructor
 
 	/**
+	 * Make a copy of this {@link StepVerifierOptions} instance.
+	 *
+	 * @return a copy of the options that can be further mutated without impacting the original
+	 */
+	public StepVerifierOptions copy() {
+		StepVerifierOptions copy = new StepVerifierOptions();
+		copy.scenarioName = this.scenarioName;
+		copy.checkUnderRequesting = this.checkUnderRequesting;
+		copy.initialRequest = this.initialRequest;
+		copy.vtsLookup = this.vtsLookup;
+		copy.initialContext = this.initialContext;
+		copy.objectFormatter = this.objectFormatter;
+		copy.extractorMap.putAll(this.extractorMap);
+
+		return copy;
+	}
+
+	/**
 	 * Activate or deactivate the {@link StepVerifier} check of request amount
 	 * being too low. Defauts to true.
 	 *
