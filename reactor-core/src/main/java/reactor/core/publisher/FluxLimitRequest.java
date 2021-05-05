@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 
 /**
@@ -31,11 +32,18 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 	FluxLimitRequest(Flux<T> flux, long cap) {
 		super(flux);
+		if (cap < 0) {
+			throw new IllegalArgumentException("cap >= 0 required but it was " + cap);
+		}
 		this.cap = cap;
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		if (this.cap == 0) {
+			Operators.complete(actual);
+			return null;
+		}
 		return new FluxLimitRequestSubscriber<>(actual, this.cap);
 	}
 
@@ -58,6 +66,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 		Subscription parent;
 		long toProduce;
+		boolean done;
 
 		volatile long requestRemaining;
 		static final AtomicLongFieldUpdater<FluxLimitRequestSubscriber> REQUEST_REMAINING =
@@ -77,12 +86,17 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t, actual.currentContext());
+				return;
+			}
 			long r = toProduce;
 			if (r > 0L) {
 				toProduce = --r;
 				actual.onNext(t);
 
 				if (r == 0) {
+					done = true;
 					parent.cancel();
 					actual.onComplete();
 				}
@@ -91,24 +105,29 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable throwable) {
-			if (toProduce != 0L) {
-				toProduce = 0L;
-				actual.onError(throwable);
+			if (done) {
+				Operators.onErrorDropped(throwable, currentContext());
+				return;
 			}
+			done = true;
+			actual.onError(throwable);
 		}
 
 		@Override
 		public void onComplete() {
-			if (toProduce != 0L) {
-				toProduce = 0L;
-				actual.onComplete();
+			if (done) {
+				return;
 			}
+			done = true;
+			actual.onComplete();
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			parent = s;
-			actual.onSubscribe(this);
+			if (Operators.validate(this.parent, s)) {
+				parent = s;
+				actual.onSubscribe(this);
+			}
 		}
 
 		@Override
@@ -139,7 +158,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
-			if (key == Attr.TERMINATED) return toProduce == 0L;
+			if (key == Attr.TERMINATED) return done;
 
 			//InnerOperator defines ACTUAL
 			return InnerOperator.super.scanUnsafe(key);
