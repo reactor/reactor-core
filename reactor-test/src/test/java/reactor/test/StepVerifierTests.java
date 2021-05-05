@@ -1155,13 +1155,6 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyVirtualTimeNoLookupFails() {
-		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> StepVerifier.withVirtualTime(Flux::empty, null, 1))
-	            .withMessage("vtsLookup");
-	}
-
-	@Test
 	public void verifyVirtualTimeNoScenarioFails() {
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> StepVerifier.withVirtualTime(null, 1))
@@ -2445,5 +2438,24 @@ public class StepVerifierTests {
 		finally {
 			Schedulers.resetFactory();
 		}
+	}
+
+	@Test
+	void withVirtualTimeCopiesOptionsAddsDefaultVtsIfNoSupplier() {
+		StepVerifierOptions options = StepVerifierOptions.create()
+				.initialRequest(123L);
+
+		assertThatCode(() -> StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofSeconds(1)), options)
+				.expectSubscription()
+				.expectNoEvent(Duration.ofSeconds(1))
+				.expectNext(0L)
+				.expectComplete()
+				.verify(Duration.ofMillis(500))
+		)
+				.doesNotThrowAnyException();
+
+		assertThat(options.getVirtualTimeSchedulerSupplier())
+				.as("copy didn't influence original")
+				.isNull();
 	}
 }

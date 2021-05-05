@@ -267,6 +267,10 @@ public interface StepVerifier {
 	 * The verification will request a specified amount of values according to
 	 * the provided {@link StepVerifierOptions options}.
 	 * <p>
+	 * If no {@link VirtualTimeScheduler} {@link Supplier} is set in the options, this
+	 * method will make a {@link StepVerifierOptions#copy() copy} of said options and
+	 * set up the default supplier (like the one in {@link #withVirtualTime(Supplier)}).
+	 * <p>
 	 * Note that virtual time, {@link Step#thenAwait(Duration)} sources that are
 	 * subscribed on a different {@link reactor.core.scheduler.Scheduler} (eg. a source
 	 * that is initialized outside of the lambda with a dedicated Scheduler) and
@@ -278,7 +282,8 @@ public interface StepVerifier {
 	 * to and verify. In order for operators to use virtual time, they must be invoked
 	 * from within the lambda.
 	 * @param options the verification options, including the supplier of the
-	 * {@link VirtualTimeScheduler} to inject and manipulate during verification.
+	 * {@link VirtualTimeScheduler} to inject and manipulate during verification
+	 * (see note above in case options doesn't define such a supplier)
 	 * @param <T> the type of the subscriber
 	 *
 	 * @return a builder for expectation declaration and ultimately verification.
@@ -286,12 +291,18 @@ public interface StepVerifier {
 	static <T> FirstStep<T> withVirtualTime(
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			StepVerifierOptions options) {
+
 		DefaultStepVerifierBuilder.checkPositive(options.getInitialRequest());
-		Objects.requireNonNull(options.getVirtualTimeSchedulerSupplier(), "vtsLookup");
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return DefaultStepVerifierBuilder.newVerifier(options,
-				scenarioSupplier);
+		//force the default VTS supplier if the provided options doesn't define a VTS supplier.
+		//note we make a copy just in case the original options are reused.
+		if (options.getVirtualTimeSchedulerSupplier() == null) {
+			options = options
+					.copy()
+					.virtualTimeSchedulerSupplier(() -> VirtualTimeScheduler.getOrSet(true));
+		}
+		return DefaultStepVerifierBuilder.newVerifier(options, scenarioSupplier);
 	}
 
 	/**
