@@ -92,7 +92,7 @@ dependencies {
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
-	testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
+	testImplementation "ch.qos.logback:logback-classic:$logbackVersion" //need to access API to decrease some tests verbosity
 	// Testing
 	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
