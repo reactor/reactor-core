@@ -60,7 +60,6 @@ public class MonoCollectTest {
 		ch.qos.logback.classic.Level oldLevel = logbackLogger.getLevel();
 		logbackLogger.setLevel(ch.qos.logback.classic.Level.ERROR);
 		afterTest.autoDispose(() -> {
-			System.out.println("going back to level " + oldLevel);
 			logbackLogger.setLevel(oldLevel);
 		});
 	}
