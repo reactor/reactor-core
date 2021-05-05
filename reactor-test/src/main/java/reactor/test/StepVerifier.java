@@ -291,6 +291,10 @@ public interface StepVerifier {
 	static <T> FirstStep<T> withVirtualTime(
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			StepVerifierOptions options) {
+
+		DefaultStepVerifierBuilder.checkPositive(options.getInitialRequest());
+		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
+
 		//force the default VTS supplier if the provided options doesn't define a VTS supplier.
 		//note we make a copy just in case the original options are reused.
 		if (options.getVirtualTimeSchedulerSupplier() == null) {
@@ -298,10 +302,6 @@ public interface StepVerifier {
 					.copy()
 					.virtualTimeSchedulerSupplier(() -> VirtualTimeScheduler.getOrSet(true));
 		}
-
-		DefaultStepVerifierBuilder.checkPositive(options.getInitialRequest());
-		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
-
 		return DefaultStepVerifierBuilder.newVerifier(options, scenarioSupplier);
 	}
 
