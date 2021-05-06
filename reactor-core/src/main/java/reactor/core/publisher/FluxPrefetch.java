@@ -292,7 +292,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					// check the mode and fusion mode
 					if (prefetchMode == PrefetchMode.LAZY) {
 						if (sourceMode == -1) {
-							// check if sourceMode was setted
+							// check if sourceMode was set
 							if (WIP.getAndIncrement(this) == 0) {
 								if (sourceMode == Fuseable.NONE) {
 									firstRequest = false;
