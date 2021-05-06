@@ -19,12 +19,14 @@ package reactor.test.publisher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -421,5 +423,20 @@ public class ColdTestPublisherTests {
 				.then(() -> publisher.emit("G", "H"))
 				.expectNext("G", "H")
 				.verifyComplete();
+	}
+
+	@Test
+	void subscriberIncrementShouldBeVisibleBeforeCompletionPropagated() {
+		final TestPublisher<String> cold = TestPublisher.createCold();
+		cold.next("value");
+		final int timeout = 2;
+
+		StepVerifier.create(cold.mono().subscribeOn(Schedulers.elastic()))
+				.expectSubscription()
+				.expectNext("value")
+				.expectComplete()
+				.verify(Duration.ofSeconds(timeout));
+
+		Assertions.assertThat(cold.subscribeCount()).as("subscriberCount").isEqualTo(1);
 	}
 }
