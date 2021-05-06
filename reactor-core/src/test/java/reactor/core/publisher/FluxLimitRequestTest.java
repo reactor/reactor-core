@@ -33,6 +33,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 class FluxLimitRequestTest {
 
@@ -270,6 +271,12 @@ class FluxLimitRequestTest {
 				.verify(Duration.ofSeconds(1));
 
 		assertThat(subscribed).isFalse();
+	}
+
+	@Test
+	void negativeCapIsRejectedAtAssembly() {
+		assertThatIllegalArgumentException().isThrownBy(() -> Flux.empty().limitRequest(-1))
+				.withMessage("cap >= 0 required but it was -1");
 	}
 
 	@Test
