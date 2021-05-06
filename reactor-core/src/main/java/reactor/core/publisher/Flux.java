@@ -8589,9 +8589,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Take only the first N values from this {@link Flux}, if available.
-	 * <p>
-	 * If N is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
-	 * signals its first value (which is not not relayed, though).
+	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/take.svg" alt="">
 	 * <p>
@@ -8617,23 +8615,26 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Take only the first N values from this {@link Flux}, if available.
 	 * <p>
-	 * If N is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
-	 * signals its first value (which is not not relayed, though).
-	 * <p>
 	 * <img class="marble" src="doc-files/marbles/takeLimitRequestTrue.svg" alt="">
 	 * <p>
 	 * If {@code limitRequest == true}, ensure that the total amount requested upstream is capped
 	 * at {@code n}. In that configuration, this operator never let the upstream produce more elements
 	 * than the cap, and it can be used to more strictly adhere to backpressure.
-	 * Typically useful for cases where a race between request and cancellation can lead the upstream to
-	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
+	 * If n is zero, the source isn't even subscribed to and the operator completes immediately
+	 * upon subscription.
+	 * <p>
+	 * This mode is typically useful for cases where a race between request and cancellation can lead
+	 * the upstream to producing a lot of extraneous data, and such a production is undesirable (e.g.
 	 * a source that would send the extraneous data over the network).
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/takeLimitRequestFalse.svg" alt="takeLimitRequestFalse">
 	 * <p>
 	 * If {@code limitRequest == false} this operator doesn't propagate the backpressure requested amount.
 	 * Rather, it makes an unbounded request and cancels once N elements have been emitted.
-	 * As a result, the source could produce a lot of extraneous elements in the meantime.
+	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes
+	 * (the behavior inherited from {@link #take(long)}).
+	 * <p>
+	 * In this mode, the source could produce a lot of extraneous elements despite cancellation.
 	 * If that behavior is undesirable and you do not own the request from downstream
 	 * (e.g. prefetching operators), consider using {@code limitRequest = true} instead.
 	 *
