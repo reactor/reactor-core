@@ -91,7 +91,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable {
 								prefetch,
 								prefetch,
 								queueSupplier,
-								FluxPrefetch.PrefetchMode.LAZY);
+								FluxPrefetch.PrefetchMode.EAGER);
 			}
 			else {
 				parents[i] =
@@ -103,7 +103,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable {
 							prefetch,
 							prefetch,
 							queueSupplier,
-							FluxPrefetch.PrefetchMode.LAZY);;
+							FluxPrefetch.PrefetchMode.EAGER);
 			}
 		}
 
