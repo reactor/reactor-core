@@ -1,15 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="21 -5 685 315" width="685" height="315" id="svg127">
  <defs id="defs23">
-  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-   <font-face-src>
-    <font-face-name name="Tahoma-Bold"/>
-   </font-face-src>
-  </font-face>
-  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face4" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-   <font-face-src>
-    <font-face-name name="Tahoma"/>
-   </font-face-src>
-  </font-face>
   <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
    <g id="g8">
     <path d="M12 0L0-4v9z" id="path6" fill="currentColor" stroke="currentColor" stroke-width="1"/>
@@ -25,20 +15,30 @@
     <path d="M8 0L0-3v6z" id="path16" fill="currentColor" stroke="currentColor" stroke-width="1"/>
    </g>
   </marker>
-  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="16" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face21" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-   <font-face-src>
-    <font-face-name name="Tahoma"/>
-   </font-face-src>
-  </font-face>
   <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-0" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
    <g id="g16-6">
     <path d="M8 0L0-3v6z" id="path14-1" fill="currentColor" stroke="currentColor" stroke-width="1"/>
    </g>
   </marker>
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma-Bold"/>
+   </font-face-src>
+  </font-face>
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face4" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma"/>
+   </font-face-src>
+  </font-face>
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="16" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face21" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma"/>
+   </font-face-src>
+  </font-face>
  </defs>
  <path d="M44 130h380l1 1v65l-1 1H44l-1-1v-65z" id="path33" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
- <text id="text41" x="-48" y="149" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-  <tspan font-size="24" font-weight="700" x="162" y="171" id="tspan35" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">takeEager (</tspan> <tspan font-size="21" font-weight="400" y="171" id="tspan37" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">3</tspan> <tspan font-size="24" font-weight="700" y="171" id="tspan39" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">)</tspan>
+ <text id="text41" x="-54.68" y="149" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan font-size="24" font-weight="700" x="155.32" y="171" id="tspan35" font-family="Tahoma, 'Nimbus Sans L'" fill="#34302c">take(</tspan><tspan font-size="21" font-weight="400" y="171" id="tspan37" font-family="Tahoma, 'Nimbus Sans L'" fill="#34302c">3</tspan><tspan font-size="24" font-weight="700" y="171" id="tspan39" font-family="Tahoma, 'Nimbus Sans L'" fill="#34302c">, false)</tspan>
  </text>
  <path id="line52" d="M27 279h391" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker)"/>
  <path id="path55" d="M332 255l2 2v44c0 2-1 2-2 2s-2 0-2-2v-44z" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
@@ -55,8 +55,8 @@
   <tspan font-size="14" font-weight="400" x="-117" y="325" id="tspan1408" font-family="Tahoma,'Nimbus Sans L'" fill="#45b8de">cancel()</tspan>
  </text>
  <path id="path984" d="M510 131h192v68H510z" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
- <text y="150" x="324" id="text992" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-  <tspan id="tspan986" y="172" x="524" font-weight="700" font-size="24" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">takeEager (<tspan id="tspan6328" font-weight="400">0</tspan> )</tspan>
+ <text y="150" x="325.42" id="text992" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan986" y="172" x="525.42" font-weight="700" font-size="24" font-family="Tahoma, 'Nimbus Sans L'" fill="#34302c">take(0, false)</tspan>
  </text>
  <path id="line994" d="M518 281h156" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker)"/>
  <path d="M600 256h1l2 2v45l-2 2h-1l-2-2v-45z" id="path996" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>

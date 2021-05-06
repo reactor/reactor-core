@@ -53,7 +53,7 @@ public class FluxTakeTest {
 	public void numberIsInvalid() {
 		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
 			Flux.never()
-					.take(-1);
+					.take(-1, false);
 		});
 	}
 
@@ -61,7 +61,7 @@ public class FluxTakeTest {
 	public void numberIsInvalidFused() {
 		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
 			Flux.just(1)
-					.take(-1);
+					.take(-1, false);
 		});
 	}
 
@@ -70,7 +70,7 @@ public class FluxTakeTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
-		    .take(5)
+		    .take(5, false)
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5)
@@ -83,7 +83,7 @@ public class FluxTakeTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
-		    .take(5)
+		    .take(5, false)
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -108,7 +108,7 @@ public class FluxTakeTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
-		    .take(0)
+		    .take(0, false)
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -119,7 +119,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeNever() {
 		StepVerifier.create(
-				Flux.never().take(1))
+				Flux.never().take(1, false))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
 		            .thenCancel()
@@ -129,7 +129,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeNeverZero() {
 		PublisherProbe<Object> probe = PublisherProbe.of(Flux.never());
-		StepVerifier.create(probe.flux().take(0))
+		StepVerifier.create(probe.flux().take(0, false))
 		            .expectSubscription()
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
@@ -146,7 +146,7 @@ public class FluxTakeTest {
 			s.onNext(3);
 		};
 
-		StepVerifier.create(Flux.from(p).take(2))
+		StepVerifier.create(Flux.from(p).take(2, false))
 		            .expectNext(1, 2)
 		            .expectComplete()
 		            .verifyThenAssertThat()
@@ -156,7 +156,7 @@ public class FluxTakeTest {
 	@Test
 	public void aFluxCanBeLimited(){
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .take(2)
+		                        .take(2, false)
 		)
 		            .expectNext("test", "test2")
 		            .verifyComplete();
@@ -184,7 +184,7 @@ public class FluxTakeTest {
 				}
 			});
 		})
-		                        .take(3), 0)
+		                        .take(3, false), 0)
 		            .thenAwait()
 		            .thenRequest(2)
 		            .expectNext("test", "test")
@@ -197,7 +197,7 @@ public class FluxTakeTest {
 	public void takeFusedBackpressured() {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(up.asFlux()
-							  .take(3), 0)
+							  .take(3, false), 0)
 		            .expectFusion()
 		            .then(() -> up.emitNext("test", FAIL_FAST))
 		            .then(() -> up.emitNext("test2", FAIL_FAST))
@@ -215,7 +215,7 @@ public class FluxTakeTest {
 	public void takeFusedBackpressuredCancelled() {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(up.asFlux()
-							  .take(3).doOnSubscribe(s -> {
+							  .take(3, false).doOnSubscribe(s -> {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
 		            .expectFusion()
@@ -251,7 +251,7 @@ public class FluxTakeTest {
 				}
 			});
 		})
-		                        .take(3)
+		                        .take(3, false)
 								.filter("test"::equals), 0)
 		            .thenAwait()
 		            .thenRequest(2)
@@ -286,7 +286,7 @@ public class FluxTakeTest {
 				}
 			});
 		})
-		                        .take(3)
+		                        .take(3, false)
 								.filter("test"::equals), 0)
 		            .thenAwait()
 		            .thenRequest(2)
@@ -302,7 +302,7 @@ public class FluxTakeTest {
 		Flux.range(1, 100)
 				.hide()
 				.doOnRequest(requested::set)
-				.takeEager(5)
+				.take(5, false)
 				.as(f -> StepVerifier.create(f, 40))
 				.expectNextCount(5)
 				.verifyComplete();
@@ -318,7 +318,7 @@ public class FluxTakeTest {
 			s.onComplete();
 			s.onNext(1);
 		})
-		                        .take(2))
+		                        .take(2, false))
 		            .verifyComplete();
 		Hooks.resetOnNextDropped();
 	}
@@ -327,7 +327,7 @@ public class FluxTakeTest {
 	public void failNextIfTerminatedTakeFused() {
 		TestPublisher<Integer> up = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));
-		StepVerifier.create(up.flux().take(2))
+		StepVerifier.create(up.flux().take(2, false))
 		            .then(up::complete)
 		            .then(() -> up.next(1))
 		            .verifyComplete();
@@ -342,7 +342,7 @@ public class FluxTakeTest {
 			s.onComplete();
 			s.onNext(1);
 		})
-		                        .take(2)
+		                        .take(2, false)
 		                        .filter("test2"::equals))
 		            .verifyComplete();
 		Hooks.resetOnNextDropped();
@@ -357,7 +357,7 @@ public class FluxTakeTest {
 			s.onComplete();
 			((Fuseable.ConditionalSubscriber)s).tryOnNext(1);
 		})
-		                        .take(2)
+		                        .take(2, false)
 		                        .filter("test2"::equals))
 		            .verifyComplete();
 		Hooks.resetOnNextDropped();
@@ -367,7 +367,7 @@ public class FluxTakeTest {
 	public void take() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .hide()
-		                        .take(2))
+		                        .take(2, false))
 		            .expectNext("test", "test2")
 		            .verifyComplete();
 	}
@@ -376,7 +376,7 @@ public class FluxTakeTest {
 	public void takeCancel() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .hide()
-		                        .take(3), 2)
+		                        .take(3, false), 2)
 		            .expectNext("test", "test2")
 		            .thenCancel()
 		            .verify();
@@ -385,7 +385,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeFused() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .take(2))
+		                        .take(2, false))
 		            .expectNext("test", "test2")
 		            .verifyComplete();
 	}
@@ -393,7 +393,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeFusedSync() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .take(2))
+		                        .take(2, false))
 		            .expectFusion(Fuseable.SYNC)
 		            .expectNext("test", "test2")
 		            .verifyComplete();
@@ -403,7 +403,7 @@ public class FluxTakeTest {
 	public void takeFusedAsync() {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(up.asFlux()
-							  .take(2))
+							  .take(2, false))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
 			            up.emitNext("test", FAIL_FAST);
@@ -416,7 +416,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeFusedCancel() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .take(3), 2)
+		                        .take(3, false), 2)
 		            .expectNext("test", "test2")
 		            .thenCancel()
 		            .verify();
@@ -427,7 +427,7 @@ public class FluxTakeTest {
 	public void takeConditional() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .hide()
-		                        .take(2)
+		                        .take(2, false)
 		                        .filter("test2"::equals))
 		            .expectNext("test2")
 		            .verifyComplete();
@@ -437,7 +437,7 @@ public class FluxTakeTest {
 	public void takeConditionalCancel() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .hide()
-		                        .take(3)
+		                        .take(3, false)
 		                        .filter("test2"::equals), 2)
 		            .thenCancel()
 		            .verify();
@@ -446,7 +446,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeConditionalFused() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .take(2)
+		                        .take(2, false)
 		                        .filter("test2"::equals))
 		            .expectNext("test2")
 		            .verifyComplete();
@@ -455,7 +455,7 @@ public class FluxTakeTest {
 	@Test
 	public void takeConditionalFusedCancel() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .take(3)
+		                        .take(3, false)
 		                        .filter("test2"::equals), 2)
 		            .expectNext("test2")
 		            .thenCancel()
@@ -487,7 +487,7 @@ public class FluxTakeTest {
 			assertTrackableAfterOnComplete((InnerOperator)s);
 			s.onError(new Exception("test2"));
 		})
-		                        .take(2))
+		                        .take(2, false))
 		            .verifyErrorMessage("test");
 	}
 
@@ -503,7 +503,7 @@ public class FluxTakeTest {
 			assertTrackableAfterOnComplete((InnerOperator)s);
 			s.onError(new Exception("test2"));
 		})
-		                        .take(2).filter(d -> true))
+		                        .take(2, false).filter(d -> true))
 		            .verifyErrorMessage("test");
 	}
 
@@ -514,7 +514,7 @@ public class FluxTakeTest {
 		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
 		StepVerifier.create(up.asFlux()
-							  .take(2))
+							  .take(2, false))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableBeforeOnSubscribe((InnerOperator)s);
 		            })
@@ -532,7 +532,7 @@ public class FluxTakeTest {
 	public void ignoreFusedDoubleComplete() {
 		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(up.asFlux()
-							  .take(2).filter(d -> true))
+							  .take(2, false).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableAfterOnSubscribe((InnerOperator)s);
 		            })
@@ -553,7 +553,7 @@ public class FluxTakeTest {
 			s.onComplete();
 			s.onComplete();
 		})
-		                        .take(2))
+		                        .take(2, false))
 		            .verifyComplete();
 	}
 
@@ -561,7 +561,7 @@ public class FluxTakeTest {
 	public void assertPrefetch() {
 		assertThat(Flux.just("test", "test2", "test3")
 		               .hide()
-		               .take(2)
+		               .take(2, false)
 		               .getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 	}
 
@@ -572,7 +572,7 @@ public class FluxTakeTest {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onComplete();
 		})
-		                        .take(2))
+		                        .take(2, false))
 		            .verifyComplete();
 	}
 	@Test
@@ -582,7 +582,7 @@ public class FluxTakeTest {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onComplete();
 		})
-		                        .take(2)
+		                        .take(2, false)
 		                        .filter(d -> true))
 		            .verifyComplete();
 	}
@@ -591,7 +591,7 @@ public class FluxTakeTest {
 	public void takeZeroCancelsWhenNoRequest() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
-		                      .take(0), 0)
+		                      .take(0, false), 0)
 		            .thenAwait()
 		            .verifyComplete();
 
@@ -603,7 +603,7 @@ public class FluxTakeTest {
 	public void takeZeroIgnoresRequestAndCancels() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
-		                      .take(0), 3)
+		                      .take(0, false), 3)
 		            .thenAwait()
 		            .verifyComplete();
 
@@ -615,7 +615,7 @@ public class FluxTakeTest {
 	public void takeConditionalZeroCancelsWhenNoRequest() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
-		                      .take(0)
+		                      .take(0, false)
 		                      .filter(d -> true), 0)
 		            .thenAwait()
 		            .verifyComplete();
@@ -628,7 +628,7 @@ public class FluxTakeTest {
 	public void takeConditionalZeroIgnoresRequestAndCancels() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
-		                      .take(0)
+		                      .take(0, false)
 		                      .filter(d -> true), 3)
 		            .thenAwait()
 		            .verifyComplete();
