@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Simon Baslé
@@ -39,6 +40,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
+	@Nullable
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (this.cap == 0) {
 			Operators.complete(actual);
