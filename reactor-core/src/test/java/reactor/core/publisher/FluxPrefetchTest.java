@@ -1,331 +1,205 @@
 package reactor.core.publisher;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.reactivestreams.Subscription;
+import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.Fuseable;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxPrefetchTest {
-//		1. EAGER / LAZY
-//		3. request (limit - 1) && no doOnRequest && (limit - 1) elements
-//		4. request 1 && (limit) doOnRequest && 1 elements
-//		5. request (limit + 1) && (limit) doOnRequest && (limit + 1) elements
-//		6. Complete (2 * limit + 1)
+	private static final int sourceSize = 1000;
 
-//		8. request 0 && error
-//		7. Unbound
+	private static final Object[] nonFuseableSource   =
+			new Object[]{Flux.range(1, sourceSize).hide(), Fuseable.NONE};
+	private static final Object[] syncFuseableSource  =
+			new Object[]{Flux.range(1, sourceSize), Fuseable.SYNC};
+	private static final Object[] asyncFuseableSource =
+			new Object[]{Flux.range(1, sourceSize).onBackpressureBuffer(),
+					Fuseable.ASYNC};
 
-// SYNC-(NONE,ASYNC)-ASYNC (-BP,+P), ASYNC-(ASYNC,ASYNC)-ASYNC (-BP,-P), NONE-(NONE,ASYNC)-ASYNC (-BP,+P)
-// SYNC-(SYNC,SYNC)-ANY    (-BP,-P), ASYNC-(ASYNC,ASYNC)-ANY   (-BP,-P), NONE-(NONE,ASYNC)-ANY   (-BP,+P)
-// SYNC-(SYNC,NONE)-NONE   (+BP,-P), ASYNC-(ASYNC,NONE)-NONE   (+BP,-P), NONE-(NONE,NONE)-NONE   (+BP,+P)
+	private static Stream<Integer> requestedModes() {
+		return Stream.of(Fuseable.NONE, Fuseable.ASYNC, Fuseable.ANY);
+	}
 
-//	TODO: DS - SYNC
-//	TODO: DS - None
-//	TODO: prefetchValuesFromAsyncFuseableUpstreamAndLazyRequestMode duplicate Eager
-//	TODO: US - ASYNC -> no s.request
+	private static Stream<Object[]> requestedModesWithPrefetchModes() {
+		return requestedModes().flatMap(requestMode -> Stream.of(true, false)
+		                                                     .map(prefetchMode -> new Object[]{
+				                                                     requestMode,
+				                                                     prefetchMode}));
+	}
 
-	@DisplayName("Prefetch value from Non-Fused upstream in Eager mode")
-	@ParameterizedTest(name = "Prefetch value from Non-Fused upstream with downstream with fusion={0}")
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
-	public void prefetchValuesFromNonFuseableUpstreamInEagerRequestMode(int requestedMode) {
+	private static Stream<Object[]> sources() {
+		return Stream.of(nonFuseableSource, syncFuseableSource, asyncFuseableSource);
+	}
+
+	// Fusions Tests
+	@DisplayName("Prefetch value from Non-Fused upstream")
+	@ParameterizedTest(name = "Prefetch value from Non-Fused upstream with downstream with fusion={0} and Prefetch Mode={1}")
+	@MethodSource("requestedModesWithPrefetchModes")
+	public void prefetchValuesFromNonFuseableUpstream(int requestedMode,
+			boolean prefetchMode) {
+		Flux<Integer> nonFuseableSource = Flux.range(1, sourceSize)
+		                                      .hide();
+
+		StepVerifier.FirstStep<Integer> firstStep =
+				StepVerifier.create(nonFuseableSource.prefetch(prefetchMode));
+
+		StepVerifier.Step<Integer> step;
+		if (requestedMode != Fuseable.NONE) {
+			step = firstStep.expectFusion(requestedMode, Fuseable.ASYNC);
+		}
+		else {
+			step = firstStep.expectSubscription();
+		}
+
+		step.thenAwait()
+		    .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(
+				    Fuseable.NONE))
+
+		    .expectNextCount(sourceSize)
+		    .verifyComplete();
+	}
+
+	@DisplayName("Prefetch Value from Async-Fused upstream")
+	@ParameterizedTest(name = "Prefetch value from Async-Fused upstream with downstream with fusion={0} and Prefetch Mode={1}")
+	@MethodSource("requestedModesWithPrefetchModes")
+	public void prefetchValuesFromAsyncFuseableUpstream(int requestedMode,
+			boolean prefetchMode) {
+		Flux<Integer> asyncFuseableSource = Flux.range(1, sourceSize)
+		                                        .onBackpressureBuffer();
+
+		StepVerifier.FirstStep<Integer> firstStep =
+				StepVerifier.create(asyncFuseableSource.prefetch(prefetchMode));
+
+		StepVerifier.Step<Integer> step;
+		if (requestedMode != Fuseable.NONE) {
+			step = firstStep.expectFusion(requestedMode, Fuseable.ASYNC);
+		}
+		else {
+			step = firstStep.expectSubscription();
+		}
+
+		step.thenAwait()
+		    .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(
+				    Fuseable.ASYNC))
+
+		    .expectNextCount(sourceSize)
+		    .verifyComplete();
+	}
+
+	@DisplayName("Prefetch Value from Sync-Fused upstream")
+	@ParameterizedTest(name = "Prefetch Value from Sync-Fused upstream with downstream with fusion={0} and Prefetch Mode={1}")
+	@MethodSource("requestedModesWithPrefetchModes")
+	public void prefetchValuesFromSyncFuseableUpstream(int requestedMode,
+			boolean prefetchMode) {
+		Flux<Integer> syncFuseableSource = Flux.range(1, sourceSize);
+
+		StepVerifier.FirstStep<Integer> firstStep =
+				StepVerifier.create(syncFuseableSource.prefetch(prefetchMode));
+
+		StepVerifier.Step<Integer> step;
+		if (requestedMode != Fuseable.NONE) {
+			step = firstStep.expectFusion(requestedMode,
+					(requestedMode & Fuseable.SYNC) != 0 ? Fuseable.SYNC : Fuseable.ASYNC)
+
+			                .thenAwait()
+			                .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(
+					                (requestedMode & Fuseable.SYNC) != 0 ? Fuseable.SYNC :
+							                Fuseable.NONE));
+		}
+		else {
+			step = firstStep.expectSubscription()
+			                .thenAwait()
+			                .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(
+					                Fuseable.SYNC));
+		}
+
+		step.expectNextCount(sourceSize)
+		    .verifyComplete();
+	}
+
+	// Backpressure Tests
+	@DisplayName("Check backpressure from different sources")
+	@ParameterizedTest(name = "Prefetch value from {0}")
+	@MethodSource("sources")
+	public void backpressureFromDifferentSourcesTypes(Flux<Integer> source) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		source.prefetch()
+		      .subscribe(ts);
+
+		ts.assertNoEvents();
+
+		int step = 250;
+		int count = 0;
+		while (count < sourceSize) {
+			ts.request(step);
+			count += step;
+			ts.assertValueCount(count);
+		}
+
+		ts.assertComplete();
+	}
+
+	// Prefetch mode Tests
+	@ParameterizedTest
+	@MethodSource("requestedModes")
+	public void immediatePrefetchInEagerPrefetchMode(int requestedMode) {
 		int prefetch = 256;
-		int limit = 192;
-
 		ArrayList<Long> requests = new ArrayList<>();
 
-		Flux<Integer> nonFuseableSource = Flux.range(1, limit * 2 + 1)
+		Flux<Integer> nonFuseableSource = Flux.range(1, sourceSize)
 		                                      .hide()
 		                                      .doOnRequest(requests::add);
 
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, false), 0)
-		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
+		StepVerifier.FirstStep<Integer> firstStep =
+				StepVerifier.create(nonFuseableSource.prefetch(prefetch, false), 0);
 
-		            .thenAwait()
-		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE))
-		            .then(() -> assertThat(requests).hasSize(1))
+		StepVerifier.Step<Integer> step;
+		if (requestedMode != Fuseable.NONE) {
+			step = firstStep.expectFusion(requestedMode, requestedMode & Fuseable.ASYNC);
+		}
+		else {
+			step = firstStep.expectSubscription();
+		}
 
-		            .thenRequest(limit - 1)
-		            .expectNextCount(limit - 1)
-		            .then(() -> assertThat(requests).hasSize(1))
-
-		            .thenRequest(1)
-		            .expectNextCount(1)
-		            .then(() -> assertThat(requests).hasSize(2))
-
-		            .thenRequest(limit + 1)
-		            .expectNextCount(limit + 1)
-		            .then(() -> assertThat(requests).hasSize(3))
-		            .then(() -> assertThat(requests).containsExactly((long) prefetch,
-				            (long) limit,
-				            (long) limit))
-		            .verifyComplete();
-	}
-
-	@DisplayName("Prefetch value from Non-Fused upstream in Lazy mode")
-	@ParameterizedTest(name = "Prefetch value from Non-Fused upstream with downstream with fusion={0}")
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
-	public void prefetchValuesFromNonFuseableUpstreamInLazyRequestMode(int requestedMode) {
-		int prefetch = 256;
-		int limit = 192;
-
-		ArrayList<Long> requests = new ArrayList<>();
-
-		Flux<Integer> nonFuseableSource = Flux.range(1, limit * 2 + 1)
-		                                      .hide()
-		                                      .doOnRequest(requests::add);
-
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, true), 0)
-		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
-
-		            .thenAwait()
-		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE))
-		            .then(() -> assertThat(requests).isEmpty())
-
-		            .thenRequest(limit - 1)
-		            .expectNextCount(limit - 1)
-		            .then(() -> assertThat(requests).hasSize(1))
-
-		            .thenRequest(1)
-		            .expectNextCount(1)
-		            .then(() -> assertThat(requests).hasSize(2))
-
-		            .thenRequest(limit + 1)
-		            .expectNextCount(limit + 1)
-		            .then(() -> assertThat(requests).hasSize(3))
-		            .then(() -> assertThat(requests).containsExactly((long) prefetch,
-				            (long) limit,
-				            (long) limit))
-		            .verifyComplete();
-	}
-
-	@Test
-	public void prefetchValuesFromNonFuseableUpstreamInEagerRequestModeWithoutDownstreamFusion() {
-		int prefetch = 256;
-		int limit = 192;
-
-		ArrayList<Long> requests = new ArrayList<>();
-
-		Flux<Integer> nonFuseableSource = Flux.range(1, limit * 2 + 1)
-		                                      .hide()
-		                                      .doOnRequest(requests::add);
-
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, false), 0)
-		            .expectSubscription()
-		            .consumeSubscriptionWith(s -> {
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
-		            })
-		            .then(() -> assertThat(requests).hasSize(1))
-
-		            .thenRequest(limit - 1)
-		            .expectNextCount(limit - 1)
-		            .then(() -> assertThat(requests).hasSize(1))
-
-		            .thenRequest(1)
-		            .expectNextCount(1)
-		            .then(() -> assertThat(requests).hasSize(2))
-
-		            .thenRequest(limit + 1)
-		            .expectNextCount(limit + 1)
-		            .then(() -> assertThat(requests).hasSize(3))
-		            .then(() -> assertThat(requests).containsExactly((long) prefetch,
-				            (long) limit,
-				            (long) limit))
-		            .verifyComplete();
-	}
-
-	@Test
-	public void prefetchValuesFromNonFuseableUpstreamInLazyRequestModeWithoutDownstreamFusion() {
-		int prefetch = 256;
-		int limit = 192;
-
-		ArrayList<Long> requests = new ArrayList<>();
-
-		Flux<Integer> nonFuseableSource = Flux.range(1, limit * 2 + 1)
-		                                      .hide()
-		                                      .doOnRequest(requests::add);
-
-		StepVerifier.create(nonFuseableSource.prefetch(prefetch, limit, true), 0)
-		            .expectSubscription()
-		            .consumeSubscriptionWith(s -> {
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.NONE);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
-		            })
-		            .then(() -> assertThat(requests).isEmpty())
-
-		            .thenRequest(limit - 1)
-		            .expectNextCount(limit - 1)
-		            .then(() -> assertThat(requests).hasSize(1))
-
-		            .thenRequest(1)
-		            .expectNextCount(1)
-		            .then(() -> assertThat(requests).hasSize(2))
-
-		            .thenRequest(limit + 1)
-		            .expectNextCount(limit + 1)
-		            .then(() -> assertThat(requests).hasSize(3))
-		            .then(() -> assertThat(requests).containsExactly((long) prefetch,
-				            (long) limit,
-				            (long) limit))
-		            .verifyComplete();
-	}
-
-	@DisplayName("Prefetch Value from Async-Fused upstream in Eager mode")
-	@ParameterizedTest(name = "Prefetch value from Async-Fused upstream with downstream with fusion={0}")
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
-	public void prefetchValuesFromAsyncFuseableUpstreamAndEagerRequestMode(int requestedMode) {
-		int prefetch = 256;
-		int count = 1000;
-
-		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
-		                                        .onBackpressureBuffer();
-
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, false), 0)
-		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
-
-		            .thenAwait()
-		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(requestedMode & Fuseable.ASYNC))
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-		            .verifyComplete();
-	}
-
-	@DisplayName("Prefetch Value from Async-Fused upstream in Lazy mode")
-	@ParameterizedTest(name = "Prefetch value from Async-Fused upstream with downstream with fusion={0}")
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
-	public void prefetchValuesFromAsyncFuseableUpstreamAndLazyRequestMode(int requestedMode) {
-		int prefetch = 256;
-		int count = 1000;
-
-		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
-		                                        .onBackpressureBuffer();
-
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, true), 0)
-		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
-
-		            .thenAwait()
-		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(requestedMode & Fuseable.ASYNC))
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void prefetchValuesFromAsyncFuseableUpstreamInEagerRequestModeWithoutDownstreamFusion() {
-		int prefetch = 256;
-		int count = 1000;
-
-		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
-		                                        .onBackpressureBuffer();
-
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, false), 0)
-		            .expectSubscription()
-		            .consumeSubscriptionWith(s -> {
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.ASYNC);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
-		            })
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void prefetchValuesFromAsyncFuseableUpstreamInLazyRequestModeWithoutDownstreamFusion() {
-		int prefetch = 256;
-		int count = 1000;
-
-		Flux<Integer> asyncFuseableSource = Flux.range(1, count)
-		                                        .onBackpressureBuffer();
-
-		StepVerifier.create(asyncFuseableSource.prefetch(prefetch, true), 0)
-		            .expectSubscription()
-		            .consumeSubscriptionWith(s -> {
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.ASYNC);
-			            assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).outputFused).isEqualTo(Fuseable.NONE);
-		            })
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-
-		            .thenRequest(500)
-		            .expectNextCount(500)
-		            .verifyComplete();
-	}
-
-	@DisplayName("Prefetch Value from Sync-Fused upstream in Eager mode")
-	@ParameterizedTest(name = "Prefetch Value from Sync-Fused upstream with downstream with fusion={0}")
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.ANY, Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.ASYNC | Fuseable.THREAD_BARRIER})
-	public void prefetchValuesFromSyncFuseableUpstreamAndEagerRequestMode(int requestedMode) {
-		int prefetch = 256;
-		int limit = 192;
-
-		Flux<Integer> syncFuseableSource = Flux.range(1, limit * 2 + 1);
-
-		StepVerifier.create(syncFuseableSource.prefetch(prefetch, limit, false), 0)
-		            .expectSubscription()
-//		            .expectFusion(requestedMode)
-//		            .thenAwait(Duration.ofMillis(10))
-//		            .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.SYNC & requestedMode))
-
-                    .thenRequest(limit - 1)
-
-//                    .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(Fuseable.SYNC & requestedMode))
-
-                    .expectNextCount(limit - 1)
-
-                    .thenRequest(1)
-                    .expectNextCount(1)
-
-                    .thenRequest(limit + 2)
-                    .expectNextCount(limit + 1)
-
-                    .verifyComplete();
+		step.then(() -> assertThat(requests).hasSize(1)
+		                                    .containsExactly((long) prefetch))
+		    .thenRequest(Long.MAX_VALUE)
+		    .expectNextCount(sourceSize)
+		    .verifyComplete();
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.ANY})
-	public void downstreamFusionWithNonFuseableUpstreamAndEagerRequestMode(int requestedMode) {
-		TestPublisher<Integer> publisher = TestPublisher.create();
+	@MethodSource("requestedModes")
+	public void delayedPrefetchInLazyPrefetchMode(int requestedMode) {
+		LongAdder requestCount = new LongAdder();
 
-		StepVerifier.create(publisher.flux()
-		                             .prefetch(256, false), 0)
-		            .expectFusion(requestedMode, requestedMode & Fuseable.ASYNC)
-		            .then(() -> publisher.assertMinRequested(256))
-		            .then(publisher::complete)
-		            .verifyComplete();
-	}
+		Flux<Integer> nonFuseableSource = Flux.range(1, sourceSize)
+		                                      .hide()
+		                                      .doOnRequest((r) -> requestCount.increment());
 
-	@ParameterizedTest
-	@ValueSource(ints = {Fuseable.ASYNC, Fuseable.SYNC, Fuseable.ANY})
-	public void downstreamFusionWithNonFuseableUpstreamAndLazyRequestMode(int requestMode) {
-		TestPublisher<Integer> publisher = TestPublisher.create();
+		StepVerifier.FirstStep<Integer> firstStep =
+				StepVerifier.create(nonFuseableSource.prefetch(true), 0);
 
-		StepVerifier.create(publisher.flux()
-		                             .prefetch(256, true), 0)
-		            .expectFusion(requestMode, requestMode & Fuseable.ASYNC)
-		            .then(publisher::assertWasNotRequested)
-		            .then(publisher::complete)
-		            .verifyComplete();
+		StepVerifier.Step<Integer> step;
+		if (requestedMode != Fuseable.NONE) {
+			step = firstStep.expectFusion(requestedMode, requestedMode & Fuseable.ASYNC);
+		}
+		else {
+			step = firstStep.expectSubscription();
+		}
+
+		step.then(() -> assertThat(requestCount.longValue()).isEqualTo(0))
+		    .thenRequest(Long.MAX_VALUE)
+		    .expectNextCount(sourceSize)
+		    .verifyComplete();
 	}
 }

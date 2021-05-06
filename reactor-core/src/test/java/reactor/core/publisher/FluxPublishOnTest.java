@@ -1403,7 +1403,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 						Schedulers.single()
 						          .createWorker(),
 						true);
-//						Queues.unbounded());
+
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -1428,8 +1428,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		// => better place to test that BUFFERED reflects the size of the queue
 		Thread.sleep(50); //"hiccup" to ensure cancellation / draining is done
 
-//		test.queue.add(1);
-//		test.queue.add(1);
 		test.qs.add(1);
 		test.qs.add(1);
 
@@ -1446,7 +1444,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 						Schedulers.single()
 						          .createWorker(),
 						true);
-//						Queues.unbounded());
+
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -1456,7 +1454,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-//		test.queue.add(1);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 
