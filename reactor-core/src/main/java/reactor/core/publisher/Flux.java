@@ -5895,7 +5895,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Ensure that the total amount requested upstream is capped at {@code cap}.
+	 * Take only the first N values from this {@link Flux}, if available.
+	 * Furthermore, ensure that the total amount requested upstream is capped at {@code n}.
+	 * If n is zero, the source isn't even subscribed to and the operator completes immediately
+	 * upon subscription.
+	 * <img class="marble" src="doc-files/marbles/limitRequest.svg" alt="">
+	 * <p>
 	 * Backpressure signals from downstream subscribers are smaller than the cap are
 	 * propagated as is, but if they would cause the total requested amount to go over the
 	 * cap, they are reduced to the minimum value that doesn't go over.
@@ -5905,17 +5910,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * for cases where a race between request and cancellation can lead the upstream to
 	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
 	 * a source that would send the extraneous data over the network).
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/limitRequest.svg" alt="">
 	 *
-	 * @param requestCap the global backpressure limit to apply to the sum of downstream's requests
+	 * @param n the number of elements to emit from this flux, which is also the backpressure
+	 * cap for all of downstream's request
 	 *
-	 * @return a {@link Flux} that requests AT MOST {@code cap} from upstream in total.
-	 * @see #limitRate(int)
+	 * @return a {@link Flux} of {@code n} elements from the source, that requests AT MOST {@code n} from upstream in total.
 	 * @see #take(long)
 	 */
-	public final Flux<T> limitRequest(long requestCap) {
-		return onAssembly(new FluxLimitRequest<>(this, requestCap));
+	public final Flux<T> limitRequest(long n) {
+		return onAssembly(new FluxLimitRequest<>(this, n));
 	}
 
 	/**
