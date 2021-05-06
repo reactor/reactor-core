@@ -128,6 +128,7 @@ public class FluxJustTest {
 			Mono.just(0)
 			    .flatMapMany(i -> {
 				    return Flux.range(0, 10)
+				               .prefetch()
 				               .publishOn(Schedulers.boundedElastic())
 				               .concatWithValues(10)
 				               .concatWithValues(11)

@@ -55,6 +55,7 @@ public class FluxOnBackpressureLatestTest {
 		Flux.range(1, 10000000)
 		    .subscribeOn(Schedulers.parallel())
 		    .onBackpressureLatest()
+		    .prefetch()
 		    .publishOn(Schedulers.single())
 		    .concatMap(Mono::just, 1)
 		    .subscribe(ts);

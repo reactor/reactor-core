@@ -399,6 +399,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		    .publishOn(Schedulers.single())
 		    .map(v -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + v + Thread.currentThread().getName()))
 		    .share()
+		    .prefetch()
 		    .publishOn(Schedulers.boundedElastic())
 		    .distinct()
 		    .as(StepVerifier::create)
@@ -523,6 +524,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<Integer> dp = Sinks.unsafe().many().multicast().directBestEffort();
 		StepVerifier.create(
 				dp.asFlux()
+				  .prefetch()
 				  .publishOn(Schedulers.parallel()).publish()
 				  .autoConnect().<Integer>handle((s1, sink) -> {
 					if (s1 == 1) {

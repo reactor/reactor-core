@@ -216,6 +216,7 @@ public class FluxSubscribeOnTest {
 		}, DROP)
 		        .map(Flux.identityFunction()) //note the create is away from subscribeOn
 				.subscribeOn(Schedulers.newSingle("test")) //note there's no explicit parameter
+				.prefetch()
 				.publishOn(Schedulers.boundedElastic());
 
 		StepVerifier.create(test)
@@ -240,6 +241,7 @@ public class FluxSubscribeOnTest {
 		}, DROP)
 				.map(Function.identity())
 				.subscribeOn(Schedulers.single(), false)
+				.prefetch()
 				.publishOn(Schedulers.boundedElastic());
 
 		AtomicInteger count = new AtomicInteger();
@@ -265,9 +267,10 @@ public class FluxSubscribeOnTest {
 			}
 			sink.complete();
 		}, DROP)
-				.map(Function.identity())
-				.subscribeOn(Schedulers.single(), true)
-				.publishOn(Schedulers.boundedElastic());
+		                         .map(Function.identity())
+		                         .subscribeOn(Schedulers.single(), true)
+		                         .prefetch()
+		                         .publishOn(Schedulers.boundedElastic());
 
 		AtomicInteger count = new AtomicInteger();
 		StepVerifier.create(test)

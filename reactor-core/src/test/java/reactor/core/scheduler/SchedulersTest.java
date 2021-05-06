@@ -673,6 +673,7 @@ public class SchedulersTest {
 			CountDownLatch l = new CountDownLatch(1);
 
 			p.asFlux()
+			 .prefetch()
 			 .publishOn(scheduler)
 			 .log()
 			 .subscribe(r::set, null, l::countDown);
