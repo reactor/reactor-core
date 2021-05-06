@@ -767,7 +767,7 @@ public class HooksTest {
 			Hooks.onNextDroppedFail();
 
 			assertThatExceptionOfType(RuntimeException.class)
-					.isThrownBy(() -> Flux.from(p).take(2).subscribe(seen::add))
+					.isThrownBy(() -> Flux.from(p).take(2, false).subscribe(seen::add))
 					.isInstanceOf(RuntimeException.class)
 					.matches(Exceptions::isCancel);
 

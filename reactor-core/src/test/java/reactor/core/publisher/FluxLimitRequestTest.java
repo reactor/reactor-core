@@ -43,7 +43,7 @@ class FluxLimitRequestTest {
 		final Flux<Integer> source = Flux.range(1, 100)
 		                                 .doOnRequest(rCount::add);
 
-		StepVerifier.create(source.limitRequest(3))
+		StepVerifier.create(source.take(3, true))
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
@@ -151,7 +151,7 @@ class FluxLimitRequestTest {
 
 		Flux<Integer> test = Flux.range(1, 1000)
 				.doOnCancel(() -> cancelled.set(true))
-				.limitRequest(3);
+				.take(3, true);
 
 		StepVerifier.create(test)
 		            .expectNextCount(3)
@@ -170,7 +170,7 @@ class FluxLimitRequestTest {
 		Flux<Integer> test = Flux.range(1, 1000)
 		                         .doOnCancel(() -> sourceCancelled.set(true))
 		                         .doOnRequest(sourceRequested::add)
-		                         .limitRequest(10)
+		                         .take(10, true)
 		                         .doOnCancel(() -> operatorCancelled.set(true))
 		                         .doOnRequest(operatorRequested::add)
 		                         .take(3);
@@ -188,7 +188,7 @@ class FluxLimitRequestTest {
 
 	@Test
 	void noPrefetch() {
-		assertThat(Flux.range(1, 10).limitRequest(3)
+		assertThat(Flux.range(1, 10).take(3, true)
 				.getPrefetch()).isZero();
 	}
 
@@ -196,7 +196,7 @@ class FluxLimitRequestTest {
 	void errorAtCapNotPropagated() {
 		TestPublisher<Integer> tp = TestPublisher.create();
 
-		StepVerifier.create(tp.flux().limitRequest(3))
+		StepVerifier.create(tp.flux().take(3, true))
 		            .then(() -> tp.next(1, 2, 3).error(new IllegalStateException("boom")))
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
@@ -206,7 +206,7 @@ class FluxLimitRequestTest {
 	void errorUnderCapPropagated() {
 		TestPublisher<Integer> tp = TestPublisher.create();
 
-		StepVerifier.create(tp.flux().limitRequest(4))
+		StepVerifier.create(tp.flux().take(4, true))
 		            .then(() -> tp.next(1, 2, 3).error(new IllegalStateException("boom")))
 		            .expectNext(1, 2, 3)
 		            .verifyErrorMessage("boom");
@@ -216,7 +216,7 @@ class FluxLimitRequestTest {
 	void completeUnderCap() {
 		TestPublisher<Integer> tp = TestPublisher.create();
 
-		StepVerifier.create(tp.flux().limitRequest(4))
+		StepVerifier.create(tp.flux().take(4, true))
 		            .then(() -> tp.emit(1, 2, 3))
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
@@ -226,7 +226,7 @@ class FluxLimitRequestTest {
 	void nextSignalDespiteAllProducedIsDropped() {
 		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE, TestPublisher.Violation.REQUEST_OVERFLOW);
 
-		StepVerifier.create(tp.flux().limitRequest(3))
+		StepVerifier.create(tp.flux().take(3, true))
 				.then(() -> tp.emit(1, 2, 3, 4))
 				.expectNext(1, 2, 3)
 				.expectComplete()
@@ -238,7 +238,7 @@ class FluxLimitRequestTest {
 	void completeSignalDespiteAllProducedNotPropagated() {
 		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 
-		StepVerifier.create(tp.flux().limitRequest(3))
+		StepVerifier.create(tp.flux().take(3, true))
 		            .then(() -> tp.emit(1, 2, 3))
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
@@ -248,7 +248,7 @@ class FluxLimitRequestTest {
 	void errorSignalDespiteAllProducedIsDropped() {
 		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 
-		StepVerifier.create(tp.flux().limitRequest(3))
+		StepVerifier.create(tp.flux().take(3, true))
 				.then(() -> tp.next(1, 2, 3).error(new IllegalStateException("boom")))
 				.expectNext(1, 2, 3)
 				.expectComplete()
@@ -258,7 +258,7 @@ class FluxLimitRequestTest {
 
 	@Test
 	void zeroCompletesImmediately() {
-		StepVerifier.create(Flux.range(1, 100).limitRequest(0))
+		StepVerifier.create(Flux.range(1, 100).take(0, true))
 				.expectComplete()
 				.verify(Duration.ofSeconds(1));
 	}
@@ -266,7 +266,7 @@ class FluxLimitRequestTest {
 	@Test
 	void zeroDoesntEvenSubscribeToUpstream() {
 		AtomicBoolean subscribed = new AtomicBoolean();
-		StepVerifier.create(Flux.never().doOnSubscribe(sub -> subscribed.set(true)).limitRequest(0))
+		StepVerifier.create(Flux.never().doOnSubscribe(sub -> subscribed.set(true)).take(0, true))
 				.expectComplete()
 				.verify(Duration.ofSeconds(1));
 
@@ -275,7 +275,7 @@ class FluxLimitRequestTest {
 
 	@Test
 	void negativeCapIsRejectedAtAssembly() {
-		assertThatIllegalArgumentException().isThrownBy(() -> Flux.empty().limitRequest(-1))
+		assertThatIllegalArgumentException().isThrownBy(() -> Flux.empty().take(-1, true))
 				.withMessage("cap >= 0 required but it was -1");
 	}
 
@@ -313,7 +313,7 @@ class FluxLimitRequestTest {
 		List<Long> requests = Collections.synchronizedList(new ArrayList<>());
 		final Flux<Integer> flux = Flux.range(1, 1000)
 		                               .doOnRequest(requests::add)
-		                               .limitRequest(81);
+		                               .take(81, true);
 		BaseSubscriber<Integer> base = new BaseSubscriber<Integer>() {
 			@Override
 			protected void hookOnSubscribe(Subscription subscription) {

@@ -172,7 +172,8 @@ I want to deal with:
 
 * I want to keep only a subset of the sequence:
 ** by taking N elements:
-*** at the beginning of the sequence: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#take-long-[Flux#take(long)]
+*** at the beginning of the sequence: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#take-long-boolean-[Flux#take(long, true)]
+**** ...requesting an unbounded amount from upstream: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#take-long-boolean-[Flux#take(long, false)]
 **** ...based on a duration: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#take-java.time.Duration-[Flux#take(Duration)]
 **** ...only the first element, as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#next--[Flux#next()]
 **** ...using https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscription.html#request(long)[request(N)] rather than cancellation: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#limitRequest-long-[Flux#limitRequest(long)]
