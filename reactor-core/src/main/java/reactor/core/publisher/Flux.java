@@ -5970,12 +5970,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param prefetchRate the limit to apply to downstream's backpressure
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure
-	 * @see #publishOn(Scheduler, int)
+	 * @see #publishOn(Scheduler)
+	 * @see #prefetch(int)
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int prefetchRate) {
-		Flux<T> prefetch = onAssembly(this.prefetch(prefetchRate));
-		return onAssembly(prefetch.publishOn(Schedulers.immediate(), true));
+		Flux<T> prefetch = this.prefetch(prefetchRate);
+		return prefetch.publishOn(Schedulers.immediate(), true);
 	}
 
 	/**
@@ -6013,7 +6014,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
 	 * replenishment request amount
-	 * @see #publishOn(Scheduler, int)
+	 * @see #publishOn(Scheduler)
+	 * @see #prefetch(int)
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
