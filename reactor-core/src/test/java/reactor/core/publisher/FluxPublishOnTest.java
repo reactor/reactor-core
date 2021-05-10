@@ -1052,7 +1052,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				    catch (InterruptedException e) {
 				    }
 			    })
-			    .prefetch()
 			    .publishOn(fromExecutor(executor))
 			    .subscribe(assertSubscriber);
 
@@ -1198,7 +1197,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				                               throw Exceptions.propagate(exception);
 			                               }
 		                               })
+		                               .hide()
 		                               .prefetch()
+		                               .hide()
 		                               .publishOn(fromExecutorService(executor));
 
 		StepVerifier.create(flux, 0)
@@ -1388,7 +1389,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		FluxPublishOn<Integer> test = new FluxPublishOn<>(source, scheduler, false);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
-		assertThat(test.scan(PREFETCH)).isEqualTo(3);
 		assertThat(test.scan(RUN_ON)).isSameAs(scheduler);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 	}
@@ -1410,7 +1410,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
@@ -1423,15 +1422,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-
-		//once cancelled, there shouldn't be any draining left
-		// => better place to test that BUFFERED reflects the size of the queue
-		Thread.sleep(50); //"hiccup" to ensure cancellation / draining is done
-
-		test.qs.add(1);
-		test.qs.add(1);
-
-		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 	}
 
 	@Test
@@ -1451,10 +1441,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
