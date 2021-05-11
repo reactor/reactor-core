@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-20.04
     outputs:
       versionType: ${{ steps.version.outputs.versionType }}
+      fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
     - uses: actions/checkout@v2
     - name: setup java
@@ -73,7 +74,7 @@ jobs:
       run: |
         git config --local user.name 'reactorbot'
         git config --local user.email '32325210+reactorbot@users.noreply.github.com'
-        git tag -m "Release milestone ${{ steps.version.outputs.fullVersion }}" v${{ steps.version.outputs.fullVersion }} ${{ github.sha }}
+        git tag -m "Release milestone ${{ needs.prepare.outputs.fullVersion }}" v${{ needs.prepare.outputs.fullVersion }} ${{ github.sha }}
         git push --tags
 
   #sign the release artifacts and deploy them to Artifactory
@@ -102,7 +103,7 @@ jobs:
       run: |
         git config --local user.name 'reactorbot'
         git config --local user.email '32325210+reactorbot@users.noreply.github.com'
-        git tag -m "Release version ${{ steps.version.outputs.fullVersion }}" v${{ steps.version.outputs.fullVersion }} ${{ github.sha }}
+        git tag -m "Release version ${{ needs.prepare.outputs.fullVersion }}" v${{ needs.prepare.outputs.fullVersion }} ${{ github.sha }}
         git push --tags
 
 # For Gradle configuration of signing, see https://docs.gradle.org/current/userguide/signing_plugin.html#sec:in-memory-keys
