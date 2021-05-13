@@ -2420,8 +2420,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Emit a single boolean true if any of the values of this {@link Flux} sequence match
 	 * the predicate.
 	 * <p>
-	 * The implementation uses short-circuit logic and completes with false if any value
-	 * doesn't match the predicate.
+	 * The implementation uses short-circuit logic and completes with true if
+	 * the predicate matches a value.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/any.svg" alt="">
