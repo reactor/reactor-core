@@ -64,6 +64,7 @@ public class BlockingTests {
 	@Test
 	public void blockingFirst() {
 		assertThat(range(1, 10)
+				.prefetch()
 				.publishOn(scheduler)
 				.blockFirst()).isEqualTo((Integer) 1);
 	}
@@ -71,6 +72,7 @@ public class BlockingTests {
 	@Test
 	public void blockingFirst2() {
 		assertThat(range(1, 10)
+				.prefetch()
 				.publishOn(scheduler)
 				.blockFirst(ofSeconds(10))).isEqualTo((Integer) 1);
 	}
@@ -92,6 +94,7 @@ public class BlockingTests {
 	@Test
 	public void blockingLast() {
 		assertThat(range(1, 10)
+				.prefetch()
 				.publishOn(scheduler)
 				.blockLast()).isEqualTo((Integer) 10);
 	}
@@ -99,6 +102,7 @@ public class BlockingTests {
 	@Test
 	public void blockingLast2() {
 		assertThat(range(1, 10)
+				.prefetch()
 				.publishOn(scheduler)
 				.blockLast(ofSeconds(10))).isEqualTo((Integer) 10);
 	}
@@ -122,8 +126,9 @@ public class BlockingTests {
 	public void blockingFirstError() {
 		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> {
 			Flux.error(new RuntimeException("test"))
-					.publishOn(scheduler)
-					.blockFirst();
+			    .prefetch()
+			    .publishOn(scheduler)
+			    .blockFirst();
 		});
 	}
 
@@ -131,8 +136,9 @@ public class BlockingTests {
 	public void blockingFirstError2() {
 		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> {
 			Flux.error(new RuntimeException("test"))
-					.publishOn(scheduler)
-					.blockFirst(Duration.ofSeconds(1));
+			    .prefetch()
+			    .publishOn(scheduler)
+			    .blockFirst(Duration.ofSeconds(1));
 		});
 	}
 

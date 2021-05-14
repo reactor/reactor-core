@@ -197,7 +197,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.doOnNext(v -> System.out.println("published " + v));
 
 		for (int i = 0; i < maxQueue * maxThreads - 1; i++) {
-			flux = flux.publishOn(scheduler, false, 1 + i % 2);
+			flux = flux.prefetch(1 + i % 2).publishOn(scheduler, false);
 		}
 
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();

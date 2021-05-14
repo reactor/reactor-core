@@ -26,19 +26,19 @@ public class FluxConcatWithTest {
 	@Test
 	public void noStackOverflow() {
 		int n = 5000;
-		
+
 		Flux<Integer> source = Flux.just(1);
-		
+
 		Flux<Integer> result = source;
-		
+
 		for (int i = 0; i < n; i++) {
 			result = result.concatWith(source);
 		}
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		result.subscribe(ts);
-		
+
 		ts.assertValueCount(n + 1)
 		.assertNoError()
 		.assertComplete();
@@ -47,20 +47,20 @@ public class FluxConcatWithTest {
 	@Test
 	public void noStackOverflow2() {
 		int n = 5000;
-		
+
 		Flux<Integer> source = Flux.just(1, 2).concatMap(Flux::just);
 		Flux<Integer> add = Flux.just(3);
-		
+
 		Flux<Integer> result = source;
-		
+
 		for (int i = 0; i < n; i++) {
 			result = result.concatWith(add);
 		}
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		result.subscribe(ts);
-		
+
 		ts.assertValueCount(n + 2)
 		.assertNoError()
 		.assertComplete();
@@ -69,34 +69,34 @@ public class FluxConcatWithTest {
 	@Test
 	public void noStackOverflow3() {
 		int n = 5000;
-		
+
 		Flux<Flux<Integer>> source = Flux.just(Flux.just(1), Flux.just(2));
 		Flux<Flux<Integer>> add = Flux.just(Flux.just(3));
-		
+
 		Flux<Flux<Integer>> result = source;
-		
+
 		for (int i = 0; i < n; i++) {
 			result = result.concatWith(add);
 		}
-		
+
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		
+
 		result.subscribe(ts);
-		
+
 		ts.assertValueCount(n + 2)
 		.assertNoError()
 		.assertComplete();
 	}
 
-	
+
 	@Test
 	public void dontBreakFluxArrayConcatMap() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.just(1, 2).concatMap(Flux::just).concatWith(Flux.just(3))
 		.subscribe(ts);
 
-		
+
 		ts.assertValues(1, 2, 3)
 		.assertNoError()
 		.assertComplete();
@@ -108,7 +108,7 @@ public class FluxConcatWithTest {
           .expectNext(1, 2, 4, 5, 6)
           .verifyComplete();
     }
-	
+
 	@Test
 	public void testConcurrencyCausingOverflow() {
 		// See https://github.com/reactor/reactor-core/pull/2576
@@ -118,7 +118,8 @@ public class FluxConcatWithTest {
 			.concatWithValues(10, 11, 12, 13)
 			.concatWith(Flux.range(14, 100 - 14))
 			.limitRate(16, 2)
-			.publishOn(Schedulers.boundedElastic(), 16)
+		    .prefetch(16)
+			.publishOn(Schedulers.boundedElastic())
 			.subscribeOn(Schedulers.boundedElastic())
 			.blockLast();
 		}
@@ -130,13 +131,14 @@ public class FluxConcatWithTest {
 		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
 		for (int round = 0; round < 20000; round++) {
 			Flux.range(0,10)
-			.publishOn(Schedulers.boundedElastic())
-			.concatWithValues(10, 11, 12, 13)
-			.concatWith(Flux.range(14, 100-14))
-			.publishOn(Schedulers.boundedElastic(), 16)
-			.subscribeOn(Schedulers.boundedElastic())
-			.blockLast();
+			    .prefetch()
+			    .publishOn(Schedulers.boundedElastic())
+			    .concatWithValues(10, 11, 12, 13)
+			    .concatWith(Flux.range(14, 100 - 14))
+			    .prefetch(16)
+			    .publishOn(Schedulers.boundedElastic())
+			    .subscribeOn(Schedulers.boundedElastic())
+			    .blockLast();
 		}
 	}
-	
 }

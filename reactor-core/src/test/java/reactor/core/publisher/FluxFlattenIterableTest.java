@@ -559,6 +559,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		ReferenceCounted referenceCounted3 = new ReferenceCounted(3);
 
 		Flux<ReferenceCounted> source = Flux.just(1, 2)
+		                                    .prefetch()
 		                                    .publishOn(Schedulers.immediate()) //drain async
 		                                    .concatMapIterable(i -> Arrays.asList(
 				                                    referenceCounted1,

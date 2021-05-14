@@ -170,6 +170,7 @@ public class FluxSpecTests {
 //		given:	"a composable with an initial value"
 		Flux<String> stream = Flux.just("test", "test2", "test3")
 		                    .log()
+		                    .prefetch()
 		                    .publishOn(Schedulers.parallel());
 
 //		when: "the flux is retrieved"
@@ -478,6 +479,7 @@ public class FluxSpecTests {
 		Flux<Integer> mapped = source
 				.asFlux()
 				.log()
+				.prefetch()
 				.publishOn(Schedulers.parallel())
 				.log()
 				.flatMap(v -> Flux.just(v * 2))
@@ -1094,6 +1096,7 @@ public class FluxSpecTests {
 
 		head
 				.asFlux()
+				.prefetch()
 				.publishOn(Schedulers.parallel())
 				.parallel(3)
 				.runOn(Schedulers.parallel())
