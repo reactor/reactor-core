@@ -37,6 +37,7 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
+@SuppressWarnings("deprecation")
 public class FluxSwitchMapTest {
 
 	@ParameterizedTest

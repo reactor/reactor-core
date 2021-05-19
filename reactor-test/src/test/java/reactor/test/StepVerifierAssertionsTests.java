@@ -181,34 +181,26 @@ public class StepVerifierAssertionsTests {
 		}
 	}
 
-        @Test
-        public void assertDiscardedElementsSatisfyingFailureOneExtra() {
-		try {
-	                 StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
-		                     .expectNext(2)
-		                     .expectComplete()
-		                     .verifyThenAssertThat()
-		                     .hasDiscardedElementsSatisfying(list -> assertThat(list).hasSize(3));
-	                 fail("expected an AssertionError");
-		}
-		catch (AssertionError ae) {
-	                 assertThat(ae).hasMessageContaining("Expected size:<3> but was:<2> in:");
-	        }
-        }
+	@Test
+	void assertDiscardedElementsSatisfyingFailureOneExtra() {
+		assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+					.expectNext(2)
+					.expectComplete()
+					.verifyThenAssertThat()
+					.hasDiscardedElementsSatisfying(list -> assertThat(list).hasSize(3));
+		}).withMessage("\nExpected size: 3 but was: 2 in:\n[1, 3]");
+	}
 
 	@Test
-	public void assertDiscardedElementsMatchingFailureOneExtra() {
-		try {
+	void assertDiscardedElementsMatchingFailureOneExtra() {
+		assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> {
 			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
 					.expectNext(2)
 					.expectComplete()
 					.verifyThenAssertThat()
 					.hasDiscardedElementsMatching(list -> list.stream().allMatch(e -> (int)e % 2 == 0));
-			fail("expected an AssertionError");
-		}
-		catch (AssertionError ae) {
-			assertThat(ae).hasMessage("Expected collection of discarded elements matching the given predicate, did not match: <[1, 3]>.");
-		}
+		}).withMessage("Expected collection of discarded elements matching the given predicate, did not match: <[1, 3]>.");
 	}
 
 
@@ -386,25 +378,22 @@ public class StepVerifierAssertionsTests {
 	}
 
 	@Test
-	public void assertDroppedErrorsNotSatisfying() {
+	void assertDroppedErrorsNotSatisfying() {
 		Throwable err1 = new IllegalStateException("boom1");
 		Throwable err2 = new IllegalStateException("boom2");
 		Throwable err3 = new IllegalStateException("boom3");
-		try {
+
+		assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(err1);
 				s.onError(err2);
 				s.onError(err3);
 			}).buffer(1))
-			            .expectError()
-			            .verifyThenAssertThat()
-			            .hasDroppedErrorsSatisfying(c -> assertThat(c).hasSize(3));
-			fail("expected an AssertionError");
-		}
-		catch (AssertionError ae) {
-			assertThat(ae).hasMessageContaining("Expected size:<3> but was:<2> in:");
-		}
+					.expectError()
+					.verifyThenAssertThat()
+					.hasDroppedErrorsSatisfying(c -> assertThat(c).hasSize(3));
+		}).withMessageContaining("Expected size: 3 but was: 2 in:");
 	}
 
 	@Test
@@ -554,27 +543,24 @@ public class StepVerifierAssertionsTests {
 	}
 
 	@Test
-	public void assertOperatorErrorsNotSatisfying() {
+	void assertOperatorErrorsNotSatisfying() {
 		Throwable err1 = new IllegalStateException("boom1");
 		Throwable err2 = new IllegalStateException("boom2");
 		Throwable err3 = new IllegalStateException("boom3");
-		try {
+
+		assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(err1);
 				Operators.onOperatorError(err2, Context.empty());
 				Operators.onOperatorError(err3, Context.empty());
 			}).buffer(1))
-			            .expectError()
-			            .verifyThenAssertThat()
-			            .hasOperatorErrorsSatisfying(c -> assertThat(c).hasSize(3));
-			fail("expected an AssertionError");
-		}
-		catch (AssertionError ae) {
-			assertThat(ae).hasMessageStartingWith("\nExpected size:<3> but was:<2> in:\n")
-			              .hasMessageContaining("boom2")
-			              .hasMessageContaining("boom3");
-		}
+					.expectError()
+					.verifyThenAssertThat()
+					.hasOperatorErrorsSatisfying(c -> assertThat(c).hasSize(3));
+		}).withMessageStartingWith("\nExpected size: 3 but was: 2 in:\n")
+				.withMessageContaining("boom2")
+				.withMessageContaining("boom3");
 	}
 
 	@Test

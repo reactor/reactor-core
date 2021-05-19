@@ -60,7 +60,7 @@ public class ParallelFluxNameTest {
 
 		final Stream<Tuple2<String, String>> scannedTags = test.scan(Scannable.Attr.TAGS);
 		assertThat(scannedTags).isNotNull();
-		assertThat(scannedTags.iterator()).containsExactlyInAnyOrder(tag1, tag2);
+		assertThat(scannedTags).containsExactlyInAnyOrder(tag1, tag2);
 	}
 
 	@Test

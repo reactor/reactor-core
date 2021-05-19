@@ -249,7 +249,8 @@ class StepVerifierOptionsTest {
 		assertThat(copy)
 				.as("deep copy")
 				.isNotSameAs(options)
-				.isEqualToComparingFieldByFieldRecursively(options);
+				.usingRecursiveComparison()
+				.isEqualTo(options);
 
 		assertThat(copy.extractorMap)
 				.as("extractorMap not shared")
@@ -260,26 +261,32 @@ class StepVerifierOptionsTest {
 		copy.initialRequest(234L)
 				.withInitialContext(Context.of("exampleSame", false))
 				.scenarioName("scenarioName2")
-				.extractor(customExtractor2)
 				.checkUnderRequesting(true)
+				.extractor(customExtractor2)
 				.valueFormatter(ValueFormatters.forClass(Signal.class, s -> "SIGNAL2"))
 				.virtualTimeSchedulerSupplier(() -> VirtualTimeScheduler.create(false));
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> assertThat(copy).isEqualToIgnoringGivenFields(options, "extractorMap"))
+				.isThrownBy(() -> assertThat(copy)
+						.usingRecursiveComparison()
+						.isEqualTo(options)
+				)
 				.as("post mutation")
-				.withMessageContaining("in fields:\n" +
-						"  <[\"scenarioName\",\n" +
-						"    \"checkUnderRequesting\",\n" +
-						"    \"initialRequest\",\n" +
-						"    \"vtsLookup\",\n" +
-						"    \"initialContext\",\n" +
-						"    \"objectFormatter\"]>");
+				.withMessageContainingAll(
+						"when recursively comparing field by field, but found the following 5 differences:",
+						"field/property 'checkUnderRequesting' differ:",
+						"field/property 'initialContext.key' differ:",
+						"field/property 'initialContext.value' differ:",
+						"field/property 'initialRequest' differ:",
+						"field/property 'scenarioName' differ:"
+				);
 		assertThat(copy.extractorMap)
 				.as("post mutation extractorMap")
 				.containsOnlyKeys(Signal.class)
 				.doesNotContainEntry(Signal.class, customExtractor1)
 				.containsEntry(Signal.class, customExtractor2);
+		assertThat(copy.getValueFormatter()).as("valueFormatter").isNotSameAs(options.getValueFormatter());
+		assertThat(copy.getVirtualTimeSchedulerSupplier()).as("vts supplier").isNotSameAs(options.getVirtualTimeSchedulerSupplier());
 	}
 
 }

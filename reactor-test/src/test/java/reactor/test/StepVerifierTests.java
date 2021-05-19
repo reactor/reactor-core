@@ -244,7 +244,7 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void assertNext() throws Exception {
+	void assertNext() throws Exception {
 		Flux<String> flux = Flux.just("foo");
 
 		assertThatExceptionOfType(AssertionError.class)
@@ -252,7 +252,7 @@ public class StepVerifierTests {
 				                              .assertNext(s -> assertThat(s).endsWith("ooz"))
 				                              .expectComplete()
 				                              .verify())
-				.withMessage("\nExpecting:\n <\"foo\">\nto end with:\n <\"ooz\">\n");
+				.withMessage("\nExpecting:\n  \"foo\"\nto end with:\n  \"ooz\"\n");
 	}
 
 	@Test
@@ -466,7 +466,7 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void errorSatisfiesInvalid() {
+	void errorSatisfiesInvalid() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
@@ -475,8 +475,9 @@ public class StepVerifierTests {
 		            .expectNext("foo")
 		            .expectErrorSatisfies(t -> assertThat(t).hasMessage("foo"))
 		            .verify())
-	            .withMessage("expectation \"expectErrorSatisfies\" failed (assertion failed on exception <java.lang.IllegalArgumentException>: " +
-			            "\nExpecting message:\n <\"foo\">\nbut was:\n <null>)");
+	            .withMessageStartingWith("expectation \"expectErrorSatisfies\" failed (assertion failed on exception <java.lang.IllegalArgumentException>: " +
+			            "\nExpecting message to be:\n  \"foo\"\nbut was:\n  null\n")
+				.withMessageEndingWith(")");
 	}
 
 	@Test
@@ -1674,12 +1675,13 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyErrorAssertionTriggersVerificationFailNoMatch() {
+	void verifyErrorAssertionTriggersVerificationFailNoMatch() {
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> StepVerifier.create(Flux.error(new IllegalArgumentException("boom")))
 				                              .verifyErrorSatisfies(e -> assertThat(e).hasMessage("foo")))
-		        .withMessage("expectation \"verifyErrorSatisfies\" failed (assertion failed on exception <java.lang.IllegalArgumentException: boom>: "
-				        + "\nExpecting message:\n <\"foo\">\nbut was:\n <\"boom\">)");
+		        .withMessageStartingWith("expectation \"verifyErrorSatisfies\" failed (assertion failed on exception <java.lang.IllegalArgumentException: boom>: "
+				        + "\nExpecting message to be:\n  \"foo\"\nbut was:\n  \"boom\"")
+				.withMessageEndingWith(")");
 	}
 
 	@Test

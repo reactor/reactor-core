@@ -1705,7 +1705,6 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void errorModeContinueInternalErrorStopStrategy() {
 		for (int iterations = 0; iterations < 1000; iterations++) {
 			AtomicInteger i = new AtomicInteger();
@@ -1733,7 +1732,6 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void errorModeContinueInternalErrorStopStrategyAsync() {
 		for (int iterations = 0; iterations < 1000; iterations++) {
 			AtomicInteger i = new AtomicInteger();

@@ -47,6 +47,7 @@ ext {
 testSets {
 	blockHoundTest
 	withMicrometerTest
+	tckTest
 }
 
 configurations {
@@ -57,7 +58,7 @@ configurations {
 dependencies {
 	// Reactive Streams
 	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
-	testImplementation ("org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}") {
+	tckTestImplementation ("org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}") {
 		// without this exclusion, testng brings an old version of junit which *embeds* an old version of hamcrest
 		// which gets picked up first and that we don't want. TCK runs fine w/o (old) junit 4.
 		exclude group: 'junit', module: 'junit'
@@ -185,17 +186,9 @@ task loops(type: Test, group: 'verification') {
 	}
 }
 
-task reactivestreamsTCK(type: Test, group: 'verification') {
-	include '**/*Verification.*'
-	doFirst {
-		println "Additional tests from `${name}` (${includes})"
-	}
-}
-
 tasks.withType(Test).all {
-	if (it.name == "reactivestreamsTCK") {
-		useTestNG()
-	} else {
+	if (it.name == "test") {
+		//configure tag support for the core test task
 		def tags = rootProject.findProperty("junit-tags")
 		if (tags != null) {
 			println "junit5 tags for core: $tags"
@@ -207,6 +200,18 @@ tasks.withType(Test).all {
 			useJUnitPlatform()
 		}
 	}
+	else if (it.name != "tckTest") {
+		//default to JunitPlatform
+		useJUnitPlatform()
+	}
+}
+
+tckTest {
+	useTestNG()
+	include '**/*Verification.*'
+	doFirst {
+		println "Additional tests from `${name}` (${includes})"
+	}
 }
 
 
@@ -216,17 +221,21 @@ blockHoundTest {
 	maxParallelForks = 1
 }
 
+jcstress {
+	mode = 'quick' //quick, default, tough
+}
+
 // inherit basic test task + common configuration in root
-// always depend on testNoMicrometer, skip reactivestreamsTCK on Travis, skip loops when not releasing
+// always depend on withMicrometerTest, blockHoundTest and tckTest, skip loops when not releasing
 // note that this way the tasks can be run individually
 check {
 	dependsOn withMicrometerTest
-	if (!detectedCiServers.contains("TRAVIS")) {
-		dependsOn reactivestreamsTCK
-	}
+	dependsOn blockHoundTest
+	dependsOn tckTest
 	if (!version.endsWith('-SNAPSHOT') && !version.contains('-SNAPSHOT-')) { //neither classic nor customized snapshots
 		dependsOn loops
 	}
+	dependsOn tasks.jcstress
 }
 
 // TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?
@@ -249,10 +258,6 @@ jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 check.dependsOn japicmp
 
-jcstress {
-	mode = 'quick' //quick, default, tough
-}
-tasks.check.dependsOn(tasks.jcstress)
 
 if (JavaVersion.current().java9Compatible) {
 	// SharedSecretsCallSiteSupplierFactory is a Java 8 specific optimization.
