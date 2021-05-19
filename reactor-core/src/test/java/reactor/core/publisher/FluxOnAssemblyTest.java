@@ -241,6 +241,7 @@ public class FluxOnAssemblyTest {
 		Iterator<String> lines = seekToBacktrace(debugStack);
 
 		assertThat(lines)
+				.toIterable()
 				.startsWith(
 						"|_ ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")",
 						"Stack trace:"

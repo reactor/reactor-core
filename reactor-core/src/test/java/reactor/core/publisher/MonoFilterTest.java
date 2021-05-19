@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.jupiter.api.Test;
-import org.testng.Assert;
+
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
