@@ -119,7 +119,7 @@ public class QueuesTest {
 		assertThat(q.peek()).as("peek").isNull();
 		assertThat(q.poll()).as("poll").isNull();
 		assertThat(q.contains(1)).as("contains").isFalse();
-		assertThat(q.iterator()).as("iterator").isEmpty();
+		assertThat(q.iterator()).as("iterator").isExhausted();
 
 		assertThatExceptionOfType(NoSuchElementException.class)
 				.as("element")

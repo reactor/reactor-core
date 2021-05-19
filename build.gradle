@@ -75,7 +75,7 @@ ext {
 
 	// Testing
 	jUnitPlatformVersion = '5.6.0'
-	assertJVersion = '3.11.1'
+	assertJVersion = '3.19.0' //needs to be manually synchronized in buildSrc
 	mockitoVersion = '2.23.0'
 	awaitilityVersion = '3.1.2'
 	throwingFunctionVersion = '1.5.0'
@@ -139,7 +139,6 @@ configure(subprojects) { p ->
 	test {
 		include '**/*Tests.*'
 		include '**/*Test.*'
-		include '**/*Spec.*'
 	}
 
 	//all test tasks will show FAILED for each test method,

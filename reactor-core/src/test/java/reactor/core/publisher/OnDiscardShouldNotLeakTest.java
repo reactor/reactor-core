@@ -140,6 +140,7 @@ public class OnDiscardShouldNotLeakTest {
 		int numberOfSubscriptions = discardScenario.numberOfSubscriptions;
 		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
+			@SuppressWarnings("unchecked")
 			TestPublisher<Tracked>[] testPublishers = new TestPublisher[numberOfSubscriptions];
 
 			for (int i1 = 0; i1 < numberOfSubscriptions; i1++) {
@@ -195,6 +196,7 @@ public class OnDiscardShouldNotLeakTest {
 
 		for (int i = 0; i < NB_ITERATIONS; i++) {
 			tracker.reset();
+			@SuppressWarnings("unchecked")
 			TestPublisher<Tracked>[] testPublishers = new TestPublisher[numberOfSubscriptions];
 
 			for (int i1 = 0; i1 < numberOfSubscriptions; i1++) {
@@ -555,7 +557,9 @@ public class OnDiscardShouldNotLeakTest {
 			this.publisherProducer = publisherProducer;
 		}
 
-		Publisher<Tracked> producePublisherFromSources(TestPublisher<Tracked> mainSource, TestPublisher<Tracked>... otherSources) {
+		@SafeVarargs
+		final Publisher<Tracked> producePublisherFromSources(TestPublisher<Tracked> mainSource,
+		                                                     TestPublisher<Tracked>... otherSources) {
 			return publisherProducer.apply(mainSource, otherSources);
 		}
 

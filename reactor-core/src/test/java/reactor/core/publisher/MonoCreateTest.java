@@ -347,6 +347,7 @@ public class MonoCreateTest {
 			Hooks.onNextDropped(collector::add);
 			AssertSubscriber<Object> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, collector::add), 1);
 
+			@SuppressWarnings("unchecked")
 			MonoSink<Object>[] sinks = new MonoSink[1];
 
 			Mono.create(sink -> sinks[0] = sink)

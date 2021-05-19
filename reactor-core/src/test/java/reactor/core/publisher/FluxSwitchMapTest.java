@@ -28,6 +28,7 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("deprecation")
 public class FluxSwitchMapTest {
 
 	@Test

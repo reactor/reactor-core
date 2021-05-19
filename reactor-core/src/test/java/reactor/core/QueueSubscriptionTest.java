@@ -79,7 +79,7 @@ class QueueSubscriptionTest {
 				.isThrownBy(() -> {
 					assertThat(queueSubscription).isNull();
 				})
-		.withMessage("\n" + "Expecting:\n" + " <ThisIsNotAQueue>\n" + "to be equal to:\n" + " <null>\n" + "but was not.");
+		.withMessage("\n" + "expected: null\n" + "but was : ThisIsNotAQueue");
 	}
 
 }
