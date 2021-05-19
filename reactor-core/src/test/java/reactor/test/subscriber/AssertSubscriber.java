@@ -449,8 +449,9 @@ public class AssertSubscriber<T>
 
 	public final AssertSubscriber<T> assertFusionMode(int expectedMode) {
 		if (establishedFusionMode != expectedMode) {
-			throw new AssertionError("Wrong fusion mode: expected: " + fusionModeName(
-					expectedMode) + ", actual: " + fusionModeName(establishedFusionMode));
+			throw new AssertionError("Wrong fusion mode: expected: " +
+					Fuseable.fusionModeName(expectedMode) +
+					", actual: " + Fuseable.fusionModeName(establishedFusionMode));
 		}
 		return this;
 	}
@@ -1105,21 +1106,6 @@ public class AssertSubscriber<T>
 		}
 
 		throw e;
-	}
-
-	protected final String fusionModeName(int mode) {
-		switch (mode) {
-			case -1:
-				return "Disabled";
-			case Fuseable.NONE:
-				return "None";
-			case Fuseable.SYNC:
-				return "Sync";
-			case Fuseable.ASYNC:
-				return "Async";
-			default:
-				return "Unknown(" + mode + ")";
-		}
 	}
 
 	protected final String valueAndClass(Object o) {

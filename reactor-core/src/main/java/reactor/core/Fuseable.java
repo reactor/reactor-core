@@ -47,7 +47,59 @@ public interface Fuseable {
 	 * whereas the unfused sequence would have invoked the mapper on the previous thread.
 	 * If such mapper invocation is costly, it would escape its thread boundary this way.
 	 */
-	int THREAD_BARRIER = 4;
+	int THREAD_BARRIER = 0b100; //4
+
+	/**
+	 * Attempt to convert a fusion mode int code into a human-readable representation.
+	 * Note that this can include the {@link #THREAD_BARRIER} flag, as an appended {@code +THREAD_BARRIER}.
+	 * <p>
+	 * This method accepts negative codes, mainly for the benefit of supporting testing scenarios where
+	 * fusion can be entirely deactivated (returns {@code Disabled}).
+	 * Unknown positive codes on the other hand return {@code Unknown(x)}.
+	 *
+	 * @param mode the fusion mode int code
+	 * @return a human-readable {@link String} representation of the code
+	 */
+	static String fusionModeName(int mode) {
+		return fusionModeName(mode, false);
+	}
+
+	/**
+	 * Attempt to convert a fusion mode int code into a human-readable representation.
+	 * Note that this can include the {@link #THREAD_BARRIER} flag, as an appended {@code +THREAD_BARRIER},
+	 * unless the {@code ignoreThreadBarrier} parameter is set to {@literal true}.
+	 * <p>
+	 * This method accepts negative codes, mainly for the benefit of supporting testing scenarios where
+	 * fusion can be entirely deactivated (returns {@code Disabled}).
+	 * Unknown positive codes on the other hand return {@code Unknown(x)}.
+	 *
+	 * @param mode the fusion mode int code
+	 * @param ignoreThreadBarrier whether or not to ignore the {@link #THREAD_BARRIER} flag in the representation
+	 * @return a human-readable {@link String} representation of the code
+	 */
+	static String fusionModeName(int mode, boolean ignoreThreadBarrier) {
+		int evaluated = mode;
+		String threadBarrierSuffix = "";
+		if (mode >= 0) {
+			evaluated = mode & ~THREAD_BARRIER; //erase the THREAD_BARRIER bit;
+			if ((mode & THREAD_BARRIER) == THREAD_BARRIER) {
+				threadBarrierSuffix = "+THREAD_BARRIER";
+			}
+		}
+
+		switch (evaluated) {
+			case -1:
+				return "Disabled"; //this is more specific for tests or things that can entirely skip the fusion negotiation
+			case Fuseable.NONE:
+				return "NONE";
+			case Fuseable.SYNC:
+				return "SYNC" + threadBarrierSuffix;
+			case Fuseable.ASYNC:
+				return "ASYNC" + threadBarrierSuffix;
+			default:
+				return "Unknown(" + mode + ")";
+		}
+	}
 
 	/**
 	 * A subscriber variant that can immediately tell if it consumed
