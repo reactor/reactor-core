@@ -1681,6 +1681,7 @@ public class FluxFlatMapTest {
 	public void errorModeContinueInternalErrorStopStrategy() {
 		for (int iterations = 0; iterations < 1000; iterations++) {
 			AtomicInteger i = new AtomicInteger();
+			@SuppressWarnings("unchecked")
 			TestPublisher<Integer>[] inners = new TestPublisher[]{
 					TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE),
 					TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE)
@@ -1709,6 +1710,7 @@ public class FluxFlatMapTest {
 	public void errorModeContinueInternalErrorStopStrategyAsync() {
 		for (int iterations = 0; iterations < 1000; iterations++) {
 			AtomicInteger i = new AtomicInteger();
+			@SuppressWarnings("unchecked")
 			TestPublisher<Integer>[] inners = new TestPublisher[]{
 				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE),
 				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE)
