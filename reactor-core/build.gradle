@@ -194,18 +194,14 @@ tasks.withType(Test).all {
 			useJUnitPlatform()
 		}
 	}
-	else if (it.name == "tckTest") {
-		//configure tck tests to use TestNG
-		useTestNG()
-	}
-	else {
+	else if (it.name != "tckTest") {
 		//default to JunitPlatform
 		useJUnitPlatform()
 	}
 }
 
 tckTest {
-	useJUnitPlatform()
+	useTestNG()
 	include '**/*Verification.*'
 	doFirst {
 		println "Additional tests from `${name}` (${includes})"
