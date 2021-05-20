@@ -16,18 +16,11 @@
 
 package reactor.test.subscriber;
 
-import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.api.ThrowableTypeAssert;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.internal.util.MockUtil;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.reactivestreams.Subscription;
@@ -35,13 +28,10 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Signal;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyInt;
 
 /**
@@ -80,9 +70,9 @@ class TestSubscriberTest {
 	@Test
 	void requestFusionSync() {
 		Flux<Integer> source = Flux.range(1, 10);
-		TestSubscriber<Integer> testSubscriber = TestSubscriber.withOptions()
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.SYNC)
-				.create();
+				.build();
 
 		source.subscribe(testSubscriber);
 
@@ -99,7 +89,7 @@ class TestSubscriberTest {
 
 	@Test
 	void requestFusionSyncButGetNormal() {
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions().requireFusion(Fuseable.SYNC).create();
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder().requireFusion(Fuseable.SYNC).build();
 
 		assertThatCode(() -> subscriber.onSubscribe(Mockito.mock(Subscription.class)))
 				.doesNotThrowAnyException();
@@ -114,7 +104,7 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.ASYNC);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions().requireFusion(Fuseable.SYNC).create();
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder().requireFusion(Fuseable.SYNC).build();
 
 		assertThatCode(() -> subscriber.onSubscribe(mock))
 				.doesNotThrowAnyException();
@@ -126,9 +116,9 @@ class TestSubscriberTest {
 
 	@Test
 	void syncFusionModeDisallowsRequest() {
-		TestSubscriber<Integer> testSubscriber = TestSubscriber.withOptions()
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.SYNC)
-				.create();
+				.build();
 		Flux.range(1, 10).subscribe(testSubscriber);
 
 		assertThat(testSubscriber.getFusionMode()).as("fusion mode").isEqualTo(Fuseable.SYNC);
@@ -142,9 +132,9 @@ class TestSubscriberTest {
 		Flux<Integer> source = Flux.range(1, 10)
 				.publishOn(Schedulers.immediate());
 
-		TestSubscriber<Integer> testSubscriber = TestSubscriber.withOptions()
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ASYNC)
-				.create();
+				.build();
 
 		source.subscribe(testSubscriber);
 
@@ -161,7 +151,7 @@ class TestSubscriberTest {
 
 	@Test
 	void requestFusionAsyncButGetNormal() {
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions().requireFusion(Fuseable.ASYNC).create();
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
 
 		assertThatCode(() -> subscriber.onSubscribe(Mockito.mock(Subscription.class)))
 				.doesNotThrowAnyException();
@@ -176,7 +166,7 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC | Fuseable.THREAD_BARRIER);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions().requireFusion(Fuseable.ASYNC).create();
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
 
 		assertThatCode(() -> subscriber.onSubscribe(mock))
 				.doesNotThrowAnyException();
@@ -191,9 +181,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.SYNC)
-				.create();
+				.build();
 
 		subscriber.onSubscribe(mock);
 
@@ -206,9 +196,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.NONE);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.SYNC)
-				.create();
+				.build();
 
 		assertThatCode(() -> subscriber.onSubscribe(mock))
 				.doesNotThrowAnyException();
@@ -223,9 +213,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.ASYNC);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.ASYNC)
-				.create();
+				.build();
 
 		subscriber.onSubscribe(mock);
 
@@ -238,9 +228,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.NONE);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.ASYNC)
-				.create();
+				.build();
 
 		assertThatCode(() -> subscriber.onSubscribe(mock))
 				.doesNotThrowAnyException();
@@ -255,9 +245,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.ASYNC);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.ANY)
-				.create();
+				.build();
 
 		subscriber.onSubscribe(mock);
 
@@ -269,9 +259,9 @@ class TestSubscriberTest {
 	void syncPollInterruptedByCancel() {
 		AtomicInteger source = new AtomicInteger();
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.SYNC)
-				.create();
+				.build();
 
 		@SuppressWarnings("rawtypes")
 		final Fuseable.QueueSubscription mock = Mockito.mock(Fuseable.QueueSubscription.class);
@@ -308,9 +298,9 @@ class TestSubscriberTest {
 	void asyncPollInterruptedByCancel() {
 		AtomicInteger source = new AtomicInteger();
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.ASYNC)
-				.create();
+				.build();
 
 		@SuppressWarnings("rawtypes")
 		final Fuseable.QueueSubscription mock = Mockito.mock(Fuseable.QueueSubscription.class);
@@ -349,9 +339,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.ASYNC);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireNotFuseable()
-				.create();
+				.build();
 
 		subscriber.onSubscribe(mock);
 
@@ -449,9 +439,9 @@ class TestSubscriberTest {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.withOptions()
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
 				.requireFusion(Fuseable.SYNC)
-				.create();
+				.build();
 
 		subscriber.onSubscribe(mock);
 		//actually at that point the source has been entirely polled so we're terminated
@@ -472,7 +462,7 @@ class TestSubscriberTest {
 	@Test
 	void requestZeroInitiallyThenSmallRequest() {
 		Flux<Integer> source = Flux.range(1, 100).hide();
-		TestSubscriber<Integer> subscriber = TestSubscriber.withOptions().initialRequest(0L).create();
+		TestSubscriber<Integer> subscriber = TestSubscriber.builder().initialRequest(0L).build();
 
 		source.subscribe(subscriber);
 
@@ -487,7 +477,7 @@ class TestSubscriberTest {
 	}
 
 	@Test
-	void checkTerminalSignal_notTerminatedCancelsThrows() {
+	void expectTerminalSignal_notTerminatedCancelsThrows() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -499,14 +489,14 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(testSubscriber::checkTerminalSignal)
+				.isThrownBy(testSubscriber::expectTerminalSignal)
 				.withMessage("Expected subscriber to be terminated, but it has not been terminated yet.");
 
 		assertThat(cancelled.get()).as("subscription was cancelled").isTrue();
 	}
 
 	@Test
-	void checkTerminalSignal_unexpectedSignalCancelsThrows() {
+	void expectTerminalSignal_unexpectedSignalCancelsThrows() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -521,14 +511,14 @@ class TestSubscriberTest {
 		testSubscriber.terminalSignal.set(Signal.next(1));
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(testSubscriber::checkTerminalSignal)
+				.isThrownBy(testSubscriber::expectTerminalSignal)
 				.withMessage("Expected subscriber to be terminated, but it has not been terminated yet.");
 
 		assertThat(cancelled.get()).as("subscription was cancelled").isTrue();
 	}
 
 	@Test
-	void checkTerminalSignal_completedReturnsSignal() {
+	void expectTerminalSignal_completedReturnsSignal() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -540,7 +530,7 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 		testSubscriber.onComplete();
 
-		assertThat(testSubscriber.checkTerminalSignal())
+		assertThat(testSubscriber.expectTerminalSignal())
 				.satisfies(sig -> {
 					assertThat(sig.isOnComplete()).as("isOnComplete").isTrue();
 					assertThat(sig.getContextView().isEmpty()).as("contextView").isTrue();
@@ -550,7 +540,7 @@ class TestSubscriberTest {
 	}
 
 	@Test
-	void checkTerminalSignal_erroredReturnsSignal() {
+	void expectTerminalSignal_erroredReturnsSignal() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -563,7 +553,7 @@ class TestSubscriberTest {
 		Throwable expected = new IllegalStateException("boom");
 		testSubscriber.onError(expected);
 
-		assertThat(testSubscriber.checkTerminalSignal())
+		assertThat(testSubscriber.expectTerminalSignal())
 				.satisfies(sig -> {
 					assertThat(sig.isOnError()).as("isOnError").isTrue();
 					assertThat(sig.getThrowable()).as("getThrowable").isEqualTo(expected);
@@ -574,7 +564,7 @@ class TestSubscriberTest {
 	}
 
 	@Test
-	void checkTerminalError_notTerminatedCancelsThrows() {
+	void expectTerminalError_notTerminatedCancelsThrows() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -586,14 +576,14 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(testSubscriber::checkTerminalError)
+				.isThrownBy(testSubscriber::expectTerminalError)
 				.withMessage("Expected subscriber to have errored, but it has not been terminated yet.");
 
 		assertThat(cancelled.get()).as("subscription was cancelled").isTrue();
 	}
 
 	@Test
-	void checkTerminalError_completedThrows() {
+	void expectTerminalError_completedThrows() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -606,14 +596,14 @@ class TestSubscriberTest {
 		testSubscriber.onComplete();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(testSubscriber::checkTerminalError)
+				.isThrownBy(testSubscriber::expectTerminalError)
 				.withMessage("Expected subscriber to have errored, but it has completed instead.");
 
 		assertThat(cancelled.get()).as("subscription was not cancelled").isFalse();
 	}
 
 	@Test
-	void checkTerminalError_unexpectedSignalCancelsThrows() {
+	void expectTerminalError_unexpectedSignalCancelsThrows() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -628,14 +618,14 @@ class TestSubscriberTest {
 		testSubscriber.terminalSignal.set(Signal.next(1));
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(testSubscriber::checkTerminalError)
+				.isThrownBy(testSubscriber::expectTerminalError)
 				.withMessage("Expected subscriber to have errored, got unexpected terminal signal <onNext(1)>.");
 
 		assertThat(cancelled.get()).as("subscription was cancelled").isTrue();
 	}
 
 	@Test
-	void checkTerminalError_errorReturnsThrowable() {
+	void expectTerminalError_errorReturnsThrowable() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		final Subscription mock = Mockito.mock(Subscription.class);
 		Mockito.doAnswer(inv -> {
@@ -647,7 +637,7 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 		testSubscriber.onError(new IllegalStateException("expected"));
 
-		assertThat(testSubscriber.checkTerminalError())
+		assertThat(testSubscriber.expectTerminalError())
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("expected");
 

@@ -32,8 +32,6 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -57,7 +55,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * @return a new {@link TestSubscriber}
 	 */
 	static <T> TestSubscriber<T> create() {
-		return new TestSubscriber<>(new TestSubscriberSpec());
+		return new TestSubscriber<>(new TestSubscriberBuilder());
 	}
 
 	/**
@@ -69,28 +67,28 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		 * The parent {@link org.reactivestreams.Publisher} is expected to be fuseable, and this is
 		 * verified by checking the {@link Subscription} it provides is a {@link reactor.core.Fuseable.QueueSubscription}.
 		 */
-		REQUIRE_FUSEABLE,
+		FUSEABLE,
 		/**
 		 * The parent {@link org.reactivestreams.Publisher} is expected to NOT be fuseable, and this is
 		 * verified by checking the {@link Subscription} it provides is NOT a {@link reactor.core.Fuseable.QueueSubscription}.
 		 */
-		REQUIRE_NOT_FUSEABLE,
+		NOT_FUSEABLE,
 		/**
 		 * There is no particular interest in the fuseability of the parent {@link org.reactivestreams.Publisher},
 		 * so even if it provides a {@link reactor.core.Fuseable.QueueSubscription} it will be used as a
 		 * vanilla {@link Subscription}.
 		 */
-		NO_REQUIREMENT;
+		NONE;
 
 	}
 
 	/**
-	 * Create a {@link TestSubscriber} with tuning. See {@link TestSubscriberSpec}.
+	 * Create a {@link TestSubscriber} with tuning. See {@link TestSubscriberBuilder}.
 	 *
-	 * @return a {@link TestSubscriberSpec} to fine tune the {@link TestSubscriber} to produce
+	 * @return a {@link TestSubscriberBuilder} to fine tune the {@link TestSubscriber} to produce
 	 */
-	public static TestSubscriberSpec withOptions() {
-		return new TestSubscriberSpec();
+	public static TestSubscriberBuilder builder() {
+		return new TestSubscriberBuilder();
 	}
 
 	final long                             initialRequest;
@@ -114,7 +112,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	final CountDownLatch doneLatch;
 	final AtomicReference<AssertionError> internalFailure;
 
-	TestSubscriber(TestSubscriberSpec options) {
+	TestSubscriber(TestSubscriberBuilder options) {
 		this.initialRequest = options.initialRequest;
 		this.context = options.context;
 		this.fusionRequirement = options.fusionRequirement;
@@ -167,7 +165,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		this.s = s;
 		this.fusionMode = -1;
 		if (s instanceof Fuseable.QueueSubscription) {
-			if (fusionRequirement == FusionRequirement.REQUIRE_NOT_FUSEABLE) {
+			if (fusionRequirement == FusionRequirement.NOT_FUSEABLE) {
 				internalFail("TestSubscriber configured to reject QueueSubscription, got " + s);
 				return;
 			}
@@ -200,7 +198,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 				s.request(this.initialRequest);
 			}
 		}
-		else if (fusionRequirement == FusionRequirement.REQUIRE_FUSEABLE) {
+		else if (fusionRequirement == FusionRequirement.FUSEABLE) {
 			internalFail("TestSubscriber configured to require QueueSubscription, got " + s);
 		}
 		else if (this.initialRequest > 0L) {
@@ -332,7 +330,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return this.terminalSignal.get();
 	}
 
-	public Signal<T> checkTerminalSignal() {
+	public Signal<T> expectTerminalSignal() {
 		Signal<T> sig = terminalSignal.get();
 		if (sig == null || (!sig.isOnError() && !sig.isOnComplete())) {
 			cancel();
@@ -341,7 +339,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return sig;
 	}
 
-	public Throwable checkTerminalError() {
+	public Throwable expectTerminalError() {
 		Signal<T> sig = terminalSignal.get();
 		if (sig == null) {
 			cancel();
@@ -362,7 +360,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return new ArrayList<>(this.receivedOnNext);
 	}
 
-	public List<T> getOnNextSublistReceivedAfterCancel() {
+	public List<T> getReceivedOnNextAfterCancellation() {
 		return new ArrayList<>(this.receivedPostCancellation);
 	}
 

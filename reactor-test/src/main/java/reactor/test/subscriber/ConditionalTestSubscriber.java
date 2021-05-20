@@ -27,7 +27,7 @@ public class ConditionalTestSubscriber<T> extends TestSubscriber<T> implements F
 
 	final Predicate<? super T> tryOnNextPredicate;
 
-	ConditionalTestSubscriber(TestSubscriberSpec options,
+	ConditionalTestSubscriber(TestSubscriberBuilder options,
 	                          Predicate<? super T> tryOnNextPredicate) {
 		super(options);
 		this.tryOnNextPredicate = tryOnNextPredicate;

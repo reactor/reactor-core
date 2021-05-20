@@ -30,13 +30,13 @@ import reactor.util.context.ContextView;
  * and to enforce fusion compatibility (assuming a {@link Fuseable} source publisher
  * and expecting a {@link reactor.core.Fuseable.QueueSubscription}).
  * <p>
- * See {@link TestSubscriber#withOptions()} to obtain a base spec.
+ * See {@link TestSubscriber#builder()} to obtain a new builder.
  * <p>
- * Note that all methods mutate the spec, so reuse is discouraged.
+ * Note that all methods mutate the builder configuration, so reuse is discouraged.
  *
  * @author Simon Baslé
  */
-public class TestSubscriberSpec {
+public final class TestSubscriberBuilder {
 
 	long                             initialRequest;
 	Context                          context;
@@ -44,10 +44,10 @@ public class TestSubscriberSpec {
 	int                              requestedFusionMode;
 	int                              expectedFusionMode;
 
-	TestSubscriberSpec() {
+	TestSubscriberBuilder() {
 		this.initialRequest = Long.MAX_VALUE;
 		this.context = Context.empty();
-		this.fusionRequirement = TestSubscriber.FusionRequirement.NO_REQUIREMENT;
+		this.fusionRequirement = TestSubscriber.FusionRequirement.NONE;
 		this.requestedFusionMode = Fuseable.NONE;
 		this.expectedFusionMode = Fuseable.NONE;
 	}
@@ -57,9 +57,9 @@ public class TestSubscriberSpec {
 	 *
 	 * @param key the key to put/set in the {@link Context} of the future {@link TestSubscriber}
 	 * @param value the value to associate with the key
-	 * @return this spec, mutated to have the key/value pair added to the {@link Context}
+	 * @return this builder, mutated to have the key/value pair added to the {@link Context}
 	 */
-	public TestSubscriberSpec contextPut(Object key, Object value) {
+	public TestSubscriberBuilder contextPut(Object key, Object value) {
 		this.context = context.put(key, value);
 		return this;
 	}
@@ -68,9 +68,9 @@ public class TestSubscriberSpec {
 	 * Enrich the {@link Context} by putting all entries of the given {@link ContextView} in it.
 	 *
 	 * @param toAdd the {@link ContextView} to add to the {@link Context} of the future {@link TestSubscriber}
-	 * @return this spec, mutated to have all {@link ContextView}'s key/value pairs added to the {@link Context}
+	 * @return this builder, mutated to have all {@link ContextView}'s key/value pairs added to the {@link Context}
 	 */
-	public TestSubscriberSpec contextPutAll(ContextView toAdd) {
+	public TestSubscriberBuilder contextPutAll(ContextView toAdd) {
 		this.context = context.putAll(toAdd);
 		return this;
 	}
@@ -80,9 +80,9 @@ public class TestSubscriberSpec {
 	 * in {@link org.reactivestreams.Subscriber#onSubscribe(Subscription)}. Default is {@link Long#MAX_VALUE}.
 	 *
 	 * @param initialRequest the request to be made at subscription
-	 * @return this spec, mutated to reflect the new request to be made at subscription
+	 * @return this builder, mutated to reflect the new request to be made at subscription
 	 */
-	public TestSubscriberSpec initialRequest(long initialRequest) {
+	public TestSubscriberBuilder initialRequest(long initialRequest) {
 		this.initialRequest = initialRequest;
 		return this;
 	}
@@ -92,9 +92,9 @@ public class TestSubscriberSpec {
 	 * in {@link org.reactivestreams.Subscriber#onSubscribe(Subscription)} to be an
 	 * unbounded request, ie. {@link Long#MAX_VALUE}.
 	 *
-	 * @return this spec, mutated to reflect an unbounded request is to be made at subscription
+	 * @return this builder, mutated to reflect an unbounded request is to be made at subscription
 	 */
-	public TestSubscriberSpec initialRequestUnbounded() {
+	public TestSubscriberBuilder initialRequestUnbounded() {
 		this.initialRequest = Long.MAX_VALUE;
 		return this;
 	}
@@ -106,9 +106,9 @@ public class TestSubscriberSpec {
 	 * is expected to be the same as the provided mode.
 	 *
 	 * @param exactMode the requested fusion mode, expected in return from the negotiation with the {@link reactor.core.Fuseable.QueueSubscription}
-	 * @return this spec, mutated to require fusion with the given mode
+	 * @return this builder, mutated to require fusion with the given mode
 	 */
-	public TestSubscriberSpec requireFusion(int exactMode) {
+	public TestSubscriberBuilder requireFusion(int exactMode) {
 		return requireFusion(exactMode, exactMode);
 	}
 
@@ -124,14 +124,14 @@ public class TestSubscriberSpec {
 	 *
 	 * @param requestedMode the fusion mode requested to the {@link reactor.core.Fuseable.QueueSubscription}
 	 * @param negotiatedMode the fusion mode expected from the negotiation with the {@link reactor.core.Fuseable.QueueSubscription}
-	 * @return this spec, mutated to require fusion with the given negotiated mode (in response to the given requested mode)
+	 * @return this builder, mutated to require fusion with the given negotiated mode (in response to the given requested mode)
 	 */
-	public TestSubscriberSpec requireFusion(int requestedMode, int negotiatedMode) {
+	public TestSubscriberBuilder requireFusion(int requestedMode, int negotiatedMode) {
 		if (requestedMode == negotiatedMode && negotiatedMode == Fuseable.NONE) {
-			this.fusionRequirement = TestSubscriber.FusionRequirement.NO_REQUIREMENT;
+			this.fusionRequirement = TestSubscriber.FusionRequirement.NONE;
 		}
 		else {
-			this.fusionRequirement = TestSubscriber.FusionRequirement.REQUIRE_FUSEABLE;
+			this.fusionRequirement = TestSubscriber.FusionRequirement.FUSEABLE;
 		}
 		this.requestedFusionMode = requestedMode;
 		this.expectedFusionMode = negotiatedMode;
@@ -143,10 +143,10 @@ public class TestSubscriberSpec {
 	 * This is stricter than {@code requireFusion(Fuseable.NONE, Fuseable.NONE)}, which merely disables fusion but still accepts
 	 * the incoming subscription to be a QueueSubscription.
 	 *
-	 * @return this spec, mutated to reject all {@link reactor.core.Fuseable.QueueSubscription}
+	 * @return this builder, mutated to reject all {@link reactor.core.Fuseable.QueueSubscription}
 	 */
-	public TestSubscriberSpec requireNotFuseable() {
-		this.fusionRequirement = TestSubscriber.FusionRequirement.REQUIRE_NOT_FUSEABLE;
+	public TestSubscriberBuilder requireNotFuseable() {
+		this.fusionRequirement = TestSubscriber.FusionRequirement.NOT_FUSEABLE;
 		this.requestedFusionMode = Fuseable.NONE;
 		this.expectedFusionMode = Fuseable.NONE;
 		return this;
@@ -154,7 +154,7 @@ public class TestSubscriberSpec {
 
 	/**
 	 * Create a {@link reactor.core.Fuseable.ConditionalSubscriber} variant of {@link TestSubscriber} according
-	 * to this spec.
+	 * to this builder.
 	 * The provided {@link Predicate} will be used as the implementation
 	 * of {@link reactor.core.Fuseable.ConditionalSubscriber#tryOnNext(Object)}.
 	 *
@@ -162,17 +162,17 @@ public class TestSubscriberSpec {
 	 * @param <T> the type of elements received by the {@link TestSubscriber}, defined by the predicate
 	 * @return a {@link TestSubscriber} that implements {@link reactor.core.Fuseable.ConditionalSubscriber}
 	 */
-	public <T> ConditionalTestSubscriber<T> createConditional(Predicate<? super T> tryOnNext) {
+	public <T> ConditionalTestSubscriber<T> buildConditional(Predicate<? super T> tryOnNext) {
 		return new ConditionalTestSubscriber<>(this, tryOnNext);
 	}
 
 	/**
-	 * Create a {@link TestSubscriber} according to this spec.
+	 * Create a {@link TestSubscriber} according to this builder.
 	 *
 	 * @param <T> the type of elements to be received by the subscriber
 	 * @return a new plain {@link TestSubscriber}
 	 */
-	public <T> TestSubscriber<T> create() {
+	public <T> TestSubscriber<T> build() {
 		return new TestSubscriber<>(this);
 	}
 }
