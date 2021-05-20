@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.test.util.RaceTestUtils;
@@ -59,53 +60,45 @@ public class OperatorDisposablesTest {
 	@Test
 	public void validationNull() {
 		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
-		                                       .hasMessage("next is null"));
+				.hasMessage("next is null"));
 		assertThat(OperatorDisposables.validate(null, null,
 				e -> Operators.onErrorDropped(e, Context.empty()))).isFalse();
 	}
 
-	@Test
-	public void disposeRace() {
-		for (int i = 0; i < 500; i++) {
+	@RepeatedTest(500)
+	void disposeRace() {
+		TestDisposable r = new TestDisposable() {
+			@Override
+			public void run() {
+				OperatorDisposables.dispose(DISPOSABLE_UPDATER, this);
+			}
+		};
 
-			TestDisposable r = new TestDisposable() {
-				@Override
-				public void run() {
-					OperatorDisposables.dispose(DISPOSABLE_UPDATER, this);
-				}
-			};
-
-			RaceTestUtils.race(r, r);
-		}
+		RaceTestUtils.race(r, r);
 	}
 
-	@Test
-	public void setReplace() {
-		for (int i = 0; i < 500; i++) {
+	@RepeatedTest(500)
+	void setReplace() {
+		TestDisposable r = new TestDisposable() {
+			@Override
+			public void run() {
+				OperatorDisposables.replace(DISPOSABLE_UPDATER, this, Disposables.single());
+			}
+		};
 
-			TestDisposable r = new TestDisposable() {
-				@Override
-				public void run() {
-					OperatorDisposables.replace(DISPOSABLE_UPDATER, this, Disposables.single());
-				}
-			};
-
-			RaceTestUtils.race(r, r);
-		}
+		RaceTestUtils.race(r, r);
 	}
 
-	@Test
-	public void setRace() {
-		for (int i = 0; i < 500; i++) {
-			TestDisposable r = new TestDisposable() {
-				@Override
-				public void run() {
-					OperatorDisposables.set(DISPOSABLE_UPDATER, this, Disposables.single());
-				}
-			};
+	@RepeatedTest(500)
+	void setRace() {
+		TestDisposable r = new TestDisposable() {
+			@Override
+			public void run() {
+				OperatorDisposables.set(DISPOSABLE_UPDATER, this, Disposables.single());
+			}
+		};
 
-			RaceTestUtils.race(r, r);
-		}
+		RaceTestUtils.race(r, r);
 	}
 
 	@Test
