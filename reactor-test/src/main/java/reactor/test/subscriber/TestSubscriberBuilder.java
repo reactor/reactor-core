@@ -25,10 +25,11 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
- * A configuration spec used to create a fine-tuned {@link TestSubscriber}, also
- * allowing for a {@link reactor.core.Fuseable.ConditionalSubscriber} variant
- * and to enforce fusion compatibility (assuming a {@link Fuseable} source publisher
- * and expecting a {@link reactor.core.Fuseable.QueueSubscription}).
+ * A configuration builder used to create a fine-tuned {@link TestSubscriber}, also
+ * allowing for a {@link reactor.core.Fuseable.ConditionalSubscriber} variant.
+ * Notably, it allows the created instance to enforce fusion compatibility
+ * (by assuming a {@link Fuseable} source publisher and expecting a
+ * {@link reactor.core.Fuseable.QueueSubscription}).
  * <p>
  * See {@link TestSubscriber#builder()} to obtain a new builder.
  * <p>

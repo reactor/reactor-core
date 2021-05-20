@@ -37,11 +37,36 @@ import reactor.util.context.Context;
 
 /**
  * A {@link CoreSubscriber} that can be attached to any {@link org.reactivestreams.Publisher} to later assert which
- * events occurred at runtime. This is an alternative to {@link reactor.test.StepVerifier} which allows to evaluate
- * more complex scenarios where there are more than one possible outcome (eg. racing).
+ * events occurred at runtime. This can be used as an alternative to {@link reactor.test.StepVerifier}
+ * for more complex scenarios, e.g. more than one possible outcome, racing...
  * <p>
- * The subscriber can be fine tuned {@link #withOptions()}, which also allows to produce a {@link reactor.core.Fuseable.ConditionalSubscriber}
- * variant, a {@link reactor.core.Fuseable} variant and third variant that combines both interfaces, if needed.
+ * The subscriber can be fine tuned with a {@link #builder()}, which also allows to produce a {@link reactor.core.Fuseable.ConditionalSubscriber}
+ * variant if needed.
+ * <p>
+ * {@link org.reactivestreams.Subscriber}-inherited methods never throw, but a few failure conditions might be met, which
+ * fall into two categories.
+ * <p>
+ * The first category are "protocol errors": when the occurrence of an incoming signal doesn't follow the Reactive Streams
+ * specification. The case must be covered explicitly in the specification, and leads to the signal being added to the
+ * {@link #getProtocolErrors()} list. All protocol errors imply that the {@link org.reactivestreams.Publisher} has terminated
+ * already. The list of detected protocol errors is:
+ * <ul>
+ *     <li>the {@link TestSubscriber} has already terminated (onComplete or onError), but an {@link #onNext(Object)} is received: onNext signal added to protocol errors</li>
+ *     <li>the {@link TestSubscriber} has already terminated, but an {@link #onComplete()} is received: onComplete signal added to protocol errors</li>
+ *     <li>the {@link TestSubscriber} has already terminated, but an {@link #onError(Throwable)} is received: onError signal added to protocol errors</li>
+ * </ul>
+ * <p>
+ * The second category are "internal failures", in the rare cases where the {@link TestSubscriber} internally performs a check.
+ * These failure conditions always lead to a cancellation of the subscription and are represented as an {@link AssertionError}
+ * which is thrown when calling {@link #block()} or exposed via the {@link #getFailure()} getter.
+ * The possible internal failures are:
+ * <ul>
+ *     <li>the {@link TestSubscriber} has already received a {@link Subscription} (ie. it is being reused). Both subscriptions are cancelled.</li>
+ *     <li>the incoming {@link Subscription} is not capable of fusion, but fusion was required by the user</li>
+ *     <li>the incoming {@link Subscription} is capable of fusion, but this was forbidden by the user</li>
+ *     <li>the incoming {@link Subscription} is capable of fusion, but the negotiated fusion mode is not the one required by the user</li>
+ *     <li>onNext(null) is received, which should denote ASYNC fusion, but ASYNC fusion hasn't been established</li>
+ * </ul>
  *
  * @author Simon Baslé
  */
@@ -134,14 +159,14 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return this.context;
 	}
 
-	void internalCancel() {
+	private void internalCancel() {
 		Subscription s = this.s;
 		if (cancelled.compareAndSet(false, true) && s != null) {
 			s.cancel();
 		}
 	}
 
-	void internalFail(String message) {
+	private void internalFail(String message) {
 		if (this.internalFailure.compareAndSet(null, new AssertionError(message))) {
 			internalCancel();
 			notifyDone();
@@ -159,7 +184,8 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			return;
 		}
 		if (!Operators.validate(this.s, s)) {
-			this.protocolErrors.add(Signal.subscribe(s));
+			//s is already cancelled at that point, internalFail will cancel this.s
+			internalFail("TestSubscriber must not be reused, but Subscription has already been set.");
 			return;
 		}
 		this.s = s;
@@ -317,12 +343,29 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return terminalSignal.get() != null;
 	}
 
+
+	public boolean isCompleted() {
+		return isTerminated() && terminalSignal.get().isOnComplete();
+	}
+
+	public boolean isErrored() {
+		return isTerminated() && terminalSignal.get().isOnError();
+	}
+
 	public boolean isCancelled() {
 		return cancelled.get();
 	}
 
 	public boolean isTerminatedOrCancelled() {
 		return terminalSignal.get() != null || cancelled.get();
+	}
+
+	public boolean isFailed() {
+		return internalFailure.get() != null;
+	}
+
+	public boolean isDone() {
+		return doneLatch.getCount() == 0;
 	}
 
 	@Nullable
@@ -371,6 +414,16 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 */
 	public List<Signal<T>> getProtocolErrors() {
 		return new ArrayList<>(this.protocolErrors);
+	}
+
+	/**
+	 * @implNote unlike terminal signals a failure isn't expected to be something that tests would commonly assert,
+	 * thus no expectFailure method is provided as convenience around the nullable nature of this getter
+	 * @return
+	 */
+	@Nullable
+	public Throwable getFailure() {
+		return internalFailure.get();
 	}
 
 	public int getFusionMode() {

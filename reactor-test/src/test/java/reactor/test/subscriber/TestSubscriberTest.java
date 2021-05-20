@@ -18,6 +18,7 @@ package reactor.test.subscriber;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -96,6 +97,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessageStartingWith("TestSubscriber configured to require QueueSubscription, got Mock for Subscription");
 	}
 
@@ -111,6 +113,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected SYNC got ASYNC");
 	}
 
@@ -158,6 +161,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessageStartingWith("TestSubscriber configured to require QueueSubscription, got Mock for Subscription");
 	}
 
@@ -173,6 +177,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected ASYNC got SYNC+THREAD_BARRIER");
 	}
 
@@ -205,6 +210,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected SYNC got NONE");
 	}
 
@@ -237,6 +243,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected ASYNC got NONE");
 	}
 
@@ -347,16 +354,24 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessageStartingWith("TestSubscriber configured to reject QueueSubscription, got Mock for QueueSubscription, hashCode: ");
+
+
 
 		assertThat(Fuseable.fusionModeName(subscriber.getFusionMode()))
 				.isEqualTo("Disabled");
 	}
 
 	@Test
-	void protocolErrorExtraSubscription() {
+	void failFastOnExtraSubscription() {
 		final Subscription sub = Mockito.mock(Subscription.class);
+		AtomicBoolean subCancelled = new AtomicBoolean();
+		Mockito.doAnswer(inv -> { subCancelled.set(true); return null; }).when(sub).cancel();
+
 		final Subscription extraSub = Mockito.mock(Subscription.class);
+		AtomicBoolean extraSubCancelled = new AtomicBoolean();
+		Mockito.doAnswer(inv -> { extraSubCancelled.set(true); return null; }).when(extraSub).cancel();
 
 		final TestSubscriber<Object> subscriber = TestSubscriber.create();
 
@@ -364,9 +379,13 @@ class TestSubscriberTest {
 		subscriber.onSubscribe(extraSub);
 
 		assertThat(subscriber.s).isSameAs(sub);
-		assertThat(subscriber.getProtocolErrors()).as("protocol errors")
-				.containsExactly(Signal.subscribe(extraSub))
-				.allMatch(s -> s.getContextView().isEmpty(), "empty context");
+		assertThat(extraSubCancelled).as("extraSub cancelled").isTrue();
+		assertThat(subCancelled).as("sub cancelled").isTrue();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
+				.withMessage("TestSubscriber must not be reused, but Subscription has already been set.");
 	}
 
 	@Test
@@ -431,6 +450,7 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
+				.isSameAs(subscriber.getFailure())
 				.withMessage("onNext(null) received while ASYNC fusion not established");
 	}
 
