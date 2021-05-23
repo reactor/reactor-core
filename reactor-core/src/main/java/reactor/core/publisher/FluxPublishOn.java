@@ -446,9 +446,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final Subscriber<? super T> a = actual;
 			final Queue<T> queue = qs;
 
+			long emitted = 0L;
 			int missed = 1;
 			for (; ; ) {
-				long emitted = 0L;
 				long requested = this.requested;
 
 				while (emitted != requested) {
@@ -483,10 +483,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				if (queue.isEmpty()) {
 					doComplete(a);
 					return;
-				}
-
-				if (emitted != 0L && requested != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -emitted);
 				}
 
 				int w = wip;
