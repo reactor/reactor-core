@@ -223,12 +223,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		@Override
 		public void onNext(T t) {
-			if (sourceMode != Fuseable.NONE && sourceMode == outputMode) {
-				actual.onNext(t);
-			}
-
 			if (sourceMode == Fuseable.ASYNC) {
-				drain(null);
+				if (outputMode == Fuseable.ASYNC) {
+					actual.onNext(null);
+				}
+				else {
+					drain(null);
+				}
 				return;
 			}
 
@@ -287,17 +288,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				long previousState;
-				for (; ; ) {
-					previousState = this.requested;
-
-					long requested = previousState & Long.MAX_VALUE;
-					long nextRequested = Operators.addCap(requested, n);
-
-					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
-						break;
-					}
-				}
+				long previousState = Operators.addCapFromMinValue(REQUESTED, this, n);
 
 				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {

@@ -98,6 +98,20 @@ public abstract class Operators {
 			}
 		}
 	}
+	public static <T> long addCapFromMinValue(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
+		long pr, r, u;
+		for (; ; ) {
+			pr = updater.get(instance);
+			r = pr & Long.MAX_VALUE;
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = addCap(r, toAdd);
+			if (updater.compareAndSet(instance, pr, u)) {
+				return pr;
+			}
+		}
+	}
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.
