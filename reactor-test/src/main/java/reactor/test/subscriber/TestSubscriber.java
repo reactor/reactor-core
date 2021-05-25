@@ -56,10 +56,10 @@ import reactor.util.context.Context;
  *     <li>the {@link TestSubscriber} has already terminated, but an {@link #onError(Throwable)} is received: onError signal added to protocol errors</li>
  * </ul>
  * <p>
- * The second category are "internal failures", in the rare cases where the {@link TestSubscriber} internally performs a check.
- * These failure conditions always lead to a cancellation of the subscription and are represented as an {@link AssertionError}
- * which is thrown when calling {@link #block()} or exposed via the {@link #getFailure()} getter.
- * The possible internal failures are:
+ * The second category are "subscription failures", which are the only ones for which {@link TestSubscriber} internally performs an assertion.
+ * These failure conditions always lead to a cancellation of the subscription and are represented as an {@link AssertionError}.
+ * The assertion error is thrown by all the {@link #getReceivedOnNext() getXxx} and {@link #isTerminated() isXxx} accessors, the {@link #block()} methods
+ * and the {@link #expectTerminalError()}/{@link #expectTerminalSignal()} methods. The possible subscription failures are:
  * <ul>
  *     <li>the {@link TestSubscriber} has already received a {@link Subscription} (ie. it is being reused). Both subscriptions are cancelled.</li>
  *     <li>the incoming {@link Subscription} is not capable of fusion, but fusion was required by the user</li>
@@ -134,8 +134,8 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	final List<Signal<T>> protocolErrors;
 	final AtomicReference<Signal<T>> terminalSignal;
 
-	final CountDownLatch doneLatch;
-	final AtomicReference<AssertionError> internalFailure;
+	final CountDownLatch                  doneLatch;
+	final AtomicReference<AssertionError> subscriptionFailure;
 
 	TestSubscriber(TestSubscriberBuilder options) {
 		this.initialRequest = options.initialRequest;
@@ -151,7 +151,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		this.terminalSignal = new AtomicReference<>();
 
 		this.doneLatch = new CountDownLatch(1);
-		this.internalFailure = new AtomicReference<>();
+		this.subscriptionFailure = new AtomicReference<>();
 	}
 
 	@Override
@@ -159,21 +159,21 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return this.context;
 	}
 
-	private void internalCancel() {
+	void internalCancel() {
 		Subscription s = this.s;
 		if (cancelled.compareAndSet(false, true) && s != null) {
 			s.cancel();
 		}
 	}
 
-	private void internalFail(String message) {
-		if (this.internalFailure.compareAndSet(null, new AssertionError(message))) {
+	void subscriptionFail(String message) {
+		if (this.subscriptionFailure.compareAndSet(null, new AssertionError(message))) {
 			internalCancel();
 			notifyDone();
 		}
 	}
 
-	private void notifyDone() {
+	final void notifyDone() {
 		doneLatch.countDown();
 	}
 
@@ -184,15 +184,15 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			return;
 		}
 		if (!Operators.validate(this.s, s)) {
-			//s is already cancelled at that point, internalFail will cancel this.s
-			internalFail("TestSubscriber must not be reused, but Subscription has already been set.");
+			//s is already cancelled at that point, subscriptionFail will cancel this.s
+			subscriptionFail("TestSubscriber must not be reused, but Subscription has already been set.");
 			return;
 		}
 		this.s = s;
 		this.fusionMode = -1;
 		if (s instanceof Fuseable.QueueSubscription) {
 			if (fusionRequirement == FusionRequirement.NOT_FUSEABLE) {
-				internalFail("TestSubscriber configured to reject QueueSubscription, got " + s);
+				subscriptionFail("TestSubscriber configured to reject QueueSubscription, got " + s);
 				return;
 			}
 
@@ -202,7 +202,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			int negotiatedMode = qs.requestFusion(this.requestedFusionMode);
 
 			if (expectedFusionMode != negotiatedMode && expectedFusionMode != Fuseable.ANY) {
-				internalFail("TestSubscriber negotiated fusion mode inconsistent, expected " +
+				subscriptionFail("TestSubscriber negotiated fusion mode inconsistent, expected " +
 						Fuseable.fusionModeName(expectedFusionMode) + " got " + Fuseable.fusionModeName(negotiatedMode));
 				return;
 			}
@@ -225,7 +225,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			}
 		}
 		else if (fusionRequirement == FusionRequirement.FUSEABLE) {
-			internalFail("TestSubscriber configured to require QueueSubscription, got " + s);
+			subscriptionFail("TestSubscriber configured to require QueueSubscription, got " + s);
 		}
 		else if (this.initialRequest > 0L) {
 			s.request(this.initialRequest);
@@ -262,7 +262,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 				}
 			}
 			else {
-				internalFail("onNext(null) received while ASYNC fusion not established");
+				subscriptionFail("onNext(null) received while ASYNC fusion not established");
 			}
 		}
 
@@ -339,20 +339,31 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 	// == public accessors
 
+	void checkSubscriptionFailure() {
+		AssertionError subscriptionFailure = this.subscriptionFailure.get();
+		if (subscriptionFailure != null) {
+			throw subscriptionFailure;
+		}
+	}
+
 	/**
-	 * Check if this {@link TestSubscriber} is "done", that is to say it has either:
+	 * Check if this {@link TestSubscriber} has either:
 	 * <ul>
 	 *     <li>been cancelled: {@link #isCancelled()} would return true</li>
 	 *     <li>been terminated, having been signalled with onComplete or onError: {@link #isTerminated()} would return true and {@link #getTerminalSignal()}
 	 *     would return a non-null {@link Signal}</li>
-	 *     <li>encountered a failure condition (see {@link TestSubscriber} javadoc): {@link #isFailed()} would return true</li>
 	 * </ul>
+	 * The third possible failure condition, subscription failure, results in an {@link AssertionError} being thrown by this method
+	 * (like all other accessors, see also {@link TestSubscriber} javadoc).
+	 * <p>
 	 * Once this method starts returning true, any pending {@link #block()} calls should finish, and subsequent
 	 * block calls will return immediately.
 	 *
 	 * @return true if the {@link TestSubscriber} has reached an end state
+	 * @throws AssertionError in case of failure at subscription time
 	 */
-	public boolean isDone() {
+	public boolean isTerminatedOrCancelled() {
+		checkSubscriptionFailure();
 		return doneLatch.getCount() == 0;
 	}
 
@@ -360,15 +371,17 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * Check if this {@link TestSubscriber} has received a terminal signal, ie. onComplete or onError.
 	 * When returning {@code true}, implies:
 	 * <ul>
-	 *     <li>{@link #isDone()} is also true</li>
+	 *     <li>{@link #isTerminatedOrCancelled()} is also true</li>
 	 *     <li>{@link #getTerminalSignal()} returns a non-null {@link Signal}</li>
 	 *     <li>{@link #expectTerminalSignal()}} returns the {@link Signal}</li>
 	 *     <li>{@link #expectTerminalError()}} returns the {@link Signal} in case of onError but throws in case of onComplete</li>
 	 * </ul>
 	 *
 	 * @return true if the {@link TestSubscriber} has been terminated via onComplete or onError
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public boolean isTerminated() {
+		checkSubscriptionFailure();
 		return terminalSignal.get() != null;
 	}
 
@@ -376,7 +389,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * Check if this {@link TestSubscriber} has received a terminal signal that is specifically onComplete.
 	 * When returning {@code true}, implies:
 	 * <ul>
-	 *     <li>{@link #isDone()} is also true</li>
+	 *     <li>{@link #isTerminatedOrCancelled()} is also true</li>
 	 *     <li>{@link #isTerminated()} is also true</li>
 	 *     <li>{@link #getTerminalSignal()} returns a non-null onComplete {@link Signal}</li>
 	 *     <li>{@link #expectTerminalSignal()}} returns the same onComplete {@link Signal}</li>
@@ -384,8 +397,10 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * </ul>
 	 *
 	 * @return true if the {@link TestSubscriber} has been terminated via onComplete
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public boolean isTerminatedComplete() {
+		checkSubscriptionFailure();
 		return isTerminated() && terminalSignal.get().isOnComplete();
 	}
 
@@ -393,7 +408,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * Check if this {@link TestSubscriber} has received a terminal signal that is specifically onError.
 	 * When returning {@code true}, implies:
 	 * <ul>
-	 *     <li>{@link #isDone()} is also true</li>
+	 *     <li>{@link #isTerminatedOrCancelled()} is also true</li>
 	 *     <li>{@link #isTerminated()} is also true</li>
 	 *     <li>{@link #getTerminalSignal()} returns a non-null onError {@link Signal}</li>
 	 *     <li>{@link #expectTerminalSignal()}} returns the same onError {@link Signal}</li>
@@ -401,29 +416,22 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * </ul>
 	 *
 	 * @return true if the {@link TestSubscriber} has been terminated via onComplete
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public boolean isTerminatedError() {
+		checkSubscriptionFailure();
 		return isTerminated() && terminalSignal.get().isOnError();
 	}
 
 	/**
-	 * Check if this {@link TestSubscriber} has been {@link #cancel() cancelled}, which implies {@link #isDone()} is also true.
+	 * Check if this {@link TestSubscriber} has been {@link #cancel() cancelled}, which implies {@link #isTerminatedOrCancelled()} is also true.
 	 *
 	 * @return true if the {@link TestSubscriber} has been cancelled
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public boolean isCancelled() {
+		checkSubscriptionFailure();
 		return cancelled.get();
-	}
-
-	/**
-	 * Check if this {@link TestSubscriber} is {@link #isDone() done} due to an expectation failure.
-	 * This implies that an {@link AssertionError} describing the exact nature of the failed expectation is accessible
-	 * through {@link #getFailure()}.
-	 *
-	 * @return true if the @{@link TestSubscriber} has failed an expectation
-	 */
-	public boolean isFailed() {
-		return internalFailure.get() != null;
 	}
 
 	/**
@@ -433,21 +441,28 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * @return the terminal {@link Signal} or null if not terminated
 	 * @see #isTerminated()
 	 * @see #expectTerminalSignal()
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	@Nullable
 	public Signal<T> getTerminalSignal() {
+		checkSubscriptionFailure();
 		return this.terminalSignal.get();
 	}
 
 	/**
 	 * Expect the {@link TestSubscriber} to be {@link #isTerminated() terminated}, and return the terminal {@link Signal}
 	 * if so. Otherwise, <strong>cancel the subscription</strong> and throw an {@link AssertionError}.
+	 * <p>
+	 * Note that is there was already a subscription failure, the corresponding {@link AssertionError} is raised by this
+	 * method instead.
 	 *
 	 * @return the terminal {@link Signal} (cannot be null)
 	 * @see #isTerminated()
 	 * @see #getTerminalSignal()
+	 * @throws AssertionError in case of failure at subscription time, or if the subscriber hasn't terminated yet
 	 */
 	public Signal<T> expectTerminalSignal() {
+		checkSubscriptionFailure();
 		Signal<T> sig = terminalSignal.get();
 		if (sig == null || (!sig.isOnError() && !sig.isOnComplete())) {
 			cancel();
@@ -465,8 +480,10 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * @see #isTerminated()
 	 * @see #isTerminatedError()
 	 * @see #getTerminalSignal()
+	 * @throws AssertionError in case of failure at subscription time, or if the subscriber hasn't errored.
 	 */
 	public Throwable expectTerminalError() {
+		checkSubscriptionFailure();
 		Signal<T> sig = terminalSignal.get();
 		if (sig == null) {
 			cancel();
@@ -495,8 +512,10 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * @return the {@link List} of all elements received by the {@link TestSubscriber} as part of normal operation
 	 * @see #getReceivedOnNextAfterCancellation()
 	 * @see #getProtocolErrors()
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public List<T> getReceivedOnNext() {
+		checkSubscriptionFailure();
 		return new ArrayList<>(this.receivedOnNext);
 	}
 
@@ -513,8 +532,10 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * after {@link #cancel()} was triggered
 	 * @see #getReceivedOnNext()
 	 * @see #getProtocolErrors()
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public List<T> getReceivedOnNextAfterCancellation() {
+		checkSubscriptionFailure();
 		return new ArrayList<>(this.receivedPostCancellation);
 	}
 
@@ -527,23 +548,11 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * since they would all be the configured {@link #currentContext()}.
 	 *
 	 * @return a {@link List} of {@link Signal} representing the detected protocol errors from the source {@link org.reactivestreams.Publisher}
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public List<Signal<T>> getProtocolErrors() {
+		checkSubscriptionFailure();
 		return new ArrayList<>(this.protocolErrors);
-	}
-
-	/**
-	 * Return an {@link AssertionError} if there was a failed expectation (see {@link TestSubscriber), or null otherwise.
-	 * <p>
-	 * A non-null return value implies {@link #isDone()} and {@link #isFailed()} return true.
-	 *
-	 * @implNote unlike terminal signals a failure isn't expected to be something that tests would commonly assert,
-	 * thus no expectFailure method is provided as convenience around the nullable nature of this getter
-	 * @return an {@link AssertionError} if there was a failed expectation, null otherwise
-	 */
-	@Nullable
-	public AssertionError getFailure() {
-		return internalFailure.get();
 	}
 
 	/**
@@ -551,11 +560,14 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 * Fusion codes can be converted to a human-readable value for display via {@link Fuseable#fusionModeName(int)}.
 	 * If no particular fusion has been requested, returns {@link Fuseable#NONE}.
 	 * Note that as long as this {@link TestSubscriber} hasn't been subscribed to a {@link org.reactivestreams.Publisher},
-	 * this method will return {@code -1}.
+	 * this method will return {@code -1}. It will also throw an {@link AssertionError} if the configured fusion mode
+	 * couldn't be negotiated at subscription.
 	 *
 	 * @return -1 if not subscribed, 0 ({@link Fuseable#NONE}) if no fusion negotiated, a relevant fusion code otherwise
+	 * @throws AssertionError in case of failure at subscription time
 	 */
 	public int getFusionMode() {
+		checkSubscriptionFailure();
 		return this.fusionMode;
 	}
 
@@ -564,18 +576,17 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 	/**
 	 * Block until an assertable end state has been reached. This can be either a cancellation ({@link #isCancelled()}),
-	 * a "normal" termination ({@link #isTerminated()}) or an expectation failure ({@link #isFailed()}). In the later
-	 * case only, this method throws the corresponding {@link AssertionError} (which is also accessible via {@link #getFailure()}).
+	 * a "normal" termination ({@link #isTerminated()}) or subscription failure. In the later case only, this method
+	 * throws the corresponding {@link AssertionError}.
 	 * <p>
 	 * An AssertionError is also thrown if the thread is interrupted.
+	 *
+	 * @throws AssertionError in case of failure at subscription time (or thread interruption)
 	 */
 	public void block() {
 		try {
 			this.doneLatch.await();
-			AssertionError internalFailure = this.internalFailure.get();
-			if (internalFailure != null) {
-				throw internalFailure;
-			}
+			checkSubscriptionFailure();
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -586,20 +597,18 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	/**
 	 * Block until an assertable end state has been reached, or a timeout {@link Duration} has elapsed.
 	 * End state can be either a cancellation ({@link #isCancelled()}), a "normal" termination ({@link #isTerminated()})
-	 * or an expectation failure ({@link #isFailed()}). In the later case only, this method throws the corresponding
-	 * {@link AssertionError} (which is also accessible via {@link #getFailure()}). In case of timeout, an {@link AssertionError}
-	 * with a message reflecting the configured duration is thrown.
+	 * or a subscription failure. In the later case only, this method throws the corresponding {@link AssertionError}.
+	 * In case of timeout, an {@link AssertionError} with a message reflecting the configured duration is thrown.
 	 * <p>
 	 * An AssertionError is also thrown if the thread is interrupted.
+	 *
+	 * @throws AssertionError in case of failure at subscription time (or thread interruption)
 	 */
 	public void block(Duration timeout) {
 		long timeoutMs = timeout.toMillis();
 		try {
 			boolean done = this.doneLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
-			AssertionError internalFailure = this.internalFailure.get();
-			if (internalFailure != null) {
-				throw internalFailure;
-			}
+			checkSubscriptionFailure();
 			if (!done) {
 				throw new AssertionError("TestSubscriber timed out, not terminated after " + timeout + " (" + timeoutMs + "ms)");
 			}

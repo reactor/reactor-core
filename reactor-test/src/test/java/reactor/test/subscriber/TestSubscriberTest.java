@@ -16,6 +16,7 @@
 
 package reactor.test.subscriber;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +43,17 @@ import static org.mockito.ArgumentMatchers.anyInt;
  */
 class TestSubscriberTest {
 
+	@Nullable
+	static Throwable captureThrow(Runnable r) {
+		try {
+			r.run();
+			return null;
+		}
+		catch (Throwable t) {
+			return t;
+		}
+	}
+
 	@Test
 	void requestFailsIfNotSubscribed() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
@@ -58,7 +70,7 @@ class TestSubscriberTest {
 
 		AtomicBoolean cancelled = new AtomicBoolean();
 		Subscription s = Mockito.mock(Subscription.class);
-		Mockito.doAnswer((Answer<Object>) invocation -> {
+		Mockito.doAnswer(invocation -> {
 			cancelled.set(true);
 			return null;
 		}).when(s).cancel();
@@ -99,11 +111,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessageStartingWith("TestSubscriber configured to require QueueSubscription, got Mock for Subscription");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -118,11 +127,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected SYNC got ASYNC");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -169,11 +175,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessageStartingWith("TestSubscriber configured to require QueueSubscription, got Mock for Subscription");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -188,11 +191,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected ASYNC got SYNC+THREAD_BARRIER");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -224,11 +224,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected SYNC got NONE");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -260,11 +257,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessage("TestSubscriber negotiated fusion mode inconsistent, expected ASYNC got NONE");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -315,8 +309,7 @@ class TestSubscriberTest {
 		subscriber.onSubscribe(mock);
 
 		assertThat(subscriber.getReceivedOnNext()).containsExactly(1, 2, 3, 4);
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isFalse();
+		assertThat(subscriber.isTerminatedOrCancelled()).as("isDone").isTrue();
 		assertThat(subscriber.getTerminalSignal()).as("terminal signal").isNull();
 		assertThat(subscriber.isTerminated()).as("isTerminated").isFalse();
 		assertThat(subscriber.isCancelled()).as("isCancelled").isTrue();
@@ -356,8 +349,7 @@ class TestSubscriberTest {
 		subscriber.onNext(null);
 
 		assertThat(subscriber.getReceivedOnNext()).containsExactly(1, 2, 3, 4);
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isFalse();
+		assertThat(subscriber.isTerminatedOrCancelled()).as("isDone").isTrue();
 		assertThat(subscriber.getTerminalSignal()).as("terminal signal").isNull();
 		assertThat(subscriber.isTerminated()).as("isTerminated").isFalse();
 		assertThat(subscriber.isCancelled()).as("isCancelled").isTrue();
@@ -376,14 +368,8 @@ class TestSubscriberTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessageStartingWith("TestSubscriber configured to reject QueueSubscription, got Mock for QueueSubscription, hashCode: ");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
-
-		assertThat(Fuseable.fusionModeName(subscriber.getFusionMode()))
-				.isEqualTo(Fuseable.fusionModeName(-1));
 	}
 
 	@Test
@@ -405,16 +391,10 @@ class TestSubscriberTest {
 		assertThat(extraSubCancelled).as("extraSub cancelled").isTrue();
 		assertThat(subCancelled).as("sub cancelled").isTrue();
 
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
-
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessage("TestSubscriber must not be reused, but Subscription has already been set.");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -477,16 +457,10 @@ class TestSubscriberTest {
 		assertThatCode(() -> subscriber.onNext(null))
 				.doesNotThrowAnyException();
 
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
-
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(subscriber::block)
-				.isSameAs(subscriber.getFailure())
+				.isSameAs(captureThrow(subscriber::isTerminatedOrCancelled))
 				.withMessage("onNext(null) received while ASYNC fusion not established");
-
-		assertThat(subscriber.isDone()).as("isDone").isTrue();
-		assertThat(subscriber.isFailed()).as("isFailed").isTrue();
 	}
 
 	@Test
@@ -528,7 +502,7 @@ class TestSubscriberTest {
 		assertThat(subscriber.getReceivedOnNext())
 				.as("receivedOnNext after request")
 				.containsExactly(1, 2, 3);
-		assertThat(subscriber.isDone()).as("isDone").isFalse();
+		assertThat(subscriber.isTerminatedOrCancelled()).as("isDone").isFalse();
 	}
 
 	@Test
@@ -705,7 +679,7 @@ class TestSubscriberTest {
 
 		testSubscriber.onComplete();
 
-		assertThat(testSubscriber.isDone()).as("isDone").isTrue();
+		assertThat(testSubscriber.isTerminatedOrCancelled()).as("isDone").isTrue();
 		assertThat(testSubscriber.isTerminated()).as("isTerminated").isTrue();
 		assertThat(testSubscriber.isTerminatedComplete()).as("isTerminatedComplete").isTrue();
 		assertThat(testSubscriber.isTerminatedError()).as("isTerminatedError").isFalse();
@@ -717,7 +691,7 @@ class TestSubscriberTest {
 
 		testSubscriber.onError(new IllegalStateException("expected"));
 
-		assertThat(testSubscriber.isDone()).as("isDone").isTrue();
+		assertThat(testSubscriber.isTerminatedOrCancelled()).as("isDone").isTrue();
 		assertThat(testSubscriber.isTerminated()).as("isTerminated").isTrue();
 		assertThat(testSubscriber.isTerminatedError()).as("isTerminatedError").isTrue();
 		assertThat(testSubscriber.isTerminatedComplete()).as("isTerminatedComplete").isFalse();
@@ -833,6 +807,29 @@ class TestSubscriberTest {
 		list.clear();
 
 		assertThat(afterCancelList).as("after clear()").isNotEmpty();
+	}
+
+	@Test
+	void checkSubscriptionFailureCalledByAllAccessors() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		testSubscriber.subscriptionFail("expected");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(testSubscriber::isTerminatedOrCancelled)
+				.isSameAs(captureThrow(testSubscriber::isTerminated))
+				.isSameAs(captureThrow(testSubscriber::isTerminatedComplete))
+				.isSameAs(captureThrow(testSubscriber::isTerminatedError))
+				.isSameAs(captureThrow(testSubscriber::isCancelled))
+				.isSameAs(captureThrow(testSubscriber::getTerminalSignal))
+				.isSameAs(captureThrow(testSubscriber::getReceivedOnNext))
+				.isSameAs(captureThrow(testSubscriber::getReceivedOnNextAfterCancellation))
+				.isSameAs(captureThrow(testSubscriber::getProtocolErrors))
+				.isSameAs(captureThrow(testSubscriber::getFusionMode))
+				.isSameAs(captureThrow(testSubscriber::block))
+				.isSameAs(captureThrow(() -> testSubscriber.block(Duration.ofMillis(100))))
+				.isSameAs(captureThrow(testSubscriber::expectTerminalError))
+				.isSameAs(captureThrow(testSubscriber::expectTerminalSignal))
+				.withMessage("expected");
 	}
 
 	//TODO block(Duration) tests
