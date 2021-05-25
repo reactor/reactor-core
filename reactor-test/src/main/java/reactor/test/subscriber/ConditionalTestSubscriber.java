@@ -19,6 +19,9 @@ package reactor.test.subscriber;
 import java.util.function.Predicate;
 
 import reactor.core.Fuseable;
+import reactor.core.publisher.Operators;
+import reactor.core.publisher.Signal;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Simon Baslé
@@ -35,6 +38,28 @@ public class ConditionalTestSubscriber<T> extends TestSubscriber<T> implements F
 
 	@Override
 	public boolean tryOnNext(T t) {
-		return false;
+		if (terminalSignal.get() != null) {
+			this.protocolErrors.add(Signal.next(t));
+			return false;
+		}
+
+		try {
+			if (tryOnNextPredicate.test(t)) {
+				this.receivedOnNext.add(t);
+				if (cancelled.get()) {
+					this.receivedPostCancellation.add(t);
+				}
+				return true;
+			}
+			else {
+				Operators.onDiscard(t, currentContext());
+				return false;
+			}
+		}
+		catch (Throwable predicateError) {
+			internalCancel();
+			onError(predicateError);
+			return false; //this is consistent with eg. Flux.filter
+		}
 	}
 }
