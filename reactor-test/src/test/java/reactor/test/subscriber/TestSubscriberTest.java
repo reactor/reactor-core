@@ -29,6 +29,7 @@ import org.mockito.stubbing.Answer;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Signal;
@@ -858,6 +859,137 @@ class TestSubscriberTest {
 				.withMessage("expected");
 	}
 
-	//TODO block(Duration) tests
-	//TODO scan
+	@Test
+	void scanSubscriber_completed() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before complete").isFalse();
+
+		testSubscriber.onComplete();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after complete").isTrue();
+		assertThat(testSubscriber.scan(Scannable.Attr.ERROR)).as("ERROR").isNull();
+	}
+
+	@Test
+	void scanSubscriber_error() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before onError").isFalse();
+		assertThat(testSubscriber.scan(Scannable.Attr.ERROR)).as("ERROR before onError").isNull();
+
+		IllegalStateException exception = new IllegalStateException("expected");
+		testSubscriber.onError(exception);
+
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after onError").isTrue();
+		assertThat(testSubscriber.scan(Scannable.Attr.ERROR)).as("ERROR after onError").isSameAs(exception);
+	}
+
+	@Test
+	void scanSubscriber_subscriptionFailReflected() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before onError").isFalse();
+		assertThat(testSubscriber.scan(Scannable.Attr.ERROR)).as("ERROR before onError").isNull();
+
+		testSubscriber.subscriptionFail("expected");
+
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after subscriptionFail").isTrue();
+		assertThat(testSubscriber.scan(Scannable.Attr.ERROR))
+				.as("ERROR after subscriptionFail")
+				.isInstanceOf(AssertionError.class)
+				.hasMessage("expected");
+	}
+
+	@Test
+	void scanSubscriber_cancelled() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.CANCELLED)).as("CANCELLED before").isFalse();
+
+		testSubscriber.cancel();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after").isTrue();
+		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED").isFalse();
+	}
+
+	@Test
+	void scanSubscriber_misc() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		assertThat(testSubscriber.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.SYNC);
+		assertThat(testSubscriber.scan(Scannable.Attr.PARENT))
+				.as("PARENT before subscription")
+				.isNull();
+
+		Flux.just(1).subscribe(testSubscriber);
+
+		assertThat(testSubscriber.scan(Scannable.Attr.PARENT))
+				.as("PARENT after subscription")
+				.isNotNull()
+				.matches(Scannable::isScanAvailable, "is Scannable")
+				.extracting(Scannable::stepName)
+				.isEqualTo("just");
+
+		//just triggering the default path
+		assertThat(testSubscriber.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA default")
+				.isEqualTo(Scannable.Attr.ACTUAL_METADATA.defaultValue());
+	}
+
+	@Test
+	void blockWithTimeout() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> testSubscriber.block(Duration.ofMillis(100)))
+				.withMessage("TestSubscriber timed out, not terminated after PT0.1S (100ms)");
+	}
+
+	@Test
+	void blockCanBeInterrupted() throws InterruptedException {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		final AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+		Thread t = new Thread(() -> {
+			try {
+				testSubscriber.block();
+			}
+			catch (Throwable error) {
+				errorRef.set(error);
+			}
+		});
+
+		t.start();
+		t.interrupt();
+
+		Thread.sleep(100);
+		assertThat(errorRef.get())
+				.isInstanceOf(AssertionError.class)
+				.hasCauseInstanceOf(InterruptedException.class)
+				.hasMessage("Block() interrupted");
+	}
+
+	@Test
+	void blockWithDurationCanBeInterrupted() throws InterruptedException {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		final AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+		Thread t = new Thread(() -> {
+			try {
+				testSubscriber.block(Duration.ofSeconds(5));
+			}
+			catch (Throwable error) {
+				errorRef.set(error);
+			}
+		});
+
+		t.start();
+		t.interrupt();
+
+		Thread.sleep(100);
+		assertThat(errorRef.get())
+				.isInstanceOf(AssertionError.class)
+				.hasCauseInstanceOf(InterruptedException.class)
+				.hasMessage("Block(PT5S) interrupted");
+	}
 }

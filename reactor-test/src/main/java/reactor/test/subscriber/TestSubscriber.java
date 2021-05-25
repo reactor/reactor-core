@@ -297,14 +297,15 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.TERMINATED) return terminalSignal.get() != null;
+		if (key == Attr.TERMINATED) return terminalSignal.get() != null || subscriptionFailure.get() != null;
 		if (key == Attr.CANCELLED) return cancelled.get();
 		if (key == Attr.ERROR) {
+			Throwable subFailure = subscriptionFailure.get();
 			Signal<T> sig = terminalSignal.get();
-			if (sig == null || sig.getThrowable() == null) {
-				return null;
+			if (sig != null && sig.getThrowable() != null) {
+				return sig.getThrowable();
 			}
-			return sig.getThrowable();
+			else return subFailure; //simplified: ok to return null if subscriptionFailure holds null
 		}
 		if (key == Attr.PARENT) return s;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -618,7 +619,5 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			throw new AssertionError("Block(" + timeout +") interrupted", e);
 		}
 	}
-
 	//TODO should we add a method to await the latch without throwing ?
-
 }
