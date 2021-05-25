@@ -101,10 +101,14 @@ public final class TestSubscriberBuilder {
 	}
 
 	/**
-	 * Expect fusion to be possible with the {@link TestSubscriber}. Fusion will be negotiated at subscription,
-	 * enforcing the need for a {@link reactor.core.Fuseable.QueueSubscription} to be passed.
+	 * Expect fusion to be possible with the {@link TestSubscriber}, with {@link Fuseable#NONE}) being a special case.
+	 * Fusion will be negotiated at subscription, enforcing the need for a {@link reactor.core.Fuseable.QueueSubscription} to be passed.
 	 * Furthermore, the fusion mode returned from the negotiation with the {@link reactor.core.Fuseable.QueueSubscription}
 	 * is expected to be the same as the provided mode.
+	 * <p>
+	 * Use {@code requireFusion(Fuseable.NONE)} to remove any previously fusion requirement, as well as
+	 * removing type enforcement on the subscription (a vanilla {@link Subscription} becomes acceptable).
+	 * Use {@link #requireNotFuseable()} to strictly enforce that the {@link Subscription} MUST NOT be a {@link reactor.core.Fuseable.QueueSubscription}.
 	 *
 	 * @param exactMode the requested fusion mode, expected in return from the negotiation with the {@link reactor.core.Fuseable.QueueSubscription}
 	 * @return this builder, mutated to require fusion with the given mode
@@ -114,14 +118,14 @@ public final class TestSubscriberBuilder {
 	}
 
 	/**
-	 * Expect fusion to be possible with the {@link TestSubscriber}. Fusion will be negotiated at subscription,
-	 * enforcing the need for a {@link reactor.core.Fuseable.QueueSubscription} to be passed.
+	 * Expect fusion to be possible with the {@link TestSubscriber}, with both parameters set to {@link Fuseable#NONE} being a special case.
+	 * Fusion will be negotiated at subscription, enforcing the need for a {@link reactor.core.Fuseable.QueueSubscription} to be passed.
 	 * Furthermore, the {@code negotiatedMode} is expected to be negotiated by the subscription
 	 * in response to requesting {@code requestedMode}.
 	 * <p>
-	 * Use {@code requireFusion(Fuseable.NONE, Fuseable.NONE)} to remove any previously fusion requirement, but
-	 * without enforcing any type on the subscription. Use {@link #requireNotFuseable()} to additionally enforce
-	 * that the {@link Subscription} MUST NOT be a {@link reactor.core.Fuseable.QueueSubscription}.
+	 * Use {@code requireFusion(Fuseable.NONE, Fuseable.NONE)} to remove any previously fusion requirement, as well as
+	 * removing type enforcement on the subscription (a vanilla {@link Subscription} becomes acceptable).
+	 * Use {@link #requireNotFuseable()} to strictly enforce that the {@link Subscription} MUST NOT be a {@link reactor.core.Fuseable.QueueSubscription}.
 	 *
 	 * @param requestedMode the fusion mode requested to the {@link reactor.core.Fuseable.QueueSubscription}
 	 * @param negotiatedMode the fusion mode expected from the negotiation with the {@link reactor.core.Fuseable.QueueSubscription}

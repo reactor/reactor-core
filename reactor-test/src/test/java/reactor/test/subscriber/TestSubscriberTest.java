@@ -277,6 +277,32 @@ class TestSubscriberTest {
 	}
 
 	@Test
+	void requireFusionNoneAcceptsVanillaSubscription() {
+		final Subscription mock = Mockito.mock(Subscription.class);
+
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
+				.requireFusion(Fuseable.NONE)
+				.build();
+
+		subscriber.onSubscribe(mock);
+
+		assertThatCode(subscriber::checkSubscriptionFailure).doesNotThrowAnyException();
+	}
+
+	@Test
+	void requireFusionNoneNoneAcceptsVanillaSubscription() {
+		final Subscription mock = Mockito.mock(Subscription.class);
+
+		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
+				.requireFusion(Fuseable.NONE, Fuseable.NONE)
+				.build();
+
+		subscriber.onSubscribe(mock);
+
+		assertThatCode(subscriber::checkSubscriptionFailure).doesNotThrowAnyException();
+	}
+
+	@Test
 	void syncPollInterruptedByCancel() {
 		AtomicInteger source = new AtomicInteger();
 
