@@ -82,7 +82,7 @@ public interface Fuseable {
 		String threadBarrierSuffix = "";
 		if (mode >= 0) {
 			evaluated = mode & ~THREAD_BARRIER; //erase the THREAD_BARRIER bit;
-			if ((mode & THREAD_BARRIER) == THREAD_BARRIER) {
+			if (!ignoreThreadBarrier && (mode & THREAD_BARRIER) == THREAD_BARRIER) {
 				threadBarrierSuffix = "+THREAD_BARRIER";
 			}
 		}
@@ -91,13 +91,13 @@ public interface Fuseable {
 			case -1:
 				return "Disabled"; //this is more specific for tests or things that can entirely skip the fusion negotiation
 			case Fuseable.NONE:
-				return "NONE";
+				return "NONE" + threadBarrierSuffix;
 			case Fuseable.SYNC:
 				return "SYNC" + threadBarrierSuffix;
 			case Fuseable.ASYNC:
 				return "ASYNC" + threadBarrierSuffix;
 			default:
-				return "Unknown(" + mode + ")";
+				return "Unknown(" + evaluated + ")" + threadBarrierSuffix;
 		}
 	}
 
