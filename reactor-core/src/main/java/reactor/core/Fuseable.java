@@ -53,9 +53,13 @@ public interface Fuseable {
 	 * Attempt to convert a fusion mode int code into a human-readable representation.
 	 * Note that this can include the {@link #THREAD_BARRIER} flag, as an appended {@code +THREAD_BARRIER}.
 	 * <p>
-	 * This method accepts negative codes, mainly for the benefit of supporting testing scenarios where
+	 * This method accepts {@code -1} as a special code, mainly for the benefit of supporting testing scenarios where
 	 * fusion can be entirely deactivated (returns {@code Disabled}).
-	 * Unknown positive codes on the other hand return {@code Unknown(x)}.
+	 * Other negative values and unknown positive codes on the other hand return {@code Unknown(x)}.
+	 * <p>
+	 * Note that as this is a human-facing representation, the different values could evolve in the future.
+	 * As such, never compare the returned string to a constant, but always use this method on both sides of
+	 * a comparison.
 	 *
 	 * @param mode the fusion mode int code
 	 * @return a human-readable {@link String} representation of the code
@@ -69,9 +73,13 @@ public interface Fuseable {
 	 * Note that this can include the {@link #THREAD_BARRIER} flag, as an appended {@code +THREAD_BARRIER},
 	 * unless the {@code ignoreThreadBarrier} parameter is set to {@literal true}.
 	 * <p>
-	 * This method accepts negative codes, mainly for the benefit of supporting testing scenarios where
+	 * This method accepts {@code -1} as a special code, mainly for the benefit of supporting testing scenarios where
 	 * fusion can be entirely deactivated (returns {@code Disabled}).
-	 * Unknown positive codes on the other hand return {@code Unknown(x)}.
+	 * Other negative values and unknown positive codes on the other hand return {@code Unknown(x)}.
+	 * <p>
+	 * Note that as this is a human-facing representation, the different values could evolve in the future.
+	 * As such, never compare the returned string to a constant, but always use this method on both sides of
+	 * a comparison.
 	 *
 	 * @param mode the fusion mode int code
 	 * @param ignoreThreadBarrier whether or not to ignore the {@link #THREAD_BARRIER} flag in the representation
