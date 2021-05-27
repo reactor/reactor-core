@@ -26,6 +26,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FuseableTest {
 
 	@Test
+	void fusionModeName_sync() {
+		int mode = Fuseable.SYNC;
+		assertThat(Fuseable.fusionModeName(mode)).isEqualTo("SYNC");
+		assertThat(Fuseable.fusionModeName(mode, true)).isEqualTo("SYNC");
+	}
+
+	@Test
+	void fusionModeName_async() {
+		int mode = Fuseable.ASYNC;
+		assertThat(Fuseable.fusionModeName(mode)).isEqualTo("ASYNC");
+		assertThat(Fuseable.fusionModeName(mode, true)).isEqualTo("ASYNC");
+	}
+
+	@Test
 	void fusionModeName_syncVariants() {
 		int mode = Fuseable.SYNC | Fuseable.THREAD_BARRIER;
 		assertThat(Fuseable.fusionModeName(mode)).isEqualTo("SYNC+THREAD_BARRIER");
