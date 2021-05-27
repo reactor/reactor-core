@@ -120,6 +120,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		int sourceMode;
 
+		long produced;
+
 		boolean outputFused;
 
 		PublishOnSubscriber(CoreSubscriber<? super T> actual,
@@ -214,11 +216,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				long previousState = Operators.addCapFromMinValue(REQUESTED, this, n);
 
 				// check if this is the first request from the downstream
-				if (previousState == Long.MIN_VALUE) {
-					// check the mode and fusion mode
-					if (this.sourceMode == Fuseable.NONE) {
-						this.s.request(1);
-					}
+				if (previousState == Long.MIN_VALUE && this.sourceMode == Fuseable.NONE) {
+					this.s.request(1);
 				}
 
 				// WIP also guards during request and onError is possible
@@ -308,9 +307,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final Subscriber<? super T> a = actual;
 			final Queue<T> queue = qs;
 
+			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
-				long emitted = 0L;
 				long requested = this.requested & Long.MAX_VALUE;
 
 				while (emitted != requested) {
@@ -346,12 +345,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					return;
 				}
 
-				if (emitted != 0L && requested != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -emitted);
-				}
-
 				int w = wip;
 				if (missed == w) {
+					produced = emitted;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;
@@ -397,9 +393,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		void runOneByOne() {
 			final Subscriber<? super T> a = actual;
 
+			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
-				long emitted = 0L;
 				long requested = this.requested;
 
 				while (emitted != requested) {
@@ -425,12 +421,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					return;
 				}
 
-				if (emitted != 0L && requested != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -emitted);
-				}
-
 				int w = wip;
 				if (missed == w) {
+					produced = emitted;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;
@@ -446,7 +439,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final Subscriber<? super T> a = actual;
 			final Queue<T> queue = qs;
 
-			long emitted = 0L;
+			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
 				long requested = this.requested;
@@ -487,6 +480,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 				int w = wip;
 				if (missed == w) {
+					produced = emitted;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;
@@ -696,6 +690,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		int sourceMode;
 
+		long produced;
+
 		boolean outputFused;
 
 		PublishOnConditionalSubscriber(ConditionalSubscriber<? super T> actual,
@@ -787,24 +783,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				long previousState;
-				for (; ; ) {
-					previousState = this.requested;
-
-					long requested = previousState & Long.MAX_VALUE;
-					long nextRequested = Operators.addCap(requested, n);
-
-					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
-						break;
-					}
-				}
+				long previousState = Operators.addCapFromMinValue(REQUESTED, this, n);
 
 				// check if this is the first request from the downstream
-				if (previousState == Long.MIN_VALUE) {
-					// check the mode and fusion mode
-					if (this.sourceMode == Fuseable.NONE) {
-						this.s.request(1);
-					}
+				if (previousState == Long.MIN_VALUE && this.sourceMode == Fuseable.NONE) {
+					this.s.request(1);
 				}
 
 				// WIP also guards during request and onError is possible
@@ -894,10 +877,10 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> queue = qs;
 
+			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
 				long dropped = 0;
-				long emitted = 0;
 				long requested = this.requested & Long.MAX_VALUE;
 
 				while (emitted != requested) {
@@ -943,12 +926,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					return;
 				}
 
-				if (emitted != 0L && requested != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -emitted);
-				}
-
 				int w = wip;
 				if (missed == w) {
+					produced = emitted;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;
@@ -995,9 +975,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		void runOneByOne() {
 			final ConditionalSubscriber<? super T> a = actual;
 
+			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
-				long emitted = 0L;
 				long requested = this.requested;
 
 				while (emitted != requested) {
@@ -1026,12 +1006,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					return;
 				}
 
-				if (emitted != 0L && requested != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -emitted);
-				}
-
 				int w = wip;
 				if (missed == w) {
+					produced = emitted;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;
@@ -1047,9 +1024,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> queue = qs;
 
+			long emitted = produced;
 			int missed = 1;
 			for (; ; ) {
-				long emitted = 0L;
 				long requested = this.requested;
 
 				while (emitted != requested) {
@@ -1087,12 +1064,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					return;
 				}
 
-				if (emitted != 0L && requested != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -emitted);
-				}
-
 				int w = wip;
 				if (missed == w) {
+					produced = emitted;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;

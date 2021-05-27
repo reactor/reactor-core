@@ -1043,7 +1043,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
 			Flux.range(0, 5)
-			    .prefetch()
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
@@ -1055,6 +1054,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			    .publishOn(fromExecutor(executor))
 			    .subscribe(assertSubscriber);
 
+			Thread.sleep(100);
 			executor.shutdownNow();
 
 			assertSubscriber.assertNoValues()

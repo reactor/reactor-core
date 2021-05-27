@@ -251,6 +251,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						actual.currentContext());
 				done = true;
 			}
+
+			if (outputMode == Fuseable.ASYNC) {
+				actual.onNext(null);
+				return;
+			}
 			drain(t);
 		}
 
@@ -277,6 +282,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 			done = true;
+
 			if (sourceMode != Fuseable.NONE && sourceMode == outputMode) {
 				actual.onComplete();
 			}
@@ -389,13 +395,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					a.onNext(value);
 					emitted++;
 
-					if (emitted == limit) {
+					if (emitted == limit && sourceMode == Fuseable.NONE) {
 						if (requested != Long.MAX_VALUE) {
 							requested = REQUESTED.addAndGet(this, -emitted);
 						}
-						if (sourceMode == Fuseable.NONE) {
-							s.request(emitted);
-						}
+						s.request(emitted);
 						emitted = 0L;
 					}
 				}
@@ -857,7 +861,12 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
-				drain(null);
+				if (outputMode == Fuseable.ASYNC) {
+					actual.onNext(null);
+				}
+				else {
+					drain(null);
+				}
 				return;
 			}
 
@@ -879,6 +888,11 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						actual.currentContext());
 				done = true;
 			}
+
+			if (outputMode == Fuseable.ASYNC) {
+				actual.onNext(null);
+				return;
+			}
 			drain(t);
 		}
 
@@ -890,7 +904,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			}
 			error = err;
 			done = true;
-			drain(null);
+
+			if (sourceMode != Fuseable.NONE && sourceMode == outputMode) {
+				actual.onError(err);
+			}
+			else {
+				drain(null);
+			}
 		}
 
 		@Override
@@ -899,30 +919,26 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				return;
 			}
 			done = true;
-			drain(null);
+
+			if (sourceMode != Fuseable.NONE && sourceMode == outputMode) {
+				actual.onComplete();
+			}
+			else {
+				drain(null);
+			}
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				long previousState;
-				for (; ; ) {
-					previousState = this.requested;
-
-					long requested = previousState & Long.MAX_VALUE;
-					long nextRequested = Operators.addCap(requested, n);
-
-					if (REQUESTED.compareAndSet(this, previousState, nextRequested)) {
-						break;
-					}
-				}
+				long previousState = Operators.addCapFromMinValue(REQUESTED, this, n);
 
 				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {
 					// check the mode and fusion mode
 					if (prefetchMode == PrefetchMode.LAZY) {
 						if (sourceMode == -1) {
-							// check if sourceMode was setted
+							// check if sourceMode was set
 							if (WIP.getAndIncrement(this) == 0) {
 								if (sourceMode == Fuseable.NONE) {
 									firstRequest = false;
@@ -1020,10 +1036,8 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 					polled++;
 
-					if (polled == limit) {
-						if (sourceMode == Fuseable.NONE) {
-							s.request(polled);
-						}
+					if (polled == limit && sourceMode == Fuseable.NONE) {
+						s.request(polled);
 						polled = 0L;
 					}
 				}
@@ -1241,23 +1255,28 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		@Nullable
 		public T poll() {
-			if (firstRequest && sourceMode == Fuseable.NONE && prefetchMode == PrefetchMode.LAZY) {
-				firstRequest = false;
-				s.request(Operators.unboundedOrPrefetch(this.prefetch));
-			}
+			if (sourceMode == Fuseable.NONE) {
+				if (firstRequest && prefetchMode == PrefetchMode.LAZY) {
+					firstRequest = false;
+					s.request(Operators.unboundedOrPrefetch(this.prefetch));
+				}
 
-			T value = queue.poll();
-			if (value != null && sourceMode == Fuseable.NONE) {
-				long c = consumed + 1;
-				if (c == limit) {
-					consumed = 0;
-					s.request(c);
+				T value = queue.poll();
+				if (value != null) {
+					long c = consumed + 1;
+					if (c == limit) {
+						consumed = 0;
+						s.request(c);
+					}
+					else {
+						consumed = c;
+					}
 				}
-				else {
-					consumed = c;
-				}
+				return value;
 			}
-			return value;
+			else {
+				return queue.poll();
+			}
 		}
 
 		public int requestFusion(int requestedMode) {
