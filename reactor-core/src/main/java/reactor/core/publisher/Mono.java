@@ -1898,6 +1898,71 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Scheduler timer) {
 		return onAssembly(new MonoCacheTime<>(this, ttlForValue, ttlForError, ttlForEmpty, timer));
 	}
+
+	/**
+	 * Cache {@link Subscriber#onNext(Object) onNext} signal received from the source and replay it to other subscribers,
+	 * while allowing invalidation by verifying the cached value against the given {@link Predicate} each time a late
+	 * subscription occurs.
+	 * Note that the {@link Predicate} is only evaluated if the cache is currently populated, ie. it is not applied
+	 * upon receiving the source {@link Subscriber#onNext(Object) onNext} signal.
+	 * For late subscribers, if the predicate returns {@code true} the cache is invalidated and a new subscription is made
+	 * to the source in an effort to notify the new subscriber with a valid value.
+	 * Note that if the predicate continuously mark the incoming values as invalid, this becomes akin to an infinite retry loop.
+	 * <p>
+	 * The predicate is not strictly evaluated once per downstream subscriber. Rather, subscriptions happening in concurrent
+	 * batches  will trigger a single evaluation of the predicate. Similarly, a batch of subscriptions happening before
+	 * the cache is populated (ie. before this operator receives an onNext signal after an invalidation) will always
+	 * receive the incoming value without going through the {@link Predicate}. The predicate is only triggered by
+	 * subscribers that come in AFTER the cache is populated. Therefore, it is possible that pre-population subscribers
+	 * receive an "invalid" value, especially if the object can switch from a valid to an invalid state in a short amount
+	 * of time (eg. between creation, cache population and propagation to the downstream subscriber(s)).
+	 * <p>
+	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
+	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
+	 * if one wants to only consider empty sources or error sources).
+	 *
+	 * @param validatingPredicate the {@link Predicate} used for cache invalidation
+	 * @return a new cached {@link Mono} which can be invalidated
+	 */
+	public final Mono<T> cacheInvalidateIf(Predicate<? super T> validatingPredicate) {
+		return onAssembly(new MonoCacheInvalidateIf<>(this, validatingPredicate));
+	}
+
+	/**
+	 * Cache {@link Subscriber#onNext(Object) onNext} signal received from the source and replay it to other subscribers,
+	 * while allowing invalidation via a {@link Mono Mono&lt;Void&gt;} companion trigger generated from the currently
+	 * cached value.
+	 * Completion of the trigger will invalidate the cached element, so the next subscriber that comes in will trigger
+	 * a new subscription to the source, re-populating the cache and re-creating a new trigger out of that value.
+	 * <p>
+	 * <ul>
+	 *     <li>
+	 *         If the trigger completes with an error, all registered subscribers are terminated with the same error.
+	 *     </li>
+	 *     <li>
+	 *         If all the subscribers are cancelled <strong>before</strong> the cache is populated (ie. an attempt to
+	 *         cache a {@link Mono#never()}), the source subscription is cancelled.
+	 *     </li>
+	 *     <li>
+	 *         Cancelling a downstream subscriber once the cache has been populated is not necessarily relevant,
+	 *         as the value will be immediately replayed on subscription, which usually means within onSubscribe (so
+	 *         earlier than any cancellation can happen). That said the operator will make best efforts to detect such
+	 *         cancellations and avoid propagating the value to these subscribers.
+	 *     </li>
+	 * </ul>
+	 * <p>
+	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
+	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
+	 * if one wants to only consider empty sources or error sources).
+	 *
+	 * @param invalidationTriggerGenerator the {@link Function} that generates new {@link Mono Mono&lt;Void&gt;} triggers
+	 * used for invalidation
+	 * @return a new cached {@link Mono} which can be invalidated
+	 */
+	public final Mono<T> cacheInvalidateWhen(Function<? super T, Mono<Void>> invalidationTriggerGenerator) {
+		return onAssembly(new MonoCacheInvalidateWhen<>(this, invalidationTriggerGenerator));
+	}
+
 	/**
 	 * Prepare this {@link Mono} so that subscribers will cancel from it on a
 	 * specified
