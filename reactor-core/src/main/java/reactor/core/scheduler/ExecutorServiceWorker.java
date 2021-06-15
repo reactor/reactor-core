@@ -16,11 +16,15 @@
 
 package reactor.core.scheduler;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 
 /**
@@ -38,7 +42,8 @@ final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scann
 	 * including but not limited to tasks that have been scheduled on the worker.
 	 */
 	final Composite disposables;
-
+	
+	CompletableFuture<Void> lastFuture;
 
 	ExecutorServiceWorker(ScheduledExecutorService exec) {
 		this.exec = exec;
@@ -47,12 +52,12 @@ final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scann
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.workerSchedule(exec, disposables, task, 0L, TimeUnit.MILLISECONDS);
+		return workerSchedule(exec, disposables, task, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.workerSchedule(exec, disposables, task, delay, unit);
+		return workerSchedule(exec, disposables, task, delay, unit);
 	}
 
 	@Override
@@ -65,6 +70,47 @@ final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scann
 				initialDelay,
 				period,
 				unit);
+	}
+	
+	private Disposable workerSchedule(ScheduledExecutorService exec,
+			Disposable.Composite tasks,
+			Runnable task,
+			long delay,
+			TimeUnit unit) {
+		
+		task = Schedulers.onSchedule(task);
+
+		WorkerTask sr = new WorkerTask(task, tasks);
+		if (!tasks.add(sr)) {
+			throw Exceptions.failWithRejected();
+		}
+
+		try {
+			Future<?> f;
+			if (delay <= 0L) {
+				synchronized (this) {
+					if (lastFuture != null) {
+						lastFuture = lastFuture
+								.whenComplete((res, ex) -> {})
+								.thenRunAsync(sr, exec);
+					} else {
+						lastFuture = CompletableFuture.runAsync(sr, exec);
+					}
+				}
+				f = lastFuture;
+			}
+			else {
+				f = exec.schedule((Callable<?>) sr, delay, unit);
+			}
+			sr.setFuture(f);
+		}
+		catch (RejectedExecutionException ex) {
+			sr.dispose();
+			//RejectedExecutionException are propagated up
+			throw ex;
+		}
+
+		return sr;
 	}
 
 	@Override
