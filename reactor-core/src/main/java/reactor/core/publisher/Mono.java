@@ -1917,6 +1917,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * receive an "invalid" value, especially if the object can switch from a valid to an invalid state in a short amount
 	 * of time (eg. between creation, cache population and propagation to the downstream subscriber(s)).
 	 * <p>
+	 * If the cached value needs to be discarded in case of invalidation, the recommended way is to do so in the predicate
+	 * directly. Note that some downstream subscribers might still be using or storing the value, for example if they
+	 * haven't requested anything yet.
+	 * <p>
 	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
 	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
 	 * if one wants to only consider empty sources or error sources).
@@ -1932,6 +1936,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Cache {@link Subscriber#onNext(Object) onNext} signal received from the source and replay it to other subscribers,
 	 * while allowing invalidation via a {@link Mono Mono&lt;Void&gt;} companion trigger generated from the currently
 	 * cached value.
+	 * <p>
+	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
+	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
+	 * if one wants to only consider empty sources or error sources). The exception is still propagated to the subscribers
+	 * that have accumulated between the time the source has been subscribed to and the time the onError/onComplete terminal
+	 * signal is received. An empty source is turned into a {@link NoSuchElementException} onError.
+	 * <p>
 	 * Completion of the trigger will invalidate the cached element, so the next subscriber that comes in will trigger
 	 * a new subscription to the source, re-populating the cache and re-creating a new trigger out of that value.
 	 * <p>
@@ -1951,16 +1962,20 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *     </li>
 	 * </ul>
 	 * <p>
-	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
-	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
-	 * if one wants to only consider empty sources or error sources).
+	 * If the cached value needs to be discarded in case of invalidation, use the {@link #cacheInvalidateWhen(Function, Consumer)} version.
+	 * Note that some downstream subscribers might still be using or storing the value, for example if they
+	 * haven't requested anything yet.
 	 *
 	 * @param invalidationTriggerGenerator the {@link Function} that generates new {@link Mono Mono&lt;Void&gt;} triggers
 	 * used for invalidation
 	 * @return a new cached {@link Mono} which can be invalidated
 	 */
 	public final Mono<T> cacheInvalidateWhen(Function<? super T, Mono<Void>> invalidationTriggerGenerator) {
-		return onAssembly(new MonoCacheInvalidateWhen<>(this, invalidationTriggerGenerator));
+		return onAssembly(new MonoCacheInvalidateWhen<>(this, invalidationTriggerGenerator, null));
+	}
+	public final Mono<T> cacheInvalidateWhen(Function<? super T, Mono<Void>> invalidationTriggerGenerator,
+	                                         Consumer<? super T> onInvalidate) {
+		return onAssembly(new MonoCacheInvalidateWhen<>(this, invalidationTriggerGenerator, onInvalidate));
 	}
 
 	/**

@@ -17,17 +17,29 @@
 package reactor.core.publisher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import reactor.core.Disposable;
+import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
+import reactor.test.util.LoggerUtils;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.*;
 
 class MonoCacheInvalidateWhenTest {
+
+	@RegisterExtension
+	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
 	void nullGenerator() {
@@ -52,7 +64,7 @@ class MonoCacheInvalidateWhenTest {
 		assertThatExceptionOfType(NoSuchElementException.class)
 				.as("first subscribe")
 				.isThrownBy(cached::block)
-				.withMessage("foo");
+				.withMessage("cacheInvalidateWhen expects a value, source completed empty");
 
 		assertThat(cached.block())
 				.as("second subscribe")
@@ -72,27 +84,26 @@ class MonoCacheInvalidateWhenTest {
 		StepVerifier.create(cached)
 				.expectErrorSatisfies(e -> assertThat(e)
 				.isInstanceOf(NullPointerException.class)
-				.hasMessage(""))
+				.hasMessage("invalidationTriggerGenerator produced a null trigger"))
 				.verifyThenAssertThat()
 				.hasDiscarded(1);
-
-		assertThatNullPointerException()
-				.as("first subscribe")
-				.isThrownBy(cached::block)
-				.withMessage("foo");
 
 		assertThat(cached.block())
 				.as("second subscribe")
 				.isEqualTo(2);
+
+		assertThat(cached.block())
+				.as("third subscribe")
+				.isEqualTo(2);
 	}
 
 	@Test
-	void generatorThrowsTriggersErrorDiscardAndResubscribe() {
+	void generatorThrowsTriggersErrorDiscardAndInvalidate() {
 		AtomicInteger counter = new AtomicInteger();
 		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
 
 		Mono<Integer> cached = source.cacheInvalidateWhen(it -> {
-			if (it == 1) throw new IllegalStateException("boom");
+			if (it < 3) throw new IllegalStateException("boom");
 			return Mono.never();
 		});
 
@@ -103,14 +114,16 @@ class MonoCacheInvalidateWhenTest {
 				.verifyThenAssertThat()
 				.hasDiscarded(1);
 
-		assertThatNullPointerException()
-				.as("first subscribe")
-				.isThrownBy(cached::block)
-				.withMessage("foo");
+		StepVerifier.create(cached)
+				.expectErrorSatisfies(e -> assertThat(e)
+						.isInstanceOf(IllegalStateException.class)
+						.hasMessage("boom"))
+				.verifyThenAssertThat()
+				.hasDiscarded(2);
 
 		assertThat(cached.block())
-				.as("second subscribe")
-				.isEqualTo(2);
+				.as("third subscribe")
+				.isEqualTo(3);
 	}
 
 	@Test
@@ -118,16 +131,16 @@ class MonoCacheInvalidateWhenTest {
 		AtomicInteger counter = new AtomicInteger();
 		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
 
-		final Sinks.Empty<Void> trigger = Sinks.empty();
-		Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.asMono());
+		//we want to be able to reset it
+		final TestPublisher<Void> trigger = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.mono());
 
 		assertThat(cached.block()).as("sub1").isEqualTo(1);
 		assertThat(cached.block()).as("sub2").isEqualTo(1);
 		assertThat(cached.block()).as("sub3").isEqualTo(1);
 
-		//trigger (let's still assert the result)
-		Sinks.EmitResult triggerResult = trigger.tryEmitEmpty();
-		assertThat(triggerResult).isEqualTo(Sinks.EmitResult.OK);
+		//trigger
+		trigger.complete();
 
 		assertThat(cached.block()).as("sub4").isEqualTo(2);
 		assertThat(cached.block()).as("sub5").isEqualTo(2);
@@ -135,11 +148,16 @@ class MonoCacheInvalidateWhenTest {
 
 	@Test
 	void triggerFailingLeadsToInvalidation() {
+		TestLogger testLogger = new TestLogger(false);
+		LoggerUtils.enableCaptureWith(testLogger);
+		afterTest.autoDispose(LoggerUtils::disableCapture);
+
 		AtomicInteger counter = new AtomicInteger();
 		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
 
-		final Sinks.Empty<Void> trigger = Sinks.empty();
-		Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.asMono());
+		//we want to be able to reset it
+		final TestPublisher<Void> trigger = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.mono());
 
 		assertThat(cached.block()).as("sub1").isEqualTo(1);
 		assertThat(cached.block()).as("sub2").isEqualTo(1);
@@ -147,13 +165,44 @@ class MonoCacheInvalidateWhenTest {
 
 		List<Throwable> errorsDropped = new ArrayList<>();
 		Hooks.onErrorDropped(errorsDropped::add); //will be reset by ReactorTestExecutionListener
+		trigger.error(new IllegalStateException("expected logged"));
 
-		//trigger (let's still assert the result)
-		Sinks.EmitResult triggerResult = trigger.tryEmitError(new IllegalStateException("expected dropped"));
-		assertThat(triggerResult).isEqualTo(Sinks.EmitResult.OK);
+		assertThat(Arrays.stream(testLogger.getErrContent().split("\n")))
+				.as("trace log of trigger error")
+				.filteredOn(s -> s.contains("expected"))
+				.allMatch(s -> s.endsWith("Invalidation triggered by onError(java.lang.IllegalStateException: " +
+						"expected logged)"))
+				.hasSize(1);
 
 		assertThat(cached.block()).as("sub4").isEqualTo(2);
 		assertThat(cached.block()).as("sub5").isEqualTo(2);
+
+		assertThat(errorsDropped).as("errorsDropped").isEmpty();
+	}
+
+	@Test
+	void cancellingAllSubscribersBeforeOnNextInvalidates() {
+		TestPublisher<Integer> source = TestPublisher.create();
+
+		Mono<Integer> cached = source
+				.mono()
+				.cacheInvalidateWhen(i -> Mono.never());
+
+		Disposable sub1 = cached.subscribe();
+		Disposable sub2 = cached.subscribe();
+		Disposable sub3 = cached.subscribe();
+
+		source.assertWasSubscribed();
+		source.assertNotCancelled();
+
+		sub1.dispose();
+		source.assertNotCancelled();
+
+		sub2.dispose();
+		source.assertNotCancelled();
+
+		sub3.dispose();
+		source.assertCancelled(1);
 	}
 
 	@Test
