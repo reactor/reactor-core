@@ -66,7 +66,7 @@ final class ParallelMergeOrdered<T> extends Flux<T> implements Scannable {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxMergeOrdered.MergeOrderedMainProducer<T>
-				main = new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, valueComparator, prefetch, source.parallelism());
+				main = new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, valueComparator, prefetch, source.parallelism(), true);
 		actual.onSubscribe(main);
 		source.subscribe(main.subscribers);
 	}

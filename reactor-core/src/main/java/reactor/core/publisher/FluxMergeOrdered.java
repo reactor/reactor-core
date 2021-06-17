@@ -25,11 +25,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * Merges the provided sources {@link org.reactivestreams.Publisher}, assuming a total order
@@ -47,10 +49,12 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 	final int                      prefetch;
 	final Comparator<? super T>    valueComparator;
 	final Publisher<? extends T>[] sources;
+	final boolean delayError;
 
 	@SafeVarargs
 	FluxMergeOrdered(int prefetch,
 			Comparator<? super T> valueComparator,
+			boolean delayError,
 			Publisher<? extends T>... sources) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
@@ -66,6 +70,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 
 		this.prefetch = prefetch;
 		this.valueComparator = valueComparator;
+		this.delayError = delayError;
 	}
 
 	/**
@@ -90,9 +95,9 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 			@SuppressWarnings("unchecked")
 			Comparator<T> currentComparator = (Comparator<T>) this.valueComparator;
 			final Comparator<T> newComparator = currentComparator.thenComparing(otherComparator);
-			return new FluxMergeOrdered<>(prefetch, newComparator, newArray);
+			return new FluxMergeOrdered<>(prefetch, newComparator, delayError, newArray);
 		}
-		return new FluxMergeOrdered<>(prefetch, valueComparator, newArray);
+		return new FluxMergeOrdered<>(prefetch, valueComparator, delayError, newArray);
 	}
 
 	@Override
@@ -105,7 +110,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return sources.length > 0 ? sources[0] : null;
 		if (key == Attr.PREFETCH) return prefetch;
-		if (key == Attr.DELAY_ERROR) return true;
+		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
@@ -113,7 +118,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MergeOrderedMainProducer<T> main = new MergeOrderedMainProducer<>(actual, valueComparator, prefetch, sources.length);
+		MergeOrderedMainProducer<T> main = new MergeOrderedMainProducer<>(actual, valueComparator, prefetch, sources.length, delayError);
 		actual.onSubscribe(main);
 		main.subscribe(sources);
 	}
@@ -127,6 +132,9 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 		final MergeOrderedInnerSubscriber<T>[] subscribers;
 		final Comparator<? super T> comparator;
 		final Object[] values;
+		final boolean delayError;
+
+		volatile boolean done;
 
 		volatile Throwable error;
 		static final AtomicReferenceFieldUpdater<MergeOrderedMainProducer, Throwable> ERROR =
@@ -145,13 +153,15 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 				AtomicLongFieldUpdater.newUpdater(MergeOrderedMainProducer.class, "emitted");
 
 		volatile int wip;
+
 		static final AtomicIntegerFieldUpdater<MergeOrderedMainProducer> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(MergeOrderedMainProducer.class, "wip");
 
 		MergeOrderedMainProducer(CoreSubscriber<? super T> actual,
-				Comparator<? super T> comparator, int prefetch, int n) {
+				Comparator<? super T> comparator, int prefetch, int n, boolean delayError) {
 			this.actual = actual;
 			this.comparator = comparator;
+			this.delayError = delayError;
 
 			@SuppressWarnings("unchecked")
 			MergeOrderedInnerSubscriber<T>[] mergeOrderedInnerSub =
@@ -193,18 +203,30 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 				}
 
 				if (WIP.getAndIncrement(this) == 0) {
-					Arrays.fill(values, null);
-					for (MergeOrderedInnerSubscriber<T> subscriber : subscribers) {
-						subscriber.queue.clear();
-					}
+					discardData();
 				}
 			}
 		}
 
 		void onInnerError(MergeOrderedInnerSubscriber<T> inner, Throwable ex) {
-			Exceptions.addThrowable(ERROR, this, ex);
-			inner.done = true;
-			drain();
+			Throwable e = Operators.onNextInnerError(ex, actual().currentContext(), this);
+			if (e != null) {
+				if (Exceptions.addThrowable(ERROR, this, e)) {
+					if (!delayError) {
+						done = true;
+					}
+					inner.done = true;
+					drain();
+				}
+				else {
+					inner.done = true;
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
+			}
+			else {
+				inner.done = true;
+				drain();
+			}
 		}
 
 		void drain() {
@@ -227,6 +249,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 				long r = requested;
 
 				for (;;) {
+					boolean d = this.done;
 					if (cancelled != 0) {
 						Arrays.fill(values, null);
 
@@ -236,12 +259,12 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 						return;
 					}
 
-					int done = 0;
+					int innerDoneCount = 0;
 					int nonEmpty = 0;
 					for (int i = 0; i < n; i++) {
 						Object o = values[i];
 						if (o == DONE) {
-							done++;
+							innerDoneCount++;
 							nonEmpty++;
 						}
 						else if (o == null) {
@@ -253,7 +276,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 							}
 							else if (innerDone) {
 								values[i] = DONE;
-								done++;
+								innerDoneCount++;
 								nonEmpty++;
 							}
 						}
@@ -262,13 +285,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 						}
 					}
 
-					if (done == n) {
-						Throwable ex = error;
-						if (ex == null) {
-							actual.onComplete();
-						} else {
-							actual.onError(ex);
-						}
+					if (checkTerminated(d || innerDoneCount == n, actual)) {
 						return;
 					}
 
@@ -319,12 +336,60 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 			}
 		}
 
+		boolean checkTerminated(boolean d, Subscriber<?> a) {
+			if (cancelled != 0) {
+				discardData();
+				return true;
+			}
+			
+			if (!d) {
+				return false;
+			}
+			
+			if (delayError) {
+				Throwable e = error;
+				if (e != null && e != Exceptions.TERMINATED) {
+					e = Exceptions.terminate(ERROR, this);
+					a.onError(e);
+				}
+				else {
+					a.onComplete();
+				}
+			}
+			else {
+				Throwable e = error;
+				if (e != null && e != Exceptions.TERMINATED) {
+					e = Exceptions.terminate(ERROR, this);
+					cancel();
+					discardData();
+					a.onError(e);
+				}
+				else {
+					a.onComplete();
+				}
+			}
+			return true;
+		}
+
+		private void discardData() {
+			Context ctx = actual().currentContext();
+			for (Object v : values) {
+				if (v != DONE) {
+					Operators.onDiscard(v, ctx);
+				}
+			}
+			Arrays.fill(values, null);
+			for (MergeOrderedInnerSubscriber<T> subscriber : subscribers) {
+				Operators.onDiscardQueueWithClear(subscriber.queue, ctx, null);
+			}
+		}
+		
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.CANCELLED) return this.cancelled > 0;
 			if (key == Attr.ERROR) return this.error;
-			if (key == Attr.DELAY_ERROR) return true;
+			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested - emitted;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -364,6 +429,10 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onNext(T item) {
+			if (parent.done || done) {
+				Operators.onNextDropped(item, actual().currentContext());
+				return;
+			}
 			queue.offer(item);
 			parent.drain();
 		}
