@@ -64,13 +64,6 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 		}
 	}
 	
-	final Predicate<? super T> validatingPredicate;
-	
-	volatile     State<T>                                                    state;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<MonoCacheInvalidateIf, State> STATE =
-			AtomicReferenceFieldUpdater.newUpdater(MonoCacheInvalidateIf.class, State.class, "state");
-	
 	static final State<?> EMPTY_STATE = new State<Object>() {
 		@Nullable
 		@Override
@@ -84,43 +77,36 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 		}
 	};
 
-	MonoCacheInvalidateIf(Mono<T> source, Predicate<? super T> validatingPredicate) {
+	final Predicate<? super T> shouldInvalidatePredicate;
+
+	volatile     State<T>                                                    state;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<MonoCacheInvalidateIf, State> STATE =
+			AtomicReferenceFieldUpdater.newUpdater(MonoCacheInvalidateIf.class, State.class, "state");
+
+	MonoCacheInvalidateIf(Mono<T> source, Predicate<? super T> shouldInvalidatePredicate) {
 		super(source);
-		this.validatingPredicate = validatingPredicate;
+		this.shouldInvalidatePredicate = shouldInvalidatePredicate;
 		@SuppressWarnings("unchecked")
 		State<T> state = (State<T>) EMPTY_STATE;
 		this.state = state;
 	}
 
-
-//	boolean invalidate(Signal<?> expected) {
-//		if (STATE.compareAndSet(this, expected, EMPTY_STATE)) {
-//			LOGGER.trace("invalidated {}", expected);
-//			if (expected.isOnNext() && this.invalidateHandler != null) {
-//				//noinspection unchecked
-//				invalidateHandler.accept((T) expected.get());
-//			}
-//			return true;
-//		}
-//		return false;
-//	}
-
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		//important: onSubscribe should be deferred until we're sure we're in the Coordinator case OR the cached value passes the predicate
-//		actual.onSubscribe(inner);
 		for(;;) {
 			State<T> state = this.state;
 			if (state == EMPTY_STATE || state instanceof CoordinatorSubscriber) {
-				boolean subscribe = false;
+				boolean connectToUpstream = false;
 				CoordinatorSubscriber<T> coordinator;
 				if (state == EMPTY_STATE) {
-					coordinator = new CoordinatorSubscriber<>(this);
+					coordinator = new CoordinatorSubscriber<>(this, this.source);
 					if (!STATE.compareAndSet(this, EMPTY_STATE, coordinator)) {
 						continue;
 					}
-					subscribe = true;
+					connectToUpstream = true;
 				}
 				else {
 					coordinator = (CoordinatorSubscriber<T>) state;
@@ -135,14 +121,20 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 						actual.onSubscribe(inner);
 					}
 
-					if (subscribe) {
-						source.subscribe(coordinator);
+					if (connectToUpstream) {
+						coordinator.resubscribe();
 					}
 					return null;
 				}
 			}
 			else {
 				//state is an actual signal, cached
+				T cached = state.get();
+				if (this.shouldInvalidatePredicate.test(cached)) {
+					STATE.compareAndSet(this, state, EMPTY_STATE); //we CAS but even if it fails we want to loop back
+					continue;
+				}
+
 				actual.onSubscribe(inner);
 				inner.complete(state.get());
 				return null;
@@ -159,12 +151,19 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, State<T> {
 
 		final MonoCacheInvalidateIf<T> main;
+		final Mono<? extends T> source;
 
-		Subscription subscription;
+		volatile boolean gotOnNext = false;
 
-		volatile     CacheMonoSubscriber<T>[]                                                                         subscribers;
+		volatile Subscription upstream;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, CacheMonoSubscriber[]>SUBSCRIBERS =
+		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Subscription> UPSTREAM =
+				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "upstream");
+
+
+		volatile     CacheMonoSubscriber<T>[]                                                  subscribers;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, CacheMonoSubscriber[]> SUBSCRIBERS =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, CacheMonoSubscriber[].class, "subscribers");
 
 		@SuppressWarnings("rawtypes")
@@ -173,8 +172,9 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 		private static final CacheMonoSubscriber[] COORDINATOR_INIT = new CacheMonoSubscriber[0];
 
 		@SuppressWarnings("unchecked")
-		CoordinatorSubscriber(MonoCacheInvalidateIf<T> main) {
+		CoordinatorSubscriber(MonoCacheInvalidateIf<T> main, Mono<? extends T> source) {
 			this.main = main;
+			this.source = source;
 			this.subscribers = COORDINATOR_INIT;
 		}
 
@@ -236,7 +236,7 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 				if (n == 1) {
 					if (SUBSCRIBERS.compareAndSet(this, a, COORDINATOR_DONE)) {
 						//cancel the subscription no matter what, at this point coordinator is done and cannot accept new subscribers
-						this.subscription.cancel();
+						this.upstream.cancel();
 						//only switch to EMPTY_STATE if the current state is this coordinator
 						STATE.compareAndSet(this.main, this, EMPTY_STATE);
 						return;
@@ -255,16 +255,21 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 			}
 		}
 
+		void resubscribe() {
+			Subscription old = UPSTREAM.getAndSet(this, null);
+			if (old != null && old != Operators.cancelledSubscription()) {
+				old.cancel();
+			}
+			source.subscribe(this);
+		}
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			//this only happens if there was at least one incoming subscriber
-			if (Operators.validate(this.subscription, s)) {
-				this.subscription = s;
+			if (UPSTREAM.compareAndSet(this, null, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-
-		volatile boolean gotOnNext = false;
 
 		@Override
 		public void onNext(T t) {
@@ -273,9 +278,9 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 				return;
 			}
 			gotOnNext = true;
-			boolean invalid = main.validatingPredicate.test(t);
+			boolean invalid = main.shouldInvalidatePredicate.test(t);
 			if (invalid) {
-				//resubscribe
+				resubscribe();
 			}
 			else {
 				State<T> valueState = new ValueState<>(t);
