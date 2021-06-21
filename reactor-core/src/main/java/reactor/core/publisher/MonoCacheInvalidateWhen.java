@@ -42,7 +42,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	@Nullable
 	final Consumer<? super T>             invalidateHandler;
 
-	volatile Signal<T> state;
+	volatile     Signal<T>                                                    state;
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<MonoCacheInvalidateWhen, Signal> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(MonoCacheInvalidateWhen.class, Signal.class, "state");
 

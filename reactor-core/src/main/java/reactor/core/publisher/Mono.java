@@ -1925,6 +1925,44 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
 	 * if one wants to only consider empty sources or error sources).
 	 *
+	 * Predicate is applied differently depending on whether the cache is populated or not:
+	 *  IF EMPTY
+	 *   - first incoming subscriber creates a new COORDINATOR and adds itself
+	 *
+	 *  IF COORDINATOR
+	 *   - each incoming subscriber is added to the current "batch" (COORDINATOR)
+	 *   - once the value is received, the predicate is applied ONCE
+	 *     - mismatch: all the batch is terminated with an error
+	 *          - we're back to init state, next subscriber will trigger a new coordinator and a new subscription
+	 *     - ok: all the batch is completed with the value
+	 *          - cache is now POPULATED
+	 *
+	 * IF POPULATED
+	 *  - each incoming subscriber causes the predicate to apply
+	 *  - if ok: complete that subscriber with the value
+	 *  - if mismatch, swap the current POPULATED with a new COORDINATOR and add the subscriber to that coordinator
+	 *  - imagining a race between sub1 and sub2:
+	 *      - OK NOK will naturally lead to sub1 completing and sub2 being put on wait inside a new COORDINATOR
+	 *      - NOK NOK will race swap of POPULATED with COORDINATOR1 and COORDINATOR2 respectively
+	 *          - if sub1 swaps, sub2 will dismiss the COORDINATOR2 it failed to swap and loop back, see COORDINATOR1 and add itself
+	 *          - if sub2 swaps, the reverse happens
+	 *          - if value is populated in the time it takes for sub2 to loop back, sub2 sees a value and triggers the predicate again (hopefully passing)
+	 *
+	 *  Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
+	 *  Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
+	 *
+	 *  when cancelling a COORDINATOR-issued subscription:
+	 *    - removes itself from batch
+	 *    - if 0 subscribers remaining
+	 *          - swap COORDINATOR with EMPTY
+	 *          - COORDINATOR cancels its source
+	 *
+	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
+	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
+	 *
+	 *
+	 *
+	 *
 	 * @param validatingPredicate the {@link Predicate} used for cache invalidation
 	 * @return a new cached {@link Mono} which can be invalidated
 	 */
@@ -1965,6 +2003,28 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * If the cached value needs to be discarded in case of invalidation, use the {@link #cacheInvalidateWhen(Function, Consumer)} version.
 	 * Note that some downstream subscribers might still be using or storing the value, for example if they
 	 * haven't requested anything yet.
+	 *
+	 *
+	 * Trigger is generated only after a subscribers in the COORDINATOR have received the value, and only once.
+	 * The only way to get out of the POPULATED state is to use the trigger, so there cannot be multiple trigger subscriptions, nor concurrent triggering.
+	 *
+	 * Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
+	 * Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
+	 *
+	 * when cancelling a COORDINATOR-issued subscription:
+	 *   - removes itself from batch
+	 *   - if 0 subscribers remaining
+	 *         - swap COORDINATOR with EMPTY
+	 *         - COORDINATOR cancels its source
+	 *
+	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
+	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
+	 *
+	 *
+	 *
+	 *
+	 *
+	 *
 	 *
 	 * @param invalidationTriggerGenerator the {@link Function} that generates new {@link Mono Mono&lt;Void&gt;} triggers
 	 * used for invalidation
