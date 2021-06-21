@@ -20,16 +20,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -540,6 +535,7 @@ class ContextTest {
 		ContextView contextView = context;
 		Context receiver = Context.of("foo", "bar");
 
+		@SuppressWarnings("deprecation") // because of putAll(Context). This test method shall be removed in 3.5 alongside putAll(Context)
 		Context resultFromContext = receiver.putAll(context);
 		Context resultFromContextView = receiver.putAll(contextView);
 
@@ -551,10 +547,13 @@ class ContextTest {
 	void putAllContextOfNoAmbiguity() {
 		Context receiver = Context.of("foo", "bar");
 
+		@SuppressWarnings("deprecation") // because of putAll(Context). This test method shall be removed in 3.5 alongside putAll(Context)
 		Context resultFromContext = receiver.putAll(Context.of("key", "value"));
+		Context resultFromContextView = receiver.putAll(Context.of("key", "value").readOnly());
 
-		assertThat(resultFromContext.stream().map(e -> e.getKey() + ":" + e.getValue()).collect(Collectors.toList()))
-				.containsExactly("foo:bar", "key:value");
+
+		assertThat(resultFromContext.stream().collect(Collectors.toList()))
+				.containsExactlyElementsOf(resultFromContextView.stream().collect(Collectors.toList()));
 	}
 
 	static class ForeignContext extends ForeignContextView implements Context {

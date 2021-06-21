@@ -284,13 +284,15 @@ public interface Context extends ContextView {
 	}
 
 	/**
-	 * Convenience alternative to {@link #putAll(ContextView)} where one wants to specify several key-value pairs,
-	 * since a common way of providing such pairs is via {@link Context#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)}.
-	 * This method simply calls the {@link Context#readOnly()}, which generally casts the {@link Context} as a {@link ContextView}.
+	 * See {@link #putAll(ContextView)}.
 	 *
+	 * @deprecated will be removed in 3.5, kept for backward compatibility with 3.3. Until
+	 * then if you need to work around the deprecation, use {@link #putAll(ContextView)}
+	 * combined with {@link #readOnly()}
 	 * @param context the {@link Context} from which to copy entries
 	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
 	 */
+	@Deprecated
 	default Context putAll(Context context) {
 		return this.putAll(context.readOnly());
 	}
