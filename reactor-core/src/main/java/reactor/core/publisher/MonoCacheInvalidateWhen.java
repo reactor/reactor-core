@@ -25,11 +25,13 @@ import java.util.function.Function;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.MonoCacheInvalidateIf.State;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextView;
+
+import static reactor.core.publisher.MonoCacheInvalidateIf.EMPTY_STATE;
 
 /**
  * @author Simon Baslé
@@ -42,12 +44,10 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	@Nullable
 	final Consumer<? super T>             invalidateHandler;
 
-	volatile     Signal<T>                                                    state;
+	volatile     State<T>   state;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<MonoCacheInvalidateWhen, Signal> STATE =
-			AtomicReferenceFieldUpdater.newUpdater(MonoCacheInvalidateWhen.class, Signal.class, "state");
-
-	static final Signal<?> EMPTY_STATE = new ImmutableSignal<>(Context.empty(), SignalType.ON_NEXT, null, null, null);
+	static final AtomicReferenceFieldUpdater<MonoCacheInvalidateWhen, State> STATE =
+			AtomicReferenceFieldUpdater.newUpdater(MonoCacheInvalidateWhen.class, State.class, "state");
 
 	MonoCacheInvalidateWhen(Mono<T> source, Function<? super T, Mono<Void>> invalidationTriggerGenerator,
 	                        @Nullable Consumer<? super T> invalidateHandler) {
@@ -55,20 +55,32 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		this.invalidationTriggerGenerator = Objects.requireNonNull(invalidationTriggerGenerator, "invalidationTriggerGenerator");
 		this.invalidateHandler = invalidateHandler;
 		@SuppressWarnings("unchecked")
-		Signal<T> state = (Signal<T>) EMPTY_STATE;
+		State<T> state = (State<T>) EMPTY_STATE; //from MonoCacheInvalidateIf
 		this.state = state;
 	}
 
-	boolean invalidate(Signal<?> expected) {
+	boolean compareAndInvalidate(State<T> expected) {
 		if (STATE.compareAndSet(this, expected, EMPTY_STATE)) {
-			LOGGER.trace("invalidated {}", expected);
-			if (expected.isOnNext() && this.invalidateHandler != null) {
-				//noinspection unchecked
-				invalidateHandler.accept((T) expected.get());
+			if (expected instanceof MonoCacheInvalidateIf.ValueState) {
+				LOGGER.trace("invalidated {}", expected.get());
+			    if (this.invalidateHandler != null) {
+			    	invalidateHandler.accept(expected.get());
+			    }
 			}
 			return true;
 		}
 		return false;
+	}
+
+	void invalidate() {
+		@SuppressWarnings("unchecked")
+		State<T> oldState = STATE.getAndSet(this, EMPTY_STATE);
+		if (oldState instanceof MonoCacheInvalidateIf.ValueState) {
+			LOGGER.trace("invalidated {}", oldState.get());
+			if (this.invalidateHandler != null) {
+				invalidateHandler.accept(oldState.get());
+			}
+		}
 	}
 
 	@Override
@@ -76,7 +88,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		actual.onSubscribe(inner);
 		for(;;) {
-			Signal<T> state = this.state;
+			State<T> state = this.state;
 			if (state == EMPTY_STATE || state instanceof CoordinatorSubscriber) {
 				boolean subscribe = false;
 				CoordinatorSubscriber<T> coordinator;
@@ -105,12 +117,11 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 					return null;
 				}
 			}
-			else if (state.isOnNext()) {
+			else {
 				//state is an actual signal, cached
 				inner.complete(state.get());
 				return null;
 			}
-			// else cached onError, means the state is about to be switched back to EMPTY => continue
 		}
 	}
 
@@ -120,7 +131,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		return super.scanUnsafe(key);
 	}
 
-	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, Signal<T> {
+	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, State<T> {
 
 		final MonoCacheInvalidateWhen<T> main;
 
@@ -143,50 +154,22 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		/**
-		 * unused in this context as the {@link Signal} interface is only
-		 * implemented for use in the main's STATE compareAndSet.
-		 */
-		@Override
-		public Throwable getThrowable() {
-			throw new UnsupportedOperationException("illegal signal use");
-		}
-
-		/**
-		 * unused in this context as the {@link Signal} interface is only
-		 * implemented for use in the main's STATE compareAndSet.
-		 */
-		@Override
-		public Subscription getSubscription() {
-			throw new UnsupportedOperationException("illegal signal use");
-		}
-
-		/**
-		 * unused in this context as the {@link Signal} interface is only
+		 * unused in this context as the {@link State} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
 		@Nullable
 		@Override
 		public T get() {
-			return null;
+			throw new UnsupportedOperationException("coordinator State#get shouldn't be used");
 		}
 
 		/**
-		 * Use of {@link SignalType#AFTER_TERMINATE} ensures that the isXxx methods
-		 * used by this operator (isOnNext, isOnError, isOnComplete) will all return
-		 * false for this class.
-		 */
-		@Override
-		public SignalType getType() {
-			return SignalType.AFTER_TERMINATE;
-		}
-
-		/**
-		 * unused in this context as the {@link Signal} interface is only
+		 * unused in this context as the {@link State} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
 		@Override
-		public ContextView getContextView() {
-			throw new UnsupportedOperationException("illegal signal use: getContextView");
+		public void clear() {
+			//NO-OP
 		}
 
 		final boolean add(CacheMonoSubscriber<T> toAdd) {
@@ -227,7 +210,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 
 				if (n == 1) {
 					if (SUBSCRIBERS.compareAndSet(this, a, COORDINATOR_DONE)) {
-						if (main.invalidate(this)) {
+						if (main.compareAndInvalidate(this)) {
 							this.subscription.cancel();
 						}
 						return;
@@ -254,48 +237,38 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			}
 		}
 
-		void signalCached(Signal<T> signal) {
-			boolean invalidateAtEnd = false;
-			Signal<T> signalToPropagate = signal;
-			if (STATE.compareAndSet(main, this, signal)) {
-				if (signal.get() != null) {
-					Mono<Void> invalidateTrigger = null;
-					try {
-						invalidateTrigger = Objects.requireNonNull(
-								main.invalidationTriggerGenerator.apply(signal.get()),
-								"invalidationTriggerGenerator produced a null trigger");
+		boolean cacheLoadFailure(State<T> expected, Throwable failure) {
+			if (STATE.compareAndSet(main, expected, EMPTY_STATE)) {
+				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					inner.onError(failure);
+				}
+				//no need to invalidate, EMPTY_STATE swap above is equivalent for our purpose
+				return true;
+			}
+			return false;
+		}
 
-						invalidateTrigger.subscribe(new TriggerSubscriber(this.main));
-					}
-					catch (Throwable generatorError) {
-						signalToPropagate = Signal.error(generatorError);
-						if (STATE.compareAndSet(main, signal, signalToPropagate)) {
-							invalidateAtEnd = true;
-							Operators.onDiscard(signal.get(), currentContext());
-						}
-					}
+		void cacheLoad(T value) {
+			State<T> valueState = new MonoCacheInvalidateIf.ValueState<>(value);
+			if (STATE.compareAndSet(main, this, valueState)) {
+				Mono<Void> invalidateTrigger = null;
+				try {
+					invalidateTrigger = Objects.requireNonNull(
+							main.invalidationTriggerGenerator.apply(value),
+							"invalidationTriggerGenerator produced a null trigger");
 				}
-				else {
-					invalidateAtEnd = true;
-					if (signal.isOnComplete()) {
-						signalToPropagate = Signal.error(new NoSuchElementException("cacheInvalidateWhen expects a value, source completed empty"));
-						invalidateAtEnd = STATE.compareAndSet(main, signal, signalToPropagate);
+				catch (Throwable generatorError) {
+					if (cacheLoadFailure(valueState, generatorError)) {
+						Operators.onDiscard(value, currentContext());
 					}
+					return;
 				}
+
+				//TODO should the trigger be subscribed AFTER the pending inners have completed?
+				invalidateTrigger.subscribe(new TriggerSubscriber(this.main));
 
 				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-					if (signalToPropagate.isOnNext()) {
-						inner.complete(signalToPropagate.get());
-					}
-					else if (signalToPropagate.getThrowable() != null) {
-						inner.onError(signalToPropagate.getThrowable());
-					}
-					else {
-						inner.onError(new IllegalStateException("unexpected signal cached " + signalToPropagate));
-					}
-				}
-				if (invalidateAtEnd) {
-					main.invalidate(signalToPropagate);
+					inner.complete(value);
 				}
 			}
 		}
@@ -306,7 +279,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 				Operators.onNextDroppedMulticast(t, subscribers);
 				return;
 			}
-			signalCached(Signal.next(t));
+			cacheLoad(t);
 		}
 
 		@Override
@@ -315,12 +288,16 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 				Operators.onErrorDroppedMulticast(t, subscribers);
 				return;
 			}
-			signalCached(Signal.error(t));
+			cacheLoadFailure(this, t);
 		}
 
 		@Override
 		public void onComplete() {
-			signalCached(Signal.complete());
+			if (main.state == this) {
+				//completed empty
+				cacheLoadFailure(this, new NoSuchElementException("cacheInvalidateWhen expects a value, source completed empty"));
+			}
+			//otherwise, main.state MUST be a ValueState at this point
 		}
 
 		@Override
@@ -384,12 +361,12 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			LOGGER.warn("Invalidation triggered by onError(" + t + ")");
-			main.invalidate(main.state);
+			main.invalidate();
 		}
 
 		@Override
 		public void onComplete() {
-			main.invalidate(main.state);
+			main.invalidate();
 		}
 
 		@Nullable
