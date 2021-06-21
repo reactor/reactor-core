@@ -32,6 +32,7 @@ import reactor.util.annotation.Nullable;
  * a write API that returns new instances on each write.
  *
  * @author Simon Baslé
+ * @since 3.4.0
  */
 public interface ContextView {
 

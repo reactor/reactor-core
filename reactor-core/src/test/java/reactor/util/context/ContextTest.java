@@ -20,15 +20,20 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
 import static org.assertj.core.api.Assertions.*;
 
-public class ContextTest {
+class ContextTest {
 
 	static Condition<Context> key(Object k) {
 		return new Condition<>(c -> c.hasKey(k), "key <%s>", k);
@@ -63,7 +68,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void empty() throws Exception {
+	void empty() throws Exception {
 		Context c = Context.empty();
 
 		assertThat(c).isInstanceOf(Context0.class);
@@ -71,7 +76,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of1() throws Exception {
+	void of1() throws Exception {
 		Context c = Context.of(1, 100);
 
 		assertThat(c).isInstanceOf(Context1.class);
@@ -80,7 +85,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of2() throws Exception {
+	void of2() throws Exception {
 		Context c = Context.of(1, 100, 2, 200);
 
 		assertThat(c).isInstanceOf(Context2.class);
@@ -89,7 +94,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of3() throws Exception {
+	void of3() throws Exception {
 		Context c = Context.of(1, 100, 2, 200, 3, 300);
 
 		assertThat(c).isInstanceOf(Context3.class);
@@ -98,7 +103,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of4() throws Exception {
+	void of4() throws Exception {
 		Context c = Context.of(1, 100, 2, 200, 3, 300, 4, 400);
 
 		assertThat(c).isInstanceOf(Context4.class);
@@ -107,7 +112,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of5() throws Exception {
+	void of5() throws Exception {
 		Context c = Context.of(1, 100, 2, 200, 3, 300, 4, 400, 5, 500);
 
 		assertThat(c).isInstanceOf(Context5.class);
@@ -116,7 +121,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of1NullChecks() {
+	void of1NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 0))
 		                                .withMessage("key");
 		assertThatNullPointerException().as("value1").isThrownBy(() -> Context.of(1, null))
@@ -124,7 +129,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of2NullChecks() {
+	void of2NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 0, 2, 0))
 		                                .withMessage("key1");
 		assertThatNullPointerException().as("value1").isThrownBy(() -> Context.of(1, null, 2, 0))
@@ -136,7 +141,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of3NullChecks() {
+	void of3NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 0, 2, 0, 3, 0))
 		                                .withMessage("key1");
 		assertThatNullPointerException().as("value1").isThrownBy(() -> Context.of(1, null, 2, 0, 3, 0))
@@ -152,7 +157,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of4NullChecks() {
+	void of4NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 0, 2, 0, 3, 0, 4, 0))
 		                                .withMessage("key1");
 		assertThatNullPointerException().as("value1").isThrownBy(() -> Context.of(1, null, 2, 0, 3, 0, 4, 0))
@@ -172,7 +177,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void of5NullChecks() {
+	void of5NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 0, 2, 0, 3, 0, 4, 0, 5, 0))
 		                                .withMessage("key1");
 		assertThatNullPointerException().as("value1").isThrownBy(() -> Context.of(1, null, 2, 0, 3, 0, 4, 0, 5, 0))
@@ -196,14 +201,14 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofTwoRejectsDuplicates() {
+	void ofTwoRejectsDuplicates() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Context.of(1, 0, 1, 0))
 				.withMessage("Key #1 (1) is duplicated");
 	}
 
 	@Test
-	public void ofThreeRejectsDuplicates() {
+	void ofThreeRejectsDuplicates() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Context.of(1, 0, 1, 0, 3, 0))
 				.withMessage("Key #1 (1) is duplicated");
@@ -219,35 +224,35 @@ public class ContextTest {
 
 	//the other implementations rely on Context4.checkDuplicateKeys which is extensively tested in Context4Test
 	@Test
-	public void ofFourRejectsSimpleDuplicate() {
+	void ofFourRejectsSimpleDuplicate() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Context.of(1, 0, 2, 0, 3, 0, 3, 0))
 				.withMessage("Key #3 (3) is duplicated");
 	}
 
 	@Test
-	public void ofFiveRejectsSimpleDuplicate() {
+	void ofFiveRejectsSimpleDuplicate() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Context.of(1, 0, 2, 0, 3, 0, 4, 0, 4, 0))
 				.withMessage("Key #4 (4) is duplicated");
 	}
 
 	@Test
-	public void ofMapZero() {
+	void ofMapZero() {
 		Map<String, Integer> map = new HashMap<>(0);
 
 		assertThat(Context.of(map)).isInstanceOf(Context0.class);
 	}
 
 	@Test
-	public void ofMapNull() {
+	void ofMapNull() {
 		Map<String, Integer> nullMap = null;
 		assertThatNullPointerException().isThrownBy(() -> Context.of(nullMap))
 		                                .withMessage("map");
 	}
 
 	@Test
-	public void ofMapOne() {
+	void ofMapOne() {
 		Map<String, Integer> map = new HashMap<>(1);
 		map.put("k1", 1);
 		Context context = Context.of(map);
@@ -257,7 +262,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapTwo() {
+	void ofMapTwo() {
 		Map<String, Integer> map = new HashMap<>(2);
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -269,7 +274,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapThree() {
+	void ofMapThree() {
 		Map<String, Integer> map = new HashMap<>(3);
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -283,7 +288,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapFour() {
+	void ofMapFour() {
 		Map<String, Integer> map = new HashMap<>(4);
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -299,7 +304,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapFive() {
+	void ofMapFive() {
 		Map<String, Integer> map = new HashMap<>(5);
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -317,7 +322,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapSix() {
+	void ofMapSix() {
 		Map<String, Integer> map = new HashMap<>(6);
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -338,7 +343,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofLinkedHashMap6() {
+	void ofLinkedHashMap6() {
 		//Context.of(map) should always avoid being backed directly by the given map since we don't know
 		Map<String, Integer> map = new LinkedHashMap<>(6);
 		map.put("k1", 1);
@@ -354,7 +359,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapWithNullKey() {
+	void ofMapWithNullKey() {
 		Map<Object, Object> map = new HashMap<>();
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -368,7 +373,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofMapWithNullValue() {
+	void ofMapWithNullValue() {
 		Map<Object, Object> map = new HashMap<>();
 		map.put("k1", 1);
 		map.put("k2", 2);
@@ -382,20 +387,20 @@ public class ContextTest {
 	}
 
 	@Test
-	public void ofContextViewNull() {
+	void ofContextViewNull() {
 		assertThatNullPointerException().isThrownBy(() -> Context.of((ContextView) null))
 		                                .withMessage("contextView");
 	}
 
 	@Test
-	public void ofContextViewThatIsAContextReturnsSame() {
+	void ofContextViewThatIsAContextReturnsSame() {
 		ContextView cv = Context.of("A", "a", "B", "b");
 
 		assertThat(Context.of(cv)).isSameAs(cv);
 	}
 
 	@Test
-	public void ofContextViewThatIsntContextReturnsNewContext() {
+	void ofContextViewThatIsntContextReturnsNewContext() {
 		ForeignContextView cv = new ForeignContextView("A", "a");
 		cv.directPut("B", "b");
 
@@ -406,7 +411,7 @@ public class ContextTest {
 	// == tests for default methods ==
 
 	@Test
-	public void defaultPutAll() {
+	void defaultPutAll() {
 		Map<Object, Object> leftMap = new HashMap<>();
 		leftMap.put(1, "A");
 		leftMap.put(10, "A10");
@@ -431,7 +436,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void defaultPutAllOtherIsAbstractContext() {
+	void defaultPutAllOtherIsAbstractContext() {
 		Map<Object, Object> leftMap = new HashMap<>();
 		leftMap.put(1, "A");
 		leftMap.put(10, "A10");
@@ -457,7 +462,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void defaultPutAllWorksWithParallelStream() {
+	void defaultPutAllWorksWithParallelStream() {
 		Map<Object, Object> leftMap = new HashMap<>();
 		leftMap.put(1, "A");
 		leftMap.put(10, "A10");
@@ -495,7 +500,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void defaultPutAllForeignSmallSize() {
+	void defaultPutAllForeignSmallSize() {
 		Context initial = new ForeignContext(1, "A");
 		Context other = new ForeignContext(2, "B");
 
@@ -511,7 +516,7 @@ public class ContextTest {
 	}
 
 	@Test
-	public void putAllForeignMiddleSize() {
+	void putAllForeignMiddleSize() {
 		ForeignContext initial = new ForeignContext(1, "value1")
 				.directPut(2, "value2")
 				.directPut(3, "value3")
@@ -530,17 +535,26 @@ public class ContextTest {
 	}
 
 	@Test
-	public void putAllContextViewNoAmbiguity() {
+	void putAllContextViewNoAmbiguity() {
 		Context context = Context.of("key", "value");
 		ContextView contextView = context;
 		Context receiver = Context.of("foo", "bar");
 
-		@SuppressWarnings("deprecation") // because of putAll(Context). This test method shall be removed in 3.5 alongside putAll(Context)
 		Context resultFromContext = receiver.putAll(context);
 		Context resultFromContextView = receiver.putAll(contextView);
 
 		assertThat(resultFromContext.stream().collect(Collectors.toList()))
 				.containsExactlyElementsOf(resultFromContextView.stream().collect(Collectors.toList()));
+	}
+
+	@Test
+	void putAllContextOfNoAmbiguity() {
+		Context receiver = Context.of("foo", "bar");
+
+		Context resultFromContext = receiver.putAll(Context.of("key", "value"));
+
+		assertThat(resultFromContext.stream().map(e -> e.getKey() + ":" + e.getValue()).collect(Collectors.toList()))
+				.containsExactly("foo:bar", "key:value");
 	}
 
 	static class ForeignContext extends ForeignContextView implements Context {
