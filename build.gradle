@@ -120,6 +120,8 @@ configure(subprojects) { p ->
 
 		mavenLocal()
 		if (version.endsWith('BUILD-SNAPSHOT')) {
+			//do not wait for Maven Central when going back to snapshots and comparing for baseline
+			maven { url 'https://repo.spring.io/release' }
 			maven { url 'https://repo.spring.io/snapshot' }
 		}
 		maven { url 'https://repo.spring.io/milestone' }
