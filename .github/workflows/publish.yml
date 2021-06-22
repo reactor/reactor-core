@@ -29,7 +29,7 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      run: ./gradlew qualifyVersionGha
+      run: ./gradlew check
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
