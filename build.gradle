@@ -26,6 +26,7 @@ buildscript {
 	}
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.24.5" //applied in individual submodules
 	}
 }
 
@@ -38,7 +39,7 @@ plugins {
 	id "de.undercouch.download" version "3.4.3"
 	id "org.unbroken-dome.test-sets" version "3.0.0" apply false
 	// note: build scan plugin now must be applied in settings.gradle
-	id "com.jfrog.artifactory" version "4.15.2" apply false
+	// plugin portal is now outdated due to bintray sunset, at least for artifactory gradle plugin
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 	id 'io.spring.nohttp' version '0.0.5.RELEASE'
 	id "io.github.reyerizo.gradle.jcstress" version "0.8.11" apply false
@@ -88,7 +89,7 @@ ext {
 	// Used as a way to get jsr305 annotations.
 	// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
 	findbugsVersion = '3.0.1'
-	
+
 	jsr166BackportVersion = '1.0.0.RELEASE'
 
 	// Blockhound
@@ -144,6 +145,8 @@ configure(subprojects) { p ->
 
 		mavenLocal()
 		if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
+			//do not wait for Maven Central when going back to snapshots and comparing for baseline
+			maven { url 'https://repo.spring.io/release' }
 			maven { url 'https://repo.spring.io/snapshot' }
 		}
 		maven { url 'https://repo.spring.io/milestone' }
