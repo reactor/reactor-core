@@ -122,29 +122,14 @@ publishing {
 				}
 				developers {
 					developer {
-						id = 'smaldini'
-						name = 'Stephane Maldini'
-						email = 'smaldini@pivotal.io'
-					}
-					developer {
-						id = 'akarnokd'
-						name = 'David Karnok'
-						email = 'akarnokd@gmail.com'
-					}
-					developer {
 						id = 'simonbasle'
 						name = 'Simon Baslé'
-						email = 'sbasle@pivotal.io'
+						email = 'sbasle@vmware.com'
 					}
 					developer {
-						id = 'bsideup'
-						name = 'Sergei Egorov'
-						email = 'segorov@pivotal.io'
-					}
-					developer {
-						id = 'sdeleuze'
-						name = 'Sébastien Deleuze'
-						email = 'sdeleuze@pivotal.io'
+						id = 'odokuka'
+						name = 'Oleh Dokuka'
+						email = 'odokuka@vmware.com'
 					}
 				}
 				issueManagement {
