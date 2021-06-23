@@ -39,6 +39,7 @@ plugins {
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 	id 'io.spring.nohttp' version '0.0.5.RELEASE'
 	id "io.github.reyerizo.gradle.jcstress" version "0.8.11" apply false
+	id "com.diffplug.spotless" version "5.14.0"
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -104,6 +105,20 @@ nohttp {
 	source.exclude "docs/asciidoc/highlight/**"
 	source.exclude "**/build/reports/tests/**/*.html"
 	allowlistFile = project.file('codequality/nohttp/allowlist.lines')
+}
+
+spotless {
+	ratchetFrom 'origin/pivotalToVmware' //FIXME switch to 3.3.x once other PR is merged, and `main` once forward-merged
+	java {
+		target '**/*.java'
+		indentWithTabs()
+		replaceRegex 'class-level javadoc indentation fix', /^\*/, ' *'
+		replaceRegex 'method-level javadoc indentation fix', /\t\*/, '\t *'
+		trimTrailingWhitespace()
+		endWithNewline()
+		removeUnusedImports()
+		licenseHeaderFile('codequality/spotless/licenseJava.txt')
+	}
 }
 
 configure(subprojects) { p ->
