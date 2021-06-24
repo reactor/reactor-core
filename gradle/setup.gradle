@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -122,29 +122,14 @@ publishing {
 				}
 				developers {
 					developer {
-						id = 'smaldini'
-						name = 'Stephane Maldini'
-						email = 'smaldini@pivotal.io'
-					}
-					developer {
-						id = 'akarnokd'
-						name = 'David Karnok'
-						email = 'akarnokd@gmail.com'
-					}
-					developer {
 						id = 'simonbasle'
 						name = 'Simon Baslé'
-						email = 'sbasle@pivotal.io'
+						email = 'sbasle@vmware.com'
 					}
 					developer {
-						id = 'bsideup'
-						name = 'Sergei Egorov'
-						email = 'segorov@pivotal.io'
-					}
-					developer {
-						id = 'sdeleuze'
-						name = 'Sébastien Deleuze'
-						email = 'sdeleuze@pivotal.io'
+						id = 'odokuka'
+						name = 'Oleh Dokuka'
+						email = 'odokuka@vmware.com'
 					}
 				}
 				issueManagement {
