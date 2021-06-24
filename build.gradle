@@ -108,7 +108,7 @@ nohttp {
 }
 
 spotless {
-	ratchetFrom 'origin/pivotalToVmware' //FIXME switch to 3.3.x once other PR is merged, and `main` once forward-merged
+	ratchetFrom 'origin/3.3.x'
 	java {
 		target '**/*.java'
 		indentWithTabs()
