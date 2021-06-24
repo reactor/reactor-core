@@ -108,7 +108,19 @@ nohttp {
 }
 
 spotless {
-	ratchetFrom 'origin/3.3.x'
+	if (project.hasProperty("spotlessFrom")) {
+		println "[Spotless] Ratchet from $project.spotlessFrom"
+		ratchetFrom project.spotlessFrom
+	}
+	else if (isCiServer) {
+		println "[Spotless] CI detected without explicit branch, not enforcing check"
+		enforceCheck false
+	}
+	else {
+		String spotlessBranch = "origin/3.3.x"
+		println "[Spotless] Local run detected, ratchet from $spotlessBranch"
+		ratchetFrom spotlessBranch
+	}
 	java {
 		target '**/*.java'
 		indentWithTabs()

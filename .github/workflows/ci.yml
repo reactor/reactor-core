@@ -22,6 +22,20 @@ jobs:
         wrapper-cache-enabled: true
         dependencies-cache-enabled: true
         configuration-cache-enabled: true
+  spotless:
+    name: spotless
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: eskatos/gradle-command-action@v1
+          name: gradle
+          with:
+            arguments: spotlessCheck -PspotlessFrom=$GITHUB_BASE_REF
+            wrapper-cache-enabled: true
+            dependencies-cache-enabled: true
+            configuration-cache-enabled: true
   core-slow:
     name: core slower tests
     runs-on: ubuntu-latest
