@@ -123,9 +123,13 @@ spotless {
 	}
 	java {
 		target '**/*.java'
-		indentWithTabs()
-		replaceRegex 'class-level javadoc indentation fix', /^\*/, ' *'
-		replaceRegex 'method-level javadoc indentation fix', /\t\*/, '\t *'
+		//the regexp below uses a non-greedy quantifier to find blocks of 4 spaces at beginning of line
+		//it stops replacing such blocks with tabs once the first non-space character is found.
+		//As such, 5 spaces are turned into a tab + one extra space, where greedy would have turned into space then tab.
+		replaceRegex 'turn indentation 4 spaces into tabs', /^(\s*?)[ ]{4}(\s*)/, '$1\t$2'
+		//the above can leave tabs-spaces-tabs occurrences (with less that 4 spaces). the regexp
+		//below removes theses in-between spaces (again only looking at beginning of line)
+		replaceRegex 'remove in-between spaces in indentation', /^(\t*)[ ]{1,3}(\t*)/, '$1$2'
 		trimTrailingWhitespace()
 		endWithNewline()
 		licenseHeaderFile('codequality/spotless/licenseJava.txt')
