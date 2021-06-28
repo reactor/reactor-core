@@ -128,7 +128,6 @@ spotless {
 		replaceRegex 'method-level javadoc indentation fix', /\t\*/, '\t *'
 		trimTrailingWhitespace()
 		endWithNewline()
-		removeUnusedImports()
 		licenseHeaderFile('codequality/spotless/licenseJava.txt')
 	}
 }
