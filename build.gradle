@@ -43,6 +43,7 @@ plugins {
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 	id 'io.spring.nohttp' version '0.0.5.RELEASE'
 	id "io.github.reyerizo.gradle.jcstress" version "0.8.11" apply false
+	id "com.diffplug.spotless" version "5.14.0"
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -129,6 +130,27 @@ nohttp {
 	source.exclude "docs/asciidoc/highlight/**"
 	source.exclude "**/build/reports/tests/**/*.html"
 	allowlistFile = project.file('codequality/nohttp/allowlist.lines')
+}
+
+spotless {
+	if (project.hasProperty("spotlessFrom")) {
+		println "[Spotless] Ratchet from $project.spotlessFrom"
+		ratchetFrom project.spotlessFrom
+	}
+	else if (isCiServer) {
+		println "[Spotless] CI detected without explicit branch, not enforcing check"
+		enforceCheck false
+	}
+	else {
+		String spotlessBranch = "origin/main"
+		println "[Spotless] Local run detected, ratchet from $spotlessBranch"
+		ratchetFrom spotlessBranch
+	}
+	java {
+		target '**/*.java'
+		targetExclude '**/java8stubs/**/*', '**/java9stubs/**/*'
+		licenseHeaderFile('codequality/spotless/licenseSlashstarStyle.txt')
+	}
 }
 
 configure(subprojects) { p ->
