@@ -38,7 +38,7 @@ jobs:
         dependencies-cache-enabled: true
         configuration-cache-enabled: true
   other:
-    name: other tests and checks
+    name: other tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -61,4 +61,3 @@ jobs:
         wrapper-cache-enabled: true
         dependencies-cache-enabled: true
         configuration-cache-enabled: true
-#the above should exclude jcstress in master, adding a 3rd job below for jcstress
