@@ -109,8 +109,13 @@ nohttp {
 
 spotless {
 	if (project.hasProperty("spotlessFrom")) {
-		println "[Spotless] Ratchet from $project.spotlessFrom"
-		ratchetFrom project.spotlessFrom
+		if (project.spotlessFrom == "ALL") {
+			println "[Spotless] Ratchet deactivated"
+		}
+		else {
+			println "[Spotless] Ratchet from $project.spotlessFrom"
+			ratchetFrom project.spotlessFrom
+		}
 	}
 	else if (isCiServer) {
 		println "[Spotless] CI detected without explicit branch, not enforcing check"
