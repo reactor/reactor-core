@@ -123,7 +123,10 @@ spotless {
 	}
 	java {
 		target '**/*.java'
-		targetExclude '**/java8stubs/**/*', '**/java9stubs/**/*'
+		targetExclude '**/java8stubs/**/*', '**/java9stubs/**/*', '**/scrabble/**/*',
+			'reactor-core/src/main/java/reactor/util/annotation/NonNull.java',
+			'reactor-core/src/main/java/reactor/util/annotation/NonNullApi.java',
+			'reactor-core/src/main/java/reactor/util/annotation/Nullable.java'
 		licenseHeaderFile('codequality/spotless/licenseSlashstarStyle.txt')
 	}
 }
