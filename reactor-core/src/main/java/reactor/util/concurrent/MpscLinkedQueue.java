@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-/*
- * The code was inspired by the similarly named JCTools class:
- * https://github.com/JCTools/JCTools/blob/master/jctools-core/src/main/java/org/jctools/queues/atomic
- */
 package reactor.util.concurrent;
 
 import java.util.AbstractQueue;
@@ -28,6 +24,10 @@ import java.util.function.BiPredicate;
 
 import reactor.util.annotation.Nullable;
 
+/*
+ * The code was inspired by the similarly named JCTools class:
+ * https://github.com/JCTools/JCTools/blob/master/jctools-core/src/main/java/org/jctools/queues/atomic
+ */
 /**
  * A multi-producer single consumer unbounded queue.
  * @param <E> the contained value type
