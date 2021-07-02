@@ -134,8 +134,13 @@ nohttp {
 
 spotless {
 	if (project.hasProperty("spotlessFrom")) {
-		println "[Spotless] Ratchet from $project.spotlessFrom"
-		ratchetFrom project.spotlessFrom
+		if (project.spotlessFrom == "ALL") {
+			println "[Spotless] Ratchet deactivated"
+		}
+		else {
+			println "[Spotless] Ratchet from $project.spotlessFrom"
+			ratchetFrom project.spotlessFrom
+		}
 	}
 	else if (isCiServer) {
 		println "[Spotless] CI detected without explicit branch, not enforcing check"
@@ -148,7 +153,10 @@ spotless {
 	}
 	java {
 		target '**/*.java'
-		targetExclude '**/java8stubs/**/*', '**/java9stubs/**/*'
+		targetExclude '**/java8stubs/**/*', '**/java9stubs/**/*', '**/scrabble/**/*',
+			'reactor-core/src/main/java/reactor/util/annotation/NonNull.java',
+			'reactor-core/src/main/java/reactor/util/annotation/NonNullApi.java',
+			'reactor-core/src/main/java/reactor/util/annotation/Nullable.java'
 		licenseHeaderFile('codequality/spotless/licenseSlashstarStyle.txt')
 	}
 }
