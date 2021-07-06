@@ -1548,7 +1548,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
 	 */
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparing(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
@@ -1571,7 +1572,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that, subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
 	 */
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparing(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
@@ -1602,7 +1604,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that, subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
 	 */
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparingDelayError(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
@@ -1629,7 +1632,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
 	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
-	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
 	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
 	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
 	 * To be removed in 3.6.0 at the earliest.
@@ -1656,7 +1660,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
 	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
 	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
 	 * To be removed in 3.6.0 at the earliest.
@@ -1685,7 +1690,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
 	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
 	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
 	 * To be removed in 3.6.0 at the earliest.
@@ -6279,8 +6285,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param other the {@link Publisher} to merge with
 	 * @param otherComparator the {@link Comparator} to use for merging
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new {@link Flux} that compares latest values from the given publisher
+	 * and this flux, using the smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #mergeComparingWith(Publisher, Comparator)} instead
+	 * (with the caveat that it defaults to NOT delaying errors, unlike this operator).
+	 * To be removed in 3.6.0 at the earliest.
 	 */
+	@Deprecated
 	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
 			Comparator<? super T> otherComparator) {
 		if (this instanceof FluxMergeOrdered) {
@@ -6306,11 +6317,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * another source.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeOrderedWith.svg" alt="">
+	 * <p>
+	 * mergeComparingWith doesn't delay errors by default, but it will inherit the delayError
+	 * behavior of a mergeComparingDelayError directly above it.
 	 *
 	 * @param other the {@link Publisher} to merge with
 	 * @param otherComparator the {@link Comparator} to use for merging
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new {@link Flux} that compares latest values from the given publisher
+	 * and this flux, using the smallest value and replenishing the source that produced it
 	 */
 	public final Flux<T> mergeComparingWith(Publisher<? extends T> other,
 			Comparator<? super T> otherComparator) {
