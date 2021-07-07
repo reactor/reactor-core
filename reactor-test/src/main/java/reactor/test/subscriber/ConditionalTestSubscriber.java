@@ -38,7 +38,11 @@ public class ConditionalTestSubscriber<T> extends TestSubscriber<T> implements F
 
 	@Override
 	public boolean tryOnNext(T t) {
-		if (terminalSignal.get() != null) {
+		int previousState = markOnNextStart();
+		boolean wasTerminated = isMarkedTerminated(previousState);
+		boolean wasOnNext = isMarkedOnNext(previousState);
+		if (wasTerminated || wasOnNext) {
+			//at this point, we know we haven't switched the markedOnNext bit. if it is set, let the other onNext unset it
 			this.protocolErrors.add(Signal.next(t));
 			return false;
 		}
@@ -49,10 +53,12 @@ public class ConditionalTestSubscriber<T> extends TestSubscriber<T> implements F
 				if (cancelled.get()) {
 					this.receivedPostCancellation.add(t);
 				}
+				checkTerminatedAfterOnNext();
 				return true;
 			}
 			else {
 				Operators.onDiscard(t, currentContext());
+				checkTerminatedAfterOnNext();
 				return false;
 			}
 		}
