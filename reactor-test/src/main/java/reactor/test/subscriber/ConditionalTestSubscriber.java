@@ -63,6 +63,7 @@ public class ConditionalTestSubscriber<T> extends TestSubscriber<T> implements F
 			}
 		}
 		catch (Throwable predicateError) {
+			markOnNextDone();
 			internalCancel();
 			onError(predicateError);
 			return false; //this is consistent with eg. Flux.filter
