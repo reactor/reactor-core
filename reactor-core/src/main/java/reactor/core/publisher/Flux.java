@@ -1583,7 +1583,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new FluxMergeOrdered<>(prefetch, comparator, false, sources));
+		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, false, sources));
 	}
 
 	/**
@@ -1615,7 +1615,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new FluxMergeOrdered<>(prefetch, comparator, true, sources));
+		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, sources));
 	}
 
 	/**
@@ -1705,7 +1705,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new FluxMergeOrdered<>(prefetch, comparator, true, sources));
+		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, sources));
 	}
 
 	/**
@@ -6294,8 +6294,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Deprecated
 	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
 			Comparator<? super T> otherComparator) {
-		if (this instanceof FluxMergeOrdered) {
-			FluxMergeOrdered<T> fluxMerge = (FluxMergeOrdered<T>) this;
+		if (this instanceof FluxMergeComparing) {
+			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
 			return fluxMerge.mergeAdditionalSource(other, otherComparator);
 		}
 		return mergeOrdered(otherComparator, this, other);
@@ -6329,8 +6329,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> mergeComparingWith(Publisher<? extends T> other,
 			Comparator<? super T> otherComparator) {
-		if (this instanceof FluxMergeOrdered) {
-			FluxMergeOrdered<T> fluxMerge = (FluxMergeOrdered<T>) this;
+		if (this instanceof FluxMergeComparing) {
+			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
 			return fluxMerge.mergeAdditionalSource(other, otherComparator);
 		}
 		return mergeComparing(otherComparator, this, other);

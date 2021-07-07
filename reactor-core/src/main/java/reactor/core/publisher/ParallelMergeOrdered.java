@@ -17,8 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Comparator;
-import java.util.Queue;
-import java.util.function.Supplier;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -65,8 +63,8 @@ final class ParallelMergeOrdered<T> extends Flux<T> implements Scannable {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		FluxMergeOrdered.MergeOrderedMainProducer<T>
-				main = new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, valueComparator, prefetch, source.parallelism(), true);
+		FluxMergeComparing.MergeOrderedMainProducer<T>
+				main = new FluxMergeComparing.MergeOrderedMainProducer<>(actual, valueComparator, prefetch, source.parallelism(), true);
 		actual.onSubscribe(main);
 		source.subscribe(main.subscribers);
 	}

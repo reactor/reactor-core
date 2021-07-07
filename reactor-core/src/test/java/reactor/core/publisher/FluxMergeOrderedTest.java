@@ -34,7 +34,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxMergeComparingTest.Person;
 import reactor.core.publisher.FluxMergeComparingTest.User;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 
@@ -142,8 +141,8 @@ class FluxMergeOrderedTest {
 		                              .mergeOrderedWith(Flux.just("DD", "CCC"), comparator)
 		                              .mergeOrderedWith(Flux.just("E"), comparator);
 
-		assertThat(flux).isInstanceOf(FluxMergeOrdered.class);
-		assertThat(((FluxMergeOrdered<String>) flux).valueComparator)
+		assertThat(flux).isInstanceOf(FluxMergeComparing.class);
+		assertThat(((FluxMergeComparing<String>) flux).valueComparator)
 				.as("didn't combine comparator")
 				.isSameAs(comparator);
 	}
@@ -154,8 +153,8 @@ class FluxMergeOrderedTest {
 		                              .mergeOrderedWith(Flux.just("DD", "CCC"), Comparator.naturalOrder())
 		                              .mergeOrderedWith(Flux.just("E"), Comparator.naturalOrder());
 
-		assertThat(flux).isInstanceOf(FluxMergeOrdered.class);
-		assertThat(((FluxMergeOrdered<String>) flux).valueComparator)
+		assertThat(flux).isInstanceOf(FluxMergeComparing.class);
+		assertThat(((FluxMergeComparing<String>) flux).valueComparator)
 				.as("didn't combine naturalOrder()")
 				.isSameAs(Comparator.naturalOrder());
 	}
@@ -188,7 +187,7 @@ class FluxMergeOrderedTest {
 		@SuppressWarnings("unchecked")
 		Publisher<Tuple2<Long, Integer>>[] sources = sourceList.toArray(new Publisher[sourceList.size()]);
 
-		Flux<Integer> test = new FluxMergeOrdered<>(16, Comparator.comparing(Tuple2::getT1), true, sources)
+		Flux<Integer> test = new FluxMergeComparing<>(16, Comparator.comparing(Tuple2::getT1), true, sources)
 				.map(Tuple2::getT2);
 
 		StepVerifier.create(test)
@@ -214,7 +213,7 @@ class FluxMergeOrderedTest {
 		@SuppressWarnings("unchecked")
 		Publisher<Tuple2<Long, Integer>>[] sources = sourceList.toArray(new Publisher[sourceList.size()]);
 
-		Flux<Integer> test = new FluxMergeOrdered<>(16,
+		Flux<Integer> test = new FluxMergeComparing<>(16,
 				Comparator.comparing(Tuple2::getT1), true, sources)
 				.map(Tuple2::getT2);
 
@@ -226,20 +225,20 @@ class FluxMergeOrderedTest {
 	@Test
 	void prefetchZero() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new FluxMergeOrdered<Integer>(0, Comparator.naturalOrder(), true))
+				.isThrownBy(() -> new FluxMergeComparing<Integer>(0, Comparator.naturalOrder(), true))
 				.withMessage("prefetch > 0 required but it was 0");
 	}
 
 	@Test
 	void prefetchNegative() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new FluxMergeOrdered<Integer>(-1, Comparator.naturalOrder(), true))
+				.isThrownBy(() -> new FluxMergeComparing<Integer>(-1, Comparator.naturalOrder(), true))
 				.withMessage("prefetch > 0 required but it was -1");
 	}
 
 	@Test
 	void getPrefetch() {
-		FluxMergeOrdered<Integer> fmo = new FluxMergeOrdered<Integer>(123,
+		FluxMergeComparing<Integer> fmo = new FluxMergeComparing<Integer>(123,
 				Comparator.naturalOrder(), true);
 
 		assertThat(fmo.getPrefetch()).isEqualTo(123);
@@ -248,7 +247,7 @@ class FluxMergeOrderedTest {
 	@Test
 	void nullSources() {
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+				.isThrownBy(() -> new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 						(Publisher<Integer>[]) null))
 				.withMessage("sources must be non-null");
 	}
@@ -257,12 +256,12 @@ class FluxMergeOrderedTest {
 	void mergeAdditionalSource() {
 		Comparator<Integer> originalComparator = Comparator.naturalOrder();
 		@SuppressWarnings("unchecked") //safe varargs
-		FluxMergeOrdered<Integer> fmo = new FluxMergeOrdered<>(2,
+		FluxMergeComparing<Integer> fmo = new FluxMergeComparing<>(2,
 				originalComparator, true,
 				Flux.just(1, 2),
 				Flux.just(3, 4));
 
-		FluxMergeOrdered<Integer> fmo2 = fmo.mergeAdditionalSource(Flux.just(5, 6), Comparator.naturalOrder());
+		FluxMergeComparing<Integer> fmo2 = fmo.mergeAdditionalSource(Flux.just(5, 6), Comparator.naturalOrder());
 
 		assertThat(fmo2).isNotSameAs(fmo);
 		assertThat(fmo2.sources).startsWith(fmo.sources)
@@ -283,7 +282,7 @@ class FluxMergeOrderedTest {
 		Flux<Integer> source2 = Flux.just(2);
 
 		@SuppressWarnings("unchecked") //safe varargs
-		Scannable fmo = new FluxMergeOrdered<>(123, Comparator.naturalOrder(), true, source1, source2);
+		Scannable fmo = new FluxMergeComparing<>(123, Comparator.naturalOrder(), true, source1, source2);
 
 		assertThat(fmo.scan(Scannable.Attr.PARENT)).isSameAs(source1);
 		assertThat(fmo.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
@@ -298,8 +297,8 @@ class FluxMergeOrderedTest {
 	void scanMain() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 
-		FluxMergeOrdered.MergeOrderedMainProducer<Integer> test =
-				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
+		FluxMergeComparing.MergeOrderedMainProducer<Integer> test =
+				new FluxMergeComparing.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL))
 				.isSameAs(actual)
@@ -326,10 +325,10 @@ class FluxMergeOrderedTest {
 	@Test
 	void scanInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
-		FluxMergeOrdered.MergeOrderedMainProducer<Integer> main =
-				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
+		FluxMergeComparing.MergeOrderedMainProducer<Integer> main =
+				new FluxMergeComparing.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
 
-		FluxMergeOrdered.MergeOrderedInnerSubscriber<Integer> test = new FluxMergeOrdered.MergeOrderedInnerSubscriber<>(
+		FluxMergeComparing.MergeOrderedInnerSubscriber<Integer> test = new FluxMergeComparing.MergeOrderedInnerSubscriber<>(
 				main, 123);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
@@ -356,8 +355,8 @@ class FluxMergeOrderedTest {
 	void mainSubscribersDifferentCountInners() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 
-		FluxMergeOrdered.MergeOrderedMainProducer<Integer> test =
-				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
+		FluxMergeComparing.MergeOrderedMainProducer<Integer> test =
+				new FluxMergeComparing.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
 
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> {
@@ -371,10 +370,10 @@ class FluxMergeOrderedTest {
 	@Test
 	void innerRequestAmountIgnoredAssumedOne() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
-		FluxMergeOrdered.MergeOrderedMainProducer<Integer> main =
-				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
+		FluxMergeComparing.MergeOrderedMainProducer<Integer> main =
+				new FluxMergeComparing.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4, true);
 
-		FluxMergeOrdered.MergeOrderedInnerSubscriber<Integer> test = new FluxMergeOrdered.MergeOrderedInnerSubscriber<>(
+		FluxMergeComparing.MergeOrderedInnerSubscriber<Integer> test = new FluxMergeComparing.MergeOrderedInnerSubscriber<>(
 				main, 4);
 		AtomicLong requested = new AtomicLong();
 		Subscription sub = new Subscription() {
@@ -407,7 +406,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal1() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1), Flux.just(2))
 				.as(StepVerifier::create)
 				.expectNext(1, 2)
@@ -417,7 +416,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal2() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
 				.as(StepVerifier::create)
 				.expectNext(1, 2, 3, 4, 5, 6, 7, 8)
@@ -427,7 +426,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal3() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6))
 				.as(StepVerifier::create)
 				.expectNext(1, 2, 3, 4, 5, 6, 7)
@@ -437,7 +436,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal4() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(1, 3, 5, 7))
 				.as(StepVerifier::create)
 				.expectNext(1, 1, 3, 3, 5, 5, 7, 7)
@@ -447,7 +446,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal1Hidden() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1).hide(), Flux.just(2).hide())
 				.as(StepVerifier::create)
 				.expectNext(1, 2)
@@ -457,7 +456,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal2Hidden() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7).hide(), Flux.just(2, 4, 6, 8).hide())
 				.as(StepVerifier::create)
 				.expectNext(1, 2, 3, 4, 5, 6, 7, 8)
@@ -467,7 +466,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal3Hidden() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7).hide(), Flux.just(2, 4, 6).hide())
 				.as(StepVerifier::create)
 				.expectNext(1, 2, 3, 4, 5, 6, 7)
@@ -477,7 +476,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void normal4Hidden() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7).hide(), Flux.just(1, 3, 5, 7).hide())
 				.as(StepVerifier::create)
 				.expectNext(1, 1, 3, 3, 5, 5, 7, 7)
@@ -487,7 +486,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void backpressure1() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7).log("left")
 				, Flux.just(2, 4, 6, 8).log("right"))
 				.limitRate(1)
@@ -499,7 +498,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void backpressure2() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1), Flux.just(2))
 				.limitRate(1)
 				.as(StepVerifier::create)
@@ -510,7 +509,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void backpressure3() {
-		new FluxMergeOrdered<>(1, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(1, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
 				.limitRate(1)
 				.as(StepVerifier::create)
@@ -521,7 +520,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void take() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
 				.take(5)
 				.as(StepVerifier::create)
@@ -532,7 +531,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void firstErrorsDelayed() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.error(new IOException("boom")),
 				Flux.just(2, 4, 6, 8))
 				.as(StepVerifier::create)
@@ -543,7 +542,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void firstErrorsBackpressuredDelayed() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.error(new IOException("boom")),
 				Flux.just(2, 4, 6, 8))
 				.as(f -> StepVerifier.create(f, 0L))
@@ -555,7 +554,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void secondErrorsDelayed() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7),
 				Flux.error(new IOException("boom"))
 		)
@@ -567,7 +566,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void secondErrorsBackpressuredDelayed() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7),
 				Flux.error(new IOException("boom"))
 		)
@@ -581,7 +580,7 @@ class FluxMergeOrderedTest {
 	void bothErrorDelayed() {
 		IOException firstError = new IOException("first");
 		IOException secondError = new IOException("second");
-		new FluxMergeOrdered<Integer>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<Integer>(2, Comparator.naturalOrder(), true,
 				Flux.error(firstError),
 				Flux.error(secondError)
 		)
@@ -593,7 +592,7 @@ class FluxMergeOrderedTest {
 
 	@Test
 	void never() {
-		new FluxMergeOrdered<Integer>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<Integer>(2, Comparator.naturalOrder(), true,
 				Flux.never(), Flux.never())
 				.as(StepVerifier::create)
 				.thenCancel()
@@ -603,7 +602,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void fusedThrowsInDrainLoopDelayed() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1).map(v -> { throw new IllegalArgumentException("boom"); }),
 				Flux.just(2, 3))
 				.as(StepVerifier::create)
@@ -614,7 +613,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void fusedThrowsInPostEmissionCheckDelayed() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1).map(v -> { throw new IllegalArgumentException("boom"); }),
 				Flux.just(2, 3))
 				.as(f -> StepVerifier.create(f, 0L))
@@ -628,7 +627,7 @@ class FluxMergeOrderedTest {
 	void nullInSourceArray() {
 		assertThatNullPointerException()
 				.isThrownBy(() -> {
-					new FluxMergeOrdered<>(2,
+					new FluxMergeComparing<>(2,
 							Comparator.naturalOrder(), true,
 							Flux.just(1), null);
 				})
@@ -638,7 +637,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void comparatorThrows() {
-		new FluxMergeOrdered<>(2,
+		new FluxMergeComparing<>(2,
 				(a, b) -> { throw new IllegalArgumentException("boom"); }, true,
 				Flux.just(1, 3), Flux.just(2, 4))
 				.as(StepVerifier::create)
@@ -648,7 +647,7 @@ class FluxMergeOrderedTest {
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
 	void naturalOrder() {
-		new FluxMergeOrdered<>(2, Comparator.naturalOrder(), true,
+		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1), Flux.just(2))
 				.as(StepVerifier::create)
 				.expectNext(1, 2)

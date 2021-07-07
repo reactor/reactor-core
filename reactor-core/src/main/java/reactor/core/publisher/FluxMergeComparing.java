@@ -44,7 +44,7 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 //source: https://akarnokd.blogspot.fr/2017/09/java-9-flow-api-ordered-merge.html
-final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 
 	final int                      prefetch;
 	final Comparator<? super T>    valueComparator;
@@ -52,10 +52,10 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 	final boolean delayError;
 
 	@SafeVarargs
-	FluxMergeOrdered(int prefetch,
-			Comparator<? super T> valueComparator,
-			boolean delayError,
-			Publisher<? extends T>... sources) {
+	FluxMergeComparing(int prefetch,
+	                   Comparator<? super T> valueComparator,
+	                   boolean delayError,
+	                   Publisher<? extends T>... sources) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -78,13 +78,13 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 	 * the current array of sources. The provided {@link Comparator} is tested for equality
 	 * with the current comparator, and if different is combined by {@link Comparator#thenComparing(Comparator)}.
 	 * <p>
-	 * This operation doesn't change the current {@link FluxMergeOrdered} instance.
+	 * This operation doesn't change the current {@link FluxMergeComparing} instance.
 	 *
 	 * @param source the new source to merge with the others
-	 * @return the new {@link FluxMergeOrdered} instance
+	 * @return the new {@link FluxMergeComparing} instance
 	 */
-	FluxMergeOrdered<T> mergeAdditionalSource(Publisher<? extends T> source,
-			Comparator<? super T> otherComparator) {
+	FluxMergeComparing<T> mergeAdditionalSource(Publisher<? extends T> source,
+	                                            Comparator<? super T> otherComparator) {
 		int n = sources.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
@@ -95,9 +95,9 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 			@SuppressWarnings("unchecked")
 			Comparator<T> currentComparator = (Comparator<T>) this.valueComparator;
 			final Comparator<T> newComparator = currentComparator.thenComparing(otherComparator);
-			return new FluxMergeOrdered<>(prefetch, newComparator, delayError, newArray);
+			return new FluxMergeComparing<>(prefetch, newComparator, delayError, newArray);
 		}
-		return new FluxMergeOrdered<>(prefetch, valueComparator, delayError, newArray);
+		return new FluxMergeComparing<>(prefetch, valueComparator, delayError, newArray);
 	}
 
 	@Override
