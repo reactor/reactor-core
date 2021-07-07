@@ -134,7 +134,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		final Object[] values;
 		final boolean delayError;
 
-		volatile boolean done;
+		boolean done;
 
 		volatile Throwable error;
 		static final AtomicReferenceFieldUpdater<MergeOrderedMainProducer, Throwable> ERROR =
