@@ -52,10 +52,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 	final boolean delayError;
 
 	@SafeVarargs
-	FluxMergeComparing(int prefetch,
-	                   Comparator<? super T> valueComparator,
-	                   boolean delayError,
-	                   Publisher<? extends T>... sources) {
+	FluxMergeComparing(int prefetch, Comparator<? super T> valueComparator, boolean delayError, Publisher<? extends T>... sources) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -83,8 +80,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 	 * @param source the new source to merge with the others
 	 * @return the new {@link FluxMergeComparing} instance
 	 */
-	FluxMergeComparing<T> mergeAdditionalSource(Publisher<? extends T> source,
-	                                            Comparator<? super T> otherComparator) {
+	FluxMergeComparing<T> mergeAdditionalSource(Publisher<? extends T> source, Comparator<? super T> otherComparator) {
 		int n = sources.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
@@ -179,8 +175,8 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 				throw new IllegalArgumentException("must subscribe with " + subscribers.length + " sources");
 			}
 			for (int i = 0; i < sources.length; i++) {
-				Objects.requireNonNull(sources[i], "subscribed with a null source: sources[" + i + "]")
-				       .subscribe(subscribers[i]);
+				Objects.requireNonNull(sources[i], "subscribed with a null source: sources[" + i + "]");
+				sources[i].subscribe(subscribers[i]);
 			}
 		}
 
