@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscription;
@@ -128,14 +129,21 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	int fusionMode = -1;
 
 	// state tracking
-	AtomicBoolean cancelled;
-	final List<T> receivedOnNext;
-	final List<T> receivedPostCancellation;
+	final AtomicBoolean   cancelled;
+	final List<T>         receivedOnNext;
+	final List<T>         receivedPostCancellation;
 	final List<Signal<T>> protocolErrors;
-	final AtomicReference<Signal<T>> terminalSignal;
 
 	final CountDownLatch                  doneLatch;
 	final AtomicReference<AssertionError> subscriptionFailure;
+
+	@Nullable
+	volatile Signal<T> terminalSignal;
+
+	volatile     int                                       state;
+	@SuppressWarnings("rawtypes")
+	static final AtomicIntegerFieldUpdater<TestSubscriber> STATE =
+			AtomicIntegerFieldUpdater.newUpdater(TestSubscriber.class, "state");
 
 	TestSubscriber(TestSubscriberBuilder options) {
 		this.initialRequest = options.initialRequest;
@@ -148,7 +156,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		this.receivedOnNext = new CopyOnWriteArrayList<>();
 		this.receivedPostCancellation = new CopyOnWriteArrayList<>();
 		this.protocolErrors = new CopyOnWriteArrayList<>();
-		this.terminalSignal = new AtomicReference<>();
+		this.state = 0;
 
 		this.doneLatch = new CountDownLatch(1);
 		this.subscriptionFailure = new AtomicReference<>();
@@ -234,13 +242,22 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 	@Override
 	public void onNext(@Nullable T t) {
-		if (terminalSignal.get() != null) {
+		int previousState = markOnNextStart();
+		boolean wasTerminated = isMarkedTerminated(previousState);
+		boolean wasOnNext = isMarkedOnNext(previousState);
+		if (wasTerminated || wasOnNext) {
+			//at this point, we know we haven't switched the markedOnNext bit. if it is set, let the other onNext unset it
 			if (t != null) {
 				this.protocolErrors.add(Signal.next(t));
 			}
-			else {
+			else if (wasTerminated) {
 				this.protocolErrors.add(Signal.error(
 						new AssertionError("onNext(null) received despite SYNC fusion (which has already completed)")
+				));
+			}
+			else {
+				this.protocolErrors.add(Signal.error(
+						new AssertionError("onNext(null) received despite SYNC fusion (with concurrent onNext)")
 				));
 			}
 			return;
@@ -251,11 +268,13 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 				assert this.qs != null;
 				for (; ; ) {
 					if (cancelled.get()) {
+						checkTerminatedAfterOnNext();
 						return;
 					}
 					t = qs.poll();
 					if (t == null) {
 						//no more available data, until next request (or termination)
+						checkTerminatedAfterOnNext();
 						return;
 					}
 					this.receivedOnNext.add(t);
@@ -270,38 +289,58 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		if (cancelled.get()) {
 			this.receivedPostCancellation.add(t);
 		}
+
+		checkTerminatedAfterOnNext();
 	}
 
 	@Override
 	public void onComplete() {
 		Signal<T> sig = Signal.complete();
-		if (terminalSignal.compareAndSet(null, sig)) {
-			notifyDone();
-		}
-		else {
+
+		int previousState = markTerminated();
+
+		if (isMarkedTerminated(previousState) || isMarkedTerminating(previousState)) {
 			this.protocolErrors.add(sig);
+			return;
 		}
+		if (isMarkedOnNext(previousState)) {
+			this.protocolErrors.add(sig);
+			this.terminalSignal = sig;
+			return; //isTerminating will be detected later, triggering the notifyDone()
+		}
+
+		this.terminalSignal = sig;
+		notifyDone();
 	}
 
 	@Override
 	public void onError(Throwable t) {
 		Signal<T> sig = Signal.error(t);
-		if (terminalSignal.compareAndSet(null, sig)) {
-			notifyDone();
-		}
-		else {
+
+		int previousState = markTerminated();
+
+		if (isMarkedTerminated(previousState) || isMarkedTerminating(previousState)) {
 			this.protocolErrors.add(sig);
+			return;
 		}
+		if (isMarkedOnNext(previousState)) {
+			this.protocolErrors.add(sig);
+			this.terminalSignal = sig;
+			return; //isTerminating will be detected later, triggering the notifyDone()
+		}
+
+		this.terminalSignal = sig;
+		notifyDone();
 	}
 
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.TERMINATED) return terminalSignal.get() != null || subscriptionFailure.get() != null;
+		if (key == Attr.TERMINATED) return terminalSignal != null || subscriptionFailure.get() != null;
 		if (key == Attr.CANCELLED) return cancelled.get();
 		if (key == Attr.ERROR) {
 			Throwable subFailure = subscriptionFailure.get();
-			Signal<T> sig = terminalSignal.get();
+			Signal<T> sig = terminalSignal;
 			if (sig != null && sig.getThrowable() != null) {
 				return sig.getThrowable();
 			}
@@ -313,8 +352,86 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		return null;
 	}
 
+	static final int MASK_TERMINATED = 0b1000;
+	static final int MASK_TERMINATING = 0b0100;
+	static final int MASK_ON_NEXT = 0b0001;
+
+	void checkTerminatedAfterOnNext() {
+		int donePreviousState = markOnNextDone();
+		if (isMarkedTerminating(donePreviousState)) {
+			notifyDone();
+		}
+	}
+
+	static boolean isMarkedTerminated(int state) {
+		return (state & MASK_TERMINATED) == MASK_TERMINATED;
+	}
+
+	static boolean isMarkedOnNext(int state) {
+		return (state & MASK_ON_NEXT) == MASK_ON_NEXT;
+	}
+
+	static boolean isMarkedTerminating(int state) {
+		return (state & MASK_TERMINATING) == MASK_TERMINATING
+				&& (state & MASK_TERMINATED) != MASK_TERMINATED;
+	}
+
+	/**
+	 * Attempt to mark the TestSubscriber as terminated. Does nothing if already terminated.
+	 * Mark as {@link #isMarkedTerminating(int)} if a concurrent onNext is detected.
+	 *
+	 * @return the previous state
+	 */
+	int markTerminated() {
+		for(;;) {
+			int state = this.state;
+			if (isMarkedTerminated(state) || isMarkedTerminating(state)) {
+				return state;
+			}
+
+			int newState;
+			if (isMarkedOnNext(state)) {
+				newState = state | MASK_TERMINATING;
+			}
+			else {
+				newState = MASK_TERMINATED;
+			}
+
+			if (STATE.compareAndSet(this, state, newState)) {
+				return state;
+			}
+		}
+	}
+
+	int markOnNextStart() {
+		for(;;) {
+			int state = this.state;
+			if (state != 0) {
+				return state;
+			}
+
+			if (STATE.compareAndSet(this, state, MASK_ON_NEXT)) {
+				return state;
+			}
+		}
+	}
+
+	int markOnNextDone() {
+		for(;;) {
+			int state = this.state;
+			int nextState = state & ~MASK_ON_NEXT;
+			if (STATE.compareAndSet(this, state, nextState)) {
+				return state;
+			}
+		}
+	}
+
 	// == public subscription-like methods
 
+	/**
+	 * Cancel the underlying subscription to the {@link org.reactivestreams.Publisher} and
+	 * unblock any pending {@link #block()} calls.
+	 */
 	public void cancel() {
 		if (cancelled.compareAndSet(false, true)) {
 			if (this.s != null) {
@@ -324,6 +441,16 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 	}
 
+	/**
+	 * Request {@code n} elements from the {@link org.reactivestreams.Publisher}'s {@link Subscription}.
+	 * This method MUST only be called once the {@link TestSubscriber} has subscribed to the {@link org.reactivestreams.Publisher},
+	 * otherwise an {@link IllegalStateException} is thrown.
+	 * <p>
+	 * Note that if {@link Fuseable#SYNC} fusion mode is established, this method shouldn't be used either, and this will
+	 * also throw an {@link IllegalStateException}.
+	 *
+	 * @param n the additional amount to request
+	 */
 	public void request(long n) {
 		if (this.s == null) {
 			throw new IllegalStateException("Request can only happen once a Subscription has been established." +
@@ -338,14 +465,14 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 	}
 
-	// == public accessors
-
 	void checkSubscriptionFailure() {
 		AssertionError subscriptionFailure = this.subscriptionFailure.get();
 		if (subscriptionFailure != null) {
 			throw subscriptionFailure;
 		}
 	}
+
+	// == public accessors
 
 	/**
 	 * Check if this {@link TestSubscriber} has either:
@@ -383,7 +510,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 */
 	public boolean isTerminated() {
 		checkSubscriptionFailure();
-		return terminalSignal.get() != null;
+		return terminalSignal != null;
 	}
 
 	/**
@@ -402,7 +529,8 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 */
 	public boolean isTerminatedComplete() {
 		checkSubscriptionFailure();
-		return isTerminated() && terminalSignal.get().isOnComplete();
+		Signal<T> ts = this.terminalSignal;
+		return ts != null && ts.isOnComplete();
 	}
 
 	/**
@@ -421,7 +549,8 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 */
 	public boolean isTerminatedError() {
 		checkSubscriptionFailure();
-		return isTerminated() && terminalSignal.get().isOnError();
+		Signal<T> ts = this.terminalSignal;
+		return ts != null && ts.isOnError();
 	}
 
 	/**
@@ -447,7 +576,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	@Nullable
 	public Signal<T> getTerminalSignal() {
 		checkSubscriptionFailure();
-		return this.terminalSignal.get();
+		return this.terminalSignal;
 	}
 
 	/**
@@ -464,7 +593,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 */
 	public Signal<T> expectTerminalSignal() {
 		checkSubscriptionFailure();
-		Signal<T> sig = terminalSignal.get();
+		Signal<T> sig = this.terminalSignal;
 		if (sig == null || (!sig.isOnError() && !sig.isOnComplete())) {
 			cancel();
 			throw new AssertionError("Expected subscriber to be terminated, but it has not been terminated yet: cancelling subscription.");
@@ -485,7 +614,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	 */
 	public Throwable expectTerminalError() {
 		checkSubscriptionFailure();
-		Signal<T> sig = terminalSignal.get();
+		Signal<T> sig = this.terminalSignal;
 		if (sig == null) {
 			cancel();
 			throw new AssertionError("Expected subscriber to have errored, but it has not been terminated yet.");

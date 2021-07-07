@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -34,6 +35,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.publisher.TestPublisher;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
@@ -43,6 +48,9 @@ import static org.mockito.ArgumentMatchers.anyInt;
  * @author Simon Baslé
  */
 class TestSubscriberTest {
+
+	private static final Logger LOGGER = Loggers.getLogger(TestSubscriberTest.class);
+	private static final int RACE_DETECTION_LOOPS = 100;
 
 	@Nullable
 	static Throwable captureThrow(Runnable r) {
@@ -564,7 +572,7 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 
 		//force something that shouldn't happen
-		testSubscriber.terminalSignal.set(Signal.next(1));
+		testSubscriber.terminalSignal = Signal.next(1);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(testSubscriber::expectTerminalSignal)
@@ -671,7 +679,7 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 
 		//force something that shouldn't happen
-		testSubscriber.terminalSignal.set(Signal.next(1));
+		testSubscriber.terminalSignal = Signal.next(1);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(testSubscriber::expectTerminalError)
@@ -991,5 +999,204 @@ class TestSubscriberTest {
 				.isInstanceOf(AssertionError.class)
 				.hasCauseInstanceOf(InterruptedException.class)
 				.hasMessage("Block(PT5S) interrupted");
+	}
+
+	@Test
+	void raceDetectionOnNextOnNext() {
+		int interesting = 0;
+		for (int i = 0; i < RACE_DETECTION_LOOPS; i++) {
+
+			TestPublisher<Integer> badSource = TestPublisher.create();
+			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+			badSource.subscribe(testSubscriber);
+
+			RaceTestUtils.race(
+					() -> badSource.next(1),
+					() -> badSource.next(2)
+			);
+
+			assertThat(testSubscriber.getReceivedOnNext()).hasSizeBetween(1, 2);
+
+			if (testSubscriber.getReceivedOnNext().size() == 1) {
+				assertThat(testSubscriber.getProtocolErrors())
+						.containsAnyOf(Signal.next(1), Signal.next(2));
+			}
+			else {
+				interesting++;
+			}
+		}
+		LOGGER.info("raceDetectionOnNextOnNext interesting {} / {}", interesting, RACE_DETECTION_LOOPS);
+		assertThat(interesting).as("asserts racy cases").isLessThan(RACE_DETECTION_LOOPS);
+	}
+
+	@Test
+	void raceDetectionOnNextOnComplete() {
+		int interesting = 0;
+		//this one has been observed to produce the "interesting" results more often when only doing 100 loops, so we increase to 1000
+		final int loops = Math.max(RACE_DETECTION_LOOPS, 1000);
+		for (int i = 0; i < loops; i++) {
+			TestPublisher<Integer> badSource = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+			badSource.subscribe(testSubscriber);
+
+			RaceTestUtils.race(
+					badSource::complete,
+					() -> badSource.next(1)
+			);
+
+			List<Signal<Integer>> protocolErrors = testSubscriber.getProtocolErrors();
+			if (protocolErrors.isEmpty()) {
+				interesting++;
+				assertThat(testSubscriber.getReceivedOnNext())
+						.as("no protocol errors - onNext")
+						.containsExactly(1);
+				assertThat(testSubscriber.getTerminalSignal())
+						.as("no protocol errors - terminal")
+						.isEqualTo(Signal.complete());
+			}
+			else {
+				assertThat(testSubscriber.getProtocolErrors())
+						.as("protocol errors")
+						.containsAnyOf(Signal.next(1), Signal.complete());
+				if (testSubscriber.getProtocolErrors().get(0).isOnNext()) {
+					assertThat(testSubscriber.getTerminalSignal())
+							.as("protocol error isOnNext - terminal")
+							.isEqualTo(Signal.complete());
+				}
+			}
+		}
+		LOGGER.info("raceDetectionOnNextOnComplete interesting {} / {}", interesting, loops);
+		assertThat(interesting).as("asserts racy cases").isLessThan(loops);
+	}
+
+	@Test
+	void raceDetectionOnNextOnError() {
+		int interesting = 0;
+		for (int i = 0; i < RACE_DETECTION_LOOPS; i++) {
+			TestPublisher<Integer> badSource = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+			IllegalStateException racingException = new IllegalStateException("expected");
+			Signal<Integer> racingExceptionSignal = Signal.error(racingException);
+
+			badSource.subscribe(testSubscriber);
+
+			RaceTestUtils.race(
+					() -> badSource.error(racingException),
+					() -> badSource.next(1)
+			);
+
+			List<Signal<Integer>> protocolErrors = testSubscriber.getProtocolErrors();
+			if (protocolErrors.isEmpty()) {
+				interesting++;
+				assertThat(testSubscriber.getReceivedOnNext())
+						.as("no protocol errors - onNext")
+						.containsExactly(1);
+				assertThat(testSubscriber.getTerminalSignal())
+						.as("no protocol errors - terminal")
+						.isEqualTo(racingExceptionSignal);
+			}
+			else {
+				assertThat(testSubscriber.getProtocolErrors())
+						.as("protocol errors")
+						.containsAnyOf(Signal.next(1), racingExceptionSignal);
+				if (testSubscriber.getProtocolErrors().get(0).isOnNext()) {
+					assertThat(testSubscriber.getTerminalSignal())
+							.as("protocol error isOnNext - terminal")
+							.isEqualTo(racingExceptionSignal);
+				}
+			}
+		}
+		LOGGER.info("raceDetectionOnNextOnError interesting {} / {}", interesting, RACE_DETECTION_LOOPS);
+		assertThat(interesting).as("asserts racy cases").isLessThan(RACE_DETECTION_LOOPS);
+	}
+
+	@RepeatedTest(100)
+	void raceDetectionOnCompleteOnError() {
+		TestPublisher<Integer> badSource = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		IllegalStateException racingException = new IllegalStateException("expected");
+		Signal<Integer> racingExceptionSignal = Signal.error(racingException);
+
+		badSource.subscribe(testSubscriber);
+
+		RaceTestUtils.race(
+				() -> badSource.error(racingException),
+				badSource::complete
+		);
+
+		//ensure there was a terminal signal
+		Signal<Integer> terminalSignal = testSubscriber.expectTerminalSignal();
+
+		if (terminalSignal.equals(Signal.complete())) {
+			assertThat(testSubscriber.getProtocolErrors())
+					.as("protocol error if terminalSignal onComplete")
+					.containsExactly(racingExceptionSignal);
+		}
+		else if (terminalSignal.equals(racingExceptionSignal)) {
+			assertThat(testSubscriber.getProtocolErrors())
+					.as("protocol error if terminalSignal onError")
+					.containsExactly(Signal.complete());
+		}
+		else {
+			fail("unexpected terminal signal " + terminalSignal);
+		}
+
+		assertThat(testSubscriber.getProtocolErrors())
+				.containsAnyOf(Signal.complete(), racingExceptionSignal);
+	}
+
+	@RepeatedTest(100)
+	void raceDetectionOnCompleteOnComplete() {
+		TestPublisher<Integer> badSource = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		badSource.subscribe(testSubscriber);
+
+		RaceTestUtils.race(
+				badSource::complete,
+				badSource::complete
+		);
+
+		//ensure there was a terminal signal
+		assertThat(testSubscriber.getTerminalSignal()).as("terminal signal").isEqualTo(Signal.complete());
+		assertThat(testSubscriber.getProtocolErrors())
+				.as("second complete in protocol error")
+				.containsExactly(Signal.complete());
+	}
+
+	@RepeatedTest(100)
+	void raceDetectionOnErrorOnError() {
+		TestPublisher<Integer> badSource = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		IllegalStateException racingException1 = new IllegalStateException("expected 1");
+		Signal<Integer> racingExceptionSignal1 = Signal.error(racingException1);
+		IllegalStateException racingException2 = new IllegalStateException("expected 2");
+		Signal<Integer> racingExceptionSignal2 = Signal.error(racingException2);
+
+		badSource.subscribe(testSubscriber);
+
+		RaceTestUtils.race(
+				() -> badSource.error(racingException1),
+				() -> badSource.error(racingException2)
+		);
+
+		//ensure there was a terminal signal
+		Signal<Integer> terminalSignal = testSubscriber.expectTerminalSignal();
+
+		if (terminalSignal.equals(racingExceptionSignal1)) {
+			assertThat(testSubscriber.getProtocolErrors())
+					.as("protocol error if terminalSignal 1")
+					.containsExactly(racingExceptionSignal2);
+		}
+		else if (terminalSignal.equals(racingExceptionSignal2)) {
+			assertThat(testSubscriber.getProtocolErrors())
+					.as("protocol error if terminalSignal 2")
+					.containsExactly(racingExceptionSignal1);
+		}
+		else {
+			fail("unexpected terminal signal " + terminalSignal);
+		}
 	}
 }
