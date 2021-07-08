@@ -122,7 +122,7 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 					}
 
 					if (connectToUpstream) {
-						coordinator.resubscribe();
+						coordinator.delayedSubscribe();
 					}
 					return null;
 				}
@@ -255,7 +255,7 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 			}
 		}
 
-		void resubscribe() {
+		void delayedSubscribe() {
 			Subscription old = UPSTREAM.getAndSet(this, null);
 			if (old != null && old != Operators.cancelledSubscription()) {
 				old.cancel();
@@ -278,16 +278,11 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 				return;
 			}
 			gotOnNext = true;
-			boolean invalid = main.shouldInvalidatePredicate.test(t);
-			if (invalid) {
-				resubscribe();
-			}
-			else {
-				State<T> valueState = new ValueState<>(t);
-				if (STATE.compareAndSet(main, this, valueState)) {
-					for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-						inner.complete(t);
-					}
+			//note the predicate is not applied upon reception of the value to be cached. only late subscribers will trigger revalidation.
+			State<T> valueState = new ValueState<>(t);
+			if (STATE.compareAndSet(main, this, valueState)) {
+				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					inner.complete(t);
 				}
 			}
 		}
@@ -309,7 +304,6 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 		public void onComplete() {
 			if (gotOnNext) {
 				gotOnNext = false;
-				//FIXME should the resubscribe happen here?
 				return;
 			}
 			if (STATE.compareAndSet(main, this, EMPTY_STATE)) {
