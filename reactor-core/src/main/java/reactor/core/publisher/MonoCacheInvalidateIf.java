@@ -151,10 +151,24 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 			else {
 				//state is an actual signal, cached
 				T cached = state.get();
-				if (this.shouldInvalidatePredicate.test(cached)) {
-					STATE.compareAndSet(this, state, EMPTY_STATE); //we CAS but even if it fails we want to loop back
-					continue;
+				try {
+					boolean invalidated = this.shouldInvalidatePredicate.test(cached);
+					if (invalidated) {
+						if (STATE.compareAndSet(this, state, EMPTY_STATE)) {
+							Operators.onDiscard(cached, actual.currentContext());
+						}
+						//we CAS but even if it fails we want to loop back
+						continue;
+					}
 				}
+				catch (Throwable error) {
+					if (STATE.compareAndSet(this, state, EMPTY_STATE)) {
+						Operators.onDiscard(cached, actual.currentContext());
+						Operators.error(actual, error);
+						return null;
+					}
+				}
+
 
 				actual.onSubscribe(inner);
 				inner.complete(state.get());
