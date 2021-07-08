@@ -185,14 +185,14 @@ public class MemoryUtils {
 		 */
 		public final String identifier;
 
-	    Tracked(String identifier) {
-	        this.identifier = identifier;
-	    }
+		public Tracked(String identifier) {
+			this.identifier = identifier;
+		}
 
-	    Tracked(String identifier, boolean preReleased) {
-	    	this.identifier = identifier;
-	    	set(preReleased);
-	    }
+		public Tracked(String identifier, boolean preReleased) {
+			this.identifier = identifier;
+			set(preReleased);
+		}
 
 		/**
 		 * Release this {@link Tracked} object.

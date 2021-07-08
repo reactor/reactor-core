@@ -21,10 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import reactor.core.Disposable;
@@ -32,6 +31,7 @@ import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.util.LoggerUtils;
+import reactor.test.util.RaceTestUtils;
 import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.*;
@@ -207,7 +207,34 @@ class MonoCacheInvalidateWhenTest {
 
 	@Test
 	void concurrentTriggerAndDownstreamSubscriber() {
-		//FIXME
-		fail("TO BE IMPLEMENTED");
+		int lessInteresting = 0;
+		final int loops = 1000;
+		for (int i = 0; i < loops; i++) {
+			final TestPublisher<Void> trigger = TestPublisher.create();
+
+			AtomicInteger counter = new AtomicInteger();
+			Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
+
+			Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.mono());
+
+			assertThat(cached.block()).as("sub1").isEqualTo(1);
+
+			AtomicReference<Integer> sub2Ref = new AtomicReference<>();
+
+			RaceTestUtils.race(
+					() -> cached.subscribe(sub2Ref::set),
+					trigger::complete
+			);
+
+			Integer sub2Seen = sub2Ref.get();
+			assertThat(sub2Seen).as("sub2 seen in round " + i)
+					.isNotNull()
+					.isBetween(1, 2);
+			if (sub2Seen == 1) lessInteresting++;
+		}
+		//smoke assertion: we caught more than 50% of interesting cases
+		assertThat(lessInteresting)
+				.as("less interesting cases (got 1)")
+				.isBetween(0, loops * 50 / 100);
 	}
 }
