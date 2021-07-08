@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,8 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.*;
@@ -57,6 +60,80 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@AfterEach
 	public void vtsStop() {
 		VirtualTimeScheduler.reset();
+	}
+
+	static final Logger log = Loggers.getLogger(FluxReplayTest.class);
+
+	@Test
+	void test() {
+		VirtualTimeScheduler.reset();
+		Flux<Integer> flow = getSource2()
+				.doOnSubscribe(__ -> log.info("Loading source..."))
+				.log("cache")
+				.cache(Duration.ofSeconds(1))
+				.log("actual")
+				.doOnSubscribe(__ -> log.info("Pooling cycle starting..."))
+				.flatMap(this::process, 2)
+				.repeat(1000);
+
+		StepVerifier.create(flow)
+		            .expectNextCount(1001 * 5)
+		            .verifyComplete();
+	}
+
+	private Flux<Integer> getSource2() {
+		return Flux.just(1, 2, 3, 4, 5);
+	}
+
+	private Mono<Integer> process(int channel) {
+		return Mono.just(channel)
+		           .doOnNext(rec -> log.info("Processing: {}", rec))
+		           .delayElement(Duration.ofMillis(50))
+				   .log("Processing: " + channel);
+	}
+
+	@Test
+	void test2() throws InterruptedException {
+		//vtsStop(); //only important because I added the test in FluxReplayTest.java
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		AtomicInteger sourceLoad = new AtomicInteger();
+		AtomicInteger pollStart = new AtomicInteger();
+		final AtomicInteger pollEnd = new AtomicInteger();
+
+		Flux<String> flow = getSource()
+				.doOnSubscribe(__ -> log.info("Loading source #" + sourceLoad.incrementAndGet()))
+				.cache(Duration.ofSeconds(1), vts)
+				.flatMap(v -> {
+					if (v == 1) {
+						pollStart.incrementAndGet();
+					}
+					else if (v == 5) { //this assume a 5 element source
+						pollEnd.incrementAndGet();
+					}
+					return process(pollStart.get() + "_" + v, vts);
+				}, 2)
+				.repeat(3);
+
+		StepVerifier.create(flow)
+		            .expectNextCount(4 * 5)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(300));
+	}
+
+	private Flux<Integer> getSource() {
+		return Flux.just(1, 2, 3, 4, 5)
+		           .doOnRequest(r -> log.info("source.request({})", r == Long.MAX_VALUE ? "unbounded" : r))
+		           .hide();
+	}
+
+	private Mono<String> process(String channel, VirtualTimeScheduler timeScheduler) {
+		if (channel.equals("2_4")) {
+			timeScheduler.advanceTimeBy(Duration.ofMillis(1001));
+		}
+		return Mono.fromCallable(() -> {
+			log.info("Processing: {}", channel);
+			return channel;
+		});
 	}
 
 	// === overrides to configure the abstract test ===
@@ -289,11 +366,12 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxHistoryTTLFused() {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
+		                                         .log()
 		                                         .replay(2, Duration.ofMillis(2000))
 		                                         .autoConnect()
 		                                         .elapsed();
 
-		StepVerifier.create(source)
+		StepVerifier.create(source.log("1"))
 		            .expectFusion(Fuseable.ANY)
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
@@ -301,7 +379,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
 		            .verifyComplete();
 
-		StepVerifier.create(source)
+		StepVerifier.create(source.log("2"))
 		            .expectFusion(Fuseable.ANY)
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
@@ -336,7 +414,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 5)
 				    .doOnRequest(requests::add)
-				    .replay(3);
+				    .replay(7);
 
 		assertThat(requests).isEmpty();
 
@@ -356,7 +434,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 100)
 				    .doOnRequest(requests::add)
-				    .replay(3);
+				    .replay(7);
 
 		replay.take(13).subscribe(fiveThenEightSubscriber);
 		replay.subscribe(sevenThenEightSubscriber);
@@ -383,7 +461,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(); //unbounded
 		replay.connect();
 
-		assertThat(requests).containsExactly(Long.MAX_VALUE);
+		assertThat(requests).containsExactly(3L, 3L);
 	}
 
 	@Test
@@ -402,7 +480,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(); //unbounded
 		replay.connect();
 
-		assertThat(requests).containsExactly(Long.MAX_VALUE);
+		assertThat(requests).containsExactly(3L, 3L);
 	}
 
 	@Test
@@ -423,7 +501,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		replay.subscribe(ts); //unbounded
 
-		assertThat(requests).containsExactly(5L, 8L);
+		assertThat(requests).containsExactly(3L, 3L);
 		ts.assertValueCount(3); //despite unbounded, as it was late it only sees the replay capacity
 	}
 
@@ -441,7 +519,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 				.isThrownBy(connected::dispose)
 	            .withMessage("Disconnected");
 
-		boolean cancelled = ((FluxReplay.ReplaySubscriber) connected).cancelled;
+		boolean cancelled = (((FluxReplay.ReplaySubscriber) connected).state & FluxReplay.ReplaySubscriber.DISPOSED_FLAG) == FluxReplay.ReplaySubscriber.DISPOSED_FLAG;
 		assertThat(cancelled).isTrue();
 	}
 
@@ -461,7 +539,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
         FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);
-        FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual, parent, false);
+        FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual, parent);
         parent.add(test);
         parent.buffer.replay(test);
 
@@ -504,7 +582,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-        test.cancelled = true;
+        test.state = test.state | FluxReplay.ReplaySubscriber.DISPOSED_FLAG;
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
@@ -538,9 +616,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void ifSubscribeBeforeConnectThenTrackFurtherRequests() {
-		ConnectableFlux<Long> connectableFlux = Flux.just(1L, 2L, 3L, 4L).replay(2);
+		ConnectableFlux<Long> connectableFlux = Flux.just(1L, 2L, 3L, 4L).log().replay(2);
 
-		StepVerifier.create(connectableFlux, 1)
+		StepVerifier.create(connectableFlux.log("1"), 1)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
 		            .then(connectableFlux::connect)
@@ -572,7 +650,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(10));
 
-		assertThat(totalRequested).hasValue(Long.MAX_VALUE);
+		assertThat(totalRequested).hasValue(12L);
 	}
 
 	private static final class TwoRequestsSubscriber extends BaseSubscriber<Integer> {
