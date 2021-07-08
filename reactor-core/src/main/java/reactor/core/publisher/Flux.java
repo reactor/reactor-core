@@ -1523,13 +1523,123 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeOrderedNaturalOrder.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/mergeComparingNaturalOrder.svg" alt="">
 	 *
 	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
 	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
 	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
 	 */
 	@SafeVarargs
+	public static <I extends Comparable<? super I>> Flux<I> mergeComparing(Publisher<? extends I>... sources) {
+		return mergeComparing(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
+	}
+
+	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by the provided
+	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
+	 * the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
+	 *
+	 * @param comparator the {@link Comparator} to use to find the smallest value
+	 * @param sources {@link Publisher} sources to merge
+	 * @param <T> the merged type
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
+	 */
+	@SafeVarargs
+	public static <T> Flux<T> mergeComparing(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
+		return mergeComparing(Queues.SMALL_BUFFER_SIZE, comparator, sources);
+	}
+
+	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by the provided
+	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
+	 * the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
+	 *
+	 * @param prefetch the number of elements to prefetch from each source (avoiding too
+	 * many small requests to the source when picking)
+	 * @param comparator the {@link Comparator} to use to find the smallest value
+	 * @param sources {@link Publisher} sources to merge
+	 * @param <T> the merged type
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
+	 */
+	@SafeVarargs
+	public static <T> Flux<T> mergeComparing(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, false, sources));
+	}
+
+	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by the provided
+	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
+	 * the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * Note that it is delaying errors until all data is consumed.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
+	 *
+	 * @param prefetch the number of elements to prefetch from each source (avoiding too
+	 * many small requests to the source when picking)
+	 * @param comparator the {@link Comparator} to use to find the smallest value
+	 * @param sources {@link Publisher} sources to merge
+	 * @param <T> the merged type
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
+	 */
+	@SafeVarargs
+	public static <T> Flux<T> mergeComparingDelayError(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, sources));
+	}
+
+	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by their natural order).
+	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * Note that it is delaying errors until all data is consumed.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparingNaturalOrder.svg" alt="">
+	 *
+	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
+	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
+	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
+	 * To be removed in 3.6.0 at the earliest.
+	 */
+	@SafeVarargs
+	@Deprecated
 	public static <I extends Comparable<? super I>> Flux<I> mergeOrdered(Publisher<? extends I>... sources) {
 		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
 	}
@@ -1543,14 +1653,21 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeOrdered.svg" alt="">
+	 * Note that it is delaying errors until all data is consumed.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
 	 *
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
+	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
+	 * To be removed in 3.6.0 at the earliest.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> Flux<T> mergeOrdered(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, comparator, sources);
 	}
@@ -1564,16 +1681,23 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeOrdered.svg" alt="">
+	 * Note that it is delaying errors until all data is consumed.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
 	 *
 	 * @param prefetch the number of elements to prefetch from each source (avoiding too
 	 * many small requests to the source when picking)
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
 	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @return a merged {@link Flux} that compares latest values from each source, using the
+	 * smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
+	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
+	 * To be removed in 3.6.0 at the earliest.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> Flux<T> mergeOrdered(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		if (sources.length == 0) {
 			return empty();
@@ -1581,7 +1705,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new FluxMergeOrdered<>(prefetch, comparator, sources));
+		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, sources));
 	}
 
 	/**
@@ -6154,20 +6278,62 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeOrderedWith.svg" alt="">
+	 * Note that it is delaying errors until all data is consumed.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
 	 *
 	 * @param other the {@link Publisher} to merge with
 	 * @param otherComparator the {@link Comparator} to use for merging
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new {@link Flux} that compares latest values from the given publisher
+	 * and this flux, using the smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #mergeComparingWith(Publisher, Comparator)} instead
+	 * (with the caveat that it defaults to NOT delaying errors, unlike this operator).
+	 * To be removed in 3.6.0 at the earliest.
 	 */
+	@Deprecated
 	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
 			Comparator<? super T> otherComparator) {
-		if (this instanceof FluxMergeOrdered) {
-			FluxMergeOrdered<T> fluxMerge = (FluxMergeOrdered<T>) this;
+		if (this instanceof FluxMergeComparing) {
+			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
 			return fluxMerge.mergeAdditionalSource(other, otherComparator);
 		}
 		return mergeOrdered(otherComparator, this, other);
+	}
+
+	/**
+	 * Merge data from this {@link Flux} and a {@link Publisher} into a reordered merge
+	 * sequence, by picking the smallest value from each sequence as defined by a provided
+	 * {@link Comparator}. Note that subsequent calls are combined, and their comparators are
+	 * in lexicographic order as defined by {@link Comparator#thenComparing(Comparator)}.
+	 * <p>
+	 * The combination step is avoided if the two {@link Comparator Comparators} are
+	 * {@link Comparator#equals(Object) equal} (which can easily be achieved by using the
+	 * same reference, and is also always true of {@link Comparator#naturalOrder()}).
+	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
+	 * <p>
+	 * mergeComparingWith doesn't delay errors by default, but it will inherit the delayError
+	 * behavior of a mergeComparingDelayError directly above it.
+	 *
+	 * @param other the {@link Publisher} to merge with
+	 * @param otherComparator the {@link Comparator} to use for merging
+	 *
+	 * @return a new {@link Flux} that compares latest values from the given publisher
+	 * and this flux, using the smallest value and replenishing the source that produced it
+	 */
+	public final Flux<T> mergeComparingWith(Publisher<? extends T> other,
+			Comparator<? super T> otherComparator) {
+		if (this instanceof FluxMergeComparing) {
+			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
+			return fluxMerge.mergeAdditionalSource(other, otherComparator);
+		}
+		return mergeComparing(otherComparator, this, other);
 	}
 
 	/**
