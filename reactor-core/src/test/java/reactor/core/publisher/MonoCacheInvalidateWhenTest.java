@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -72,21 +73,24 @@ class MonoCacheInvalidateWhenTest {
 	}
 
 	@Test
-	void generatorReturnsNullTriggersErrorDiscardAndResubscribe() {
+	void generatorReturnsNullTriggersErrorAndResubscribeAndInvalidateHandler() {
 		AtomicInteger counter = new AtomicInteger();
 		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
+		CopyOnWriteArrayList<Integer> invalidateHandler = new CopyOnWriteArrayList<>();
 
 		Mono<Integer> cached = source.cacheInvalidateWhen(it -> {
 			if (it == 1) return null;
 			return Mono.never();
-		});
+		}, invalidateHandler::add);
 
 		StepVerifier.create(cached)
 				.expectErrorSatisfies(e -> assertThat(e)
 				.isInstanceOf(NullPointerException.class)
 				.hasMessage("invalidationTriggerGenerator produced a null trigger"))
 				.verifyThenAssertThat()
-				.hasDiscarded(1);
+				.hasNotDiscardedElements();
+
+		assertThat(invalidateHandler).as("invalidateHandler").containsExactly(1);
 
 		assertThat(cached.block())
 				.as("second subscribe")
@@ -98,28 +102,33 @@ class MonoCacheInvalidateWhenTest {
 	}
 
 	@Test
-	void generatorThrowsTriggersErrorDiscardAndInvalidate() {
+	void generatorThrowsTriggersErrorAndInvalidateAndInvalidateHandler() {
 		AtomicInteger counter = new AtomicInteger();
 		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
+		CopyOnWriteArrayList<Integer> invalidateHandler = new CopyOnWriteArrayList<>();
 
 		Mono<Integer> cached = source.cacheInvalidateWhen(it -> {
 			if (it < 3) throw new IllegalStateException("boom");
 			return Mono.never();
-		});
+		}, invalidateHandler::add);
 
 		StepVerifier.create(cached)
 				.expectErrorSatisfies(e -> assertThat(e)
 						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("boom"))
 				.verifyThenAssertThat()
-				.hasDiscarded(1);
+				.hasNotDiscardedElements();
+
+		assertThat(invalidateHandler).as("after first subscription").containsExactly(1);
 
 		StepVerifier.create(cached)
 				.expectErrorSatisfies(e -> assertThat(e)
 						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("boom"))
 				.verifyThenAssertThat()
-				.hasDiscarded(2);
+				.hasNotDiscardedElements();
+
+		assertThat(invalidateHandler).as("after second subscription").containsExactly(1, 2);
 
 		assertThat(cached.block())
 				.as("third subscribe")
@@ -178,6 +187,40 @@ class MonoCacheInvalidateWhenTest {
 		assertThat(cached.block()).as("sub5").isEqualTo(2);
 
 		assertThat(errorsDropped).as("errorsDropped").isEmpty();
+	}
+
+	@Test
+	void triggerInvalidationAppliesInvalidationHandler() {
+		AtomicInteger counter = new AtomicInteger();
+		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
+		AtomicReference<Integer> invalidationHandler = new AtomicReference<>();
+
+		final TestPublisher<Void> trigger = TestPublisher.create();
+		Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.mono(), invalidationHandler::set);
+
+		assertThat(cached.block()).as("sub1").isEqualTo(1);
+
+		//trigger
+		trigger.complete();
+
+		assertThat(invalidationHandler).as("invalidated").hasValue(1);
+	}
+
+	@Test
+	void invalidationHandlerProtectedAgainstException() {
+		AtomicInteger counter = new AtomicInteger();
+		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
+
+		final TestPublisher<Void> trigger = TestPublisher.create();
+		Mono<Integer> cached = source.cacheInvalidateWhen(it -> trigger.mono(),
+				discarded -> {
+					throw new IllegalStateException("boom invalidation handler");
+				});
+
+		assertThat(cached.block()).as("sub1").isEqualTo(1);
+
+		//trigger
+		assertThatCode(trigger::complete).doesNotThrowAnyException();
 	}
 
 	@Test

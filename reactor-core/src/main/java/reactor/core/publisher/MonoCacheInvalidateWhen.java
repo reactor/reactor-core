@@ -69,9 +69,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		if (STATE.compareAndSet(this, expected, EMPTY_STATE)) {
 			if (expected instanceof MonoCacheInvalidateIf.ValueState) {
 				LOGGER.trace("invalidated {}", expected.get());
-			    if (this.invalidateHandler != null) {
-			    	invalidateHandler.accept(expected.get());
-			    }
+				safeInvalidateHandler(expected.get());
 			}
 			return true;
 		}
@@ -83,8 +81,17 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		State<T> oldState = STATE.getAndSet(this, EMPTY_STATE);
 		if (oldState instanceof MonoCacheInvalidateIf.ValueState) {
 			LOGGER.trace("invalidated {}", oldState.get());
-			if (this.invalidateHandler != null) {
-				invalidateHandler.accept(oldState.get());
+			safeInvalidateHandler(oldState.get());
+		}
+	}
+
+	void safeInvalidateHandler(@Nullable T value) {
+		if (value != null && this.invalidateHandler != null) {
+			try {
+				this.invalidateHandler.accept(value);
+			}
+			catch (Throwable invalidateHandlerError) {
+				LOGGER.warn("InvalidateHandler failed on invalidated value " + value, invalidateHandlerError);
 			}
 		}
 	}
@@ -265,17 +272,15 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 				}
 				catch (Throwable generatorError) {
 					if (cacheLoadFailure(valueState, generatorError)) {
-						Operators.onDiscard(value, currentContext());
+						main.safeInvalidateHandler(value);
 					}
 					return;
 				}
 
-				//TODO should the trigger be subscribed AFTER the pending inners have completed?
-				invalidateTrigger.subscribe(new TriggerSubscriber(this.main));
-
 				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.complete(value);
 				}
+				invalidateTrigger.subscribe(new TriggerSubscriber(this.main));
 			}
 		}
 
