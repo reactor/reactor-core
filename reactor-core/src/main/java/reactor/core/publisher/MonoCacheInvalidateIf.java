@@ -29,12 +29,23 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
+ * A caching operator that uses a {@link Predicate} to potentially invalidate the cached value whenever a late subscriber arrives.
+ * Subscribers accumulated between the upstream susbscription is triggered and the actual value is received and stored
+ * don't trigger the predicate, as the operator assumes that values are not invalid at reception.
+ *
  * @author Simon Baslé
  */
 final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheInvalidateIf.class);
 
+	/**
+	 * A state-holding interface for {@link MonoCacheInvalidateIf} and {@link MonoCacheInvalidateWhen},
+	 * leaner than a {@link Signal} to represent valued state, and allowing specific subclasses for pending
+	 * state and disconnected state.
+	 *
+	 * @param <T> the type of data cached by the parent operator
+	 */
 	static interface State<T> {
 
 		@Nullable
@@ -43,6 +54,11 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 		void clear();
 	}
 
+	/**
+	 * Common implementation of {@link State} for storing the cached value.
+	 *
+	 * @param <T> the type of data cached by the parent operator
+	 */
 	static final class ValueState<T> implements State<T> {
 
 		@Nullable
@@ -63,7 +79,11 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 			this.value = null;
 		}
 	}
-	
+
+	/**
+	 * Singleton implementation of an empty {@link State}, to represent initial state
+	 * pre-subscription, when no caching has been requested.
+	 */
 	static final State<?> EMPTY_STATE = new State<Object>() {
 		@Nullable
 		@Override

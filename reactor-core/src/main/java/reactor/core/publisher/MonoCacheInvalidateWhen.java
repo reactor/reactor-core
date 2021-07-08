@@ -34,6 +34,12 @@ import reactor.util.context.Context;
 import static reactor.core.publisher.MonoCacheInvalidateIf.EMPTY_STATE;
 
 /**
+ * A caching operator that uses a companion {@link Mono} as a trigger to invalidate the cached value.
+ * Subscribers accumulated between the upstream subscription is triggered and the actual value is received and stored
+ * don't get impacted by the generated trigger and will immediately receive the cached value.
+ * If after that the trigger completes immediately, the next incoming subscriber will lead to a resubscription to the
+ * source and a new caching cycle.
+ *
  * @author Simon Baslé
  */
 final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
