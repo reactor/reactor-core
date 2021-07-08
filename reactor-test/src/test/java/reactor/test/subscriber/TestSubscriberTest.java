@@ -1199,4 +1199,25 @@ class TestSubscriberTest {
 			fail("unexpected terminal signal " + terminalSignal);
 		}
 	}
+
+	@Test
+	void asyncFusedPrefetchingUpstreamDoesntOverflow() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
+				.requireFusion(Fuseable.ASYNC)
+				.initialRequest(3)
+				.build();
+
+		Flux.range(1, 10)
+				.hide()
+				.publishOn(Schedulers.immediate(), 5)
+				.subscribe(testSubscriber);
+
+		assertThat(testSubscriber.getReceivedOnNext()).hasSize(3);
+
+		testSubscriber.request(3);
+		assertThat(testSubscriber.getReceivedOnNext()).hasSize(6);
+
+		testSubscriber.request(5);
+		assertThat(testSubscriber.getReceivedOnNext()).hasSize(10);
+	}
 }

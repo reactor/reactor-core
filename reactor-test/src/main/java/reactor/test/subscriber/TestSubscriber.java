@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscription;
@@ -145,6 +146,12 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	static final AtomicIntegerFieldUpdater<TestSubscriber> STATE =
 			AtomicIntegerFieldUpdater.newUpdater(TestSubscriber.class, "state");
 
+	volatile     long                                   requestedTotal;
+	@SuppressWarnings("rawtypes")
+	static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED_TOTAL =
+			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requestedTotal");
+
+
 	TestSubscriber(TestSubscriberBuilder options) {
 		this.initialRequest = options.initialRequest;
 		this.context = options.context;
@@ -229,14 +236,14 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 				}
 			}
 			else if (this.initialRequest > 0L) {
-				s.request(this.initialRequest);
+				upstreamRequest(s, this.initialRequest);
 			}
 		}
 		else if (fusionRequirement == FusionRequirement.FUSEABLE) {
 			subscriptionFail("TestSubscriber configured to require QueueSubscription, got " + s);
 		}
 		else if (this.initialRequest > 0L) {
-			s.request(this.initialRequest);
+			upstreamRequest(s, this.initialRequest);
 		}
 	}
 
@@ -271,6 +278,14 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 						checkTerminatedAfterOnNext();
 						return;
 					}
+
+					long r = REQUESTED_TOTAL.get(this);
+					if (r != Long.MAX_VALUE && r - this.receivedOnNext.size() < 1) {
+						//no more request for data, until next request (or termination)
+						checkTerminatedAfterOnNext();
+						return;
+					}
+
 					t = qs.poll();
 					if (t == null) {
 						//no more available data, until next request (or termination)
@@ -350,6 +365,13 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
+	}
+
+	void upstreamRequest(Subscription s, long n) {
+		long prev = Operators.addCap(REQUESTED_TOTAL, this, n);
+		if (prev != Long.MAX_VALUE) {
+			s.request(n);
+		}
 	}
 
 	static final int MASK_TERMINATED = 0b1000;
@@ -461,7 +483,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 				internalCancel();
 				throw new IllegalStateException("Request is short circuited in SYNC fusion mode, and should not be explicitly used");
 			}
-			this.s.request(n);
+			upstreamRequest(this.s, n);
 		}
 	}
 
