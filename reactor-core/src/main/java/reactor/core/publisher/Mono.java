@@ -1906,8 +1906,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Note that the {@link Predicate} is only evaluated if the cache is currently populated, ie. it is not applied
 	 * upon receiving the source {@link Subscriber#onNext(Object) onNext} signal.
 	 * For late subscribers, if the predicate returns {@code true} the cache is invalidated and a new subscription is made
-	 * to the source in an effort to notify the new subscriber with a valid value.
-	 * Note that if the predicate continuously mark the incoming values as invalid, this becomes akin to an infinite retry loop.
+	 * to the source in an effort to refresh the cache with a more up-to-date value to be passed to the new subscriber.
 	 * <p>
 	 * The predicate is not strictly evaluated once per downstream subscriber. Rather, subscriptions happening in concurrent
 	 * batches  will trigger a single evaluation of the predicate. Similarly, a batch of subscriptions happening before
@@ -1960,14 +1959,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
 	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
 	 *
-	 *
-	 *
-	 *
-	 * @param validatingPredicate the {@link Predicate} used for cache invalidation
+	 * @param invalidationPredicate the {@link Predicate} used for cache invalidation. Returning {@code true} means the value is invalid and should be
+	 * removed from the cache.
 	 * @return a new cached {@link Mono} which can be invalidated
 	 */
-	public final Mono<T> cacheInvalidateIf(Predicate<? super T> validatingPredicate) {
-		return onAssembly(new MonoCacheInvalidateIf<>(this, validatingPredicate));
+	public final Mono<T> cacheInvalidateIf(Predicate<? super T> invalidationPredicate) {
+		return onAssembly(new MonoCacheInvalidateIf<>(this, invalidationPredicate));
 	}
 
 	/**

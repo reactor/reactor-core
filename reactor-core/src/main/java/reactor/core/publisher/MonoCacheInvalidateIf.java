@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 
@@ -104,9 +105,9 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 	static final AtomicReferenceFieldUpdater<MonoCacheInvalidateIf, State> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(MonoCacheInvalidateIf.class, State.class, "state");
 
-	MonoCacheInvalidateIf(Mono<T> source, Predicate<? super T> shouldInvalidatePredicate) {
+	MonoCacheInvalidateIf(Mono<T> source, Predicate<? super T> invalidationPredicate) {
 		super(source);
-		this.shouldInvalidatePredicate = shouldInvalidatePredicate;
+		this.shouldInvalidatePredicate = Objects.requireNonNull(invalidationPredicate, "invalidationPredicate");
 		@SuppressWarnings("unchecked")
 		State<T> state = (State<T>) EMPTY_STATE;
 		this.state = state;
