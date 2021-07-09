@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.reactivestreams.Publisher;
@@ -62,6 +63,7 @@ public class ParallelFluxTest {
 	public AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
+	@Tag("slow")
 	public void sequentialMode() {
 		Flux<Integer> source = Flux.range(1, 1_000_000)
 		                           .hide();
@@ -83,6 +85,7 @@ public class ParallelFluxTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void sequentialModeFused() {
 		Flux<Integer> source = Flux.range(1, 1_000_000);
 		for (int i = 1; i < 33; i++) {
@@ -103,6 +106,7 @@ public class ParallelFluxTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void parallelMode() {
 		Flux<Integer> source = Flux.range(1, 1_000_000)
 		                           .hide();
@@ -138,6 +142,7 @@ public class ParallelFluxTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void parallelModeFused() {
 		Flux<Integer> source = Flux.range(1, 1_000_000);
 		int ncpu = Math.max(8,

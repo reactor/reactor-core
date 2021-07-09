@@ -387,6 +387,7 @@ public class FluxGroupByTest extends
 	}
 
 	@Test
+	@Tag("slow")
 	public void twoGroupsLongAsyncMergeHidden2() {
 		ForkJoinPool forkJoinPool = new ForkJoinPool();
 

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.info.FieldLayout;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class QueueDrainSubscriberTest {
 
 	@Test
+	@Tag("slow")
 	public void objectPadding() {
 		ClassLayout layout = ClassLayout.parseClass(QueueDrainSubscriber.class);
 		AtomicReference<FieldLayout> wip = new AtomicReference<>();
