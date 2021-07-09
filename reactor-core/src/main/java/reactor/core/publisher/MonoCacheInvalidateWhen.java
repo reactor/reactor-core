@@ -380,6 +380,11 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			main.invalidate();
 		}
 
+		@Override
+		public Context currentContext() {
+			return Context.empty();
+		}
+
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
