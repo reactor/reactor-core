@@ -49,7 +49,8 @@ public class FluxGroupByTest extends
 
 	@Test
 	@Tag("slow")
-	void issue2730() throws Exception {
+	//see https://github.com/reactor/reactor-core/issues/2730
+	void performanceOfContinuouslyCancellingGroups() throws Exception {
 		AtomicLong upstream = new AtomicLong(0L);
 		AtomicLong downstream = new AtomicLong(0L);
 		CountDownLatch latch = new CountDownLatch(1);
@@ -59,13 +60,13 @@ public class FluxGroupByTest extends
 		Flux.fromStream(Stream.iterate(0L, (last) -> (long) (Math.random() * 4096)))
 				.flatMap(number -> Flux.concat(
 						Mono.just(number),
-						Mono.just(number).delayElement(Duration.ofMillis((int) (Math.random() * 200)))),
+						Mono.just(number).delayElement(Duration.ofMillis((int) (Math.random() * 2000)))),
 						4096)
-				.take(Duration.ofSeconds(5L))
+				.take(Duration.ofSeconds(10L))
 				.doOnNext(next -> upstream.incrementAndGet())
 				.publishOn(scheduler)
 				.groupBy(Function.identity())
-				.flatMap(groupFlux -> groupFlux.take(Duration.ofMillis(200), scheduler)
+				.flatMap(groupFlux -> groupFlux.take(Duration.ofSeconds(1L), scheduler)
 						.take(2)
 						.collectList(), 16384)
 				.map(Collection::size)
@@ -73,7 +74,7 @@ public class FluxGroupByTest extends
 
 		latch.await();
 		assertThat(upstream).as("upstream and downstream consistent").hasValue(downstream.get());
-		assertThat(downstream).as("order of magnitude").hasValueGreaterThan(99_999);
+		assertThat(downstream).as("order of magnitude").hasValueGreaterThan(49_999);
 	}
 
 	@Override
