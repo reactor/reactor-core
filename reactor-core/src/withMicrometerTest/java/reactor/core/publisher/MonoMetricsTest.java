@@ -175,6 +175,19 @@ public class MonoMetricsTest {
 	}
 
 	@Test
+	void overwritingTag() {
+		final Mono<Object> source = Mono.empty().tag("1", "one");
+
+		final Mono<Object> modified = source.tag("1", "ein");
+
+		assertThat(Scannable.from(source).scan(Scannable.Attr.TAGS).map(t -> t.getT1()+t.getT2()))
+				.containsExactly("1one");
+
+		assertThat(Scannable.from(modified).scan(Scannable.Attr.TAGS).map(t -> t.getT1()+t.getT2()))
+				.containsExactly("1ein");
+	}
+
+	@Test
 	public void noOnNextTimer() {
 		Mono<Integer> source = Mono.just(1).hide();
 

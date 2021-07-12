@@ -165,6 +165,19 @@ public class FluxMetricsTest {
 	}
 
 	@Test
+	void overwritingTag() {
+		final Flux<Object> source = Flux.empty().tag("1", "one");
+
+		final Flux<Object> modified = source.tag("1", "ein");
+
+		assertThat(Scannable.from(source).scan(Scannable.Attr.TAGS).map(t -> t.getT1()+t.getT2()))
+				.containsExactly("1one");
+
+		assertThat(Scannable.from(modified).scan(Scannable.Attr.TAGS).map(t -> t.getT1()+t.getT2()))
+				.containsExactly("1ein");
+	}
+
+	@Test
 	public void onNextTimerCounts() {
 		Flux<Integer> source = Flux.range(1, 123)
 		                           .hide();

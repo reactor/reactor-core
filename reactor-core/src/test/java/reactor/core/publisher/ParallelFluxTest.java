@@ -45,6 +45,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
@@ -1066,6 +1067,18 @@ public class ParallelFluxTest {
 				"onComplete() Hello!",
 				"onComplete() Hello!"
 		);
+	}
+
+	@Test
+	void overwritingTag() {
+		final ParallelFlux<Object> source = Flux.empty().parallel().tag("1", "one");
+		final ParallelFlux<Object> modified = source.tag("1", "ein");
+
+		assertThat(Scannable.from(source).scan(Scannable.Attr.TAGS).map(t -> t.getT1()+t.getT2()))
+				.containsExactly("1one");
+
+		assertThat(Scannable.from(modified).scan(Scannable.Attr.TAGS).map(t -> t.getT1()+t.getT2()))
+				.containsExactly("1ein");
 	}
 
 	private void tryToSleep(long value)
