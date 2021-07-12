@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -270,6 +271,7 @@ public class FluxRefCountGraceTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1260
 	@Test
+	@Tag("slow")
 	public void raceSubscribeAndCancelNoTimeout() {
 		final Flux<String> testFlux = Flux.<String>create(fluxSink -> fluxSink.next("Test").complete())
 				.replay(1)

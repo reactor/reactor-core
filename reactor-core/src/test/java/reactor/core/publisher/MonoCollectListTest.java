@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -43,6 +44,7 @@ import reactor.util.context.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
+@Tag("slow")
 public class MonoCollectListTest {
 
 	static final Logger LOGGER = Loggers.getLogger(MonoCollectListTest.class);
@@ -208,6 +210,7 @@ public class MonoCollectListTest {
 
 
 	@Test
+	@Tag("slow")
 	public void discardCancelNextRace() {
 		AtomicInteger doubleDiscardCounter = new AtomicInteger();
 		Context discardingContext = Operators.enableOnDiscard(null, o -> {
@@ -237,6 +240,7 @@ public class MonoCollectListTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void discardCancelCompleteRace() {
 		AtomicInteger doubleDiscardCounter = new AtomicInteger();
 		Context discardingContext = Operators.enableOnDiscard(null, o -> {

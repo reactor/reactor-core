@@ -48,6 +48,7 @@ import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Publisher;
@@ -556,6 +557,7 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void parallelTests() throws InterruptedException {
 		parallelMapManyTest("sync", 1_000_000);
 		parallelMapManyTest("shared", 1_000_000);

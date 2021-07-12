@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
@@ -38,6 +39,7 @@ public class SerializedSubscriberTest {
 
 	//see https://github.com/reactor/reactor-core/issues/2077
 	@Test
+	@Tag("slow")
 	public void onNextRaceWithCancelDoesNotLeak() {
 		int loops = 0;
 		while (loops < 100_000) {
