@@ -36,9 +36,7 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
-
-	private static final Logger LOGGER = Loggers.getLogger(MonoCacheInvalidateIf.class);
+final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 
 	/**
 	 * A state-holding interface for {@link MonoCacheInvalidateIf} and {@link MonoCacheInvalidateWhen},
@@ -188,7 +186,8 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 		final MonoCacheInvalidateIf<T> main;
 		final Mono<? extends T> source;
 
-		volatile boolean gotOnNext = false;
+		//no need for volatile: only used in onNext/onError/onComplete
+		boolean done = false;
 
 		volatile Subscription upstream;
 		@SuppressWarnings("rawtypes")
@@ -308,11 +307,11 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 
 		@Override
 		public void onNext(T t) {
-			if (main.state != this || gotOnNext) {
+			if (main.state != this || done) {
 				Operators.onNextDropped(t, currentContext());
 				return;
 			}
-			gotOnNext = true;
+			done = true;
 			//note the predicate is not applied upon reception of the value to be cached. only late subscribers will trigger revalidation.
 			State<T> valueState = new ValueState<>(t);
 			if (STATE.compareAndSet(main, this, valueState)) {
@@ -324,7 +323,7 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 
 		@Override
 		public void onError(Throwable t) {
-			if (main.state != this || gotOnNext) {
+			if (main.state != this || done) {
 				Operators.onErrorDropped(t, currentContext());
 				return;
 			}
@@ -337,8 +336,8 @@ final class MonoCacheInvalidateIf<T> extends MonoCacheTime<T> {
 
 		@Override
 		public void onComplete() {
-			if (gotOnNext) {
-				gotOnNext = false;
+			if (done) {
+				done = false;
 				return;
 			}
 			if (STATE.compareAndSet(main, this, EMPTY_STATE)) {
