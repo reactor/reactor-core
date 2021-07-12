@@ -18,9 +18,13 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -42,6 +46,36 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class FluxGroupByTest extends
                              FluxOperatorTest<String, GroupedFlux<Integer, String>> {
+
+	@Test
+	@Tag("slow")
+	//see https://github.com/reactor/reactor-core/issues/2730
+	void performanceOfContinuouslyCancellingGroups() throws Exception {
+		AtomicLong upstream = new AtomicLong(0L);
+		AtomicLong downstream = new AtomicLong(0L);
+		CountDownLatch latch = new CountDownLatch(1);
+
+		Scheduler scheduler = Schedulers.single(Schedulers.boundedElastic());
+
+		Flux.fromStream(Stream.iterate(0L, (last) -> (long) (Math.random() * 4096)))
+				.flatMap(number -> Flux.concat(
+						Mono.just(number),
+						Mono.just(number).delayElement(Duration.ofMillis((int) (Math.random() * 2000)))),
+						4096)
+				.take(Duration.ofSeconds(10L))
+				.doOnNext(next -> upstream.incrementAndGet())
+				.publishOn(scheduler)
+				.groupBy(Function.identity())
+				.flatMap(groupFlux -> groupFlux.take(Duration.ofSeconds(1L), scheduler)
+						.take(2)
+						.collectList(), 16384)
+				.map(Collection::size)
+				.subscribe(downstream::addAndGet, System.err::println, latch::countDown);
+
+		latch.await();
+		assertThat(upstream).as("upstream and downstream consistent").hasValue(downstream.get());
+		assertThat(downstream).as("order of magnitude").hasValueGreaterThan(49_999);
+	}
 
 	@Override
 	protected Scenario<String, GroupedFlux<Integer, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<Integer, String>> defaultOptions) {
