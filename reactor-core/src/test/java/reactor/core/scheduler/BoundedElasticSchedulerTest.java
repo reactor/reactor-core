@@ -48,6 +48,7 @@ import com.pivovarit.function.ThrowingSupplier;
 import org.awaitility.Awaitility;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -171,6 +172,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void testLargeNumberOfWorkers() throws InterruptedException {
 		final int maxThreads = 3;
 		final int maxQueue = 10;
@@ -421,6 +423,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void lifoEvictionNoThreadRegrowth() throws InterruptedException {
 		int otherThreads = Thread.activeCount(); //don't count the evictor at shutdown
 		Set<String> preExistingEvictors = dumpThreadNames().filter(s -> s.startsWith("boundedElastic-evictor")).collect(Collectors.toSet());
@@ -1124,6 +1127,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void pickSetIdleRaceBusy() {
 		BoundedElasticScheduler scheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, r -> new Thread(r, "test"),
 				1000));
@@ -1143,6 +1147,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	}
 	@Test
+	@Tag("slow")
 	public void pickSetIdleRaceIdle() {
 		BoundedElasticScheduler scheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, r -> new Thread(r, "test"),
 				1000));
@@ -1178,6 +1183,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	//gh-1973 smoke test
 	@Test
+	@Tag("slow")
 	public void testGh1973() throws InterruptedException {
 		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(3, 100000, "subscriberElastic", 600, true));
 		LinkedList<MonoSink<String>> listeners = new LinkedList<>();

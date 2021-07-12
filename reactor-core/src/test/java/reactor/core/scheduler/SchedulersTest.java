@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -647,16 +648,19 @@ public class SchedulersTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void testRejectingSingleScheduler() {
 		assertRejectingScheduler(Schedulers.newSingle("test"));
 	}
 
 	@Test
+	@Tag("slow")
 	public void testRejectingParallelScheduler() {
 		assertRejectingScheduler(Schedulers.newParallel("test"));
 	}
 
 	@Test
+	@Tag("slow")
 	public void testRejectingExecutorServiceScheduler() {
 		assertRejectingScheduler(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor()));
 	}

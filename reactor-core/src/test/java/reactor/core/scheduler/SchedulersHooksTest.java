@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import reactor.test.AutoDisposingExtension;
@@ -42,6 +43,7 @@ public class SchedulersHooksTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void onScheduleIsAdditive() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
@@ -92,6 +94,7 @@ public class SchedulersHooksTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void onScheduleResetOne() throws InterruptedException {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));

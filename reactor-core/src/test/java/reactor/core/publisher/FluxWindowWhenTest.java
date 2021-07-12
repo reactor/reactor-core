@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -65,6 +66,7 @@ public class FluxWindowWhenTest {
 
 	//see https://github.com/reactor/reactor-core/issues/975
 	@Test
+	@Tag("slow")
 	public void noWindowRetained_gh975() throws InterruptedException {
 		LongAdder created = new LongAdder();
 		class Wrapper {

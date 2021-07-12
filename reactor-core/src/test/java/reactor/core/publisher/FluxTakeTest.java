@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -705,6 +706,7 @@ public class FluxTakeTest {
     }
 
     @Test
+	@Tag("slow")
 	public void onSubscribeRaceRequestingShouldBeConsistentForTakeFuseableTest() throws InterruptedException {
 		for (int i = 0; i < 5; i++) {
 			int take = 3000;
@@ -718,6 +720,7 @@ public class FluxTakeTest {
     }
 
 	@Test
+	@Tag("slow")
 	public void onSubscribeRaceRequestingShouldBeConsistentForTakeConditionalTest() throws InterruptedException {
 		for (int i = 0; i < 5; i++) {
 			int take = 3000;
@@ -732,6 +735,7 @@ public class FluxTakeTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void onSubscribeRaceRequestingShouldBeConsistentForTakeTest() throws InterruptedException {
 		for (int i = 0; i < 5; i++) {
 			int take = 3000;

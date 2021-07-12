@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -826,6 +827,7 @@ public class FluxBufferPredicateTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void requestRaceWithOnNextLoops() {
 		for (int i = 0; i < ROUNDS; i++) {
 			requestRaceWithOnNext();

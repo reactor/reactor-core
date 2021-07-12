@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
@@ -74,6 +75,7 @@ MonoCompletionStageTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void cancelFutureDelayedCancelledLoop() {
 		for (int i = 0; i < 500; i++) {
 			CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -95,6 +97,7 @@ MonoCompletionStageTest {
 	}
 
 	@Test
+	@Tag("slow")
 	public void cancelFutureTimeoutCancelledLoop() {
 		for (int i = 0; i < 500; i++) {
 			CompletableFuture<Integer> future = new CompletableFuture<>();

@@ -21,6 +21,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,6 +44,7 @@ public class FluxSwitchMapTest {
 	@ParameterizedTest
 	@ValueSource(ints = {0}) // TODO: add for prefetch one
 	@Timeout(120_000)
+	@Tag("slow")
 	// test for issue https://github.com/reactor/reactor-core/issues/2554
 	public void test2596() {
 		final Scheduler scheduler = Schedulers.newSingle("test");

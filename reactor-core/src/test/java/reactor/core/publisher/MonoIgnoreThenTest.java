@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
@@ -67,7 +68,8 @@ class MonoIgnoreThenTest {
 	}
 
 	@Test
-		// https://github.com/reactor/reactor-core/issues/2561
+	@Tag("slow")
+	// https://github.com/reactor/reactor-core/issues/2561
 	void raceTest2561() {
 		final Scheduler scheduler = Schedulers.newSingle("non-test-thread");
 		final Mono<String> getCurrentThreadName =

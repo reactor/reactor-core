@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
@@ -61,6 +62,7 @@ public class FluxBufferWhenTest {
 
 	//see https://github.com/reactor/reactor-core/issues/969
 	@Test
+	@Tag("slow")
 	public void bufferedCanCompleteIfOpenNeverCompletesDropping() {
 		//this test ensures that dropping buffers will complete if the source is exhausted before the open publisher finishes
 		Mono<Integer> buffered = Flux.range(1, 200)
@@ -82,6 +84,7 @@ public class FluxBufferWhenTest {
 
 	//see https://github.com/reactor/reactor-core/issues/969
 	@Test
+	@Tag("slow")
 	public void bufferedCanCompleteIfOpenNeverCompletesOverlapping() {
 		//this test ensures that overlapping buffers will complete if the source is exhausted before the open publisher finishes
 		Mono<Integer> buffered = Flux.range(1, 200)
@@ -102,6 +105,7 @@ public class FluxBufferWhenTest {
 
 	//see https://github.com/reactor/reactor-core/issues/969
 	@Test
+	@Tag("slow")
 	public void timedOutBuffersDontLeak() throws InterruptedException {
 		LongAdder created = new LongAdder();
 		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
