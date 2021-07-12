@@ -472,6 +472,15 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			if (this.s != null) {
 				this.s.cancel();
 			}
+
+			if (requestedFusionMode == Fuseable.ASYNC) {
+				int st = this.state;
+				Fuseable.QueueSubscription<T> q = this.qs;
+				if (!isMarkedOnNext(st) && q != null) {
+					q.clear();
+				}
+			}
+
 			notifyDone();
 		}
 	}

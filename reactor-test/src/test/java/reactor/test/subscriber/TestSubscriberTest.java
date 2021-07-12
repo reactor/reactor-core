@@ -1269,6 +1269,16 @@ class TestSubscriberTest {
 
 	@Test
 	void asyncFusedUpstreamGetsClearedOnCancellation() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
 
+		@SuppressWarnings("unchecked")
+		Fuseable.QueueSubscription<Integer> queueSubscription = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(queueSubscription.requestFusion(Mockito.anyInt())).thenReturn(Fuseable.ASYNC);
+
+		testSubscriber.onSubscribe(queueSubscription);
+
+		testSubscriber.cancel();
+
+		Mockito.verify(queueSubscription).clear();
 	}
 }
