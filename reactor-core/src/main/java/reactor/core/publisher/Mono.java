@@ -1898,6 +1898,193 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Scheduler timer) {
 		return onAssembly(new MonoCacheTime<>(this, ttlForValue, ttlForError, ttlForEmpty, timer));
 	}
+
+	/**
+	 * Cache {@link Subscriber#onNext(Object) onNext} signal received from the source and replay it to other subscribers,
+	 * while allowing invalidation by verifying the cached value against the given {@link Predicate} each time a late
+	 * subscription occurs.
+	 * Note that the {@link Predicate} is only evaluated if the cache is currently populated, ie. it is not applied
+	 * upon receiving the source {@link Subscriber#onNext(Object) onNext} signal.
+	 * For late subscribers, if the predicate returns {@code true} the cache is invalidated and a new subscription is made
+	 * to the source in an effort to refresh the cache with a more up-to-date value to be passed to the new subscriber.
+	 * <p>
+	 * The predicate is not strictly evaluated once per downstream subscriber. Rather, subscriptions happening in concurrent
+	 * batches  will trigger a single evaluation of the predicate. Similarly, a batch of subscriptions happening before
+	 * the cache is populated (ie. before this operator receives an onNext signal after an invalidation) will always
+	 * receive the incoming value without going through the {@link Predicate}. The predicate is only triggered by
+	 * subscribers that come in AFTER the cache is populated. Therefore, it is possible that pre-population subscribers
+	 * receive an "invalid" value, especially if the object can switch from a valid to an invalid state in a short amount
+	 * of time (eg. between creation, cache population and propagation to the downstream subscriber(s)).
+	 * <p>
+	 * If the cached value needs to be discarded in case of invalidation, the recommended way is to do so in the predicate
+	 * directly. Note that some downstream subscribers might still be using or storing the value, for example if they
+	 * haven't requested anything yet.
+	 * <p>
+	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
+	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
+	 * if one wants to only consider empty sources or error sources).
+	 *
+	 * Predicate is applied differently depending on whether the cache is populated or not:
+	 *  IF EMPTY
+	 *   - first incoming subscriber creates a new COORDINATOR and adds itself
+	 *
+	 *  IF COORDINATOR
+	 *   - each incoming subscriber is added to the current "batch" (COORDINATOR)
+	 *   - once the value is received, the predicate is applied ONCE
+	 *     - mismatch: all the batch is terminated with an error
+	 *          - we're back to init state, next subscriber will trigger a new coordinator and a new subscription
+	 *     - ok: all the batch is completed with the value
+	 *          - cache is now POPULATED
+	 *
+	 * IF POPULATED
+	 *  - each incoming subscriber causes the predicate to apply
+	 *  - if ok: complete that subscriber with the value
+	 *  - if mismatch, swap the current POPULATED with a new COORDINATOR and add the subscriber to that coordinator
+	 *  - imagining a race between sub1 and sub2:
+	 *      - OK NOK will naturally lead to sub1 completing and sub2 being put on wait inside a new COORDINATOR
+	 *      - NOK NOK will race swap of POPULATED with COORDINATOR1 and COORDINATOR2 respectively
+	 *          - if sub1 swaps, sub2 will dismiss the COORDINATOR2 it failed to swap and loop back, see COORDINATOR1 and add itself
+	 *          - if sub2 swaps, the reverse happens
+	 *          - if value is populated in the time it takes for sub2 to loop back, sub2 sees a value and triggers the predicate again (hopefully passing)
+	 *
+	 *  Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
+	 *  Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
+	 *
+	 *  when cancelling a COORDINATOR-issued subscription:
+	 *    - removes itself from batch
+	 *    - if 0 subscribers remaining
+	 *          - swap COORDINATOR with EMPTY
+	 *          - COORDINATOR cancels its source
+	 *
+	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
+	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
+	 *
+	 * @param invalidationPredicate the {@link Predicate} used for cache invalidation. Returning {@code true} means the value is invalid and should be
+	 * removed from the cache.
+	 * @return a new cached {@link Mono} which can be invalidated
+	 */
+	public final Mono<T> cacheInvalidateIf(Predicate<? super T> invalidationPredicate) {
+		return onAssembly(new MonoCacheInvalidateIf<>(this, invalidationPredicate));
+	}
+
+	/**
+	 * Cache {@link Subscriber#onNext(Object) onNext} signal received from the source and replay it to other subscribers,
+	 * while allowing invalidation via a {@link Mono Mono&lt;Void&gt;} companion trigger generated from the currently
+	 * cached value.
+	 * <p>
+	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
+	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
+	 * if one wants to only consider empty sources or error sources). The exception is still propagated to the subscribers
+	 * that have accumulated between the time the source has been subscribed to and the time the onError/onComplete terminal
+	 * signal is received. An empty source is turned into a {@link NoSuchElementException} onError.
+	 * <p>
+	 * Completion of the trigger will invalidate the cached element, so the next subscriber that comes in will trigger
+	 * a new subscription to the source, re-populating the cache and re-creating a new trigger out of that value.
+	 * <p>
+	 * <ul>
+	 *     <li>
+	 *         If the trigger completes with an error, all registered subscribers are terminated with the same error.
+	 *     </li>
+	 *     <li>
+	 *         If all the subscribers are cancelled <strong>before</strong> the cache is populated (ie. an attempt to
+	 *         cache a {@link Mono#never()}), the source subscription is cancelled.
+	 *     </li>
+	 *     <li>
+	 *         Cancelling a downstream subscriber once the cache has been populated is not necessarily relevant,
+	 *         as the value will be immediately replayed on subscription, which usually means within onSubscribe (so
+	 *         earlier than any cancellation can happen). That said the operator will make best efforts to detect such
+	 *         cancellations and avoid propagating the value to these subscribers.
+	 *     </li>
+	 * </ul>
+	 * <p>
+	 * If the cached value needs to be discarded in case of invalidation, use the {@link #cacheInvalidateWhen(Function, Consumer)} version.
+	 * Note that some downstream subscribers might still be using or storing the value, for example if they
+	 * haven't requested anything yet.
+	 *
+	 *
+	 * Trigger is generated only after a subscribers in the COORDINATOR have received the value, and only once.
+	 * The only way to get out of the POPULATED state is to use the trigger, so there cannot be multiple trigger subscriptions, nor concurrent triggering.
+	 *
+	 * Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
+	 * Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
+	 *
+	 * when cancelling a COORDINATOR-issued subscription:
+	 *   - removes itself from batch
+	 *   - if 0 subscribers remaining
+	 *         - swap COORDINATOR with EMPTY
+	 *         - COORDINATOR cancels its source
+	 *
+	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
+	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
+	 *
+	 * @param invalidationTriggerGenerator the {@link Function} that generates new {@link Mono Mono&lt;Void&gt;} triggers
+	 * used for invalidation
+	 * @return a new cached {@link Mono} which can be invalidated
+	 */
+	public final Mono<T> cacheInvalidateWhen(Function<? super T, Mono<Void>> invalidationTriggerGenerator) {
+		return onAssembly(new MonoCacheInvalidateWhen<>(this, invalidationTriggerGenerator, null));
+	}
+
+	/**
+	 * Cache {@link Subscriber#onNext(Object) onNext} signal received from the source and replay it to other subscribers,
+	 * while allowing invalidation via a {@link Mono Mono&lt;Void&gt;} companion trigger generated from the currently
+	 * cached value.
+	 * <p>
+	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
+	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
+	 * if one wants to only consider empty sources or error sources). The exception is still propagated to the subscribers
+	 * that have accumulated between the time the source has been subscribed to and the time the onError/onComplete terminal
+	 * signal is received. An empty source is turned into a {@link NoSuchElementException} onError.
+	 * <p>
+	 * Completion of the trigger will invalidate the cached element, so the next subscriber that comes in will trigger
+	 * a new subscription to the source, re-populating the cache and re-creating a new trigger out of that value.
+	 * <p>
+	 * <ul>
+	 *     <li>
+	 *         If the trigger completes with an error, all registered subscribers are terminated with the same error.
+	 *     </li>
+	 *     <li>
+	 *         If all the subscribers are cancelled <strong>before</strong> the cache is populated (ie. an attempt to
+	 *         cache a {@link Mono#never()}), the source subscription is cancelled.
+	 *     </li>
+	 *     <li>
+	 *         Cancelling a downstream subscriber once the cache has been populated is not necessarily relevant,
+	 *         as the value will be immediately replayed on subscription, which usually means within onSubscribe (so
+	 *         earlier than any cancellation can happen). That said the operator will make best efforts to detect such
+	 *         cancellations and avoid propagating the value to these subscribers.
+	 *     </li>
+	 * </ul>
+	 * <p>
+	 * Once a cached value is invalidated, it is passed to the provided {@link Consumer} (which MUST complete normally).
+	 * Note that some downstream subscribers might still be using or storing the value, for example if they
+	 * haven't requested anything yet.
+	 *
+	 *
+	 * Trigger is generated only after a subscribers in the COORDINATOR have received the value, and only once.
+	 * The only way to get out of the POPULATED state is to use the trigger, so there cannot be multiple trigger subscriptions, nor concurrent triggering.
+	 *
+	 * Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
+	 * Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
+	 *
+	 * when cancelling a COORDINATOR-issued subscription:
+	 *   - removes itself from batch
+	 *   - if 0 subscribers remaining
+	 *         - swap COORDINATOR with EMPTY
+	 *         - COORDINATOR cancels its source
+	 *
+	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
+	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
+	 *
+	 * @param invalidationTriggerGenerator the {@link Function} that generates new {@link Mono Mono&lt;Void&gt;} triggers
+	 * used for invalidation
+	 * @param onInvalidate the {@link Consumer} that will be applied to cached value upon invalidation
+	 * @return a new cached {@link Mono} which can be invalidated
+	 */
+	public final Mono<T> cacheInvalidateWhen(Function<? super T, Mono<Void>> invalidationTriggerGenerator,
+	                                         Consumer<? super T> onInvalidate) {
+		return onAssembly(new MonoCacheInvalidateWhen<>(this, invalidationTriggerGenerator, onInvalidate));
+	}
+
 	/**
 	 * Prepare this {@link Mono} so that subscribers will cancel from it on a
 	 * specified
