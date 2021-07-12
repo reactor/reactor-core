@@ -33,6 +33,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
@@ -64,12 +65,47 @@ class TestSubscriberTest {
 	}
 
 	@Test
-	void requestFailsIfNotSubscribed() {
-		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+	void requestAccumulatesIfNotSubscribed() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().initialRequest(0L).build();
+		testSubscriber.request(1);
 
-		assertThatIllegalStateException().isThrownBy(() -> testSubscriber.request(1))
-				.withMessage("Request can only happen once a Subscription has been established." +
-						"Have you subscribed the TestSubscriber?");
+		assertThat(testSubscriber.requestedTotal)
+				.as("requestedTotal before subscribe")
+				.isZero();
+		assertThat(testSubscriber.requestedPreSubscription)
+				.as("requestedPreSubscription before subscribe")
+				.isEqualTo(1L);
+
+		testSubscriber.onSubscribe(Operators.emptySubscription());
+
+		assertThat(testSubscriber.requestedTotal)
+				.as("requestedTotal after subscribe")
+				.isEqualTo(1L);
+		assertThat(testSubscriber.requestedPreSubscription)
+				.as("requestedPreSubscription after subscribe")
+				.isEqualTo(-1L);
+	}
+
+	@Test
+	void requestAccumulatedIfNotSubscribedStartsWithInitialRequest() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().initialRequest(123L).build();
+		testSubscriber.request(1);
+
+		assertThat(testSubscriber.requestedTotal)
+				.as("requestedTotal before subscribe")
+				.isZero();
+		assertThat(testSubscriber.requestedPreSubscription)
+				.as("requestedPreSubscription before subscribe")
+				.isEqualTo(124L);
+
+		testSubscriber.onSubscribe(Operators.emptySubscription());
+
+		assertThat(testSubscriber.requestedTotal)
+				.as("requestedTotal after subscribe")
+				.isEqualTo(124L);
+		assertThat(testSubscriber.requestedPreSubscription)
+				.as("requestedPreSubscription after subscribe")
+				.isEqualTo(-1L);
 	}
 
 	@Test
@@ -923,14 +959,24 @@ class TestSubscriberTest {
 
 	@Test
 	void scanSubscriber_misc() {
-		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
+				.initialRequest(123L)
+				.build();
 
 		assertThat(testSubscriber.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.SYNC);
 		assertThat(testSubscriber.scan(Scannable.Attr.PARENT))
 				.as("PARENT before subscription")
 				.isNull();
 
+		assertThat(testSubscriber.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM))
+				.as("REQUESTED_FROM_DOWNSTREAM before subscribe")
+				.isZero();
+
 		Flux.just(1).subscribe(testSubscriber);
+
+		assertThat(testSubscriber.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM))
+				.as("REQUESTED_FROM_DOWNSTREAM after subscribe")
+				.isEqualTo(123L);
 
 		assertThat(testSubscriber.scan(Scannable.Attr.PARENT))
 				.as("PARENT after subscription")
@@ -1219,5 +1265,10 @@ class TestSubscriberTest {
 
 		testSubscriber.request(5);
 		assertThat(testSubscriber.getReceivedOnNext()).hasSize(10);
+	}
+
+	@Test
+	void asyncFusedUpstreamGetsClearedOnCancellation() {
+
 	}
 }

@@ -151,6 +151,11 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED_TOTAL =
 			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requestedTotal");
 
+	volatile     long                                   requestedPreSubscription;
+	@SuppressWarnings("rawtypes")
+	static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED_PRE_SUBSCRIPTION =
+			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requestedPreSubscription");
+
 
 	TestSubscriber(TestSubscriberBuilder options) {
 		this.initialRequest = options.initialRequest;
@@ -167,6 +172,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 		this.doneLatch = new CountDownLatch(1);
 		this.subscriptionFailure = new AtomicReference<>();
+		REQUESTED_PRE_SUBSCRIPTION.lazySet(this, initialRequest);
 	}
 
 	@Override
@@ -235,15 +241,21 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 					onNext(v);
 				}
 			}
-			else if (this.initialRequest > 0L) {
-				upstreamRequest(s, this.initialRequest);
+			else {
+				long rPre = REQUESTED_PRE_SUBSCRIPTION.getAndSet(this, -1L);
+				if (rPre > 0L) {
+					upstreamRequest(s, rPre);
+				}
 			}
 		}
 		else if (fusionRequirement == FusionRequirement.FUSEABLE) {
 			subscriptionFail("TestSubscriber configured to require QueueSubscription, got " + s);
 		}
 		else if (this.initialRequest > 0L) {
-			upstreamRequest(s, this.initialRequest);
+			long rPre = REQUESTED_PRE_SUBSCRIPTION.getAndSet(this, -1L);
+			if (rPre > 0L) {
+				upstreamRequest(s, rPre);
+			}
 		}
 	}
 
@@ -363,6 +375,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 		if (key == Attr.PARENT) return s;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return REQUESTED_TOTAL.get(this);
 
 		return null;
 	}
@@ -374,9 +387,9 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 	}
 
-	static final int MASK_TERMINATED = 0b1000;
-	static final int MASK_TERMINATING = 0b0100;
-	static final int MASK_ON_NEXT = 0b0001;
+	static final int MASK_TERMINATED       = 0b1000;
+	static final int MASK_TERMINATING      = 0b0100;
+	static final int MASK_ON_NEXT          = 0b0001;
 
 	void checkTerminatedAfterOnNext() {
 		int donePreviousState = markOnNextDone();
@@ -465,19 +478,30 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 	/**
 	 * Request {@code n} elements from the {@link org.reactivestreams.Publisher}'s {@link Subscription}.
-	 * This method MUST only be called once the {@link TestSubscriber} has subscribed to the {@link org.reactivestreams.Publisher},
-	 * otherwise an {@link IllegalStateException} is thrown.
+	 * If this method is called before the {@link TestSubscriber} has subscribed to the {@link org.reactivestreams.Publisher},
+	 * pre-request is accumulated (including {@link TestSubscriberBuilder#initialRequest(long) configured initial request}
+	 * and replayed in a single batch upon subscription.
 	 * <p>
-	 * Note that if {@link Fuseable#SYNC} fusion mode is established, this method shouldn't be used either, and this will
-	 * also throw an {@link IllegalStateException}.
+	 * Note that if/once {@link Fuseable#SYNC} fusion mode is established, this method MUST NOT be used, and this will
+	 * throw an {@link IllegalStateException}.
 	 *
 	 * @param n the additional amount to request
 	 */
 	public void request(long n) {
 		if (this.s == null) {
-			throw new IllegalStateException("Request can only happen once a Subscription has been established." +
-					"Have you subscribed the TestSubscriber?");
+			for (;;) {
+				long prevReq = REQUESTED_PRE_SUBSCRIPTION.get(this);
+				if (prevReq == -1L) {
+					request(n); //will propagate upstream
+					return;
+				}
+				long newReq = Operators.addCap(prevReq, n);
+				if (REQUESTED_PRE_SUBSCRIPTION.compareAndSet(this, prevReq, newReq)) {
+					return;
+				}
+			}
 		}
+
 		if (Operators.validate(n)) {
 			if (this.fusionMode == Fuseable.SYNC) {
 				internalCancel();
