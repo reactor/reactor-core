@@ -1998,7 +1998,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
 		}
 
-		return new MonoOnAssembly<>(this, stacktrace);
+		return new MonoOnAssembly<>(this, stacktrace, false);
 	}
 
 	/**
@@ -4891,7 +4891,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			source = (Mono<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
-			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			AssemblySnapshot stacktrace =
+					new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 			source = (Mono<T>) Hooks.addAssemblyInfo(source, stacktrace);
 		}
 		return source;

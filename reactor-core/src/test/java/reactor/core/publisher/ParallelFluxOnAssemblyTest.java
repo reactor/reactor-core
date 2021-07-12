@@ -30,7 +30,7 @@ public class ParallelFluxOnAssemblyTest {
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace, false);
 
 		assertThat(test.parallelism())
 				.isEqualTo(3)
@@ -41,7 +41,7 @@ public class ParallelFluxOnAssemblyTest {
 	public void stepNameAndToString() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
 		AssemblySnapshot stacktrace = new AssemblySnapshot("foo", Traces.callSiteSupplierFactory.get());
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace, false);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
@@ -52,7 +52,7 @@ public class ParallelFluxOnAssemblyTest {
 	public void scanOperator() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace, false);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH))

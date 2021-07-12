@@ -343,4 +343,14 @@ public class HooksTraceTest {
 		            .verifyComplete();
 	}
 
+	public static void main(String[] args) {
+		Hooks.onOperatorDebug();
+		Hooks.enableStatsRecording();
+		
+		Flux.range(0, 100)
+		    .concatWith(Flux.error(new RuntimeException("test")))
+		    .subscribe();
+
+	}
+
 }

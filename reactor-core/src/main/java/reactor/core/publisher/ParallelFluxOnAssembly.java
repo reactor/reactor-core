@@ -20,7 +20,6 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.annotation.Nullable;
 
@@ -42,13 +41,17 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 
 	final ParallelFlux<T>  source;
 	final AssemblySnapshot stacktrace;
+	final boolean          withDebugStats;
 
 	/**
 	 * Create an assembly trace wrapping a {@link ParallelFlux}.
 	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source, AssemblySnapshot stacktrace) {
+	ParallelFluxOnAssembly(ParallelFlux<T> source,
+			AssemblySnapshot stacktrace,
+			boolean withDebugStats) {
 		this.source = source;
 		this.stacktrace = stacktrace;
+		this.withDebugStats = withDebugStats;
 	}
 
 	@Override
@@ -79,10 +82,14 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 						super T>) s;
 				s = new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 						stacktrace,
+						withDebugStats ? new FluxOnAssembly.DefaultDebugStats() : null,
 						source);
 			}
 			else {
-				s = new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source);
+				s = new FluxOnAssembly.OnAssemblySubscriber<>(s,
+						stacktrace,
+						withDebugStats ? new FluxOnAssembly.DefaultDebugStats() : null,
+						source);
 			}
 			parents[i] = s;
 		}
