@@ -29,13 +29,27 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      run: ./gradlew check
+      run: ./gradlew check -Pjunit-tags=!slow
+
+  slowerChecks:
+    # similar limitations as in prepare, but we parallelize slower tests here
+    name: slowerChecks
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      - name: run slower tests
+        id: slowerTests
+        run: ./gradlew test -Pjunit-tags=slow
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
     name: deploySnapshot
     runs-on: ubuntu-20.04
-    needs: prepare
+    needs: [ prepare, slowerChecks ]
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
@@ -54,7 +68,7 @@ jobs:
   deployMilestone:
     name: deployMilestone
     runs-on: ubuntu-20.04
-    needs: prepare
+    needs: [ prepare, slowerChecks ]
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
@@ -81,7 +95,7 @@ jobs:
   deployRelease:
     name: deployRelease
     runs-on: ubuntu-20.04
-    needs: prepare
+    needs: [ prepare, slowerChecks ]
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
