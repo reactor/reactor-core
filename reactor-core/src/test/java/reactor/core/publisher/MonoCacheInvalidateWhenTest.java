@@ -17,13 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,9 +31,7 @@ import reactor.core.Disposable;
 import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import reactor.test.util.LoggerUtils;
 import reactor.test.util.RaceTestUtils;
-import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -157,10 +155,6 @@ class MonoCacheInvalidateWhenTest {
 
 	@Test
 	void triggerFailingLeadsToInvalidation() {
-		TestLogger testLogger = new TestLogger(false);
-		LoggerUtils.enableCaptureWith(testLogger);
-		afterTest.autoDispose(LoggerUtils::disableCapture);
-
 		AtomicInteger counter = new AtomicInteger();
 		Mono<Integer> source = Mono.fromCallable(counter::incrementAndGet);
 
@@ -175,13 +169,6 @@ class MonoCacheInvalidateWhenTest {
 		List<Throwable> errorsDropped = new ArrayList<>();
 		Hooks.onErrorDropped(errorsDropped::add); //will be reset by ReactorTestExecutionListener
 		trigger.error(new IllegalStateException("expected logged"));
-
-		assertThat(Arrays.stream(testLogger.getErrContent().split("\n")))
-				.as("trace log of trigger error")
-				.filteredOn(s -> s.contains("expected"))
-				.allMatch(s -> s.endsWith("Invalidation triggered by onError(java.lang.IllegalStateException: " +
-						"expected logged)"))
-				.hasSize(1);
 
 		assertThat(cached.block()).as("sub4").isEqualTo(2);
 		assertThat(cached.block()).as("sub5").isEqualTo(2);

@@ -74,7 +74,7 @@ public class FluxGroupByTest extends
 
 		latch.await();
 		assertThat(upstream).as("upstream and downstream consistent").hasValue(downstream.get());
-		assertThat(downstream).as("order of magnitude").hasValueGreaterThan(49_999);
+		assertThat(downstream).as("order of magnitude").hasValueGreaterThan(9_999);
 	}
 
 	@Override
