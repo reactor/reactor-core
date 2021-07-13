@@ -346,7 +346,7 @@ maintainability of code. As the layers of asynchronous processes increase in bot
 and complexity, being able to compose and read code becomes increasingly difficult. As we
 saw, the callback model is simple, but one of its main drawbacks is that, for complex
 processes, you need to have a callback executed from a callback, itself nested inside
-another callback, and so on. That mess is known as "`Callback Hell`". As you can guess (or
+another callback, and so on. That mess is known as https://en.wiktionary.org/wiki/callback_hell["`Callback Hell`"]. As you can guess (or
 know from experience), such code is pretty hard to go back to and reason about.
 
 Reactor offers rich composition options, wherein code mirrors the organization of the
