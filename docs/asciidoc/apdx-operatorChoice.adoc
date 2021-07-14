@@ -55,6 +55,7 @@ I want to deal with:
 ** synchronously and one-by-one: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#generate-java.util.concurrent.Callable-java.util.function.BiFunction-[Flux#generate]
 ** asynchronously (can also be sync), multiple emissions possible in one pass: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#create-java.util.function.Consumer-[Flux#create]
 (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#create-java.util.function.Consumer-[Mono#create] as well, without the multiple emission aspect)
+* created from expanding paginated objects into a Flux of pages content: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#fromPaginated-P-java.util.function.Function-java.util.function.Function-[Flux#fromPaginated]
 
 [[which.values]]
 == Transforming an Existing Sequence
