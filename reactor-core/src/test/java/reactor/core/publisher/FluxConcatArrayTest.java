@@ -276,8 +276,7 @@ public class FluxConcatArrayTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		test.missedRequested = 2;
-		test.requested = 3;
+		test.requested = 5;
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
@@ -299,8 +298,7 @@ public class FluxConcatArrayTest {
 
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 
-		test.missedRequested = 2;
-		test.requested = 3;
+		test.requested = 5;
 		test.error = new IllegalStateException("boom");
 
 		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");

@@ -16,11 +16,17 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.Test;
 
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxConcatWithTest {
 
@@ -89,6 +95,75 @@ public class FluxConcatWithTest {
 		.assertComplete();
 	}
 
+	@Test
+	public void noStackOverflow4() {
+		int n = 5000;
+
+		Flux<Integer> source =
+				Flux.just(1, 2)
+				    .concatMap(Flux::just)
+				    .concatMap(Flux::just)
+				    .concatWith(Flux.just(1).subscribeOn(Schedulers.single()));
+		Flux<Integer> add = Flux.just(3);
+
+		Flux<Integer> result = source;
+
+		for (int i = 0; i < n; i++) {
+			result = result.concatWith(add);
+		}
+
+		result = result.concatWith(add.subscribeOn(Schedulers.parallel()));
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		result.subscribe(ts);
+
+		ts.await()
+		  .assertValueCount(n + 4)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void noUnexpectedThreadSwitch() {
+		final Scheduler scheduler = Schedulers.single();
+
+		for (int i = 0; i < 1000; i++) {
+			final TestPublisher<Object> testPublisher = TestPublisher.create();
+
+			AtomicReference<Thread> sendingThread1 = new AtomicReference<>();
+			AtomicReference<Thread> sendingThread2 = new AtomicReference<>();
+			AtomicReference<Thread> observedThread1 = new AtomicReference<>();
+			AtomicReference<Thread> observedThread2 = new AtomicReference<>();
+
+			final StepVerifier verifier = testPublisher.mono()
+			                                           .thenMany(Flux.defer(() -> {
+				                                           observedThread1.set(Thread.currentThread());
+				                                           return Flux.just(1, 2)
+				                                                      .publishOn(Schedulers.parallel())
+						                                              .doOnComplete(() -> sendingThread2.set(Thread.currentThread()));
+			                                           }))
+			                                           .thenMany(Flux.defer(() -> {
+				                                           observedThread2.set(Thread.currentThread());
+				                                           return Flux.just(1, 2);
+			                                           }))
+			                                           .as(StepVerifier::create)
+			                                           .expectSubscription()
+			                                           .expectNext(1, 2)
+			                                           .expectComplete()
+			                                           .verifyLater();
+
+			scheduler.schedule(() -> {
+				sendingThread1.set(Thread.currentThread());
+				testPublisher.complete();
+			});
+
+			verifier.verify();
+			assertThat(observedThread1).hasValue(sendingThread1.get());
+			assertThat(observedThread2).hasValue(sendingThread2.get());
+			assertThat(observedThread2).doesNotHaveValue(observedThread1.get());
+		}
+	}
 	
 	@Test
 	public void dontBreakFluxArrayConcatMap() {
