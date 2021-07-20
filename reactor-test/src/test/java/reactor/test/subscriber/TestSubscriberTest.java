@@ -17,13 +17,17 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -48,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 /**
  * @author Simon Baslé
  */
+//@Timeout(10)
 class TestSubscriberTest {
 
 	private static final Logger LOGGER = Loggers.getLogger(TestSubscriberTest.class);
@@ -557,6 +562,31 @@ class TestSubscriberTest {
 		assertThat(expectedErrorSignal.getThrowable())
 				.isNotNull()
 				.hasMessage("onNext(null) received despite SYNC fusion (which has already completed)");
+	}
+
+	@Test
+	void onNextNullWhenSyncFusionWithConcurrentOnNext() {
+		final Fuseable.QueueSubscription<Integer> mock = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC);
+
+		final TestSubscriber<Integer> subscriber = TestSubscriber.builder()
+				.requireFusion(Fuseable.SYNC)
+				.build();
+
+		//this is an artificial way of getting in the state where that message occurs,
+		//since it is hard to deterministically trigger (it would imply a badly formed
+		//publisher wrt fusion but also chance, as it is a race condition)
+		subscriber.fusionMode = Fuseable.SYNC;
+		subscriber.markOnNextStart();
+
+		assertThatCode(() -> subscriber.onNext(null)).doesNotThrowAnyException();
+
+		assertThat(subscriber.getProtocolErrors()).hasSize(1);
+		Signal<Integer> expectedErrorSignal = subscriber.getProtocolErrors().get(0);
+
+		assertThat(expectedErrorSignal.getThrowable())
+				.isNotNull()
+				.hasMessage("onNext(null) received despite SYNC fusion (with concurrent onNext)");
 	}
 
 	@Test
@@ -1280,5 +1310,35 @@ class TestSubscriberTest {
 		testSubscriber.cancel();
 
 		Mockito.verify(queueSubscription).clear();
+	}
+
+	@Test
+	void drainAsyncFromOnComplete() {
+		//FIXME
+		fail("implement");
+	}
+
+	@Test
+	void drainAsyncFromOnError() {
+		//FIXME
+		fail("implement");
+	}
+
+	@Test
+	void drainAsyncPollNullClears() {
+		//FIXME
+		fail("implement");
+	}
+
+	@Test
+	void drainAsyncProducedRequestedAmountClears() {
+		//FIXME
+		fail("implement");
+	}
+
+	@Test
+	void drainAsyncCancelledClears() {
+		//FIXME
+		fail("implement");
 	}
 }

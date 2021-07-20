@@ -184,6 +184,13 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		Subscription s = this.s;
 		if (cancelled.compareAndSet(false, true) && s != null) {
 			s.cancel();
+			safeClearQueue(s);
+		}
+	}
+
+	void safeClearQueue(@Nullable Subscription s) {
+		if (s instanceof Fuseable.QueueSubscription) {
+			((Fuseable.QueueSubscription) s).clear();
 		}
 	}
 
@@ -202,9 +209,11 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	public void onSubscribe(Subscription s) {
 		if (cancelled.get()) {
 			s.cancel();
+			safeClearQueue(s);
 			return;
 		}
 		if (!Operators.validate(this.s, s)) {
+			safeClearQueue(s);
 			//s is already cancelled at that point, subscriptionFail will cancel this.s
 			subscriptionFail("TestSubscriber must not be reused, but Subscription has already been set.");
 			return;
@@ -231,6 +240,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 			if (negotiatedMode == Fuseable.SYNC) {
 				for (;;) {
 					if (cancelled.get()) {
+						safeClearQueue(qs);
 						break;
 					}
 					T v = qs.poll();
@@ -275,6 +285,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 				));
 			}
 			else {
+				//due to the looping nature of SYNC fusion in onSubscribe, this shouldn't happen
 				this.protocolErrors.add(Signal.error(
 						new AssertionError("onNext(null) received despite SYNC fusion (with concurrent onNext)")
 				));
@@ -284,28 +295,8 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 		if (t == null) {
 			if (this.fusionMode == Fuseable.ASYNC) {
-				assert this.qs != null;
-				for (; ; ) {
-					if (cancelled.get()) {
-						checkTerminatedAfterOnNext();
-						return;
-					}
-
-					long r = REQUESTED_TOTAL.get(this);
-					if (r != Long.MAX_VALUE && r - this.receivedOnNext.size() < 1) {
-						//no more request for data, until next request (or termination)
-						checkTerminatedAfterOnNext();
-						return;
-					}
-
-					t = qs.poll();
-					if (t == null) {
-						//no more available data, until next request (or termination)
-						checkTerminatedAfterOnNext();
-						return;
-					}
-					this.receivedOnNext.add(t);
-				}
+				drainAsync(true);
+				return;
 			}
 			else {
 				subscriptionFail("onNext(null) received while ASYNC fusion not established");
@@ -337,6 +328,12 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 
 		this.terminalSignal = sig;
+
+		if (fusionMode == Fuseable.ASYNC) {
+			drainAsync(false);
+			return;
+		}
+
 		notifyDone();
 	}
 
@@ -357,7 +354,58 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 
 		this.terminalSignal = sig;
+
+		if (fusionMode == Fuseable.ASYNC) {
+			drainAsync(false);
+			return;
+		}
+
 		notifyDone();
+	}
+
+	void drainAsync(boolean alreadyMarkedOnNext) {
+		assert this.qs != null;
+
+		final int previousState = markOnNextStart();
+		if (isMarkedOnNext(previousState) && !alreadyMarkedOnNext) {
+			return;
+		}
+
+		if (isMarkedTerminated(previousState)) {
+			safeClearQueue(qs);
+			notifyDone();
+			return;
+		}
+
+		T t;
+
+		for (; ; ) {
+			if (cancelled.get()) {
+				if (checkTerminatedAfterOnNext()) {
+					safeClearQueue(qs);
+				}
+				return;
+			}
+
+			long r = REQUESTED_TOTAL.get(this);
+			if (r != Long.MAX_VALUE && r - this.receivedOnNext.size() < 1) {
+				//no more request for data, until next request (or termination)
+				if (checkTerminatedAfterOnNext()) {
+					safeClearQueue(qs);
+				}
+				return;
+			}
+
+			t = qs.poll();
+			if (t == null) {
+				//no more available data, until next request (or termination)
+				if (checkTerminatedAfterOnNext()) {
+					safeClearQueue(qs);
+				}
+				return;
+			}
+			this.receivedOnNext.add(t);
+		}
 	}
 
 	@Nullable
@@ -391,11 +439,13 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 	static final int MASK_TERMINATING      = 0b0100;
 	static final int MASK_ON_NEXT          = 0b0001;
 
-	void checkTerminatedAfterOnNext() {
+	boolean checkTerminatedAfterOnNext() {
 		int donePreviousState = markOnNextDone();
 		if (isMarkedTerminating(donePreviousState)) {
 			notifyDone();
+			return true;
 		}
+		return false;
 	}
 
 	static boolean isMarkedTerminated(int state) {
@@ -438,6 +488,10 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 	}
 
+	/**
+	 * Mark that onNext processing has started (work in progress) and return the previous state.
+	 * @return the previous state
+	 */
 	int markOnNextStart() {
 		for(;;) {
 			int state = this.state;
@@ -451,6 +505,10 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		}
 	}
 
+	/**
+	 * Mark that onNext processing has terminated and return the previous state.
+	 * @return the previous state
+	 */
 	int markOnNextDone() {
 		for(;;) {
 			int state = this.state;
