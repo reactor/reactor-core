@@ -17,7 +17,6 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -48,6 +47,7 @@ import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.times;
 
 /**
  * @author Simon Baslé
@@ -1313,32 +1313,286 @@ class TestSubscriberTest {
 	}
 
 	@Test
-	void drainAsyncFromOnComplete() {
-		//FIXME
-		fail("implement");
+	void drainAsyncWithOnError() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
+
+		@SuppressWarnings("unchecked")
+		Fuseable.QueueSubscription<Integer> queueSubscription = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(queueSubscription.requestFusion(Mockito.anyInt())).thenReturn(Fuseable.ASYNC);
+		Mockito.when(queueSubscription.poll()).thenReturn(1, 2, 3, 4, null);
+
+		testSubscriber.onSubscribe(queueSubscription);
+
+		testSubscriber.onNext(null); //trigger async fusion
+		testSubscriber.onError(new IllegalStateException("expected"));
+
+		Mockito.verify(queueSubscription).clear();
+		Mockito.verify(queueSubscription, times(5)).poll();
+
+		assertThat(testSubscriber.getReceivedOnNext())
+				.as("receivedOnNext")
+				.containsExactly(1, 2, 3, 4);
+
+		assertThat(testSubscriber.getTerminalSignal())
+				.as("terminal signal")
+				.matches(Signal::isOnError, "isOnError")
+				.satisfies(s -> assertThat(s.getThrowable()).isInstanceOf(IllegalStateException.class).hasMessage("expected"));
 	}
 
 	@Test
-	void drainAsyncFromOnError() {
-		//FIXME
-		fail("implement");
+	@Tag("slow") //potentially slow due to timeout 10s
+	void drainAsyncBadOnErrorDuringPollNotifiesAndClears() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
+
+		@SuppressWarnings("unchecked")
+		Fuseable.QueueSubscription<Integer> queueSubscription = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(queueSubscription.requestFusion(Mockito.anyInt())).thenReturn(Fuseable.ASYNC);
+
+		final AtomicInteger count = new AtomicInteger();
+		final CountDownLatch waitForPoll = new CountDownLatch(1);
+		final CountDownLatch waitForOnError = new CountDownLatch(1);
+		Mockito.when(queueSubscription.poll())
+				.thenAnswer(args -> {
+					int answer = count.incrementAndGet();
+					if (answer == 3) {
+						waitForPoll.countDown();
+						waitForOnError.await(1, TimeUnit.SECONDS);
+					}
+					if (answer == 5) {
+						return null;
+					}
+					return answer;
+				});
+
+		testSubscriber.onSubscribe(queueSubscription);
+
+		//we only use RaceTestUtils for the convenience of blocking until both tasks have finished,
+		// since we're doing our own artificial synchronization
+		RaceTestUtils.race(
+				() -> testSubscriber.onNext(null),
+				() -> {
+					try {
+						if (waitForPoll.await(1, TimeUnit.SECONDS)) {
+							testSubscriber.onError(new IllegalStateException("expected"));
+							waitForOnError.countDown();
+						}
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+		);
+
+		assertThatCode(() -> testSubscriber.block(Duration.ofSeconds(10)))
+				.as("block(10s)")
+				.doesNotThrowAnyException();
+
+		Mockito.verify(queueSubscription).clear();
+		Mockito.verify(queueSubscription, times(5)).poll();
+
+		assertThat(testSubscriber.getReceivedOnNext())
+				.as("receivedOnNext")
+				.containsExactly(1, 2, 3, 4);
+
+		assertThat(testSubscriber.getProtocolErrors())
+				.as("protocol errors")
+				.singleElement()
+				.matches(Signal::isOnError, "isOnError")
+				.satisfies(s -> assertThat(s.getThrowable()).isInstanceOf(IllegalStateException.class).hasMessage("expected"))
+				.isSameAs(testSubscriber.getTerminalSignal()); //that last assertion ensures we registered the terminal signal
 	}
 
 	@Test
-	void drainAsyncPollNullClears() {
-		//FIXME
-		fail("implement");
+	@Tag("slow") //potentially slow due to timeout 10s
+	void drainAsyncBadOnCompleteDuringPollNotifiesAndClears() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
+
+		@SuppressWarnings("unchecked")
+		Fuseable.QueueSubscription<Integer> queueSubscription = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(queueSubscription.requestFusion(Mockito.anyInt())).thenReturn(Fuseable.ASYNC);
+
+		final AtomicInteger count = new AtomicInteger();
+		final CountDownLatch waitForPoll = new CountDownLatch(1);
+		final CountDownLatch waitForComplete = new CountDownLatch(1);
+		Mockito.when(queueSubscription.poll())
+				.thenAnswer(args -> {
+					int answer = count.incrementAndGet();
+					if (answer == 2) {
+						waitForPoll.countDown();
+						waitForComplete.await(1, TimeUnit.SECONDS);
+					}
+					if (answer == 5) {
+						return null;
+					}
+					return answer;
+				});
+
+		testSubscriber.onSubscribe(queueSubscription);
+
+		//we only use RaceTestUtils for the convenience of blocking until both tasks have finished,
+		// since we're doing our own artificial synchronization
+		RaceTestUtils.race(
+				() -> testSubscriber.onNext(null),
+				() -> {
+					try {
+						if (waitForPoll.await(1, TimeUnit.SECONDS)) {
+							testSubscriber.onComplete();
+							waitForComplete.countDown();
+						}
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+		);
+
+		assertThatCode(() -> testSubscriber.block(Duration.ofSeconds(10)))
+				.as("block(10s)")
+				.doesNotThrowAnyException();
+
+		Mockito.verify(queueSubscription).clear();
+		Mockito.verify(queueSubscription, times(5)).poll();
+
+		assertThat(testSubscriber.getReceivedOnNext())
+				.as("receivedOnNext")
+				.containsExactly(1, 2, 3, 4);
+
+		assertThat(testSubscriber.getProtocolErrors())
+				.as("protocol errors")
+				.singleElement()
+				.matches(Signal::isOnComplete, "isOnComplete")
+				.isSameAs(testSubscriber.getTerminalSignal()); //that last assertion ensures we registered the terminal signal
 	}
 
 	@Test
-	void drainAsyncProducedRequestedAmountClears() {
-		//FIXME
-		fail("implement");
+	@Tag("slow") //potentially slow due to timeout 10s
+	void drainAsyncBadTerminalNotifiesAndClearsOnceProducedRequestedAmount() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
+				.initialRequest(3L)
+				.requireFusion(Fuseable.ASYNC)
+				.build();
+
+		@SuppressWarnings("unchecked")
+		Fuseable.QueueSubscription<Integer> queueSubscription = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(queueSubscription.requestFusion(Mockito.anyInt())).thenReturn(Fuseable.ASYNC);
+
+		final AtomicInteger count = new AtomicInteger();
+		final CountDownLatch waitForPoll = new CountDownLatch(1);
+		final CountDownLatch waitForComplete = new CountDownLatch(1);
+		Mockito.when(queueSubscription.poll())
+				.thenAnswer(args -> {
+					int answer = count.incrementAndGet();
+					if (answer == 1) {
+						waitForPoll.countDown();
+						waitForComplete.await(1, TimeUnit.SECONDS);
+					}
+					if (answer == 10) {
+						return null;
+					}
+					return answer;
+				});
+
+		testSubscriber.onSubscribe(queueSubscription);
+
+		//we only use RaceTestUtils for the convenience of blocking until both tasks have finished,
+		// since we're doing our own artificial synchronization
+		RaceTestUtils.race(
+				() -> testSubscriber.onNext(null),
+				() -> {
+					try {
+						if (waitForPoll.await(1, TimeUnit.SECONDS)) {
+							testSubscriber.onComplete();
+							waitForComplete.countDown();
+						}
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+		);
+
+		assertThatCode(() -> testSubscriber.block(Duration.ofSeconds(10)))
+				.as("block(10s)")
+				.doesNotThrowAnyException();
+
+		Mockito.verify(queueSubscription).clear();
+		Mockito.verify(queueSubscription, times(3)).poll();
+
+		assertThat(testSubscriber.getReceivedOnNext())
+				.as("receivedOnNext")
+				.containsExactly(1, 2, 3);
+
+		assertThat(testSubscriber)
+				.matches(TestSubscriber::isTerminatedComplete, "isTerminatedComplete");
+
+		//terminal onComplete is registered as a protocol error
+		assertThat(testSubscriber.getProtocolErrors())
+				.as("protocol errors")
+				.singleElement()
+				.isSameAs(testSubscriber.getTerminalSignal());
 	}
 
 	@Test
-	void drainAsyncCancelledClears() {
-		//FIXME
-		fail("implement");
+	@Tag("slow") //potentially slow due to timeout 10s
+	void drainAsyncCancelledNotifiesAndClears() {
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
+
+		@SuppressWarnings("unchecked")
+		Fuseable.QueueSubscription<Integer> queueSubscription = Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(queueSubscription.requestFusion(Mockito.anyInt())).thenReturn(Fuseable.ASYNC);
+
+		final AtomicInteger count = new AtomicInteger();
+		final CountDownLatch waitForPoll = new CountDownLatch(1);
+		final CountDownLatch waitForCancel = new CountDownLatch(1);
+		Mockito.when(queueSubscription.poll())
+				.thenAnswer(args -> {
+					int answer = count.incrementAndGet();
+					if (answer == 2) {
+						waitForPoll.countDown();
+						waitForCancel.await(1, TimeUnit.SECONDS);
+					}
+					if (answer == 5) {
+						return null;
+					}
+					return answer;
+				});
+
+		testSubscriber.onSubscribe(queueSubscription);
+
+		//we only use RaceTestUtils for the convenience of blocking until both tasks have finished,
+		// since we're doing our own artificial synchronization
+		RaceTestUtils.race(
+				() -> testSubscriber.onNext(null),
+				() -> {
+					try {
+						if (waitForPoll.await(1, TimeUnit.SECONDS)) {
+							testSubscriber.cancel();
+							waitForCancel.countDown();
+						}
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+		);
+
+		assertThatCode(() -> testSubscriber.block(Duration.ofSeconds(10)))
+				.as("block(10s)")
+				.doesNotThrowAnyException();
+
+		Mockito.verify(queueSubscription).clear();
+		Mockito.verify(queueSubscription, times(2)).poll();
+
+		assertThat(testSubscriber.getReceivedOnNext())
+				.as("receivedOnNext")
+				.containsExactly(1, 2);
+
+		assertThat(testSubscriber)
+				.matches(TestSubscriber::isCancelled, "isCancelled")
+				.matches(ts -> !ts.isTerminated(), "not terminated");
+
+		assertThat(testSubscriber.getProtocolErrors())
+				.as("protocol errors")
+				.isEmpty();
 	}
 }

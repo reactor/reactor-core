@@ -295,7 +295,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 		if (t == null) {
 			if (this.fusionMode == Fuseable.ASYNC) {
-				drainAsync(true);
+				drainAsync(false);
 				return;
 			}
 			else {
@@ -330,7 +330,7 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		this.terminalSignal = sig;
 
 		if (fusionMode == Fuseable.ASYNC) {
-			drainAsync(false);
+			drainAsync(true);
 			return;
 		}
 
@@ -356,18 +356,24 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 		this.terminalSignal = sig;
 
 		if (fusionMode == Fuseable.ASYNC) {
-			drainAsync(false);
+			drainAsync(true);
 			return;
 		}
 
 		notifyDone();
 	}
 
-	void drainAsync(boolean alreadyMarkedOnNext) {
+	/**
+	 * Drain the subscriber in asynchronous fusion mode (assumes there is a this.qs).
+	 *
+	 * @param isTerminal is the draining happening from onComplete/onError?
+	 */
+	void drainAsync(boolean isTerminal) {
 		assert this.qs != null;
 
-		final int previousState = markOnNextStart();
-		if (isMarkedOnNext(previousState) && !alreadyMarkedOnNext) {
+		//onComplete and onError move to terminated/terminating and call drainAsync ONLY if no work in progress
+		int previousState = this.state;
+		if (isTerminal && isMarkedOnNext(previousState)) {
 			return;
 		}
 
@@ -381,9 +387,8 @@ public class TestSubscriber<T> implements CoreSubscriber<T>, Scannable {
 
 		for (; ; ) {
 			if (cancelled.get()) {
-				if (checkTerminatedAfterOnNext()) {
-					safeClearQueue(qs);
-				}
+				safeClearQueue(qs);
+				notifyDone();
 				return;
 			}
 
