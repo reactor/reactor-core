@@ -136,6 +136,7 @@ public class FluxSwitchOnFirstTest {
                                     }
                                 })
                                 .hide()
+                                .prefetch()
                                 .publishOn(Schedulers.parallel())
                                 .cancelOn(NoOpsScheduler.INSTANCE)
                                 .doOnCancel(latch::countDown)
@@ -175,6 +176,7 @@ public class FluxSwitchOnFirstTest {
                                     }
                                 })
                                 .hide()
+                                .prefetch()
                                 .publishOn(Schedulers.parallel())
                                 .cancelOn(NoOpsScheduler.INSTANCE)
                                 .doOnCancel(latch::countDown)

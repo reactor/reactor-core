@@ -141,6 +141,7 @@ public class FluxConcatWithTest {
 			                                           .thenMany(Flux.defer(() -> {
 				                                           observedThread1.set(Thread.currentThread());
 				                                           return Flux.just(1, 2)
+				                                                      .prefetch()
 				                                                      .publishOn(Schedulers.parallel())
 						                                              .doOnComplete(() -> sendingThread2.set(Thread.currentThread()));
 			                                           }))
@@ -188,12 +189,14 @@ public class FluxConcatWithTest {
 			                                           .thenMany(Flux.defer(() -> {
 				                                           observedThread1.set(Thread.currentThread());
 				                                           return Flux.just(1, 2)
+				                                                      .prefetch()
 				                                                      .publishOn(Schedulers.parallel())
 				                                                      .doOnComplete(() -> sendingThread2.set(Thread.currentThread()));
 			                                           }))
 			                                           .thenMany(Flux.defer(() -> {
 				                                           observedThread2.set(Thread.currentThread());
 				                                           return Flux.just(1, 2)
+				                                                      .prefetch()
 				                                                      .publishOn(single)
 				                                                      .doOnComplete(() -> sendingThread3.set(Thread.currentThread()));
 			                                           }))
@@ -257,7 +260,8 @@ public class FluxConcatWithTest {
 			.concatWithValues(10, 11, 12, 13)
 			.concatWith(Flux.range(14, 100 - 14))
 			.limitRate(16, 2)
-			.publishOn(Schedulers.boundedElastic(), 16)
+			.prefetch(16)
+			.publishOn(Schedulers.boundedElastic())
 			.subscribeOn(Schedulers.boundedElastic())
 			.blockLast();
 		}
@@ -269,10 +273,12 @@ public class FluxConcatWithTest {
 		// reactor.core.Exceptions$OverflowException: Queue is full: Reactive Streams source doesn't respect backpressure
 		for (int round = 0; round < 20000; round++) {
 			Flux.range(0,10)
+			.prefetch()
 			.publishOn(Schedulers.boundedElastic())
 			.concatWithValues(10, 11, 12, 13)
 			.concatWith(Flux.range(14, 100-14))
-			.publishOn(Schedulers.boundedElastic(), 16)
+			.prefetch(16)
+			.publishOn(Schedulers.boundedElastic())
 			.subscribeOn(Schedulers.boundedElastic())
 			.blockLast();
 		}

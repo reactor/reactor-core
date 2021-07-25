@@ -113,6 +113,7 @@ public class SerializedSubscriberTest {
 			}
 		})
 			.doFinally(sig -> latch.countDown())
+		    .prefetch()
 			.publishOn(Schedulers.single())
 			.doFinally(sig -> latch.countDown())
 			.retryWhen(Retry.from(p -> p.take(3)))

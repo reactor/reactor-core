@@ -59,30 +59,36 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.fluxSource("onBackpressureBuffer", Flux::onBackpressureBuffer),
 			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", f -> f
 					.onBackpressureBuffer()
+					.prefetch()
 					.publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOnWithMaps", f -> f
 					.onBackpressureBuffer()
 					.map(Function.identity())
 					.map(Function.identity())
 					.map(Function.identity())
+					.prefetch()
 					.publishOn(Schedulers.immediate())),
 			DiscardScenario.rawSource("flatMapInner", raw -> Flux.just(1).flatMap(f -> raw)),
 			DiscardScenario.fluxSource("flatMap", main -> main.flatMap(f -> Mono.just(f).hide().flux())),
 			DiscardScenario.fluxSource("flatMapIterable", f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
+			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.prefetch().publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.prefetch(Queues.SMALL_BUFFER_SIZE).publishOn(Schedulers.immediate(), false)),
 			DiscardScenario.fluxSource("publishOnAndPublishOn", main -> main
+					.prefetch()
 					.publishOn(Schedulers.immediate())
+					.prefetch()
 					.publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps", main -> main
+					.prefetch()
 					.publishOn(Schedulers.immediate())
 					.map(Function.identity())
 					.map(Function.identity())
 					.map(Function.identity())
+					.prefetch()
 					.publishOn(Schedulers.immediate())),
 			DiscardScenario.sinkSource("unicastSink",  Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn",  Sinks.unsafe().many().unicast()::onBackpressureBuffer,
-					f -> f.publishOn(Schedulers.immediate())),
+					f -> f.prefetch().publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))

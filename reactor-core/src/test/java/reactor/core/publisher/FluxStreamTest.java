@@ -466,6 +466,7 @@ public class FluxStreamTest {
 		//note: we cannot check the spliterator, otherwise the stream will be considered used up
 
 		Flux.fromStream(stream)
+		    .prefetch()
 		    .publishOn(Schedulers.single())
 		    .take(10)
 		    .doOnDiscard(Integer.class, i -> {})

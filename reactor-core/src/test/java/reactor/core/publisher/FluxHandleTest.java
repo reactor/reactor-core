@@ -190,9 +190,10 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
-		Flux.range(1,
-				5).<Integer>handle((v, s) -> s.next(v * 2)).publishOn(Schedulers.single())
-		                                                   .subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((v, s) -> s.next(v * 2))
+		    .prefetch()
+		    .publishOn(Schedulers.single())
+		    .subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.await()
@@ -231,8 +232,10 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 			if (v % 2 == 0) {
 				s.next(v * 2);
 			}
-		}).publishOn(Schedulers.single())
-		  .subscribe(ts);
+		})
+		    .prefetch()
+		    .publishOn(Schedulers.single())
+		    .subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 		ts.await()

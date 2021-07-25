@@ -148,7 +148,9 @@ class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}).publishOn(Schedulers.parallel()))
+		})
+		                        .prefetch()
+		                        .publishOn(Schedulers.parallel()))
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 
@@ -377,7 +379,9 @@ class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}).publishOn(Schedulers.parallel()))
+		})
+		                        .prefetch()
+		                        .publishOn(Schedulers.parallel()))
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}
@@ -536,7 +540,9 @@ class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}, FluxSink.OverflowStrategy.LATEST).publishOn(Schedulers.parallel()))
+		}, FluxSink.OverflowStrategy.LATEST)
+		                        .prefetch()
+		                        .publishOn(Schedulers.parallel()))
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}
@@ -643,7 +649,9 @@ class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}, FluxSink.OverflowStrategy.DROP).publishOn(Schedulers.parallel()))
+		}, FluxSink.OverflowStrategy.DROP)
+		                        .prefetch()
+		                        .publishOn(Schedulers.parallel()))
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}
@@ -749,7 +757,9 @@ class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}, FluxSink.OverflowStrategy.ERROR).publishOn(Schedulers.parallel()))
+		}, FluxSink.OverflowStrategy.ERROR)
+		                        .prefetch()
+		                        .publishOn(Schedulers.parallel()))
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}
@@ -855,7 +865,9 @@ class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}, FluxSink.OverflowStrategy.IGNORE).publishOn(Schedulers.parallel()))
+		}, FluxSink.OverflowStrategy.IGNORE)
+		                        .prefetch()
+		                        .publishOn(Schedulers.parallel()))
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}
@@ -1079,7 +1091,7 @@ class FluxCreateTest {
 			s.onDispose(() -> queue.close());
 		}, overflowStrategy);
 
-		StepVerifier.create(created.take(count).publishOn(Schedulers.parallel(), 1000))
+		StepVerifier.create(created.take(count).prefetch(1000).publishOn(Schedulers.parallel()))
 		            .expectNextCount(count)
 		            .expectComplete()
 		            .verify();

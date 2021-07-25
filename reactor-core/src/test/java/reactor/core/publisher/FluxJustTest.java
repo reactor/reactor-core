@@ -127,6 +127,7 @@ public class FluxJustTest {
 		for (int round = 0; round < 20000; round++) {
 			Mono.just(0).flatMapMany(i -> {
 				return Flux.range(0, 10)
+						.prefetch()
 						.publishOn(Schedulers.boundedElastic())
 						.concatWithValues(10)
 						.concatWithValues(11)
@@ -137,7 +138,9 @@ public class FluxJustTest {
 						.concatWithValues(16)
 						.concatWithValues(17)
 						.concatWith(Flux.range(18, 100 - 18));
-			}).publishOn(Schedulers.boundedElastic(), 16).subscribeOn(Schedulers.boundedElastic()).blockLast();
+			})
+			    .prefetch(16)
+			    .publishOn(Schedulers.boundedElastic()).subscribeOn(Schedulers.boundedElastic()).blockLast();
 		}
 	}
 

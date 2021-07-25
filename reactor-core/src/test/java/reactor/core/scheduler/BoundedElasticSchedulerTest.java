@@ -199,7 +199,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.doOnNext(v -> System.out.println("published " + v));
 
 		for (int i = 0; i < maxQueue * maxThreads - 1; i++) {
-			flux = flux.publishOn(scheduler, false, 1 + i % 2);
+			flux = flux.prefetch(1 + i % 2).publishOn(scheduler, false);
 		}
 
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
@@ -245,6 +245,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(Flux.interval(Duration.ofSeconds(1), scheduler)
 		               .doOnNext(ignored -> System.out.println("emitted"))
+		               .prefetch()
 		               .publishOn(scheduler)
 		               .doOnNext(ignored -> System.out.println("published"))
 		               .blockFirst(Duration.ofSeconds(2))
@@ -1097,6 +1098,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		);
 		tasks.add(
 				Flux.just("just fused")
+				    .prefetch()
 				    .publishOn(bounded)
 				    .map(sleepAndIncrement)
 				    .subscribe()
@@ -1104,6 +1106,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		tasks.add(
 				Flux.just("just")
 				    .hide()
+				    .prefetch()
 				    .publishOn(bounded)
 				    .map(sleepAndIncrement)
 				    .subscribe()
@@ -1112,6 +1115,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				//test the FluxCallable (not ScalarCallable) case
 				Mono.fromCallable(() -> "FluxCallable, not ScalarCallable")
 				    .flux()
+				    .prefetch()
 				    .publishOn(bounded)
 				    .map(sleepAndIncrement)
 				    .subscribe()

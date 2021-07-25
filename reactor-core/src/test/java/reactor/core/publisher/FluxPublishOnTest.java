@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -74,8 +73,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(Queues.SMALL_BUFFER_SIZE)
-		                     .fusionModeThreadBarrier(Fuseable.ASYNC)
+		return defaultOptions.fusionModeThreadBarrier(Fuseable.ASYNC)
 		                     .fusionMode(Fuseable.ASYNC);
 	}
 
@@ -109,46 +107,46 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 
-				scenario(f -> f.publishOn(Schedulers.fromExecutor(d -> {
+				scenario(f -> f.prefetch().publishOn(Schedulers.fromExecutor(d -> {
 					throw exception();
 				})))
 						.producerError(new RejectedExecutionException("Scheduler unavailable"))
 						.receiverDemand(0),
 
-				scenario(f -> f.publishOn(new FailWorkerScheduler()))
+				scenario(f -> f.prefetch().publishOn(new FailWorkerScheduler()))
 						.producerEmpty(),
 
-				scenario(f -> f.publishOn(new FailNullWorkerScheduler()))
+				scenario(f -> f.prefetch().publishOn(new FailNullWorkerScheduler()))
 						.producerEmpty(),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, false)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false, false)))
 						.verifier(this::assertNoRejected)
 						.receiverDemand(0),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, false)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true, false)))
 						.verifier(this::assertRejected)
 						.receiverDemand(0),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, true)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true, true)))
 						.verifier(this::assertNoRejected)
 						.receiverDemand(0),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, true)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false, true)))
 						.verifier(this::assertNoRejected),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, false)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false, false)))
 						.verifier(this::assertNoRejected)
 						.receiverDemand(0),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, true)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(false, true)))
 						.verifier(this::assertNoRejected)
 						.producerEmpty(),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, false)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true, false)))
 						.verifier(this::assertRejected)
 						.receiverDemand(0),
 
-				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, true)))
+				scenario(f -> f.prefetch().publishOn(new RejectingWorkerScheduler(true, true)))
 						.verifier(this::assertNoRejected)
 						.receiverDemand(0)
 		);
@@ -157,17 +155,13 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
- 				scenario(f -> f.publishOn(Schedulers.immediate())),
+ 				scenario(f -> f.prefetch().publishOn(Schedulers.immediate())),
 
-				scenario(f -> f.publishOn(Schedulers.immediate(), false, 4))
-						.prefetch(4),
+				scenario(f -> f.prefetch(4).publishOn(Schedulers.immediate(), false)),
 
-				scenario(f -> f.publishOn(Schedulers.immediate(), 1))
-						.prefetch(1),
+				scenario(f -> f.prefetch(1).publishOn(Schedulers.immediate())),
 
-				scenario(f -> f.publishOn(Schedulers.immediate(), Integer.MAX_VALUE))
-						.prefetch(Integer.MAX_VALUE)
-
+				scenario(f -> f.prefetch(Integer.MAX_VALUE).publishOn(Schedulers.immediate()))
 		);
 	}
 
@@ -187,7 +181,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void failPrefetch() {
 		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
 			Flux.range(1, 10)
-					.publishOn(Schedulers.immediate(), -1);
+			    .prefetch(-1)
+			    .publishOn(Schedulers.immediate());
 		});
 	}
 
@@ -195,6 +190,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normal() {
 		StepVerifier.create(Flux.range(1, 1_000_000)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(1_000_000)
 		            .verifyComplete();
@@ -204,6 +200,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normalBackpressured1() throws Exception {
 		StepVerifier.create(Flux.range(1, 1_000)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)), 0)
 		            .thenRequest(500)
 		            .expectNextCount(500)
@@ -216,6 +213,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normalBackpressured() throws Exception {
 		StepVerifier.create(Flux.range(1, 1_000_000)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)), 0)
 		            .thenRequest(500_000)
 		            .expectNextCount(500_000)
@@ -227,6 +225,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void normalSyncFused() {
 		StepVerifier.create(Flux.range(1, 1_000_000)
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(1_000_000)
 		            .verifyComplete();
@@ -235,6 +234,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void normalSyncFusedBackpressured() throws Exception {
 		StepVerifier.create(Flux.range(1, 1_000_000)
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)), 0)
 		            .thenRequest(500_000)
 		            .expectNextCount(500_000)
@@ -256,6 +256,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		up.emitComplete(FAIL_FAST);
 
 		up.asFlux()
+		  .prefetch()
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
@@ -276,7 +277,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		}
 		up.emitComplete(FAIL_FAST);
 
-		StepVerifier.create(up.asFlux().publishOn(Schedulers.fromExecutorService(exec)), 0)
+		StepVerifier.create(up.asFlux().prefetch().publishOn(Schedulers.fromExecutorService(exec)), 0)
 		            .expectSubscription()
 		            .thenRequest(500_000)
 		            .expectNextCount(500_000)
@@ -288,6 +289,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void error() {
 		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .verifyErrorMessage("forced failure");
 	}
@@ -296,6 +298,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void errorHide() {
 		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .verifyErrorMessage("forced failure");
 	}
@@ -304,8 +307,10 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void empty() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>empty().publishOn(Schedulers.fromExecutorService(exec))
-		                     .subscribe(ts);
+		Flux.<Integer>empty()
+		    .prefetch()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
 
@@ -322,6 +327,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 1000)
 		    .concatWith(err)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -338,6 +344,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -353,6 +360,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -377,6 +385,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 2_000_000)
 		    .hide()
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .filter(v -> (v & 1) == 0)
 		    .subscribe(ts);
@@ -394,6 +403,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 2_000)
 		    .hide()
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .filter(v -> (v & 1) == 0)
 		    .subscribe(ts);
@@ -409,6 +419,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normalFilteredBackpressured() throws Exception {
 		StepVerifier.create(Flux.range(1, 2_000_000)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec))
 		                        .filter(v -> (v & 1) == 0), 0)
 		            .thenRequest(500_000)
@@ -422,6 +433,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normalFilteredBackpressured1() throws Exception {
 		StepVerifier.create(Flux.range(1, 2_000)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec))
 		                        .filter(v -> (v & 1) == 0), 0)
 		            .thenRequest(500)
@@ -460,17 +472,21 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> fork1 = sink.asFlux().map(d -> d)
-		                        .publishOn(Schedulers.fromExecutorService(exec));
+		                          .prefetch()
+		                          .publishOn(Schedulers.fromExecutorService(exec));
 		Flux<Integer> fork2 = sink.asFlux().map(d -> d)
-		                        .publishOn(Schedulers.fromExecutorService(exec));
+		                          .prefetch()
+		                          .publishOn(Schedulers.fromExecutorService(exec));
 
 		ts.request(256);
 		Flux.merge(fork1, fork2)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		    .subscribe(ts);
 
 		Flux.range(0, 128)
 		    .hide()
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		    .subscribe(v -> sink.emitNext(v, FAIL_FAST), e -> sink.emitError(e, FAIL_FAST), () -> sink.emitComplete(FAIL_FAST));
 
@@ -492,6 +508,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		    .doOnRequest(v -> {
 			    clq.offer(v);
 		    })
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -512,7 +529,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 100_000)
 		    .hide()
-		    .publishOn(Schedulers.fromExecutor(exec), 128)
+		    .prefetch(128)
+		    .publishOn(Schedulers.fromExecutor(exec))
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(1));
@@ -529,7 +547,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 100_000)
 		    .hide()
-		    .publishOn(Schedulers.fromExecutor(exec), 128)
+		    .prefetch(128)
+		    .publishOn(Schedulers.fromExecutor(exec))
 		    .filter(v -> (v & 1) == 0)
 		    .subscribe(ts);
 
@@ -547,6 +566,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 100_000)
 		    .flatMap(Flux::just)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -561,6 +581,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void syncSourceWithNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, null, 1)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -575,6 +596,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void syncSourceWithNull2() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.fromIterable(Arrays.asList(1, null, 1))
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -590,6 +612,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, 2)
 		    .map(v -> v == 2 ? null : v)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -606,6 +629,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.just(1, 2)
 		    .hide()
 		    .map(v -> v == 2 ? null : v)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -622,6 +646,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.just(1, 2)
 		    .hide()
 		    .map(v -> v == 2 ? null : v)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .filter(v -> true)
 		    .subscribe(ts);
@@ -638,6 +663,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.fromIterable(Arrays.asList(1, 2))
 		    .map(v -> v == 2 ? null : v)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -654,6 +680,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.fromIterable(Arrays.asList(1, 2))
 		    .hide()
 		    .map(v -> v == 2 ? null : v)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -670,6 +697,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.just(1, 2)
 		    .map(v -> v == 2 ? null : v)
 		    .filter(v -> true)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -686,6 +714,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.fromIterable(Arrays.asList(1, 2))
 		    .map(v -> v == 2 ? null : v)
 		    .filter(v -> true)
+		    .prefetch()
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
 
@@ -706,6 +735,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		up.emitComplete(FAIL_FAST);
 
 		up.asFlux().map(v -> v == 2 ? null : v)
+		  .prefetch()
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
@@ -726,6 +756,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		up.emitComplete(FAIL_FAST);
 
 		up.asFlux().map(v -> v == 2 ? null : v)
+		  .prefetch()
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .filter(v -> true)
 		  .subscribe(ts);
@@ -746,6 +777,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                        .flatMap(v -> Flux.range(v, 2)
 		                                          .hide(), false, 128, 1)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -757,6 +789,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		StepVerifier.create(Flux.range(1, count)
 		                        .flatMap(v -> Flux.range(v, 2), false, 128, 1)
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -771,6 +804,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                        .flatMap(v -> Flux.range(v, 2)
 		                                          .hide(), false, 4, 32)
 		                        .hide()
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -783,6 +817,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		StepVerifier.create(Flux.range(1, count)
 		                        .flatMap(v -> Flux.range(v, 2), false, 128, 32)
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -794,6 +829,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		StepVerifier.create(Flux.range(1, count)
 		                        .flatMap(v -> Flux.range(v, 2))
+		                        .prefetch()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -808,6 +844,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		up.asFlux().map(v -> Thread.currentThread()
 		                           .getName())
+		  .prefetch()
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
@@ -834,6 +871,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		up.asFlux().filter(v -> s.equals(Thread.currentThread()
 		                                       .getName()))
+		  .prefetch()
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
@@ -858,7 +896,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> source = Flux.range(1, count)
 		                           .flatMap(v -> Flux.range(v, 2), false, 128, 32);
 
-		source.publishOn(scheduler)
+		source.prefetch()
+		      .publishOn(scheduler)
 		      .subscribe(ts);
 
 		if (!ts.await(Duration.ofSeconds(10))
@@ -974,6 +1013,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			    .publishOn(fromExecutor(executor))
 			    .subscribe(assertSubscriber);
 
+			Thread.sleep(100);
 			executor.shutdownNow();
 
 			assertSubscriber.assertNoValues()
@@ -1017,6 +1057,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
 			Flux.range(0, 5)
+			    .prefetch()
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
@@ -1026,6 +1067,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 					    throw Exceptions.propagate(exception);
 				    }
 			    })
+			    .prefetch()
 			    .publishOn(fromExecutor(executor))
 			    .subscribe(assertSubscriber);
 
@@ -1064,8 +1106,10 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			ExecutorService executor = newCachedThreadPool();
 			StepVerifier.create(Flux.range(0, 5)
 			                        .log()
+			                        .prefetch()
 			                        .publishOn(Schedulers.boundedElastic())
 			                        .doOnRequest(n -> executor.shutdownNow())
+			                        .prefetch()
 			                        .publishOn(fromExecutorService(executor))
 			                        .doOnNext(this::infiniteBlock))
 			            .then(() -> {
@@ -1099,6 +1143,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		CountDownLatch latch = new CountDownLatch(1);
 
 		final Flux<Integer> flux = Flux.range(0, 5)
+		                               .prefetch()
 		                               .publishOn(fromExecutorService(executor))
 		                               .doOnNext(s -> {
 			                               try {
@@ -1108,6 +1153,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				                               throw Exceptions.propagate(exception);
 			                               }
 		                               })
+		                               .hide()
+		                               .prefetch()
+		                               .hide()
 		                               .publishOn(fromExecutorService(executor));
 
 		StepVerifier.create(flux, 0)
@@ -1146,10 +1194,12 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> d = s.asFlux();
 
 		/*Disposable c = */
-		d.publishOn(Schedulers.parallel())
+		d.prefetch()
+		 .publishOn(Schedulers.parallel())
 		 .parallel(8)
 		 .groups()
-		 .subscribe(stream -> stream.publishOn(Schedulers.parallel())
+		 .subscribe(stream -> stream.prefetch()
+		                            .publishOn(Schedulers.parallel())
 		                            .map(o -> {
 			                            synchronized (internalLock) {
 
@@ -1217,10 +1267,12 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Sinks.Many<String> s = Sinks.many().multicast().onBackpressureBuffer();
 		Flux<String> d = s.asFlux();
 
-		Flux<Integer> tasks = d.publishOn(Schedulers.parallel())
+		Flux<Integer> tasks = d.prefetch()
+		                       .publishOn(Schedulers.parallel())
 		                       .parallel(8)
 		                       .groups()
-		                       .flatMap(stream -> stream.publishOn(Schedulers.parallel())
+		                       .flatMap(stream -> stream.prefetch()
+		                                                .publishOn(Schedulers.parallel())
 		                                                .map((String str) -> {
 			                                                try {
 				                                                Thread.sleep(random.nextInt(
@@ -1266,11 +1318,13 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			throw new Exception("test");
 		})
 		                        .flux()
+		                        .prefetch()
 		                        .publishOn(Schedulers.immediate()))
 		            .verifyErrorMessage("test");
 
 		StepVerifier.create(Mono.fromCallable(() -> null)
 		                        .flux()
+		                        .prefetch()
 		                        .publishOn(Schedulers.immediate()))
 		            .verifyComplete();
 	}
@@ -1279,10 +1333,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void scanOperator(){
 		Flux<Integer> source = Flux.just(1);
 		Scheduler scheduler = Schedulers.immediate();
-		FluxPublishOn<Integer> test = new FluxPublishOn<>(source, scheduler, false, 3, 4, Queues.one());
+		FluxPublishOn<Integer> test = new FluxPublishOn<>(source, scheduler, false);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
-		assertThat(test.scan(PREFETCH)).isEqualTo(3);
 		assertThat(test.scan(RUN_ON)).isSameAs(scheduler);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 	}
@@ -1290,15 +1343,16 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanSubscriber() throws InterruptedException {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxPublishOn.PublishOnSubscriber<Integer> test = new FluxPublishOn.PublishOnSubscriber<>(actual,
-        		Schedulers.single(), Schedulers.single().createWorker(), true, 123, 123, Queues.unbounded());
+        FluxPublishOn.PublishOnSubscriber<Integer> test =
+		        new FluxPublishOn.PublishOnSubscriber<>(actual, Schedulers.single(),
+				        Schedulers.single().createWorker(), true);
+
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
-        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
@@ -1311,13 +1365,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-
-        //once cancelled, there shouldn't be any draining left
-        // => better place to test that BUFFERED reflects the size of the queue
-		Thread.sleep(50); //"hiccup" to ensure cancellation / draining is done
-        test.queue.add(1);
-        test.queue.add(1);
-        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
     }
 
 	@Test
@@ -1325,19 +1372,17 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxPublishOn.PublishOnConditionalSubscriber<Integer> test =
-        		new FluxPublishOn.PublishOnConditionalSubscriber<>(actual, Schedulers.single(),
-        				Schedulers.single().createWorker(), true, 123, 123, Queues.unbounded());
+        		new FluxPublishOn.PublishOnConditionalSubscriber<>(actual,
+				        Schedulers.single(), Schedulers.single().createWorker(), true);
+
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
-        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-        test.queue.add(1);
-        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 
         assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
@@ -1346,10 +1391,10 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-        test.cancel();
-        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-    }
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
 
     //see https://github.com/reactor/reactor-core/issues/767
     @Test
@@ -1361,6 +1406,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			    Flux.from(a)
 			        .flatMap(value -> Mono.just(value)
 			                              .zipWith(Mono.from(b)))
+			        .prefetch()
 			        .publishOn(Schedulers.single());
 
 	    StepVerifier.create(flux)
@@ -1382,6 +1428,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			    Flux.from(a)
 			        .flatMap(value -> Mono.just(value)
 			                              .zipWith(Mono.from(b)))
+			        .prefetch()
 			        .publishOn(Schedulers.single())
 			        .filter(t -> true);
 
@@ -1492,6 +1539,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void scanRunOn() {
 		Scannable publishOnScannable = Scannable.from(
 				Flux.just(1).hide()
+				    .prefetch()
 				    .publishOn(Schedulers.boundedElastic())
 		);
 		Scannable runOnScannable = publishOnScannable.scan(Scannable.Attr.RUN_ON);

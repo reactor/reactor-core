@@ -118,6 +118,7 @@ public class FluxPublishOnLoop {
 
 			Flux<Integer> source = Flux.range(1, count)
 			                           .flatMap(v -> Flux.range(v, 2), 128, j)
+			                           .prefetch()
 			                           .publishOn(scheduler);
 
 			StepVerifier.Step<Integer> v = StepVerifier.create(source)
