@@ -396,6 +396,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void boundaryFused() {
 		Flux.range(1, 10000)
+		    .prefetch()
 		    .publishOn(Schedulers.single())
 		    .map(v -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + v + Thread.currentThread().getName()))
 		    .share()

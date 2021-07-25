@@ -15,16 +15,16 @@ import reactor.util.annotation.Nullable;
 
 final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
+	final Supplier<? extends Queue<T>> queueSupplier;
+
 	final int prefetch;
 
 	final int lowTide;
 
-	final Supplier<? extends Queue<T>> queueSupplier;
-
 	final PrefetchMode prefetchMode;
 
 	enum PrefetchMode {
-		EAGER, LAZY,
+		EAGER, LAZY
 	}
 
 	public FluxPrefetch(Flux<? extends T> source,
@@ -55,7 +55,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
@@ -97,11 +96,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		Throwable error;
 
-		volatile     long                                       requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<PrefetchSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(PrefetchSubscriber.class, "requested");
-
 		volatile     int                                           wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PrefetchSubscriber> WIP =
@@ -110,7 +104,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		volatile     int                                           discardGuard;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PrefetchSubscriber> DISCARD_GUARD =
-				AtomicIntegerFieldUpdater.newUpdater(PrefetchSubscriber.class, "discardGuard");
+				AtomicIntegerFieldUpdater.newUpdater(PrefetchSubscriber.class,
+						"discardGuard");
+
+		volatile     long                                       requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<PrefetchSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(PrefetchSubscriber.class, "requested");
 
 		int sourceMode = -1;
 
@@ -150,7 +150,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					else {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(queue,
+								actual.currentContext(),
+								null);
 					}
 					return;
 				}
@@ -260,16 +262,16 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		@Override
-		public void onError(Throwable err) {
+		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(err, actual.currentContext());
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-			error = err;
+			error = t;
 			done = true;
 
 			if (sourceMode != Fuseable.NONE && sourceMode == outputMode) {
-				actual.onError(err);
+				actual.onError(t);
 			}
 			else {
 				drain(null);
@@ -294,7 +296,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				long previousState = Operators.addCapFromMinValue(REQUESTED, this, n);
+				long previousState = Operators.addCapFromMin(REQUESTED, this, n);
 
 				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {
@@ -345,8 +347,36 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				else if (outputMode == Fuseable.NONE) {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here in case non-fused output
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
+			}
+		}
+
+		private void drain(@Nullable Object dataSignal) {
+			if (WIP.getAndIncrement(this) != 0) {
+				if (cancelled) {
+					if (sourceMode == Fuseable.ASYNC) {
+						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+						queue.clear();
+					}
+					else {
+						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+						Operators.onDiscard(dataSignal, actual.currentContext());
+					}
+				}
+				return;
+			}
+
+			if (outputMode != Fuseable.NONE) {
+				drainOutput();
+			}
+			else if (sourceMode == Fuseable.SYNC) {
+				drainSync();
+			}
+			else {
+				drainAsync();
 			}
 		}
 
@@ -375,10 +405,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						else {
 							// discard MUST be happening only and only if there is no racing on elements consumption
 							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(queue,
+									actual.currentContext(),
+									null);
 						}
 
-						a.onError(Operators.onOperatorError(err, actual.currentContext()));
+						a.onError(Operators.onOperatorError(err,
+								actual.currentContext()));
 						return;
 					}
 
@@ -404,7 +437,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					}
 				}
 
-				if (emitted == requested && checkTerminated(done, queue.isEmpty(), null)) {
+				if (emitted == requested && checkTerminated(done,
+						queue.isEmpty(),
+						null)) {
 					return;
 				}
 
@@ -467,13 +502,17 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						value = queue.poll();
 					}
 					catch (Throwable err) {
-						a.onError(Operators.onOperatorError(s, err, actual.currentContext()));
+						a.onError(Operators.onOperatorError(s,
+								err,
+								actual.currentContext()));
 						return;
 					}
 
 					if (cancelled) {
 						Operators.onDiscard(value, actual.currentContext());
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(queue,
+								actual.currentContext(),
+								null);
 						return;
 					}
 					if (value == null) {
@@ -486,7 +525,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				}
 
 				if (cancelled) {
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 					return;
 				}
 
@@ -510,32 +551,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		}
 
-		private void drain(@Nullable Object dataSignal) {
-			if (WIP.getAndIncrement(this) != 0) {
-				if (cancelled) {
-					if (sourceMode == Fuseable.ASYNC) {
-						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
-						queue.clear();
-					}
-					else {
-						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
-						Operators.onDiscard(dataSignal, actual.currentContext());
-					}
-				}
-				return;
-			}
-
-			if (outputMode != Fuseable.NONE) {
-				drainOutput();
-			}
-			else if (sourceMode == Fuseable.SYNC) {
-				drainSync();
-			}
-			else {
-				drainAsync();
-			}
-		}
-
 		boolean checkTerminated(boolean done, boolean empty, @Nullable T value) {
 			if (cancelled) {
 				Operators.onDiscard(value, actual.currentContext());
@@ -546,7 +561,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				else {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
 				return true;
 			}
@@ -561,7 +578,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					else {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(queue,
+								actual.currentContext(),
+								null);
 					}
 					actual.onError(err);
 					return true;
@@ -573,6 +592,25 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			}
 
 			return false;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -641,8 +679,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		public int requestFusion(int requestedMode) {
 			if (s instanceof QueueSubscription) {
-				@SuppressWarnings("unchecked") QueueSubscription<T> fusion =
-						(QueueSubscription<T>) s;
+				@SuppressWarnings("unchecked") QueueSubscription<T> fusion = (QueueSubscription<T>) s;
 				int fusionMode = fusion.requestFusion(requestedMode);
 
 				if (fusionMode == Fuseable.SYNC) {
@@ -686,25 +723,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		public int size() {
 			return queue.size();
 		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.ERROR) return error;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PREFETCH) return prefetch;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-
-			return InnerOperator.super.scanUnsafe(key);
-		}
 	}
 
 	static final class PrefetchConditionalSubscriber<T>
@@ -730,22 +748,24 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		Throwable error;
 
+		volatile     int                                                      wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<PrefetchConditionalSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(PrefetchConditionalSubscriber.class,
+						"wip");
+
+		volatile     int discardGuard;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<PrefetchConditionalSubscriber>
+		                 DISCARD_GUARD = AtomicIntegerFieldUpdater.newUpdater(
+				PrefetchConditionalSubscriber.class,
+				"discardGuard");
+
 		volatile     long                                                  requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PrefetchConditionalSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PrefetchConditionalSubscriber.class,
 						"requested");
-
-		volatile     int                                                      wip;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PrefetchConditionalSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(PrefetchConditionalSubscriber.class, "wip");
-
-		volatile     int                                                      discardGuard;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PrefetchConditionalSubscriber> DISCARD_GUARD =
-				AtomicIntegerFieldUpdater.newUpdater(PrefetchConditionalSubscriber.class,
-						"discardGuard");
 
 		int sourceMode = -1;
 
@@ -787,7 +807,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					else {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(queue,
+								actual.currentContext(),
+								null);
 					}
 					return;
 				}
@@ -897,16 +919,16 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		}
 
 		@Override
-		public void onError(Throwable err) {
+		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(err, actual.currentContext());
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-			error = err;
+			error = t;
 			done = true;
 
 			if (sourceMode != Fuseable.NONE && sourceMode == outputMode) {
-				actual.onError(err);
+				actual.onError(t);
 			}
 			else {
 				drain(null);
@@ -931,7 +953,7 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				long previousState = Operators.addCapFromMinValue(REQUESTED, this, n);
+				long previousState = Operators.addCapFromMin(REQUESTED, this, n);
 
 				// check if this is the first request from the downstream
 				if (previousState == Long.MIN_VALUE) {
@@ -982,8 +1004,36 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				else if (outputMode == Fuseable.NONE) {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here in case non-fused output
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
+			}
+		}
+
+		private void drain(@Nullable Object dataSignal) {
+			if (WIP.getAndIncrement(this) != 0) {
+				if (cancelled) {
+					if (sourceMode == Fuseable.ASYNC) {
+						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+						queue.clear();
+					}
+					else {
+						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+						Operators.onDiscard(dataSignal, actual.currentContext());
+					}
+				}
+				return;
+			}
+
+			if (outputMode != Fuseable.NONE) {
+				drainOutput();
+			}
+			else if (sourceMode == Fuseable.SYNC) {
+				drainSync();
+			}
+			else {
+				drainAsync();
 			}
 		}
 
@@ -1013,10 +1063,13 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						else {
 							// discard MUST be happening only and only if there is no racing on elements consumption
 							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(queue,
+									actual.currentContext(),
+									null);
 						}
 
-						a.onError(Operators.onOperatorError(err, actual.currentContext()));
+						a.onError(Operators.onOperatorError(err,
+								actual.currentContext()));
 						return;
 					}
 
@@ -1042,7 +1095,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					}
 				}
 
-				if (emitted == requested && checkTerminated(done, queue.isEmpty(), null)) {
+				if (emitted == requested && checkTerminated(done,
+						queue.isEmpty(),
+						null)) {
 					return;
 				}
 
@@ -1106,13 +1161,17 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 						value = queue.poll();
 					}
 					catch (Throwable err) {
-						a.onError(Operators.onOperatorError(s, err, actual.currentContext()));
+						a.onError(Operators.onOperatorError(s,
+								err,
+								actual.currentContext()));
 						return;
 					}
 
 					if (cancelled) {
 						Operators.onDiscard(value, actual.currentContext());
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(queue,
+								actual.currentContext(),
+								null);
 						return;
 					}
 					if (value == null) {
@@ -1126,7 +1185,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				}
 
 				if (cancelled) {
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 					return;
 				}
 
@@ -1150,32 +1211,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 
 		}
 
-		private void drain(@Nullable Object dataSignal) {
-			if (WIP.getAndIncrement(this) != 0) {
-				if (cancelled) {
-					if (sourceMode == Fuseable.ASYNC) {
-						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
-						queue.clear();
-					}
-					else {
-						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
-						Operators.onDiscard(dataSignal, actual.currentContext());
-					}
-				}
-				return;
-			}
-
-			if (outputMode != Fuseable.NONE) {
-				drainOutput();
-			}
-			else if (sourceMode == Fuseable.SYNC) {
-				drainSync();
-			}
-			else {
-				drainAsync();
-			}
-		}
-
 		boolean checkTerminated(boolean done, boolean empty, @Nullable T value) {
 			if (cancelled) {
 				Operators.onDiscard(value, actual.currentContext());
@@ -1186,7 +1221,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 				else {
 					// discard MUST be happening only and only if there is no racing on elements consumption
 					// which is guaranteed by the WIP guard here
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(queue,
+							actual.currentContext(),
+							null);
 				}
 				return true;
 			}
@@ -1201,7 +1238,9 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 					else {
 						// discard MUST be happening only and only if there is no racing on elements consumption
 						// which is guaranteed by the WIP guard here
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						Operators.onDiscardQueueWithClear(queue,
+								actual.currentContext(),
+								null);
 					}
 					actual.onError(err);
 					return true;
@@ -1213,6 +1252,25 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 			}
 
 			return false;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -1325,25 +1383,6 @@ final class FluxPrefetch<T> extends InternalFluxOperator<T, T> implements Fuseab
 		@Override
 		public int size() {
 			return queue.size();
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.ERROR) return error;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PREFETCH) return prefetch;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-
-			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 }

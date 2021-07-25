@@ -71,24 +71,21 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.rawSource("flatMapInner", raw -> Flux.just(1).flatMap(f -> raw)),
 			DiscardScenario.fluxSource("flatMap", main -> main.flatMap(f -> Mono.just(f).hide().flux())),
 			DiscardScenario.fluxSource("flatMapIterable", f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("publishOnDelayErrors",
-					f -> f.prefetch().publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnImmediateErrors",
-					f -> f.prefetch(Queues.SMALL_BUFFER_SIZE)
-					      .publishOn(Schedulers.immediate(), false)),
-			DiscardScenario.fluxSource("publishOnAndPublishOn",  main -> main
+			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.prefetch().publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.prefetch(Queues.SMALL_BUFFER_SIZE).publishOn(Schedulers.immediate(), false)),
+			DiscardScenario.fluxSource("publishOnAndPublishOn", main -> main
 					.prefetch()
 					.publishOn(Schedulers.immediate())
 					.prefetch()
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps",
-					main -> main.prefetch()
-					            .publishOn(Schedulers.immediate())
-					            .map(Function.identity())
-					            .map(Function.identity())
-					            .map(Function.identity())
-					            .prefetch()
-					            .publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("publishOnAndPublishOnWithMaps", main -> main
+					.prefetch()
+					.publishOn(Schedulers.immediate())
+					.map(Function.identity())
+					.map(Function.identity())
+					.map(Function.identity())
+					.prefetch()
+					.publishOn(Schedulers.immediate())),
 			DiscardScenario.sinkSource("unicastSink",  Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn",  Sinks.unsafe().many().unicast()::onBackpressureBuffer,
 					f -> f.prefetch().publishOn(Schedulers.immediate())),

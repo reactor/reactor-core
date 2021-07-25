@@ -52,7 +52,7 @@ public class FluxSwitchMapTest {
 		Flux<Integer> integerFlux = Flux.defer(() ->  {
 			return Flux.range(0, 20)
 			    .hide()
-	            .prefetch(1)
+			    .prefetch(1)
 			    .publishOn(Schedulers.single())
 			    .switchMap(s ->  {
 				    return Flux.range(s * 20, 20)
@@ -60,7 +60,7 @@ public class FluxSwitchMapTest {
 				               .prefetch(1)
 				               .publishOn(scheduler);
 			    }, 0)
-	            .prefetch(1)
+			    .prefetch(1)
 			    .publishOn(scheduler2)
 			    .doOnNext(new Consumer<Integer>() {
 				    int last = -1;

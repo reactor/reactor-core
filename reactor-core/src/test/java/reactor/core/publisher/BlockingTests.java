@@ -126,9 +126,9 @@ public class BlockingTests {
 	public void blockingFirstError() {
 		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> {
 			Flux.error(new RuntimeException("test"))
-			    .prefetch()
-			    .publishOn(scheduler)
-			    .blockFirst();
+					.prefetch()
+					.publishOn(scheduler)
+					.blockFirst();
 		});
 	}
 
@@ -136,9 +136,9 @@ public class BlockingTests {
 	public void blockingFirstError2() {
 		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> {
 			Flux.error(new RuntimeException("test"))
-			    .prefetch()
-			    .publishOn(scheduler)
-			    .blockFirst(Duration.ofSeconds(1));
+					.prefetch()
+					.publishOn(scheduler)
+					.blockFirst(Duration.ofSeconds(1));
 		});
 	}
 

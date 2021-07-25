@@ -6015,7 +6015,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
 	 * replenishment request amount
 	 * @see #publishOn(Scheduler)
-	 * @see #prefetch(int)
+	 * @see #prefetch(int, int)
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
@@ -7101,14 +7101,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	public final Flux<T> prefetch(int prefetch, int lowTide, boolean lazyMode) {
-		FluxPrefetch.PrefetchMode mode = lazyMode ? FluxPrefetch.PrefetchMode.LAZY :
-				FluxPrefetch.PrefetchMode.EAGER;
-
-		return onAssembly(new FluxPrefetch<>(this,
-				prefetch,
-				lowTide,
-				Queues.get(prefetch),
-				mode));
+		FluxPrefetch.PrefetchMode mode = lazyMode ? FluxPrefetch.PrefetchMode.LAZY : FluxPrefetch.PrefetchMode.EAGER;
+		return onAssembly(new FluxPrefetch<>(this, prefetch, lowTide, Queues.get(prefetch), mode));
 	}
 
 	/**

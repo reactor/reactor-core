@@ -176,6 +176,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void discardPollAsyncPredicateMiss() {
 		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .prefetch()
 		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
 		                        .filter(i -> i % 2 == 0)
 		)
@@ -268,6 +269,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void discardConditionalPollAsyncPredicateFail() {
 		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext, so let's use just instead
+		                        .prefetch()
 		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
 		                        .filter(i -> { throw new IllegalStateException("boom"); })
 		                        .filter(i -> true)
@@ -283,6 +285,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void discardConditionalPollAsyncPredicateMiss() {
 		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .prefetch()
 		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
 		                        .filter(i -> i % 2 == 0)
 		                        .filter(i -> true)

@@ -64,6 +64,7 @@ public class FluxGroupByTest extends
 						4096)
 				.take(Duration.ofSeconds(10L))
 				.doOnNext(next -> upstream.incrementAndGet())
+				.prefetch()
 				.publishOn(scheduler)
 				.groupBy(Function.identity())
 				.flatMap(groupFlux -> groupFlux.take(Duration.ofSeconds(1L), scheduler)

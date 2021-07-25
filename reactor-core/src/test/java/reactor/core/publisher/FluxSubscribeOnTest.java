@@ -267,10 +267,10 @@ public class FluxSubscribeOnTest {
 			}
 			sink.complete();
 		}, DROP)
-		                         .map(Function.identity())
-		                         .subscribeOn(Schedulers.single(), true)
-		                         .prefetch()
-		                         .publishOn(Schedulers.boundedElastic());
+				.map(Function.identity())
+				.subscribeOn(Schedulers.single(), true)
+				.prefetch()
+				.publishOn(Schedulers.boundedElastic());
 
 		AtomicInteger count = new AtomicInteger();
 		StepVerifier.create(test)

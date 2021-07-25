@@ -31,20 +31,17 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable {
-
+final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 	final ParallelFlux<? extends T> source;
-
+	
 	final Scheduler scheduler;
 
 	final int prefetch;
 
 	final Supplier<Queue<T>> queueSupplier;
-
+	
 	ParallelRunOn(ParallelFlux<? extends T> parent,
-			Scheduler scheduler,
-			int prefetch,
-			Supplier<Queue<T>> queueSupplier) {
+			Scheduler scheduler, int prefetch, Supplier<Queue<T>> queueSupplier) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -63,7 +60,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable {
 
 		return null;
 	}
-
+	
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
@@ -84,10 +81,10 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable {
 				parents[i] =
 						new FluxPrefetch.PrefetchSubscriber<>(
 								new FluxPublishOn.PublishOnConditionalSubscriber<>(
-									(Fuseable.ConditionalSubscriber<T>) subscribers[i],
-									scheduler,
-									w,
-									true),
+										(Fuseable.ConditionalSubscriber<T>) subscribers[i],
+										scheduler,
+										w,
+										true),
 								prefetch,
 								prefetch,
 								queueSupplier,
@@ -96,14 +93,14 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable {
 			else {
 				parents[i] =
 						new FluxPrefetch.PrefetchSubscriber<>(
-							new FluxPublishOn.PublishOnSubscriber<>(subscribers[i],
-								scheduler,
-								w,
-								true),
-							prefetch,
-							prefetch,
-							queueSupplier,
-							FluxPrefetch.PrefetchMode.EAGER);
+								new FluxPublishOn.PublishOnSubscriber<>(subscribers[i],
+										scheduler,
+										w,
+										true),
+								prefetch,
+								prefetch,
+								queueSupplier,
+								FluxPrefetch.PrefetchMode.EAGER);
 			}
 		}
 

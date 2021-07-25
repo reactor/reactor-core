@@ -43,11 +43,11 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
 
 		return f.prefetch()
-				.publishOn(sharedGroup)
+		        .publishOn(sharedGroup)
 		        .parallel(2)
 		        .groups()
 		        .flatMap(stream -> stream.prefetch()
-		                                  .publishOn(asyncGroup)
+				                          .publishOn(asyncGroup)
 				                          .doOnNext(this::monitorThreadUse)
 				                          .scan((prev, next) -> next)
 				                          .map(integer -> -integer)

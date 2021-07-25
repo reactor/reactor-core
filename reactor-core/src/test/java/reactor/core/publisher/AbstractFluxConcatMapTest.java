@@ -700,15 +700,11 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 	@Test
 	public void errorModeContinueInternalErrorStopStrategyAsync() {
-		Flux<Integer> test = Flux.just(0, 1)
-		                         .hide()
-		                         .concatMap(f -> Flux.range(f, 1)
-		                                             .prefetch()
-		                                             .publishOn(Schedulers.parallel())
-		                                             .map(i -> 1 / i)
-		                                             .onErrorStop(),
-				                         implicitPrefetchValue())
-		                         .onErrorContinue(OnNextFailureStrategyTest::drop);
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.concatMap(f ->  Flux.range(f, 1).prefetch().publishOn(Schedulers.parallel()).map(i -> 1 / i).onErrorStop(), implicitPrefetchValue())
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 		            .expectNoFusionSupport()
@@ -738,13 +734,11 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 	@Test
 	public void errorModeContinueInternalErrorMonoAsync() {
-		Flux<Integer> test = Flux.just(0, 1)
-		                         .hide()
-		                         .concatMap(f -> Mono.just(f)
-		                                             .publishOn(Schedulers.parallel())
-		                                             .map(i -> 1 / i),
-				                         implicitPrefetchValue())
-		                         .onErrorContinue(OnNextFailureStrategyTest::drop);
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.concatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i), implicitPrefetchValue())
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 		            .expectNoFusionSupport()
