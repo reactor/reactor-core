@@ -67,9 +67,8 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 		if (!validate(subscribers)) {
 			return;
 		}
-		
+
 		int n = subscribers.length;
-		
 
 		CoreSubscriber<T>[] parents = new CoreSubscriber[n];
 
@@ -79,18 +78,32 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 			Worker w = scheduler.createWorker();
 
 			if (conditional) {
-				parents[i] = new FluxPublishOn.PublishOnConditionalSubscriber<>(
-						(Fuseable.ConditionalSubscriber<T>)subscribers[i],
-						scheduler, w, true,
-						prefetch, prefetch, queueSupplier);
+				parents[i] =
+						new FluxPrefetch.PrefetchSubscriber<>(
+								new FluxPublishOn.PublishOnConditionalSubscriber<>(
+										(Fuseable.ConditionalSubscriber<T>) subscribers[i],
+										scheduler,
+										w,
+										true),
+								prefetch,
+								prefetch,
+								queueSupplier,
+								FluxPrefetch.PrefetchMode.EAGER);
 			}
 			else {
-				parents[i] = new FluxPublishOn.PublishOnSubscriber<>(subscribers[i],
-						scheduler, w, true,
-						prefetch, prefetch, queueSupplier);
+				parents[i] =
+						new FluxPrefetch.PrefetchSubscriber<>(
+								new FluxPublishOn.PublishOnSubscriber<>(subscribers[i],
+										scheduler,
+										w,
+										true),
+								prefetch,
+								prefetch,
+								queueSupplier,
+								FluxPrefetch.PrefetchMode.EAGER);
 			}
 		}
-		
+
 		source.subscribe(parents);
 	}
 
