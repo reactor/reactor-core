@@ -7076,6 +7076,31 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				Queues.get(prefetch));
 	}
 
+	public final Flux<T> prefetch() {
+		return prefetch(Queues.SMALL_BUFFER_SIZE);
+	}
+
+	public final Flux<T> prefetch(boolean lazyMode) {
+		return prefetch(Queues.SMALL_BUFFER_SIZE, lazyMode);
+	}
+
+	public final Flux<T> prefetch(int prefetch) {
+		return prefetch(prefetch, false);
+	}
+
+	public final Flux<T> prefetch(int prefetch, int lowTide) {
+		return prefetch(prefetch, lowTide, false);
+	}
+
+	public final Flux<T> prefetch(int prefetch, boolean lazyMode) {
+		return prefetch(prefetch, prefetch, lazyMode);
+	}
+
+	public final Flux<T> prefetch(int prefetch, int lowTide, boolean lazyMode) {
+		FluxPrefetch.PrefetchMode mode = lazyMode ? FluxPrefetch.PrefetchMode.LAZY : FluxPrefetch.PrefetchMode.EAGER;
+		return onAssembly(new FluxPrefetch<>(this, prefetch, lowTide, Queues.get(prefetch), mode));
+	}
+
 	/**
 	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and
 	 * dispatches values to subscribers in a backpressure-aware manner. Prefetch will

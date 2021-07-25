@@ -98,6 +98,22 @@ public abstract class Operators {
 			}
 		}
 	}
+
+	public static <T> long addCapFromMin(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
+		long pr, r, u;
+		for (;;) {
+			pr = updater.get(instance);
+			r = pr & Long.MAX_VALUE;
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = addCap(r, toAdd);
+			if (updater.compareAndSet(instance, pr, u)) {
+				return pr;
+			}
+		}
+	}
+
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.
@@ -1114,7 +1130,7 @@ public abstract class Operators {
 			T value, String stepName){
 		return new ScalarSubscription<>(subscriber, value, stepName);
 	}
-	
+
 	/**
 	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
 	 * sequentially (serialized).
@@ -2284,7 +2300,7 @@ public abstract class Operators {
 	                    }
 	                } else if (mr != 0L && a != null) {
 	                    requestAmount = addCap(requestAmount, mr);
-	                    alreadyInRequestAmount += mr; 
+	                    alreadyInRequestAmount += mr;
 	                    requestTarget = a;
 	                }
 	            }
