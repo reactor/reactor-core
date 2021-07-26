@@ -118,7 +118,7 @@ import reactor.util.retry.Retry;
 public abstract class Flux<T> implements CorePublisher<T> {
 
 //	 ==============================================================================================================
-//	 Static Generators
+//	 Static Operators
 //	 ==============================================================================================================
 
 	/**
@@ -2491,6 +2491,58 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			                    }
 		                    }));
 	}
+
+	//	 ==============================================================================================================
+	//	 Operator Groups
+	//	 ==============================================================================================================
+
+	static void test() {
+		Flux<List<Integer>> firstBuffering = Flux.just(1)
+			.op(ApiGroup::bufferOf).fixedSize(3);
+
+		Flux<List<List<Integer>>> secondBuffering = firstBuffering
+			.bufferOf().fixedSize(3);
+
+		Flux.just(1)
+			.sideEffects()
+			.log()
+			.doOnNext(v -> {})
+			.doOnComplete(() -> {})
+			.apply()
+			.map(Function.identity());
+
+		Flux.just(1)
+			.op(ApiGroup::sideEffects)
+			.log()
+			.doOnNext(v -> {})
+			.doOnComplete(() -> {})
+			.apply()
+			.map(Function.identity());
+	}
+
+	public <G extends ApiGroup> G op(Function<Flux<T>, G> groupFactory) {
+		/*
+		Implementation notes: we cannot avoid allocation, since the alternative would involve higher order functions
+		generated from a static factory class, which would create a new lambda on each call.
+		This alternative is also more clunky, as it doesn't really allow having "standard" groups like #buffers().
+		Thus, creating a new group instance per source Flux instance is deemed acceptable.
+		Hopefully, the method calls are small enough that they can be inlined by the JVM if a lot of grouped operators
+		are used in a chain.
+		 */
+		return groupFactory.apply(this);
+	}
+
+	public ApiGroup.Buffers<T> bufferOf() {
+		return new ApiGroup.Buffers<>(this);
+	}
+
+	public ApiGroup.FluxSideEffects<T> sideEffects() {
+		return new ApiGroup.FluxSideEffects<>(this);
+	}
+
+	//	 ==============================================================================================================
+	//	 Instance Operators
+	//	 ==============================================================================================================
 
 	/**
 	 *
