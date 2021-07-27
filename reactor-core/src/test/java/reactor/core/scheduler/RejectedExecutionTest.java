@@ -112,6 +112,7 @@ public class RejectedExecutionTest {
 	@Test
 	public void publishOn() throws Exception {
 		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
+		                      .prefetch()
 		                      .publishOn(scheduler)
 		                      .doOnNext(i -> onNext(i))
 		                      .doOnError(e -> onError(e));
@@ -122,6 +123,7 @@ public class RejectedExecutionTest {
 	@Test
 	public void publishOnFilter() throws Exception {
 		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
+		                      .prefetch()
 		                      .publishOn(scheduler)
 		                      .filter(t -> true)
 		                      .doOnNext(i -> onNext(i))
