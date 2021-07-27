@@ -3417,7 +3417,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a user-defined container,
 	 * by applying a collector {@link BiConsumer} taking the container and each element.
-	 * The collected result will be emitted when this sequence completes.
+	 * The collected result will be emitted when this sequence completes, emitting the
+	 * empty container if the sequence was empty.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collect.svg" alt="">
@@ -3441,7 +3442,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a container,
 	 * by applying a Java 8 Stream API {@link Collector}
-	 * The collected result will be emitted when this sequence completes.
+	 * The collected result will be emitted when this sequence completes, emitting
+	 * the empty container if the sequence was empty.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectWithCollector.svg" alt="">
@@ -3466,7 +3468,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a {@link List} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link List} if the sequence was empty.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectList.svg" alt="">
@@ -3514,7 +3517,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a hashed {@link Map} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link Map} if the sequence was empty.
 	 * The key is extracted from each element by applying the {@code keyExtractor}
 	 * {@link Function}. In case several elements map to the same key, the associated value
 	 * will be the most recently emitted element.
@@ -3537,7 +3541,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a hashed {@link Map} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link Map} if the sequence was empty.
 	 * The key is extracted from each element by applying the {@code keyExtractor}
 	 * {@link Function}, and the value is extracted by the {@code valueExtractor} Function.
 	 * In case several elements map to the same key, the associated value will be derived
@@ -3565,7 +3570,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a user-defined {@link Map} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link Map} if the sequence was empty.
 	 * The key is extracted from each element by applying the {@code keyExtractor}
 	 * {@link Function}, and the value is extracted by the {@code valueExtractor} Function.
 	 * In case several elements map to the same key, the associated value will be derived
@@ -3599,7 +3605,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a {@link Map multimap} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link Map multimap} if the sequence was empty.
 	 * The key is extracted from each element by applying the {@code keyExtractor}
 	 * {@link Function}, and every element mapping to the same key is stored in the {@link List}
 	 * associated to said key.
@@ -3621,7 +3628,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a {@link Map multimap} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link Map multimap} if the sequence was empty.
 	 * The key is extracted from each element by applying the {@code keyExtractor}
 	 * {@link Function}, and every element mapping to the same key is converted by the
 	 * {@code valueExtractor} Function to a value stored in the {@link List} associated to
@@ -3648,7 +3656,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a user-defined {@link Map multimap} that is
-	 * emitted by the resulting {@link Mono} when this sequence completes.
+	 * emitted by the resulting {@link Mono} when this sequence completes, emitting the
+	 * empty {@link Map multimap} if the sequence was empty.
 	 * The key is extracted from each element by applying the {@code keyExtractor}
 	 * {@link Function}, and every element mapping to the same key is converted by the
 	 * {@code valueExtractor} Function to a value stored in the {@link Collection} associated to
@@ -3688,7 +3697,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Collect all elements emitted by this {@link Flux} until this sequence completes,
 	 * and then sort them in natural order into a {@link List} that is emitted by the
-	 * resulting {@link Mono}.
+	 * resulting {@link Mono}. If the sequence was empty, empty {@link List} will be emitted.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedList.svg" alt="">
@@ -3705,7 +3714,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Collect all elements emitted by this {@link Flux} until this sequence completes,
 	 * and then sort them using a {@link Comparator} into a {@link List} that is emitted
-	 * by the resulting {@link Mono}.
+	 * by the resulting {@link Mono}. If the sequence was empty, empty {@link List} will be emitted.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedListWithComparator.svg" alt="">
