@@ -2496,48 +2496,39 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	//	 Operator Groups
 	//	 ==============================================================================================================
 
-	static void test() {
-		Flux<List<Integer>> firstBuffering = Flux.just(1)
-			.op(ApiGroup::bufferOf).fixedSize(3);
+	//see examples in GuideTests
 
-		Flux<List<List<Integer>>> secondBuffering = firstBuffering
-			.bufferOf().fixedSize(3);
-
-		Flux.just(1)
-			.sideEffects()
-			.log()
-			.doOnNext(v -> {})
-			.doOnComplete(() -> {})
-			.apply()
-			.map(Function.identity());
-
-		Flux.just(1)
-			.op(ApiGroup::sideEffects)
-			.log()
-			.doOnNext(v -> {})
-			.doOnComplete(() -> {})
-			.apply()
-			.map(Function.identity());
+	public final Flux<List<T>> buffers(Function<ApiGroup.FluxBuffersV1<T>, Flux<List<T>>> bufferSpec) {
+		ApiGroup.FluxBuffersV1<T> b = new ApiGroup.FluxBuffersV1<>(this);
+		return bufferSpec.apply(b);
 	}
 
-	public <G extends ApiGroup> G op(Function<Flux<T>, G> groupFactory) {
-		/*
-		Implementation notes: we cannot avoid allocation, since the alternative would involve higher order functions
-		generated from a static factory class, which would create a new lambda on each call.
-		This alternative is also more clunky, as it doesn't really allow having "standard" groups like #buffers().
-		Thus, creating a new group instance per source Flux instance is deemed acceptable.
-		Hopefully, the method calls are small enough that they can be inlined by the JVM if a lot of grouped operators
-		are used in a chain.
-		 */
-		return groupFactory.apply(this);
+	public final ApiGroup.FluxBuffersV1<T> buffers_v1() {
+		return new ApiGroup.FluxBuffersV1<>(this);
 	}
 
-	public ApiGroup.Buffers<T> bufferOf() {
-		return new ApiGroup.Buffers<>(this);
+	public final ApiGroup.FluxBuffersV2<T> buffers_v2() {
+		return new ApiGroup.FluxBuffersV2<T>(this);
 	}
 
-	public ApiGroup.FluxSideEffects<T> sideEffects() {
-		return new ApiGroup.FluxSideEffects<>(this);
+	public final <R> Flux<R> buffers_v3(Function<ApiGroup.FluxBuffersV2<T>, ApiGroup.FluxBuffersV2<R>> bufferSpec) {
+		ApiGroup.FluxBuffersV2<T> initialSpec = new ApiGroup.FluxBuffersV2<T>(this);
+		ApiGroup.FluxBuffersV2<R> endSpec = bufferSpec.apply(initialSpec);
+		return endSpec.generateFlux();
+	}
+
+	public final ApiGroup.FluxSideEffectsV1<T> sideEffects_v1() {
+		return new ApiGroup.FluxSideEffectsV1<>(this);
+	}
+
+	public ApiGroup.FluxSideEffectsV2<T> sideEffects_v2() {
+		return new ApiGroup.FluxSideEffectsV2<>(this);
+	}
+
+	public final Flux<T> sideEffects_v3(Consumer<ApiGroup.FluxSideEffectsV2<T>> sideEffectSpec) {
+		ApiGroup.FluxSideEffectsV2<T> se = new ApiGroup.FluxSideEffectsV2<T>(this);
+		sideEffectSpec.accept(se);
+		return se.endSideEffects();
 	}
 
 	//	 ==============================================================================================================

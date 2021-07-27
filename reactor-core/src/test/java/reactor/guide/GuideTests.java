@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,6 +48,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.publisher.ApiGroup;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
@@ -1208,5 +1210,130 @@ Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
 StepVerifier.create(put)
             .expectNext("PUT <Walter> sent to www.example.com")
             .verifyComplete();
+	}
+
+	@Test
+	void apiGroupBuffers() {
+		/*
+			V1: one operator == one call to the api group
+
+			PROS:
+			 - simplest to use
+			 - no juggling with generics: 1 call == 1 operator so we know the end return type when we get back to Flux
+			 - no need for macro fusion friendliness for this category of operators
+
+			CONS:
+			 - one extra allocation per operator
+			 - if formatter introduces newline before each dot, reads less like a typical reactive chain
+		 */
+		Flux<List<List<Integer>>> b1 = Flux.just(1)
+			.buffers_v1().fixedSize(3)
+			.buffers_v1().sizeAndTimeout(3, Duration.ofMillis(500));
+
+		/*
+			V2: allow to set up multiple operators in a row then explicitly switch back to Flux API
+
+			PROS:
+			 - less allocations: allows to reuse api group instance to avoid 1 extra allocation per operator
+
+			CONS:
+			 - clunky termination of the api group needed to switch back to top level Flux API
+			 - this is a pattern used nowhere else
+			 - no clear benefit in enabling macro-fusion scenarios since these operators are not easily fuseable
+		 */
+		Flux<List<List<Integer>>> b2 = Flux.just(1)
+			.buffers_v2()
+			.fixedSize(3)
+			.sizeAndTimeout(3, Duration.ofMillis(500))
+			.generateFlux();
+
+		/*
+			V3: allow to set up multiple operators in one api group call, materialized as a Consumer
+
+			PROS:
+			 - less allocations: allows to reuse api group instance to avoid 1 extra allocation per operator
+			 - no need to look for a `endSideEffects()` method / remember to switch back to Flux
+			 - this is an established pattern, notably in reactor-netty
+
+			CONS:
+			 - no benefit in terms of macro-fusion (these operators are not easily fused)
+			 - no benefit in terms of logical grouping vs transform (less likely that somebody would want
+			 	to provide a "standard" consumer that only deals with buffering)
+		 */
+		Flux<List<List<Integer>>> b3 = Flux.just(1)
+			.buffers_v3(it -> it
+				.fixedSize(3)
+				.sizeAndTimeout(3, Duration.ofMillis(500))
+			);
+	}
+
+	@Test
+	void apiGroupSideEffects() {
+		/*
+			V1: one operator == one call to the api group
+
+			PROS:
+			 - simplest to use
+
+			CONS:
+			 - one extra allocation per operator
+			 - if formatter introduces newline before each dot, reads less like a typical reactive chain
+			 - doesn't facilitate macro-fusion (although it is possible)
+		 */
+		Flux<Integer> se1 = Flux.just(1)
+			.sideEffects_v1().log()
+			.sideEffects_v1().doOnComplete(() -> {})
+			.sideEffects_v1().doOnNext(v -> {});
+
+		/*
+			V2: allow to set up multiple operators in a row then explicitly switch back to Flux API
+
+			PROS:
+			 - less allocations: allows to reuse api group instance to avoid 1 extra allocation per operator
+			 - can facilitate advanced macro-fusion (since we have boundaries and can assume that none of these intermediate
+			   steps will be used as independent Publisher)
+
+			CONS:
+			 - clunky termination of the api group needed to switch back to top level Flux API
+			 - this is a pattern used nowhere else
+		 */
+		Flux<Integer> se2 = Flux.just(1)
+			.sideEffects_v2()
+			.log()
+			.doOnComplete(() -> {})
+			.doOnNext(v -> {})
+			.endSideEffects();
+
+		/*
+			V3: allow to set up multiple operators in one api group call, materialized as a Consumer
+
+			PROS:
+			 - less allocations: allows to reuse api group instance to avoid 1 extra allocation per operator
+			 - no need to look for a `endSideEffects()` method / remember to switch back to Flux
+			 - this is an established pattern, notably in reactor-netty
+			 - can facilitate advanced macro-fusion (since we have boundaries and can assume that none of these intermediate
+			   steps will be used as independent Publisher)
+			 - "standard" consumers (aka combinations of side effects) can be externalized
+
+			CONS:
+			 - arguably `it -> it` is the ugly part
+		 */
+		Flux<Integer> se3 = Flux.just(1)
+			.sideEffects_v3(it -> it
+				.log()
+				.doOnComplete(() -> {})
+				.doOnNext(v -> {})
+			);
+		//the consumer can be externalized, or it can also be a method reference:
+		Consumer<ApiGroup.FluxSideEffectsV2<Integer>> logAndReactOnComplete = it ->
+			it.log().doOnComplete(() -> System.out.println("logged and reacted onComplete"));
+		Flux.just(1)
+			.sideEffects_v3(logAndReactOnComplete);
+		Flux.just(1)
+			.sideEffects_v3(this::logAndReactOnComplete);
+	}
+
+	<T> void logAndReactOnComplete(ApiGroup.FluxSideEffectsV2<T> it) {
+		it.log().doOnComplete(() -> System.out.println("logged and reacted onComplete"));
 	}
 }

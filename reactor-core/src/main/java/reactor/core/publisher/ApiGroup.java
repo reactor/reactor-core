@@ -16,80 +16,100 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import org.reactivestreams.Publisher;
 
 /**
  * @author Simon Baslé
  */
 public interface ApiGroup {
 
-	/**
-	 * An {@link ApiGroup} that is explicitly <strong>combinable</strong>, allowing to set up
-	 * several operators in a row as long as all these operators maintain the original {@link Flux}
-	 * or {@link Mono} type.
-	 * <p>
-	 * In other words, instead of immediately returning a {@link Flux} or {@link Mono}, its methods
-	 * add new operators to the chain until {@link #apply()} is invoked (at which point
-	 * the outermost operator instance is returned).
-	 *
-	 * @param <T> the type of data
-	 * @param <P>
-	 */
-	interface Combinable<T, P extends Publisher<T>> extends ApiGroup {
-		P apply();
-	}
-
-	static <T> Buffers<T> bufferOf(Flux<T> source) {
-		return new Buffers<>(source);
-	}
-
-	static <T> FluxSideEffects<T> sideEffects(Flux<T> source) {
-		return new FluxSideEffects<>(source);
-	}
-
-	final class Buffers<T> implements ApiGroup {
+	final class FluxBuffersV1<T> implements ApiGroup {
 
 		final Flux<T> source;
 
-		public Buffers(Flux<T> source) {
+		public FluxBuffersV1(Flux<T> source) {
 			this.source = source;
 		}
 
 		public Flux<List<T>> fixedSize(int size) {
-			return source.onAssembly(new FluxBuffer<>(this.source, size, ArrayList::new));
+			return Flux.onAssembly(new FluxBuffer<>(this.source, size, ArrayList::new));
+		}
+
+		public Flux<List<T>> sizeAndTimeout(int maxSize, Duration timeout) {
+			return this.source.bufferTimeout(maxSize, timeout);
 		}
 	}
 
-	final class FluxSideEffects<T> implements ApiGroup.Combinable<T, Flux<T>> {
+	final class FluxBuffersV2<T> {
+
+		final Flux<T> source;
+
+		FluxBuffersV2(Flux<T> source) {
+			this.source = source;
+		}
+
+		public FluxBuffersV2<List<T>> fixedSize(int size) {
+			return new FluxBuffersV2<>(this.source.buffer(size));
+		}
+
+		public FluxBuffersV2<List<T>> sizeAndTimeout(int maxSize, Duration timeout) {
+			return new FluxBuffersV2<>(this.source.bufferTimeout(maxSize, timeout));
+		}
+
+		public Flux<T> generateFlux() {
+			return source;
+		}
+	}
+
+	final class FluxSideEffectsV2<T> {
 
 		Flux<T> built;
 
-		public FluxSideEffects(Flux<T> source) {
+		FluxSideEffectsV2(Flux<T> source) {
 			this.built = source;
 		}
 
-		FluxSideEffects<T> log() {
+		public FluxSideEffectsV2<T> log() {
 			this.built = this.built.log();
 			return this;
 		}
 
-		FluxSideEffects<T> doOnNext(Consumer<? super T> nextHandler) {
+		public FluxSideEffectsV2<T> doOnNext(Consumer<? super T> nextHandler) {
 			this.built = this.built.doOnNext(nextHandler);
 			return this;
 		}
 
-		FluxSideEffects<T> doOnComplete(Runnable completeHandler) {
+		public FluxSideEffectsV2<T> doOnComplete(Runnable completeHandler) {
 			this.built = this.built.doOnComplete(completeHandler);
 			return this;
 		}
 
-		@Override
-		public Flux<T> apply() {
+		public Flux<T> endSideEffects() {
 			return this.built;
+		}
+	}
+
+	public final class FluxSideEffectsV1<T> implements ApiGroup {
+
+		final Flux<T> source;
+
+		FluxSideEffectsV1(Flux<T> source) {
+			this.source = source;
+		}
+
+		public Flux<T> log() {
+			return source.log();
+		}
+
+		public Flux<T> doOnNext(Consumer<? super T> nextHandler) {
+			return source.doOnNext(nextHandler);
+		}
+
+		public Flux<T> doOnComplete(Runnable completeHandler) {
+			return source.doOnComplete(completeHandler);
 		}
 	}
 }
