@@ -576,6 +576,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.RUN_ON) return worker;
@@ -1107,6 +1108,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.RUN_ON) return worker;
