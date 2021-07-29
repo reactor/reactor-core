@@ -308,7 +308,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			long e = produced;
 			for (; ; ) {
-				long r = requested;
+				long r = requested & Long.MAX_VALUE;
 
 				while (e != r) {
 					T v;
@@ -457,7 +457,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			long e = produced;
 			for (; ; ) {
-				long r = this.requested;
+				long r = this.requested & Long.MAX_VALUE;
 
 				while (e != r) {
 					boolean d = done;
@@ -572,7 +572,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested & Long.MAX_VALUE;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.TERMINATED) return done;
@@ -878,7 +878,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			long e = produced;
 			for (; ; ) {
-				long r = requested;
+				long r = requested & Long.MAX_VALUE;
 
 				while (e != r) {
 					T v;
@@ -1037,7 +1037,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			long e = produced;
 			for (; ; ) {
-				long r = requested;
+				long r = requested & Long.MAX_VALUE;
 
 				while (e != r) {
 					boolean d = done;
@@ -1103,7 +1103,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested & Long.MAX_VALUE;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.TERMINATED) return done;
