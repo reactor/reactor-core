@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.Fuseable;
@@ -28,8 +29,10 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxPrefetchTest {
+
 	private static final int sourceSize = 1000;
 
 	private static final Object[] nonFuseableSource   =
@@ -53,6 +56,14 @@ public class FluxPrefetchTest {
 
 	private static Stream<Object[]> sources() {
 		return Stream.of(nonFuseableSource, syncFuseableSource, asyncFuseableSource);
+	}
+
+	@Test
+	public void failPrefetch() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.range(1, 10)
+			    .prefetch(-1);
+		});
 	}
 
 	// Fusions Tests
@@ -123,7 +134,7 @@ public class FluxPrefetchTest {
 		StepVerifier.Step<Integer> step;
 		if (requestedMode != Fuseable.NONE) {
 			step = firstStep.expectFusion(requestedMode,
-					(requestedMode & Fuseable.SYNC) != 0 ? Fuseable.SYNC : Fuseable.ASYNC)
+					                (requestedMode & Fuseable.SYNC) != 0 ? Fuseable.SYNC : Fuseable.ASYNC)
 
 			                .thenAwait()
 			                .consumeSubscriptionWith(s -> assertThat(((FluxPrefetch.PrefetchSubscriber<?>) s).sourceMode).isEqualTo(
