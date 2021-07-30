@@ -240,6 +240,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 				}
 				g.onComplete();
 				newWindowDeferred();
+				s.request(1);
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
 				g.onComplete();
