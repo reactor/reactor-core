@@ -1606,7 +1606,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		/**
-		 * Check if state has subscribed flag indicating subscription reception
+		 * Check if state has {@link #CONNECTED_FLAG} flag indicating subscription reception
 		 *
 		 * @param state to check flag presence
 		 * @return true if flag is set
@@ -1616,7 +1616,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		/**
-		 * Check if state has subscribed flag indicating subscription reception
+		 * Check if state has {@link #SUBSCRIBED_FLAG} flag indicating subscription reception
 		 *
 		 * @param state to check flag presence
 		 * @return true if flag is set
@@ -1636,7 +1636,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		/**
-		 * Check if state has disposed flag
+		 * Check if state has {@link #DISPOSED_FLAG} flag
 		 *
 		 * @param state to check flag presence
 		 * @return true if flag is set
