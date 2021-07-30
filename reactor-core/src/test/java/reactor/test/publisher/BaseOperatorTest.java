@@ -42,6 +42,8 @@ import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -53,6 +55,8 @@ import static reactor.core.Fuseable.*;
  * @author Stephane Maldini
  */
 public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, PO extends Publisher<? extends O>> {
+
+	static final Logger LOGGER = Loggers.getLogger(BaseOperatorTest.class);
 
 	OperatorScenario<I, PI, O, PO> defaultScenario;
 
@@ -1104,8 +1108,8 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	private DynamicTest toDynamicTest(OperatorScenario<I, PI, O, PO> scenario, Executable runnable) {
 		return DynamicTest.dynamicTest(scenario.description(), () -> {
-			if (scenario.stack != null) {
-				System.out.println("\tat " + scenario.stack.getStackTrace()[2]);
+			if (LOGGER.isTraceEnabled() && scenario.stack != null) {
+				LOGGER.trace("executing anonymous scenario at {} ", scenario.stack.getStackTrace()[2]);
 			}
 			runnable.execute();
 		});

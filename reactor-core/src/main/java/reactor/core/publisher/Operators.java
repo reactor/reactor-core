@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Spliterator;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -440,7 +442,7 @@ public abstract class Operators {
 				hook.accept(element);
 			}
 			catch (Throwable t) {
-				log.warn("Error in discard hook", t);
+				DISCARD_LOGGER.warn("Error in discard hook", t);
 			}
 		}
 	}
@@ -489,12 +491,12 @@ public abstract class Operators {
 								       hook.accept(elementToDiscard);
 							       }
 							       catch (Throwable t) {
-								       log.warn("Error while discarding item extracted from a queue element, continuing with next item", t);
+								       DISCARD_LOGGER.trace("Error while discarding item extracted from a queue element, continuing with next item", t);
 							       }
 						       });
 					}
 					catch (Throwable t) {
-						log.warn("Error while extracting items to discard from queue element, continuing with next queue element", t);
+						DISCARD_LOGGER.trace("Error while extracting items to discard from queue element, continuing with next queue element", t);
 					}
 				}
 				else {
@@ -502,13 +504,13 @@ public abstract class Operators {
 						hook.accept(toDiscard);
 					}
 					catch (Throwable t) {
-						log.warn("Error while discarding a queue element, continuing with next queue element", t);
+						DISCARD_LOGGER.trace("Error while discarding a queue element, continuing with next queue element", t);
 					}
 				}
 			}
 		}
 		catch (Throwable t) {
-			log.warn("Cannot further apply discard hook while discarding and clearing a queue", t);
+			DISCARD_LOGGER.warn("Cannot further apply discard hook while discarding and clearing a queue", t);
 		}
 	}
 
@@ -534,12 +536,12 @@ public abstract class Operators {
 				        		hook.accept(v);
 					        }
 				        	catch (Throwable t) {
-				        		log.warn("Error while discarding a stream element, continuing with next element", t);
+								DISCARD_LOGGER.trace("Error while discarding a stream element, continuing with next element", t);
 					        }
 				        });
 			}
 			catch (Throwable t) {
-				log.warn("Error while discarding stream, stopping", t);
+				DISCARD_LOGGER.warn("Error while discarding stream, stopping", t);
 			}
 		}
 	}
@@ -569,13 +571,13 @@ public abstract class Operators {
 							hook.accept(o);
 						}
 						catch (Throwable t) {
-							log.warn("Error while discarding element from a Collection, continuing with next element", t);
+							DISCARD_LOGGER.trace("Error while discarding element from a Collection, continuing with next element", t);
 						}
 					}
 				}
 			}
 			catch (Throwable t) {
-				log.warn("Error while discarding collection, stopping", t);
+				DISCARD_LOGGER.warn("Error while discarding collection, stopping", t);
 			}
 		}
 	}
@@ -606,13 +608,13 @@ public abstract class Operators {
 							hook.accept(o);
 						}
 						catch (Throwable t) {
-							log.warn("Error while discarding element from an Iterator, continuing with next element", t);
+							DISCARD_LOGGER.trace("Error while discarding element from an Iterator, continuing with next element", t);
 						}
 					}
 				});
 			}
 			catch (Throwable t) {
-				log.warn("Error while discarding Iterator, stopping", t);
+				DISCARD_LOGGER.warn("Error while discarding Iterator, stopping", t);
 			}
 		}
 	}
@@ -2817,4 +2819,5 @@ public abstract class Operators {
 
 
 	final static Logger log = Loggers.getLogger(Operators.class);
+	final static Logger DISCARD_LOGGER = Loggers.getLogger(Operators.class.getName()+"-discard");
 }
