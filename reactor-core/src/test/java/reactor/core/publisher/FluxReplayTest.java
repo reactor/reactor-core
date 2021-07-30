@@ -65,13 +65,11 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	static final Logger log = Loggers.getLogger(FluxReplayTest.class);
 
 	@Test
-	void test() {
+	void checkTimeCacheResubscribesAndCompletesAfterRepetitions() {
 		VirtualTimeScheduler.reset();
 		Flux<Integer> flow = getSource2()
 				.doOnSubscribe(__ -> log.info("Loading source..."))
-				.log("cache")
-				.cache(Duration.ofSeconds(1))
-				.log("actual")
+				.cache(Duration.ofMillis(200))
 				.doOnSubscribe(__ -> log.info("Pooling cycle starting..."))
 				.flatMap(this::process, 2)
 				.repeat(1000);
@@ -88,12 +86,11 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	private Mono<Integer> process(int channel) {
 		return Mono.just(channel)
 		           .doOnNext(rec -> log.info("Processing: {}", rec))
-		           .delayElement(Duration.ofMillis(50))
-				   .log("Processing: " + channel);
+		           .delayElement(Duration.ofMillis(5));
 	}
 
 	@Test
-	void test2() throws InterruptedException {
+	void checkTimeCacheResubscribesAndCompletesAfterRepetitions2() {
 		//vtsStop(); //only important because I added the test in FluxReplayTest.java
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		AtomicInteger sourceLoad = new AtomicInteger();
@@ -366,12 +363,11 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxHistoryTTLFused() {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
-		                                         .log()
 		                                         .replay(2, Duration.ofMillis(2000))
 		                                         .autoConnect()
 		                                         .elapsed();
 
-		StepVerifier.create(source.log("1"))
+		StepVerifier.create(source)
 		            .expectFusion(Fuseable.ANY)
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
@@ -379,7 +375,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
 		            .verifyComplete();
 
-		StepVerifier.create(source.log("2"))
+		StepVerifier.create(source)
 		            .expectFusion(Fuseable.ANY)
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
@@ -538,7 +534,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
     public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
-        FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);
+        FluxReplay.ReplaySubscriber<Integer> parent =
+		        new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main, 10);
         FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual, parent);
         parent.add(test);
         parent.buffer.replay(test);
@@ -563,7 +560,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanSubscriber() {
 		FluxReplay<Integer> parent = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
-        FluxReplay.ReplaySubscriber<Integer> test = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), parent);
+        FluxReplay.ReplaySubscriber<Integer> test =
+		        new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), parent, 10);
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
@@ -616,9 +614,10 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void ifSubscribeBeforeConnectThenTrackFurtherRequests() {
-		ConnectableFlux<Long> connectableFlux = Flux.just(1L, 2L, 3L, 4L).log().replay(2);
+		ConnectableFlux<Long> connectableFlux = Flux.just(1L, 2L, 3L, 4L)
+		                                            .replay(2);
 
-		StepVerifier.create(connectableFlux.log("1"), 1)
+		StepVerifier.create(connectableFlux, 1)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
 		            .then(connectableFlux::connect)

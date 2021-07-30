@@ -141,18 +141,6 @@ class SinksTest {
 		}
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemanticsSize0() {
-			final int historySize = 0;
-			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
-
-			return Stream.of(
-					expectMulticast(supplier, Integer.MAX_VALUE),
-					expectReplay(supplier, historySize),
-					expectBufferingBeforeFirstSubscriber(supplier, historySize)
-			);
-		}
-
-		@TestFactory
 		Stream<DynamicContainer> checkSemanticsSize100() {
 			final int historySize = 100;
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
