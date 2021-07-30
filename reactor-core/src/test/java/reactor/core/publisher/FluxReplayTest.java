@@ -447,9 +447,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
 
 		ConnectableFlux<Integer> replay =
-				Flux.range(1, 5)
+				Flux.range(1, 11)
 				    .doOnRequest(requests::add)
-				    .replay(3);
+				    .replay(8);
 
 		assertThat(requests).isEmpty();
 
@@ -457,7 +457,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(); //unbounded
 		replay.connect();
 
-		assertThat(requests).containsExactly(3L, 3L);
+		assertThat(requests).containsExactly(8L, 6L);
 	}
 
 	@Test
@@ -466,9 +466,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
 
 		ConnectableFlux<Integer> replay =
-				Flux.range(1, 5)
+				Flux.range(1, 11)
 				    .doOnRequest(requests::add)
-				    .replay(3);
+				    .replay(8);
 
 		assertThat(requests).isEmpty();
 
@@ -476,7 +476,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(); //unbounded
 		replay.connect();
 
-		assertThat(requests).containsExactly(3L, 3L);
+		assertThat(requests).containsExactly(8L, 6L);
 	}
 
 	@Test
@@ -485,9 +485,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
 
 		ConnectableFlux<Integer> replay =
-				Flux.range(1, 5)
+				Flux.range(1, 11)
 				    .doOnRequest(requests::add)
-				    .replay(3);
+				    .replay(8);
 
 		assertThat(requests).isEmpty();
 
@@ -497,8 +497,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		replay.subscribe(ts); //unbounded
 
-		assertThat(requests).containsExactly(3L, 3L);
-		ts.assertValueCount(3); //despite unbounded, as it was late it only sees the replay capacity
+		assertThat(requests).containsExactly(8L, 6L);
+		ts.assertValueCount(8); //despite unbounded, as it was late it only sees the replay capacity
 	}
 
 	@Test
