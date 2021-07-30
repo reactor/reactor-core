@@ -1606,7 +1606,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		/**
-		 * Check if state has {@link #CONNECTED_FLAG} flag indicating subscription reception
+		 * Check if state has {@link #CONNECTED_FLAG} flag indicating that the
+		 * {@link #connect(Consumer)} method was called and we have already connected
+		 * to the upstream
 		 *
 		 * @param state to check flag presence
 		 * @return true if flag is set
@@ -1616,7 +1618,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		/**
-		 * Check if state has {@link #SUBSCRIBED_FLAG} flag indicating subscription reception
+		 * Check if state has {@link #SUBSCRIBED_FLAG} flag indicating subscription
+		 * reception from the upstream
 		 *
 		 * @param state to check flag presence
 		 * @return true if flag is set
