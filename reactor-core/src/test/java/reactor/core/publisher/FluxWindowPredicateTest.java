@@ -32,12 +32,14 @@ import java.util.logging.Level;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -54,6 +56,25 @@ import static reactor.core.publisher.SignalType.*;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
+
+	//https://github.com/reactor/reactor-core/issues/2744
+	@Test
+	void windowUntilCutAfterReplenishesWhenBackpressuredAsync() {
+		AtomicInteger emittedCount = new AtomicInteger();
+		AtomicInteger producedByWindowsCount = new AtomicInteger();
+		Flux.range(1, 20)
+			.doOnNext(ignore -> emittedCount.incrementAndGet())
+			.windowUntil(i -> i % 3 == 0, false, 2)
+			.publishOn(Schedulers.newSingle("thread-2"))
+			.concatMap(window -> window.doOnNext(i -> producedByWindowsCount.incrementAndGet()))
+			.as(StepVerifier::create)
+			.expectNextCount(20)
+			.expectComplete()
+			.verify(Duration.ofSeconds(2));
+
+		assertThat(emittedCount).as("emitted total").hasValue(20);
+		assertThat(producedByWindowsCount).as("produced by published windows").hasValue(20);
+	}
 
 	//see https://github.com/reactor/reactor-core/issues/1452
 	@Test
@@ -923,7 +944,7 @@ public class FluxWindowPredicateTest extends
 		            .thenCancel()
 		            .verify();
 
-		assertThat(req).hasValue(8 + prefetch);
+	assertThat(req).hasValue(8 + prefetch + 2); //TODO investigate why not just (1) extra
 	}
 
 	@Test
