@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -636,20 +638,20 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void ifNoSubscriptionBeforeConnectThenUnbounded() {
-		AtomicLong totalRequested = new AtomicLong();
-		ConnectableFlux<Integer> connectable = Flux.range(1, 10)
-		                                           .doOnRequest(totalRequested::addAndGet)
-		                                           .replay(2);
+	public void ifNoSubscriptionBeforeConnectThenPrefetches() {
+		Queue<Long> totalRequested = new ArrayBlockingQueue<>(10);
+		ConnectableFlux<Integer> connectable = Flux.range(1, 24)
+		                                           .doOnRequest(totalRequested::offer)
+		                                           .replay(8);
 
 		connectable.connect();
 
 		StepVerifier.create(connectable)
-		            .expectNext(9, 10)
+		            .expectNext(17, 18, 19, 20, 21, 22, 23, 24)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(10));
 
-		assertThat(totalRequested).hasValue(12L);
+		assertThat(totalRequested).containsExactly(8L, 6L, 6L, 6L, 6L);
 	}
 
 	private static final class TwoRequestsSubscriber extends BaseSubscriber<Integer> {
