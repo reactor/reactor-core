@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +28,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 @Tag("slow")
-public class MonoCollectListTest {
+class MonoCollectListTest {
 
 	static final Logger LOGGER = Loggers.getLogger(MonoCollectListTest.class);
 
@@ -227,7 +227,6 @@ public class MonoCollectListTest {
 			AtomicBoolean ab = (AtomicBoolean) o;
 			if (ab.getAndSet(true)) {
 				doubleDiscardCounter.incrementAndGet();
-				throw new RuntimeException("test");
 			}
 		});
 		for (int i = 0; i < 100_000; i++) {
@@ -246,7 +245,7 @@ public class MonoCollectListTest {
 			}
 			assertThat(extraneous).as("released %d", i).isTrue();
 		}
-		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
+		LOGGER.info("{} discarded twice or more in discardCancelNextRace", doubleDiscardCounter.get());
 	}
 
 	@Test
@@ -257,7 +256,6 @@ public class MonoCollectListTest {
 			AtomicBoolean ab = (AtomicBoolean) o;
 			if (ab.getAndSet(true)) {
 				doubleDiscardCounter.incrementAndGet();
-				throw new RuntimeException("test");
 			}
 		});
 		for (int i = 0; i < 100_000; i++) {
@@ -274,7 +272,7 @@ public class MonoCollectListTest {
 				assertThat(resource).as("not completed and released %d", i).isTrue();
 			}
 		}
-		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
+		LOGGER.info("{} discarded twice or more in discardCancelCompleteRace", doubleDiscardCounter.get());
 	}
 
 	@Test
