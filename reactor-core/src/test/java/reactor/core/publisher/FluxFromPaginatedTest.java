@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -119,7 +120,8 @@ class FluxFromPaginatedTest {
 
 		Flux<String> fluxPage = Flux.fromPaginated(
 			"A",
-			pid -> Page.clientFetchPage(pid)
+			pid -> "A".equals(pid) ? Page.clientFetchPage(pid) :
+				Page.clientFetchPage(pid)
 				.doOnSubscribe(s -> pageSub.incrementAndGet())
 				.doOnRequest(r -> pageReq.incrementAndGet()),
 			Page::content,
@@ -174,8 +176,8 @@ class FluxFromPaginatedTest {
 		final AtomicInteger nextPageRequested = new AtomicInteger();
 		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
 			"A",
-			pid -> Page.clientFetchPage(pid)
-				.doOnRequest(r -> nextPageRequested.incrementAndGet()),
+			pid -> pid.equals("A") ? Page.clientFetchPage(pid)
+				: Page.clientFetchPage(pid).doOnRequest(r -> nextPageRequested.incrementAndGet()),
 			Page::content,
 			p -> p.nextPageId
 		);
@@ -201,7 +203,8 @@ class FluxFromPaginatedTest {
 		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
 			"A",
 			//this triggers immediate completion once we've consumed the first page
-			p -> Mono.<Page>empty().doOnRequest(r -> requested.set(true)),
+			pid -> pid.equals("A") ? Page.clientFetchPage(pid)
+				: Mono.<Page>empty().doOnRequest(r -> requested.set(true)),
 			Page::content,
 			p -> p.nextPageId
 		);
@@ -247,23 +250,33 @@ class FluxFromPaginatedTest {
 
 	@Test
 	void pageFetchCanSeeMainContext() {
+		AtomicReference<String> forcedPageOnce = new AtomicReference<>("D");
 		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
 			"A",
 			pid -> Mono.deferContextual(ctx -> {
-				String nextPageId = ctx.getOrDefault("forceNextPage", pid);
-				if (Objects.equals(nextPageId, pid)) {
-					return Mono.empty();
+				if ("A".equals(pid)) {
+					//normal behavior for the first page
+					return Page.clientFetchPage(pid);
+				}
+				//next we force the next page from context
+				AtomicReference<String> nextPageId = ctx.getOrDefault("forceNextPage", new AtomicReference<>(null));
+				if (nextPageId.get() == null) {
+					//this behaves "normally" and will iterate all the subsequent PAGES
+					return Page.clientFetchPage(pid);
 				}
 				else {
-					return Mono.justOrEmpty(PAGES.get(nextPageId));
+					//we force once, and go back to normal behavior
+					String forcedId = nextPageId.getAndSet(null);
+					return Page.clientFetchPage(forcedId);
 				}
 			}),
 			Page::content,
 			p -> p.nextPageId
 		);
 
-		StepVerifier.create(fluxFromPaginated, StepVerifierOptions.create().withInitialContext(Context.of("forceNextPage", "D")))
+		StepVerifier.create(fluxFromPaginated, StepVerifierOptions.create().withInitialContext(Context.of("forceNextPage", new AtomicReference("C"))))
 				.expectNext("1A", "2A", "3A")
+				.expectNext("1C", "2C", "3C")
 				.expectNext("1D", "2D", "3D")
 				.verifyComplete();
 	}
@@ -271,18 +284,20 @@ class FluxFromPaginatedTest {
 	@Test
 	void pageMainCanChangeThreadsDependingOnPageFetch() {
 		Set<String> threadNames = new HashSet<>();
-		Flux<Integer> fluxPaging = new FluxFromPaginated<>(
+		Flux<Integer> fluxPaging = new FluxFromPaginated<Integer, Integer, Integer>(
 			0,
 			i -> {
 				Mono<Integer> base;
 				switch (i) {
 					case 0:
-						base = Mono.just(1).publishOn(Schedulers.parallel());
+						base = Mono.just(0).publishOn(Schedulers.parallel());
 						break;
 					case 1:
-						base = Mono.just(2);
+						base = Mono.just(1);
 						break;
 					case 2:
+						base = Mono.just(2);
+						break;
 					default:
 						base = Mono.empty();
 						break;
@@ -411,5 +426,80 @@ class FluxFromPaginatedTest {
 	void scanPageContentSubscriber() {
 		//FIXME
 	}
+
+
+
+
+//	static private final class Page {
+//
+//		Optional<Integer> nextPage;
+//		List<Integer> values;
+//
+//		public Page(@Nullable Integer nextPageId, List<Integer> values) {
+//			this.nextPage = Optional.ofNullable(nextPageId);
+//			this.values = values;
+//		}
+//	}
+//
+//	static private final Mono<Page> clientRequest(Optional<Integer> pageId) {
+//		if (pageId.isPresent()) {
+//			int id = pageId.get();
+//			if (id == 0) {
+//				return Mono.just(new Page(1, Arrays.asList(1, 2, 3)));
+//			}
+//			if (id == 8) {
+//				return Mono.just(new Page(null, IntStream.range(80, 86)
+//					.boxed().collect(Collectors.toList())));
+//			}
+//			return Mono.just(new Page(id + 1, IntStream.range(10 * id, (10 * id) + id)
+//				.boxed().collect(Collectors.toList())));
+//		}
+//		return Mono.empty();
+//	}
+//
+//
+//	private static void testFromPaginated() {
+//		fromPaginated(Optional.of(0),
+//			opt -> clientRequest(opt),
+//			page -> page.values,
+//			page -> page.nextPage);
+//	}
+//
+//	static class Page2 {
+//
+//		final String url;
+//		final String nextPageUrl;
+//		final List<Integer> values;
+//
+//		Page2(String url, @Nullable String nextPageUrl, List<Integer> values) {
+//			this.url = url;
+//			this.nextPageUrl = nextPageUrl == null ? "" : nextPageUrl;
+//			this.values = values;
+//		}
+//	}
+//
+//	static private final Mono<Page2> clientRequest2(String url) {
+//		if (url == null || url.isEmpty()) {
+//			return Mono.empty();
+//		}
+//
+//		int id = Integer.parseInt(url.replaceAll("page", ""));
+//		if (id == 8) {
+//			return Mono.just(new Page2(url, null, IntStream.range(80, 86)
+//				.boxed().collect(Collectors.toList())));
+//		}
+//		return Mono.just(new Page2(url, "page" + (id + 1), IntStream.range(10 * id, (10 * id) + id)
+//			.boxed().collect(Collectors.toList())));
+//	}
+//
+//	private static void testFromPaginated2() {
+//		String organization = "reactor";
+//		Flux<Integer> unpaginated = Flux.fromPaginated(
+//			"https://api.github.com/orgs/"+ organization + "/repos?per_page=3",
+//			Flux::clientRequest2,
+//			page -> page.values,
+//			page -> page.nextPageUrl
+//		);
+//	}
 
 }
