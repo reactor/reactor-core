@@ -31,24 +31,30 @@ import reactor.util.context.Context;
 /**
  * @author Simon Baslé
  */
-final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFromPaginated<P, PID, T> extends Flux<T> implements SourceProducer<T> {
 
-	final P                                           initialPage;
-	final Function<? super P, Mono<P>>                nextPageFunction;
-	final Function<? super P, ? extends Publisher<T>> pageContentFunction;
+	final PID                                        initialPageId;
+	final Function<? super PID, Mono<P>>             pageFetchFunction;
+	final Function<? super P, PID>                   nextPageIdFunction;
+	final Function<? super P, ? extends Iterable<T>> pageContentFunction;
 
-	public FluxFromPaginated(P initialPage,
-	                         Function<? super P, ? extends Publisher<T>> pageContentFunction,
-	                         Function<? super P, Mono<P>> nextPageFunction) {
-		this.initialPage = initialPage;
-		this.nextPageFunction = nextPageFunction;
+	public FluxFromPaginated(PID initialPageId,
+							 Function<? super PID, Mono<P>> pageFetchFunction,
+							 Function<? super P, ? extends Iterable<T>> pageContentFunction,
+							 Function<? super P, PID> nextPageIdFunction) {
+		this.initialPageId = initialPageId;
+		this.pageFetchFunction = pageFetchFunction;
+		this.nextPageIdFunction = nextPageIdFunction;
 		this.pageContentFunction = pageContentFunction;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		PaginatedCoordinator<P, T> paginatedCoordinatorSubscription = new PaginatedCoordinator<>(actual, pageContentFunction, nextPageFunction);
-		paginatedCoordinatorSubscription.prepareNextPage(Mono.just(initialPage));
+		PaginatedCoordinator<P, PID, T> paginatedCoordinatorSubscription = new PaginatedCoordinator<>(actual,
+			pageFetchFunction,
+			pageContentFunction,
+			nextPageIdFunction);
+		paginatedCoordinatorSubscription.prepareNextPage(pageFetchFunction.apply(initialPageId));
 		actual.onSubscribe(paginatedCoordinatorSubscription);
 	}
 
@@ -66,11 +72,12 @@ final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T>
 		return SourceProducer.super.scanUnsafe(key);
 	}
 
-	static final class PaginatedCoordinator<P, T> implements InnerProducer<T> {
+	static final class PaginatedCoordinator<P, PID, T> implements InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
-		final Function<? super P, Mono<P>> nextPageFunction;
-		final Function<? super P, ? extends Publisher<T>> pageContentFunction;
+		final Function<? super P, ? extends Iterable<T>> pageContentFunction;
+		final Function<? super PID, Mono<P>> pageFetchFunction;
+		final Function<? super P, PID> nextPageIdFunction;
 
 		@Nullable
 		Subscription pageContentSubscription;
@@ -86,12 +93,14 @@ final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T>
 		static final AtomicLongFieldUpdater<PaginatedCoordinator> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PaginatedCoordinator.class, "requested");
 
-		PaginatedCoordinator(CoreSubscriber<? super T> actual,
-		                     Function<? super P, ? extends Publisher<T>> pageContentFunction,
-		                     Function<? super P, Mono<P>> nextPageFunction) {
+		public PaginatedCoordinator(CoreSubscriber<? super T> actual,
+									Function<? super PID, Mono<P>> pageFetchFunction,
+									Function<? super P, ? extends Iterable<T>> pageContentFunction,
+									Function<? super P, PID> nextPageIdFunction) {
 			this.actual = actual;
-			this.nextPageFunction = nextPageFunction;
 			this.pageContentFunction = pageContentFunction;
+			this.pageFetchFunction = pageFetchFunction;
+			this.nextPageIdFunction = nextPageIdFunction;
 		}
 
 		@Override
@@ -120,8 +129,8 @@ final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T>
 				return;
 			}
 			//if we get a next page, it means we have at least outstanding request of 1
-			Publisher<? extends T> pageContentPublisher = pageContentFunction.apply(page);
-			pageContentPublisher.subscribe(new PageContentSubscriber<>(this, page));
+			Flux.fromIterable(pageContentFunction.apply(page))
+				.subscribe(new PageContentSubscriber<>(this, page));
 		}
 
 		void noMorePages() {
@@ -207,12 +216,12 @@ final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T>
 
 	static final class PageSubscriber<P, T> extends AtomicBoolean implements InnerConsumer<P> {
 
-		final PaginatedCoordinator<P, T> parent;
+		final PaginatedCoordinator<P, ?, T> parent;
 
 		boolean done;
 		Subscription s;
 
-		PageSubscriber(PaginatedCoordinator<P, T> parent) {
+		PageSubscriber(PaginatedCoordinator<P, ?, T> parent) {
 			this.parent = parent;
 		}
 
@@ -284,14 +293,14 @@ final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T>
 		}
 	}
 
-	static final class PageContentSubscriber<P, T> implements InnerConsumer<T> {
+	static final class PageContentSubscriber<P, PID, T> implements InnerConsumer<T> {
 
-		final PaginatedCoordinator<P, T> parent;
-		final P                          page;
+		final PaginatedCoordinator<P, PID, T> parent;
+		final P                               page;
 
 		boolean done;
 
-		PageContentSubscriber(PaginatedCoordinator<P, T> parent, P page) {
+		PageContentSubscriber(PaginatedCoordinator<P, PID, T> parent, P page) {
 			this.parent = parent;
 			this.page = page;
 		}
@@ -328,7 +337,9 @@ final class FluxFromPaginated<P, T> extends Flux<T> implements SourceProducer<T>
 				return;
 			}
 			this.done = true;
-			parent.prepareNextPage(parent.nextPageFunction.apply(this.page));
+			PID nextPageId = parent.nextPageIdFunction.apply(this.page);
+			Mono<P> nextPageMono = parent.pageFetchFunction.apply(nextPageId);
+			parent.prepareNextPage(nextPageMono);
 		}
 
 		@Override

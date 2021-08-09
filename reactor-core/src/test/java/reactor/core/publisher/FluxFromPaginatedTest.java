@@ -17,13 +17,18 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,9 +63,10 @@ class FluxFromPaginatedTest {
 			this.nextPageId = nextPageId;
 		}
 
-		Flux<String> content() {
-			return Flux.range(1, 3)
-			           .map(i -> i + pageId);
+		List<String> content() {
+			return IntStream.range(1, 4)
+				.mapToObj(i -> i + pageId)
+				.collect(Collectors.toList());
 		}
 
 		static Mono<Page> clientFetchPage(@Nullable String pageId) {
@@ -93,9 +99,11 @@ class FluxFromPaginatedTest {
 
 	@Test
 	void unboundedRequest() {
-		Flux.fromPaginated(PAGES.get("A"),
+		Flux.fromPaginated(
+				"A",
+				Page::clientFetchPage,
 				Page::content,
-				p -> Page.clientFetchPage(p.nextPageId)
+				p -> p.nextPageId
 		).as(StepVerifier::create)
 				.expectNext("1A", "2A", "3A")
 				.expectNext("1B", "2B", "3B")
@@ -109,10 +117,13 @@ class FluxFromPaginatedTest {
 		final AtomicInteger pageSub = new AtomicInteger();
 		final AtomicInteger pageReq = new AtomicInteger();
 
-		Flux<String> fluxPage = Flux.fromPaginated(PAGES.get("A"),
-				Page::content, p -> Page.clientFetchPage(p.nextPageId)
-						.doOnSubscribe(s -> pageSub.incrementAndGet())
-						.doOnRequest(r -> pageReq.incrementAndGet())
+		Flux<String> fluxPage = Flux.fromPaginated(
+			"A",
+			pid -> Page.clientFetchPage(pid)
+				.doOnSubscribe(s -> pageSub.incrementAndGet())
+				.doOnRequest(r -> pageReq.incrementAndGet()),
+			Page::content,
+			p -> p.nextPageId
 		);
 
 		fluxPage.as(f -> StepVerifier.create(f, 0))
@@ -161,9 +172,12 @@ class FluxFromPaginatedTest {
 	@Test
 	void requestingExactlyPageContentNumberWillNotTriggerNextPage() {
 		final AtomicInteger nextPageRequested = new AtomicInteger();
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
-				Page::content, p -> Page.clientFetchPage(p.nextPageId)
-				         .doOnRequest(r -> nextPageRequested.incrementAndGet())
+		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
+			"A",
+			pid -> Page.clientFetchPage(pid)
+				.doOnRequest(r -> nextPageRequested.incrementAndGet()),
+			Page::content,
+			p -> p.nextPageId
 		);
 
 		fluxFromPaginated.as(f -> StepVerifier.create(f, 0))
@@ -184,9 +198,12 @@ class FluxFromPaginatedTest {
 	@Test
 	void requestingExactlyPageContentWillSubscribeNextPageThusCompleteEarly() {
 		AtomicBoolean requested = new AtomicBoolean();
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
-				//this triggers immediate completion once we've consumed the first page
-				Page::content, p -> Mono.<Page>empty().doOnRequest(r -> requested.set(true))
+		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
+			"A",
+			//this triggers immediate completion once we've consumed the first page
+			p -> Mono.<Page>empty().doOnRequest(r -> requested.set(true)),
+			Page::content,
+			p -> p.nextPageId
 		);
 
 		fluxFromPaginated.as(f -> StepVerifier.create(f, 3))
@@ -200,8 +217,11 @@ class FluxFromPaginatedTest {
 	void errorInPageFetching() {
 		PAGES.remove("B");
 
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
-				Page::content, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
+		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
+			"A",
+			pid -> Page.clientFetchPage(pid), //will trigger error
+			Page::content,
+			p -> p.nextPageId
 		);
 
 		fluxFromPaginated.as(StepVerifier::create)
@@ -213,8 +233,11 @@ class FluxFromPaginatedTest {
 	void errorInPageFetching_withRequestExactlyPageSize() {
 		PAGES.remove("B");
 
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
-				Page::content, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
+		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
+			"A",
+			pid -> Page.clientFetchPage(pid), //will trigger error
+			Page::content,
+			p -> p.nextPageId
 		);
 
 		fluxFromPaginated.as(f -> StepVerifier.create(f, 3))
@@ -223,52 +246,20 @@ class FluxFromPaginatedTest {
 	}
 
 	@Test
-	void errorInPageContent() {
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
-				p -> {
-					if (p.pageId.equals("B")) {
-						return p.content().concatWith(Mono.error(new IllegalStateException("Error in page content")));
-					}
-					return p.content();
-				}, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
-		);
-
-		fluxFromPaginated.as(StepVerifier::create)
-				.expectNext("1A", "2A", "3A")
-				.expectNext("1B", "2B", "3B")
-				.verifyErrorMessage("Error in page content");
-	}
-
-	@Test
-	void errorInPageContent_withRequestExactlyPageSize() {
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(PAGES.get("A"),
-				p -> {
-					if (p.pageId.equals("B")) {
-						return p.content().concatWith(Mono.error(new IllegalStateException("Error in page content")));
-					}
-					return p.content();
-				}, p -> Page.clientFetchPage(p.nextPageId) //will trigger error
-		);
-
-		fluxFromPaginated.as(publisher -> StepVerifier.create(publisher, 6))
-				.expectNext("1A", "2A", "3A")
-				.expectNext("1B", "2B", "3B")
-				.verifyErrorMessage("Error in page content");
-	}
-
-	@Test
 	void pageFetchCanSeeMainContext() {
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(
-				PAGES.get("A"),
-				Page::content, p -> Mono.deferContextual(ctx -> {
-					String nextPageId = ctx.getOrDefault("forceNextPage", p.nextPageId);
-					if (Objects.equals(nextPageId, p.pageId)) {
-						return Mono.empty();
-					}
-					else {
-						return Mono.justOrEmpty(PAGES.get(nextPageId));
-					}
-				})
+		FluxFromPaginated<Page, String, String> fluxFromPaginated = new FluxFromPaginated<>(
+			"A",
+			pid -> Mono.deferContextual(ctx -> {
+				String nextPageId = ctx.getOrDefault("forceNextPage", pid);
+				if (Objects.equals(nextPageId, pid)) {
+					return Mono.empty();
+				}
+				else {
+					return Mono.justOrEmpty(PAGES.get(nextPageId));
+				}
+			}),
+			Page::content,
+			p -> p.nextPageId
 		);
 
 		StepVerifier.create(fluxFromPaginated, StepVerifierOptions.create().withInitialContext(Context.of("forceNextPage", "D")))
@@ -278,42 +269,30 @@ class FluxFromPaginatedTest {
 	}
 
 	@Test
-	void pageContentCanSeeMainContext() {
-		FluxFromPaginated<Page, String> fluxFromPaginated = new FluxFromPaginated<>(
-				PAGES.get("A"),
-				p -> Flux.deferContextual(ctx -> {
-					String additionalValue = ctx.getOrDefault("prependValue", null);
-					if (additionalValue != null) {
-						return Mono.just(additionalValue).concatWith(p.content());
-					}
-					return p.content();
-				}), p -> Mono.justOrEmpty(PAGES.get(p.nextPageId))
-		);
-
-		StepVerifier.create(fluxFromPaginated, StepVerifierOptions.create().withInitialContext(Context.of("prependValue", "ADD")))
-				.expectNext("ADD", "1A", "2A", "3A")
-				.expectNext("ADD", "1B", "2B", "3B")
-				.expectNext("ADD", "1C", "2C", "3C")
-				.expectNext("ADD", "1D", "2D", "3D")
-				.verifyComplete();
-	}
-
-	@Test
 	void pageMainCanChangeThreadsDependingOnPageFetch() {
 		Set<String> threadNames = new HashSet<>();
-		Flux<Integer> fluxPaging = new FluxFromPaginated<>(0, i -> Flux.range(i * 10, 2),
-				i -> {
-					switch (i) {
-						case 0:
-							return Mono.just(1).publishOn(Schedulers.parallel());
-						case 1:
-							return Mono.just(2);
-						case 2:
-						default:
-							return Mono.empty();
-					}
-				})
-				.doOnNext(i -> threadNames.add(Thread.currentThread().getName()));
+		Flux<Integer> fluxPaging = new FluxFromPaginated<>(
+			0,
+			i -> {
+				Mono<Integer> base;
+				switch (i) {
+					case 0:
+						base = Mono.just(1).publishOn(Schedulers.parallel());
+						break;
+					case 1:
+						base = Mono.just(2);
+						break;
+					case 2:
+					default:
+						base = Mono.empty();
+						break;
+				}
+				return base
+					.doOnNext(v -> threadNames.add(Thread.currentThread().getName()));
+			},
+			i -> Arrays.asList(i * 10, i * 10 + 1),
+			i -> i + 1
+		);
 
 		StepVerifier.create(fluxPaging)
 				.expectNext(0, 1, 10, 11, 20, 21)
@@ -328,7 +307,7 @@ class FluxFromPaginatedTest {
 
 	@Test
 	void scanPublisher() {
-		FluxFromPaginated<Object, Object> fluxFromPaginated = new FluxFromPaginated<>(1, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated<Object, Integer, Object> fluxFromPaginated = new FluxFromPaginated<>(1, o -> Mono.empty(), o -> Collections.emptyList(), p -> 1);
 
 		assertThat(fluxFromPaginated.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(Scannable.from(null));
 		assertThat(fluxFromPaginated.scan(Scannable.Attr.ACTUAL)).as("ACTUAL").isSameAs(Scannable.from(null));
@@ -339,8 +318,8 @@ class FluxFromPaginatedTest {
 	@Test
 	void scanMain() {
 		AssertSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxFromPaginated.PaginatedCoordinator<Object, Object>
-				main = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Integer, Object>
+				main = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Collections.emptyList(), p -> 1);
 		actual.onSubscribe(main);
 
 		assertThat(main.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).as("REQUESTED_FROM_DOWNSTREAM pre-request").isEqualTo(0);
@@ -358,8 +337,8 @@ class FluxFromPaginatedTest {
 	@Test
 	void scanMainTerminatedCases() {
 		AssertSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxFromPaginated.PaginatedCoordinator<Object, Object>
-				main = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Integer, Object>
+				main = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Collections.emptyList(), p -> 1);
 		actual.onSubscribe(main);
 
 		main.done = false;
@@ -378,8 +357,8 @@ class FluxFromPaginatedTest {
 	@Test
 	void scanPageSubscriber() {
 		CoreSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxFromPaginated.PaginatedCoordinator<Object, Object>
-				parent = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Integer, Object>
+				parent = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Collections.emptyList(), p -> 1);
 
 		parent.prepareNextPage(Mono.never());
 
@@ -401,8 +380,8 @@ class FluxFromPaginatedTest {
 	@Test
 	void scanPageSubscriberTerminatedCases() {
 		CoreSubscriber<Object> actual = AssertSubscriber.create(0);
-		FluxFromPaginated.PaginatedCoordinator<Object, Object>
-				parent = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Mono.empty());
+		FluxFromPaginated.PaginatedCoordinator<Object, Integer, Object>
+				parent = new FluxFromPaginated.PaginatedCoordinator<>(actual, o -> Mono.empty(), o -> Collections.emptyList(), p -> 1);
 		//we'll use a misbehaving TestPublisher to separately send onNext / onComplete / onError signals to terminate the subscriber
 		TestPublisher<Object> pagePublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		parent.prepareNextPage(pagePublisher.mono());
@@ -430,7 +409,7 @@ class FluxFromPaginatedTest {
 
 	@Test
 	void scanPageContentSubscriber() {
-
+		//FIXME
 	}
 
 }

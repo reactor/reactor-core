@@ -1207,10 +1207,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the content type
 	 * @return a {@link Flux} representing the concatenation of all the pages' content
 	 */
-	public static <P, T> Flux<T> fromPaginated(P firstPage,
-			Function<? super P, ? extends Publisher<T>> pageContentFunction,
-			Function<? super P, Mono<P>> nextPageFunction) {
-		return onAssembly(new FluxFromPaginated<>(firstPage, pageContentFunction, nextPageFunction));
+	public static <P, PID, T> Flux<T> fromPaginated(
+		PID firstPageIdentifier,
+		Function<? super PID, Mono<P>> pageFetchFunction,
+		Function<? super P, ? extends Iterable<T>> pageContentFunction,
+		Function<? super P, PID> nextPageIdFunction) {
+		return onAssembly(new FluxFromPaginated<>(firstPageIdentifier,
+			pageFetchFunction, pageContentFunction, nextPageIdFunction));
 	}
 
 	/**
