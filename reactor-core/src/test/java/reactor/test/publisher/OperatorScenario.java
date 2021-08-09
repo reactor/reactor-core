@@ -284,7 +284,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 
 		if (stack != null) {
 			StackTraceElement element = stack.getStackTrace()[2];
-			return element.getFileName() + ":" + element.getLineNumber();
+			return "scenario[" + element.getFileName() + ":" + element.getLineNumber() + "]";
 		}
 
 		return toString();

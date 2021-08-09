@@ -313,7 +313,6 @@ public class MonoCollectTest {
 			AtomicBoolean ab = (AtomicBoolean) o;
 			if (ab.getAndSet(true)) {
 				doubleDiscardCounter.incrementAndGet();
-				throw new RuntimeException("test");
 			}
 		});
 		for (int i = 0; i < 100_000; i++) {
@@ -345,7 +344,6 @@ public class MonoCollectTest {
 			AtomicBoolean ab = (AtomicBoolean) o;
 			if (ab.getAndSet(true)) {
 				doubleDiscardCounter.incrementAndGet();
-				throw new RuntimeException("test");
 			}
 		});
 		for (int i = 0; i < 100_000; i++) {
