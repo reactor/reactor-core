@@ -2330,17 +2330,6 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyDrainOnRequestInCaseOfFusion() {
-		Sinks.One<Integer> processor = Sinks.one();
-		StepVerifier.create(processor.asMono(), 0)
-				.expectFusion(Fuseable.ANY)
-				.then(() -> processor.emitValue(1, FAIL_FAST))
-				.thenRequest(1)
-				.expectNext(1)
-				.verifyComplete();
-	}
-
-	@Test
-	public void verifyDrainOnRequestInCaseOfFusion2() {
 		ArrayList<Long> requests = new ArrayList<>();
 		Sinks.Many<Integer> processor = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(processor.asFlux().doOnRequest(requests::add), 0)
