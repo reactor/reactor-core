@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,6 +32,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
@@ -42,11 +44,112 @@ import reactor.util.function.Tuple2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class NextProcessorTest {
+class NextProcessorTest {
 
 	@Test
-	public void currentSubscriberCount() {
-		Sinks.One<Integer> sink = new NextProcessor<>(null);
+	void monoShareIsReferenceCounted() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Mono<Object> mono = Mono.never()
+			.doOnCancel(() -> cancelled.set(true))
+			.share();
+
+		mono
+			.subscribe()
+			.dispose();
+
+		assertThat(cancelled).isTrue();
+	}
+
+	@Test
+	void monoShareIsReferenceCounted2() {
+		AtomicInteger cancelledCount = new AtomicInteger();
+		AtomicInteger source = new AtomicInteger();
+
+		Mono<Integer> mono = Mono.fromCallable(source::incrementAndGet)
+			.delayElement(Duration.ofSeconds(10))
+			.doOnCancel(cancelledCount::incrementAndGet)
+			.share();
+
+		mono.subscribe().dispose();
+		mono.subscribe(v -> {}).dispose();
+		mono.subscribe(v -> {}, Throwable::printStackTrace).dispose();
+		mono.subscribe().dispose();
+
+		assertThat(source).hasValue(4);
+		assertThat(cancelledCount).hasValue(4);
+	}
+
+	@Test
+	void monoShareSubscribeNoArgsCanBeIndividuallyDisposed() {
+		AtomicInteger cancelledCount = new AtomicInteger();
+
+		Mono<Object> mono = Mono.never()
+			.doOnCancel(cancelledCount::incrementAndGet)
+			.share();
+
+		Disposable sub1 = mono.subscribe();
+		Disposable sub2 = mono.subscribe();
+
+		assertThat(sub1).as("subscription are differentiated").isNotSameAs(sub2);
+
+		sub1.dispose();
+
+		assertThat(cancelledCount).as("not cancelled when 1+ subscriber").hasValue(0);
+
+		AtomicBoolean sub3Terminated = new AtomicBoolean();
+		Disposable sub3 = mono.doOnTerminate(() -> sub3Terminated.set(true)).subscribe();
+
+		assertThat(sub3).as("3rd subscribe differentiated").isNotSameAs(sub2);
+		assertThat(sub3Terminated).as("subscription still possible once sub disposed").isFalse();
+
+		sub2.dispose();
+		sub3.dispose();
+
+		Scannable.from(mono).inners().forEach(System.out::println);
+
+		assertThat(cancelledCount).as("cancelled once 0 subscriber").hasValue(1);
+
+		AtomicBoolean sub4Terminated = new AtomicBoolean();
+
+		Disposable sub4 = mono.doOnTerminate(() -> sub4Terminated.set(true)).subscribe();
+
+		assertThat(sub4Terminated)
+			.as("subscription still possible once all subs disposed")
+			.isFalse();
+	}
+
+	@Test
+	void shareCanDisconnectAndReconnect() {
+		AtomicInteger connectionCount = new AtomicInteger();
+		AtomicInteger disconnectionCount = new AtomicInteger();
+
+		Mono<Object> shared = Mono.never()
+			.doFirst(() -> connectionCount.incrementAndGet())
+			.doOnCancel(() -> disconnectionCount.incrementAndGet())
+			.share();
+
+		Disposable sub1 = shared.subscribe();
+
+		assertThat(connectionCount).as("sub1 connectionCount").hasValue(1);
+		assertThat(disconnectionCount).as("sub1 disconnectionCount before dispose").hasValue(0);
+
+		sub1.dispose();
+
+		assertThat(disconnectionCount).as("sub1 disconnectionCount after dispose").hasValue(1);
+
+		Disposable sub2 = shared.subscribe();
+
+		assertThat(connectionCount).as("sub2 connectionCount").hasValue(2);
+		assertThat(disconnectionCount).as("sub2 disconnectionCount before dispose").hasValue(1);
+
+		sub2.dispose();
+
+		assertThat(disconnectionCount).as("sub2 disconnectionCount after dispose").hasValue(2);
+	}
+
+	@Test
+	void currentSubscriberCount() {
+		Sinks.One<Integer> sink = new SinkOneMulticast<>();
 
 		assertThat(sink.currentSubscriberCount()).isZero();
 
@@ -60,7 +163,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void noRetentionOnTermination() throws InterruptedException {
+	void noRetentionOnTermination() throws InterruptedException {
 		Date date = new Date();
 		CompletableFuture<Date> future = new CompletableFuture<>();
 
@@ -91,7 +194,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void noRetentionOnTerminationError() throws InterruptedException {
+	void noRetentionOnTerminationError() throws InterruptedException {
 		CompletableFuture<Date> future = new CompletableFuture<>();
 
 		WeakReference<CompletableFuture<Date>> refFuture = new WeakReference<>(future);
@@ -119,7 +222,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void noRetentionOnTerminationCancel() throws InterruptedException {
+	void noRetentionOnTerminationCancel() throws InterruptedException {
 		CompletableFuture<Date> future = new CompletableFuture<>();
 
 		WeakReference<CompletableFuture<Date>> refFuture = new WeakReference<>(future);
@@ -146,7 +249,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorResultNotAvailable() {
+	void MonoProcessorResultNotAvailable() {
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
 			NextProcessor<String> mp = new NextProcessor<>(null);
 			mp.block(Duration.ofMillis(1));
@@ -154,7 +257,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void rejectedDoOnSuccessOrError() {
+	void rejectedDoOnSuccessOrError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
@@ -169,7 +272,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void rejectedDoOnTerminate() {
+	void rejectedDoOnTerminate() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicInteger invoked = new AtomicInteger();
 
@@ -182,7 +285,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void rejectedSubscribeCallback() {
+	void rejectedSubscribeCallback() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
@@ -195,7 +298,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void successDoOnSuccessOrError() {
+	void successDoOnSuccessOrError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
@@ -210,7 +313,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void successDoOnTerminate() {
+	void successDoOnTerminate() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicInteger invoked = new AtomicInteger();
 
@@ -223,7 +326,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void successSubscribeCallback() {
+	void successSubscribeCallback() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
@@ -236,7 +339,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void rejectedDoOnError() {
+	void rejectedDoOnError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
@@ -249,7 +352,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void rejectedSubscribeCallbackNull() {
+	void rejectedSubscribeCallbackNull() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
@@ -258,7 +361,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void successDoOnSuccess() {
+	void successDoOnSuccess() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
@@ -271,7 +374,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void successChainTogether() {
+	void successChainTogether() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		NextProcessor<String> mp2 = new NextProcessor<>(null);
 		mp.subscribe(mp2);
@@ -284,7 +387,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void rejectedChainTogether() {
+	void rejectedChainTogether() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		NextProcessor<String> mp2 = new NextProcessor<>(null);
 		mp.subscribe(mp2);
@@ -297,7 +400,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void doubleFulfill() {
+	void doubleFulfill() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		StepVerifier.create(mp)
@@ -312,7 +415,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void nullFulfill() {
+	void nullFulfill() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		mp.onNext(null);
@@ -323,7 +426,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void mapFulfill() {
+	void mapFulfill() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 
 		mp.onNext(1);
@@ -339,7 +442,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void thenFulfill() {
+	void thenFulfill() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 
 		mp.onNext(1);
@@ -354,7 +457,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void mapError() {
+	void mapError() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 
 		mp.onNext(1);
@@ -374,7 +477,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void doubleError() {
+	void doubleError() {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.enableCaptureWith(testLogger);
 		try {
@@ -392,7 +495,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void doubleSignal() {
+	void doubleSignal() {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.enableCaptureWith(testLogger);
 		try {
@@ -411,7 +514,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void zipMonoProcessor() {
+	void zipMonoProcessor() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		NextProcessor<Tuple2<Integer, Integer>> mp3 = new NextProcessor<>(null);
@@ -435,7 +538,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void zipMonoProcessor2() {
+	void zipMonoProcessor2() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp3 = new NextProcessor<>(null);
 
@@ -453,7 +556,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void zipMonoProcessorRejected() {
+	void zipMonoProcessorRejected() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		NextProcessor<Tuple2<Integer, Integer>> mp3 = new NextProcessor<>(null);
@@ -472,7 +575,7 @@ public class NextProcessorTest {
 
 
 	@Test
-	public void filterMonoProcessor() {
+	void filterMonoProcessor() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		StepVerifier.create(mp.filter(s -> s % 2 == 0).subscribeWith(mp2))
@@ -487,7 +590,7 @@ public class NextProcessorTest {
 
 
 	@Test
-	public void filterMonoProcessorNot() {
+	void filterMonoProcessorNot() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		StepVerifier.create(mp.filter(s -> s % 2 == 0).subscribeWith(mp2))
@@ -500,7 +603,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void filterMonoProcessorError() {
+	void filterMonoProcessorError() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		StepVerifier.create(mp.filter(s -> {throw new RuntimeException("test"); })
@@ -515,7 +618,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void doOnSuccessMonoProcessorError() {
+	void doOnSuccessMonoProcessorError() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		NextProcessor<Integer> mp2 = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
@@ -534,7 +637,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void fluxCancelledByMonoProcessor() {
+	void fluxCancelledByMonoProcessor() {
 		AtomicLong cancelCounter = new AtomicLong();
 		Flux.range(1, 10)
 		    .doOnCancel(cancelCounter::incrementAndGet)
@@ -545,7 +648,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void monoNotCancelledByMonoProcessor() {
+	void monoNotCancelledByMonoProcessor() {
 		AtomicLong cancelCounter = new AtomicLong();
 		Mono.just("foo")
 		    .doOnCancel(cancelCounter::incrementAndGet)
@@ -555,7 +658,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanProcessor() {
+	void scanProcessor() {
 		NextProcessor<String> test = new NextProcessor<>(null);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -571,7 +674,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanProcessorCancelled() {
+	void scanProcessorCancelled() {
 		NextProcessor<String> test = new NextProcessor<>(null);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -586,7 +689,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanProcessorSubscription() {
+	void scanProcessorSubscription() {
 		NextProcessor<String> test = new NextProcessor<>(null);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -596,7 +699,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanProcessorError() {
+	void scanProcessorError() {
 		NextProcessor<String> test = new NextProcessor<>(null);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -608,19 +711,23 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	@SuppressWarnings("deprecated")
-	public void sharedMonoReusesInstance() {
+	void sharingSharedMonoIsSameInstance() {
 		Mono<String> sharedMono = Mono.just("foo")
 		                              .hide()
 		                              .share();
 
-		assertThat(sharedMono)
-				.isSameAs(sharedMono.share())
-				.isSameAs(sharedMono.subscribe());
+		assertThat(sharedMono.share())
+			.isSameAs(sharedMono);
 	}
 
 	@Test
-	public void sharedMonoParentIsNotNull() {
+	void sharingNextProcessorIsNewInstance() {
+		NextProcessor<String> nextProcessor = new NextProcessor<>(null, false);
+		assertThat(nextProcessor.share()).isNotSameAs(nextProcessor);
+	}
+
+	@Test
+	void sharedMonoParentIsNotNull() {
 		TestPublisher<String> tp = TestPublisher.create();
 		Mono<String> connectedProcessor = tp.mono().share();
 		connectedProcessor.subscribe();
@@ -629,7 +736,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void sharedMonoParentChain() {
+	void sharedMonoParentChain() {
 		Mono<String> m = Mono.just("foo").share();
 		StepVerifier.withVirtualTime(() -> m.delayElement(Duration.ofMillis(500)))
 		            .expectSubscription()
@@ -639,7 +746,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void sharedMonoChainColdToHot() {
+	void sharedMonoChainColdToHot() {
 		AtomicInteger subscriptionCount = new AtomicInteger();
 		Mono<String> coldToHot = Mono.just("foo")
 		                             .doOnSubscribe(sub -> subscriptionCount.incrementAndGet())
@@ -654,7 +761,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void monoProcessorBlockNegativeIsImmediateTimeout() {
+	void monoProcessorBlockNegativeIsImmediateTimeout() {
 		long start = System.nanoTime();
 
 		assertThatExceptionOfType(IllegalStateException.class)
@@ -669,7 +776,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void monoProcessorBlockZeroIsImmediateTimeout() {
+	void monoProcessorBlockZeroIsImmediateTimeout() {
 		long start = System.nanoTime();
 
 		assertThatExceptionOfType(IllegalStateException.class)
@@ -684,9 +791,9 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	//FIXME that should not be the case even if it works
-	public void disposeBeforeValueSendsCancellationException() {
-		Mono<String> processor = Mono.<String>never().share();
+	@SuppressWarnings("deprecation")
+	void toProcessorDisposeBeforeValueSendsCancellationException() {
+		Mono<String> processor = Mono.<String>never().toProcessor();
 		AtomicReference<Throwable> e1 = new AtomicReference<>();
 		AtomicReference<Throwable> e2 = new AtomicReference<>();
 		AtomicReference<Throwable> e3 = new AtomicReference<>();
@@ -707,7 +814,25 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanSubscriber(){
+	void sharedDisposeBeforeValueDoesNotDisposeProcessor() {
+		AtomicInteger cancellationErrorCount = new AtomicInteger();
+		Mono<String> processor = Mono.<String>never().share();
+
+		processor.subscribe(v -> Assertions.fail("expected first subscriber to receive nothing"), e1 -> cancellationErrorCount.incrementAndGet());
+		processor.subscribe(v -> Assertions.fail("expected second subscriber to receive nothing"), e2 -> cancellationErrorCount.incrementAndGet());
+		processor.subscribe(v -> Assertions.fail("expected third subscriber to receive nothing"), e3 -> cancellationErrorCount.incrementAndGet());
+
+		processor.subscribe().dispose();
+
+		assertThat(cancellationErrorCount).as("before late subscribe").hasValue(0);
+
+		processor.subscribe(v -> Assertions.fail("expected late subscriber to receive nothing"), late -> cancellationErrorCount.incrementAndGet());
+
+		assertThat(cancellationErrorCount).as("after late subscribe").hasValue(0);
+	}
+
+	@Test
+	void scanSubscriber(){
 		NextProcessor<String> processor = new NextProcessor<>(null);
 		AssertSubscriber<String> subscriber = new AssertSubscriber<>();
 
@@ -717,8 +842,8 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanTerminated() {
-		Sinks.One<Integer> sinkTerminated = new NextProcessor<>(null);
+	void scanTerminated() {
+		NextProcessor<Integer> sinkTerminated = new NextProcessor<>(null);
 
 		assertThat(sinkTerminated.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
 
@@ -729,8 +854,8 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void scanCancelled() {
-		Sinks.One<Integer> sinkCancelled = new NextProcessor<>(null);
+	void scanCancelled() {
+		NextProcessor<Integer> sinkCancelled = new NextProcessor<>(null);
 
 		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
 
@@ -740,15 +865,15 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void inners() {
-		Sinks.One<Integer> sink = new NextProcessor<>(null);
+	void inners() {
+		NextProcessor<Integer> sink = new NextProcessor<>(null);
 		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
 		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
 
 		assertThat(sink.inners()).as("before subscriptions").isEmpty();
 
-		sink.asMono().subscribe(notScannable);
-		sink.asMono().subscribe(scannable);
+		sink.subscribe(notScannable);
+		sink.subscribe(scannable);
 
 		assertThat(sink.inners())
 				.asList()

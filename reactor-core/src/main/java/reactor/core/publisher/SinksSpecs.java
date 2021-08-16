@@ -108,8 +108,7 @@ final class SinksSpecs {
 
 		@Override
 		public <T> One<T> one() {
-			final NextProcessor<T> original = new NextProcessor<>(null);
-			return wrapOne(original);
+			return wrapOne(new SinkOneMulticast<>());
 		}
 
 		@Override

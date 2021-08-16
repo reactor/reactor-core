@@ -29,14 +29,21 @@ import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.EmitResult;
+import reactor.core.publisher.Sinks.EmissionException;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 // NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.
 @SuppressWarnings("deprecation")
-class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
+class NextProcessor<O> extends MonoProcessor<O> {
+
+	/**
+	 * This boolean indicates a usage as `Mono#share()` where, for alignment with Flux#share(), the removal of all
+	 * subscribers should lead to the cancellation of the upstream Subscription.
+	 */
+	final boolean isRefCounted;
 
 	volatile NextInner<O>[] subscribers;
 
@@ -66,18 +73,13 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	O         value;
 
 	NextProcessor(@Nullable CorePublisher<? extends O> source) {
+		this(source, false);
+	}
+
+	NextProcessor(@Nullable CorePublisher<? extends O> source, boolean isRefCounted) {
 		this.source = source;
+		this.isRefCounted = isRefCounted;
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
-	}
-
-	@Override
-	public int currentSubscriberCount() {
-		return subscribers.length;
-	}
-
-	@Override
-	public Mono<O> asMono() {
-		return this;
 	}
 
 	@Override
@@ -145,22 +147,72 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	@Override
 	public final void onComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused") EmitResult emitResult = tryEmitEmpty();
+		@SuppressWarnings("unused") EmitResult emitResult = tryEmitValue(null);
 	}
 
-	@Override
-	public EmitResult tryEmitEmpty() {
-		return tryEmitValue(null);
+	void emitEmpty(Sinks.EmitFailureHandler failureHandler) {
+		for (;;) {
+			Sinks.EmitResult emitResult = tryEmitValue(null);
+			if (emitResult.isSuccess()) {
+				return;
+			}
+
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE,
+				emitResult);
+			if (shouldRetry) {
+				continue;
+			}
+
+			switch (emitResult) {
+				case FAIL_ZERO_SUBSCRIBER:
+				case FAIL_OVERFLOW:
+				case FAIL_CANCELLED:
+				case FAIL_TERMINATED:
+					return;
+				case FAIL_NON_SERIALIZED:
+					throw new EmissionException(emitResult,
+						"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+					);
+				default:
+					throw new EmissionException(emitResult, "Unknown emitResult value");
+			}
+		}
 	}
 
 	@Override
 	public final void onError(Throwable cause) {
-		emitError(cause, EmitFailureHandler.FAIL_FAST);
+		for (;;) {
+			EmitResult emitResult = tryEmitError(cause);
+			if (emitResult.isSuccess()) {
+				return;
+			}
+
+			boolean shouldRetry = EmitFailureHandler.FAIL_FAST.onEmitFailure(SignalType.ON_ERROR,
+				emitResult);
+			if (shouldRetry) {
+				continue;
+			}
+
+			switch (emitResult) {
+				case FAIL_ZERO_SUBSCRIBER:
+				case FAIL_OVERFLOW:
+				case FAIL_CANCELLED:
+					return;
+				case FAIL_TERMINATED:
+					Operators.onErrorDropped(cause, currentContext());
+					return;
+				case FAIL_NON_SERIALIZED:
+					throw new EmissionException(emitResult,
+						"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+					);
+				default:
+					throw new EmissionException(emitResult, "Unknown emitResult value");
+			}
+		}
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
-	public Sinks.EmitResult tryEmitError(Throwable cause) {
+	Sinks.EmitResult tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
 		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription()) == Operators.cancelledSubscription()) {
@@ -180,11 +232,50 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 
 	@Override
 	public final void onNext(@Nullable O value) {
-		emitValue(value, EmitFailureHandler.FAIL_FAST);
+		if (value == null) {
+			emitEmpty(EmitFailureHandler.FAIL_FAST);
+			return;
+		}
+
+		for (;;) {
+			EmitResult emitResult = tryEmitValue(value);
+			if (emitResult.isSuccess()) {
+				return;
+			}
+
+			boolean shouldRetry = EmitFailureHandler.FAIL_FAST.onEmitFailure(SignalType.ON_NEXT,
+				emitResult);
+			if (shouldRetry) {
+				continue;
+			}
+
+			switch (emitResult) {
+				case FAIL_ZERO_SUBSCRIBER:
+					//we want to "discard" without rendering the sink terminated.
+					// effectively NO-OP cause there's no subscriber, so no context :(
+					return;
+				case FAIL_OVERFLOW:
+					Operators.onDiscard(value, currentContext());
+					//the emitError will onErrorDropped if already terminated
+					onError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
+					return;
+				case FAIL_CANCELLED:
+					Operators.onDiscard(value, currentContext());
+					return;
+				case FAIL_TERMINATED:
+					Operators.onNextDropped(value, currentContext());
+					return;
+				case FAIL_NON_SERIALIZED:
+					throw new EmissionException(emitResult,
+						"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+					);
+				default:
+					throw new EmissionException(emitResult, "Unknown emitResult value");
+			}
+		}
 	}
 
-	@Override
-	public EmitResult tryEmitValue(@Nullable O value) {
+	EmitResult tryEmitValue(@Nullable O value) {
 		Subscription s;
 		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription())) == Operators.cancelledSubscription()) {
 			return EmitResult.FAIL_TERMINATED;
@@ -345,9 +436,15 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 			}
 
 			NextInner<O>[] b;
-
+			boolean disconnect = false;
 			if (n == 1) {
-				b = EMPTY;
+				if (isRefCounted && source != null) {
+					b = EMPTY_WITH_SOURCE;
+					disconnect = true;
+				}
+				else {
+					b = EMPTY;
+				}
 			}
 			else {
 				b = new NextInner[n - 1];
@@ -355,6 +452,12 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 				System.arraycopy(a, j + 1, b, j, n - j - 1);
 			}
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				if (disconnect) {
+					Subscription oldSubscription = UPSTREAM.getAndSet(this, null);
+					if (oldSubscription != null) {
+						oldSubscription.cancel();
+					}
+				}
 				return;
 			}
 		}
