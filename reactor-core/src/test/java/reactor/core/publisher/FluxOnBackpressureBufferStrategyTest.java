@@ -466,21 +466,21 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@ParameterizedTest
 	@ValueSource(ints = {-1, 0})
-	public void fluxOnBackpressureBufferStrategyRequiresPositiveMaxSize(int maxSize) {
+	void fluxOnBackpressureBufferStrategyRequiresPositiveMaxSize(int maxSize) {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(maxSize, v -> {}, ERROR))
 				.withMessage("Buffer Size must be strictly positive");
 	}
 
 	@Test
-	public void fluxOnBackpressureBufferStrategyRequiresCallback() {
+	void fluxOnBackpressureBufferStrategyRequiresCallback() {
 		assertThatNullPointerException()
 				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(1, null, ERROR))
 				.withMessage("onBufferOverflow");
 	}
 
 	@Test
-	public void fluxOnBackpressureBufferStrategyRequiresStrategy() {
+	void fluxOnBackpressureBufferStrategyRequiresStrategy() {
 		assertThatNullPointerException()
 				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(1, v -> {}, null))
 				.withMessage("bufferOverflowStrategy");
