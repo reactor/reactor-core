@@ -25,6 +25,8 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -462,30 +464,26 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 		assertThat(hookCapturedError).as("unexpected hookCapturedError").isNull();
 	}
 
-	@Test
-	public void fluxOnBackpressureBufferStrategyRequiresCallback() {
-		try {
-			Flux.just("foo").onBackpressureBuffer(1,
-					null,
-					ERROR);
-			fail("expected NullPointerException");
-		}
-		catch (NullPointerException e) {
-			assertThat(e).hasMessage("onBufferOverflow");
-		}
+	@ParameterizedTest
+	@ValueSource(ints = {-1, 0})
+	void fluxOnBackpressureBufferStrategyRequiresPositiveMaxSize(int maxSize) {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(maxSize, v -> {}, ERROR))
+				.withMessage("Buffer Size must be strictly positive");
 	}
 
 	@Test
-	public void fluxOnBackpressureBufferStrategyRequiresStrategy() {
-		try {
-			Flux.just("foo").onBackpressureBuffer(1,
-					v -> { },
-					null);
-			fail("expected NullPointerException");
-		}
-		catch (NullPointerException e) {
-			assertThat(e).hasMessage("bufferOverflowStrategy");
-		}
+	void fluxOnBackpressureBufferStrategyRequiresCallback() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(1, null, ERROR))
+				.withMessage("onBufferOverflow");
+	}
+
+	@Test
+	void fluxOnBackpressureBufferStrategyRequiresStrategy() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(1, v -> {}, null))
+				.withMessage("bufferOverflowStrategy");
 	}
 
 	@Test
