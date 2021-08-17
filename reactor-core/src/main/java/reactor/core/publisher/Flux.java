@@ -2498,38 +2498,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	//see examples in GuideTests
 
-	public final Flux<List<T>> buffers(Function<ApiGroup.FluxBuffersV1<T>, Flux<List<T>>> bufferSpec) {
-		ApiGroup.FluxBuffersV1<T> b = new ApiGroup.FluxBuffersV1<>(this);
-		return bufferSpec.apply(b);
-	}
-
-	public final ApiGroup.FluxBuffersV1<T> buffers_v1() {
-		return new ApiGroup.FluxBuffersV1<>(this);
-	}
-
-	public final ApiGroup.FluxBuffersV2<T> buffers_v2() {
-		return new ApiGroup.FluxBuffersV2<T>(this);
-	}
-
-	public final <R> Flux<R> buffers_v3(Function<ApiGroup.FluxBuffersV3<T>, ApiGroup.FluxBuffersV3<R>> bufferSpec) {
-		ApiGroup.FluxBuffersV3<T> initialSpec = new ApiGroup.FluxBuffersV3<T>(this);
-		ApiGroup.FluxBuffersV3<R> endSpec = bufferSpec.apply(initialSpec);
-		return endSpec.generateFlux();
-	}
-
-	public final ApiGroup.FluxSideEffectsV1<T> sideEffects_v1() {
-		return new ApiGroup.FluxSideEffectsV1<>(this);
-	}
-
-	public ApiGroup.FluxSideEffectsV2<T> sideEffects_v2() {
-		return new ApiGroup.FluxSideEffectsV2<>(this);
-	}
-
-	public final Flux<T> sideEffects_v3(Consumer<ApiGroup.FluxSideEffectsV3<T>> sideEffectSpec) {
-		ApiGroup.FluxSideEffectsV3<T> se = new ApiGroup.FluxSideEffectsV3<T>(this);
-		sideEffectSpec.accept(se);
-		return se.generateFlux();
-	}
+	//FIXME use Function/Consumer patterns for API groups
 
 	//	 ==============================================================================================================
 	//	 Instance Operators
