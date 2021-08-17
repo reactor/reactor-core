@@ -2511,9 +2511,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return new ApiGroup.FluxBuffersV2<T>(this);
 	}
 
-	public final <R> Flux<R> buffers_v3(Function<ApiGroup.FluxBuffersV2<T>, ApiGroup.FluxBuffersV2<R>> bufferSpec) {
-		ApiGroup.FluxBuffersV2<T> initialSpec = new ApiGroup.FluxBuffersV2<T>(this);
-		ApiGroup.FluxBuffersV2<R> endSpec = bufferSpec.apply(initialSpec);
+	public final <R> Flux<R> buffers_v3(Function<ApiGroup.FluxBuffersV3<T>, ApiGroup.FluxBuffersV3<R>> bufferSpec) {
+		ApiGroup.FluxBuffersV3<T> initialSpec = new ApiGroup.FluxBuffersV3<T>(this);
+		ApiGroup.FluxBuffersV3<R> endSpec = bufferSpec.apply(initialSpec);
 		return endSpec.generateFlux();
 	}
 
@@ -2525,10 +2525,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return new ApiGroup.FluxSideEffectsV2<>(this);
 	}
 
-	public final Flux<T> sideEffects_v3(Consumer<ApiGroup.FluxSideEffectsV2<T>> sideEffectSpec) {
-		ApiGroup.FluxSideEffectsV2<T> se = new ApiGroup.FluxSideEffectsV2<T>(this);
+	public final Flux<T> sideEffects_v3(Consumer<ApiGroup.FluxSideEffectsV3<T>> sideEffectSpec) {
+		ApiGroup.FluxSideEffectsV3<T> se = new ApiGroup.FluxSideEffectsV3<T>(this);
 		sideEffectSpec.accept(se);
-		return se.endSideEffects();
+		return se.generateFlux();
 	}
 
 	//	 ==============================================================================================================

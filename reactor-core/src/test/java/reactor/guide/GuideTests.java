@@ -1319,13 +1319,13 @@ StepVerifier.create(put)
 			 - arguably `it -> it` is the ugly part
 		 */
 		Flux<Integer> se3 = Flux.just(1)
-			.sideEffects_v3(it -> it
+			.sideEffects_v3(apply -> apply
 				.log()
 				.doOnComplete(() -> {})
 				.doOnNext(v -> {})
 			);
 		//the consumer can be externalized, or it can also be a method reference:
-		Consumer<ApiGroup.FluxSideEffectsV2<Integer>> logAndReactOnComplete = it ->
+		Consumer<ApiGroup.FluxSideEffectsV3<Integer>> logAndReactOnComplete = it ->
 			it.log().doOnComplete(() -> System.out.println("logged and reacted onComplete"));
 		Flux.just(1)
 			.sideEffects_v3(logAndReactOnComplete);
@@ -1333,7 +1333,7 @@ StepVerifier.create(put)
 			.sideEffects_v3(this::logAndReactOnComplete);
 	}
 
-	<T> void logAndReactOnComplete(ApiGroup.FluxSideEffectsV2<T> it) {
+	<T> void logAndReactOnComplete(ApiGroup.FluxSideEffectsV3<T> it) {
 		it.log().doOnComplete(() -> System.out.println("logged and reacted onComplete"));
 	}
 }

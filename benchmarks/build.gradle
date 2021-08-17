@@ -12,7 +12,7 @@ configurations {
 
 dependencies {
   // Use the baseline to avoid using new APIs in the benchmarks
-  compileOnly "io.projectreactor:reactor-core:${perfBaselineVersion}"
+  compileOnly project(":reactor-core")
   compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
 
   implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"

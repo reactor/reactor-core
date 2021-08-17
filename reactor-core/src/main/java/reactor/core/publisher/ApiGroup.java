@@ -64,6 +64,49 @@ public interface ApiGroup {
 		}
 	}
 
+	final class FluxBuffersV3<T> {
+
+		final Flux<T> source;
+
+		FluxBuffersV3(Flux<T> source) {
+			this.source = source;
+		}
+
+		public FluxBuffersV3<List<T>> fixedSize(int size) {
+			return new FluxBuffersV3<>(this.source.buffer(size));
+		}
+
+		public FluxBuffersV3<List<T>> sizeAndTimeout(int maxSize, Duration timeout) {
+			return new FluxBuffersV3<>(this.source.bufferTimeout(maxSize, timeout));
+		}
+
+		Flux<T> generateFlux() {
+			return source;
+		}
+	}
+
+	public final class FluxSideEffectsV1<T> implements ApiGroup {
+
+		final Flux<T> source;
+
+		FluxSideEffectsV1(Flux<T> source) {
+			this.source = source;
+		}
+
+		public Flux<T> log() {
+			return source.log();
+		}
+
+		public Flux<T> doOnNext(Consumer<? super T> nextHandler) {
+			return source.doOnNext(nextHandler);
+		}
+
+		public Flux<T> doOnComplete(Runnable completeHandler) {
+			return source.doOnComplete(completeHandler);
+		}
+	}
+
+
 	final class FluxSideEffectsV2<T> {
 
 		Flux<T> built;
@@ -92,24 +135,32 @@ public interface ApiGroup {
 		}
 	}
 
-	public final class FluxSideEffectsV1<T> implements ApiGroup {
 
-		final Flux<T> source;
+	final class FluxSideEffectsV3<T> {
 
-		FluxSideEffectsV1(Flux<T> source) {
-			this.source = source;
+		Flux<T> built;
+
+		FluxSideEffectsV3(Flux<T> source) {
+			this.built = source;
 		}
 
-		public Flux<T> log() {
-			return source.log();
+		public FluxSideEffectsV3<T> log() {
+			this.built = this.built.log();
+			return this;
 		}
 
-		public Flux<T> doOnNext(Consumer<? super T> nextHandler) {
-			return source.doOnNext(nextHandler);
+		public FluxSideEffectsV3<T> doOnNext(Consumer<? super T> nextHandler) {
+			this.built = this.built.doOnNext(nextHandler);
+			return this;
 		}
 
-		public Flux<T> doOnComplete(Runnable completeHandler) {
-			return source.doOnComplete(completeHandler);
+		public FluxSideEffectsV3<T> doOnComplete(Runnable completeHandler) {
+			this.built = this.built.doOnComplete(completeHandler);
+			return this;
+		}
+
+		Flux<T> generateFlux() {
+			return this.built;
 		}
 	}
 }
