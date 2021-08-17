@@ -48,6 +48,10 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 			@Nullable Consumer<? super O> onBufferOverflow,
 			BufferOverflowStrategy bufferOverflowStrategy) {
 		super(source);
+		if (bufferSize < 1) {
+			throw new IllegalArgumentException("Buffer Size must be strictly positive");
+		}
+
 		this.bufferSize = bufferSize;
 		this.onBufferOverflow = onBufferOverflow;
 		this.bufferOverflowStrategy = bufferOverflowStrategy;
