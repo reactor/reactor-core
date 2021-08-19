@@ -4985,6 +4985,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @deprecated Use DOON {@link FluxApiGroupDoOnCommon#terminate(Runnable)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
 		return doOnSignal(this,

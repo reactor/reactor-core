@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 /**
- * A {@link Flux} API sub-group that exposes most common side effects (most common signals like onNext/onComplete/onError..).
+ * A {@link Flux} API sub-group that exposes most common side effects (signals like onNext/onComplete/onError...).
  * Exposed via {@link Flux#doOn()}.
  * <p>
  * Additionally, exposes two extra sub-groups:

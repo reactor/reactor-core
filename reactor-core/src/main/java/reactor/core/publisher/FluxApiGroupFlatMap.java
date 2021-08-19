@@ -25,6 +25,7 @@ import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Flux} API sub-group that offers all the flavors of flatMapping operators.
+ * Exposed via {@link Flux#flatMaps()}.
  *
  * @author Simon Baslé
  */

@@ -23,6 +23,9 @@ import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
 
 /**
+ * A {@link Flux} API sub-group that exposes advanced logging configurations, all based
+ * on a {@link Level} provided at top level when calling {@link Flux#logAtLevel(Level)}.
+ *
  * @author Simon Baslé
  */
 public final class FluxApiGroupLog<T> {

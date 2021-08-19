@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 
 /**
  * A {@link Flux} API sub-group that exposes an extra set of side effects, either similar to the side effects exposed
- * at top level (via {@link Flux#doOn()} with more configuration parameters, or acting on signals that are more
+ * at top level via {@link Flux#doOn()} with more configuration parameters, or acting on signals that are more
  * rarely considered by most users. Exposed via {@link Flux#doOn() someFlux.doOn()}'s {@link FluxApiGroupDoOnCommon#advanced() advanced()} method.
  *
  * @author Simon Baslé
