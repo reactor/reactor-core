@@ -743,8 +743,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		StepVerifier.create(Flux.range(1, count)
 		                        .hide()
-		                        .flatMap(v -> Flux.range(v, 2)
-		                                          .hide(), false, 128, 1)
+		                        .flatMaps().interleaved(v -> Flux.range(v, 2).hide(), 128, 1)
 		                        .hide()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
@@ -756,7 +755,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		int count = 1000000;
 
 		StepVerifier.create(Flux.range(1, count)
-		                        .flatMap(v -> Flux.range(v, 2), false, 128, 1)
+		                        .flatMaps().interleaved(v -> Flux.range(v, 2), 128, 1)
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -768,8 +767,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		StepVerifier.create(Flux.range(1, count)
 		                        .hide()
-		                        .flatMap(v -> Flux.range(v, 2)
-		                                          .hide(), false, 4, 32)
+		                        .flatMaps().interleaved(v -> Flux.range(v, 2).hide(), 4, 32)
 		                        .hide()
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
@@ -782,7 +780,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		int count = 1000000;
 
 		StepVerifier.create(Flux.range(1, count)
-		                        .flatMap(v -> Flux.range(v, 2), false, 128, 32)
+		                        .flatMaps().interleaved(v -> Flux.range(v, 2), 128, 32)
 		                        .publishOn(Schedulers.fromExecutorService(exec)))
 		            .expectNextCount(2 * count)
 		            .verifyComplete();
@@ -856,7 +854,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		int count = 1000;
 
 		Flux<Integer> source = Flux.range(1, count)
-		                           .flatMap(v -> Flux.range(v, 2), false, 128, 32);
+		                           .flatMaps().interleaved(v -> Flux.range(v, 2), 128, 32);
 
 		source.publishOn(scheduler)
 		      .subscribe(ts);

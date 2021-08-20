@@ -47,7 +47,7 @@ class FluxMergeOrderedTest {
 	void dealsWithPrefetchLargerThanSmallBufferSize() {
 		int prefetch = Queues.SMALL_BUFFER_SIZE + 100;
 		int range = prefetch * 2;
-		Flux.mergeOrdered(prefetch,
+		Flux.fromMerging().mergeComparingDelayError(prefetch,
 				Comparator.naturalOrder(),
 				Flux.range(1, range).filter(i -> i % 2 == 0),
 				Flux.range(1, range).filter(i -> i % 2 != 0))
@@ -59,32 +59,11 @@ class FluxMergeOrderedTest {
 
 	@Test
 	void reorderingAPI() {
-		Flux<Integer> test = Flux.mergeOrdered(Comparator.naturalOrder(),
-				Flux.just(1, 3, 5, 7),
-				Flux.just(2, 4, 6, 8, 10));
-
-		StepVerifier.create(test)
-		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 10)
-		            .verifyComplete();
-	}
-
-	@Test
-	void reorderingAPIWithDefaultPrefetch() {
-		Flux<Integer> test = Flux.mergeOrdered(Comparator.naturalOrder(),
-				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8, 10));
-
-		assertThat(test.getPrefetch()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
-
-		StepVerifier.create(test)
-		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 10)
-		            .verifyComplete();
-	}
-
-	@Test
-	void reorderingAPINaturalOrder() {
-		Flux<Integer> test = Flux.mergeOrdered(Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8, 10));
-
-		assertThat(test.getPrefetch()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+		Flux<Integer> test = Flux.fromMerging().mergeComparingDelayError(
+			Queues.SMALL_BUFFER_SIZE,
+			Comparator.naturalOrder(),
+			Flux.just(1, 3, 5, 7),
+			Flux.just(2, 4, 6, 8, 10));
 
 		StepVerifier.create(test)
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 10)
@@ -93,9 +72,11 @@ class FluxMergeOrderedTest {
 
 	@Test
 	void reorderingAPISmallRequest() {
-		Flux<Integer> test = Flux.mergeOrdered(Comparator.naturalOrder(),
-				Flux.just(1, 3, 5, 7),
-				Flux.just(2, 4, 6, 8, 10));
+		Flux<Integer> test = Flux.fromMerging().mergeComparingDelayError(
+			Queues.SMALL_BUFFER_SIZE,
+			Comparator.naturalOrder(),
+			Flux.just(1, 3, 5, 7),
+			Flux.just(2, 4, 6, 8, 10));
 
 		StepVerifier.create(test, 5)
 		            .expectNext(1, 2, 3, 4)
@@ -108,63 +89,28 @@ class FluxMergeOrderedTest {
 	@Test
 	void reorderingAPIZeroOrOneSource() {
 		Flux<Integer> expectedZero = Flux.empty();
-		Flux<Integer> testZero = Flux.mergeOrdered(Comparator.naturalOrder());
+		Flux<Integer> testZero = Flux.fromMerging().mergeComparingDelayError(
+			Queues.SMALL_BUFFER_SIZE,
+			Comparator.naturalOrder());
 
 		Flux<Integer> expectedOne = Flux.just(1, 2, 3);
-		Flux<Integer> testOne = Flux.mergeOrdered(Comparator.naturalOrder(), expectedOne);
+		Flux<Integer> testOne = Flux.fromMerging().mergeComparingDelayError(
+			Queues.SMALL_BUFFER_SIZE,
+			Comparator.naturalOrder(),
+			expectedOne);
 
 		assertThat(testZero).isSameAs(expectedZero);
 		assertThat(testOne).isSameAs(expectedOne);
 	}
 
 	@Test
-	void mergeOrderedWithCombinesComparators() {
-		Comparator<Person> nameComparator = Comparator.comparing(Person::getName);
-		Comparator<User> loginComparator = Comparator.comparing(User::getLogin).reversed();
-
-		Flux<User> a = Flux.just(new User("foo", "A"), new User("bob", "JustBob"));
-		Flux<User> b = Flux.just(new User("foo", "B"));
-		Flux<User> c = Flux.just(new User("foo", "C"));
-
-		StepVerifier.create(a.mergeOrderedWith(b, nameComparator)
-		                     .mergeOrderedWith(c, loginComparator)
-		                     .map(User::getLogin))
-		            .expectNext("C", "B", "A", "JustBob")
-		            .verifyComplete();
-	}
-
-	@Test
-	void mergeOrderedWithDetectsSameReference() {
-		Comparator<String> comparator = Comparator.comparingInt(String::length);
-
-		final Flux<String> flux = Flux.just("AAAAA", "BBBB")
-		                              .mergeOrderedWith(Flux.just("DD", "CCC"), comparator)
-		                              .mergeOrderedWith(Flux.just("E"), comparator);
-
-		assertThat(flux).isInstanceOf(FluxMergeComparing.class);
-		assertThat(((FluxMergeComparing<String>) flux).valueComparator)
-				.as("didn't combine comparator")
-				.isSameAs(comparator);
-	}
-
-	@Test
-	void mergeOrderedWithDoesntCombineNaturalOrder() {
-		final Flux<String> flux = Flux.just("AAAAA", "BBBB")
-		                              .mergeOrderedWith(Flux.just("DD", "CCC"), Comparator.naturalOrder())
-		                              .mergeOrderedWith(Flux.just("E"), Comparator.naturalOrder());
-
-		assertThat(flux).isInstanceOf(FluxMergeComparing.class);
-		assertThat(((FluxMergeComparing<String>) flux).valueComparator)
-				.as("didn't combine naturalOrder()")
-				.isSameAs(Comparator.naturalOrder());
-	}
-
-	@Test
 	void considersOnlyLatestElementInEachSource() {
-		final Flux<String> flux = Flux.mergeOrdered(Comparator.comparingInt(String::length),
-				Flux.just("AAAAA", "BBBB"),
-				Flux.just("DD", "CCC"),
-				Flux.just("E"));
+		final Flux<String> flux = Flux.fromMerging().mergeComparingDelayError(
+			Queues.SMALL_BUFFER_SIZE,
+			Comparator.comparingInt(String::length),
+			Flux.just("AAAAA", "BBBB"),
+			Flux.just("DD", "CCC"),
+			Flux.just("E"));
 
 		StepVerifier.create(flux)
 		            .expectNext("E") // between E, DD and AAAAA => E, 3rd slot done
