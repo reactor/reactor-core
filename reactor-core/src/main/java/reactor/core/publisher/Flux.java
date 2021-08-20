@@ -4734,7 +4734,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param onComplete the callback to call on {@link Subscriber#onComplete}
 	 *
 	 * @return an observed  {@link Flux}
-	 * @deprecated Use DOON {@link FluxApiGroupDoOnCommon#complete(Runnable)}.
+	 * @deprecated Use {@link #doOn()} {@link FluxApiGroupDoOnCommon#complete(Runnable)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4795,7 +4795,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
 	 *   {@link Subscriber#onComplete()}
 	 * @return an observed {@link Flux}
-	 * @deprecated Use DOON See {@link FluxApiGroupDoOnCommon#each(Consumer)}.
+	 * @deprecated Use {@link #doOn()} See {@link FluxApiGroupDoOnCommon#each(Consumer)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4819,7 +4819,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param onError the callback to call on {@link Subscriber#onError}
 	 *
 	 * @return an observed  {@link Flux}
-	 * @deprecated Use DOON {@link FluxApiGroupDoOnCommon#error(Consumer)}.
+	 * @deprecated Use {@link #doOn()} {@link FluxApiGroupDoOnCommon#error(Consumer)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4903,7 +4903,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
 	 * @return an observed  {@link Flux}
-	 * @deprecated Use DOON {@link FluxApiGroupDoOnCommon#next(Consumer)}.
+	 * @deprecated Use {@link #doOn()} {@link FluxApiGroupDoOnCommon#next(Consumer)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4982,7 +4982,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
 	 * @return an observed  {@link Flux}
-	 * @deprecated Use DOON {@link FluxApiGroupDoOnCommon#terminate(Runnable)}.
+	 * @deprecated Use {@link #doOn()} {@link FluxApiGroupDoOnCommon#terminate(Runnable)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
