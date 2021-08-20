@@ -158,7 +158,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 
 				//extra scenarios for coverage using specific combination of fluxpkeek
 				// not necessarily open
-				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> FluxApiGroupDoOnCommon.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 							.equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -178,7 +178,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					}
 				}),
 
-				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> FluxApiGroupDoOnCommon.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 							.equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -198,7 +198,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					}
 				}),
 
-				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> FluxApiGroupDoOnCommon.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 							.equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
