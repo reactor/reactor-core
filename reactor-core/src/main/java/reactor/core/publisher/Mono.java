@@ -932,6 +932,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * closure terminates (with onComplete, onError or cancel)
 	 * @param <T> the type of elements emitted by the resource closure, and thus the main sequence
 	 * @param <D> the type of the resource object
+	 *
 	 * @return a new {@link Mono} built around a "transactional" resource, with deferred emission until the
 	 * asynchronous cleanup sequence completes
 	 */
@@ -990,6 +991,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * When {@code null}, the {@code asyncComplete} path is used instead.
 	 * @param <T> the type of elements emitted by the resource closure, and thus the main sequence
 	 * @param <D> the type of the resource object
+	 *
 	 * @return a new {@link Mono} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
 	 *
@@ -3024,6 +3026,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * to filter the Mono with
+	 *
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
