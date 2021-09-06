@@ -2954,6 +2954,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
+	 *
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
 	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime, Supplier<C> bufferSupplier) {
@@ -2994,6 +2995,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
+	 *
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
@@ -3016,6 +3018,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
+	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate) {
@@ -3041,6 +3044,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
+	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
@@ -3118,6 +3122,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * as well as the buffer-triggering element.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferWhile(Predicate<? super T> predicate) {
@@ -3423,14 +3428,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collect.svg" alt="">
 	 *
-	 * @param <E> the container type
-	 * @param containerSupplier the supplier of the container instance for each Subscriber
-	 * @param collector a consumer of both the container instance and the value being currently collected
-	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the container upon cancellation or error triggered by a data signal.
 	 * Either the container type is a {@link Collection} (in which case individual elements are discarded)
 	 * or not (in which case the entire container is discarded). In case the collector {@link BiConsumer} fails
 	 * to accumulate an element, the container is discarded as above and the triggering element is also discarded.
+	 *
+	 * @param <E> the container type
+	 * @param containerSupplier the supplier of the container instance for each Subscriber
+	 * @param collector a consumer of both the container instance and the value being currently collected
 	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
@@ -3448,16 +3453,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectWithCollector.svg" alt="">
 	 *
-	 * @param collector the {@link Collector}
-	 * @param <A> The mutable accumulation type
-	 * @param <R> the container type
-	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the intermediate container (see {@link Collector#supplier()} upon
 	 * cancellation, error or exception while applying the {@link Collector#finisher()}. Either the container type
 	 * is a {@link Collection} (in which case individual elements are discarded) or not (in which case the entire
 	 * container is discarded). In case the accumulator {@link BiConsumer} of the collector fails to accumulate
 	 * an element into the intermediate container, the container is discarded as above and the triggering element
 	 * is also discarded.
+	 *
+	 * @param collector the {@link Collector}
+	 * @param <A> The mutable accumulation type
+	 * @param <R> the container type
 	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
@@ -3620,6 +3625,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 *
 	 * @param <K> the type of the key extracted from each source element
+	 *
 	 * @return a {@link Mono} of a {@link Map} of key-List(elements) pairs
 	 */
 	public final <K> Mono<Map<K, Collection<T>>> collectMultimap(Function<? super T, ? extends K> keyExtractor) {
@@ -4162,6 +4168,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * 	 * if the sequence is cancelled during the delay.
 	 *
 	 * @param delay {@link Duration} to shift the sequence by
+	 *
 	 * @return an shifted {@link Flux} emitting at the same frequency as the source
 	 */
 	public final Flux<T> delaySequence(Duration delay) {
@@ -4193,6 +4200,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param delay {@link Duration} to shift the sequence by
 	 * @param timer a time-capable {@link Scheduler} instance to delay signals on
+	 *
 	 * @return an shifted {@link Flux} emitting at the same frequency as the source
 	 */
 	public final Flux<T> delaySequence(Duration delay, Scheduler timer) {
@@ -4654,13 +4662,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * The {@link Consumer} is executed first, then the onNext signal is propagated
 	 * downstream.
 	 *
-	 * @param onNext the callback to call on {@link Subscriber#onNext}
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
 	 * the {@link #onErrorContinue(BiConsumer)} error consumer (the value consumer
 	 * is not invoked, as the source element will be part of the sequence). The onNext
 	 * signal is then propagated as normal.
+	 *
+	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
 	 * @return an observed  {@link Flux}
 	 */
@@ -5038,15 +5046,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/filterForFlux.svg" alt="">
 	 *
-	 * @param p the {@link Predicate} to test values against
+	 * <p><strong>Discard Support:</strong> This operator discards elements that do not match the filter. It
+	 * also discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the predicate are
 	 * considered as if the predicate returned false: they cause the source value to be
 	 * dropped and a new element ({@code request(1)}) being requested from upstream.
 	 *
-	 * <p><strong>Discard Support:</strong> This operator discards elements that do not match the filter. It
-	 * also discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 * @param p the {@link Predicate} to test values against
 	 *
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
@@ -5075,6 +5083,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * for each value, to filter the Flux with
+	 *
 	 * @return a filtered {@link Flux}
 	 */
 	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
@@ -5104,6 +5113,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * capped depending on the size of the heap and the JVM limits, so be careful with
 	 * large values (although eg. {@literal 65536} should still be fine). Also serves as
 	 * the initial request size for the source.
+	 *
 	 * @return a filtered {@link Flux}
 	 */
 	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
@@ -5132,15 +5142,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
-	 * @param <R> the merged output sequence type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
 	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
 	 * publisher (an optimization in which the value can be resolved immediately without
 	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
 	 * publisher throws, this can be resumed from in the same manner.
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param <R> the merged output sequence type
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -5173,16 +5183,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
-	 * @param concurrency the maximum number of in-flight inner sequences
-	 * @param <V> the merged output sequence type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
 	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
 	 * publisher (an optimization in which the value can be resolved immediately without
 	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
 	 * publisher throws, this can be resumed from in the same manner.
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param concurrency the maximum number of in-flight inner sequences
+	 *
+	 * @param <V> the merged output sequence type
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -5218,17 +5229,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
-	 * @param concurrency the maximum number of in-flight inner sequences
-	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
-	 * @param <V> the merged output sequence type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
 	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
 	 * publisher (an optimization in which the value can be resolved immediately without
 	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
 	 * publisher throws, this can be resumed from in the same manner.
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param concurrency the maximum number of in-flight inner sequences
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 *
+	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
 	 */
@@ -5262,17 +5274,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
-	 * @param concurrency the maximum number of in-flight inner sequences
-	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
-	 * @param <V> the merged output sequence type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
 	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
 	 * publisher (an optimization in which the value can be resolved immediately without
 	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
 	 * publisher throws, this can be resumed from in the same manner.
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param concurrency the maximum number of in-flight inner sequences
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 *
+	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
 	 */
@@ -5356,7 +5369,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * signal is then propagated as normal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
+	 *
 	 * @param <R> the merged output sequence type
+	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
@@ -5396,7 +5411,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the number of values to request from the source upon subscription, to be transformed to {@link Iterable}
+	 *
 	 * @param <R> the merged output sequence type
+	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
@@ -5739,12 +5756,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
 	 * {@link SynchronousSink#complete()}.
 	 *
-	 * @param handler the handling {@link BiConsumer}
-	 * @param <R> the transformed type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors} (including when
 	 * fusion is enabled) when the {@link BiConsumer} throws an exception or if an error is signaled explicitly via
 	 * {@link SynchronousSink#error(Throwable)}.
+	 *
+	 * @param handler the handling {@link BiConsumer}
+	 *
+	 * @param <R> the transformed type
 	 *
 	 * @return a transformed {@link Flux}
 	 */
@@ -5928,6 +5946,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements before the last.
 	 *
 	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
+	 *
 	 * @return a {@link Mono} with the last value in this {@link Flux}
 	 */
     public final Mono<T> last(T defaultValue) {
@@ -6210,13 +6229,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mapForFlux.svg" alt="">
 	 *
-	 * @param mapper the synchronous transforming {@link Function}
-	 * @param <V> the transformed type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the mapper then cause the
 	 * source value to be dropped and a new element ({@code request(1)}) being requested
 	 * from upstream.
+	 *
+	 * @param mapper the synchronous transforming {@link Function}
+	 *
+	 * @param <V> the transformed type
 	 *
 	 * @return a transformed {@link Flux}
 	 */
@@ -6236,13 +6256,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mapNotNullForFlux.svg" alt="">
 	 *
-	 * @param mapper the synchronous transforming {@link Function}
-	 * @param <V> the transformed type
-	 *
 	 * <p><strong>Error Mode Support:</strong> This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the mapper then cause the
 	 * source value to be dropped and a new element ({@code request(1)}) being requested
 	 * from upstream.
+	 *
+	 * @param mapper the synchronous transforming {@link Function}
+	 *
+	 * @param <V> the transformed type
 	 *
 	 * @return a transformed {@link Flux}
 	 */
