@@ -137,6 +137,7 @@ class SinkEmptyMulticastTest {
 		Sinks.Empty<Integer> sinkTerminated = new SinkEmptyMulticast<>();
 
 		assertThat(sinkTerminated.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
+		assertThat(sinkTerminated.scan(Scannable.Attr.RUN_STYLE)).as("run_style").isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		sinkTerminated.tryEmitError(new IllegalStateException("boom")).orThrow();
 

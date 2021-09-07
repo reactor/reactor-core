@@ -94,6 +94,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
 		if (key == Attr.ERROR) return error;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

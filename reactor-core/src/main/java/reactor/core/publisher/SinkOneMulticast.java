@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 
 import reactor.core.CoreSubscriber;
@@ -76,6 +77,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
 		if (key == Attr.ERROR) return error;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -104,6 +106,15 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 				}
 			}
 		}
+	}
+
+	@Nullable
+	@Override
+	public O block(Duration timeout) {
+		if (timeout.isNegative()) {
+			return super.block(Duration.ZERO);
+		}
+		return super.block(timeout);
 	}
 
 	final static class NextInner<T> extends Operators.MonoInnerProducerBase<T> implements Inner<T> {

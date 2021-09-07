@@ -148,18 +148,18 @@ class NextProcessorTest {
 	}
 
 	@Test
-	void currentSubscriberCount() {
-		Sinks.One<Integer> sink = new SinkOneMulticast<>();
+	void downstreamCount() {
+		NextProcessor<Integer> processor = new NextProcessor<>(Flux.empty());
 
-		assertThat(sink.currentSubscriberCount()).isZero();
+		assertThat(processor.downstreamCount()).isZero();
 
-		sink.asMono().subscribe();
+		processor.subscribe();
 
-		assertThat(sink.currentSubscriberCount()).isOne();
+		assertThat(processor.downstreamCount()).isOne();
 
-		sink.asMono().subscribe();
+		processor.subscribe();
 
-		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
+		assertThat(processor.downstreamCount()).isEqualTo(2);
 	}
 
 	@Test
