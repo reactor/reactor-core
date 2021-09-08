@@ -4185,6 +4185,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			// `Sinks.one().subscribe()` case is now split into a separate implementation.
 			// Otherwise, this is a (legacy) #toProcessor() usage, and we return the processor itself below (and don't forget to connect() it):
 			if (s.source != null && !s.isRefCounted) {
+				s.subscribe(new LambdaMonoSubscriber<>(null, null, null, null, null));
 				s.connect();
 				return s;
 			}
