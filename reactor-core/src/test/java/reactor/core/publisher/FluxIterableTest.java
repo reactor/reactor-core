@@ -23,12 +23,18 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -331,5 +337,70 @@ public class FluxIterableTest {
 		Operators.onDiscardQueueWithClear(subscription, discardingContext, null);
 
 		assertThat(backingAtomic).hasValue(0);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/2761
+	@Test
+	void fromIterableWithFailingIteratorNextInFusion() throws InterruptedException {
+		CountDownLatch thrown = new CountDownLatch(1);
+		Iterator<Integer> throwingIterator = new Iterator<Integer>() {
+			int count = 0;
+
+			@Override
+			public boolean hasNext() {
+				return count < 3;
+			}
+
+			@Override
+			public Integer next() {
+				if (++count > 2) {
+					thrown.countDown();
+					throw new RuntimeException("boom");
+				} else {
+					return count;
+				}
+			}
+		};
+
+
+		CompletableFuture<Throwable> error = new CompletableFuture<>();
+		CountDownLatch terminated = new CountDownLatch(1);
+		Subscriber<Integer> simpleAsyncSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				// proceed on a different thread
+				CompletableFuture.runAsync(() -> request(1));
+			}
+
+			@Override
+			protected void hookOnError(Throwable throwable) {
+				error.complete(throwable); // expected to be called, but isn't
+			}
+
+			@Override
+			protected void hookOnComplete() {
+				error.complete(null); // not expected to happen
+			}
+		};
+
+		Flux.fromIterable(() -> throwingIterator)
+			.publishOn(Schedulers.boundedElastic())
+			.doOnTerminate(terminated::countDown)
+			.subscribe(simpleAsyncSubscriber);
+
+		assertThat(thrown.await(3, TimeUnit.SECONDS)).isTrue();
+
+		assertThat(terminated.await(2, TimeUnit.SECONDS))
+			.withFailMessage("Pipeline should terminate")
+			.isTrue();
+
+		assertThat(error)
+			.succeedsWithin(Duration.ofSeconds(2), InstanceOfAssertFactories.THROWABLE)
+			.hasMessage("boom");
 	}
 }
