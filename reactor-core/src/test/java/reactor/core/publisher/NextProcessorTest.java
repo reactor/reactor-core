@@ -149,16 +149,15 @@ class NextProcessorTest {
 
 	@Test
 	void downstreamCount() {
-		NextProcessor<Integer> processor = new NextProcessor<>(Flux.empty());
+		//using never() as source, otherwise subscribers get immediately completed and removed
+		NextProcessor<Integer> processor = new NextProcessor<>(Flux.never());
 
 		assertThat(processor.downstreamCount()).isZero();
 
 		processor.subscribe();
-
 		assertThat(processor.downstreamCount()).isOne();
 
 		processor.subscribe();
-
 		assertThat(processor.downstreamCount()).isEqualTo(2);
 	}
 

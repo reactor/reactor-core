@@ -246,7 +246,7 @@ class SinkOneMulticastTest {
 
 		assertThatExceptionOfType(IllegalStateException.class)
 			.isThrownBy(() -> sink.block(Duration.ZERO))
-			.withMessage("Timeout on blocking read for 1 NANOSECONDS");
+			.withMessage("Timeout on blocking read for 0 NANOSECONDS");
 
 		assertThat(Duration.ofNanos(System.nanoTime() - start))
 			.isLessThan(Duration.ofMillis(500));
