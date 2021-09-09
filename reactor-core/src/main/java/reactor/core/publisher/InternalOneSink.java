@@ -49,7 +49,7 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 				case FAIL_OVERFLOW:
 					Operators.onDiscard(value, currentContext());
 					//the emitError will onErrorDropped if already terminated
-					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"),
+					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.One#emitValue"),
 							failureHandler);
 					return;
 				case FAIL_CANCELLED:

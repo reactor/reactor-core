@@ -21,27 +21,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
+//intentionally not final
+class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 
-	volatile VoidInner<T>[] subscribers;
+	volatile Inner<T>[]                                                   subscribers;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<SinkEmptyMulticast, Inner[]> SUBSCRIBERS =
+		AtomicReferenceFieldUpdater.newUpdater(SinkEmptyMulticast.class, Inner[].class, "subscribers");
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkEmptyMulticast, VoidInner[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(SinkEmptyMulticast.class, VoidInner[].class, "subscribers");
+	static final Inner[] EMPTY = new Inner[0];
 
 	@SuppressWarnings("rawtypes")
-	static final VoidInner[] EMPTY = new VoidInner[0];
+	static final Inner[] TERMINATED = new Inner[0];
 
-	@SuppressWarnings("rawtypes")
-	static final VoidInner[] TERMINATED = new VoidInner[0];
-
+	@Nullable
 	Throwable error;
 
 	SinkEmptyMulticast() {
@@ -60,33 +60,43 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 
 	@Override
 	public EmitResult tryEmitEmpty() {
-		VoidInner<?>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		Inner<?>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (array == TERMINATED) {
 			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
-		for (VoidInner<?> as : array) {
-			as.onComplete();
+		for (Inner<?> as : array) {
+			as.complete();
 		}
 		return EmitResult.OK;
 	}
 
 	@Override
-	public Sinks.EmitResult tryEmitError(Throwable cause) {
+	@SuppressWarnings("unchecked")
+	public EmitResult tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
-		if (subscribers == TERMINATED) {
-			return Sinks.EmitResult.FAIL_TERMINATED;
+		Inner<T>[] prevSubscribers = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		if (prevSubscribers == TERMINATED) {
+			return EmitResult.FAIL_TERMINATED;
 		}
 
-		//guarded by a read memory barrier (isTerminated) and a subsequent write with getAndSet
 		error = cause;
 
-		for (VoidInner<?> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-			as.onError(cause);
+		for (Inner<T> as : prevSubscribers) {
+			as.error(cause);
 		}
-		return Sinks.EmitResult.OK;
+		return EmitResult.OK;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
+		if (key == Attr.ERROR) return error;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+		return null;
 	}
 
 	@Override
@@ -94,17 +104,16 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		return Operators.multiSubscribersContext(subscribers);
 	}
 
-	boolean add(VoidInner<T> ps) {
+	boolean add(Inner<T> ps) {
 		for (; ; ) {
-			VoidInner<T>[] a = subscribers;
+			Inner<T>[] a = subscribers;
 
 			if (a == TERMINATED) {
 				return false;
 			}
 
 			int n = a.length;
-			@SuppressWarnings("unchecked")
-			VoidInner<T>[] b = new VoidInner[n + 1];
+			@SuppressWarnings("unchecked") Inner<T>[] b = new Inner[n + 1];
 			System.arraycopy(a, 0, b, 0, n);
 			b[n] = ps;
 
@@ -114,9 +123,10 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		}
 	}
 
-	void remove(VoidInner<T> ps) {
+	@SuppressWarnings("unchecked")
+	void remove(Inner<T> ps) {
 		for (; ; ) {
-			VoidInner<T>[] a = subscribers;
+			Inner<T>[] a = subscribers;
 			int n = a.length;
 			if (n == 0) {
 				return;
@@ -134,13 +144,13 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 				return;
 			}
 
-			VoidInner<?>[] b;
+			Inner<T>[] b;
 
 			if (n == 1) {
 				b = EMPTY;
 			}
 			else {
-				b = new VoidInner[n - 1];
+				b = new Inner[n - 1];
 				System.arraycopy(a, 0, b, 0, j);
 				System.arraycopy(a, j + 1, b, j, n - j - 1);
 			}
@@ -150,25 +160,23 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		}
 	}
 
+	//redefined in SinkOneMulticast
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
-		VoidInner<T> as = new VoidInner<T>(actual, this);
+		Inner<T> as = new VoidInner<>(actual, this);
 		actual.onSubscribe(as);
 		if (add(as)) {
-			if (as.get()) {
+			if (as.isCancelled()) {
 				remove(as);
 			}
 		}
 		else {
-			if (as.get()) {
-				return;
-			}
 			Throwable ex = error;
 			if (ex != null) {
 				actual.onError(ex);
 			}
 			else {
-				actual.onComplete();
+				as.complete();
 			}
 		}
 	}
@@ -178,15 +186,18 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		return Stream.of(subscribers);
 	}
 
-	@Override
-	public Object scanUnsafe(Attr key) {
-		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
-		if (key == Attr.ERROR) return error;
+	static interface Inner<T> extends InnerProducer<T> {
+		//API must be compatible with Operators.MonoInnerProducerBase
 
-		return null;
+		void error(Throwable t);
+		void complete(T value);
+		void complete();
+		boolean isCancelled();
 	}
 
-	final static class VoidInner<T> extends AtomicBoolean implements InnerOperator<Void, T> {
+	//VoidInner is optimized for not storing request / value
+	final static class VoidInner<T> extends AtomicBoolean implements Inner<T> {
+
 		final SinkEmptyMulticast<T> parent;
 		final CoreSubscriber<? super T> actual;
 
@@ -205,22 +216,22 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		}
 
 		@Override
+		public boolean isCancelled() {
+			return get();
+		}
+
+		@Override
 		public void request(long l) {
 			Operators.validate(l);
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-			Objects.requireNonNull(s);
+		public void complete(T value) {
+			//NO-OP
 		}
 
 		@Override
-		public void onNext(Void aVoid) {
-
-		}
-
-		@Override
-		public void onComplete() {
+		public void complete() {
 			if (get()) {
 				return;
 			}
@@ -228,9 +239,9 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		}
 
 		@Override
-		public void onError(Throwable t) {
+		public void error(Throwable t) {
 			if (get()) {
-				Operators.onOperatorError(t, currentContext());
+				Operators.onOperatorError(t, actual.currentContext());
 				return;
 			}
 			actual.onError(t);
@@ -252,7 +263,7 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 			if (key == Attr.RUN_STYLE) {
 				return Attr.RunStyle.SYNC;
 			}
-			return InnerOperator.super.scanUnsafe(key);
+			return Inner.super.scanUnsafe(key);
 		}
 	}
 }
