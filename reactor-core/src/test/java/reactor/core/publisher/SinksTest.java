@@ -35,12 +35,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -128,21 +128,16 @@ class SinksTest {
 	@Nested
 	class MulticastReplayN {
 
-		@TestFactory
-		Stream<DynamicContainer> checkSemanticsSize5() {
-			final int historySize = 5;
-			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
-
-			return Stream.of(
-					expectMulticast(supplier, Integer.MAX_VALUE),
-					expectReplay(supplier, historySize),
-					expectBufferingBeforeFirstSubscriber(supplier, historySize)
-			);
+		@Test
+		void limitZeroIsRejected() {
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().limit(0))
+				.withMessage("historySize must be > 0");
 		}
 
 		@TestFactory
-		Stream<DynamicContainer> checkSemanticsSize0() {
-			final int historySize = 0;
+		Stream<DynamicContainer> checkSemanticsSize5() {
+			final int historySize = 5;
 			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
@@ -177,6 +172,17 @@ class SinksTest {
 		void setup() {
 			replaySink = Sinks.many().replay().limit(duration);
 			flux = replaySink.asFlux();
+		}
+
+		@Test
+		void historySizeZeroIsRejected() {
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().limit(0, Duration.ofSeconds(1)))
+				.withMessage("historySize must be > 0");
+
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().limit(0, Duration.ofSeconds(1), Schedulers.immediate()))
+				.withMessage("historySize must be > 0");
 		}
 
 		// fixes: https://github.com/reactor/reactor-core/issues/2513

@@ -564,7 +564,7 @@ public final class Sinks {
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 *
-		 * @param historySize maximum number of elements able to replayed
+		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 */
 		<T> Sinks.Many<T> limit(int historySize);
 
@@ -612,7 +612,7 @@ public final class Sinks {
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
 		 *
-		 * @param historySize maximum number of elements able to replayed
+		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 * @param maxAge maximum retention time for elements to be retained
 		 */
 		<T> Sinks.Many<T> limit(int historySize, Duration maxAge);
@@ -629,7 +629,7 @@ public final class Sinks {
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
 		 *
-		 * @param historySize maximum number of elements able to replayed
+		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 * @param maxAge maximum retention time for elements to be retained
 		 * @param scheduler a {@link Scheduler} to derive the time from
 		 */

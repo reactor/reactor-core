@@ -7500,6 +7500,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 */
 	public final ConnectableFlux<T> replay(int history) {
+		if (history == 0) {
+			//TODO Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version
+			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.get(Queues.SMALL_BUFFER_SIZE)));
+		}
 		return onAssembly(new FluxReplay<>(this, history, 0L, null));
 	}
 
@@ -7579,6 +7583,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
+		if (history == 0) {
+			//TODO Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version
+			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.get(Queues.SMALL_BUFFER_SIZE)));
+		}
 		return onAssembly(new FluxReplay<>(this, history, ttl.toNanos(), timer));
 	}
 

@@ -567,11 +567,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		public long signalConnectAndGetRequested() {
-			return requested;
-		}
-
-		@Override
 		public boolean isCancelled() {
 			return requested == Long.MIN_VALUE;
 		}
@@ -619,6 +614,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 				}
 				buffer.replay(this);
 			}
+		}
+
+		@Override
+		public void requestMore(int index) {
+			this.index = index;
 		}
 
 		@Override
