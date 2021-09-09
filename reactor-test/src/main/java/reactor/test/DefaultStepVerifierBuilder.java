@@ -1413,13 +1413,19 @@ final class DefaultStepVerifierBuilder<T>
 					//possibly re-evaluate the current onNext
 					event = this.script.peek();
 				}
-				if (event instanceof SignalCountEvent) {
-					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
+
+				if (event instanceof CollectEvent) {
+					if (onCollect(actualSignal)) {
 						return;
 					}
+					else if (((CollectEvent<?>) event).supplier == null) {
+						//possibly re-evaluate the current onNext
+						event = this.script.peek();
+					}
 				}
-				else if (event instanceof CollectEvent) {
-					if (onCollect(actualSignal)) {
+
+				if (event instanceof SignalCountEvent) {
+					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
 						return;
 					}
 				}
