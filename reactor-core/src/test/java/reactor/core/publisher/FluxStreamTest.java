@@ -18,13 +18,24 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -474,6 +485,77 @@ public class FluxStreamTest {
 		assertThat(source)
 				.as("polled (avoid discard loop)")
 				.hasValue(10);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/2761
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void fromStreamWithFailingIteratorNextInFusion(boolean conditionalSubscriber) throws InterruptedException {
+		CountDownLatch thrown = new CountDownLatch(1);
+		Iterator<Integer> throwingIterator = new Iterator<Integer>() {
+			int count = 0;
+
+			@Override
+			public boolean hasNext() {
+				return count < 3;
+			}
+
+			@Override
+			public Integer next() {
+				if (++count > 2) {
+					thrown.countDown();
+					throw new RuntimeException("boom");
+				} else {
+					return count;
+				}
+			}
+		};
+
+		CompletableFuture<Throwable> error = new CompletableFuture<>();
+		CountDownLatch terminated = new CountDownLatch(1);
+		Subscriber<Integer> simpleAsyncSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				// proceed on a different thread
+				CompletableFuture.runAsync(() -> request(1));
+			}
+
+			@Override
+			protected void hookOnError(Throwable throwable) {
+				error.complete(throwable); // expected to be called, but isn't
+			}
+
+			@Override
+			protected void hookOnComplete() {
+				error.complete(null); // not expected to happen
+			}
+		};
+
+		Flux<Integer> flux =
+			Flux.fromStream(StreamSupport.stream(Spliterators.spliteratorUnknownSize(throwingIterator, 0), false));
+		if (conditionalSubscriber) {
+			flux = flux.filter(v -> true);
+		}
+
+		flux
+			.publishOn(Schedulers.boundedElastic())
+			.doOnTerminate(terminated::countDown)
+			.subscribe(simpleAsyncSubscriber);
+
+		assertThat(thrown.await(3, TimeUnit.SECONDS)).isTrue();
+
+		assertThat(terminated.await(2, TimeUnit.SECONDS))
+			.withFailMessage("Pipeline should terminate")
+			.isTrue();
+
+		assertThat(error)
+			.succeedsWithin(Duration.ofSeconds(2), InstanceOfAssertFactories.THROWABLE)
+			.hasMessage("boom");
 	}
 
 	@Test

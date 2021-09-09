@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
@@ -203,6 +204,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		static final int STATE_CALL_HAS_NEXT      = 3;
 
 		T current;
+		Throwable hasNextFailure;
 
 		IterableSubscription(CoreSubscriber<? super T> actual,
 				Iterator<? extends T> iterator, boolean knownToBeFinite, @Nullable Runnable onClose) {
@@ -405,17 +407,37 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			else if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
 				return false;
 			}
-			else if (iterator.hasNext()) {
-				state = STATE_HAS_NEXT_NO_VALUE;
-				return false;
+			else {
+				boolean hasNext;
+				try {
+					hasNext = iterator.hasNext();
+				}
+				catch (Throwable t) {
+					//this is a corner case, most Iterators are not expected to throw in hasNext.
+					//since most calls to isEmpty are in preparation for poll() in fusion, we "defer"
+					//the exception by pretending queueSub isn't empty, but keeping track of exception
+					//to be re-thrown by a subsequent call to poll()
+					state = STATE_HAS_NEXT_NO_VALUE;
+					hasNextFailure = t;
+					return false;
+				}
+
+				if (hasNext) {
+					state = STATE_HAS_NEXT_NO_VALUE;
+					return false;
+				}
+				state = STATE_NO_NEXT;
+				return true;
 			}
-			state = STATE_NO_NEXT;
-			return true;
 		}
 
 		@Override
 		@Nullable
 		public T poll() {
+			if (hasNextFailure != null) {
+				state = STATE_NO_NEXT;
+				throw Exceptions.propagate(hasNextFailure);
+			}
 			if (!isEmpty()) {
 				T c;
 				if (state == STATE_HAS_NEXT_NO_VALUE) {
@@ -483,6 +505,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		static final int STATE_CALL_HAS_NEXT      = 3;
 
 		T current;
+
+		Throwable hasNextFailure;
 
 		IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
 				Iterator<? extends T> iterator, boolean knownToBeFinite, @Nullable Runnable onClose) {
@@ -687,17 +711,37 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			else if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
 				return false;
 			}
-			else if (iterator.hasNext()) {
-				state = STATE_HAS_NEXT_NO_VALUE;
-				return false;
+			else {
+				boolean hasNext;
+				try {
+					hasNext = iterator.hasNext();
+				}
+				catch (Throwable t) {
+					//this is a corner case, most Iterators are not expected to throw in hasNext.
+					//since most calls to isEmpty are in preparation for poll() in fusion, we "defer"
+					//the exception by pretending queueSub isn't empty, but keeping track of exception
+					//to be re-thrown by a subsequent call to poll()
+					state = STATE_HAS_NEXT_NO_VALUE;
+					hasNextFailure = t;
+					return false;
+				}
+
+				if (hasNext) {
+					state = STATE_HAS_NEXT_NO_VALUE;
+					return false;
+				}
+				state = STATE_NO_NEXT;
+				return true;
 			}
-			state = STATE_NO_NEXT;
-			return true;
 		}
 
 		@Override
 		@Nullable
 		public T poll() {
+			if (hasNextFailure != null) {
+				state = STATE_NO_NEXT;
+				throw Exceptions.propagate(hasNextFailure);
+			}
 			if (!isEmpty()) {
 				T c;
 				if (state == STATE_HAS_NEXT_NO_VALUE) {
