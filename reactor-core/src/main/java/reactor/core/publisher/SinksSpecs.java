@@ -216,7 +216,7 @@ final class SinksSpecs {
 		@Override
 		public <T> Many<T> limit(int historySize, Duration maxAge) {
 			if (historySize <= 0) {
-				throw new IllegalArgumentException("historySize must > 0");
+				throw new IllegalArgumentException("historySize must be > 0");
 			}
 			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
