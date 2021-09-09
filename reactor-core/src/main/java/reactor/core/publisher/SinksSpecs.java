@@ -191,6 +191,9 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> limit(int historySize) {
+			if (historySize <= 0) {
+				throw new IllegalArgumentException("historySize must be > 0");
+			}
 			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.create(historySize);
 			return wrapMany(original);
@@ -212,6 +215,9 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> limit(int historySize, Duration maxAge) {
+			if (historySize <= 0) {
+				throw new IllegalArgumentException("historySize must > 0");
+			}
 			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
 			return wrapMany(original);
@@ -219,6 +225,9 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> limit(int historySize, Duration maxAge, Scheduler scheduler) {
+			if (historySize <= 0) {
+				throw new IllegalArgumentException("historySize must be > 0");
+			}
 			@SuppressWarnings("deprecation") // ReplayProcessor will be removed in 3.5.
 			final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
 			return wrapMany(original);

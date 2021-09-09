@@ -64,7 +64,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
@@ -117,8 +116,6 @@ import reactor.util.retry.Retry;
  * @see Mono
  */
 public abstract class Flux<T> implements CorePublisher<T> {
-
-	private static final Logger LOGGER = Loggers.getLogger(Flux.class);
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -7474,7 +7471,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final ConnectableFlux<T> replay(int history) {
 		if (history == 0) {
-			LOGGER.warn("Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version");
+			//TODO Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version
 			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.get(Queues.SMALL_BUFFER_SIZE)));
 		}
 		return onAssembly(new FluxReplay<>(this, history, 0L, null));
@@ -7557,7 +7554,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
 		if (history == 0) {
-			LOGGER.warn("Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version");
+			//TODO Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version
 			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.get(Queues.SMALL_BUFFER_SIZE)));
 		}
 		return onAssembly(new FluxReplay<>(this, history, ttl.toNanos(), timer));
