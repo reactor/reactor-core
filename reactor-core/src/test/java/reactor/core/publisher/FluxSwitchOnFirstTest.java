@@ -21,21 +21,17 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.assertj.core.api.Assumptions;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 
@@ -51,7 +47,6 @@ import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -61,31 +56,29 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSwitchOnFirstTest {
 
+    // see https://github.com/reactor/reactor-core/pull/2765
     @Test
-    void switchOnFirstWithInnerFlatMap() {
-        AtomicReference<Throwable> droppedError = new AtomicReference<>();
-        Hooks.onErrorDropped(newValue -> droppedError.set(newValue));
-
-        Flux<Integer> switchOnFirstDoubleFlatMap = Flux.just(1, 2, 3)
-                                                       .switchOnFirst((signal, innerFlux) ->
-                                                               signal.hasValue()
-                                                                       ? innerFlux
-                                                                       .flatMap(checkAtLeast(signal.get())) // remove this line and everything works
-                                                                       .flatMap(value -> Mono.error(new IllegalArgumentException("this fails!")))
-                                                                       : innerFlux
-                                                       );
+    void switchOnFirstWithInnerFlatMapErroring() {
+        Flux<Integer> switchOnFirstDoubleFlatMap = Flux
+            .just(1, 2, 3)
+            .switchOnFirst((signal, innerFlux) -> {
+                    int minimum = signal.get();
+                    return signal.hasValue()
+                        ? innerFlux
+                        .flatMap(input -> input < minimum
+                            ? Mono.error(new IllegalArgumentException("too small!"))
+                            : Mono.just(minimum))
+                        .flatMap(value -> Mono.error(new IllegalArgumentException("this fails!")))
+                        : innerFlux;
+                }
+            );
 
         StepVerifier.create(switchOnFirstDoubleFlatMap)
-                    .verifyError(IllegalArgumentException.class);
-
-        Assertions.assertThat(droppedError).hasValue(null);
-    }
-
-    private static Function<Integer, Mono<Integer>> checkAtLeast(int minimum) {
-        return input ->
-                input < minimum
-                        ? Mono.error(new IllegalArgumentException("too small!"))
-                        : Mono.just(minimum);
+            .expectErrorSatisfies(e -> assertThat(e)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("this fails!"))
+            .verifyThenAssertThat()
+            .hasNotDroppedErrors();
     }
 
     @Test
