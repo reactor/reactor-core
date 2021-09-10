@@ -5406,6 +5406,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
+	 * <p>
+	 * Note that groups are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a specific group more than once: groups are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param <K> the key type extracted from each value of this sequence
 	 *
@@ -5429,6 +5436,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
+	 *
+	 * <p>
+	 * Note that groups are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a specific group more than once: groups are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param prefetch the number of values to prefetch from the source
@@ -5455,6 +5469,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
+	 *
+	 * <p>
+	 * Note that groups are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a specific group more than once: groups are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -5484,6 +5505,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
+	 *
+	 * <p>
+	 * Note that groups are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a specific group more than once: groups are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -9263,6 +9291,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithMaxSize.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9291,6 +9326,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithMaxSizeEqualsSkipSize.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
@@ -9315,6 +9357,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithBoundary.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9334,6 +9383,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithTimespan.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9366,6 +9422,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithTimespanEqualsOpenWindowEvery.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
@@ -9387,6 +9450,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithTimespan.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9420,6 +9490,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithTimespanEqualsOpenWindowEvery.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
@@ -9448,6 +9525,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowTimeout.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9469,6 +9553,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowTimeout.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9495,6 +9586,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowUntil.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -9525,6 +9623,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * expose empty windows, as the separators are emitted into the windows they close.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowUntilWithCutBefore.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -9558,6 +9663,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowUntilWithCutBefore.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
 	 * it also discards the remaining elements that were bound for it until the main sequence completes
@@ -9584,7 +9696,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowUntilChanged.svg" alt="">
+	 *
 	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -9604,7 +9722,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowUntilChangedWithKeySelector.svg" alt="">
+	 *
 	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -9626,7 +9750,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowUntilChangedWithKeySelector.svg" alt="">
+	 *
 	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -9656,6 +9786,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWhile.svg" alt="">
 	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
 	 * the predicate). Upon cancellation of the current window, it also discards the remaining elements
@@ -9681,6 +9818,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to be emitted.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWhile.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
@@ -9713,6 +9857,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * When Open signal is exactly coordinated with Close signal : exact windows
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWhen.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
 	 *
 	 * @reactor.discard This operator DOES NOT discard elements.
 	 *
