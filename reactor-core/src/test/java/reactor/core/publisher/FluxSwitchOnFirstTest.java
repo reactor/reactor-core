@@ -57,10 +57,36 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSwitchOnFirstTest {
+
+    @Test
+    void switchOnFirstWithInnerFlatMap() {
+        AtomicReference<Throwable> droppedError = new AtomicReference<>();
+        Hooks.onErrorDropped(newValue -> droppedError.set(newValue));
+
+        Flux<Integer> switchOnFirstDoubleFlatMap = Flux.just(1, 2, 3)
+                                                       .switchOnFirst((signal, innerFlux) ->
+                                                               signal.hasValue()
+                                                                       ? innerFlux
+                                                                       .flatMap(checkAtLeast(signal.get())) // remove this line and everything works
+                                                                       .flatMap(value -> Mono.error(new IllegalArgumentException("this fails!")))
+                                                                       : innerFlux
+                                                       );
+
+        StepVerifier.create(switchOnFirstDoubleFlatMap)
+                    .verifyError(IllegalArgumentException.class);
+
+        Assertions.assertThat(droppedError).hasValue(null);
+    }
+
+    private static Function<Integer, Mono<Integer>> checkAtLeast(int minimum) {
+        return input ->
+                input < minimum
+                        ? Mono.error(new IllegalArgumentException("too small!"))
+                        : Mono.just(minimum);
+    }
 
     @Test
     public void shouldNotSubscribeTwice() {

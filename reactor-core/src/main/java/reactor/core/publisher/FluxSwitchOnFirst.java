@@ -672,7 +672,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			inboundSubscriber.onSubscribe(this);
 
 			previousState = markInboundSubscriberSet(this);
-			if (hasInboundCancelled(previousState) && hasInboundTerminated(previousState)) {
+			if (hasInboundCancelled(previousState) && hasOutboundTerminated(previousState) && !hasInboundTerminated(previousState)) {
 				inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 			}
 		}
