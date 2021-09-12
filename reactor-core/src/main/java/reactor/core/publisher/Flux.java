@@ -5960,7 +5960,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
 	 * amount.
 	 * <p>
-	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }.
 	 * Note that the {@code prefetchRate} is an upper bound, and that this operator uses a
 	 * prefetch-and-replenish strategy, requesting a replenishing amount when 75% of the
 	 * prefetch amount has been emitted.
@@ -5970,13 +5969,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param prefetchRate the limit to apply to downstream's backpressure
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure
-	 * @see #publishOn(Scheduler)
 	 * @see #prefetch(int)
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int prefetchRate) {
-		Flux<T> prefetch = this.prefetch(prefetchRate);
-		return prefetch.publishOn(Schedulers.immediate(), true);
+		return this.prefetch(prefetchRate);
 	}
 
 	/**
@@ -5993,9 +5990,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
 	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
 	 * amount.
-	 * <p>
-	 * Similar to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() },
-	 * except with a customized "low tide" instead of the default 75%.
 	 * Note that the smaller the lowTide is, the higher the potential for concurrency
 	 * between request and data production. And thus the more extraneous replenishment
 	 * requests this operator could make. For example, for a global downstream
@@ -6014,13 +6008,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
 	 * replenishment request amount
-	 * @see #publishOn(Scheduler)
 	 * @see #prefetch(int, int)
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
-		Flux<T> prefetch = this.prefetch(highTide, lowTide);
-		return prefetch.publishOn(Schedulers.immediate(), true);
+		return this.prefetch(highTide, lowTide);
 	}
 
 	/**

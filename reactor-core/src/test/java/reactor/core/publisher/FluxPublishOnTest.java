@@ -902,73 +902,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void limitRate() {
-		List<Long> upstreamRequests = new LinkedList<>();
-		List<Long> downstreamRequests = new LinkedList<>();
-		Flux<Integer> source = Flux.range(1, 400)
-		                           .doOnRequest(upstreamRequests::add)
-		                           .doOnRequest(r -> System.out.println(
-				                           "upstream request of " + r))
-		                           .limitRate(40)
-		                           .doOnRequest(downstreamRequests::add)
-		                           .doOnRequest(r -> System.out.println(
-				                           "downstream request of " + r));
-
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(400);
-		source.subscribe(ts);
-		ts.await(Duration.ofMillis(100))
-		  .assertComplete();
-
-		assertThat(downstreamRequests.size()).as("downstream number of requests").isOne();
-		assertThat(downstreamRequests.get(0)).as("unique request").isEqualTo(400L);
-		long total = 0L;
-		for (Long requested : upstreamRequests) {
-			total += requested;
-			//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
-			assertThat(requested).as("rate limit check").isIn(40L, 30L);
-		}
-		assertThat(total).as("upstream total request")
-		                 .isGreaterThanOrEqualTo(400L)
-		                 .isLessThan(440L);
-	}
-
-	@Test
-	public void limitRateWithCloseLowTide() {
-		List<Long> rebatchedRequest = Collections.synchronizedList(new ArrayList<>());
-
-		final Flux<Integer> test = Flux
-				.range(1, 14)
-				.hide()
-				.doOnRequest(rebatchedRequest::add)
-				.limitRate(10,8);
-
-		StepVerifier.create(test, 14)
-		            .expectNextCount(14)
-		            .verifyComplete();
-
-		assertThat(rebatchedRequest)
-		          .containsExactly(10L, 8L);
-	}
-
-	@Test
-	public void limitRateWithVeryLowTide() {
-		List<Long> rebatchedRequest = Collections.synchronizedList(new ArrayList<>());
-
-		final Flux<Integer> test = Flux
-				.range(1, 14)
-				.hide()
-				.doOnRequest(rebatchedRequest::add)
-				.limitRate(10,2);
-
-		StepVerifier.create(test, 14)
-		            .expectNextCount(14)
-		            .verifyComplete();
-
-		assertThat(rebatchedRequest)
-		          .containsExactly(10L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
-	}
-
-	@Test
 	@Timeout(5)
 	public void rejectedExecutionExceptionOnDataSignalExecutor()
 			throws InterruptedException {
@@ -1430,30 +1363,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                assertThat(tuple.getT2()).isEqualTo("b");
 	                })
 	                .verifyComplete();
-    }
-
-    @Test
-    public void limitRateDisabledLowTide() throws InterruptedException {
-	    LongAdder request = new LongAdder();
-	    CountDownLatch latch = new CountDownLatch(1);
-
-	    Flux.range(1, 99).hide()
-	        .doOnRequest(request::add)
-	        .limitRate(10, 0)
-	        .subscribe(new BaseSubscriber<Integer>() {
-		        @Override
-		        protected void hookOnSubscribe(Subscription subscription) {
-			        request(100);
-		        }
-
-		        @Override
-		        protected void hookFinally(SignalType type) {
-			        latch.countDown();
-		        }
-	        });
-
-	    assertThat(latch.await(1, TimeUnit.SECONDS)).as("took less than 1s").isTrue();
-	    assertThat(request.sum()).as("request not compounded").isEqualTo(100L);
     }
 
 	private static class FailNullWorkerScheduler implements Scheduler {
