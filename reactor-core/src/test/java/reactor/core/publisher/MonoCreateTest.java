@@ -19,11 +19,13 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -408,7 +410,6 @@ public class MonoCreateTest {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicInteger discardCount = new AtomicInteger();
 		final Object[] value = new Object[] { latch, discardCount };
-		AtomicReference<Subscription> subRef =  new AtomicReference<>();
 
 		Mono<Object[]> mono = Mono.create(sink -> Schedulers.boundedElastic().schedule(
 			() -> {
@@ -425,15 +426,20 @@ public class MonoCreateTest {
 			((AtomicInteger)obj[1]).incrementAndGet();
 		});
 
-		StepVerifier.create(mono, 0)
-			.consumeSubscriptionWith(subRef::set)
-			.then(() -> subRef.get().cancel())
-			.then(latch::countDown)
-			.thenCancel()
-			.verify();
+		BaseSubscriber<Object[]> baseSubscriber = new BaseSubscriber<Object[]>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				//don't request anything, we just store the subscription
+			}
+		};
+
+		mono.subscribe(baseSubscriber);
+		baseSubscriber.cancel();
+		latch.countDown();
 
 		assertThat(latch.getCount()).as("latch count").isZero();
-		assertThat(discardCount).as("discardCount").hasValue(1);
+		Awaitility.await().atMost(500, TimeUnit.MILLISECONDS)
+				.untilAsserted(() -> assertThat(discardCount).as("discardCount").hasValue(1));
 	}
 
 }
