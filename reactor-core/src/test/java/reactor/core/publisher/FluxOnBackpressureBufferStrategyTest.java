@@ -25,18 +25,17 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.*;
 import static reactor.core.publisher.BufferOverflowStrategy.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -466,7 +465,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 		assertThat(hookCapturedError).as("unexpected hookCapturedError").isNull();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {-1, 0})
 	void fluxOnBackpressureBufferStrategyRequiresPositiveMaxSize(int maxSize) {
 		assertThatIllegalArgumentException()

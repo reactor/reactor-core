@@ -32,13 +32,13 @@ import java.util.stream.StreamSupport;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -488,7 +488,7 @@ public class FluxStreamTest {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/2761
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(booleans = { false, true })
 	void fromStreamWithFailingIteratorNextInFusion(boolean conditionalSubscriber) throws InterruptedException {
 		CountDownLatch thrown = new CountDownLatch(1);

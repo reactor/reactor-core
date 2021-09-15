@@ -40,9 +40,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import reactor.test.AutoDisposingExtension;
+import reactor.test.ParameterizedTestWithName;
 import reactor.util.Metrics;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.offset;
 import static org.awaitility.Awaitility.await;
 import static reactor.core.scheduler.SchedulerMetricDecorator.TAG_SCHEDULER_ID;
 
@@ -220,9 +222,9 @@ public class SchedulersMetricsTest {
 		};
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name="{displayName} [{index}] for {1}")
 	@MethodSource("metricsSchedulers")
-    public void shouldReportExecutorMetrics(Supplier<Scheduler> schedulerSupplier, String type) {
+    public void shouldReportExecutorMetrics(Supplier<Scheduler> schedulerSupplier, String type) { //TODO replace with Named.of in JUnit 5.8+
 		Scheduler scheduler = afterTest.autoDispose(schedulerSupplier.get());
 		final int taskCount = 3;
 
@@ -245,7 +247,7 @@ public class SchedulersMetricsTest {
 		});
     }
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("metricsSchedulers")
 	@Timeout(10)
 	public void shouldReportExecutionTimes(Supplier<Scheduler> schedulerSupplier, String type) {

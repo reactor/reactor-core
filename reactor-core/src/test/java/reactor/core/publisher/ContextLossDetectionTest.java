@@ -26,7 +26,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -34,6 +33,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
+import reactor.test.ParameterizedTestWithName;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -106,7 +106,7 @@ public class ContextLossDetectionTest {
 		Hooks.disableContextLossTracking();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources")
 	public void transformDeferredDetectsContextLoss(ContextTestCase fn) {
 		LossyTransformer transformer = new LossyTransformer(fn + "'s badTransformer",
@@ -118,7 +118,7 @@ public class ContextLossDetectionTest {
 				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources")
 	public void transformDeferredDetectsContextLossWithEmptyContext(ContextTestCase fn) {
 		LossyTransformer transformer = new LossyTransformer(fn + "'s badTransformer",
@@ -130,7 +130,7 @@ public class ContextLossDetectionTest {
 				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources")
 	public void transformDeferredDetectsContextLossWithDefaultContext(ContextTestCase fn) {
 		LossyTransformer transformer = new LossyTransformer(fn + "'s badTransformer", true);
@@ -141,7 +141,7 @@ public class ContextLossDetectionTest {
 				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources")
 	public void transformDeferredDetectsContextLossWithRSSubscriber(ContextTestCase fn) {
 		LossyTransformer transformer = new LossyTransformer(fn + "'s badTransformer", false);

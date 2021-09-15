@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -38,14 +38,13 @@ import reactor.core.publisher.FluxDoOnEach.DoOnEachConditionalSubscriber;
 import reactor.core.publisher.FluxDoOnEach.DoOnEachFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 public class FluxDoOnEachTest {
 
@@ -97,7 +96,7 @@ public class FluxDoOnEachTest {
 		};
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
 	public void normal(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -295,7 +294,7 @@ public class FluxDoOnEachTest {
 		assertThat(onComplete).isFalse();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesError")
 	public void error(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -328,7 +327,7 @@ public class FluxDoOnEachTest {
 		assertThat(state.intValue()).isZero();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesEmpty")
 	public void empty(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -360,7 +359,7 @@ public class FluxDoOnEachTest {
 		assertThat(state.intValue()).isEqualTo(0);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesNever")
 	public void never(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -392,7 +391,7 @@ public class FluxDoOnEachTest {
 		assertThat(state.intValue()).isEqualTo(0);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
 	public void nextCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -415,7 +414,7 @@ public class FluxDoOnEachTest {
 		assertThat(state.intValue()).isEqualTo(1);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
 	public void nextCallbackBubbleError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -442,7 +441,7 @@ public class FluxDoOnEachTest {
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
 	public void completeCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -471,7 +470,7 @@ public class FluxDoOnEachTest {
 		                        .isTrue();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesError")
 	public void errorCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();

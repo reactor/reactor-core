@@ -137,7 +137,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Multiple Subscribers racing Cancel/OnNext/Request")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureMultipleSubscribersSupportWithNoLeaksWhenRacingCancelAndOnNextAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		installScheduler(discardScenario.description, discardScenario.numberOfSubscriptions + 2 /* Cancel, request*/);
@@ -190,7 +190,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Multiple Subscribers with populated queue racing Cancel/OnNext/Request")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureMultipleSubscribersSupportWithNoLeaksWhenPopulatedQueueRacingCancelAndOnNextAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isGreaterThan(1);
@@ -248,7 +248,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/OnNext")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnNext(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -303,7 +303,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/OnComplete")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnComplete(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -355,7 +355,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/OnError")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnError(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -411,7 +411,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/overflow Error")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOverflowError(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -473,7 +473,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/Request")
-	@ParameterizedTest(name="{index} {displayName} [{argumentsWithNames}]")
+	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();

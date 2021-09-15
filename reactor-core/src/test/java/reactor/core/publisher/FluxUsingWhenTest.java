@@ -25,12 +25,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -42,6 +38,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable.Attr;
 import reactor.core.publisher.FluxUsingWhen.ResourceSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
@@ -374,7 +371,7 @@ public class FluxUsingWhenTest {
 		testResource.rollbackProbe.assertWasSubscribed();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	public void cancelWithHandler(Flux<String> source) {
 		TestResource testResource = new TestResource();
@@ -395,7 +392,7 @@ public class FluxUsingWhenTest {
 		testResource.cancelProbe.assertWasSubscribed();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	public void cancelWithHandlerFailure(Flux<String> source) {
 		TestResource testResource = new TestResource();
@@ -429,7 +426,7 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.IllegalStateException: cancel error");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	public void cancelWithHandlerGenerationFailureLogs(Flux<String> source) throws InterruptedException {
 		TestLogger tl = new TestLogger();
@@ -460,7 +457,7 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.NullPointerException");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	@Deprecated
 	public void cancelWithoutHandlerAppliesCommit(Flux<String> source) {
@@ -485,7 +482,7 @@ public class FluxUsingWhenTest {
 		testResource.rollbackProbe.assertWasNotSubscribed();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	@Deprecated
 	public void cancelDefaultHandlerFailure(Flux<String> source) {
@@ -525,7 +522,7 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.IllegalStateException: commit error");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
 	public void apiCommit(Flux<String> fullTransaction) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -553,7 +550,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
 	public void apiCommitFailure(Flux<String> fullTransaction) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -582,7 +579,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
 	public void commitGeneratingNull(Flux<String> fullTransaction) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -612,7 +609,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesTransactionError")
 	public void apiRollback(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -640,7 +637,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> tr.rollbackProbe.wasSubscribed(), "rollback method used");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesTransactionError")
 	public void apiRollbackFailure(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -668,7 +665,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> tr.rollbackProbe.wasSubscribed(), "rollback method used");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesTransactionError")
 	public void apiRollbackGeneratingNull(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -696,7 +693,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "rollback method short-circuited");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
 	public void apiCancel(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
@@ -720,7 +717,7 @@ public class FluxUsingWhenTest {
 				.matches(tr -> tr.cancelProbe.wasSubscribed(), "cancel method used");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
 	public void apiCancelFailure(Flux<String> transaction) {
 		TestLogger testLogger = new TestLogger();
@@ -759,7 +756,7 @@ public class FluxUsingWhenTest {
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
 	public void apiCancelGeneratingNullLogs(Flux<String> transactionWithError) {
 		TestLogger testLogger = new TestLogger();
@@ -862,7 +859,7 @@ public class FluxUsingWhenTest {
 		assertThat(test).isNotInstanceOf(Fuseable.QueueSubscription.class);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesContext")
 	public void contextPropagationOnCommit(Mono<String> source) {
 		AtomicReference<String> probeContextValue = new AtomicReference<>();
@@ -903,7 +900,7 @@ public class FluxUsingWhenTest {
 		assertThat(resourceContextValue).hasValue("contextual");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sourcesContextError")
 	public void contextPropagationOnRollback(Mono<String> source) {
 		AtomicReference<String> probeContextValue = new AtomicReference<>();
@@ -943,7 +940,7 @@ public class FluxUsingWhenTest {
 		assertThat(resourceContextValue).hasValue("contextual");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	public void contextPropagationOnCancel(Flux<String> source) {
 		TestResource testResource = new TestResource();
@@ -973,7 +970,7 @@ public class FluxUsingWhenTest {
 		assertThat(errorRef).hasValue(null);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@MethodSource("sources01")
 	public void contextPropagationOnCancelWithNoHandler(Flux<String> source) {
 		TestResource testResource = new TestResource();
