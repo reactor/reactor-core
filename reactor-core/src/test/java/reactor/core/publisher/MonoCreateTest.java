@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -401,5 +402,39 @@ public class MonoCreateTest {
 		            .expectNext(1L)
 		            .verifyComplete();
 	}
+
+	@Test
+	void emitAttemptAfterCancellationLeadsToDiscard() {
+		final CountDownLatch latch = new CountDownLatch(1);
+		final AtomicInteger discardCount = new AtomicInteger();
+		final Object[] value = new Object[] { latch, discardCount };
+		AtomicReference<Subscription> subRef =  new AtomicReference<>();
+
+		Mono<Object[]> mono = Mono.create(sink -> Schedulers.boundedElastic().schedule(
+			() -> {
+				try {
+					latch.await();
+					sink.success(value);
+				}
+				catch (InterruptedException e) {
+					sink.error(e);
+				}
+			}
+		));
+		mono = mono.doOnDiscard(Object[].class, obj -> {
+			((AtomicInteger)obj[1]).incrementAndGet();
+		});
+
+		StepVerifier.create(mono, 0)
+			.consumeSubscriptionWith(subRef::set)
+			.then(() -> subRef.get().cancel())
+			.then(latch::countDown)
+			.thenCancel()
+			.verify();
+
+		assertThat(latch.getCount()).as("latch count").isZero();
+		assertThat(discardCount).as("discardCount").hasValue(1);
+	}
+
 }
 
