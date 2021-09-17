@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,34 @@
  * limitations under the License.
  */
 
-package reactor.tools.agent;
+package demo;
 
 import org.junit.jupiter.api.Test;
+
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 /**
  * This test assumes that the transformation is applied at build time
  * and does not manually install it.
  */
-public class ReactorDebugBuildPluginTest {
+public class SomeClassTest {
 
 	@Test
 	public void shouldAddAssemblyInfo() {
-		int baseline = getBaseline();
-		Flux<Integer> flux = Flux.just(1);
+		//the first level is instantiated from the production code, which is instrumented
+		Flux<Integer> flux = new SomeClass().obtainFlux();
+		//the second level is instantiated here in test code, which isn't instrumented
+		flux = flux.map(i -> i);
 
-		assertThat(Scannable.from(flux).stepName())
-				.startsWith("Flux.just ⇢ at reactor.tools.agent.ReactorDebugBuildPluginTest.shouldAddAssemblyInfo(ReactorDebugBuildPluginTest.java:" + (baseline + 1));
-	}
+		Scannable scannable = Scannable.from(flux);
 
-	private static int getBaseline() {
-		return new Exception().getStackTrace()[1].getLineNumber();
+		assertThat(scannable.steps())
+			.hasSize(2)
+			.endsWith("map")
+			.first(STRING).startsWith("Flux.just ⇢ at demo.SomeClass.obtainFlux(SomeClass.java:");
 	}
 }

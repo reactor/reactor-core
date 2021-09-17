@@ -1,0 +1,63 @@
+/*
+ * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		//the plugin feature only works with the -original jar !!
+		//otherwise implemented Plugin interface is the shaded one
+		classpath files("@AGENT@")
+	}
+}
+
+plugins {
+	id "net.bytebuddy.byte-buddy-gradle-plugin" version "@BYTE_BUDDY_VERSION@"
+	id 'java'
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	//smoke test to fail the mock gradle if it is wrongly configured with the shaded jar rather than the original
+	if (!"@AGENT@".endsWith("-original.jar")) {
+		throw new GradleException("The build file must be configured with reactor-tools' -original.jar version !!")
+	}
+}
+
+dependencies {
+	implementation "org.reactivestreams:reactive-streams:@REACTIVE_STREAMS_VERSION@"
+	implementation files("@CORE@")
+
+	testImplementation platform("org.junit:junit-bom:@JUNIT_BOM_VERSION@")
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+
+	testImplementation "org.assertj:assertj-core:3.20.2"
+}
+
+test {
+	useJUnitPlatform()
+}
+
+byteBuddy {
+	transformation {
+		plugin = reactor.tools.agent.ReactorDebugByteBuddyPlugin.class
+	}
+}
