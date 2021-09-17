@@ -83,7 +83,7 @@ public class SwapDisposableTest {
 	public void settingSameDisposableTwiceDoesUnsubscribeIt() {
 		Disposable underlying = mock(Disposable.class);
 		sequentialDisposable.update(underlying);
-		verifyZeroInteractions(underlying);
+		verifyNoInteractions(underlying);
 		sequentialDisposable.update(underlying);
 		verify(underlying).dispose();
 	}

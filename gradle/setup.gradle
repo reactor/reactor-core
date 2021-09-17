@@ -156,7 +156,7 @@ if (qualifyVersion("$version") in ["RELEASE", "MILESTONE"] || rootProject.hasPro
 
 	signing {
 		//requiring signature if there is a publish task that is not to MavenLocal
-		required {  gradle.taskGraph.allTasks.any { it.name.toLowerCase().contains("publish")	&& !it.name.contains("MavenLocal") } }
+		required {  gradle.taskGraph.allTasks.any { it.name.toLowerCase().contains("publish")	&& !it.name.contains("MavenLocal") && !it.name.contains("MockRepository") } }
 		def signingKey = findProperty("signingKey")
 		def signingPassword = findProperty("signingPassword")
 

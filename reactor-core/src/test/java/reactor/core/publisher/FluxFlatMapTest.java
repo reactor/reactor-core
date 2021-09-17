@@ -1730,9 +1730,9 @@ public class FluxFlatMapTest {
 					.expectComplete()
 					.verifyThenAssertThat();
 
-			Awaitility.with().pollDelay(org.awaitility.Duration.ZERO).pollInterval(org.awaitility.Duration.ONE_MILLISECOND)
+			Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Duration.ofMillis(1))
 					.await()
-					.atMost(org.awaitility.Duration.ONE_SECOND)
+					.atMost(Duration.ofSeconds(1))
 					.untilAsserted(() -> assertions.hasNotDroppedElements().hasDroppedErrors(1));
 		}
 	}

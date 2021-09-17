@@ -63,8 +63,8 @@ dependencies {
 	}
 
 	// JSR-305 annotations
-	compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
-	testCompileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
+	compileOnly "com.google.code.findbugs:jsr305:$findbugsVersion"
+	testCompileOnly "com.google.code.findbugs:jsr305:$findbugsVersion"
 
 	//Optional Logging Operator
 	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
@@ -102,7 +102,7 @@ dependencies {
 	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
 	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
 	testImplementation "com.pivovarit:throwing-function:$throwingFunctionVersion"
-	testImplementation "com.tngtech.archunit:archunit:0.12.0"
+	testImplementation "com.tngtech.archunit:archunit:$archUnitVersion"
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.

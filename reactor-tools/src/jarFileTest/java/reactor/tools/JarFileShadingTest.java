@@ -49,6 +49,12 @@ public class JarFileShadingTest extends AbstractJarFileTest {
 		);
 	}
 
+	@Test
+	void testNoMetaInfInShaded() throws IOException {
+		assertThatFileList(root.resolve("reactor/tools/shaded"))
+			.containsOnly("net");
+	}
+
 	private ListAssert<String> assertThatFileList(Path path) throws IOException {
 		return (ListAssert) assertThat(Files.list(path))
 				.extracting(Path::getFileName)
