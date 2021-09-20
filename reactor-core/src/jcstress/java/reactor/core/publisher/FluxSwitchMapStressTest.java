@@ -28,6 +28,7 @@ import org.openjdk.jcstress.infra.results.IZL_Result;
 import org.openjdk.jcstress.infra.results.I_Result;
 import org.openjdk.jcstress.infra.results.JI_Result;
 import org.openjdk.jcstress.infra.results.JJJJJJJ_Result;
+import org.openjdk.jcstress.infra.results.LLLL_Result;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -267,7 +268,9 @@ public abstract class FluxSwitchMapStressTest {
 	}
 
 	@JCStressTest
-	@Outcome(id = {"200, 0, 0", "200, 1, 0"}, expect = ACCEPTABLE, desc = "Should produced exactly what was requested")
+	@Outcome(id = {"200, 0, 0, -1", "200, 1, 0, 199"}, expect = ACCEPTABLE, desc =
+			"Should " +
+			"produced exactly what was requested")
 	@State
 	public static class RequestAndProduceStressTest2 extends FluxSwitchMapStressTest {
 
@@ -307,10 +310,11 @@ public abstract class FluxSwitchMapStressTest {
 		}
 
 		@Arbiter
-		public void arbiter(IIL_Result r) {
+		public void arbiter(LLLL_Result r) {
 			r.r1 = stressSubscriber.onNextCalls.get();
 			r.r2 = stressSubscriber.onCompleteCalls.get();
 			r.r3 = switchMapMain.requested;
+			r.r4 = stressSubscriber.onCompleteCalls.get() == 1 ? stressSubscriber.lastElement : -1;
 		}
 	}
 

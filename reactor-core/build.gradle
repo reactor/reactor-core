@@ -222,7 +222,7 @@ blockHoundTest {
 }
 
 jcstress {
-	mode = 'quick' //quick, default, tough
+	mode = 'tough' //quick, default, tough
 }
 
 // inherit basic test task + common configuration in root

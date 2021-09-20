@@ -70,6 +70,8 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	public final AtomicInteger onSubscribeCalls = new AtomicInteger();
 
+	public T lastElement;
+
 	/**
 	 * Build a {@link StressSubscriber} that makes an unbounded request upon subscription.
 	 */
@@ -118,6 +120,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 		if (!guard.compareAndSet(null, Operation.ON_NEXT)) {
 			concurrentOnNext.set(true);
 		} else {
+			lastElement = value;
 			guard.compareAndSet(Operation.ON_NEXT, null);
 		}
 		onNextCalls.incrementAndGet();
