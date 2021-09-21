@@ -19,16 +19,18 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.Tuple4;
+import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 /**
@@ -227,7 +229,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 
-		final List<Tuple4<Integer, String, String, Integer>> chainOrder = new LinkedList<>();
+		final List<Tuple3<Integer, String, String>> chainOrder = new LinkedList<>();
 
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
@@ -243,7 +245,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		void add(Publisher<?> parent, AssemblySnapshot snapshot) {
 			if (snapshot.isLight()) {
-				add(parent, snapshot.lightPrefix(), snapshot.getDescription());
+				add(parent, snapshot.lightPrefix(), Objects.requireNonNull(snapshot.getDescription()));
 			}
 			else {
 				String assemblyInformation = snapshot.toAssemblyInformation();
@@ -258,34 +260,11 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		private void add(Publisher<?> parent, String prefix, String line) {
-			//noinspection ConstantConditions
 			int key = getParentOrThis(Scannable.from(parent));
 			synchronized (chainOrder) {
-				int i = 0;
-
-				int n = chainOrder.size();
-				int j = n - 1;
-				Tuple4<Integer, String, String, Integer> tmp;
-				while(j >= 0){
-					tmp = chainOrder.get(j);
-					//noinspection ConstantConditions
-					if(tmp.getT1() == key){
-						//noinspection ConstantConditions
-						i = tmp.getT4();
-						break;
-					}
-					j--;
-				}
-
-
-				for(;;){
-					Tuple4<Integer, String, String, Integer> t = Tuples.of(parent.hashCode(), prefix, line, i);
-
-					if(!chainOrder.contains(t)){
-						chainOrder.add(t);
-						break;
-					}
-					i++;
+				Tuple3<Integer, String, String> t = Tuples.of(key, prefix, line);
+				if(!chainOrder.contains(t)){
+					chainOrder.add(t);
 				}
 			}
 		}
@@ -299,7 +278,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 				}
 
 				int maxWidth = 0;
-				for (Tuple4<Integer, String, String, Integer> t : chainOrder) {
+				for (Tuple3<Integer, String, String> t : chainOrder) {
 					int length = t.getT2().length();
 					if (length > maxWidth) {
 						maxWidth = length;
@@ -308,14 +287,10 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 				StringBuilder sb = new StringBuilder(super.getMessage())
 						.append("\nError has been observed at the following site(s):\n");
-				for(Tuple4<Integer, String, String, Integer> t : chainOrder) {
-					Integer indent = t.getT4();
+				for(Tuple3<Integer, String, String> t : chainOrder) {
 					String operator = t.getT2();
 					String message = t.getT3();
 					sb.append("\t|_");
-					for (int i = 0; i < indent; i++) {
-						sb.append("____");
-					}
 
 					for (int i = operator.length(); i < maxWidth + 1; i++) {
 						sb.append(' ');

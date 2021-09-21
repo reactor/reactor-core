@@ -18,24 +18,84 @@ package reactor.core.publisher;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.test.StepVerifier;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxOnAssemblyTest {
+class FluxOnAssemblyTest {
 
 	@Test
-	public void stacktraceHeaderTraceEmpty() {
+	void dontAddCheckpointTwiceToBacktraceInCaseExceptionIsReusedInRetry() {
+		final RuntimeException reusedException = new RuntimeException("reused in one retry cycle");
+
+		StepVerifier.create(Flux.error(reusedException)
+				.checkpoint("checkpointId")
+				.retryWhen(Retry.max(3))
+			)
+			.expectErrorSatisfies(t -> {
+				assertThat(t)
+					.matches(Exceptions::isRetryExhausted, "isRetryExhausted")
+					.hasMessage("Retries exhausted: 3/3")
+					.hasCauseReference(reusedException);
+				assertThat(Arrays.asList(t.getCause().getSuppressed()))
+					.as("backtrace as suppressed on the cause")
+					.hasSize(1)
+					.first(InstanceOfAssertFactories.THROWABLE)
+					.hasMessage("\n" +
+						"Error has been observed at the following site(s):\n" +
+						"\t|_ checkpoint ⇢ checkpointId\n" +
+						"Stack trace:");
+			})
+			.verify(Duration.ofSeconds(10));
+	}
+
+	@Test
+	void dontAddCheckpointTwiceToBacktraceInCaseExceptionIsSharedAndMultipleRetry() {
+		Throwable reusedException = new RuntimeException("reused and shared between two retries");
+		StepVerifier.create(Flux.error(reusedException)
+				.checkpoint("checkpointId1")
+				.retryWhen(Retry.max(3))
+				.onErrorResume(e -> Flux.error(reusedException)
+					.checkpoint("checkpointId2")
+					.retryWhen(Retry.max(2))
+				)
+			)
+			.expectErrorSatisfies(t -> {
+				assertThat(t)
+					.matches(Exceptions::isRetryExhausted, "isRetryExhausted")
+					.hasMessage("Retries exhausted: 2/2")
+					.hasCauseReference(reusedException);
+				assertThat(Arrays.asList(t.getCause().getSuppressed()))
+					.as("backtrace as suppressed on the cause")
+					.hasSize(1)
+					.first(InstanceOfAssertFactories.THROWABLE)
+					.hasMessage("\n" +
+						"Error has been observed at the following site(s):\n" +
+						"\t|_ checkpoint ⇢ checkpointId1\n" +
+						"\t|_ checkpoint ⇢ checkpointId2\n" +
+						"Stack trace:");
+			})
+			.verify(Duration.ofSeconds(10));
+	}
+
+	@Test
+	void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, null);
@@ -45,7 +105,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void stacktraceHeaderTraceDescriptionNull() {
+	void stacktraceHeaderTraceDescriptionNull() {
 		StringBuilder sb = new StringBuilder();
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, null);
@@ -55,7 +115,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void stacktraceHeaderTraceDescription() {
+	void stacktraceHeaderTraceDescription() {
 		StringBuilder sb = new StringBuilder();
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, "1234");
@@ -66,7 +126,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void checkpointEmpty() {
+	void checkpointEmpty() {
 		StringWriter sw = new StringWriter();
 
 		Flux<Integer> tested = Flux.range(1, 10)
@@ -84,7 +144,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void checkpointEmptyAndDebug() {
+	void checkpointEmptyAndDebug() {
 		StringWriter sw = new StringWriter();
 
 		Hooks.onOperatorDebug();
@@ -106,7 +166,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void checkpointDescriptionAndForceStack() {
+	void checkpointDescriptionAndForceStack() {
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .map(i -> i < 3 ? i : null)
@@ -124,7 +184,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void checkpointWithDescriptionIsLight() {
+	void checkpointWithDescriptionIsLight() {
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .map(i -> i < 3 ? i : null)
@@ -146,7 +206,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void monoCheckpointEmpty() {
+	void monoCheckpointEmpty() {
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
 		                          .map(i -> null)
@@ -163,7 +223,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void monoCheckpointDescriptionAndForceStack() {
+	void monoCheckpointDescriptionAndForceStack() {
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
 		                          .map(i -> null)
@@ -180,7 +240,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void monoCheckpointWithDescriptionIsLight() {
+	void monoCheckpointWithDescriptionIsLight() {
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
 		                          .map(i -> null)
@@ -201,7 +261,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void parallelFluxCheckpointEmpty() {
+	void parallelFluxCheckpointEmpty() {
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                         .parallel(2)
@@ -219,7 +279,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void parallelFluxCheckpointDescriptionAndForceStack() {
+	void parallelFluxCheckpointDescriptionAndForceStack() {
 		StringWriter sw = new StringWriter();
 		int baseline = getBaseline();
 		Flux<Integer> tested = Flux.range(1, 10)
@@ -249,7 +309,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void parallelFluxCheckpointDescriptionIsLight() {
+	void parallelFluxCheckpointDescriptionIsLight() {
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .parallel(2)
@@ -271,7 +331,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void onAssemblyDescription() {
+	void onAssemblyDescription() {
 		String fluxOnAssemblyStr = Flux.just(1).checkpoint("onAssemblyDescription").toString();
 		String expectedDescription = "checkpoint(\"onAssemblyDescription\")";
 		assertThat(fluxOnAssemblyStr).contains(expectedDescription);
@@ -280,7 +340,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-    public void scanSubscriber() {
+	void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		AssemblySnapshot snapshot = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		FluxOnAssembly.OnAssemblySubscriber<Integer> test =
@@ -293,7 +353,7 @@ public class FluxOnAssemblyTest {
     }
 
 	@Test
-	public void scanOperator() {
+	void scanOperator() {
 		Flux<?> source = Flux.empty();
 		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
 
@@ -303,7 +363,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void stepNameAndToString() {
+	void stepNameAndToString() {
 		int baseline = getBaseline();
 		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
 
@@ -313,7 +373,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void stackAndLightCheckpoint() {
+	void stackAndLightCheckpoint() {
 		Hooks.onOperatorDebug();
 		StringWriter sw = new StringWriter();
 		Mono<Integer> tested = Flux.just(1, 2)
@@ -338,7 +398,7 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void checkpointedPublisher() {
+	void checkpointedPublisher() {
 		StringWriter sw = new StringWriter();
 		Publisher<?> tested = Flux
 				.just(1, 2)
