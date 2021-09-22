@@ -17,8 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -229,7 +229,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 
-		final List<Tuple3<Integer, String, String>> chainOrder = new LinkedList<>();
+		final Map<Tuple3<Integer, String, String>, Integer> chainOrder = new LinkedHashMap<>();
 
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
@@ -260,12 +260,10 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		private void add(Publisher<?> parent, String prefix, String line) {
-			int key = getParentOrThis(Scannable.from(parent));
+			int parentOrThisHashcode = getParentOrThis(Scannable.from(parent));
 			synchronized (chainOrder) {
-				Tuple3<Integer, String, String> t = Tuples.of(key, prefix, line);
-				if(!chainOrder.contains(t)){
-					chainOrder.add(t);
-				}
+				Tuple3<Integer, String, String> key = Tuples.of(parentOrThisHashcode, prefix, line);
+				Integer index = chainOrder.compute(key, (k, idx) -> idx == null ? 0 : idx + 1);
 			}
 		}
 
@@ -278,8 +276,13 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 				}
 
 				int maxWidth = 0;
-				for (Tuple3<Integer, String, String> t : chainOrder) {
-					int length = t.getT2().length();
+				for (Map.Entry<Tuple3<Integer, String, String>, Integer> entry : chainOrder.entrySet()) {
+					int length = entry.getKey().getT2().length();
+					if (entry.getValue() > 0) {
+						// the string ' (xVALUE)' is going to be appended
+						String times = " (x)" + entry.getValue();
+						length = length + times.length();
+					}
 					if (length > maxWidth) {
 						maxWidth = length;
 					}
@@ -287,12 +290,15 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 				StringBuilder sb = new StringBuilder(super.getMessage())
 						.append("\nError has been observed at the following site(s):\n");
-				for(Tuple3<Integer, String, String> t : chainOrder) {
-					String operator = t.getT2();
-					String message = t.getT3();
+				for (Map.Entry<Tuple3<Integer, String, String>, Integer> entry : chainOrder.entrySet()) {
+					Integer indent = entry.getValue() + 1;
+					String times = indent > 1 ? " (x" + indent + ")" : "";
+					String operator = entry.getKey().getT2();
+					String message = entry.getKey().getT3();
 					sb.append("\t|_");
+					sb.append(times);
 
-					for (int i = operator.length(); i < maxWidth + 1; i++) {
+					for (int i = operator.length() + times.length(); i < maxWidth + 1; i++) {
 						sb.append(' ');
 					}
 					sb.append(operator);

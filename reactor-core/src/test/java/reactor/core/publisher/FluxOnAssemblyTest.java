@@ -37,8 +37,124 @@ import reactor.test.StepVerifier;
 import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 class FluxOnAssemblyTest {
+
+	@Test
+	void errorObservedOnMultiplePathShowsCounterOnSharedRoots() {
+		Hooks.onOperatorDebug();
+		IllegalStateException sharedError = new IllegalStateException("shared");
+		int baseline = getBaseline();
+		Flux<String> source = Flux.error(sharedError);
+		Flux<String> chain1 = source.map(String::toLowerCase).filter(s -> s.length() < 4);
+		Flux<String> chain2 = source.filter(s -> s.length() > 5).map(String::toUpperCase);
+
+		Mono<Void> when = Mono.when(chain1, chain2);
+
+		assertThatIllegalStateException()
+			.isThrownBy(when::block)
+			.withMessage("shared")
+			.isSameAs(sharedError);
+
+		assertThat(sharedError.getSuppressed()).hasSize(2);
+		Throwable first = sharedError.getSuppressed()[0];
+		Throwable second = sharedError.getSuppressed()[1];
+
+		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
+
+		String message = first.getMessage();
+		message = message.substring(message.indexOf("\t|_"), message.indexOf("Stack trace:"));
+
+		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnMultiplePathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
+		String mapThenFilterLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnMultiplePathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
+		String filterThenMapLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnMultiplePathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+3) + ")";
+		String whenLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnMultiplePathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+5) + ")";
+
+		assertThat(message.split(System.lineSeparator()))
+			.containsExactly(
+				"\t|_ (x2) Flux.error ⇢ at " + errorLine,
+				"\t|_        Flux.map ⇢ at " + mapThenFilterLine,
+				"\t|_     Flux.filter ⇢ at " + mapThenFilterLine,
+				"\t|_       Mono.when ⇢ at " + whenLine,
+				"\t|_     Flux.filter ⇢ at " + filterThenMapLine,
+				"\t|_        Flux.map ⇢ at " + filterThenMapLine
+			);
+
+		assertThat(second).hasMessage("#block terminated with an error");
+	}
+
+	@Test
+	void errorObservedOnRetryAttemptsShowsCounterOnSharedRoots() {
+		Hooks.onOperatorDebug();
+		IllegalStateException sharedError = new IllegalStateException("shared");
+		int baseline = getBaseline();
+		Flux<String> source = Flux.error(sharedError);
+		Flux<String> retry = source.retry(10);
+
+		assertThatIllegalStateException()
+			.isThrownBy(retry::blockLast)
+			.withMessage("shared")
+			.isSameAs(sharedError);
+
+		assertThat(sharedError.getSuppressed()).hasSize(2);
+		Throwable first = sharedError.getSuppressed()[0];
+		Throwable second = sharedError.getSuppressed()[1];
+
+		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
+
+		String message = first.getMessage();
+		message = message.substring(message.indexOf("\t|_"), message.indexOf("Stack trace:"));
+
+		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
+		String retryLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
+
+		assertThat(message.split(System.lineSeparator()))
+			.containsExactly(
+				"\t|_ (x11) Flux.error ⇢ at " + errorLine,
+				"\t|_       Flux.retry ⇢ at " + retryLine
+			);
+
+		assertThat(second).hasMessage("#block terminated with an error");
+	}
+
+	@Test
+	void errorObservedOnRetryAttemptsWithCheckpointShowsCounterOnSharedRoots() {
+		Hooks.onOperatorDebug();
+		IllegalStateException sharedError = new IllegalStateException("shared");
+		int baseline = getBaseline();
+		Flux<String> source = Flux.error(sharedError);
+		Flux<String> retry = source.checkpoint("light checkpoint")
+			.retry(10);
+
+		assertThatIllegalStateException()
+			.isThrownBy(retry::blockLast)
+			.withMessage("shared")
+			.isSameAs(sharedError);
+
+		assertThat(sharedError.getSuppressed()).hasSize(2);
+		Throwable first = sharedError.getSuppressed()[0];
+		Throwable second = sharedError.getSuppressed()[1];
+
+		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
+
+		String message = first.getMessage();
+		message = message.substring(message.indexOf("\t|_"), message.indexOf("Stack trace:"));
+
+		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsWithCheckpointShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
+		String checkpointLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsWithCheckpointShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
+		String retryLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsWithCheckpointShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+3) + ")";
+
+		assertThat(message.split(System.lineSeparator()))
+			.containsExactly(
+				"\t|_ (x11) Flux.error ⇢ at " + errorLine,
+				"\t|_ (x11) checkpoint ⇢ light checkpoint",
+				"\t|_       Flux.retry ⇢ at " + retryLine
+			)
+				.doesNotContain(checkpointLine);
+
+		assertThat(second).hasMessage("#block terminated with an error");
+	}
 
 	@Test
 	void dontAddCheckpointTwiceToBacktraceInCaseExceptionIsReusedInRetry() {
@@ -59,14 +175,14 @@ class FluxOnAssemblyTest {
 					.first(InstanceOfAssertFactories.THROWABLE)
 					.hasMessage("\n" +
 						"Error has been observed at the following site(s):\n" +
-						"\t|_ checkpoint ⇢ checkpointId\n" +
+						"\t|_ (x4) checkpoint ⇢ checkpointId\n" +
 						"Stack trace:");
 			})
 			.verify(Duration.ofSeconds(10));
 	}
 
 	@Test
-	void dontAddCheckpointTwiceToBacktraceInCaseExceptionIsSharedAndMultipleRetry() {
+	void dontAddCheckpointTooManyTimesToBacktraceInCaseExceptionIsSharedAndMultipleRetry() {
 		Throwable reusedException = new RuntimeException("reused and shared between two retries");
 		StepVerifier.create(Flux.error(reusedException)
 				.checkpoint("checkpointId1")
@@ -87,8 +203,8 @@ class FluxOnAssemblyTest {
 					.first(InstanceOfAssertFactories.THROWABLE)
 					.hasMessage("\n" +
 						"Error has been observed at the following site(s):\n" +
-						"\t|_ checkpoint ⇢ checkpointId1\n" +
-						"\t|_ checkpoint ⇢ checkpointId2\n" +
+						"\t|_ (x4) checkpoint ⇢ checkpointId1\n" +
+						"\t|_ (x3) checkpoint ⇢ checkpointId2\n" +
 						"Stack trace:");
 			})
 			.verify(Duration.ofSeconds(10));
