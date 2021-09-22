@@ -18,7 +18,9 @@ package reactor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -168,22 +170,54 @@ public class HooksTraceTest {
 	@Test
 	public void testMultiReceiver() {
 		Hooks.onOperatorDebug();
-		ConnectableFlux<?> t = Flux.empty()
-		    .then(Mono.defer(() -> {
-			    throw new RuntimeException();
-		    })).flux().publish();
+		//this will avoid relying on exceptions surfacing from assertion in error handler
+		AssertionError[] assertionErrors = new AssertionError[3];
+		List<Throwable> assemblyExceptions = new ArrayList<>();
 
-		t.map(d -> d).subscribe(null,
-				e -> assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_ Flux.publish"));
+		ConnectableFlux<?> t = Flux.empty()
+			.then(Mono.defer(() -> {
+				throw new RuntimeException();
+			})).flux().publish();
+
+		t.map(d -> d).subscribe(null, e -> {
+			assemblyExceptions.add(e.getSuppressed()[0]);
+			try {
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish");
+			}
+			catch (AssertionError ae) {
+				assertionErrors[0] = ae;
+			}
+		});
 
 		t.filter(d -> true).subscribe(null, e -> {
-			assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_____ Flux.publish");
+			assemblyExceptions.add(e.getSuppressed()[0]);
+			try {
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ (x2) Flux.publish");
+			}
+			catch (AssertionError ae) {
+				assertionErrors[1] = ae;
+			}
 		});
 		t.distinct().subscribe(null, e -> {
-			assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_________  Flux.publish");
+			assemblyExceptions.add(e.getSuppressed()[0]);
+			try {
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ (x3) Flux.publish");
+			}
+			catch (AssertionError ae) {
+				assertionErrors[2] = ae;
+			}
 		});
 
 		t.connect();
+
+		assertThat(assertionErrors).allMatch(Objects::isNull);
+		assertThat(assemblyExceptions)
+			.hasSize(3)
+			.allMatch(Objects::nonNull)
+			.containsOnly(assemblyExceptions.get(0))
+			.first(InstanceOfAssertFactories.THROWABLE)
+			.hasMessageContaining("(x3) Flux.publish")
+			.hasMessageNotContainingAny("(x2)", "|_ Flux.publish");
 	}
 
 	@Test
