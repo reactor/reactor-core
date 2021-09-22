@@ -19,6 +19,7 @@ package reactor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
@@ -152,8 +153,8 @@ public class HooksTraceTest {
 	public void testOnLastPublisher() {
 		List<Publisher> l = new ArrayList<>();
 		Hooks.onLastOperator(p -> {
-			System.out.println(Scannable.from(p).parents().count());
-			System.out.println(Scannable.from(p).stepName());
+//			System.out.println(Scannable.from(p).parents().count());
+//			System.out.println(Scannable.from(p).stepName());
 			l.add(p);
 			return p;
 		});
@@ -246,20 +247,20 @@ public class HooksTraceTest {
 				}));
 
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(2, 3, 4)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(2)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(2, 2)
 		            .verifyComplete();
 
@@ -295,40 +296,40 @@ public class HooksTraceTest {
 
 		StepVerifier.create(Flux.just(1, 2, 3)
 		                        .tag("metric", "test")
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(2, 3, 4)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
 		                        .tag("metric", "test")
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(2)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
 		                                .tag("metric", "test")
-		                                .log()
-		                                .log())
+		                                .log(null, Level.OFF)
+		                                .log(null, Level.OFF))
 		            .expectNext(2, 2)
 		            .verifyComplete();
 
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(1)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .log()
-		                                .log())
+		                                .log(null, Level.OFF)
+		                                .log(null, Level.OFF))
 		            .expectNext(1, 1)
 		            .verifyComplete();
 	}
@@ -359,20 +360,20 @@ public class HooksTraceTest {
 				}));
 
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(4, 5, 6)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
+		                        .log(null, Level.OFF)
+		                        .log(null, Level.OFF))
 		            .expectNext(4)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .log()
-		                                .log())
+		                                .log(null, Level.OFF)
+		                                .log(null, Level.OFF))
 		            .expectNext(7, 7) //from now counts as an additional one
 		            .verifyComplete();
 	}
