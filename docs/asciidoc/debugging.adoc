@@ -21,28 +21,28 @@ Consider the following stack trace:
 
 .A typical Reactor stack trace
 ====
-[source,java]
+[source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
-	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
-	at reactor.core.publisher.FluxFlatMap$FlatMapMain.tryEmitScalar(FluxFlatMap.java:445)
-	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:379)
-	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:121)
-	at reactor.core.publisher.FluxRange$RangeSubscription.slowPath(FluxRange.java:154)
-	at reactor.core.publisher.FluxRange$RangeSubscription.request(FluxRange.java:109)
-	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.request(FluxMapFuseable.java:162)
-	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onSubscribe(FluxFlatMap.java:332)
-	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onSubscribe(FluxMapFuseable.java:90)
-	at reactor.core.publisher.FluxRange.subscribe(FluxRange.java:68)
-	at reactor.core.publisher.FluxMapFuseable.subscribe(FluxMapFuseable.java:63)
-	at reactor.core.publisher.FluxFlatMap.subscribe(FluxFlatMap.java:97)
-	at reactor.core.publisher.MonoSingle.subscribe(MonoSingle.java:58)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:3096)
-	at reactor.core.publisher.Mono.subscribeWith(Mono.java:3204)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:3090)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:3057)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:3029)
-	at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:995)
+    at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
+    at reactor.core.publisher.FluxFlatMap$FlatMapMain.tryEmitScalar(FluxFlatMap.java:445)
+    at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:379)
+    at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:121)
+    at reactor.core.publisher.FluxRange$RangeSubscription.slowPath(FluxRange.java:154)
+    at reactor.core.publisher.FluxRange$RangeSubscription.request(FluxRange.java:109)
+    at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.request(FluxMapFuseable.java:162)
+    at reactor.core.publisher.FluxFlatMap$FlatMapMain.onSubscribe(FluxFlatMap.java:332)
+    at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onSubscribe(FluxMapFuseable.java:90)
+    at reactor.core.publisher.FluxRange.subscribe(FluxRange.java:68)
+    at reactor.core.publisher.FluxMapFuseable.subscribe(FluxMapFuseable.java:63)
+    at reactor.core.publisher.FluxFlatMap.subscribe(FluxFlatMap.java:97)
+    at reactor.core.publisher.MonoSingle.subscribe(MonoSingle.java:58)
+    at reactor.core.publisher.Mono.subscribe(Mono.java:3096)
+    at reactor.core.publisher.Mono.subscribeWith(Mono.java:3204)
+    at reactor.core.publisher.Mono.subscribe(Mono.java:3090)
+    at reactor.core.publisher.Mono.subscribe(Mono.java:3057)
+    at reactor.core.publisher.Mono.subscribe(Mono.java:3029)
+    at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:995)
 ----
 ====
 
@@ -77,7 +77,7 @@ pre-existing `Flux` is subscribed to, as follows:
 [source,java]
 ----
 toDebug
-	.subscribeOn(Schedulers.immediate())
+    .subscribeOn(Schedulers.immediate())
     .subscribe(System.out::println, Throwable::printStackTrace);
 ----
 ====
@@ -156,27 +156,27 @@ several things happen:
 The full stack trace, once printed, is as follows:
 
 ====
-[source,java]
+[source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
-	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127) <1>
-	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: <2>
+    at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127) <1>
+    Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: <2>
 Assembly trace from producer [reactor.core.publisher.MonoSingle] : <3>
-	reactor.core.publisher.Flux.single(Flux.java:7915)
-	reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017)
+    reactor.core.publisher.Flux.single(Flux.java:7915)
+    reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017)
 Error has been observed at the following site(s): <4>
-	*_______Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017) <5>
-	|_ Mono.subscribeOn ⇢ at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1071) <6>
+    *_______Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017) <5>
+    |_ Mono.subscribeOn ⇢ at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1071) <6>
 Stack trace: <7>
-		at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127)
+        at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127)
 ...
 <8>
 ...
-		at reactor.core.publisher.Mono.subscribeWith(Mono.java:4363)
-		at reactor.core.publisher.Mono.subscribe(Mono.java:4223)
-		at reactor.core.publisher.Mono.subscribe(Mono.java:4159)
-		at reactor.core.publisher.Mono.subscribe(Mono.java:4131)
-		at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1067)
+        at reactor.core.publisher.Mono.subscribeWith(Mono.java:4363)
+        at reactor.core.publisher.Mono.subscribe(Mono.java:4223)
+        at reactor.core.publisher.Mono.subscribe(Mono.java:4159)
+        at reactor.core.publisher.Mono.subscribe(Mono.java:4131)
+        at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1067)
 ----
 <1> The original stack trace is truncated to a single frame.
 <2> This is new: We see the wrapper operator that captures the stack.
@@ -246,15 +246,15 @@ Now imagine that, inside `findAllUserByName`, there is a `map` that fails. Here,
 we would see the following in the second part of the traceback:
 
 ====
-[source,java]
+[source]
 ----
 Error has been observed at the following site(s):
-	*________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)
-	|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)
-	|_    Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)
-	|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:39)
-	|_   Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)
-	|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)
+    *________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)
+    |_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)
+    |_    Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)
+    |_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:39)
+    |_   Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)
+    |_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)
 ----
 ====
 
@@ -295,6 +295,7 @@ In the code above, error propagates to the `when`, going through two separate ch
 It would lead to a traceback containing the following:
 
 ====
+[source]
 ----
 Error has been observed at the following site(s):
     *_____Flux.error ⇢ at myClass.myMethod(MyClass.java:3) (observed 2 times)
@@ -316,7 +317,8 @@ We see that:
 . second chain is `Flux.error().filter().distinct()
 
 
-TIP: As tracebacks are appended to original errors as suppressed exceptions, this can somewhat
+TIP: *A note on tracebacks and suppressed exceptions*:
+As tracebacks are appended to original errors as suppressed exceptions, this can somewhat
 interfere with another type of exception that uses this mechanism: composite exceptions.
 Such exceptions can be created directly via `Exceptions.multiple(Throwable...)`, or by some
 operators that might join multiple erroring sources (like `Flux#flatMapDelayError`). They
@@ -365,6 +367,7 @@ cost than a regular `checkpoint`.
 searching), as shown in the following example:
 
 ====
+[source]
 ----
 ...
 	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
@@ -379,6 +382,7 @@ initial message for the traceback, augmented with a `description`, as shown in t
 following example:
 
 ====
+[source]
 ----
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
 	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)
