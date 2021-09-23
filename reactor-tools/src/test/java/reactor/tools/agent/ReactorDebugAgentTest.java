@@ -119,11 +119,11 @@ public class ReactorDebugAgentTest {
 		}
 
 		assertThat(lines.next())
-				.as("first backtrace line")
-				.endsWith("|_ Mono.map ⇢ at reactor.tools.agent.ReactorDebugAgentTest.stackTrace(ReactorDebugAgentTest.java:" + (baseline + 2) + ")");
+				.as("first traceback line")
+				.endsWith("*__Mono.map ⇢ at reactor.tools.agent.ReactorDebugAgentTest.stackTrace(ReactorDebugAgentTest.java:" + (baseline + 2) + ")");
 
 		assertThat(lines.next())
-				.as("second backtrace line")
+				.as("second traceback line")
 				.endsWith("|_          ⇢ at reactor.tools.agent.ReactorDebugAgentTest.methodReturningMono(ReactorDebugAgentTest.java:" + (methodReturningMonoBaseline + 2) + ")");
 	}
 
