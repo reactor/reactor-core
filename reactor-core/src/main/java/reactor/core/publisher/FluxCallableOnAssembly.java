@@ -47,7 +47,7 @@ final class FluxCallableOnAssembly<T> extends InternalFluxOperator<T, T>
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return FluxOnAssembly.wrapSubscriber(actual, source, stacktrace);
+		return FluxOnAssembly.wrapSubscriber(actual, source, this, stacktrace);
 	}
 
 	@SuppressWarnings("unchecked")

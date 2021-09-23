@@ -79,10 +79,11 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 						super T>) s;
 				s = new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 						stacktrace,
-						source);
+						source,
+						this);
 			}
 			else {
-				s = new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source);
+				s = new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source, this);
 			}
 			parents[i] = s;
 		}
