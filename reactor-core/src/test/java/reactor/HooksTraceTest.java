@@ -111,7 +111,7 @@ public class HooksTraceTest {
 		catch (IllegalStateException ise) {
 			assertThat(ise.getSuppressed()[0])
 					.hasMessageContaining("HooksTraceTest.java:")
-					.hasMessageContaining("|_  Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceDefer$20(HooksTraceTest.java:");
+					.hasMessageContaining("*___Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceDefer$20(HooksTraceTest.java:");
 		}
 	}
 
@@ -127,7 +127,7 @@ public class HooksTraceTest {
 				    .block()
 		).satisfies(e -> assertThat(e.getSuppressed()[0])
 				.hasMessageContaining("HooksTraceTest.java:")
-				.hasMessageContaining("|_  Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed$25(HooksTraceTest.java:")
+				.hasMessageContaining("*___Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed$25(HooksTraceTest.java:")
 		);
 	}
 
@@ -145,7 +145,7 @@ public class HooksTraceTest {
 				    .blockLast()
 		).satisfies(e -> assertThat(e.getSuppressed()[0])
 				.hasMessageContaining("HooksTraceTest.java:")
-				.hasMessageContaining("|_  Flux.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed2$31(HooksTraceTest.java:")
+				.hasMessageContaining("*___Flux.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed2$31(HooksTraceTest.java:")
 		);
 	}
 
@@ -153,8 +153,6 @@ public class HooksTraceTest {
 	public void testOnLastPublisher() {
 		List<Publisher> l = new ArrayList<>();
 		Hooks.onLastOperator(p -> {
-//			System.out.println(Scannable.from(p).parents().count());
-//			System.out.println(Scannable.from(p).stepName());
 			l.add(p);
 			return p;
 		});
@@ -183,7 +181,8 @@ public class HooksTraceTest {
 		t.map(d -> d).subscribe(null, e -> {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish");
+				//live evaluation, error hasn't been emitted everywhere so we only have one occurrence so far
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.HooksTraceTest.testMultiReceiver(HooksTraceTest.java:179)");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[0] = ae;
@@ -193,7 +192,8 @@ public class HooksTraceTest {
 		t.filter(d -> true).subscribe(null, e -> {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ (x2) Flux.publish");
+				//live evaluation, error hasn't been emitted everywhere so we only have two occurrences so far
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.HooksTraceTest.testMultiReceiver(HooksTraceTest.java:179) (observed 2 times)");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[1] = ae;
@@ -202,7 +202,9 @@ public class HooksTraceTest {
 		t.distinct().subscribe(null, e -> {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ (x3) Flux.publish");
+				//live evaluation, error has been emitted everywhere so we have the three occurrences now
+				// (note that the indentation has grown by 1 due to distinct operator getting in the mix)
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_  Flux.publish ⇢ at reactor.HooksTraceTest.testMultiReceiver(HooksTraceTest.java:179) (observed 3 times)");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[2] = ae;
@@ -217,8 +219,8 @@ public class HooksTraceTest {
 			.allMatch(Objects::nonNull)
 			.containsOnly(assemblyExceptions.get(0))
 			.first(InstanceOfAssertFactories.THROWABLE)
-			.hasMessageContaining("(x3) Flux.publish")
-			.hasMessageNotContainingAny("(x2)", "|_ Flux.publish");
+			.hasMessageContaining("|_  Flux.publish ⇢ at reactor.HooksTraceTest.testMultiReceiver(HooksTraceTest.java:179) (observed 3 times)")
+			.hasMessageNotContainingAny("(observed 2 times)");
 	}
 
 	@Test
