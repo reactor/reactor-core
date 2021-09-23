@@ -1048,8 +1048,9 @@ assertThat(errorCount).hasValue(6); // <6>
 			assertThat(t).satisfies(withSuppressed -> {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
-						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017)\n");
+					.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
+					.hasMessageContaining("*_______Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017)\n")
+					.hasMessageContaining("|_ Mono.subscribeOn ⇢ at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1070)\n");
 			});
 		}
 	}
@@ -1057,14 +1058,18 @@ assertThat(errorCount).hasValue(6); // <6>
 	@Test
 	@Tag("debugInit")
 	public void debuggingCommonStacktrace() {
-		toDebug.subscribe(System.out::println, t -> printAndAssert(t, false));
+		toDebug
+			.subscribeOn(Schedulers.immediate())
+			.subscribe(System.out::println, t -> printAndAssert(t, false));
 	}
 
 	@Test
 	@Tag("debugModeOn")
 	@Tag("debugInit")
 	public void debuggingActivated() {
-		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
+		toDebug
+			.subscribeOn(Schedulers.immediate())
+			.subscribe(System.out::println, t -> printAndAssert(t, true));
 	}
 
 	@Test
