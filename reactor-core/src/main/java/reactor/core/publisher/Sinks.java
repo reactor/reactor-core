@@ -563,6 +563,9 @@ public final class Sinks {
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
+		 * <p>
+		 * Note that though historySize of zero is forbidden, the desired equivalent effect can usually be achieved
+		 * with the {@link Duration} based variant: {@link #limit(Duration) limit(Duration.ZERO)}.
 		 *
 		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 */
@@ -611,6 +614,9 @@ public final class Sinks {
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
+		 * <p>
+		 * Note that though historySize of zero is forbidden, the desired equivalent effect can usually be achieved
+		 * by setting the {@code maxAge} to {@link Duration#ZERO}.
 		 *
 		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 * @param maxAge maximum retention time for elements to be retained
@@ -628,6 +634,9 @@ public final class Sinks {
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
+		 * <p>
+		 * Note that though historySize of zero is forbidden, the desired equivalent effect can usually be achieved
+		 * by setting the {@code maxAge} to {@link Duration#ZERO}.
 		 *
 		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 * @param maxAge maximum retention time for elements to be retained
