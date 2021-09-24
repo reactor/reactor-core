@@ -1819,12 +1819,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/cacheWithTtlForMono.svg" alt="">
 	 * <p>
-	 * Cache loading (ie. subscription to the source) can happen either at the very
-	 * first subscription or after the cache has been cleared due to expiry.
-	 * Once that upstream subscription is started, it cannot be cancelled.
-	 * The operator will however prevent multiple concurrent subscriptions from triggering
-	 * duplicated loading (only one load-triggering subscription can win at a time,
-	 * and the others will get notified of the newly cached value when it arrives).
+	 * Cache loading (ie. subscription to the source) is triggered atomically by the first
+	 * subscription to an uninitialized or expired cache, which guarantees that a single
+	 * cache load happens at a time (and other subscriptions will get notified of the newly
+	 * cached value when it arrives).
 	 *
 	 * @return a replaying {@link Mono}
 	 */
@@ -1841,12 +1839,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/cacheWithTtlForMono.svg" alt="">
 	 * <p>
-	 * Cache loading (ie. subscription to the source) can happen either at the very
-	 * first subscription or after the cache has been cleared due to expiry.
-	 * Once that upstream subscription is started, it cannot be cancelled.
-	 * The operator will however prevent multiple concurrent subscriptions from triggering
-	 * duplicated loading (only one load-triggering subscription can win at a time,
-	 * and the others will get notified of the newly cached value when it arrives).
+	 * Cache loading (ie. subscription to the source) is triggered atomically by the first
+	 * subscription to an uninitialized or expired cache, which guarantees that a single
+	 * cache load happens at a time (and other subscriptions will get notified of the newly
+	 * cached value when it arrives).
 	 *
 	 * @param ttl Time-to-live for each cached item and post termination.
 	 * @param timer the {@link Scheduler} on which to measure the duration.
@@ -1877,12 +1873,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Note that subscribers that come in perfectly simultaneously could receive the same
 	 * cached signal even if the TTL is set to zero.
 	 * <p>
-	 * Cache loading (ie. subscription to the source) can happen either at the very
-	 * first subscription or after the cache has been cleared due to expiry.
-	 * Once that upstream subscription is started, it cannot be cancelled.
-	 * The operator will however prevent multiple concurrent subscriptions from triggering
-	 * duplicated loading (only one load-triggering subscription can win at a time,
-	 * and the others will get notified of the newly cached value when it arrives).
+	 * Cache loading (ie. subscription to the source) is triggered atomically by the first
+	 * subscription to an uninitialized or expired cache, which guarantees that a single
+	 * cache load happens at a time (and other subscriptions will get notified of the newly
+	 * cached value when it arrives).
 	 *
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
@@ -1915,12 +1909,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Note that subscribers that come in perfectly simultaneously could receive the same
 	 * cached signal even if the TTL is set to zero.
 	 * <p>
-	 * Cache loading (ie. subscription to the source) can happen either at the very
-	 * first subscription or after the cache has been cleared due to expiry.
-	 * Once that upstream subscription is started, it cannot be cancelled.
-	 * The operator will however prevent multiple concurrent subscriptions from triggering
-	 * duplicated loading (only one load-triggering subscription can win at a time,
-	 * and the others will get notified of the newly cached value when it arrives).
+	 * Cache loading (ie. subscription to the source) is triggered atomically by the first
+	 * subscription to an uninitialized or expired cache, which guarantees that a single
+	 * cache load happens at a time (and other subscriptions will get notified of the newly
+	 * cached value when it arrives).
 	 *
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
