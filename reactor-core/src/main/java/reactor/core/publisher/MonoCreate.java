@@ -144,7 +144,12 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 				success();
 				return;
 			}
-			if (isDisposed()) {
+			Disposable d = this.disposable;
+			if (d == CANCELLED) {
+				Operators.onDiscard(value, actual.currentContext());
+				return;
+			}
+			else if (d == TERMINATED) {
 				Operators.onNextDropped(value, actual.currentContext());
 				return;
 			}
