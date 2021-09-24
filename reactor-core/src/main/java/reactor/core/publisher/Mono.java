@@ -1800,6 +1800,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * Once the first subscription is made to this {@link Mono}, the source is subscribed to and
 	 * the signal will be cached, indefinitely. This process cannot be cancelled.
+	 * <p>
+	 * In the face of multiple concurrent subscriptions, this operator ensures that only one
+	 * subscription is made to the source.
 	 *
 	 * @return a replaying {@link Mono}
 	 */
@@ -1816,8 +1819,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/cacheWithTtlForMono.svg" alt="">
 	 * <p>
-	 * First subscription after the cache has been emptied triggers cache loading (ie
-	 * subscription to the source), which cannot be cancelled.
+	 * Cache loading (ie. subscription to the source) can happen either at the very
+	 * first subscription or after the cache has been cleared due to expiry.
+	 * Once that upstream subscription is started, it cannot be cancelled.
+	 * The operator will however prevent multiple concurrent subscriptions from triggering
+	 * duplicated loading (only one load-triggering subscription can win at a time,
+	 * and the others will get notified of the newly cached value when it arrives).
 	 *
 	 * @return a replaying {@link Mono}
 	 */
@@ -1834,8 +1841,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/cacheWithTtlForMono.svg" alt="">
 	 * <p>
-	 * First subscription after the cache has been emptied triggers cache loading (ie
-	 * subscription to the source), which cannot be cancelled.
+	 * Cache loading (ie. subscription to the source) can happen either at the very
+	 * first subscription or after the cache has been cleared due to expiry.
+	 * Once that upstream subscription is started, it cannot be cancelled.
+	 * The operator will however prevent multiple concurrent subscriptions from triggering
+	 * duplicated loading (only one load-triggering subscription can win at a time,
+	 * and the others will get notified of the newly cached value when it arrives).
 	 *
 	 * @param ttl Time-to-live for each cached item and post termination.
 	 * @param timer the {@link Scheduler} on which to measure the duration.
@@ -1866,8 +1877,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Note that subscribers that come in perfectly simultaneously could receive the same
 	 * cached signal even if the TTL is set to zero.
 	 * <p>
-	 * First subscription after the cache has been emptied triggers cache loading (ie
-	 * subscription to the source), which cannot be cancelled.
+	 * Cache loading (ie. subscription to the source) can happen either at the very
+	 * first subscription or after the cache has been cleared due to expiry.
+	 * Once that upstream subscription is started, it cannot be cancelled.
+	 * The operator will however prevent multiple concurrent subscriptions from triggering
+	 * duplicated loading (only one load-triggering subscription can win at a time,
+	 * and the others will get notified of the newly cached value when it arrives).
 	 *
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
@@ -1900,8 +1915,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Note that subscribers that come in perfectly simultaneously could receive the same
 	 * cached signal even if the TTL is set to zero.
 	 * <p>
-	 * First subscription after the cache has been emptied triggers cache loading (ie
-	 * subscription to the source), which cannot be cancelled.
+	 * Cache loading (ie. subscription to the source) can happen either at the very
+	 * first subscription or after the cache has been cleared due to expiry.
+	 * Once that upstream subscription is started, it cannot be cancelled.
+	 * The operator will however prevent multiple concurrent subscriptions from triggering
+	 * duplicated loading (only one load-triggering subscription can win at a time,
+	 * and the others will get notified of the newly cached value when it arrives).
 	 *
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
@@ -1940,39 +1959,59 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * As this form of caching is explicitly value-oriented, empty source completion signals and error signals are NOT
 	 * cached. It is always possible to use {@link #materialize()} to cache these (further using {@link #filter(Predicate)}
 	 * if one wants to only consider empty sources or error sources).
-	 *
+	 * <p>
 	 * Predicate is applied differently depending on whether the cache is populated or not:
-	 *  IF EMPTY
-	 *   - first incoming subscriber creates a new COORDINATOR and adds itself
-	 *
-	 *  IF COORDINATOR
-	 *   - each incoming subscriber is added to the current "batch" (COORDINATOR)
-	 *   - once the value is received, the predicate is applied ONCE
-	 *     - mismatch: all the batch is terminated with an error
-	 *          - we're back to init state, next subscriber will trigger a new coordinator and a new subscription
-	 *     - ok: all the batch is completed with the value
-	 *          - cache is now POPULATED
-	 *
-	 * IF POPULATED
-	 *  - each incoming subscriber causes the predicate to apply
-	 *  - if ok: complete that subscriber with the value
-	 *  - if mismatch, swap the current POPULATED with a new COORDINATOR and add the subscriber to that coordinator
-	 *  - imagining a race between sub1 and sub2:
-	 *      - OK NOK will naturally lead to sub1 completing and sub2 being put on wait inside a new COORDINATOR
-	 *      - NOK NOK will race swap of POPULATED with COORDINATOR1 and COORDINATOR2 respectively
-	 *          - if sub1 swaps, sub2 will dismiss the COORDINATOR2 it failed to swap and loop back, see COORDINATOR1 and add itself
-	 *          - if sub2 swaps, the reverse happens
-	 *          - if value is populated in the time it takes for sub2 to loop back, sub2 sees a value and triggers the predicate again (hopefully passing)
-	 *
+	 * <ul>
+	 *  <li>IF EMPTY
+	 *   <ul><li>first incoming subscriber creates a new COORDINATOR and adds itself</li></ul>
+	 *  </li>
+	 *  <li>IF COORDINATOR
+	 *   <ol>
+	 *       <li>each incoming subscriber is added to the current "batch" (COORDINATOR)</li>
+	 *       <li>once the value is received, the predicate is applied ONCE
+	 *         <ol>
+	 *           <li>mismatch: all the batch is terminated with an error
+	 *           -> we're back to init state, next subscriber will trigger a new coordinator and a new subscription</li>
+	 *           <li>ok: all the batch is completed with the value -> cache is now POPULATED</li>
+	 *         </ol>
+	 *       </li>
+	 *    </ol>
+	 *  </li>
+	 *  <li>IF POPULATED
+	 *    <ol>
+	 *        <li>each incoming subscriber causes the predicate to apply</li>
+	 *        <li>if ok: complete that subscriber with the value</li>
+	 *        <li>if mismatch, swap the current POPULATED with a new COORDINATOR and add the subscriber to that coordinator</li>
+	 *        <li>imagining a race between sub1 and sub2:
+	 *            <ol>
+	 *                <li>OK NOK will naturally lead to sub1 completing and sub2 being put on wait inside a new COORDINATOR</li>
+	 *                <li>NOK NOK will race swap of POPULATED with COORDINATOR1 and COORDINATOR2 respectively
+	 *                    <ol>
+	 *                        <li>if sub1 swaps, sub2 will dismiss the COORDINATOR2 it failed to swap and loop back, see COORDINATOR1 and add itself</li>
+	 *                        <li>if sub2 swaps, the reverse happens</li>
+	 *                        <li>if value is populated in the time it takes for sub2 to loop back, sub2 sees a value and triggers the predicate again (hopefully passing)</li>
+	 *                    </ol>
+	 *                </li>
+	 *            </ol>
+	 *        </li>
+	 *    </ol>
+	 *  </li>
+	 * </ul>
+	 * <p>
 	 *  Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
 	 *  Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
-	 *
-	 *  when cancelling a COORDINATOR-issued subscription:
-	 *    - removes itself from batch
-	 *    - if 0 subscribers remaining
-	 *          - swap COORDINATOR with EMPTY
-	 *          - COORDINATOR cancels its source
-	 *
+	 * <p>
+	 *  When cancelling a COORDINATOR-issued subscription:
+	 *  <ol>
+	 *    <li>removes itself from batch</li>
+	 *    <li>if 0 subscribers remaining
+	 *        <ol>
+	 *          <li>swap COORDINATOR with EMPTY</li>
+	 *          <li>COORDINATOR cancels its source</li>
+	 *        </ol>
+	 *    </li>
+	 *  </ol>
+	 * <p>
 	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
 	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
 	 *
@@ -2017,20 +2056,24 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * If the cached value needs to be discarded in case of invalidation, use the {@link #cacheInvalidateWhen(Function, Consumer)} version.
 	 * Note that some downstream subscribers might still be using or storing the value, for example if they
 	 * haven't requested anything yet.
-	 *
-	 *
+	 * <p>
 	 * Trigger is generated only after a subscribers in the COORDINATOR have received the value, and only once.
 	 * The only way to get out of the POPULATED state is to use the trigger, so there cannot be multiple trigger subscriptions, nor concurrent triggering.
-	 *
+	 * <p>
 	 * Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
 	 * Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
-	 *
-	 * when cancelling a COORDINATOR-issued subscription:
-	 *   - removes itself from batch
-	 *   - if 0 subscribers remaining
-	 *         - swap COORDINATOR with EMPTY
-	 *         - COORDINATOR cancels its source
-	 *
+	 * <p>
+	 * When cancelling a COORDINATOR-issued subscription:
+	 * <ol>
+	 *    <li>removes itself from batch</li>
+	 *    <li>if 0 subscribers remaining
+	 *        <ol>
+	 *          <li>swap COORDINATOR with EMPTY</li>
+	 *          <li>COORDINATOR cancels its source</li>
+	 *        </ol>
+	 *    </li>
+	 *  </ol>
+	 * <p>
 	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
 	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
 	 *
@@ -2075,20 +2118,24 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Once a cached value is invalidated, it is passed to the provided {@link Consumer} (which MUST complete normally).
 	 * Note that some downstream subscribers might still be using or storing the value, for example if they
 	 * haven't requested anything yet.
-	 *
-	 *
+	 * <p>
 	 * Trigger is generated only after a subscribers in the COORDINATOR have received the value, and only once.
 	 * The only way to get out of the POPULATED state is to use the trigger, so there cannot be multiple trigger subscriptions, nor concurrent triggering.
-	 *
+	 * <p>
 	 * Cancellation is only possible for downstream subscribers when they've been added to a COORDINATOR.
 	 * Subscribers that are received when POPULATED will either be completed right away or (if the predicate fails) end up being added to a COORDINATOR.
-	 *
-	 * when cancelling a COORDINATOR-issued subscription:
-	 *   - removes itself from batch
-	 *   - if 0 subscribers remaining
-	 *         - swap COORDINATOR with EMPTY
-	 *         - COORDINATOR cancels its source
-	 *
+	 * <p>
+	 * When cancelling a COORDINATOR-issued subscription:
+	 * <ol>
+	 *    <li>removes itself from batch</li>
+	 *    <li>if 0 subscribers remaining
+	 *        <ol>
+	 *          <li>swap COORDINATOR with EMPTY</li>
+	 *          <li>COORDINATOR cancels its source</li>
+	 *        </ol>
+	 *    </li>
+	 *  </ol>
+	 * <p>
 	 * The fact that COORDINATOR cancels its source when no more subscribers remain is important, because it prevents issues with a never() source
 	 * or a source that never produces a value passing the predicate (assuming timeouts on the subscriber).
 	 *
