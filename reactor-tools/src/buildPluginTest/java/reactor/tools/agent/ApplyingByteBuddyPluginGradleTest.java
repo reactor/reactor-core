@@ -43,12 +43,15 @@ class ApplyingByteBuddyPluginGradleTest {
 	}
 
 	@Test
-	void testHelloWorldTask() {
+	void applyingByteBuddyPluginDuringGradleBuild() {
 		BuildResult result = GradleRunner.create()
 			.withProjectDir(testProjectDir)
 			.withDebug(true)
 			.withArguments("test", "--info", "--stacktrace")
 			.build();
+
+		//the test task in reactor-tools/src/buildPluginTest/resources/mock-gradle/src/test/java/demo/SomeClassTest.java
+		//checks that applying the reactor-tool ByteBuddy plugin in Gradle instruments prod code but not test code.
 
 		assertTrue(result.getOutput().contains("test"));
 		final BuildTask task = result.task(":test");
