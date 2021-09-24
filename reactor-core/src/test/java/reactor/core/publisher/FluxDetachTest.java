@@ -17,10 +17,10 @@
 package reactor.core.publisher;
 
 import java.lang.ref.WeakReference;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -147,9 +147,9 @@ public class FluxDetachTest {
 		ts.cancel();
 		o = null;
 
-		Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Duration.ONE_MILLISECOND)
+		Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Duration.ofMillis(1))
 			.await()
-			.atMost(Duration.FIVE_SECONDS)
+			.atMost(Duration.ofSeconds(5))
 			.untilAsserted(() -> {
 				System.gc();
 				Object garbage = new Object();

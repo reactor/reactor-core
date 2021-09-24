@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id 'net.bytebuddy.byte-buddy-gradle-plugin' version '1.10.9' apply false
+    id 'net.bytebuddy.byte-buddy-gradle-plugin' version "$byteBuddyVersion" apply false
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -37,22 +37,22 @@ configurations {
 dependencies {
     api project(":reactor-core")
 
-    shaded 'net.bytebuddy:byte-buddy-agent:1.10.9'
-    shaded 'net.bytebuddy:byte-buddy:1.10.9'
+    shaded "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
+    shaded "net.bytebuddy:byte-buddy:$byteBuddyVersion"
     for (dependency in project.configurations.shaded.dependencies) {
         compileOnly(dependency)
-        testRuntime(dependency)
-        javaAgentTestRuntime(dependency)
+        testRuntimeOnly(dependency)
+        javaAgentTestRuntimeOnly(dependency)
     }
 
     testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
     testImplementation "org.junit.jupiter:junit-jupiter-api"
-    testRuntime "org.junit.jupiter:junit-jupiter-engine"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
     testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation 'cglib:cglib:3.3.0'
+    testImplementation "cglib:cglib:$cgLibVersion"
 
-    jarFileTestImplementation 'org.assertj:assertj-core:$assertJVersion'
+    jarFileTestImplementation "org.assertj:assertj-core:$assertJVersion"
 }
 
 test {
@@ -99,7 +99,7 @@ shadowJar {
                     .toSet()
 
             // Exclude every compile-scoped dependency (including the transitive ones)
-            for (id in project.configurations.compile.resolvedConfiguration.resolvedArtifacts*.moduleVersion*.id) {
+            for (id in project.configurations.compileClasspath.resolvedConfiguration.resolvedArtifacts*.moduleVersion*.id) {
                 def module = "${id.group}:${id.name}".toString()
                 if (!shadedDependencies.contains(module)) {
                     project.configurations.shaded.exclude(group: id.group, module: id.name)
@@ -108,13 +108,7 @@ shadowJar {
             }
         }
     }
-
-    exclude 'module-info.class'
-    exclude 'META-INF/*'
-    exclude 'META-INF/maven*/**'
-    exclude 'META-INF/versions/*'
-    exclude 'META-INF/licenses/*'
-
+    exclude 'META-INF/**'
     // TODO discuss with ByteBuddy folks how to shade it
     exclude 'win32-x86*/**'
 }
@@ -139,7 +133,7 @@ task shadedJarTest(type: Test) {
 
     Set<? super File> mainOutputs = [
             project.sourceSets.main.output.resourcesDir,
-            project.sourceSets.main.java.outputDir,
+            project.sourceSets.main.java.classesDirectory,
     ]
 
     classpath = shadowJar.outputs.files
@@ -188,7 +182,7 @@ tasks.withType(Test).all {
         artifact(shadowJar)
     }
 }
-configurations.runtime.outgoing.artifacts.clear()
+configurations.runtimeOnly.outgoing.artifacts.clear()
 
 //add original jar to the publication
 publishing.publications.mavenJava.artifact(jar)

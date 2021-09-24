@@ -77,9 +77,14 @@ class QueueSubscriptionTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> {
-					assertThat(queueSubscription).isNull();
+					assertThat(queueSubscription).isSameAs("foo");
 				})
-		.withMessage("\n" + "expected: null\n" + "but was : ThisIsNotAQueue");
+		.withMessage("\n" +
+			"Expecting actual:\n" +
+			"  \"foo\"\n" +
+			"and actual:\n" +
+			"  ThisIsNotAQueue\n" +
+			"to refer to the same object");
 	}
 
 }

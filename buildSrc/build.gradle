@@ -24,8 +24,8 @@ repositories {
 }
 
 dependencies {
-	testImplementation("org.assertj:assertj-core:3.19.0")
-	testImplementation platform("org.junit:junit-bom:5.6.0")
+	testImplementation("org.assertj:assertj-core:3.21.0")
+	testImplementation platform("org.junit:junit-bom:5.8.0")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
