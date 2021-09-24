@@ -25,16 +25,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.test.util.LoggerUtils;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
@@ -44,7 +44,6 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxZipTest extends FluxOperatorTest<String, String> {
@@ -67,7 +66,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@CsvSource({
 			"false, false, first",
 			"true, false, first",
@@ -80,7 +79,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(first.zipWith(second)).verifyErrorMessage(expectedMessage);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@CsvSource({
 			"false, false, first",
 			"true, false, first",

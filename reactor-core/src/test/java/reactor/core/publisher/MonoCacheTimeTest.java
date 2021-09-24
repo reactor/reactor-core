@@ -22,15 +22,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -938,9 +937,9 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(subCount.get()).isEqualTo(2);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{displayName} [for null case #{index}]")
 	@MethodSource("nullInvocations")
-	public void nullArgumentsToCacheOperatorsAreImmediatelyRejected(ThrowableAssert.ThrowingCallable nullInvocation) {
+	public void nullArgumentsToCacheOperatorsAreImmediatelyRejected(ThrowableAssert.ThrowingCallable nullInvocation) { //TODO replace with Named.of in JUnit 5.8+
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(nullInvocation);
 	}
 

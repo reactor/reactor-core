@@ -20,12 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+
 import reactor.core.Exceptions;
-import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.EmissionException;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.publisher.Sinks.EmitResult;
+import reactor.test.ParameterizedTestWithName;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +35,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 
 class InternalManySinkTest {
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@EnumSource(value = Sinks.EmitResult.class)
 	void shouldDelegateToHandler(Sinks.EmitResult emitResult) {
 		assumeThat(emitResult.isFailure()).isTrue();

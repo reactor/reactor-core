@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -41,6 +41,7 @@ import reactor.core.publisher.FluxCreate.SerializedFluxSink;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifier.Step;
 import reactor.test.subscriber.AssertSubscriber;
@@ -1491,7 +1492,7 @@ class FluxCreateTest {
 		assertThat(failed).as("failed").isZero();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@EnumSource(OverflowStrategy.class)
 	void secondOnCancelHandlerIsDisposedImmediately(OverflowStrategy overflowStrategy) {
 		AtomicInteger firstDisposed = new AtomicInteger();
@@ -1504,7 +1505,7 @@ class FluxCreateTest {
 		assertThat(secondDisposed).as("second handler for %s", overflowStrategy).hasValue(1);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@EnumSource(OverflowStrategy.class)
 	void secondOnDisposeHandlerIsDisposedImmediately(OverflowStrategy overflowStrategy) {
 		AtomicInteger firstDisposed = new AtomicInteger();

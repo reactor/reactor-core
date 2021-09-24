@@ -18,19 +18,21 @@ package reactor.core.publisher;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
@@ -41,9 +43,8 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 @SuppressWarnings("deprecation")
 public class FluxSwitchMapTest {
 
-	@ParameterizedTest
-	@ValueSource(ints = {0}) // TODO: add for prefetch one
-	@Timeout(120_000)
+	@Test // TODO: add parameterized version, cover prefetch one
+	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	@Tag("slow")
 	// test for issue https://github.com/reactor/reactor-core/issues/2554
 	public void test2596() {
@@ -91,7 +92,7 @@ public class FluxSwitchMapTest {
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void noswitch(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -166,7 +167,7 @@ public class FluxSwitchMapTest {
 
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void doswitch(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -218,7 +219,7 @@ public class FluxSwitchMapTest {
 		            .verifyComplete();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void mainCompletesBefore(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -248,7 +249,7 @@ public class FluxSwitchMapTest {
 
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void mainError(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -274,7 +275,7 @@ public class FluxSwitchMapTest {
 		  .assertNotComplete();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void innerError(int prefetch) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -302,7 +303,7 @@ public class FluxSwitchMapTest {
 		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void mapperThrows(int prefetch) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
@@ -323,7 +324,7 @@ public class FluxSwitchMapTest {
 		  .assertNotComplete();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void mapperReturnsNull(int prefetch) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
@@ -341,7 +342,7 @@ public class FluxSwitchMapTest {
 		  .assertNotComplete();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void switchOnNextDynamically(int prefetch) {
 		StepVerifier.create(Flux.just(1, 2, 3)
@@ -350,7 +351,7 @@ public class FluxSwitchMapTest {
 		            .verifyComplete();
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(ints = {0, 32})
 	public void switchOnNextDynamicallyOnNext(int prefetch) {
 		Sinks.Many<Flux<Integer>> up = Sinks.many().unicast().onBackpressureBuffer();

@@ -16,7 +16,13 @@
 
 package reactor.util.concurrent;
 
-import java.util.*;
+import java.util.AbstractQueue;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
@@ -26,11 +32,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
 import reactor.core.publisher.Hooks;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 
 public class QueuesTest {
 
@@ -152,9 +157,9 @@ public class QueuesTest {
 		assertThat(emptyQueue.toArray(new Integer[0])).as("toArray(empty)").isEmpty();
 	}
 
-	@ParameterizedTest(name = "[{index}] {0}")
+	@ParameterizedTest(name = "{displayName} [{index}] {0}")
 	@MethodSource("queues")
-	public void testWrapping(String name, Supplier<Queue<Object>> queueSupplier) {
+	public void testWrapping(String name, Supplier<Queue<Object>> queueSupplier) { //TODO replace with Named.of in JUnit 5.8+
 		assertThat(queueSupplier.get()).as("no wrapper").hasSize(0);
 
 		Hooks.addQueueWrapper("test", queue -> {

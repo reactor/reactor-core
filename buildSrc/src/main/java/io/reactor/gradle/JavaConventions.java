@@ -74,7 +74,7 @@ public class JavaConventions implements Plugin<Project> {
 
 		if (JavaVersion.current().isJava8Compatible()) {
 			project.getTasks().withType(JavaCompile.class, t -> {
-				if (t.getName().equalsIgnoreCase("testcompile")) {
+				if (t.getName().endsWith("TestJava")) {
 					List<String> args = new ArrayList<>(t.getOptions().getCompilerArgs());
 					args.add("-parameters");
 					t.getOptions().setCompilerArgs(args);
