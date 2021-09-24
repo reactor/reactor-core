@@ -38,15 +38,13 @@ public class TestBestPracticesArchTest {
 
 	@Test
 	void parameterizedTestsIncludeDisplayNameInPattern() {
-		DescribedPredicate<JavaAnnotation> parameterizedTestWithDisplayName =
+		DescribedPredicate<JavaAnnotation<?>> parameterizedTestWithDisplayName =
 			DescribedPredicate.describe("ParameterizedTest with {displayName}, or perhaps consider @ParameterizedTestWithName instead",
 				javaAnnotation -> {
 					if (!javaAnnotation.getRawType().isAssignableFrom(ParameterizedTest.class)) {
 						return false;
 					}
-					return javaAnnotation.get("name")
-						.transform(String::valueOf)
-						.or("NOPE")
+					return javaAnnotation.get("name").map(String::valueOf).orElse("NOPE")
 						.contains(ParameterizedTest.DISPLAY_NAME_PLACEHOLDER);
 				});
 

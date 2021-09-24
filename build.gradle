@@ -19,31 +19,31 @@ import java.text.SimpleDateFormat
 
 buildscript {
 	// we define kotlin version for benefit of both core and test (see kotlin-gradle-plugin below)
-	ext.kotlinVersion = '1.3.72'
+	ext.kotlinVersion = '1.5.31'
 	repositories {
 		mavenCentral()
 		maven { url "https://repo.spring.io/plugins-release" }
 	}
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.24.5" //applied in individual submodules
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.24.18" //applied in individual submodules
 	}
 }
 
 
 plugins {
-	id "com.github.johnrengelman.shadow" version "4.0.2"
-	id 'org.asciidoctor.jvm.convert' version '3.3.0' apply false
-	id 'org.asciidoctor.jvm.pdf' version '3.3.0' apply false
-	id "me.champeau.gradle.japicmp" version "0.2.6"
-	id "de.undercouch.download" version "3.4.3"
-	id "org.unbroken-dome.test-sets" version "3.0.0" apply false
+	id "com.github.johnrengelman.shadow" version "7.0.0"
+	id 'org.asciidoctor.jvm.convert' version '3.3.2' apply false
+	id 'org.asciidoctor.jvm.pdf' version '3.3.2' apply false
+	id "me.champeau.gradle.japicmp" version "0.3.0"
+	id "de.undercouch.download" version "4.1.2"
+	id "org.unbroken-dome.test-sets" version "4.0.0" apply false
 	// note: build scan plugin now must be applied in settings.gradle
 	// plugin portal is now outdated due to bintray sunset, at least for artifactory gradle plugin
-	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
-	id 'io.spring.nohttp' version '0.0.5.RELEASE'
+	id 'biz.aQute.bnd.builder' version '5.3.0' apply false
+	id 'io.spring.nohttp' version '0.0.9'
 	id "io.github.reyerizo.gradle.jcstress" version "0.8.11" apply false
-	id "com.diffplug.spotless" version "5.14.0"
+	id "com.diffplug.spotless" version "5.15.0"
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -86,28 +86,34 @@ ext {
 	 * Versions not necessarily bumped by a script (testing, etc...) below:
 	 */
 	// Misc not often upgraded
-
+	jsr166BackportVersion = '1.0.0.RELEASE'
 	// Used as a way to get jsr305 annotations.
 	// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
 	findbugsVersion = '3.0.1'
 
-	jsr166BackportVersion = '1.0.0.RELEASE'
-
 	// Blockhound
-	blockhoundVersion = '1.0.3.RELEASE'
+	blockhoundVersion = '1.0.6.RELEASE'
 
 	// Logging
-	slf4jVersion = '1.7.12'
-	logbackVersion = '1.1.2'
+	slf4jVersion = '1.7.32'
+	logbackVersion = '1.2.5'
 
 	// Testing
-	jUnitPlatformVersion = '5.6.0'
-	assertJVersion = '3.19.0' //needs to be manually synchronized in buildSrc
-	mockitoVersion = '2.23.0'
-	awaitilityVersion = '3.1.2'
-	throwingFunctionVersion = '1.5.0'
-	javaObjectLayoutVersion = '0.9'
-	testNgVersion = '6.8.5'
+	jUnitPlatformVersion = '5.8.0' //needs to be manually synchronized in buildSrc
+	assertJVersion = '3.21.0' //needs to be manually synchronized in buildSrc
+	mockitoVersion = '3.12.4'
+	awaitilityVersion = '4.1.0'
+	throwingFunctionVersion = '1.5.1'
+	javaObjectLayoutVersion = '0.16'
+	testNgVersion = '7.4.0'
+	archUnitVersion = '0.21.0'
+
+	// For reactor-tools
+	byteBuddyVersion = '1.10.9' //sync with plugin version above //TODO bump to 1.11.16 with breaking changes
+	cgLibVersion = '3.3.0'
+
+	// JMH
+	jmhVersion = '1.33'
 }
 
 // only publish scan if a specific gradle entreprise server is passed
@@ -182,14 +188,10 @@ configure(subprojects) { p ->
 		maven { url 'https://repo.spring.io/milestone' }
 	}
 
-	jacoco {
-		toolVersion = '0.8.5'
-	}
-
 	jacocoTestReport {
 		reports {
-			xml.enabled = true
-			html.enabled = true
+			xml.required = true
+			html.required = true
 		}
 	}
 
@@ -212,14 +214,14 @@ configure(subprojects) { p ->
 		// show progress by displaying test classes, avoiding test suite timeouts
 		TestDescriptor last
 		beforeTest { TestDescriptor td ->
-			if (last != td.getParent()) {
+			if (last != td.getParent() && td.getParent().toString().startsWith("Test class")) {
 				last = td.getParent()
 				println last
 			}
 		}
 
 		if (JavaVersion.current().isJava9Compatible()) {
-			println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
+			println "Java ${JavaVersion.current()}: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
 			jvmArgs = ["-XX:MaxGCPauseMillis=20"]
 		}
 

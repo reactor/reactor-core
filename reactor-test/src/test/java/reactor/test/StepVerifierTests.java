@@ -253,7 +253,7 @@ public class StepVerifierTests {
 				                              .assertNext(s -> assertThat(s).endsWith("ooz"))
 				                              .expectComplete()
 				                              .verify())
-				.withMessage("\nExpecting:\n  \"foo\"\nto end with:\n  \"ooz\"\n");
+				.withMessage("\nExpecting actual:\n  \"foo\"\nto end with:\n  \"ooz\"\n");
 	}
 
 	@Test
@@ -2487,7 +2487,7 @@ public class StepVerifierTests {
 		assertThatExceptionOfType(AssertionError.class)
 			.isThrownBy(stepVerifier::verify)
 			.withMessage("\n" +
-				"Expecting:\n" +
+				"Expecting actual:\n" +
 				"  [1, 2, 3, 4, 5]\n" +
 				"to contain exactly (and in same order):\n" +
 				"  [1, 5]\n" +
@@ -2511,7 +2511,7 @@ public class StepVerifierTests {
 		assertThatExceptionOfType(AssertionError.class)
 			.isThrownBy(stepVerifier::verify)
 			.withMessage("\n" +
-				"Expecting:\n" +
+				"Expecting actual:\n" +
 				"  [6, 7, 8, 9, 10]\n" +
 				"to contain exactly (and in same order):\n" +
 				"  [6, 10]\n" +
@@ -2533,7 +2533,7 @@ public class StepVerifierTests {
 		assertThatExceptionOfType(AssertionError.class)
 			.isThrownBy(stepVerifier::verify)
 			.withMessage("\n" +
-				"Expecting:\n" +
+				"Expecting actual:\n" +
 				"  [2, 3, 4, 5, 6, 7, 8, 9, 10]\n" +
 				"to contain exactly (and in same order):\n" +
 				"  [2, 3, 4, 5, 6, 7, 8, 9]\n" +

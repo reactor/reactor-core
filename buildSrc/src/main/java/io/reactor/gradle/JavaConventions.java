@@ -24,7 +24,7 @@ import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 /**
@@ -38,39 +38,36 @@ public class JavaConventions implements Plugin<Project> {
 	}
 
 	private void applyJavaConvention(Project project) {
-		JavaPluginConvention java = project.getConvention().getPlugin(JavaPluginConvention.class);
+		JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
 		java.setSourceCompatibility(JavaVersion.VERSION_1_8);
 		java.setTargetCompatibility(JavaVersion.VERSION_1_8);
 
 		project.getTasks()
-		       .withType(JavaCompile.class)
-		       .forEach(compileTask -> {
-			       compileTask.getOptions().setEncoding("UTF-8");
-			       compileTask.getOptions().setCompilerArgs(Arrays.asList(
-					       "-Xlint:-varargs", // intentionally disabled
-					       "-Xlint:cast",
-					       "-Xlint:classfile",
-					       "-Xlint:dep-ann",
-					       "-Xlint:divzero",
-					       "-Xlint:empty",
-					       "-Xlint:finally",
-					       "-Xlint:overrides",
-					       "-Xlint:path",
-					       "-Xlint:-processing",
-					       "-Xlint:static",
-					       "-Xlint:try",
-						   "-Xmaxerrs", "500",
-						   "-Xmaxwarns", "500",
-					       "-Xlint:deprecation",
-					       "-Xlint:unchecked",
-					       "-Xlint:-serial",      // intentionally disabled
-					       "-Xlint:-options",     // intentionally disabled
-					       "-Xlint:-fallthrough", // intentionally disabled
-					       "-Xlint:-rawtypes",     // TODO enable and fix warnings
-						   "-Xmaxwarns",
-						   "1000"
-			       ));
-		       });
+			.withType(JavaCompile.class)
+			.forEach(compileTask -> {
+				compileTask.getOptions().setEncoding("UTF-8");
+				compileTask.getOptions().setCompilerArgs(Arrays.asList(
+					"-Xlint:-varargs", // intentionally disabled
+					"-Xlint:cast",
+					"-Xlint:classfile",
+					"-Xlint:dep-ann",
+					"-Xlint:divzero",
+					"-Xlint:empty",
+					"-Xlint:finally",
+					"-Xlint:overrides",
+					"-Xlint:path",
+					"-Xlint:-processing",
+					"-Xlint:static",
+					"-Xlint:try",
+					"-Xlint:deprecation",
+					"-Xlint:unchecked",
+					"-Xlint:-serial",      // intentionally disabled
+					"-Xlint:-options",     // intentionally disabled
+					"-Xlint:-fallthrough", // intentionally disabled
+					"-Xmaxerrs", "500",
+					"-Xmaxwarns", "1000"
+				));
+			});
 
 		if (JavaVersion.current().isJava8Compatible()) {
 			project.getTasks().withType(JavaCompile.class, t -> {

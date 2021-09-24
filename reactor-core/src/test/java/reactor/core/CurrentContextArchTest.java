@@ -28,6 +28,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CurrentContextArchTest {
 
@@ -42,6 +43,11 @@ public class CurrentContextArchTest {
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
 			.importPackagesOf(reactor.core.publisher.FluxProcessor.class);
+
+	@Test
+	void smokeTestWhereClassesLoaded() {
+		assertThat(CORE_SUBSCRIBER_CLASSES).isNotEmpty();
+	}
 
 	@Test
 	public void corePublishersShouldNotUseDefaultCurrentContext() {

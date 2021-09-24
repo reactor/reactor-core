@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id 'net.bytebuddy.byte-buddy-gradle-plugin' version '1.10.9' apply false
+    id 'net.bytebuddy.byte-buddy-gradle-plugin' version "$byteBuddyVersion" apply false
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -40,8 +40,8 @@ dependencies {
     compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
     compileOnly "com.google.code.findbugs:annotations:${findbugsVersion}"
 
-    shaded 'net.bytebuddy:byte-buddy-agent:1.10.9'
-    shaded 'net.bytebuddy:byte-buddy:1.10.9'
+    shaded "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
+    shaded "net.bytebuddy:byte-buddy:$byteBuddyVersion"
     for (dependency in project.configurations.shaded.dependencies) {
         compileOnly(dependency)
         testRuntimeOnly(dependency)
@@ -53,9 +53,9 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
     testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation 'cglib:cglib:3.3.0'
+    testImplementation "cglib:cglib:$cgLibVersion"
 
-    jarFileTestImplementation 'org.assertj:assertj-core:$assertJVersion'
+    jarFileTestImplementation "org.assertj:assertj-core:$assertJVersion"
 }
 
 test {
@@ -111,13 +111,7 @@ shadowJar {
             }
         }
     }
-
-    exclude 'module-info.class'
-    exclude 'META-INF/*'
-    exclude 'META-INF/maven*/**'
-    exclude 'META-INF/versions/*'
-    exclude 'META-INF/licenses/*'
-
+    exclude 'META-INF/**'
     // TODO discuss with ByteBuddy folks how to shade it
     exclude 'win32-x86*/**'
 }
@@ -142,7 +136,7 @@ task shadedJarTest(type: Test) {
 
     Set<? super File> mainOutputs = [
             project.sourceSets.main.output.resourcesDir,
-            project.sourceSets.main.java.outputDir,
+            project.sourceSets.main.java.classesDirectory,
     ]
 
     classpath = shadowJar.outputs.files
@@ -191,7 +185,7 @@ tasks.withType(Test).all {
         artifact(shadowJar)
     }
 }
-configurations.runtime.outgoing.artifacts.clear()
+configurations.runtimeOnly.outgoing.artifacts.clear()
 
 // add original jar to the publication
 publishing.publications.mavenJava.artifact(jar)
