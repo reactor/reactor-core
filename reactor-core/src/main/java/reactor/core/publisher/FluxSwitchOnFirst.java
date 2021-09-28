@@ -104,7 +104,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state) || hasInboundClosedPrematurely(state)) {
 				return state;
 			}
 
@@ -457,7 +457,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				this.firstValue = t;
 
 				long previousState = markFirstValueReceived(this);
-				if (hasInboundCancelled(previousState)) {
+				if (hasInboundCancelled(previousState) || hasInboundClosedPrematurely(previousState)) {
 					this.firstValue = null;
 					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return;
@@ -506,7 +506,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			this.throwable = t;
 
 			final long previousState = markInboundTerminated(this);
-			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState) || hasInboundClosedPrematurely(previousState)) {
 				Operators.onErrorDropped(t, this.outboundSubscriber.currentContext());
 				return;
 			}
@@ -543,7 +543,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			this.done = true;
 
 			final long previousState = markInboundTerminated(this);
-			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState) || hasInboundClosedPrematurely(previousState)) {
 				return;
 			}
 
