@@ -83,7 +83,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static final int HAS_INBOUND_CANCELLED_FLAG          =
 			0b0000_0000_0000_0000_0000_0000_0010_0000;
 	static final int HAS_INBOUND_CLOSED_PREMATURELY_FLAG =
-			0b0000_0000_0000_0000_0000_0000_0010_0000;
+			0b0000_0000_0000_0000_0000_0000_0100_0000;
 	static final int HAS_INBOUND_TERMINATED_FLAG         =
 			0b0000_0000_0000_0000_0000_0000_1000_0000;
 
@@ -680,8 +680,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			previousState = markInboundSubscriberSet(this);
 			if (hasInboundClosedPrematurely(previousState)
 					&& (!hasInboundRequestedOnce(previousState) || hasFirstValueSent(previousState))
-					&& !hasInboundCancelled(previousState)
-					&& !hasInboundTerminated(previousState)) {
+					&& !hasInboundCancelled(previousState)) {
 				inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 			}
 		}
