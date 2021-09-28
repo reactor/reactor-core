@@ -70,27 +70,29 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		return super.scanUnsafe(key);
 	}
 
-	static final int HAS_FIRST_VALUE_RECEIVED_FLAG    =
+	static final int HAS_FIRST_VALUE_RECEIVED_FLAG       =
 			0b0000_0000_0000_0000_0000_0000_0000_0001;
-	static final int HAS_INBOUND_SUBSCRIBED_ONCE_FLAG =
+	static final int HAS_INBOUND_SUBSCRIBED_ONCE_FLAG    =
 			0b0000_0000_0000_0000_0000_0000_0000_0010;
-	static final int HAS_INBOUND_SUBSCRIBER_SET_FLAG =
+	static final int HAS_INBOUND_SUBSCRIBER_SET_FLAG     =
 			0b0000_0000_0000_0000_0000_0000_0000_0100;
-	static final int HAS_INBOUND_REQUESTED_ONCE_FLAG  =
+	static final int HAS_INBOUND_REQUESTED_ONCE_FLAG     =
 			0b0000_0000_0000_0000_0000_0000_0000_1000;
-	static final int HAS_FIRST_VALUE_SENT_FLAG        =
+	static final int HAS_FIRST_VALUE_SENT_FLAG           =
 			0b0000_0000_0000_0000_0000_0000_0001_0000;
-	static final int HAS_INBOUND_CANCELLED_FLAG       =
+	static final int HAS_INBOUND_CANCELLED_FLAG          =
 			0b0000_0000_0000_0000_0000_0000_0010_0000;
-	static final int HAS_INBOUND_TERMINATED_FLAG      =
+	static final int HAS_INBOUND_CLOSED_PREMATURELY_FLAG =
 			0b0000_0000_0000_0000_0000_0000_0100_0000;
+	static final int HAS_INBOUND_TERMINATED_FLAG         =
+			0b0000_0000_0000_0000_0000_0000_1000_0000;
 
 	static final int HAS_OUTBOUND_SUBSCRIBED_FLAG =
-			0b0000_0000_0000_0000_0000_0000_1000_0000;
-	static final int HAS_OUTBOUND_CANCELLED_FLAG  =
 			0b0000_0000_0000_0000_0000_0001_0000_0000;
-	static final int HAS_OUTBOUND_TERMINATED_FLAG =
+	static final int HAS_OUTBOUND_CANCELLED_FLAG  =
 			0b0000_0000_0000_0000_0000_0010_0000_0000;
+	static final int HAS_OUTBOUND_TERMINATED_FLAG =
+			0b0000_0000_0000_0000_0000_0100_0000_0000;
 
 	/**
 	 * Adds a flag which indicate that the first inbound onNext signal has already been
@@ -102,7 +104,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state) || hasInboundClosedPrematurely(state)) {
 				return state;
 			}
 
@@ -142,7 +144,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state) || hasInboundClosedPrematurely(state)) {
 				return state;
 			}
 
@@ -162,7 +164,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state) || hasInboundClosedPrematurely(state)) {
 				return state;
 			}
 
@@ -182,7 +184,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state) || hasInboundClosedPrematurely(state)) {
 				return state;
 			}
 
@@ -202,7 +204,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state) || hasInboundClosedPrematurely(state)) {
 				return state;
 			}
 
@@ -214,7 +216,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	/**
 	 * Adds a flag which indicate that the inbound has already been cancelled. Fails if
-	 * inbound is cancelled or terminated.
+	 * inbound is cancelled.
 	 *
 	 * @return previous observed state
 	 */
@@ -222,7 +224,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		for (;;) {
 			final int state = instance.state;
 
-			if (hasInboundTerminated(state) || hasInboundCancelled(state)) {
+			if (hasInboundCancelled(state)) {
 				return state;
 			}
 
@@ -233,12 +235,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	/**
-	 * Adds flags which indicate that the inbound has cancelled upstream and errored
-	 * the inbound downstream. Fails if either inbound is cancelled or terminated.
+	 * Adds flags which indicate that the inbound has prematurely from the very bottom
+	 * of the pipe. Fails if either inbound is cancelled or terminated before.
 	 *
 	 * @return previous observed state
 	 */
-	static <T, R> long markInboundCancelledAndErrored(AbstractSwitchOnFirstMain<T, R> instance) {
+	static <T, R> long markInboundClosedPrematurely(AbstractSwitchOnFirstMain<T, R> instance) {
 		for (;;) {
 			final int state = instance.state;
 
@@ -246,7 +248,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG | HAS_INBOUND_TERMINATED_FLAG)) {
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CLOSED_PREMATURELY_FLAG)) {
 				return state;
 			}
 		}
@@ -342,6 +344,10 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		return (state & HAS_INBOUND_CANCELLED_FLAG) == HAS_INBOUND_CANCELLED_FLAG;
 	}
 
+	static boolean hasInboundClosedPrematurely(long state) {
+		return (state & HAS_INBOUND_CLOSED_PREMATURELY_FLAG) == HAS_INBOUND_CLOSED_PREMATURELY_FLAG;
+	}
+
 	static boolean hasInboundTerminated(long state) {
 		return (state & HAS_INBOUND_TERMINATED_FLAG) == HAS_INBOUND_TERMINATED_FLAG;
 	}
@@ -416,8 +422,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		@Nullable
 		public final Object scanUnsafe(Attr key) {
-			if (key == Attr.CANCELLED) return hasInboundCancelled(this.state);
-			if (key == Attr.TERMINATED) return hasInboundTerminated(this.state);
+			if (key == Attr.CANCELLED) return hasInboundCancelled(this.state) || hasInboundClosedPrematurely(this.state);
+			if (key == Attr.TERMINATED) return hasInboundTerminated(this.state) || hasInboundClosedPrematurely(this.state);
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -451,7 +457,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				this.firstValue = t;
 
 				long previousState = markFirstValueReceived(this);
-				if (hasInboundCancelled(previousState)) {
+				if (hasInboundCancelled(previousState) || hasInboundClosedPrematurely(previousState)) {
 					this.firstValue = null;
 					Operators.onDiscard(t, this.outboundSubscriber.currentContext());
 					return;
@@ -500,7 +506,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			this.throwable = t;
 
 			final long previousState = markInboundTerminated(this);
-			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState) || hasInboundClosedPrematurely(previousState)) {
 				Operators.onErrorDropped(t, this.outboundSubscriber.currentContext());
 				return;
 			}
@@ -537,7 +543,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			this.done = true;
 
 			final long previousState = markInboundTerminated(this);
-			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState) || hasInboundClosedPrematurely(previousState)) {
 				return;
 			}
 
@@ -568,7 +574,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		public final void cancel() {
 			long previousState = markInboundCancelled(this);
-			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
+			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState) || hasInboundClosedPrematurely(previousState)) {
 				return;
 			}
 
@@ -582,7 +588,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		final void cancelAndError() {
-			long previousState = markInboundCancelledAndErrored(this);
+			long previousState = markInboundClosedPrematurely(this);
 			if (hasInboundCancelled(previousState) || hasInboundTerminated(previousState)) {
 				return;
 			}
@@ -620,7 +626,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 					if (this.isFirstOnNextReceivedOnce) {
 						final long previousState = markInboundRequestedOnce(this);
-						if (hasInboundCancelled(previousState)) {
+						if (hasInboundCancelled(previousState) || hasInboundClosedPrematurely(previousState)) {
 							return;
 						}
 
@@ -651,7 +657,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
-			if (hasInboundCancelled(previousState)) {
+			if (hasInboundClosedPrematurely(previousState)) {
 				Operators.error(inboundSubscriber, new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 				return;
 			}
@@ -672,13 +678,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			inboundSubscriber.onSubscribe(this);
 
 			previousState = markInboundSubscriberSet(this);
-			if (hasInboundCancelled(previousState) && hasOutboundTerminated(previousState) && !hasInboundTerminated(previousState)) {
+			if (hasInboundClosedPrematurely(previousState)
+					&& (!hasInboundRequestedOnce(previousState) || hasFirstValueSent(previousState))
+					&& !hasInboundCancelled(previousState)) {
 				inboundSubscriber.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 			}
 		}
 
 		abstract CoreSubscriber<? super T> convert(CoreSubscriber<? super T> inboundSubscriber);
-
 
 		final boolean sendFirst(T firstValue) {
 			final CoreSubscriber<? super T> a = this.inboundSubscriber;
@@ -687,9 +694,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 			final long previousState = markFirstValueSent(this);
 			if (hasInboundCancelled(previousState)) {
-				if (hasInboundTerminated(previousState)) {
-					a.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
-				}
+				return sent;
+			}
+
+			if (hasInboundClosedPrematurely(previousState)) {
+				a.onError(new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 				return sent;
 			}
 
@@ -753,7 +762,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return false;
 			}
 
-
 			if (!this.isFirstOnNextReceivedOnce) {
 				this.isFirstOnNextReceivedOnce = true;
 				this.firstValue = t;
@@ -805,8 +813,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 	}
 
-	static class SwitchOnFirstControlSubscriber<T>
-			extends Operators.DeferredSubscription
+	static class SwitchOnFirstControlSubscriber<T> extends Operators.DeferredSubscription
 			implements InnerOperator<T, T>, CoreSubscriber<T> {
 
 		final AbstractSwitchOnFirstMain<?, T> parent;
