@@ -52,9 +52,9 @@ final class Traces {
 
 	static {
 		String[] strategyClasses = {
-				Traces.class.getName() + "$StackWalkerCallSiteSupplierFactory",
-				Traces.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
-				Traces.class.getName() + "$ExceptionCallSiteSupplierFactory",
+			StackWalkerCallSiteSupplierFactory.class.getName(),
+			SharedSecretsCallSiteSupplierFactory.class.getName(),
+			ExceptionCallSiteSupplierFactory.class.getName()
 		};
 		// find one available call-site supplier w.r.t. the jdk version to provide
 		// linkage-compatibility between jdk 8 and 9+
