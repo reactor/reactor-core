@@ -23,6 +23,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TracesTest {
 
 	@Test
+	void assertCallSiteSupplierPerJavaVersion() {
+		final String version = System.getProperty("java.specification.version");
+		if (version.startsWith("1.")) {
+			if (version.equals("1.8")) {
+				assertThat(Traces.callSiteSupplierFactory.getClass().getSimpleName())
+					.as("callsite supplier on Java " + version)
+					.isEqualTo("SharedSecretsCallSiteSupplierFactory");
+			}
+			else {
+				assertThat(Traces.callSiteSupplierFactory.getClass().getSimpleName())
+					.as("callsite supplier on Java " + version)
+					.isEqualTo("ExceptionCallSiteSupplierFactory");
+			}
+		}
+		else {
+			int javaVersion = Integer.parseInt(version);
+			if (javaVersion >= 9) {
+				assertThat(Traces.callSiteSupplierFactory.getClass().getSimpleName())
+					.as("callsite supplier on Java " + version)
+					.isEqualTo("StackWalkerCallSiteSupplierFactory");
+			}
+			else {
+				assertThat(Traces.callSiteSupplierFactory.getClass().getSimpleName())
+					.as("callsite supplier on Java " + version)
+					.isEqualTo("ExceptionCallSiteSupplierFactory");
+			}
+		}
+	}
+
+	@Test
 	public void extractOperatorLine_reactor() {
 		String stack = "\treactor.core.publisher.Flux.filter(Flux.java:4209)\n" +
 				"\treactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)\n";

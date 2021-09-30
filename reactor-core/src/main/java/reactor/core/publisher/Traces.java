@@ -51,18 +51,17 @@ final class Traces {
 	static Supplier<Supplier<String>> callSiteSupplierFactory;
 
 	static {
-		String[] strategyClasses = {
-			StackWalkerCallSiteSupplierFactory.class.getName(),
-			SharedSecretsCallSiteSupplierFactory.class.getName(),
-			ExceptionCallSiteSupplierFactory.class.getName()
+		Class<?>[] strategyClasses = {
+			StackWalkerCallSiteSupplierFactory.class,
+			SharedSecretsCallSiteSupplierFactory.class,
+			ExceptionCallSiteSupplierFactory.class
 		};
 		// find one available call-site supplier w.r.t. the jdk version to provide
 		// linkage-compatibility between jdk 8 and 9+
 		callSiteSupplierFactory = Stream
 				.of(strategyClasses)
-				.flatMap(className -> {
+				.flatMap(clazz -> {
 					try {
-						Class<?> clazz = Class.forName(className);
 						@SuppressWarnings("unchecked")
 						Supplier<Supplier<String>> function = (Supplier) clazz.getDeclaredConstructor()
 						                                                      .newInstance();
