@@ -252,6 +252,9 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 				this.index = ++i;
 
+				if (this.cancelled) {
+					return;
+				}
 				p.subscribe(this);
 
 				final Object state = this.get();
@@ -323,7 +326,9 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatArrayDelayErrorSubscriber, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, Throwable.class, "error");
-		
+
+		volatile boolean cancelled;
+
 		ConcatArrayDelayErrorSubscriber(CoreSubscriber<? super T> actual, Publisher<? extends T>[] sources) {
 			this.actual = actual;
 			this.sources = sources;
@@ -331,7 +336,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (this.error == Exceptions.TERMINATED) {
+			if (this.cancelled) {
 				this.remove();
 				s.cancel();
 				return;
@@ -404,7 +409,11 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				if (p == null) {
 					this.remove();
 
-					final NullPointerException npe = new NullPointerException("Source Publisher at " + "index " + i + " is null");
+					if (this.cancelled) {
+						return;
+					}
+
+					final NullPointerException npe = new NullPointerException("Source Publisher at index " + i + " is null");
 					if (!Exceptions.addThrowable(ERROR, this, npe)) {
 						Operators.onErrorDropped(npe, this.actual.currentContext());
 						return;
@@ -415,7 +424,6 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 						return;
 					}
 
-					//noinspection ConstantConditions
 					this.actual.onError(throwable);
 					return;
 				}
@@ -427,6 +435,10 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				}
 
 				this.index = ++i;
+
+				if (this.cancelled) {
+					return;
+				}
 
 				p.subscribe(this);
 
@@ -452,12 +464,14 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public void cancel() {
 			this.remove();
-			final Throwable throwable = Exceptions.terminate(ERROR, this);
+
+			this.cancelled = true;
 
 			if ((this.requested & Long.MIN_VALUE) != Long.MIN_VALUE) {
 				this.s.cancel();
 			}
 
+			final Throwable throwable = Exceptions.terminate(ERROR, this);
 			if (throwable != null) {
 				Operators.onErrorDropped(throwable, this.actual.currentContext());
 			}
@@ -477,10 +491,11 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.DELAY_ERROR) return true;
+			if (key == Attr.TERMINATED) return this.error == Exceptions.TERMINATED;
 			if (key == Attr.ERROR) return this.error != Exceptions.TERMINATED ? this.error : null;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			if (key == Attr.PARENT) return this.s;
-			if (key == Attr.CANCELLED) return this.error == Exceptions.TERMINATED;
+			if (key == Attr.CANCELLED) return this.cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return this.requested;
 
 			return InnerOperator.super.scanUnsafe(key);

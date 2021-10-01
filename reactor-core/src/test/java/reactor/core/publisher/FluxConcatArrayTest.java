@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -257,6 +258,28 @@ public class FluxConcatArrayTest {
 		)
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	void stopSubscribingAdditionalSourcesWhenDownstreamCancelled() {
+		Flux.concat(Mono.fromSupplier(() -> 5), Mono.error(IllegalStateException::new))
+			.next()
+			.as(StepVerifier::create)
+			.expectNext(5)
+			.expectComplete()
+			.verifyThenAssertThat()
+			.hasNotDroppedErrors();
+	}
+
+	@Test
+	void stopSubscribingAdditionalSourcesWhenDownstreamCancelled_delayError() {
+		Flux.concatDelayError(Mono.fromSupplier(() -> 5), Mono.error(IllegalStateException::new))
+			.next()
+			.as(StepVerifier::create)
+			.expectNext(5)
+			.expectComplete()
+			.verifyThenAssertThat()
+			.hasNotDroppedErrors();
 	}
 
 	@Test
