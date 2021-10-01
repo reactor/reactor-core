@@ -3145,8 +3145,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Transform the item emitted by this {@link Mono} into {@link Iterable}, then forward
-	 * its elements into the returned {@link Flux}. The prefetch argument allows to
-	 * give an arbitrary prefetch size to the inner {@link Iterable}.
+	 * its elements into the returned {@link Flux}.
 	 * The {@link Iterable#iterator()} method will be called at least once and at most twice.
 	 *
 	 * <p>
