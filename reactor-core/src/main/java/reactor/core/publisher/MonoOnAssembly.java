@@ -53,10 +53,10 @@ final class MonoOnAssembly<T> extends InternalMonoOperator<T, T> implements Fuse
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
 					(ConditionalSubscriber<? super T>) actual;
-			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs, stacktrace, source);
+			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs, stacktrace, source, this);
 		}
 		else {
-			return new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source);
+			return new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source, this);
 		}
 	}
 

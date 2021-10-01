@@ -46,7 +46,7 @@ public class GuideDebuggingExtraTests {
 
 		assertThat(debugStack.substring(0, debugStack.indexOf("Stack trace:")))
 				.endsWith("Error has been observed at the following site(s):\n"
-						+ "\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
+						+ "\t*________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
 						+ "\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)\n"
 						+ "\t|_    Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)\n"
 						+ "\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:39)\n"

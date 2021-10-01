@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedTransferQueue;
@@ -30,6 +31,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -735,20 +737,60 @@ public class HooksTest {
 	}
 
 	@Test
-	public void testMultiReceiver() throws Exception {
+	public void testMultiReceiver() {
 		Hooks.onOperatorDebug();
+		//this will avoid relying on exceptions surfacing from assertion in error handler
+		AssertionError[] assertionErrors = new AssertionError[3];
+		List<Throwable> assemblyExceptions = new ArrayList<>();
+
 		ConnectableFlux<?> t = Flux.empty()
 		    .then(Mono.defer(() -> {
 			    throw new RuntimeException();
 		    })).flux().publish();
 
-		t.map(d -> d).subscribe(null,
-				e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t|_ Flux.publish"));
+		t.map(d -> d).subscribe(null, e -> {
+			assemblyExceptions.add(e.getSuppressed()[0]);
+			try {
+				//live evaluation, error hasn't been emitted everywhere so we only have one occurrence so far
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:749)");
+			}
+			catch (AssertionError ae) {
+				assertionErrors[0] = ae;
+			}
+		});
 
-		t.filter(d -> true).subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("|_____ Flux.publish"));
-		t.distinct().subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("_________  Flux.publish"));
+		t.filter(d -> true).subscribe(null, e -> {
+			assemblyExceptions.add(e.getSuppressed()[0]);
+			try {
+				//live evaluation, error hasn't been emitted everywhere so we only have two occurrences so far
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:749) (observed 2 times)");
+			}
+			catch (AssertionError ae) {
+				assertionErrors[1] = ae;
+			}
+		});
+		t.distinct().subscribe(null, e -> {
+			assemblyExceptions.add(e.getSuppressed()[0]);
+			try {
+				//live evaluation, error has been emitted everywhere so we have the three occurrences now
+				// (note that the indentation has grown by 1 due to distinct operator getting in the mix)
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:749) (observed 3 times)");
+			}
+			catch (AssertionError ae) {
+				assertionErrors[2] = ae;
+			}
+		});
 
 		t.connect();
+
+		assertThat(assertionErrors).allMatch(Objects::isNull);
+		assertThat(assemblyExceptions)
+			.hasSize(3)
+			.allMatch(Objects::nonNull)
+			.containsOnly(assemblyExceptions.get(0))
+			.first(InstanceOfAssertFactories.THROWABLE)
+			.hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:749) (observed 3 times)")
+			.hasMessageNotContainingAny("(observed 2 times)");
 	}
 
 	@Test

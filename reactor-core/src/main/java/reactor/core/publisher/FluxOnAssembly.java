@@ -16,19 +16,29 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.Tuple4;
+import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 /**
@@ -96,14 +106,15 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	@SuppressWarnings("unchecked")
 	static <T> CoreSubscriber<? super T> wrapSubscriber(CoreSubscriber<? super T> actual,
 														Flux<? extends T> source,
+														Publisher<?> current,
 														@Nullable AssemblySnapshot snapshotStack) {
 		if(snapshotStack != null) {
 			if (actual instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
-				return new OnAssemblyConditionalSubscriber<>(cs, snapshotStack, source);
+				return new OnAssemblyConditionalSubscriber<>(cs, snapshotStack, source, current);
 			}
 			else {
-				return new OnAssemblySubscriber<>(actual, snapshotStack, source);
+				return new OnAssemblySubscriber<>(actual, snapshotStack, source, current);
 			}
 		}
 		else {
@@ -114,7 +125,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return wrapSubscriber(actual, source, snapshotStack);
+		return wrapSubscriber(actual, source, this, snapshotStack);
 	}
 
 	/**
@@ -126,6 +137,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		final boolean          checkpointed;
 		@Nullable
 		final String           description;
+		@Nullable
 		final Supplier<String> assemblyInformationSupplier;
 		String cached;
 
@@ -144,7 +156,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 			this.cached = assemblyInformation;
 		}
 
-		private AssemblySnapshot(boolean checkpointed, @Nullable String description, Supplier<String> assemblyInformationSupplier) {
+		private AssemblySnapshot(boolean checkpointed, @Nullable String description,
+								 @Nullable Supplier<String> assemblyInformationSupplier) {
 			this.checkpointed = checkpointed;
 			this.description = description;
 			this.assemblyInformationSupplier = assemblyInformationSupplier;
@@ -165,6 +178,9 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		String toAssemblyInformation() {
 			if(cached == null) {
+				if (assemblyInformationSupplier == null) {
+					throw new IllegalStateException("assemblyInformation must either be supplied or resolvable");
+				}
 				cached = assemblyInformationSupplier.get();
 			}
 			return cached;
@@ -217,6 +233,65 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 	}
 
+	static final class ObservedAtInformationNode {
+
+		final int id;
+		final String operator;
+		final String message;
+
+		int occurrenceCounter;
+
+		@Nullable
+		ObservedAtInformationNode parent;
+		Set<ObservedAtInformationNode> children;
+
+		ObservedAtInformationNode(int id, String operator, String message) {
+			this.id = id;
+			this.operator = operator;
+			this.message = message;
+			this.occurrenceCounter = 0;
+			this.children = new LinkedHashSet<>();
+		}
+
+		void incrementCount() {
+			this.occurrenceCounter++;
+		}
+
+		void addNode(ObservedAtInformationNode node) {
+			if (this == node) {
+				return;
+			}
+			if (children.add(node)) {
+				node.parent = this;
+			}
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			ObservedAtInformationNode node = (ObservedAtInformationNode) o;
+			return id == node.id && operator.equals(node.operator) && message.equals(node.message);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(id, operator, message);
+		}
+
+		@Override
+		public String toString() {
+			return operator + "{" +
+				"@" + id +
+				(children.isEmpty() ? "" : ", " + children.size() + " children") +
+				'}';
+		}
+	}
+
 	/**
 	 * The holder for the assembly stacktrace (as its message).
 	 *
@@ -228,10 +303,12 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 
-		final List<Tuple4<Integer, String, String, Integer>> chainOrder = new LinkedList<>();
-
 		/** */
-		private static final long serialVersionUID = 5278398300974016773L;
+		private static final long serialVersionUID = -6342981676020433721L;
+
+		final Map<Integer, ObservedAtInformationNode> nodesPerId = new HashMap<>();
+		final ObservedAtInformationNode root = new ObservedAtInformationNode(-1, "ROOT", "ROOT");
+		int maxOperatorSize = 0;
 
 		OnAssemblyException(String message) {
 			super(message);
@@ -242,9 +319,9 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 			return this;
 		}
 
-		void add(Publisher<?> parent, AssemblySnapshot snapshot) {
+		void add(Publisher<?> parent, Publisher<?> current, AssemblySnapshot snapshot) {
 			if (snapshot.isLight()) {
-				add(parent, snapshot.lightPrefix(), snapshot.getDescription());
+				add(parent, current, snapshot.lightPrefix(), Objects.requireNonNull(snapshot.getDescription()));
 			}
 			else {
 				String assemblyInformation = snapshot.toAssemblyInformation();
@@ -253,91 +330,110 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 					String prefix = parts.length > 1 ? parts[0] : "";
 					String line = parts[parts.length - 1];
 
-					add(parent, prefix, line);
+					add(parent, current, prefix, line);
 				}
 			}
 		}
 
-		private void add(Publisher<?> parent, String prefix, String line) {
-			//noinspection ConstantConditions
-			int key = getParentOrThis(Scannable.from(parent));
-			synchronized (chainOrder) {
-				int i = 0;
+		private void add(Publisher<?> operator, Publisher<?> currentAssembly, String prefix, String line) {
+			Scannable parentAssembly = Scannable.from(currentAssembly)
+				.parents()
+				.filter(s -> s instanceof AssemblyOp)
+				.findFirst()
+				.orElse(null);
 
-				int n = chainOrder.size();
-				int j = n - 1;
-				Tuple4<Integer, String, String, Integer> tmp;
-				while(j >= 0){
-					tmp = chainOrder.get(j);
-					//noinspection ConstantConditions
-					if(tmp.getT1() == key){
-						//noinspection ConstantConditions
-						i = tmp.getT4();
-						break;
-					}
-					j--;
+			int thisId = System.identityHashCode(currentAssembly);
+			int parentId = System.identityHashCode(parentAssembly);
+
+			ObservedAtInformationNode thisNode;
+			synchronized (nodesPerId) {
+				thisNode = nodesPerId.get(thisId);
+				if (thisNode != null) {
+					thisNode.incrementCount();
+				}
+				else {
+					thisNode = new ObservedAtInformationNode(thisId, prefix, line);
+					nodesPerId.put(thisId, thisNode);
 				}
 
-
-				for(;;){
-					Tuple4<Integer, String, String, Integer> t = Tuples.of(parent.hashCode(), prefix, line, i);
-
-					if(!chainOrder.contains(t)){
-						chainOrder.add(t);
-						break;
+				if (parentAssembly == null) {
+					root.addNode(thisNode);
+				}
+				else {
+					ObservedAtInformationNode parentNode = nodesPerId.get(parentId);
+					if (parentNode != null) {
+						parentNode.addNode(thisNode);
 					}
-					i++;
+					else {
+						root.addNode(thisNode);
+					}
+				}
+
+				//pre-compute the maximum width of the operators
+				int length = thisNode.operator.length();
+				if (length > this.maxOperatorSize) {
+					this.maxOperatorSize = length;
 				}
 			}
+		}
+
+		void findPathToLeaves(ObservedAtInformationNode node, List<List<ObservedAtInformationNode>> rootPaths) {
+			if (node.children.isEmpty()) {
+				List<ObservedAtInformationNode> pathForLeaf = new LinkedList<>();
+				ObservedAtInformationNode traversed = node;
+				while (traversed != null && traversed != root) {
+					pathForLeaf.add(0, traversed);
+					traversed = traversed.parent;
+				}
+				rootPaths.add(pathForLeaf);
+				return;
+			}
+			node.children.forEach(n -> findPathToLeaves(n, rootPaths));
 		}
 
 		@Override
 		public String getMessage() {
 			//skip the "error has been observed" traceback if mapped traceback is empty
-			synchronized (chainOrder) {
-				if (chainOrder.isEmpty()) {
+			synchronized (nodesPerId) {
+				if (root.children.isEmpty()) {
 					return super.getMessage();
 				}
 
-				int maxWidth = 0;
-				for (Tuple4<Integer, String, String, Integer> t : chainOrder) {
-					int length = t.getT2().length();
-					if (length > maxWidth) {
-						maxWidth = length;
-					}
-				}
-
 				StringBuilder sb = new StringBuilder(super.getMessage())
-						.append("\nError has been observed at the following site(s):\n");
-				for(Tuple4<Integer, String, String, Integer> t : chainOrder) {
-					Integer indent = t.getT4();
-					String operator = t.getT2();
-					String message = t.getT3();
-					sb.append("\t|_");
-					for (int i = 0; i < indent; i++) {
-						sb.append("____");
-					}
+					.append(System.lineSeparator())
+					.append("Error has been observed at the following site(s):")
+					.append(System.lineSeparator());
 
-					for (int i = operator.length(); i < maxWidth + 1; i++) {
-						sb.append(' ');
+				List<List<ObservedAtInformationNode>> rootPaths = new ArrayList<>();
+				root.children.forEach(actualRoot -> findPathToLeaves(actualRoot, rootPaths));
+
+				rootPaths.forEach(path -> path.forEach(node -> {
+					boolean isRoot = node.parent == null || node.parent == root;
+					sb.append("\t");
+					String connector = "|_";
+					if (isRoot) {
+						connector = "*_";
 					}
-					sb.append(operator);
+					sb.append(connector);
+
+					char filler = isRoot ? '_' : ' ';
+					for (int i = node.operator.length(); i < this.maxOperatorSize; i++) {
+						sb.append(filler);
+					}
+					sb.append(filler);
+					sb.append(node.operator);
 					sb.append(Traces.CALL_SITE_GLUE);
-					sb.append(message);
-					sb.append("\n");
-				}
+					sb.append(node.message);
+					if (node.occurrenceCounter > 0) {
+						sb.append(" (observed ").append(node.occurrenceCounter + 1).append(" times)");
+					}
+					sb.append(System.lineSeparator());
+				}));
+
 				sb.append("Stack trace:");
 				return sb.toString();
 			}
 		}
-	}
-
-	static int getParentOrThis(Scannable parent) {
-		return parent.parents()
-		             .filter(s -> !(s instanceof AssemblyOp))
-		             .findFirst()
-		             .map(Object::hashCode)
-		             .orElse(parent.hashCode());
 	}
 
 	static class OnAssemblySubscriber<T>
@@ -345,6 +441,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		final AssemblySnapshot          snapshotStack;
 		final Publisher<?>              parent;
+		final Publisher<?>              current;
 		final CoreSubscriber<? super T> actual;
 
 		QueueSubscription<T> qs;
@@ -352,10 +449,13 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		int                  fusionMode;
 
 		OnAssemblySubscriber(CoreSubscriber<? super T> actual,
-				AssemblySnapshot snapshotStack, Publisher<?> parent) {
+							 AssemblySnapshot snapshotStack,
+							 Publisher<?> parent,
+							 Publisher<?> current) {
 			this.actual = actual;
 			this.snapshotStack = snapshotStack;
 			this.parent = parent;
+			this.current = current;
 		}
 
 		@Override
@@ -458,7 +558,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 				}
 			}
 
-			onAssemblyException.add(parent, snapshotStack);
+			onAssemblyException.add(parent, current, snapshotStack);
 
 			return t;
 		}
@@ -522,8 +622,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		final ConditionalSubscriber<? super T> actualCS;
 
 		OnAssemblyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				AssemblySnapshot stacktrace, Publisher<?> parent) {
-			super(actual, stacktrace, parent);
+				AssemblySnapshot stacktrace, Publisher<?> parent, Publisher<?> current) {
+			super(actual, stacktrace, parent, current);
 			this.actualCS = actual;
 		}
 
