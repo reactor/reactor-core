@@ -41,7 +41,7 @@ public class FluxWindowTimeoutTest {
 	public void windowWithTimeoutAccumulateOnSize() {
 		StepVerifier.withVirtualTime(() -> Flux.range(1, 6)
 						   .delayElements(Duration.ofMillis(300))
-						   .windowTimeout(5, Duration.ofMillis(2000))
+						   .windowTimeout(5, Duration.ofMillis(2000), true)
 						   .concatMap(Flux::buffer))
 		            .thenAwait(Duration.ofMillis(1500))
 		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
@@ -54,7 +54,7 @@ public class FluxWindowTimeoutTest {
 	public void windowWithTimeoutAccumulateOnTime() {
 		StepVerifier.withVirtualTime(() -> Flux.range(1, 8)
 						   .delayElements(Duration.ofNanos(300))
-						   .windowTimeout(14, Duration.ofNanos(2000))
+						   .windowTimeout(14, Duration.ofNanos(2000), true)
 						   .concatMap(Flux::buffer))
 		            .thenAwait(Duration.ofNanos(2000))
 		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5, 6))
@@ -68,7 +68,7 @@ public class FluxWindowTimeoutTest {
 		StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofMillis(350))
 		                                       .ignoreElement()
 		                                       .as(Flux::from)
-		                                       .windowTimeout(1000, Duration.ofMillis(100))
+		                                       .windowTimeout(1000, Duration.ofMillis(100), true)
 		                                       .concatMap(Flux::collectList)
 		)
 		            .thenAwait(Duration.ofMinutes(1))
@@ -85,7 +85,7 @@ public class FluxWindowTimeoutTest {
 			Mono.just("foo")
 			    .delayElement(Duration.ofMillis(400 + 400 + 300))
 				.concatWith(Mono.delay(Duration.ofMillis(100 + 400 + 100)).then(Mono.empty()))
-				.windowTimeout(1000, Duration.ofMillis(400))
+				.windowTimeout(1000, Duration.ofMillis(400), true)
 				.concatMap(Flux::collectList)
 		)
 		            .thenAwait(Duration.ofHours(1))
@@ -104,7 +104,7 @@ public class FluxWindowTimeoutTest {
 				    .thenMany(Flux.range(1, 3))
 				    .delayElements(Duration.ofMillis(150))
 				    .concatWith(Flux.range(4, 10).delaySubscription(Duration.ofMillis(500)))
-				    .windowTimeout(10, Duration.ofMillis(500))
+				    .windowTimeout(10, Duration.ofMillis(500), true)
 				    .flatMap(Flux::collectList)
 		)
 		            .expectSubscription()
@@ -119,7 +119,7 @@ public class FluxWindowTimeoutTest {
 	@Test
 	public void noDelayMultipleOfSize() {
 		StepVerifier.create(Flux.range(1, 10)
-		                        .windowTimeout(5, Duration.ofSeconds(1))
+		                        .windowTimeout(5, Duration.ofSeconds(1), true)
 		                        .concatMap(Flux::collectList)
 		)
 		            .assertNext(l -> assertThat(l).containsExactly(1, 2, 3, 4, 5))
@@ -131,7 +131,7 @@ public class FluxWindowTimeoutTest {
 	@Test
 	public void noDelayGreaterThanSize() {
 		StepVerifier.create(Flux.range(1, 12)
-		                        .windowTimeout(5, Duration.ofHours(1))
+		                        .windowTimeout(5, Duration.ofHours(1), true)
 		                        .concatMap(Flux::collectList)
 		)
 		            .assertNext(l -> assertThat(l).containsExactly(1, 2, 3, 4, 5))
@@ -165,7 +165,7 @@ public class FluxWindowTimeoutTest {
 		};
 
 		StepVerifier.create(Flux.range(1, 3).hide()
-		                        .windowTimeout(10, Duration.ofMillis(500), testScheduler))
+		                        .windowTimeout(10, Duration.ofMillis(500), testScheduler, false))
 		            .expectNextCount(1)
 		            .verifyError(RejectedExecutionException.class);
 	}
@@ -177,7 +177,7 @@ public class FluxWindowTimeoutTest {
 				Flux.range(1, 10),
 				Flux.range(11, 5).delayElements(Duration.ofMillis(15))
 		)
-		    .windowTimeout(10, Duration.ofMillis(1)).concatMap(w -> w).log())
+		    .windowTimeout(10, Duration.ofMillis(1), true).concatMap(w -> w).log())
 		            .thenAwait(Duration.ofMillis(95))
 		            .expectNextCount(16)
 		.verifyComplete();
@@ -219,7 +219,7 @@ public class FluxWindowTimeoutTest {
 		};
 
 		StepVerifier.create(Flux.range(1, 3).hide()
-		                        .windowTimeout(2, Duration.ofSeconds(2), testScheduler)
+		                        .windowTimeout(2, Duration.ofSeconds(2), testScheduler, true)
 		                        .concatMap(w -> {
 		                        	reject.set(true);
 		                        	return w.collectList();
@@ -230,7 +230,7 @@ public class FluxWindowTimeoutTest {
 
 	@Test
 	public void scanOperator() {
-		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, TimeUnit.MILLISECONDS, Schedulers.immediate());
+		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, TimeUnit.MILLISECONDS, Schedulers.immediate(), true);
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
