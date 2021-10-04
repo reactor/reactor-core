@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.assertj.core.api.ThrowableAssert;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
 
@@ -34,6 +34,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.publisher.TestPublisher;
@@ -43,6 +44,8 @@ import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
@@ -937,24 +940,24 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(subCount.get()).isEqualTo(2);
 	}
 
-	@ParameterizedTest(name = "{displayName} [for null case #{index}]")
+	@ParameterizedTestWithName
 	@MethodSource("nullInvocations")
-	public void nullArgumentsToCacheOperatorsAreImmediatelyRejected(ThrowableAssert.ThrowingCallable nullInvocation) { //TODO replace with Named.of in JUnit 5.8+
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(nullInvocation);
+	void nullArgumentsToCacheOperatorsAreImmediatelyRejected(ThrowingCallable type) {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(type);
 	}
 
-	private static Stream<ThrowableAssert.ThrowingCallable> nullInvocations() {
+	private static Stream<Arguments> nullInvocations() {
 		return Stream.of(
-			() -> Mono.empty().cache(null),
-			() -> Mono.empty().cache(null, Schedulers.parallel()),
-			() -> Mono.empty().cache(Duration.ZERO, null),
-			() -> Mono.empty().cache(null, e -> Duration.ZERO, () -> Duration.ZERO),
-			() -> Mono.empty().cache(v -> Duration.ZERO, null, () -> Duration.ZERO),
-			() -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, null),
-			() -> Mono.empty().cache(null, e -> Duration.ZERO, () -> Duration.ZERO, Schedulers.parallel()),
-			() -> Mono.empty().cache(v -> Duration.ZERO, null, () -> Duration.ZERO, Schedulers.parallel()),
-			() -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, null, Schedulers.parallel()),
-			() -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, () -> Duration.ZERO, null)
+			arguments(named("cache(null)", (ThrowingCallable) () -> Mono.empty().cache(null))),
+			arguments(named("cache(null,parallel)", (ThrowingCallable) () -> Mono.empty().cache(null, Schedulers.parallel()))),
+			arguments(named("cache(ZERO,null)", (ThrowingCallable) () -> Mono.empty().cache(Duration.ZERO, null))),
+			arguments(named("cache(null,e->ZERO,()->ZERO)", (ThrowingCallable) () -> Mono.empty().cache(null, e -> Duration.ZERO, () -> Duration.ZERO))),
+			arguments(named("cache(v->ZERO,null,()->ZERO)", (ThrowingCallable) () -> Mono.empty().cache(v -> Duration.ZERO, null, () -> Duration.ZERO))),
+			arguments(named("cache(v->ZERO,e->ZERO,null)", (ThrowingCallable) () -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, null))),
+			arguments(named("cache(null,e->ZERO,()->ZERO,parallel)", (ThrowingCallable) () -> Mono.empty().cache(null, e -> Duration.ZERO, () -> Duration.ZERO, Schedulers.parallel()))),
+			arguments(named("cache(v->ZERO,null,()->ZERO,parallel)", (ThrowingCallable) () -> Mono.empty().cache(v -> Duration.ZERO, null, () -> Duration.ZERO, Schedulers.parallel()))),
+			arguments(named("cache(v->ZERO,e->ZERO,null,parallel)", (ThrowingCallable) () -> Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, null, Schedulers.parallel()))),
+			arguments(named("cache(v->ZERO,e->ZERO,()->ZERO,null)", (ThrowingCallable) () ->  Mono.empty().cache(v -> Duration.ZERO, e -> Duration.ZERO, () -> Duration.ZERO, null)))
 		);
 	}
 }

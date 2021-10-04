@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.FunctionCounter;
@@ -33,10 +34,11 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import reactor.test.AutoDisposingExtension;
@@ -46,6 +48,7 @@ import reactor.util.Metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.offset;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static reactor.core.scheduler.SchedulerMetricDecorator.TAG_SCHEDULER_ID;
 
 public class SchedulersMetricsTest {
@@ -201,31 +204,22 @@ public class SchedulersMetricsTest {
 				.containsExactly("foo");
 	}
 
-	static Object[] metricsSchedulers() {
-		return new Object[] {
-				new Object[] {
-						(Supplier<Scheduler>) () -> Schedulers.newParallel("A", 1),
-						"PARALLEL"
-				},
-				new Object[] {
-						(Supplier<Scheduler>) () -> {
-							@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic()
-							Scheduler newElastic = Schedulers.newElastic("A");
-							return newElastic;
-						},
-						"ELASTIC"
-				},
-				new Object[] {
-						(Supplier<Scheduler>) () -> Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "A"),
-						"BOUNDED_ELASTIC"
-				}
-		};
+	static Stream<Arguments>  metricsSchedulers() {
+		return Stream.of(
+			arguments(Named.named("PARALLEL", (Supplier<Scheduler>) () -> Schedulers.newParallel("A", 1))),
+			arguments(Named.named("ELASTIC", (Supplier<Scheduler>) () -> {
+				@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic()
+				Scheduler newElastic = Schedulers.newElastic("A");
+				return newElastic;
+			})),
+			arguments(Named.named("BOUNDED_ELASTIC", (Supplier<Scheduler>) () -> Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "A")))
+		);
 	}
 
-	@ParameterizedTest(name="{displayName} [{index}] for {1}")
+	@ParameterizedTestWithName
 	@MethodSource("metricsSchedulers")
-    public void shouldReportExecutorMetrics(Supplier<Scheduler> schedulerSupplier, String type) { //TODO replace with Named.of in JUnit 5.8+
-		Scheduler scheduler = afterTest.autoDispose(schedulerSupplier.get());
+    void shouldReportExecutorMetrics(Supplier<Scheduler> schedulerType) {
+		Scheduler scheduler = afterTest.autoDispose(schedulerType.get());
 		final int taskCount = 3;
 
 		for (int i = 0; i < taskCount; i++) {
@@ -250,8 +244,8 @@ public class SchedulersMetricsTest {
 	@ParameterizedTestWithName
 	@MethodSource("metricsSchedulers")
 	@Timeout(10)
-	public void shouldReportExecutionTimes(Supplier<Scheduler> schedulerSupplier, String type) {
-	    Scheduler scheduler = afterTest.autoDispose(schedulerSupplier.get());
+	void shouldReportExecutionTimes(Supplier<Scheduler> schedulerType) {
+	    Scheduler scheduler = afterTest.autoDispose(schedulerType.get());
 	    final int taskCount = 3;
 
 		Phaser phaser = new Phaser(1);
