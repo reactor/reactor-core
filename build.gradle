@@ -109,7 +109,7 @@ ext {
 	archUnitVersion = '0.21.0'
 
 	// For reactor-tools
-	byteBuddyVersion = '1.10.9' //sync with plugin version above //TODO bump to 1.11.16 with breaking changes
+	byteBuddyVersion = '1.11.16' //dependency, but plugin usage is now in a mock build done via TestKit
 	cgLibVersion = '3.3.0'
 
 	// JMH

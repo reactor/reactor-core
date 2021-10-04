@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'net.bytebuddy.byte-buddy-gradle-plugin' version "$byteBuddyVersion" apply false
-}
+import org.apache.tools.ant.filters.ReplaceTokens
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.unbroken-dome.test-sets'
@@ -56,6 +54,11 @@ dependencies {
     testImplementation "cglib:cglib:$cgLibVersion"
 
     jarFileTestImplementation "org.assertj:assertj-core:$assertJVersion"
+
+    buildPluginTestImplementation gradleTestKit()
+    buildPluginTestImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+    buildPluginTestImplementation "org.junit.jupiter:junit-jupiter-api"
+    buildPluginTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
 
 test {
@@ -160,18 +163,32 @@ javaAgentTest {
 }
 project.tasks.check.dependsOn(javaAgentTest)
 
-// See https://github.com/raphw/byte-buddy/issues/833
-compileBuildPluginTestJava.doLast(
-        new net.bytebuddy.build.gradle.TransformationAction(
-                project,
-                new net.bytebuddy.build.gradle.ByteBuddyExtension(project).tap {
-                    transformation {
-                        plugin = "reactor.tools.agent.ReactorDebugByteBuddyPlugin"
-                    }
-                },
-                compileBuildPluginTestJava
-        )
-)
+project.tasks.buildPluginTest.mustRunAfter(shadowJar)
+project.tasks.buildPluginTest.dependsOn(shadowJar)
+
+task generateMockGradle(type: Copy) {
+    def coreJar = rootProject.findProject("reactor-core").buildDir.toString() + "/libs/reactor-core-" + version + ".jar"
+    def agentJar = buildDir.toString() + "/libs/reactor-tools-" + version + "-original.jar"
+    def mockGradleDir = buildDir.toString() + "/mock-gradle"
+
+    from "$projectDir/src/buildPluginTest/resources/mock-gradle"
+    into "$mockGradleDir"
+    filter(ReplaceTokens, tokens: [
+      CORE: coreJar,
+      AGENT: agentJar,
+      REACTIVE_STREAMS_VERSION: rootProject.ext.reactiveStreamsVersion,
+      JUNIT_BOM_VERSION: rootProject.ext.jUnitPlatformVersion,
+      BYTE_BUDDY_VERSION: rootProject.ext.byteBuddyVersion
+    ])
+}
+
+buildPluginTest {
+    def mockGradleDir = "$buildDir/mock-gradle"
+    println "will run mock gradle build from $mockGradleDir"
+    systemProperty "mock-gradle-dir", mockGradleDir
+}
+
+project.tasks.buildPluginTest.dependsOn(generateMockGradle)
 project.tasks.check.dependsOn(buildPluginTest)
 
 tasks.withType(Test).all {
