@@ -24,9 +24,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -50,6 +52,8 @@ import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class FluxUsingWhenTest {
 
@@ -695,12 +699,12 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
-	public void apiCancel(Flux<String> transactionWithError) {
+	public void apiCancel(Flux<String> transactionToCancel) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
 				d -> {
 					ref.set(d);
-					return transactionWithError;
+					return transactionToCancel;
 				},
 				TestResource::commit,
 				TestResource::rollback,
@@ -758,7 +762,7 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
-	public void apiCancelGeneratingNullLogs(Flux<String> transactionWithError) {
+	public void apiCancelGeneratingNullLogs(Flux<String> transactionToCancel) {
 		TestLogger testLogger = new TestLogger();
 		Loggers.useCustomLoggers(s -> testLogger);
 		try {
@@ -766,7 +770,7 @@ public class FluxUsingWhenTest {
 			Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
 					d -> {
 						ref.set(d);
-						return transactionWithError;
+						return transactionToCancel;
 					},
 					TestResource::commit,
 					TestResource::rollback,
@@ -1418,50 +1422,52 @@ public class FluxUsingWhenTest {
 
 	//unit test parameter providers
 
-	private static Object[] sources01() {
-		return new Object[] {
-				new Object[] { Flux.interval(Duration.ofMillis(100)).map(String::valueOf) },
-				new Object[] { Flux.range(0, 2).map(String::valueOf) }
-		};
+	private static Stream<Arguments> sources01() {
+		return Stream.of(
+			arguments(named("interval(100ms).map(toString)", Flux.interval(Duration.ofMillis(100)).map(String::valueOf))),
+			arguments(named("range(0,2).map(toString)", Flux.range(0, 2).map(String::valueOf)))
+		);
 	}
 
-	private static Object[] sourcesFullTransaction() {
-		return new Object[] {
-				new Object[] { Flux.just("Transaction started", "work in transaction", "more work in transaction").hide() },
-				new Object[] { Flux.just("Transaction started", "work in transaction", "more work in transaction") }
-		};
+	private static Stream<Arguments> sourcesFullTransaction() {
+		return Stream.of(
+			arguments(named("(start,wip1,wip2)", Flux.just("Transaction started", "work in transaction", "more work in transaction").hide())),
+			arguments(named("(start,wip1,wip2) (fusion)", Flux.just("Transaction started", "work in transaction", "more work in transaction")))
+		);
 	}
 
-	private static Object[] sourcesTransactionError() {
-		return new Object[] {
-				new Object[] { Flux.just("Transaction started", "work in transaction")
-						.concatWith(Mono.error(new IllegalStateException("boom"))) },
-				new Object[] { Flux.just("Transaction started", "work in transaction", "boom")
-						.map(v -> { if (v.length() > 4) return v; else throw new IllegalStateException("boom"); } ) }
-		};
+	private static Stream<Arguments> sourcesTransactionError() {
+		return Stream.of(
+			arguments(named("(start,wip,ERROR)",
+				Flux.just("Transaction started", "work in transaction")
+					.concatWith(Mono.error(new IllegalStateException("boom")))
+			)),
+			arguments(named("(start,wip,ERROR) (fusion)",
+				Flux.just("Transaction started", "work in transaction", "boom")
+					.map(v -> { if (v.length() > 4) return v; else throw new IllegalStateException("boom"); })
+			))
+		);
 	}
 
-	private static Object[] sourcesContext() {
-		return new Object[] {
-				new Object[] { Mono.deferContextual(Mono::just).map(it -> it.get(String.class)).hide() },
-				new Object[] { Mono.deferContextual(Mono::just).map(it -> it.get(String.class)) }
-		};
+	private static Stream<Arguments> sourcesContext() {
+		return Stream.of(
+			arguments(named("deferContextual", Mono.deferContextual(Mono::just).map(it -> it.get(String.class)).hide())),
+			arguments(named("deferContextual (fusion)",  Mono.deferContextual(Mono::just).map(it -> it.get(String.class))))
+		);
 	}
 
-	private static Object[] sourcesContextError() {
-		return new Object[] {
-				new Object[] { Mono
-						.deferContextual(Mono::just)
-						.map(it -> it.get(String.class))
-						.hide()
-						.map(it -> { throw new IllegalStateException("boom"); })
-				},
-				new Object[] { Mono
-						.deferContextual(Mono::just)
-						.map(it -> it.get(String.class))
-						.map(it -> { throw new IllegalStateException("boom"); })
-				}
-		};
+	private static Stream<Arguments> sourcesContextError() {
+		return Stream.of(
+			arguments(named("deferContextual+error",
+				Mono.deferContextual(Mono::just)
+					.map(it -> it.get(String.class))
+					.hide()
+					.map(it -> { throw new IllegalStateException("boom"); }))),
+			arguments(named("deferContextual+error (fusion)",
+				Mono.deferContextual(Mono::just)
+					.map(it -> it.get(String.class))
+					.map(it -> { throw new IllegalStateException("boom"); })))
+		);
 	}
 
 }

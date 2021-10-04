@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -28,8 +27,10 @@ import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
 
@@ -45,6 +46,7 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 // TODO Junit 5: would maybe be better handled as a dynamic test, but  was migrated kind of "as is" to make sure
@@ -99,11 +101,19 @@ public class OnDiscardShouldNotLeakTest {
 			{ true, true }
 	};
 
-	public static Collection<Object[]> data() {
-		List<Object[]> parameters = new ArrayList<>(CONDITIONAL_AND_FUSED.length * SCENARIOS.length);
+	public static List<Arguments> data() {
+		List<Arguments> parameters = new ArrayList<>(CONDITIONAL_AND_FUSED.length * SCENARIOS.length);
 		for (DiscardScenario scenario : SCENARIOS) {
 			for (boolean[] booleans : CONDITIONAL_AND_FUSED) {
-				parameters.add(new Object[] { booleans[0], booleans[1], scenario });
+				StringBuilder desc = new StringBuilder("for ").append(scenario.description);
+				if (booleans[0]) {
+					desc.append(" (conditional");
+					if (booleans[1]) desc.append(" and fused");
+					desc.append(')');
+				}
+				else if (booleans[1]) desc.append(" (fused)");
+
+				parameters.add(arguments(booleans[0], booleans[1], Named.named(desc.toString(), scenario)));
 			}
 		}
 		return parameters;
@@ -137,7 +147,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Multiple Subscribers racing Cancel/OnNext/Request")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureMultipleSubscribersSupportWithNoLeaksWhenRacingCancelAndOnNextAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		installScheduler(discardScenario.description, discardScenario.numberOfSubscriptions + 2 /* Cancel, request*/);
@@ -190,7 +200,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Multiple Subscribers with populated queue racing Cancel/OnNext/Request")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureMultipleSubscribersSupportWithNoLeaksWhenPopulatedQueueRacingCancelAndOnNextAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isGreaterThan(1);
@@ -248,7 +258,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/OnNext")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnNext(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -303,7 +313,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/OnComplete")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnComplete(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -355,7 +365,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/OnError")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnError(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -411,7 +421,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/overflow Error")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOverflowError(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();
@@ -473,7 +483,7 @@ public class OnDiscardShouldNotLeakTest {
 	}
 
 	@DisplayName("Populated queue racing Cancel/Request")
-	@ParameterizedTest(name="{displayName} [{index}] for {2} (conditional={0}, fused={1})")
+	@ParameterizedTest(name="{displayName} [{index}] {2}")
 	@MethodSource("data")
 	public void ensureNoLeaksPopulatedQueueAndRacingCancelAndRequest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
 		Assumptions.assumeThat(discardScenario.numberOfSubscriptions).isOne();

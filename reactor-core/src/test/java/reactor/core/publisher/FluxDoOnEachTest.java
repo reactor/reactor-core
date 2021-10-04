@@ -24,8 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
 
@@ -45,6 +47,8 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class FluxDoOnEachTest {
 
@@ -57,48 +61,45 @@ public class FluxDoOnEachTest {
 
 	private static final String sourceErrorMessage = "boomSource";
 
-	private static Object[] sourcesError() {
-		return new Object[] {
-				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage))
-						.hide() },
-				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage))
-				                   .hide().filter(i -> true) },
-				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage)) },
-				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage))
-						.filter(i -> true) }
-		};
+	private static Stream<Arguments> sourcesError() {
+		return Stream.of(
+			arguments(named("error", Flux.<Integer>error(new IllegalStateException(sourceErrorMessage)).hide())),
+			arguments(named("error (fusion)", Flux.<Integer>error(new IllegalStateException(sourceErrorMessage)))),
+			arguments(named("error (conditional)", Flux.<Integer>error(new IllegalStateException(sourceErrorMessage)).hide().filter(i -> true))),
+			arguments(named("error (fusion+conditional)", Flux.<Integer>error(new IllegalStateException(sourceErrorMessage)).filter(i -> true)))
+			);
 	}
 
-	private static Object[] sources12Complete() {
-		return new Object[] {
-				new Object[] { Flux.just(1,2).hide() },
-				new Object[] { Flux.just(1,2).hide().filter(i -> true) },
-				new Object[] { Flux.just(1,2) },
-				new Object[] { Flux.just(1,2).filter(i -> true) }
-		};
+	private static Stream<Arguments> sources12Complete() {
+		return Stream.of(
+			arguments(named("just(1,2)", Flux.just(1,2).hide())),
+			arguments(named("just(1,2) (conditional)", Flux.just(1,2).hide().filter(i -> true))),
+			arguments(named("just(1,2) (fusion)", Flux.just(1,2))),
+			arguments(named("just(1,2) (fusion+conditional)", Flux.just(1,2).filter(i -> true)))
+		);
 	}
 
-	private static Object[] sourcesEmpty() {
-		return new Object[] {
-				new Object[] { Flux.<Integer>empty().hide() },
-				new Object[] { Flux.<Integer>empty().hide().filter(i -> true) },
-				new Object[] { Flux.<Integer>empty() },
-				new Object[] { Flux.<Integer>empty().filter(i -> true) }
-		};
+	private static Stream<Arguments> sourcesEmpty() {
+		return Stream.of(
+			arguments(named("empty", Flux.<Integer>empty().hide())),
+			arguments(named("empty (conditional)", Flux.<Integer>empty().hide().filter(i -> true))),
+			arguments(named("empty (fusion)", Flux.<Integer>empty())),
+			arguments(named("empty (fusion+conditional)", Flux.<Integer>empty().filter(i -> true)))
+		);
 	}
 
-	private static Object[] sourcesNever() {
-		return new Object[] {
-				new Object[] { Flux.<Integer>never().hide() },
-				new Object[] { Flux.<Integer>never().hide().filter(i -> true) },
-				new Object[] { Flux.<Integer>never() },
-				new Object[] { Flux.<Integer>never().filter(i -> true) }
-		};
+	private static Stream<Arguments> sourcesNever() {
+		return Stream.of(
+			arguments(named("never", Flux.<Integer>never().hide())),
+			arguments(named("never (conditional)", Flux.<Integer>never().hide().filter(i -> true))),
+			arguments(named("never (fusion)", Flux.<Integer>never())),
+			arguments(named("never (fusion+conditional)", Flux.<Integer>never().filter(i -> true)))
+		);
 	}
 
 	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
-	public void normal(Flux<Integer> source) {
+	void normal(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -296,7 +297,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesError")
-	public void error(Flux<Integer> source) {
+	void error(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -329,7 +330,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesEmpty")
-	public void empty(Flux<Integer> source) {
+	void empty(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -361,7 +362,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesNever")
-	public void never(Flux<Integer> source) {
+	void never(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -393,7 +394,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
-	public void nextCallbackError(Flux<Integer> source) {
+	void nextCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 
@@ -416,7 +417,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
-	public void nextCallbackBubbleError(Flux<Integer> source) {
+	void nextCallbackBubbleError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 
@@ -443,7 +444,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources12Complete")
-	public void completeCallbackError(Flux<Integer> source) {
+	void completeCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		AtomicBoolean completeHandled = new AtomicBoolean();
 		AtomicBoolean errorHandled = new AtomicBoolean();
@@ -472,7 +473,7 @@ public class FluxDoOnEachTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesError")
-	public void errorCallbackError(Flux<Integer> source) {
+	void errorCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 

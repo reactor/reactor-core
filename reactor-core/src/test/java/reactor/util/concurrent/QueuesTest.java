@@ -29,13 +29,15 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import reactor.core.publisher.Hooks;
+import reactor.test.ParameterizedTestWithName;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class QueuesTest {
 
@@ -157,12 +159,12 @@ public class QueuesTest {
 		assertThat(emptyQueue.toArray(new Integer[0])).as("toArray(empty)").isEmpty();
 	}
 
-	@ParameterizedTest(name = "{displayName} [{index}] {0}")
+	@ParameterizedTestWithName
 	@MethodSource("queues")
-	public void testWrapping(String name, Supplier<Queue<Object>> queueSupplier) { //TODO replace with Named.of in JUnit 5.8+
-		assertThat(queueSupplier.get()).as("no wrapper").hasSize(0);
+	void testWrapping(Supplier<Queue<Object>> queue) {
+		assertThat(queue.get()).as("no wrapper").hasSize(0);
 
-		Hooks.addQueueWrapper("test", queue -> {
+		Hooks.addQueueWrapper("test", q -> {
 			return new AbstractQueue<Object>() {
 
 				@Override
@@ -192,22 +194,22 @@ public class QueuesTest {
 			};
 		});
 
-		assertThat(queueSupplier.get()).as("with wrapper").hasSize(42);
+		assertThat(queue.get()).as("with wrapper").hasSize(42);
 
 		Hooks.removeQueueWrapper("test");
 
-		assertThat(queueSupplier.get()).as("wrapper removed").hasSize(0);
+		assertThat(queue.get()).as("wrapper removed").hasSize(0);
 	}
 
 	private static Stream<Arguments> queues() {
 		return Stream.of(
-				Arguments.of("one", Queues.one()),
-				Arguments.of("small", Queues.small()),
-				Arguments.of("xs", Queues.xs()),
-				Arguments.of("unbounded", Queues.unbounded()),
-				Arguments.of("unbounded(42)", Queues.unbounded(42)),
-				Arguments.of("unboundedMultiproducer", Queues.unboundedMultiproducer()),
-				Arguments.of("get(9000)", Queues.get(9000))
+			arguments(named("one", Queues.one())),
+			arguments(named("small", Queues.small())),
+			arguments(named("xs", Queues.xs())),
+			arguments(named("unbounded", Queues.unbounded())),
+			arguments(named("unbounded(42)", Queues.unbounded(42))),
+			arguments(named("unboundedMultiproducer", Queues.unboundedMultiproducer())),
+			arguments(named("get(9000)", Queues.get(9000)))
 		);
 	}
 
