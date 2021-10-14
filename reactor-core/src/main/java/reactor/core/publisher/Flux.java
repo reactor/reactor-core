@@ -8792,7 +8792,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #take(long, boolean)
 	 */
 	public final Flux<T> take(long n) {
-		return take(n, false);
+		return take(n, true);
 	}
 
 	/**
