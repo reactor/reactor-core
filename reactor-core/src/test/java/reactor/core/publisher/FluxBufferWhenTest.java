@@ -602,7 +602,7 @@ public class FluxBufferWhenTest {
 
 		StepVerifier.create(source.flux()
 								  .bufferWhen(open, o -> close)
-								  .limitRequest(1))
+								  .take(1))
 					.then(() -> {
 						open.next(1);
 						close.complete();
