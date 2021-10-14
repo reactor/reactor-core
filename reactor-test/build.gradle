@@ -16,7 +16,7 @@
 import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'biz.aQute.bnd.builder'
-apply plugin: 'kotlin'
+apply plugin: 'java-library'
 
 description = 'Reactor Test support'
 
@@ -28,7 +28,7 @@ ext {
 		].join(","),
 		"Import-Package": [
 			"!javax.annotation",
-			"kotlin.*;resolution:=optional,*"
+			"*"
 		].join(","),
 		"Bundle-Name" : "reactor-test",
 		"Bundle-SymbolicName" : "io.projectreactor.reactor-test",
@@ -39,10 +39,6 @@ ext {
 dependencies {
 	api project(":reactor-core")
 	compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
-
-	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
-	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
-	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -79,7 +75,8 @@ task japicmp(type: JapicmpTask) {
 
 	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
 	newClasspath = files(jar.archiveFile)
-	onlyBinaryIncompatibleModified = true
+	onlyModified = true //only display modifications in report in case of breakage
+	onlyBinaryIncompatibleModified = false
 	failOnModification = true
 	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
@@ -88,6 +85,7 @@ task japicmp(type: JapicmpTask) {
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
 	methodExcludes = [ ]
+	classExcludes = [ "reactor.test.StepVerifierExtensionsKt"	]
 }
 
 tasks.withType(Test).all {

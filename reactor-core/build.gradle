@@ -19,8 +19,8 @@ import me.champeau.gradle.japicmp.JapicmpTask
 apply plugin: 'idea' // needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'
-apply plugin: 'kotlin'
 apply plugin: 'jcstress'
+apply plugin: 'java-library'
 
 ext {
 	bndOptions = [
@@ -33,7 +33,6 @@ ext {
 			"!javax.annotation",
 			"!javax.annotation.meta",
 			'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
-			"kotlin.*;resolution:=optional",
 			"reactor.blockhound.*;resolution:=optional",
 			"io.micrometer.*;resolution:=optional",
 			"*"
@@ -74,10 +73,6 @@ dependencies {
 
 	// Optional Metrics
 	compileOnly "io.micrometer:micrometer-core:$micrometerVersion"
-
-	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
-	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
-	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	// Optional BlockHound support
 	compileOnly "io.projectreactor.tools:blockhound:$blockhoundVersion"
@@ -142,6 +137,7 @@ task japicmp(type: JapicmpTask) {
 
 	oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
 	newClasspath = files(jar.archiveFile)
+	onlyModified = true //only display modifications in report in case of breakage
 	onlyBinaryIncompatibleModified = false
 	failOnModification = false
 	failOnSourceIncompatibility = false
