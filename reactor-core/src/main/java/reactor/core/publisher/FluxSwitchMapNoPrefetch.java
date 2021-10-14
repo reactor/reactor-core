@@ -168,7 +168,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (isInnerSubscribed(state)) {
-				si.cancel();
+				si.cancelFromParent();
 
 				if (!isWip(state)) {
 					final long produced = si.produced;
@@ -228,7 +228,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 			final SwitchMapInner<T, R> inner = this.inner;
 			if (inner != null && isInnerSubscribed(state)) {
-				inner.cancel();
+				inner.cancelFromParent();
 			}
 
 			//noinspection ConstantConditions
@@ -282,7 +282,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 			final SwitchMapInner<T, R> inner = this.inner;
 			if (inner != null && isInnerSubscribed(state) && !hasInnerCompleted(state) && inner.index == index(state)) {
-				inner.cancel();
+				inner.cancelFromParent();
 			}
 
 			if (!hasMainCompleted(state)) {
@@ -326,7 +326,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.CANCELLED) return this.index ;
+			if (key == Attr.CANCELLED) return isCancelledByParent();
 			if (key == Attr.PARENT) return this.parent;
 			if (key == Attr.ACTUAL) return this.actual;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -554,7 +554,12 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			this.s.request(n);
 		}
 
-		void cancel() {
+		boolean isCancelledByParent() {
+			long state = parent.state;
+			return (this.index != index(state) && !this.done) || (!parent.done && state == TERMINATED);
+		}
+
+		void cancelFromParent() {
 			this.s.cancel();
 		}
 	}
