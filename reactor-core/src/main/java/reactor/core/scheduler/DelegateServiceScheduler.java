@@ -29,11 +29,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
-import org.jetbrains.annotations.NotNull;
-
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -162,7 +161,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 			exec.shutdown();
 		}
 
-		@NotNull
+		@NonNull
 		@Override
 		public List<Runnable> shutdownNow() {
 			return exec.shutdownNow();
@@ -179,95 +178,95 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 		}
 
 		@Override
-		public boolean awaitTermination(long timeout, @NotNull TimeUnit unit)
+		public boolean awaitTermination(long timeout, @NonNull TimeUnit unit)
 				throws InterruptedException {
 			return exec.awaitTermination(timeout, unit);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public <T> Future<T> submit(@NotNull Callable<T> task) {
+		public <T> Future<T> submit(@NonNull Callable<T> task) {
 			return exec.submit(task);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public <T> Future<T> submit(@NotNull Runnable task, T result) {
+		public <T> Future<T> submit(@NonNull Runnable task, T result) {
 			return exec.submit(task, result);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public Future<?> submit(@NotNull Runnable task) {
+		public Future<?> submit(@NonNull Runnable task) {
 			return exec.submit(task);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks)
+		public <T> List<Future<T>> invokeAll(@NonNull Collection<? extends Callable<T>> tasks)
 				throws InterruptedException {
 			return exec.invokeAll(tasks);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks,
+		public <T> List<Future<T>> invokeAll(@NonNull Collection<? extends Callable<T>> tasks,
 				long timeout,
-				@NotNull TimeUnit unit) throws InterruptedException {
+				@NonNull TimeUnit unit) throws InterruptedException {
 			return exec.invokeAll(tasks, timeout, unit);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
+		public <T> T invokeAny(@NonNull Collection<? extends Callable<T>> tasks)
 				throws InterruptedException, ExecutionException {
 			return exec.invokeAny(tasks);
 		}
 
 		@Override
-		public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
+		public <T> T invokeAny(@NonNull Collection<? extends Callable<T>> tasks,
 				long timeout,
-				@NotNull TimeUnit unit)
+				@NonNull TimeUnit unit)
 				throws InterruptedException, ExecutionException, TimeoutException {
 			return exec.invokeAny(tasks, timeout, unit);
 		}
 
 		@Override
-		public void execute(@NotNull Runnable command) {
+		public void execute(@NonNull Runnable command) {
 			exec.execute(command);
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public ScheduledFuture<?> schedule(@NotNull Runnable command,
+		public ScheduledFuture<?> schedule(@NonNull Runnable command,
 				long delay,
-				@NotNull TimeUnit unit) {
+				@NonNull TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public <V> ScheduledFuture<V> schedule(@NotNull Callable<V> callable,
+		public <V> ScheduledFuture<V> schedule(@NonNull Callable<V> callable,
 				long delay,
-				@NotNull TimeUnit unit) {
+				@NonNull TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public ScheduledFuture<?> scheduleAtFixedRate(@NotNull Runnable command,
+		public ScheduledFuture<?> scheduleAtFixedRate(@NonNull Runnable command,
 				long initialDelay,
 				long period,
-				@NotNull TimeUnit unit) {
+				@NonNull TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
-		@NotNull
+		@NonNull
 		@Override
-		public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull Runnable command,
+		public ScheduledFuture<?> scheduleWithFixedDelay(@NonNull Runnable command,
 				long initialDelay,
 				long delay,
-				@NotNull TimeUnit unit) {
+				@NonNull TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 

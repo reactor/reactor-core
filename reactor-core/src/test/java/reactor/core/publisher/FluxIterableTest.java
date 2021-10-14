@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
@@ -43,6 +42,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.annotation.NonNull;
 import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 
@@ -271,7 +271,7 @@ public class FluxIterableTest {
 				this.seed = seed;
 			}
 
-			@NotNull
+			@NonNull
 			@Override
 			public Iterator<Integer> iterator() {
 				return new Iterator<Integer>() {

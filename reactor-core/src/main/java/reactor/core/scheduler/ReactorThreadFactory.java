@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.jetbrains.annotations.NotNull;
+import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -55,7 +55,7 @@ class ReactorThreadFactory implements ThreadFactory,
 	}
 
 	@Override
-	public final Thread newThread(@NotNull Runnable runnable) {
+	public final Thread newThread(@NonNull Runnable runnable) {
 		String newThreadName = name + "-" + counterReference.incrementAndGet();
 		Thread t = rejectBlocking
 				? new NonBlockingThread(runnable, newThreadName)

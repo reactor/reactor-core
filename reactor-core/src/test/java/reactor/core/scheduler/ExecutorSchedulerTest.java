@@ -26,10 +26,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.NonNull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -146,7 +146,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 				shutdown = true;
 			}
 
-			@NotNull
+			@NonNull
 			@Override
 			public List<Runnable> shutdownNow() {
 				return Collections.emptyList();
@@ -163,13 +163,13 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 			}
 
 			@Override
-			public boolean awaitTermination(long timeout, @NotNull TimeUnit unit)
+			public boolean awaitTermination(long timeout, @NonNull TimeUnit unit)
 					throws InterruptedException {
 				return false;
 			}
 
 			@Override
-			public void execute(@NotNull Runnable command) {
+			public void execute(@NonNull Runnable command) {
 				if (count.incrementAndGet() % 2 == 0)
 					throw boom;
 			}
@@ -204,7 +204,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 				shutdown = true;
 			}
 
-			@NotNull
+			@NonNull
 			@Override
 			public List<Runnable> shutdownNow() {
 				return Collections.emptyList();
@@ -221,13 +221,13 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 			}
 
 			@Override
-			public boolean awaitTermination(long timeout, @NotNull TimeUnit unit)
+			public boolean awaitTermination(long timeout, @NonNull TimeUnit unit)
 					throws InterruptedException {
 				return false;
 			}
 
 			@Override
-			public void execute(@NotNull Runnable command) {
+			public void execute(@NonNull Runnable command) {
 				if (shutdown) throw boom;
 				shutdown = true;
 			}
@@ -253,7 +253,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 	static final class ScannableExecutor implements Executor, Scannable {
 
 		@Override
-		public void execute(@NotNull Runnable command) {
+		public void execute(@NonNull Runnable command) {
 			command.run();
 		}
 
@@ -273,7 +273,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 
 	static final class PlainExecutor implements Executor {
 		@Override
-		public void execute(@NotNull Runnable command) {
+		public void execute(@NonNull Runnable command) {
 			command.run();
 		}
 
