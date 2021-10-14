@@ -377,7 +377,7 @@ public class FluxSwitchMapTest {
 	}
 
 	@Test
-	public void scanMain() {
+	void scanMain() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> test =
 			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
@@ -392,16 +392,16 @@ public class FluxSwitchMapTest {
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		//FIXME no scanning for error field
-//        test.error = new IllegalStateException("boom");
-//        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		//TODO no scanning for error field
+//		test.error = new IllegalStateException("boom");
+//		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 		test.onComplete();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 		//CANCELLED needs to be tested separately as it is polluted by TERMINATED
 	}
 
 	@Test
-	public void scanMainCancelled() {
+	void scanMainCancelled() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> test =
 			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
@@ -414,7 +414,7 @@ public class FluxSwitchMapTest {
 	}
 
 	@Test
-	public void scanInner() {
+	void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> main =
 			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
@@ -426,15 +426,26 @@ public class FluxSwitchMapTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
+	}
 
+	@Test
+	void scanInnerDetectsCancelledByParent() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> main =
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
+		main.onNext(1); //this creates first inner, under test
+
+		FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer> test = main.inner;
+		assertThat(test).as("extracted inner").isNotNull();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
+
+		main.onNext(2); //this creates second inner and cancels first inner
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Deprecated
 	@Test
-	public void scanOperatorWithPrefetch(){
+	void scanOperatorWithPrefetch(){
 		Flux<String> parent = Flux.just("a", "bb", "ccc");
 		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
 			parent, s -> Flux.range(1, s.length()),
@@ -446,7 +457,7 @@ public class FluxSwitchMapTest {
 
 	@Deprecated
 	@Test
-	public void scanMainWithPrefetch() {
+	void scanMainWithPrefetch() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
 			new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
@@ -475,7 +486,7 @@ public class FluxSwitchMapTest {
 
 	@Deprecated
 	@Test
-    public void scanInnerWithPrefetch() {
+    void scanInnerWithPrefetch() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMap.SwitchMapMain<Integer, Integer> main =
         		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i),
