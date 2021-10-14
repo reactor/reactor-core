@@ -176,6 +176,8 @@ I want to deal with:
 **** ...requesting an unbounded amount from upstream: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#take-long-boolean-[Flux#take(long, false)]
 **** ...based on a duration: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#take-java.time.Duration-[Flux#take(Duration)]
 **** ...only the first element, as a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html[Mono]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#next--[Flux#next()]
+*** at the end of the sequence: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeLast-int-[Flux#takeLast]
+*** until a criteria is met (inclusive): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeUntil-java.util.function.Predicate-[Flux#takeUntil] (predicate-based), https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeUntilOther-org.reactivestreams.Publisher-[Flux#takeUntilOther] (companion publisher-based)
 *** while a criteria is met (exclusive): https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#takeWhile-java.util.function.Predicate-[Flux#takeWhile]
 ** by taking at most 1 element:
 *** at a specific position: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#elementAt-int-[Flux#elementAt]
