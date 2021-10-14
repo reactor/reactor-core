@@ -8823,20 +8823,21 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Take only the first N values from this {@link Flux}, if available.
-	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes.
+	 * If n is zero, the source isn't even subscribed to and the operator completes immediately upon subscription.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/take.svg" alt="">
 	 * <p>
-	 * <b>Warning:</b> The below behavior will change in 3.5.0 from that of
-	 * {@link #take(long, boolean) take(n, false)} to that of {@link #take(long, boolean) take(n, true)}.
-	 * See https://github.com/reactor/reactor-core/issues/2339
+	 * This is equivalent to {@link #take(long, boolean)} with {@code limitRequest == true},
+	 * which ensures that the total amount requested upstream is capped at {@code n}.
+	 * In that configuration, this operator never let the upstream produce more elements
+	 * than the cap, and it can be used to more strictly adhere to backpressure.
 	 * <p>
-	 * Note that this operator doesn't propagate the backpressure requested amount.
-	 * Rather, it makes an unbounded request and cancels once N elements have been emitted.
-	 * As a result, the source could produce a lot of extraneous elements in the meantime.
-	 * If that behavior is undesirable and you do not own the request from downstream
-	 * (e.g. prefetching operators), consider using {@link #limitRequest(long)} instead.
-   *
+	 * This mode is typically useful for cases where a race between request and cancellation can lead
+	 * the upstream to producing a lot of extraneous data, and such a production is undesirable (e.g.
+	 * a source that would send the extraneous data over the network).
+	 * If there is a requirement for unbounded upstream request (eg. for performance reasons),
+	 * use {@link #take(long, boolean)} with {@code limitRequest=false} instead.
+	 *
 	 * @param n the number of items to emit from this {@link Flux}
 	 *
 	 * @return a {@link Flux} limited to size N
