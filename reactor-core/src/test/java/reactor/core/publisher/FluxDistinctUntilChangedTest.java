@@ -362,7 +362,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		                                                  .map(i -> retainedDetector.tracked(new DistinctDefaultCancel(i)))
 		                                                  .concatWith(Mono.error(new IllegalStateException("boom")))
 		                                                  .distinctUntilChanged()
-		                                                  .take(50);
+		                                                  .take(50, false);
 
 		StepVerifier.create(test)
 		            .expectNextCount(50)

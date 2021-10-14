@@ -557,7 +557,7 @@ public class EmitterProcessorTest {
 	public void testNPE() {
 		EmitterProcessor<String> processor = EmitterProcessor.create(8);
 		AssertSubscriber<String> first = AssertSubscriber.create(1);
-		processor.log().take(1).subscribe(first);
+		processor.log().take(1, false).subscribe(first);
 
 		AssertSubscriber<String> second = AssertSubscriber.create(3);
 		processor.log().subscribe(second);
@@ -879,7 +879,7 @@ public class EmitterProcessorTest {
 	@Test
 	public void syncFusionFromInfiniteStreamAndTake() {
 		final Flux<Integer> flux = Flux.fromStream(Stream.iterate(0, i -> i + 1))
-				.take(10);
+				.take(10, false);
 		final EmitterProcessor<Integer> processor = EmitterProcessor.create();
 		flux.subscribe(processor);
 

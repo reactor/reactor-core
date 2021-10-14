@@ -207,7 +207,7 @@ class MonoCollectListTest {
 	@Test
 	public void discardOnCancel() {
 		Mono<List<Long>> test = Flux.interval(Duration.ofMillis(100))
-		                            .take(10)
+		                            .take(10, false)
 		                            .collectList();
 
 		StepVerifier.create(test)

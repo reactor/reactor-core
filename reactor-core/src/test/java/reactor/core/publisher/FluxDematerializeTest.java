@@ -266,7 +266,7 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofSeconds(1))
 				    .map(i -> "tick" + i)
-				    .take(5)
+				    .take(5, false)
 				    .timestamp()
 				    .materialize()
 				    .<Tuple2<Long, String>>dematerialize()

@@ -211,7 +211,7 @@ public class MonoStreamCollectorTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10)
+				    .take(10, false)
 				    .collect(collector)
 		)
 		            .expectSubscription()
@@ -273,7 +273,7 @@ public class MonoStreamCollectorTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10)
+				    .take(10, false)
 				    .collect(collector)
 				    .doOnDiscard(Object.class, discarded::add))
 		            .expectSubscription()

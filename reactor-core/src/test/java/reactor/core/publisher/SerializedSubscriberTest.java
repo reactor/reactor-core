@@ -115,7 +115,7 @@ public class SerializedSubscriberTest {
 			.doFinally(sig -> latch.countDown())
 			.publishOn(Schedulers.single())
 			.doFinally(sig -> latch.countDown())
-			.retryWhen(Retry.from(p -> p.take(3)))
+			.retryWhen(Retry.from(p -> p.take(3, false)))
 			.doFinally(sig -> latch.countDown())
 			.cancelOn(Schedulers.parallel())
 			.doOnDiscard(AtomicInteger.class, i -> {

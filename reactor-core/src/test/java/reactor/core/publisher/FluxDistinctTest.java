@@ -692,7 +692,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		                                 .map(i -> retainedDetector.tracked(new DistinctDefaultCancel(i)))
 		                                 .concatWith(Mono.error(new IllegalStateException("boom")))
 		                                 .distinct()
-		                                 .take(50);
+		                                 .take(50, false);
 
 		StepVerifier.create(test)
 		            .expectNextCount(50)

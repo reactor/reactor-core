@@ -404,7 +404,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 //                    .doOnCancel(() -> System.out.println("cancel 2"))
 			    .publish(Function.identity())
 //                    .doOnCancel(() -> System.out.println("cancel 1"))
-			    .take(5))
+			    .take(5, false))
 	                .expectNextCount(5)
 	                .verifyComplete();
 

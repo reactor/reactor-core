@@ -139,7 +139,7 @@ public class MonoExpandTest {
 	public void recursiveCountdownTake() {
 		StepVerifier.create(Mono.just(10)
 		                        .expand(countDown)
-		                        .take(5)
+		                        .take(5, false)
 		)
 		            .expectNext(10, 9, 8, 7, 6)
 		            .verifyComplete();
@@ -149,7 +149,7 @@ public class MonoExpandTest {
 	public void recursiveCountdownTakeDepth() {
 		StepVerifier.create(Mono.just(10)
 		                        .expandDeep(countDown)
-		                        .take(5)
+		                        .take(5, false)
 		)
 		            .expectNext(10, 9, 8, 7, 6)
 		            .verifyComplete();

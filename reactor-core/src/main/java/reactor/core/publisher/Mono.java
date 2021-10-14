@@ -4056,9 +4056,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 				return repeatFactory.apply(o.index().map(Tuple2::getT1));
 			}
 			else {
-				return repeatFactory.apply(o.index().map(Tuple2::getT1)
-						.take(maxRepeat)
-						.concatWith(Flux.error(() -> new IllegalStateException("Exceeded maximum number of repeats"))));
+				return repeatFactory.apply(o
+					.index()
+					.map(Tuple2::getT1)
+					.take(maxRepeat, false)
+					.concatWith(Flux.error(() -> new IllegalStateException("Exceeded maximum number of repeats"))));
 			}
 		}).next());
 	}

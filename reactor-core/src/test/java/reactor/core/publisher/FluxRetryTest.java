@@ -103,7 +103,7 @@ public class FluxRetryTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry()
-		      .take(10)
+		      .take(10, false)
 		      .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 1, 2, 3, 1, 2, 3, 1)

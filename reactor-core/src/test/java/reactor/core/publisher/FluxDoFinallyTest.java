@@ -92,7 +92,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void normalCancel() {
-		StepVerifier.create(Flux.range(1, 10).hide().doFinally(this).take(5))
+		StepVerifier.create(Flux.range(1, 10).hide().doFinally(this).take(5, false))
 		            .expectNoFusionSupport()
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
@@ -229,7 +229,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		                        .hide()
 		                        .doFinally(this)
 		                        .filter(i -> true)
-		                        .take(5))
+		                        .take(5, false))
 		            .expectNoFusionSupport()
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()

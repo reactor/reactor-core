@@ -111,7 +111,7 @@ public class RejectedExecutionTest {
 	 */
 	@Test
 	public void publishOn() throws Exception {
-		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
+		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255, false)
 		                      .publishOn(scheduler)
 		                      .doOnNext(i -> onNext(i))
 		                      .doOnError(e -> onError(e));
@@ -121,7 +121,7 @@ public class RejectedExecutionTest {
 
 	@Test
 	public void publishOnFilter() throws Exception {
-		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
+		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255, false)
 		                      .publishOn(scheduler)
 		                      .filter(t -> true)
 		                      .doOnNext(i -> onNext(i))
@@ -156,7 +156,7 @@ public class RejectedExecutionTest {
 	 */
 	@Test
 	public void parallelRunOn() throws Exception {
-		ParallelFlux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
+		ParallelFlux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255, false)
 				.parallel(1)
 				.runOn(scheduler)
 				.doOnNext(i -> onNext(i))
@@ -186,8 +186,7 @@ public class RejectedExecutionTest {
 	@Test
 	public void subscribeOn() throws Exception {
 		scheduler.tasksRemaining.set(1); //1 subscribe then request
-		Flux<Long> flux = Flux.interval(Duration.ofMillis(2))
-		                      .take(255)
+		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255, false)
 		                      .subscribeOn(scheduler);
 
 		CountDownLatch latch = new CountDownLatch(1);
