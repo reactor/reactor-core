@@ -6014,7 +6014,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
-	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * unlike with {@link #take(long)} which will cap the grand total request
 	 * amount.
 	 * <p>
 	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }.
@@ -6028,7 +6028,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure
 	 * @see #publishOn(Scheduler, int)
-	 * @see #limitRequest(long)
+	 * @see #take(long)
 	 */
 	public final Flux<T> limitRate(int prefetchRate) {
 		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
@@ -6046,7 +6046,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
-	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * unlike with {@link #take(long)} which will cap the grand total request
 	 * amount.
 	 * <p>
 	 * Similar to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() },
@@ -6070,7 +6070,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
 	 * replenishment request amount
 	 * @see #publishOn(Scheduler, int)
-	 * @see #limitRequest(long)
+	 * @see #take(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
 		return onAssembly(this.publishOn(Schedulers.immediate(), true, highTide, lowTide));

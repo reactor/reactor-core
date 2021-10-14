@@ -566,7 +566,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 	@Test
 	public void discardOnCancelSkip() {
 		StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
-		                        .limitRequest(2)
+		                        .take(2)
 		                        .concatWith(Mono.never())
 		                        .buffer(3, 4))
 		            .thenAwait(Duration.ofMillis(10))
@@ -578,7 +578,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 	@Test
 	public void discardOnCancelOverlap() {
 		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6)
-		                        .limitRequest(2)
+		                        .take(2)
 		                        .concatWith(Mono.never())
 		                        .buffer(4, 2))
 		            .thenAwait(Duration.ofMillis(10))
