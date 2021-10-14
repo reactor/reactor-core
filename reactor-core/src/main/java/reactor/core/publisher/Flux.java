@@ -8774,7 +8774,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Take only the first N values from this {@link Flux}, if available.
 	 * If n is zero, the source isn't even subscribed to and the operator completes immediately upon subscription.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/take.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/takeLimitRequestTrue.svg" alt="">
 	 * <p>
 	 * This is equivalent to {@link #take(long, boolean)} with {@code limitRequest == true},
 	 * which ensures that the total amount requested upstream is capped at {@code n}.
@@ -8805,7 +8805,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * at {@code n}. In that configuration, this operator never let the upstream produce more elements
 	 * than the cap, and it can be used to more strictly adhere to backpressure.
 	 * If n is zero, the source isn't even subscribed to and the operator completes immediately
-	 * upon subscription.
+	 * upon subscription (the behavior inherited from {@link #take(long)}).
 	 * <p>
 	 * This mode is typically useful for cases where a race between request and cancellation can lead
 	 * the upstream to producing a lot of extraneous data, and such a production is undesirable (e.g.
@@ -8815,8 +8815,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * If {@code limitRequest == false} this operator doesn't propagate the backpressure requested amount.
 	 * Rather, it makes an unbounded request and cancels once N elements have been emitted.
-	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes
-	 * (the behavior inherited from {@link #take(long)}).
+	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes.
 	 * <p>
 	 * In this mode, the source could produce a lot of extraneous elements despite cancellation.
 	 * If that behavior is undesirable and you do not own the request from downstream
