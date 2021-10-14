@@ -586,7 +586,7 @@ public class GuideTests {
 				if (type == SignalType.CANCEL) // <2>
 					statsCancel.increment(); // <3>
 			})
-			.take(1, false); // <4>
+			.take(1); // <4>
 
 		StepVerifier.create(flux)
 	                .expectNext("foo")
@@ -1075,7 +1075,7 @@ assertThat(errorCount).hasValue(6); // <6>
 	public void debuggingLogging() {
 		Flux<Integer> flux = Flux.range(1, 10)
 		                         .log()
-		                         .take(3, false);
+		                         .take(3);
 		//flux.subscribe();
 
 		//nothing much to test, but...
