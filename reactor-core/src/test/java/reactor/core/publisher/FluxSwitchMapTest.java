@@ -364,47 +364,118 @@ public class FluxSwitchMapTest {
 		            .verifyComplete();
 	}
 
+
 	@Test
 	public void scanOperator(){
 		Flux<String> parent = Flux.just("a", "bb", "ccc");
+		FluxSwitchMapNoPrefetch<String, Integer> test = new FluxSwitchMapNoPrefetch<>(
+			parent, s -> Flux.range(1, s.length()));
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanMain() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> test =
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
+		test.requested = 35;
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		//FIXME no scanning for error field
+//        test.error = new IllegalStateException("boom");
+//        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		//CANCELLED needs to be tested separately as it is polluted by TERMINATED
+	}
+
+	@Test
+	public void scanMainCancelled() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> test =
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanInner() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> main =
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
+		FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer> test = new FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer>(main, actual, 0);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Deprecated
+	@Test
+	public void scanOperatorWithPrefetch(){
+		Flux<String> parent = Flux.just("a", "bb", "ccc");
 		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
-				parent, s -> Flux.range(1, s.length()),
-				ConcurrentLinkedQueue::new, 128);
+			parent, s -> Flux.range(1, s.length()),
+			ConcurrentLinkedQueue::new, 128);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
+	@Deprecated
 	@Test
-    public void scanMain() {
-        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+	public void scanMainWithPrefetch() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
-        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
-        Subscription parent = Operators.emptySubscription();
-        test.onSubscribe(parent);
+			new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
 
-        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
-        test.requested = 35;
-        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-        test.queue.add(new FluxSwitchMap.SwitchMapInner<Integer>(test, 1, 0));
-        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
+		test.requested = 35;
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+		test.queue.add(new FluxSwitchMap.SwitchMapInner<Integer>(test, 1, 0));
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-        test.error = new IllegalStateException("boom");
-        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
-        test.onComplete();
-        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-        test.cancel();
-        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-    }
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
 
+	@Deprecated
 	@Test
-    public void scanInner() {
+    public void scanInnerWithPrefetch() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMap.SwitchMapMain<Integer, Integer> main =
         		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i),

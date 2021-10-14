@@ -326,7 +326,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.CANCELLED) return this.index ;
+			if (key == Attr.CANCELLED) return this.s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return this.parent;
 			if (key == Attr.ACTUAL) return this.actual;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -556,6 +556,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		void cancel() {
 			this.s.cancel();
+			this.s = Operators.cancelledSubscription();
 		}
 	}
 
