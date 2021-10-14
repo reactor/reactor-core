@@ -6054,38 +6054,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Take only the first N values from this {@link Flux}, if available.
-	 * Furthermore, ensure that the total amount requested upstream is capped at {@code n}.
-	 * If n is zero, the source isn't even subscribed to and the operator completes immediately
-	 * upon subscription.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/takeLimitRequestTrue.svg" alt="">
-	 * <p>
-	 * Backpressure signals from downstream subscribers are smaller than the cap are
-	 * propagated as is, but if they would cause the total requested amount to go over the
-	 * cap, they are reduced to the minimum value that doesn't go over.
-	 * <p>
-	 * As a result, this operator never let the upstream produce more elements than the
-	 * cap.
-	 * Typically useful for cases where a race between request and cancellation can lead the upstream to
-	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
-	 * a source that would send the extraneous data over the network).
-	 *
-	 * @param n the number of elements to emit from this flux, which is also the backpressure
-	 * cap for all of downstream's request
-	 *
-	 * @return a {@link Flux} of {@code n} elements from the source, that requests AT MOST {@code n} from upstream in total.
-	 * @see #take(long)
-	 * @see #take(long, boolean)
-	 * @deprecated replace with {@link #take(long, boolean) take(n, true)} in 3.4.x, then {@link #take(long)} in 3.5.0.
-	 * To be removed in 3.6.0 at the earliest. See https://github.com/reactor/reactor-core/issues/2339
-	 */
-	@Deprecated
-	public final Flux<T> limitRequest(long n) {
-		return take(n, true);
-	}
-
-	/**
 	 * Observe all Reactive Streams signals and trace them using {@link Logger} support.
 	 * Default will use {@link Level#INFO} and {@code java.util.logging}.
 	 * If SLF4J is available, it will be used instead.
