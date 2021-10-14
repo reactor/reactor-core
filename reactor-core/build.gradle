@@ -137,6 +137,7 @@ task japicmp(type: JapicmpTask) {
 
 	oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
 	newClasspath = files(jar.archiveFile)
+	onlyModified = true //only display modifications in report in case of breakage
 	onlyBinaryIncompatibleModified = false
 	failOnModification = false
 	failOnSourceIncompatibility = false

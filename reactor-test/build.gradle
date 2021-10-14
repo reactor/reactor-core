@@ -75,7 +75,8 @@ task japicmp(type: JapicmpTask) {
 
 	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
 	newClasspath = files(jar.archiveFile)
-	onlyBinaryIncompatibleModified = true
+	onlyModified = true //only display modifications in report in case of breakage
+	onlyBinaryIncompatibleModified = false
 	failOnModification = true
 	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
@@ -84,6 +85,7 @@ task japicmp(type: JapicmpTask) {
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
 	methodExcludes = [ ]
+	classExcludes = [ "reactor.test.StepVerifierExtensionsKt"	]
 }
 
 tasks.withType(Test).all {
