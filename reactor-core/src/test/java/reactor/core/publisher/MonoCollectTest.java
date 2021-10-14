@@ -256,7 +256,7 @@ public class MonoCollectTest {
 	public void discardListElementsOnCancel() {
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10)
+				    .take(10, false)
 				    .collect(ArrayList::new, List::add)
 		)
 		            .expectSubscription()
@@ -300,7 +300,7 @@ public class MonoCollectTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10)
+				    .take(10, false)
 				    .collect(() -> new Object[4], (container, element) -> container[index.getAndIncrement()] = element)
 				    .doOnDiscard(Object.class, discarded::add))
 		            .expectSubscription()

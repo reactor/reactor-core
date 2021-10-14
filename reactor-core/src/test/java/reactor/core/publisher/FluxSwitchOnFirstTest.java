@@ -823,7 +823,7 @@ public class FluxSwitchOnFirstTest {
                                                   .switchOnFirst((first, innerFlux) ->
                                                       innerFlux
                                                           .map(String::valueOf)
-                                                          .take(1)
+                                                          .take(1, false)
                                                   );
 
         publisher.next(1);
@@ -848,7 +848,7 @@ public class FluxSwitchOnFirstTest {
                                                           innerFlux
                                                                   .map(String::valueOf)
                                                   )
-                                                  .take(1);
+                                                  .take(1, false);
 
         publisher.next(1);
         publisher.next(2);

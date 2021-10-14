@@ -38,7 +38,7 @@ public class StepVerifierAssertionsTests {
 			s.onComplete();
 			s.onNext("bar");
 			s.onNext("baz");
-		}).take(3))
+		}).take(3, false))
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verifyThenAssertThat()
@@ -55,7 +55,7 @@ public class StepVerifierAssertionsTests {
 				s.onNext("foo");
 				s.onComplete();
 				s.onNext("bar");
-			}).take(2))
+			}).take(2, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()
@@ -91,7 +91,7 @@ public class StepVerifierAssertionsTests {
 				s.onComplete();
 				s.onNext("bar");
 				s.onNext("baz");
-			}).take(3))
+			}).take(3, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()
@@ -112,7 +112,7 @@ public class StepVerifierAssertionsTests {
 				s.onComplete();
 				s.onNext("bar");
 				s.onNext("baz");
-			}).take(3))
+			}).take(3, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()
@@ -248,7 +248,7 @@ public class StepVerifierAssertionsTests {
 				s.onNext("foo");
 				s.onComplete();
 				s.onError(new IllegalStateException("boom"));
-			}).take(2))
+			}).take(2, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()

@@ -359,7 +359,7 @@ public class FluxBufferPredicateTest {
 				    .map(retainedDetector::tracked)
 				    .concatWith(Mono.error(new Throwable("unexpected")))
 				    .bufferUntilChanged()
-				    .take(50);
+				    .take(50, false);
 
 
 		StepVerifier.create(test)

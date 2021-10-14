@@ -182,7 +182,7 @@ public class FluxMetricsTest {
 		                            .hide();
 
 		new FluxMetrics<>(source2)
-				.take(3)
+				.take(3, false)
 				.blockLast();
 
 		assertThat(nextMeter.count()).isEqualTo(126L);
@@ -366,7 +366,7 @@ public class FluxMetricsTest {
 		                           .hide();
 
 		new FluxMetrics<>(source)
-				.take(1)
+				.take(1, false)
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)

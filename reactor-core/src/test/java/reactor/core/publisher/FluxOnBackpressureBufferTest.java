@@ -196,8 +196,8 @@ public class FluxOnBackpressureBufferTest
 		AtomicInteger sourceCancelledAt = new AtomicInteger(-1);
 
 		StepVerifier.withVirtualTime(() ->
-						Flux.interval(Duration.ofSeconds(1)) // lets emit 1 item per second; starting with zero
-						    .take(8)
+						Flux.interval(Duration.ofSeconds(1))
+						    .take(8, false)
 						    .doOnNext(v -> sourceProduced.incrementAndGet())
 						    .doOnCancel(() -> sourceCancelledAt.set(sourceProduced.get() - 1))
 						    .onBackpressureBuffer(2, discardedItems::add)

@@ -173,7 +173,7 @@ class FluxLimitRequestTest {
 		                         .take(10, true)
 		                         .doOnCancel(() -> operatorCancelled.set(true))
 		                         .doOnRequest(operatorRequested::add)
-		                         .take(3);
+		                         .take(3, false);
 
 		StepVerifier.create(test)
 		            .expectNextCount(3)

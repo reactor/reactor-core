@@ -434,7 +434,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 				    .doOnRequest(requests::add)
 				    .replay(7);
 
-		replay.take(13).subscribe(fiveThenEightSubscriber);
+		replay.take(13, false).subscribe(fiveThenEightSubscriber);
 		replay.subscribe(sevenThenEightSubscriber);
 		replay.connect();
 

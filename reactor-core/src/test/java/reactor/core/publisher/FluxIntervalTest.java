@@ -57,7 +57,7 @@ public class FluxIntervalTest {
 			  .add(System.currentTimeMillis());
 
 			Flux.interval(Duration.ofMillis(100), Duration.ofMillis(100), exec)
-			    .take(5)
+			    .take(5, false)
 			    .map(v -> System.currentTimeMillis())
 			    .subscribe(ts);
 

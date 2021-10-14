@@ -182,7 +182,7 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	public void take() {
 		StepVerifier.create(Flux.range(1, 5)
 		                        .onBackpressureBuffer(Duration.ofMinutes(1), Integer.MAX_VALUE, v -> {})
-		                        .take(2))
+		                        .take(2, false))
 		            .expectNext(1, 2)
 		            .verifyComplete();
 	}

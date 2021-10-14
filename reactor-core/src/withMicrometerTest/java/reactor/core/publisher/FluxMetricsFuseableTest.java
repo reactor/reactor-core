@@ -285,7 +285,7 @@ public class FluxMetricsFuseableTest {
 
 		Flux<Integer> source2 = Flux.range(1, 10);
 		new FluxMetricsFuseable<>(source2)
-		    .take(3)
+		    .take(3, false)
 		    .blockLast();
 
 		assertThat(nextMeter.count()).isEqualTo(126L);

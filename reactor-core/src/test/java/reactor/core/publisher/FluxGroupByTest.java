@@ -67,7 +67,7 @@ public class FluxGroupByTest extends
 				.publishOn(scheduler)
 				.groupBy(Function.identity())
 				.flatMap(groupFlux -> groupFlux.take(Duration.ofSeconds(1L), scheduler)
-						.take(2)
+						.take(2, false)
 						.collectList(), 16384)
 				.map(Collection::size)
 				.subscribe(downstream::addAndGet, System.err::println, latch::countDown);
@@ -189,7 +189,7 @@ public class FluxGroupByTest extends
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 3)
-		    .take(2)
+		    .take(2, false)
 		    .subscribe(ts);
 
 		ts.assertValueCount(2)
@@ -435,7 +435,7 @@ public class FluxGroupByTest extends
 				final int total = 100_000;
 				Flux.range(0, total)
 				    .groupBy(i -> (i / 2d) * 2d, 42)
-				    .flatMap(it -> it.take(1)
+				    .flatMap(it -> it.take(1, false)
 				                     .hide(), 2)
 				    .publishOn(Schedulers.fromExecutorService(forkJoinPool), 2)
 				    .count()

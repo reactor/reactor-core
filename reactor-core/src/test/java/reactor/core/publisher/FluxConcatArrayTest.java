@@ -163,7 +163,7 @@ public class FluxConcatArrayTest {
 	public void veryLongTake() {
 		Flux.range(1, 1_000_000_000)
 		    .concatWith(Flux.empty())
-		    .take(10)
+		    .take(10, false)
 		    .subscribeWith(AssertSubscriber.create())
 		    .assertComplete()
 		    .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);

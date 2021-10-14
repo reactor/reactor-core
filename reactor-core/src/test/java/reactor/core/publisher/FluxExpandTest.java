@@ -143,7 +143,7 @@ public class FluxExpandTest {
 	public void recursiveCountdownTake() {
 		StepVerifier.create(Flux.just(10)
 		                        .expand(countDown)
-		                        .take(5)
+		                        .take(5, false)
 		)
 		            .expectNext(10, 9, 8, 7, 6)
 		            .verifyComplete();
@@ -153,7 +153,7 @@ public class FluxExpandTest {
 	public void recursiveCountdownTakeDepth() {
 		StepVerifier.create(Flux.just(10)
 		                        .expandDeep(countDown)
-		                        .take(5)
+		                        .take(5, false)
 		)
 		            .expectNext(10, 9, 8, 7, 6)
 		            .verifyComplete();

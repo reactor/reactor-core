@@ -74,13 +74,13 @@ public class DefaultContextExpectationsTest {
 
 	@Test
 	public void contextAccessibleLastInChain() {
-		assertContextExpectation(s -> s.take(3).contextWrite(Context.of("a", "b")),
+		assertContextExpectation(s -> s.take(3, false).contextWrite(Context.of("a", "b")),
 				e -> e, 3);
 	}
 
 	@Test
 	public void contextAccessibleFirstInChain() {
-		assertContextExpectation(s -> s.contextWrite(Context.of("a", "b")).take(3),
+		assertContextExpectation(s -> s.contextWrite(Context.of("a", "b")).take(3, false),
 				e -> e, 3);
 	}
 

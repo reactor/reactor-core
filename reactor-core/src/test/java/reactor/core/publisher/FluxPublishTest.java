@@ -673,7 +673,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 				Flux.fromStream(Stream.iterate(0, i -> i + 1))
 				    .publish()
 				    .autoConnect()
-				    .take(10);
+				    .take(10, false);
 
 		StepVerifier.create(publish)
 		            .expectNextCount(10)
