@@ -117,32 +117,33 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		source.asFlux()
-			  .concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
-		      .subscribe(ts);
+			  .concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), 1)
+			.doOnRequest(l -> System.out.println(l))
+			.subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1, FAIL_FAST);
-		source.emitNext(2, FAIL_FAST);
+		source.tryEmitNext(1).orThrow();
+		source.tryEmitNext(2).orThrow();
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.tryEmitNext(1).orThrow();
+		source1.tryEmitNext(10).orThrow();
 		//using an emit below would terminate the sink with an error
-		assertThat(source2.tryEmitNext(10))
+		assertThat(source2.tryEmitNext(200))
 				.as("early emit in source2")
 				.isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 		source1.tryEmitComplete().orThrow();
 		source.emitComplete(FAIL_FAST);
 
-		source2.tryEmitNext(2).orThrow();
+		source2.tryEmitNext(20).orThrow();
 		source2.tryEmitComplete().orThrow();
 
-		ts.assertValues(1, 2)
+		ts.assertValues(10, 20)
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -373,7 +374,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		//also tests WeakScalar
 		StepVerifier.create(Flux.just(1, 2, 3)
 		                        .concatWith(Mono.error(new IllegalStateException("boom")))
-		                        .concatMap(i -> Mono.just("value" + i)),
+		                        .concatMap(i -> Mono.just("value" + i), implicitPrefetchValue()),
 				0)
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
