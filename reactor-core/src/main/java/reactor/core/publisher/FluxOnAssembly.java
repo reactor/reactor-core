@@ -430,7 +430,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 					sb.append(System.lineSeparator());
 				}));
 
-				sb.append("Stack trace:");
+				sb.append("Original Stack Trace:");
 				return sb.toString();
 			}
 		}

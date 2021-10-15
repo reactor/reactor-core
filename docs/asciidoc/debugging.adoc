@@ -167,7 +167,7 @@ Assembly trace from producer [reactor.core.publisher.MonoSingle] : <3>
 Error has been observed at the following site(s): <4>
     *_______Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017) <5>
     |_ Mono.subscribeOn ⇢ at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1071) <6>
-Stack trace: <7>
+Original Stack Trace: <7>
         at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127)
 ...
 <8>
