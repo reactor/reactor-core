@@ -618,6 +618,24 @@ class FluxOnAssemblyTest {
 		assertThat(debugStack).contains("Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:");
 	}
 
+	@Test
+	void onAssemblyExceptionMessageWhenMessageIsNull() {
+		StringWriter sw = new StringWriter();
+		Publisher<?> tested = Flux
+				.just(1, 2)
+				.doOnNext(__ -> {
+					throw new FluxOnAssembly.OnAssemblyException(null);
+				})
+				.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack.trim()).isEqualTo("The stacktrace has been enhanced by Reactor, refer to additional information");
+	}
+
 	private Iterator<String> seekToBacktrace(String debugStack) {
 		Iterator<String> lines = seekToSupressedAssembly(debugStack);
 		while (lines.hasNext()) {

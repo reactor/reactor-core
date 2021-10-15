@@ -437,9 +437,9 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		public String toString() {
-			String s = "The stacktrace has been enhanced by Reactor, refer to additional information below";
+			String s = "The stacktrace has been enhanced by Reactor, refer to additional information";
 			String message = getLocalizedMessage();
-			return (message != null) ? (s + ": " + message) : s;
+			return (message != null) ? (s + " below: " + message) : s;
 		}
 	}
 

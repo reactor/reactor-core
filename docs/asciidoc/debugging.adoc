@@ -160,7 +160,7 @@ The full stack trace, once printed, is as follows:
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
     at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127) <1>
-    Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: <2>
+    Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below: <2>
 Assembly trace from producer [reactor.core.publisher.MonoSingle] : <3>
     reactor.core.publisher.Flux.single(Flux.java:7915)
     reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1017)
@@ -370,7 +370,7 @@ searching), as shown in the following example:
 [source]
 ----
 ...
-	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
+	Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:
 Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].
 ----
 ====
