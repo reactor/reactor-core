@@ -434,6 +434,13 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 				return sb.toString();
 			}
 		}
+
+		@Override
+		public String toString() {
+			String s = "The stacktrace has been enhanced by Reactor, refer to additional information below";
+			String message = getLocalizedMessage();
+			return (message != null) ? (s + ": " + message) : s;
+		}
 	}
 
 	static class OnAssemblySubscriber<T>
