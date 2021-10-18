@@ -3730,6 +3730,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors will immediately short circuit current concat backlog.
+	 * Note that no prefetching is done on the source, which gets requested only if there
+	 * is downstream demand.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3743,7 +3745,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper) {
-		return concatMap(mapper, Queues.XS_BUFFER_SIZE);
+		return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -3765,7 +3767,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors will immediately short circuit current concat backlog. The prefetch argument
-	 * allows to give an arbitrary prefetch size to the upstream source.
+	 * allows to give an arbitrary prefetch size to the upstream source, or to disable
+	 * prefetching with {@code 0}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3808,6 +3811,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
 	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
 	 * if several sources error.
+	 * Note that no prefetching is done on the source, which gets requested only if there
+	 * is downstream demand.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3845,7 +3850,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
 	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
 	 * if several sources error.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source,
+	 * or to disable prefetching with {@code 0}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3884,7 +3890,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Errors in the individual publishers will be delayed after the current concat
 	 * backlog if delayUntilEnd is false or after all sources if delayUntilEnd is true.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source,
+	 * or to disable prefetching with {@code 0}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">

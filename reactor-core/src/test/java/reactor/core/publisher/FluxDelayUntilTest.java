@@ -210,7 +210,7 @@ public class FluxDelayUntilTest {
 	@Test
 	public void isAlias() {
 		assertThat(Flux.range(1, 10).delayUntil(a -> Mono.empty()))
-				.isInstanceOf(FluxConcatMap.class);
+				.isInstanceOf(FluxConcatMapNoPrefetch.class);
 	}
 
 }

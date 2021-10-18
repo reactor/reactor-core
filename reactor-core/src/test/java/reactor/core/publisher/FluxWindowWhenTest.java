@@ -306,7 +306,7 @@ public class FluxWindowWhenTest {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
 		           .delayElements(Duration.ofMillis(99))
 		           .window(Duration.ofMillis(300), Duration.ofMillis(200))
-		           .concatMap(Flux::buffer);
+		           .concatMap(Flux::buffer, 1);
 	}
 
 	@Test
