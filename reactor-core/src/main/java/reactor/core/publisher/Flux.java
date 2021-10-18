@@ -1918,7 +1918,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Creates a {@link Flux} that mirrors the most recently emitted {@link Publisher},
-	 * forwarding its data until a new {@link Publisher} comes in in the source.
+	 * forwarding its data until a new {@link Publisher} is emitted by the source, continuing
+	 * that pattern with the new publisher.
 	 * <p>
 	 * The resulting {@link Flux} will complete once there are no new {@link Publisher} in
 	 * the source (source has completed) and the last mirrored {@link Publisher} has also
@@ -1929,41 +1930,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 * @return a {@link Flux} propagating elements from the most recently emitted publisher in the source
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
-		return switchOnNext(mergedPublishers, Queues.XS_BUFFER_SIZE);
-	}
-
-	/**
-	 * Creates a {@link Flux} that mirrors the most recently emitted {@link Publisher},
-	 * forwarding its data until a new {@link Publisher} comes in in the source.
-	 * <p>
-	 * The resulting {@link Flux} will complete once there are no new {@link Publisher} in
-	 * the source (source has completed) and the last mirrored {@link Publisher} has also
-	 * completed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/switchOnNext.svg" alt="">
-	 *
-	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
-	 * @param prefetch the inner source request size
-	 * @param <T> the produced type
-	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T
-	 *
-	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
-	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
-	 * behavior of the single-parameter variant will then change to prefetch=0.
-	 */
-	@Deprecated
-	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
-		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
-					identityFunction()));
-		}
-		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
-				identityFunction(),
-				Queues.unbounded(prefetch), prefetch));
+		return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
+			identityFunction()));
 	}
 
 	/**
@@ -8768,35 +8739,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
-		return switchMap(fn, Queues.XS_BUFFER_SIZE);
-	}
-
-	/**
-	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever
-	 * this {@link Flux} produces an item. As such, the elements from each generated
-	 * Publisher are emitted in the resulting {@link Flux}.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/switchMap.svg" alt="">
-	 *
-	 * @param fn the {@link Function} to generate a {@link Publisher} for each source value
-	 * @param prefetch the produced demand for inner sources
-	 *
-	 * @param <V> the type of the return value of the transformation function
-	 *
-	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
-	 * for each source onNext
-	 *
-	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
-	 * calls with prefetch=0 with calls to switchMap(fn), as the default behavior of the
-	 * single-parameter variant will then change to prefetch=0.
-	 */
-	@Deprecated
-	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
-		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
-		}
-		return onAssembly(new FluxSwitchMap<>(this, fn, Queues.unbounded(prefetch), prefetch));
+		return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
 	}
 
 	/**

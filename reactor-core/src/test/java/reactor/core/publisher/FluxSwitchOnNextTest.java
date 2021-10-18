@@ -19,9 +19,7 @@ package reactor.core.publisher;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
-public class FluxSwitchOnNextTest {
-
-
+class FluxSwitchOnNextTest {
 
 	@Test
 	public void switchOnNext() {
@@ -33,5 +31,4 @@ public class FluxSwitchOnNextTest {
 		            .expectNext("Zero")
 		            .verifyComplete();
 	}
-
 }
