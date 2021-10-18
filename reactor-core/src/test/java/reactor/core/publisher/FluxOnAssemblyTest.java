@@ -601,39 +601,27 @@ class FluxOnAssemblyTest {
 
 	@Test
 	void onAssemblyExceptionMessage() {
-		StringWriter sw = new StringWriter();
-		Publisher<?> tested = Flux
-				.just(1, 2)
-				.doOnNext(__ -> {
-					throw new RuntimeException("Boom");
-				})
-				.checkpoint()
-				.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+		Publisher<?> tested = Flux.just(1, 2)
+		                          .doOnNext(__ -> {
+			                          throw new RuntimeException("Boom");
+		                          })
+		                          .checkpoint();
 
 		StepVerifier.create(tested)
-		            .verifyError();
-
-		String debugStack = sw.toString();
-
-		assertThat(debugStack).contains("Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:");
+		            .verifyErrorSatisfies(t -> assertThat(t).hasStackTraceContaining(
+				            "Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:"));
 	}
 
 	@Test
 	void onAssemblyExceptionMessageWhenMessageIsNull() {
-		StringWriter sw = new StringWriter();
-		Publisher<?> tested = Flux
-				.just(1, 2)
-				.doOnNext(__ -> {
-					throw new FluxOnAssembly.OnAssemblyException(null);
-				})
-				.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+		Publisher<?> tested = Flux.just(1, 2)
+		                          .doOnNext(__ -> {
+			                          throw new FluxOnAssembly.OnAssemblyException(null);
+		                          });
 
 		StepVerifier.create(tested)
-		            .verifyError();
-
-		String debugStack = sw.toString();
-
-		assertThat(debugStack.trim()).isEqualTo("The stacktrace has been enhanced by Reactor, refer to additional information");
+		            .verifyErrorSatisfies(t -> assertThat(t).hasStackTraceContaining(
+				            "The stacktrace should have been enhanced by Reactor, but there was no message in OnAssemblyException"));
 	}
 
 	private Iterator<String> seekToBacktrace(String debugStack) {
