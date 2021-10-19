@@ -261,7 +261,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	/**
 	 * Indicates whether this signal represents an {@code onComplete} event.
 	 *
-	 * @return a boolean indicating whether this signal represents an {@code onSubscribe}
+	 * @return a boolean indicating whether this signal represents an {@code onComplete}
 	 * event
 	 */
 	default boolean isOnComplete() {
