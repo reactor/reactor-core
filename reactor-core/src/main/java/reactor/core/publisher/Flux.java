@@ -3339,7 +3339,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
-	 * triggered downstream of it cannot be observed and augmented with the backtrace.
+	 * triggered downstream of it cannot be observed and augmented with the traceback.
 	 * <p>
 	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
 	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback

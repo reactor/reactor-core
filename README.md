@@ -54,7 +54,7 @@ However it should work fine with Android SDK 21 (Android 5.0) and above. See the
 in the reference guide.
 
 ## Trouble importing the project in IDE?
-Since the introduction of Java 9 stubs in order to optimize the performance of debug backtraces, one can sometimes
+Since the introduction of Java 9 stubs in order to optimize the performance of debug tracebacks, one can sometimes
 encounter cryptic messages from the build system when importing or re-importing the project in their IDE.
 
 For example: 
