@@ -430,9 +430,18 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 					sb.append(System.lineSeparator());
 				}));
 
-				sb.append("Stack trace:");
+				sb.append("Original Stack Trace:");
 				return sb.toString();
 			}
+		}
+
+		@Override
+		public String toString() {
+			String message = getLocalizedMessage();
+			if (message == null) {
+				return "The stacktrace should have been enhanced by Reactor, but there was no message in OnAssemblyException";
+			}
+			return "The stacktrace has been enhanced by Reactor, refer to additional information below: " + message;
 		}
 	}
 

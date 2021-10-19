@@ -64,7 +64,7 @@ class FluxOnAssemblyTest {
 		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
 
 		String message = first.getMessage();
-		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Stack trace:"));
+		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Original Stack Trace:"));
 
 		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnMultiplePathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
 		String mapThenFilterLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnMultiplePathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
@@ -111,7 +111,7 @@ class FluxOnAssemblyTest {
 		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
 
 		String message = first.getMessage();
-		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Stack trace:"));
+		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Original Stack Trace:"));
 
 		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnDoubleNestedPathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
 		String mapChain1Line = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnDoubleNestedPathShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
@@ -158,7 +158,7 @@ class FluxOnAssemblyTest {
 		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
 
 		String message = first.getMessage();
-		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Stack trace:"));
+		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Original Stack Trace:"));
 
 		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
 		String retryLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
@@ -194,7 +194,7 @@ class FluxOnAssemblyTest {
 		assertThat(first).isInstanceOf(FluxOnAssembly.OnAssemblyException.class);
 
 		String message = first.getMessage();
-		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Stack trace:"));
+		message = message.substring(message.indexOf("Error has been observed"), message.indexOf("Original Stack Trace:"));
 
 		String errorLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsWithCheckpointShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+1) + ")";
 		String checkpointLine = "reactor.core.publisher.FluxOnAssemblyTest.errorObservedOnRetryAttemptsWithCheckpointShowsCounterOnSharedRoots(FluxOnAssemblyTest.java:" + (baseline+2) + ")";
@@ -232,7 +232,7 @@ class FluxOnAssemblyTest {
 					.hasMessage("\n" +
 						"Error has been observed at the following site(s):\n" +
 						"\t*__checkpoint ⇢ checkpointId (observed 4 times)\n" +
-						"Stack trace:");
+						"Original Stack Trace:");
 			})
 			.verify(Duration.ofSeconds(10));
 	}
@@ -261,7 +261,7 @@ class FluxOnAssemblyTest {
 						"Error has been observed at the following site(s):\n" +
 						"\t*__checkpoint ⇢ checkpointId1 (observed 4 times)\n" +
 						"\t*__checkpoint ⇢ checkpointId2 (observed 3 times)\n" +
-						"Stack trace:");
+						"Original Stack Trace:");
 			})
 			.verify(Duration.ofSeconds(10));
 	}
@@ -476,7 +476,7 @@ class FluxOnAssemblyTest {
 				.toIterable()
 				.startsWith(
 						"*__ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")",
-						"Stack trace:"
+						"Original Stack Trace:"
 				);
 	}
 
@@ -599,6 +599,31 @@ class FluxOnAssemblyTest {
 				.endsWith("checkpoint ⇢ after2");
 	}
 
+	@Test
+	void onAssemblyExceptionMessage() {
+		Publisher<?> tested = Flux.just(1, 2)
+		                          .doOnNext(__ -> {
+			                          throw new RuntimeException("Boom");
+		                          })
+		                          .checkpoint();
+
+		StepVerifier.create(tested)
+		            .verifyErrorSatisfies(t -> assertThat(t).hasStackTraceContaining(
+				            "Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:"));
+	}
+
+	@Test
+	void onAssemblyExceptionMessageWhenMessageIsNull() {
+		Publisher<?> tested = Flux.just(1, 2)
+		                          .doOnNext(__ -> {
+			                          throw new FluxOnAssembly.OnAssemblyException(null);
+		                          });
+
+		StepVerifier.create(tested)
+		            .verifyErrorSatisfies(t -> assertThat(t).hasStackTraceContaining(
+				            "The stacktrace should have been enhanced by Reactor, but there was no message in OnAssemblyException"));
+	}
+
 	private Iterator<String> seekToBacktrace(String debugStack) {
 		Iterator<String> lines = seekToSupressedAssembly(debugStack);
 		while (lines.hasNext()) {
@@ -616,7 +641,7 @@ class FluxOnAssemblyTest {
 		                               .iterator();
 		while (lines.hasNext()) {
 			String line = lines.next();
-			if (line.endsWith("Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:")) {
+			if (line.endsWith("Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:")) {
 				return lines;
 			}
 		}

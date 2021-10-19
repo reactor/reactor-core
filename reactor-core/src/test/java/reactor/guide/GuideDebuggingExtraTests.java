@@ -44,7 +44,7 @@ public class GuideDebuggingExtraTests {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack.substring(0, debugStack.indexOf("Stack trace:")))
+		assertThat(debugStack.substring(0, debugStack.indexOf("Original Stack Trace:")))
 				.endsWith("Error has been observed at the following site(s):\n"
 						+ "\t*________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
 						+ "\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)\n"
