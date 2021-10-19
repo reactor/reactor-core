@@ -135,7 +135,8 @@ start of your application.
 Later on, if an exception occurs, the failing operator is able to refer to that capture
 and to rework the stack trace, appending additional information.
 
-TIP: We call this captured assembly information a *traceback*.
+TIP: We call this captured assembly information (and additional information added to the
+exceptions by Reactor in general) a *traceback*.
 
 In the next section, we see how the stack trace differs and how to interpret
 that new information.
@@ -218,7 +219,7 @@ that line, we find out he meant to use the less restrictive `take(1)` instead.
 
 We have solved our problem.
 
-Now consider the following line in the stack trace:
+Now consider the following section in the stack trace:
 
 ====
 [source]
@@ -227,7 +228,7 @@ Error has been observed at the following site(s):
 ----
 ====
 
-That second part of the debug stack trace was not necessarily interesting in
+That second part of the traceback was not necessarily interesting in
 this particular example, because the error was actually happening in the last
 operator in the chain (the one closest to `subscribe`). Considering another
 example might make it more clear:
@@ -397,7 +398,7 @@ The description could be a static identifier or user-readable description or a w
 correlation ID (for instance, coming from a header in the case of an HTTP request).
 
 NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed
-snapshot stacks are appended as suppressed error output after the observing operator
+tracebacks  are appended as suppressed error output after the observing operator
 graph and following the same declarative order.
 
 [[reactor-tools-debug]]
