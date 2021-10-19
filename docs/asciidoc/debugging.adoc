@@ -363,19 +363,6 @@ to the assembly traceback. This way, the stack trace is omitted and you rely on 
 description to identify the assembly site. `checkpoint(String)` imposes less processing
 cost than a regular `checkpoint`.
 
-//snippets are in FluxOnAssemblyTest
-`checkpoint(String)` includes "`light`" in its output (which can be handy when
-searching), as shown in the following example:
-
-====
-[source]
-----
-...
-	Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:
-Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].
-----
-====
-
 Last but not least, if you want to add a more generic description to the checkpoint but
 still rely on the stack trace mechanism to identify the assembly site, you can force that
 behavior by using the `checkpoint("description", true)` version. We are now back to the
@@ -397,9 +384,10 @@ Error has been observed at the following site(s):
 The description could be a static identifier or user-readable description or a wider
 correlation ID (for instance, coming from a header in the case of an HTTP request).
 
-NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed
-tracebacks are appended as suppressed error output after the observing operator
-graph and following the same declarative order.
+NOTE: When global debugging is enabled in conjunction with checkpoints, the global debugging
+traceback style is applied and checkpoints are only reflected in the
+"Error has been observed..." section.
+As a result, the name of heavy checkpoints is not visible in this case.
 
 [[reactor-tools-debug]]
 == Production-ready Global Debugging
