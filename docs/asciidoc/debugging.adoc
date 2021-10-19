@@ -398,7 +398,7 @@ The description could be a static identifier or user-readable description or a w
 correlation ID (for instance, coming from a header in the case of an HTTP request).
 
 NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed
-tracebacks  are appended as suppressed error output after the observing operator
+tracebacks are appended as suppressed error output after the observing operator
 graph and following the same declarative order.
 
 [[reactor-tools-debug]]
