@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
@@ -33,6 +34,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.util.retry.Retry;
 
@@ -297,209 +299,334 @@ class FluxOnAssemblyTest {
 				.endsWith(", described as [1234] :\n");
 	}
 
-	@Test
-	void checkpointEmpty() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointEmpty(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
 
 		Flux<Integer> tested = Flux.range(1, 10)
-		                           .map(i -> i < 3 ? i : null)
-		                           .filter(i -> i % 2 == 0)
-		                           .checkpoint()
-		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.map(i -> i < 3 ? i : null)
+			.filter(i -> i % 2 == 0)
+			.checkpoint()
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 		StepVerifier.create(tested)
-		            .expectNext(2)
-		            .verifyError();
+			.expectNext(2)
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable] :");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and checkpoint,
+			//assembly points to map
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :")
+				.contains("Flux.filter ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmpty(")
+				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmpty(");
+		}
+		else {
+			//the traceback "error has been observed" only contains the checkpoint, with callsite,
+			//assembly points to filter
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable] :")
+				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmpty(")
+				.doesNotContain("Flux.filter ⇢ at");
+		}
 	}
 
-	@Test
-	void checkpointEmptyAndDebug() {
-		StringWriter sw = new StringWriter();
-
-		Hooks.onOperatorDebug();
-
-		Flux<Integer> tested = Flux.range(1, 10)
-		                           .map(i -> i < 3 ? i : null)
-		                           .filter(i -> i % 2 == 0)
-		                           .checkpoint()
-		                           .doOnError(t -> t.printStackTrace(new PrintWriter(
-				                           sw)));
-		StepVerifier.create(tested)
-		            .expectNext(2)
-		            .verifyError();
-
-		String debugStack = sw.toString();
-
-		assertThat(debugStack).contains(
-				"Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :");
-	}
-
-	@Test
-	void checkpointDescriptionAndForceStack() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointDescriptionAndForceStack(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
-		                           .map(i -> i < 3 ? i : null)
-		                           .filter(i -> i % 2 == 0)
-		                           .checkpoint("foo", true)
-		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.map(i -> i < 3 ? i : null)
+			.filter(i -> i % 2 == 0)
+			.checkpoint("heavy", true)
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
-		            .expectNext(2)
-		            .verifyError();
+			.expectNext(2)
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable], described as [foo] :");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and checkpoint with description,
+			//assembly points to map, with no description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :")
+				.contains("Flux.filter ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStack(")
+				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStack(");
+		}
+		else {
+			//the traceback "error has been observed" only contains the checkpoint, with callsite and description,
+			//assembly points to filter and reflects description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable], described as [heavy] :")
+				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStack(")
+				.doesNotContain("Flux.filter ⇢ at");
+		}
 	}
 
-	@Test
-	void checkpointWithDescriptionIsLight() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointWithDescriptionIsLight(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
-		                           .map(i -> i < 3 ? i : null)
-		                           .filter(i -> i % 2 == 0)
-		                           .checkpoint("foo")
-		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.map(i -> i < 3 ? i : null)
+			.filter(i -> i % 2 == 0)
+			.checkpoint("light")
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
-		            .expectNext(2)
-		            .verifyError();
+			.expectNext(2)
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		Iterator<String> lines = seekToBacktrace(debugStack);
-
-		assertThat(lines.next())
-				.as("first backtrace line")
-				.endsWith("checkpoint ⇢ foo");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and light checkpoint,
+			//assembly points to map, with no description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :")
+				.contains("Flux.filter ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointWithDescriptionIsLight(")
+				.contains("checkpoint ⇢ light");
+		}
+		else {
+			//the traceback "error has been observed" only contains the light checkpoint,
+			//assembly is not present
+			assertThat(debugStack)
+				.doesNotContain("Assembly trace from producer")
+				.contains("checkpoint ⇢ light")
+				.doesNotContain("Flux.filter ⇢ at");
+		}
 	}
 
-	@Test
-	void monoCheckpointEmpty() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointEmptyForMono(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
+		StringWriter sw = new StringWriter();
+
+		Mono<Object> tested = Mono.just(1)
+			.map(i -> null)
+			.filter(Objects::nonNull)
+			.checkpoint()
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+			.verifyError();
+
+		String debugStack = sw.toString();
+
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and checkpoint,
+			//assembly points to map
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.MonoMap] :")
+				.contains("Mono.filter ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForMono(")
+				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForMono(");
+		}
+		else {
+			//the traceback "error has been observed" only contains the checkpoint, with callsite,
+			//assembly points to filter
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable] :")
+				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForMono(")
+				.doesNotContain("Mono.filter ⇢ at");
+		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointDescriptionAndForceStackForMono(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
-		                          .map(i -> null)
-		                          .filter(Objects::nonNull)
-		                          .checkpoint()
-		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.map(i -> null)
+			.filter(Objects::nonNull)
+			.checkpoint("heavy", true)
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
-		            .verifyError();
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable] :");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and checkpoint with description,
+			//assembly points to map, with no description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.MonoMap] :")
+				.contains("Mono.filter ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForMono(")
+				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForMono(");
+		}
+		else {
+			//the traceback "error has been observed" only contains the checkpoint, with callsite and description,
+			//assembly points to filter and reflects description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable], described as [heavy] :")
+				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForMono(")
+				.doesNotContain("Mono.filter ⇢ at");
+		}
 	}
 
-	@Test
-	void monoCheckpointDescriptionAndForceStack() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointWithDescriptionIsLightForMono(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
-		                          .map(i -> null)
-		                          .filter(Objects::nonNull)
-		                          .checkpoint("foo", true)
-		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.map(i -> null)
+			.filter(Objects::nonNull)
+			.checkpoint("light")
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
-		            .verifyError();
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable], described as [foo] :");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and light checkpoint,
+			//assembly points to map, with no description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.MonoMap] :")
+				.contains("Mono.filter ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointWithDescriptionIsLightForMono(")
+				.contains("checkpoint ⇢ light");
+		}
+		else {
+			//the traceback "error has been observed" only contains the light checkpoint,
+			//assembly is not present
+			assertThat(debugStack)
+				.doesNotContain("Assembly trace from producer")
+				.contains("checkpoint ⇢ light")
+				.doesNotContain("Mono.filter ⇢ at");
+		}
 	}
 
-	@Test
-	void monoCheckpointWithDescriptionIsLight() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointEmptyForParallel(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
-		Mono<Object> tested = Mono.just(1)
-		                          .map(i -> null)
-		                          .filter(Objects::nonNull)
-		                          .checkpoint("foo")
-		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
+		Flux<Integer> tested = Flux.range(1, 10)
+			.parallel(2)
+			.transformGroups(g -> g.map(i -> (Integer) null))
+			.checkpoint()
+			.sequential()
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 		StepVerifier.create(tested)
-		            .verifyError();
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		Iterator<String> lines = seekToBacktrace(debugStack);
-
-		assertThat(lines.next())
-				.as("first backtrace line")
-				.endsWith("checkpoint ⇢ foo");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and checkpoint,
+			//assembly points to map
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxMap] :")
+				.contains("*__ParallelFlux.transformGroups ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForParallel(")
+				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForParallel(");
+		}
+		else {
+			//the traceback "error has been observed" only contains the checkpoint, with callsite,
+			//assembly points to parallelSource
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.ParallelSource] :")
+				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForParallel(")
+				.doesNotContain("ParallelFlux.transformGroups ⇢ at");
+		}
 	}
 
-	@Test
-	void parallelFluxCheckpointEmpty() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointDescriptionAndForceStackForParallel(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
-		                         .parallel(2)
-		                         .transformGroups(g -> g.map(i -> (Integer) null))
-		                         .checkpoint()
-		                         .sequential()
-		                         .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.parallel(2)
+			.transformGroups(g -> g.map(i -> (Integer) null))
+			.checkpoint("heavy", true)
+			.sequential()
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
-		            .verifyError();
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource] :");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and checkpoint with description,
+			//assembly points to map, with no description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxMap] :")
+				.contains("*__ParallelFlux.transformGroups ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForParallel(")
+				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForParallel(");
+		}
+		else {
+			//the traceback "error has been observed" only contains the checkpoint, with callsite and description,
+			//assembly points to parallelSource and reflects description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [heavy] :")
+				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForParallel(")
+				.doesNotContain("ParallelFlux.transformGroups ⇢ at");
+		}
 	}
 
-	@Test
-	void parallelFluxCheckpointDescriptionAndForceStack() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = { false, true })
+	void checkpointWithDescriptionIsLightForParallel(boolean debugModeOn) {
+		if (debugModeOn) {
+			Hooks.onOperatorDebug();
+		}
 		StringWriter sw = new StringWriter();
-		int baseline = getBaseline();
 		Flux<Integer> tested = Flux.range(1, 10)
-		                           .parallel(2)
-		                           .transformGroups(g -> g.map(i -> (Integer) null))
-		                           .checkpoint("descriptionCorrelation1234", true)
-		                           .sequential()
-		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+			.parallel(2)
+			.transformGroups(g -> g.map(i -> (Integer) null))
+			.checkpoint("light")
+			.sequential()
+			.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
-		            .verifyError();
+			.verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
-				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:244)\n"
-				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n");
-
-		Iterator<String> lines = seekToBacktrace(debugStack);
-
-		assertThat(lines)
-				.toIterable()
-				.startsWith(
-						"*__ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")",
-						"Original Stack Trace:"
-				);
-	}
-
-	@Test
-	void parallelFluxCheckpointDescriptionIsLight() {
-		StringWriter sw = new StringWriter();
-		Flux<Integer> tested = Flux.range(1, 10)
-		                           .parallel(2)
-		                           .transformGroups(g -> g.map(i -> (Integer) null))
-		                           .checkpoint("light checkpoint identifier")
-		                           .sequential()
-		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
-
-		StepVerifier.create(tested)
-		            .verifyError();
-
-		String debugStack = sw.toString();
-
-		Iterator<String> lines = seekToBacktrace(debugStack);
-
-		assertThat(lines.next())
-				.as("first backtrace line")
-				.endsWith("checkpoint ⇢ light checkpoint identifier");
+		if (debugModeOn) {
+			//the traceback "error has been observed" contains both individual ops and light checkpoint,
+			//assembly points to map, with no description
+			assertThat(debugStack)
+				.contains("Assembly trace from producer [reactor.core.publisher.FluxMap] :")
+				.contains("*__ParallelFlux.transformGroups ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointWithDescriptionIsLightForParallel(")
+				.contains("checkpoint ⇢ light");
+		}
+		else {
+			//the traceback "error has been observed" only contains the light checkpoint,
+			//assembly is not present
+			assertThat(debugStack)
+				.doesNotContain("Assembly trace from producer")
+				.contains("checkpoint ⇢ light")
+				.doesNotContain("ParallelFlux.transformGroups ⇢ at");
+		}
 	}
 
 	@Test

@@ -57,7 +57,8 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.CheckpointHeavySnapshot;
+import reactor.core.publisher.FluxOnAssembly.CheckpointLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
@@ -3410,10 +3411,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final Flux<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
 		final AssemblySnapshot stacktrace;
 		if (!forceStackTrace) {
-			stacktrace = new AssemblyLightSnapshot(description);
+			stacktrace = new CheckpointLightSnapshot(description);
 		}
 		else {
-			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
+			stacktrace = new CheckpointHeavySnapshot(description, Traces.callSiteSupplierFactory.get());
 		}
 
 		return new FluxOnAssembly<>(this, stacktrace);
