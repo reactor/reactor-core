@@ -16,10 +16,29 @@
 
 package reactor.util;
 
+import java.util.function.Supplier;
+
 /**
  * Logger interface designed for internal Reactor usage.
  */
 public interface Logger {
+
+	/**
+	 * A kind of {@link java.util.function.Predicate} and {@link Supplier} mix, provides two
+	 * variants of a message {@link String} depending on the level of detail desired.
+	 */
+	@FunctionalInterface
+	interface ChoiceOfMessageSupplier {
+
+		/**
+		 * Provide two possible versions of a message {@link String}, depending on the
+		 * level of detail desired.
+		 *
+		 * @param isVerbose {@code true} for higher level of detail, {@code false} for lower level of detail
+		 * @return the message {@link String} according to the passed level of detail
+		 */
+		String get(boolean isVerbose);
+	}
 
 	/**
 	 * Return the name of this <code>Logger</code> instance.
@@ -142,6 +161,50 @@ public interface Logger {
 	void info(String msg, Throwable t);
 
 	/**
+	 * Convenience method to log a message that is different according to the log level.
+	 * In priority, DEBUG level is used if {@link #isDebugEnabled()}.
+	 * Otherwise, INFO level is used (unless {@link #isInfoEnabled()} is false).
+	 * <p>
+	 * This can be used to log different level of details according to the active
+	 * log level.
+	 *
+	 * @param messageSupplier the {@link ChoiceOfMessageSupplier} invoked in priority
+	 * with {@code true} for the DEBUG level message, or {@code false} for INFO level
+	 * @see #info(String)
+	 */
+	default void infoOrDebug(ChoiceOfMessageSupplier messageSupplier) {
+		if (isDebugEnabled()) {
+			debug(messageSupplier.get(true));
+		}
+		else if (isInfoEnabled()) {
+			info(messageSupplier.get(false));
+		}
+	}
+
+	/**
+	 * Convenience method to log an exception (throwable), with an accompanying
+	 * message that is different according to the log level.
+	 * In priority, DEBUG level is used if {@link #isDebugEnabled()}.
+	 * Otherwise, INFO level is used (unless {@link #isInfoEnabled()} is false).
+	 * <p>
+	 * This can be used to log different level of details according to the active
+	 * log level.
+	 *
+	 * @param messageSupplier the {@link ChoiceOfMessageSupplier} invoked in priority
+	 * with {@code true} for the DEBUG level message, or {@code false} for INFO level
+	 * @param cause the {@link Throwable} the original exception to be logged
+	 * @see #info(String, Throwable)
+	 */
+	default void infoOrDebug(ChoiceOfMessageSupplier messageSupplier, Throwable cause) {
+		if (isDebugEnabled()) {
+			debug(messageSupplier.get(true), cause);
+		}
+		else if (isInfoEnabled()) {
+			info(messageSupplier.get(false), cause);
+		}
+	}
+
+	/**
 	 * Is the logger instance enabled for the WARN level?
 	 *
 	 * @return True if this Logger is enabled for the WARN level,
@@ -180,6 +243,50 @@ public interface Logger {
 	void warn(String msg, Throwable t);
 
 	/**
+	 * Convenience method to log a message that is different according to the log level.
+	 * In priority, DEBUG level is used if {@link #isDebugEnabled()}.
+	 * Otherwise, WARN level is used (unless {@link #isWarnEnabled()} is false).
+	 * <p>
+	 * This can be used to log different level of details according to the active
+	 * log level.
+	 *
+	 * @param messageSupplier the {@link ChoiceOfMessageSupplier} invoked in priority
+	 * with {@code true} for the DEBUG level message, or {@code false} for WARN level
+	 * @see #warn(String)
+	 */
+	default void warnOrDebug(ChoiceOfMessageSupplier messageSupplier) {
+		if (isDebugEnabled()) {
+			debug(messageSupplier.get(true));
+		}
+		else if (isWarnEnabled()) {
+			warn(messageSupplier.get(false));
+		}
+	}
+
+	/**
+	 * Convenience method to log an exception (throwable), with an accompanying
+	 * message that is different according to the log level.
+	 * In priority, DEBUG level is used if {@link #isDebugEnabled()}.
+	 * Otherwise, WARN level is used (unless {@link #isWarnEnabled()} is false).
+	 * <p>
+	 * This can be used to log different level of details according to the active
+	 * log level.
+	 *
+	 * @param messageSupplier the {@link ChoiceOfMessageSupplier} invoked in priority
+	 * with {@code true} for the DEBUG level message, or {@code false} for WARN level
+	 * @param cause the {@link Throwable} the original exception to be logged
+	 * @see #warn(String, Throwable)
+	 */
+	default void warnOrDebug(ChoiceOfMessageSupplier messageSupplier, Throwable cause) {
+		if (isDebugEnabled()) {
+			debug(messageSupplier.get(true), cause);
+		}
+		else if (isWarnEnabled()) {
+			warn(messageSupplier.get(false), cause);
+		}
+	}
+
+	/**
 	 * Is the logger instance enabled for the ERROR level?
 	 *
 	 * @return True if this Logger is enabled for the ERROR level,
@@ -216,5 +323,49 @@ public interface Logger {
 	 * @param t   the exception (throwable) to log
 	 */
 	void error(String msg, Throwable t);
+
+	/**
+	 * Convenience method to log a message that is different according to the log level.
+	 * In priority, DEBUG level is used if {@link #isDebugEnabled()}.
+	 * Otherwise, ERROR level is used (unless {@link #isErrorEnabled()} is false).
+	 * <p>
+	 * This can be used to log different level of details according to the active
+	 * log level.
+	 *
+	 * @param messageSupplier the {@link ChoiceOfMessageSupplier} invoked in priority
+	 * with {@code true} for the DEBUG level message, or {@code false} for ERROR level
+	 * @see #error(String)
+	 */
+	default void errorOrDebug(ChoiceOfMessageSupplier messageSupplier) {
+		if (isDebugEnabled()) {
+			debug(messageSupplier.get(true));
+		}
+		else if (isErrorEnabled()) {
+			error(messageSupplier.get(false));
+		}
+	}
+
+	/**
+	 * Convenience method to log an exception (throwable), with an accompanying
+	 * message that is different according to the log level.
+	 * In priority, DEBUG level is used if {@link #isDebugEnabled()}.
+	 * Otherwise, ERROR level is used (unless {@link #isErrorEnabled()} is false).
+	 * <p>
+	 * This can be used to log different level of details according to the active
+	 * log level.
+	 *
+	 * @param messageSupplier the {@link ChoiceOfMessageSupplier} invoked in priority
+	 * with {@code true} for the DEBUG level message, or {@code false} for ERROR level
+	 * @param cause the {@link Throwable} the original exception to be logged
+	 * @see #error(String, Throwable)
+	 */
+	default void errorOrDebug(ChoiceOfMessageSupplier messageSupplier, Throwable cause) {
+		if (isDebugEnabled()) {
+			debug(messageSupplier.get(true), cause);
+		}
+		else if (isErrorEnabled()) {
+			error(messageSupplier.get(false), cause);
+		}
+	}
 
 }
