@@ -91,7 +91,9 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 				this.invalidateHandler.accept(value);
 			}
 			catch (Throwable invalidateHandlerError) {
-				LOGGER.warn("InvalidateHandler failed on invalidated value " + value, invalidateHandlerError);
+				LOGGER.warnOrDebug(
+					isVerbose -> isVerbose ? "Failed to apply invalidate handler on value " + value : "Failed to apply invalidate handler",
+					invalidateHandlerError);
 			}
 		}
 	}
@@ -371,7 +373,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			LOGGER.warn("Invalidation triggered by onError(" + t + ")");
+			LOGGER.debug("Invalidation triggered by onError(" + t + ")");
 			main.invalidate();
 		}
 

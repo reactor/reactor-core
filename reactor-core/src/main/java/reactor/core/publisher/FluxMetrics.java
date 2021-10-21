@@ -282,7 +282,7 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 			}
 		}
 		else {
-			log.warn("Attempting to activate metrics but the upstream is not Scannable. " + "You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
+			log.warn("Attempting to activate metrics but the upstream is not Scannable. You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
 			return REACTOR_DEFAULT_NAME;
 		}
 
