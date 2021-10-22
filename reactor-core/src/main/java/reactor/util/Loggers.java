@@ -102,8 +102,8 @@ public abstract class Loggers {
 	public static void useConsoleLoggers() {
 		String name = Loggers.class.getName();
 		Function<String, Logger> loggerFactory = new ConsoleLoggerFactory(false);
-		loggerFactory.apply(name).debug("Using Console logging");
 		LOGGER_FACTORY = loggerFactory;
+		loggerFactory.apply(name).debug("Using Console logging");
 	}
 
 	/**
@@ -118,8 +118,8 @@ public abstract class Loggers {
 	public static void useVerboseConsoleLoggers() {
 		String name = Loggers.class.getName();
 		Function<String, Logger> loggerFactory = new ConsoleLoggerFactory(true);
-		loggerFactory.apply(name).debug("Using Verbose Console logging");
 		LOGGER_FACTORY = loggerFactory;
+		loggerFactory.apply(name).debug("Using Verbose Console logging");
 	}
 
 	/**
@@ -134,8 +134,8 @@ public abstract class Loggers {
 	 */
 	public static void useCustomLoggers(final Function<String, ? extends Logger> loggerFactory) {
 		String name = Loggers.class.getName();
-		loggerFactory.apply(name).debug("Using custom logging");
 		LOGGER_FACTORY = loggerFactory;
+		loggerFactory.apply(name).debug("Using custom logging");
 	}
 
 	/**
@@ -148,8 +148,8 @@ public abstract class Loggers {
 	public static void useJdkLoggers() {
 		String name = Loggers.class.getName();
 		Function<String, Logger> loggerFactory = new JdkLoggerFactory();
-		loggerFactory.apply(name).debug("Using JDK logging framework");
 		LOGGER_FACTORY = loggerFactory;
+		loggerFactory.apply(name).debug("Using JDK logging framework");
 	}
 
 	/**
@@ -163,8 +163,8 @@ public abstract class Loggers {
 	public static void useSl4jLoggers() {
 		String name = Loggers.class.getName();
 		Function<String, Logger> loggerFactory = new Slf4JLoggerFactory();
-		loggerFactory.apply(name).debug("Using Slf4j logging framework");
 		LOGGER_FACTORY = loggerFactory;
+		loggerFactory.apply(name).debug("Using Slf4j logging framework");
 	}
 
 	/**
