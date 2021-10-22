@@ -32,7 +32,7 @@ class ReactorDebugClassVisitor extends ClassVisitor {
 	private String currentSource;
 
 	ReactorDebugClassVisitor(ClassVisitor classVisitor, AtomicBoolean changed) {
-		super(Opcodes.ASM7, classVisitor);
+		super(Opcodes.ASM9, classVisitor);
 		this.changed = changed;
 	}
 

@@ -70,7 +70,7 @@ class CallSiteInfoAddingMethodVisitor extends MethodVisitor {
             String currentSource,
             AtomicBoolean changed
     ) {
-        super(Opcodes.ASM7, visitor);
+        super(Opcodes.ASM9, visitor);
         this.currentMethod = currentMethod;
         this.currentClassName = currentClassName;
         this.currentSource = currentSource;
