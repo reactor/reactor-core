@@ -59,52 +59,52 @@ public final class FluxApiGroupSideEffects<T> {
 	}
 
 	public FluxApiGroupSideEffects<T> onNext(Consumer<? super T> onNext) {
-		this.decoratedFlux = decoratedFlux.doOnNext(onNext);
+		this.decoratedFlux = decoratedFlux.doOn().next(onNext);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onComplete(Runnable onComplete) {
-		this.decoratedFlux = decoratedFlux.doOnComplete(onComplete);
+		this.decoratedFlux = decoratedFlux.doOn().complete(onComplete);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onError(Consumer<? super Throwable> onError) {
-		this.decoratedFlux = decoratedFlux.doOnError(onError);
+		this.decoratedFlux = decoratedFlux.doOn().error(onError);
 		return this;
 	}
 
 	public <R extends Throwable> FluxApiGroupSideEffects<T> onError(Class<R> clazz, Consumer<? super R> onError) {
-		this.decoratedFlux = decoratedFlux.doOnError(clazz, onError);
+		this.decoratedFlux = decoratedFlux.doOn().advanced().onError(clazz, onError);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onError(Predicate<? super Throwable> predicate, Consumer<? super Throwable> onError) {
-		this.decoratedFlux = decoratedFlux.doOnError(predicate, onError);
+		this.decoratedFlux = decoratedFlux.doOn().advanced().onError(predicate, onError);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onTerminate(Runnable onTerminate) {
-		this.decoratedFlux = decoratedFlux.doOnTerminate(onTerminate);
+		this.decoratedFlux = decoratedFlux.doOn().terminate(onTerminate);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> afterTerminate(Runnable afterTerminate) {
-		this.decoratedFlux = decoratedFlux.doAfterTerminate(afterTerminate);
+		this.decoratedFlux = decoratedFlux.doOn().advanced().afterTerminate(afterTerminate);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onCancel(Runnable onCancel) {
-		this.decoratedFlux = decoratedFlux.doOnCancel(onCancel);
+		this.decoratedFlux = decoratedFlux.doOn().advanced().onCancel(onCancel);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onRequest(LongConsumer onRequest) {
-		this.decoratedFlux = decoratedFlux.doOnRequest(onRequest);
+		this.decoratedFlux = decoratedFlux.doOn().advanced().onRequest(onRequest);
 		return this;
 	}
 
 	public FluxApiGroupSideEffects<T> onSubscribe(Consumer<? super Subscription> onSubscribe) {
-		this.decoratedFlux = decoratedFlux.doOnSubscribe(onSubscribe);
+		this.decoratedFlux = decoratedFlux.doOn().advanced().onSubscribe(onSubscribe);
 		return this;
 	}
 

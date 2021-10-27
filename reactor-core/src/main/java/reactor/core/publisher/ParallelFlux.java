@@ -1147,12 +1147,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	public final <U> ParallelFlux<U> transformGroups(Function<? super GroupedFlux<Integer, T>,
 			? extends Publisher<? extends U>> composer) {
 		if (getPrefetch() > -1) {
-			return from(groups().flatMap(composer::apply),
-					parallelism(), getPrefetch(),
-					Queues.small());
+			return from(
+				groups().flatMaps().interleaved(composer::apply),
+				parallelism(), getPrefetch(),
+				Queues.small());
 		}
 		else {
-			return from(groups().flatMap(composer::apply), parallelism());
+			return from(groups().flatMaps().interleaved(composer::apply), parallelism());
 		}
 	}
 

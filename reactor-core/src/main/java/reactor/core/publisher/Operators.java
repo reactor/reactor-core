@@ -402,7 +402,7 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Utility method to activate the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
+	 * Utility method to activate the onDiscard feature (see {@link FluxApiGroupUnsafe#influenceUpstreamToDiscardUsing(Class, Consumer)})
 	 * in a target {@link Context}. Prefer using the {@link Flux} API, and reserve this for
 	 * testing purposes.
 	 *
