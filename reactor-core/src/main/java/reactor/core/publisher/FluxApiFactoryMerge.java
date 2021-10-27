@@ -16,7 +16,14 @@
 
 package reactor.core.publisher;
 
+import java.util.Comparator;
+
+import org.reactivestreams.Publisher;
+
 /**
+ * A set of {@link Flux} factory methods around merging of multiple publishers.
+ * Exposed through {@link Flux#fromMerging()}.
+ *
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
@@ -28,8 +35,101 @@ public final class FluxApiFactoryMerge {
 	FluxApiFactoryMerge() {
 	}
 
-	//FIXME add all variant of merge factory methods
-	public void foo() {
-
+	public <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
+		return Flux.merge(source);
 	}
+
+	public <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency) {
+		return Flux.merge(source, concurrency);
+	}
+
+	public <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
+		return Flux.merge(source, concurrency, prefetch);
+	}
+
+	public <I> Flux<I> merge(Iterable<? extends Publisher<? extends I>> sources) {
+		return Flux.merge(sources);
+	}
+
+	@SafeVarargs
+	public final <I> Flux<I> merge(Publisher<? extends I>... sources) {
+		return Flux.merge(sources);
+	}
+
+	@SafeVarargs
+	public final <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
+		return Flux.merge(prefetch, sources);
+	}
+
+	@SafeVarargs
+	public final <I> Flux<I> mergeDelayError(int prefetch, Publisher<? extends I>... sources) {
+		return Flux.mergeDelayError(prefetch, sources);
+	}
+
+	@SafeVarargs
+	public final <I extends Comparable<? super I>> Flux<I> mergeComparing(Publisher<? extends I>... sources) {
+		return Flux.mergeComparing(sources);
+	}
+
+	@SafeVarargs
+	public final <T> Flux<T> mergeComparing(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
+		return Flux.mergeComparing(comparator, sources);
+	}
+
+	@SafeVarargs
+	public final <T> Flux<T> mergeComparing(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
+		return Flux.mergeComparing(prefetch, comparator, sources);
+	}
+
+	@SafeVarargs
+	public final <T> Flux<T> mergeComparingDelayError(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
+		return Flux.mergeComparingDelayError(prefetch, comparator, sources);
+	}
+
+	public <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources) {
+		return Flux.mergeSequential(sources);
+	}
+
+	public <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
+											  int maxConcurrency, int prefetch) {
+		return Flux.mergeSequential(sources, maxConcurrency, prefetch);
+	}
+
+	public <T> Flux<T> mergeSequentialDelayError(Publisher<? extends Publisher<? extends T>> sources,
+														int maxConcurrency, int prefetch) {
+		return Flux.mergeSequentialDelayError(sources, maxConcurrency, prefetch);
+	}
+
+	@SafeVarargs
+	public final <I> Flux<I> mergeSequential(Publisher<? extends I>... sources) {
+		return Flux.mergeSequential(sources);
+	}
+
+	@SafeVarargs
+	public final <I> Flux<I> mergeSequential(int prefetch, Publisher<? extends I>... sources) {
+		return Flux.mergeSequential(prefetch, sources);
+	}
+
+	@SafeVarargs
+	public final <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {
+		return Flux.mergeSequentialDelayError(prefetch, sources);
+	}
+
+	public <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources) {
+		return Flux.mergeSequential(sources);
+	}
+
+	public <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
+											  int maxConcurrency, int prefetch) {
+		return Flux.mergeSequential(sources, maxConcurrency, prefetch);
+	}
+
+	public <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
+														int maxConcurrency, int prefetch) {
+		return Flux.mergeSequentialDelayError(sources, maxConcurrency, prefetch);
+	}
+
+	// TODO == private static factories that all methods delegate to ==
+	// Note that we use instance method + singleton for the actual operators because we need to expose these as public, but
+	// don't want users to have direct access to static methods in the present class.
 }

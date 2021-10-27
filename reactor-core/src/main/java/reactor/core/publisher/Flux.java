@@ -1373,6 +1373,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#merge(Publisher)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
 	 * sources are subscribed to eagerly.
@@ -1389,7 +1391,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#merge(Publisher)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
 		return merge(source,
 				Queues.SMALL_BUFFER_SIZE,
@@ -1397,6 +1402,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#merge(Publisher, int)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
 	 * sources are subscribed to eagerly (but at most {@code concurrency} sources are
@@ -1414,12 +1421,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#merge(Publisher, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency) {
 		return merge(source, concurrency, Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#merge(Publisher, int, int)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
 	 * sources are subscribed to eagerly (but at most {@code concurrency} sources are
@@ -1438,7 +1450,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#merge(Publisher, int, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
 				from(source),
@@ -1451,6 +1466,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#merge(Iterable)} instead.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences contained in an {@link Iterable}
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
 	 * sources are subscribed to eagerly.
@@ -1467,12 +1484,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#merge(Iterable)} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <I> Flux<I> merge(Iterable<? extends Publisher<? extends I>> sources) {
 		return merge(fromIterable(sources));
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#merge(Publisher[])}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences contained in an array / vararg
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat},
 	 * sources are subscribed to eagerly.
@@ -1488,13 +1510,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#merge(Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I> Flux<I> merge(Publisher<? extends I>... sources) {
 		return merge(Queues.XS_BUFFER_SIZE, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#merge(int, Publisher[])}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences contained in an array / vararg
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat},
 	 * sources are subscribed to eagerly.
@@ -1511,13 +1538,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#merge(int, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
 		return merge(prefetch, false, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeDelayError(int, Publisher[])}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences contained in an array / vararg
 	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat},
 	 * sources are subscribed to eagerly.
@@ -1535,13 +1567,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeDelayError(int, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I> Flux<I> mergeDelayError(int prefetch, Publisher<? extends I>... sources) {
 		return merge(prefetch, true, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeComparing(Publisher[])}.
+	 * <p>
 	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
 	 * by picking the smallest values from each source (as defined by their natural order).
 	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences.
@@ -1554,13 +1591,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
 	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
 	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeComparing(Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I extends Comparable<? super I>> Flux<I> mergeComparing(Publisher<? extends I>... sources) {
 		return mergeComparing(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeComparing(Comparator, Publisher[])}.
+	 * <p>
 	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
 	 * by picking the smallest values from each source (as defined by the provided
 	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
@@ -1576,13 +1618,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 * @return a merged {@link Flux} that compares latest values from each source, using the
 	 * smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeComparing(Comparator, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparing(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		return mergeComparing(Queues.SMALL_BUFFER_SIZE, comparator, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeComparing(int, Comparator, Publisher[])}.
+	 * <p>
 	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
 	 * by picking the smallest values from each source (as defined by the provided
 	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
@@ -1600,7 +1647,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 * @return a merged {@link Flux} that compares latest values from each source, using the
 	 * smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeComparing(int, Comparator, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparing(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		if (sources.length == 0) {
@@ -1613,6 +1663,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeComparingDelayError(int, Comparator, Publisher[])}.
+	 * <p>
 	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
 	 * by picking the smallest values from each source (as defined by the provided
 	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
@@ -1632,7 +1684,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 * @return a merged {@link Flux} that compares latest values from each source, using the
 	 * smallest value and replenishing the source that produced it
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeComparingDelayError(int, Comparator, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparingDelayError(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		if (sources.length == 0) {
@@ -1645,96 +1700,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by their natural order).
-	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences.
+	 * See {@link FluxApiFactoryMerge#mergeSequential(Publisher)}.
 	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingNaturalOrder.svg" alt="">
-	 *
-	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
-	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <I extends Comparable<? super I>> Flux<I> mergeOrdered(Publisher<? extends I>... sources) {
-		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by the provided
-	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
-	 * the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
-	 *
-	 * @param comparator the {@link Comparator} to use to find the smallest value
-	 * @param sources {@link Publisher} sources to merge
-	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Flux<T> mergeOrdered(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
-		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, comparator, sources);
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by the provided
-	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
-	 * the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
-	 *
-	 * @param prefetch the number of elements to prefetch from each source (avoiding too
-	 * many small requests to the source when picking)
-	 * @param comparator the {@link Comparator} to use to find the smallest value
-	 * @param sources {@link Publisher} sources to merge
-	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Flux<T> mergeOrdered(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return from(sources[0]);
-		}
-		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, sources));
-	}
-
-	/**
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
@@ -1746,13 +1713,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequential(Publisher)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources) {
 		return mergeSequential(sources, false, Queues.SMALL_BUFFER_SIZE,
 				Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequential(Publisher, int, int)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
 	 * eagerly (but at most {@code maxConcurrency} sources at a time). Unlike merge, their
@@ -1766,13 +1738,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequential(Publisher, int, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, false, maxConcurrency, prefetch);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequentialDelayError(Publisher, int, int)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
 	 * eagerly (but at most {@code maxConcurrency} sources at a time). Unlike merge, their
@@ -1787,13 +1764,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequentialDelayError(Publisher, int, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> mergeSequentialDelayError(Publisher<? extends Publisher<? extends T>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequential(Publisher[])}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences provided in an array/vararg
 	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
@@ -1804,13 +1786,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequential(Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequential(Publisher<? extends I>... sources) {
 		return mergeSequential(Queues.XS_BUFFER_SIZE, false, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequential(int, Publisher[])}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences provided in an array/vararg
 	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
@@ -1822,13 +1809,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequential(int, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequential(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, false, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequentialDelayError(int, Publisher[])}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences provided in an array/vararg
 	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
@@ -1842,13 +1834,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequentialDelayError(int, Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, true, sources);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequential(Iterable)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences provided in an {@link Iterable}
 	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
@@ -1859,13 +1856,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequential(Iterable)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources) {
 		return mergeSequential(sources, false, Queues.SMALL_BUFFER_SIZE,
 				Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequential(Iterable, int, int)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences provided in an {@link Iterable}
 	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly (but at most {@code maxConcurrency} sources at a time). Unlike merge, their
@@ -1879,13 +1881,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequential(Iterable, int, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, false, maxConcurrency, prefetch);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryMerge#mergeSequentialDelayError(Iterable, int, int)}.
+	 * <p>
 	 * Merge data from {@link Publisher} sequences provided in an {@link Iterable}
 	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly (but at most {@code maxConcurrency} sources at a time). Unlike merge, their
@@ -1901,7 +1908,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated Use {@link #fromMerging()} {@link FluxApiFactoryMerge#mergeSequentialDelayError(Iterable, int, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
@@ -6571,44 +6581,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
 	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
-	 *
-	 * @param other the {@link Publisher} to merge with
-	 * @param otherComparator the {@link Comparator} to use for merging
-	 *
-	 * @return a new {@link Flux} that compares latest values from the given publisher
-	 * and this flux, using the smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingWith(Publisher, Comparator)} instead
-	 * (with the caveat that it defaults to NOT delaying errors, unlike this operator).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@Deprecated
-	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
-			Comparator<? super T> otherComparator) {
-		if (this instanceof FluxMergeComparing) {
-			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
-			return fluxMerge.mergeAdditionalSource(other, otherComparator);
-		}
-		return mergeOrdered(otherComparator, this, other);
-	}
-
-	/**
-	 * Merge data from this {@link Flux} and a {@link Publisher} into a reordered merge
-	 * sequence, by picking the smallest value from each sequence as defined by a provided
-	 * {@link Comparator}. Note that subsequent calls are combined, and their comparators are
-	 * in lexicographic order as defined by {@link Comparator#thenComparing(Comparator)}.
-	 * <p>
-	 * The combination step is avoided if the two {@link Comparator Comparators} are
-	 * {@link Comparator#equals(Object) equal} (which can easily be achieved by using the
-	 * same reference, and is also always true of {@link Comparator#naturalOrder()}).
-	 * <p>
-	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
-	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
-	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
-	 * another source.
-	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
 	 * <p>
 	 * mergeComparingWith doesn't delay errors by default, but it will inherit the delayError
@@ -10660,6 +10632,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return new MonoCallable<>(supplier);
 	}
 
+	//TODO move into FluxApiGroupMerge
+	@Deprecated
 	@SafeVarargs
 	static <I> Flux<I> merge(int prefetch, boolean delayError, Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
@@ -10676,6 +10650,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				Queues.get(prefetch)));
 	}
 
+	//TODO move into FluxApiGroupMerge
+	@Deprecated
 	@SafeVarargs
 	static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
 			Publisher<? extends I>... sources) {
@@ -10690,6 +10666,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
+	//TODO move into FluxApiGroupMerge
+	@Deprecated
 	static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(from(sources),
@@ -10698,6 +10676,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
+	//TODO move into FluxApiGroupMerge
+	@Deprecated
 	static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(new FluxIterable<>(sources),
