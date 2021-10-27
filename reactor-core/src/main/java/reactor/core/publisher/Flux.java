@@ -2500,6 +2500,39 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	//FIXME use Function/Consumer patterns for API groups
 
+	public static FluxApiFactoryMerge fromMerging() {
+		return FluxApiFactoryMerge.INSTANCE;
+	}
+
+	public static FluxApiFactoryConcat fromConcatening() {
+		return FluxApiFactoryConcat.INSTANCE;
+	}
+
+	public final FluxApiGroupBuffer<T> buffers() {
+		return new FluxApiGroupBuffer<>(this);
+	}
+
+	public final FluxApiGroupConcatMap<T> concatMaps() {
+		return new FluxApiGroupConcatMap<>(this);
+	}
+
+	public final FluxApiGroupFlatMap<T> flatMaps() {
+		return new FluxApiGroupFlatMap<>(this);
+	}
+
+	public final FluxApiGroupWindow<T> windows() {
+		return new FluxApiGroupWindow<>(this);
+	}
+
+	//keep doFirst/doFinally directly accessible
+	public final FluxApiGroupDoOnCommon<T> doOn() {
+		return new FluxApiGroupDoOnCommon<>(this);
+	}
+
+	public final FluxApiGroupUnsafe<T> unsafe() {
+		return new FluxApiGroupUnsafe<>(this);
+	}
+
 	//	 ==============================================================================================================
 	//	 Instance Operators
 	//	 ==============================================================================================================
@@ -2652,6 +2685,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#all()}.
+	 * <p>
 	 * Collect all incoming values into a single {@link List} buffer that will be emitted
 	 * by the returned {@link Flux} once this Flux completes.
 	 * <p>
@@ -2661,12 +2696,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a buffered {@link Flux} of at most one {@link List}
 	 * @see #collectList() for an alternative collecting algorithm returning {@link Mono}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#all() .all()} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
     public final Flux<List<T>> buffer() {
 	    return buffer(Integer.MAX_VALUE);
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySize(int)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted
 	 * by the returned {@link Flux} each time the given max size is reached or once this
 	 * Flux completes.
@@ -2676,14 +2716,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the maximum collected size
-	 *
-	 * @return a microbatched {@link Flux} of {@link List}
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySize(int) .bySize} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(int maxSize) {
 		return buffer(maxSize, listSupplier());
 	}
 
 	/**
+	  * See {@link FluxApiGroupBuffer#bySize(int, Supplier)}.
+	 * <p>
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the given max size is reached
 	 * or once this Flux completes.
@@ -2697,13 +2741,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
 	 *
-	 * @return a microbatched {@link Flux} of {@link Collection}
+	 * @return a buffered {@link Flux} of {@link Collection}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySize(int, Supplier) .bySize} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBuffer<>(this, maxSize, bufferSupplier));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySizeWithSkip(int, int)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted
 	 * by the returned {@link Flux} each time the given max size is reached or once this
 	 * Flux completes. Buffers can be created with gaps, as a new buffer will be created
@@ -2729,13 +2778,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param skip the number of items to count before creating a new buffer
 	 * @param maxSize the max collected size
 	 *
-	 * @return a microbatched {@link Flux} of possibly overlapped or gapped {@link List}
+	 * @return a buffered {@link Flux} of possibly overlapped or gapped {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySizeWithSkip(int, int) .bySizeWithSkip} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(int maxSize, int skip) {
 		return buffer(maxSize, skip, listSupplier());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySizeWithSkip(int, int, Supplier)}.
+	 * <p>
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the given max size is reached
 	 * or once this Flux completes. Buffers can be created with gaps, as a new buffer will
@@ -2763,15 +2817,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
 	 *
-	 * @return a microbatched {@link Flux} of possibly overlapped or gapped
+	 * @return a buffered {@link Flux} of possibly overlapped or gapped
 	 * {@link Collection}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySizeWithSkip(int, int, Supplier) .bySizeWithSkip} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize,
 			int skip, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBuffer<>(this, maxSize, skip, bufferSupplier));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#splitWhen(Publisher)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers, as delimited by the
 	 * signals of a companion {@link Publisher} this operator will subscribe to.
 	 * <p>
@@ -2780,14 +2839,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param other the companion {@link Publisher} whose signals trigger new buffers
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by signals from a {@link Publisher}
+	 * @return a buffered {@link Flux} of {@link List} delimited by signals from a {@link Publisher}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#splitWhen(Publisher) .split} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(Publisher<?> other) {
 		return buffer(other, listSupplier());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#splitWhen(Publisher, Supplier)}.
+	 * <p>
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers, as
 	 * delimited by the signals of a companion {@link Publisher} this operator will
 	 * subscribe to.
@@ -2801,13 +2864,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
 	 *
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by signals from a {@link Publisher}
+	 * @return a buffered {@link Flux} of {@link Collection} delimited by signals from a {@link Publisher}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#splitWhen(Publisher, Supplier) .splitWhen} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <C extends Collection<? super T>> Flux<C> buffer(Publisher<?> other, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferBoundary<>(this, other, bufferSupplier));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#byTime(Duration)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the returned {@link Flux} every {@code bufferingTimespan}.
 	 * <p>
@@ -2817,13 +2885,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given time span
+	 * @return a buffered {@link Flux} of {@link List} delimited by the given time span
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#byTime(Duration) .byTime} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(Duration bufferingTimespan) {
 		return buffer(bufferingTimespan, Schedulers.parallel());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#byTimeWithSkip(Duration, Duration)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers created at a given
 	 * {@code openBufferEvery} period. Each buffer will last until the {@code bufferingTimespan} has elapsed,
 	 * thus emitting the bucket in the resulting {@link Flux}.
@@ -2847,13 +2920,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
 	 * @param openBufferEvery the interval at which to create a new buffer
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period openBufferEvery and sized by bufferingTimespan
+	 * @return a buffered {@link Flux} of {@link List} delimited by the given period openBufferEvery and sized by bufferingTimespan
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#byTimeWithSkip(Duration, Duration) .byTimeWithSkip} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(Duration bufferingTimespan, Duration openBufferEvery) {
 		return buffer(bufferingTimespan, openBufferEvery, Schedulers.parallel());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#byTime(Duration, Scheduler)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the returned {@link Flux} every {@code bufferingTimespan}, as measured on the provided {@link Scheduler}.
 	 * <p>
@@ -2864,13 +2942,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
+	 * @return a buffered {@link Flux} of {@link List} delimited by the given period
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#byTime(Duration, Scheduler) .byTime} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(Duration bufferingTimespan, Scheduler timer) {
 		return buffer(interval(bufferingTimespan, timer));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#byTimeWithSkip(Duration, Duration, Scheduler)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers created at a given
 	 * {@code openBufferEvery} period, as measured on the provided {@link Scheduler}. Each
 	 * buffer will last until the {@code bufferingTimespan} has elapsed (also measured on the scheduler),
@@ -2896,8 +2979,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param openBufferEvery the interval at which to create a new buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period openBufferEvery and sized by bufferingTimespan
+	 * @return a buffered {@link Flux} of {@link List} delimited by the given period openBufferEvery and sized by bufferingTimespan
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#byTimeWithSkip(Duration, Duration, Scheduler) .byTimeWithSkip} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(Duration bufferingTimespan, Duration openBufferEvery, Scheduler timer) {
 		if (bufferingTimespan.equals(openBufferEvery)) {
 			return buffer(bufferingTimespan, timer);
@@ -2907,6 +2993,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted
 	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
 	 * maxTime {@link Duration} elapses.
@@ -2918,13 +3006,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param maxSize the max collected size
 	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @return a buffered {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration) .bySizeOrTimeout} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime) {
 		return bufferTimeout(maxSize, maxTime, listSupplier());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration, Supplier)}.
+	 * <p>
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses.
@@ -2938,14 +3031,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
 	 *
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 * @return a buffered {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration, Supplier) .bySizeOrTimeout} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime, Supplier<C> bufferSupplier) {
 		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(),
 				bufferSupplier);
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration, Scheduler)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted
 	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
 	 * maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
@@ -2958,13 +3056,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @return a buffered {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration, Scheduler) .bySizeOrTimeout} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime, Scheduler timer) {
 		return bufferTimeout(maxSize, maxTime, timer, listSupplier());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration, Scheduler, Supplier)}.
+	 * <p>
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
@@ -2978,15 +3081,22 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
-	 *
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+*
+	 * @return a buffered {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#bySizeOrTimeout(int, Duration, Scheduler, Supplier) .bySizeOrTimeout} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toNanos(), TimeUnit.NANOSECONDS, timer, bufferSupplier));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#until(Predicate)}.
+	 * <p>
+	 * SEE
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux} each time the given predicate returns true. Note that
 	 * the element that triggers the predicate to return true (and thus closes a buffer)
@@ -3001,15 +3111,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
-	 *
-	 * @return a microbatched {@link Flux} of {@link List}
+	*
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#until(Predicate) .until} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate) {
 		return onAssembly(new FluxBufferPredicate<>(this, predicate,
 				listSupplier(), FluxBufferPredicate.Mode.UNTIL));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#until(Predicate, boolean)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux} each time the given predicate returns true. Note that
 	 * the buffer into which the element that triggers the predicate to return true
@@ -3028,8 +3143,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
 	 *
-	 * @return a microbatched {@link Flux} of {@link List}
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#until(Predicate, boolean) .until} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
 		return onAssembly(new FluxBufferPredicate<>(this, predicate, listSupplier(),
 				cutBefore ? FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE
@@ -3037,6 +3155,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#untilChanged()}.
+	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another) into multiple {@link List} buffers that will be emitted by the
 	 * resulting {@link Flux}.
@@ -3045,13 +3165,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
 	 * <p>
 	 *
-	 * @return a microbatched {@link Flux} of {@link List}
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#untilChanged() .untilChanged()} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
-	public final <V> Flux<List<T>> bufferUntilChanged() {
-		return bufferUntilChanged(identityFunction());
+	@Deprecated
+	public final Flux<List<T>> bufferUntilChanged() {
+		return buffers().untilChanged();
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#untilChanged(Function)}.
+	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another), as compared by a key extracted through the user provided {@link
 	 * Function}, into multiple {@link List} buffers that will be emitted by the
@@ -3062,13 +3187,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 *
 	 * @param keySelector function to compute comparison key for each element
-	 * @return a microbatched {@link Flux} of {@link List}
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#untilChanged(Function) .untilChanged} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <V> Flux<List<T>> bufferUntilChanged(Function<? super T, ? extends V> keySelector) {
 		return bufferUntilChanged(keySelector, equalPredicate());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#untilChanged(Function, BiPredicate)}.
+	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another), as compared by a key extracted through the user provided {@link
 	 * Function} and compared using a supplied {@link BiPredicate}, into multiple
@@ -3080,8 +3210,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param keyComparator predicate used to compare keys
-	 * @return a microbatched {@link Flux} of {@link List}
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#untilChanged(Function, BiPredicate) .untilChanged} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <V> Flux<List<T>> bufferUntilChanged(Function<? super T, ? extends V> keySelector,
 			BiPredicate<? super V, ? super V> keyComparator) {
 		return Flux.defer(() -> bufferUntil(new FluxBufferPredicate.ChangedPredicate<T, V>(keySelector,
@@ -3089,6 +3222,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#splitIf(Predicate)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux}. Each buffer continues aggregating values while the
 	 * given predicate returns true, and a new buffer is created as soon as the
@@ -3106,14 +3241,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes false.
 	 *
-	 * @return a microbatched {@link Flux} of {@link List}
+	 * @return a buffered {@link Flux} of {@link List}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#splitIf(Predicate) .splitIf} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferWhile(Predicate<? super T> predicate) {
 		return onAssembly(new FluxBufferPredicate<>(this, predicate,
 				listSupplier(), FluxBufferPredicate.Mode.WHILE));
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#when(Publisher, Function)}.
+	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers started each time an opening
 	 * companion {@link Publisher} emits. Each buffer will last until the corresponding
 	 * closing companion {@link Publisher} emits, thus releasing the buffer to the resulting {@link Flux}.
@@ -3136,15 +3276,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <U> the element type of the buffer-opening sequence
 	 * @param <V> the element type of the buffer-closing sequence
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by an opening {@link Publisher} and a relative
+	 * @return a buffered {@link Flux} of {@link List} delimited by an opening {@link Publisher} and a relative
 	 * closing {@link Publisher}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#when(Publisher, Function) .when} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <U, V> Flux<List<T>> bufferWhen(Publisher<U> bucketOpening,
 			Function<? super U, ? extends Publisher<V>> closeSelector) {
 		return bufferWhen(bucketOpening, closeSelector, listSupplier());
 	}
 
 	/**
+	 * See {@link FluxApiGroupBuffer#when(Publisher, Function, Supplier)}.
+	 * <p>
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers started each time an opening
 	 * companion {@link Publisher} emits. Each buffer will last until the corresponding
 	 * closing companion {@link Publisher} emits, thus releasing the buffer to the resulting {@link Flux}.
@@ -3167,9 +3312,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the element type of the buffer-closing sequence
 	 * @param <C> the {@link Collection} buffer type
 	 *
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by an opening {@link Publisher} and a relative
+	 * @return a buffered {@link Flux} of {@link Collection} delimited by an opening {@link Publisher} and a relative
 	 * closing {@link Publisher}
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#when(Publisher, Function, Supplier) .when} instead.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <U, V, C extends Collection<? super T>> Flux<C> bufferWhen(Publisher<U> bucketOpening,
 			Function<? super U, ? extends Publisher<V>> closeSelector, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferWhen<>(this, bucketOpening, closeSelector,
@@ -4524,6 +4672,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupUnsafe#influenceUpstreamToDiscardUsing(Class, Consumer)}.
+	 * <p>
 	 * Potentially modify the behavior of the <i>whole chain</i> of operators upstream of this one to
 	 * conditionally clean up elements that get <i>discarded</i> by these operators.
 	 * <p>
@@ -4546,7 +4696,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param discardHook a {@link Consumer} of elements in the upstream chain of operators
 	 * that performs the cleanup.
 	 * @return a {@link Flux} that cleans up matching elements that get discarded upstream of it.
+	 *
+	 * @deprecated Use {@link #unsafe()} and replace with {@link FluxApiGroupUnsafe#influenceUpstreamToDiscardUsing(Class, Consumer)}
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <R> Flux<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
 		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
 	}
@@ -6748,6 +6902,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupUnsafe#influenceUpstreamToContinueOnErrors(BiConsumer)}.
+	 * <p>
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
@@ -6756,7 +6912,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinue.svg" alt="">
 	 * <p>
-	 * Note that onErrorContinue() is a specialist operator that can make the behaviour of your
+	 * Note that this is a specialist operator that can make the behaviour of your
 	 * reactive chain unclear. It operates on upstream, not downstream operators, it requires specific
 	 * operator support to work, and the scope can easily propagate upstream into library code
 	 * that didn't anticipate it (resulting in unintended behaviour.)
@@ -6776,8 +6932,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
 	 * that triggered the error.
-	 * @return a {@link Flux} that attempts to continue processing on errors.
+	 * @return a {@link Flux} indicating to its upstream operators that they should strive to continue processing in case of errors.
+	 *
+	 * @deprecated Use {@link #unsafe()} and replace with {@link FluxApiGroupUnsafe#influenceUpstreamToContinueOnErrors(BiConsumer)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
 		return subscriberContext(Context.of(
@@ -6787,6 +6947,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupUnsafe#influenceUpstreamToContinueOnErrors(Class, BiConsumer)}.
+	 * <p>
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the specified {@code type} are recovered from.
@@ -6796,10 +6958,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinueWithClassPredicate.svg" alt="">
 	 * <p>
-	 * Note that onErrorContinue() is a specialist operator that can make the behaviour of your
-	 * reactive chain unclear. It operates on upstream, not downstream operators, it requires specific
-	 * operator support to work, and the scope can easily propagate upstream into library code
-	 * that didn't anticipate it (resulting in unintended behaviour.)
+	 * Note that this is a specialist operator that can make the behaviour of your reactive chain unclear.
+	 * It operates on upstream, not downstream operators, it requires specific operator support to work,
+	 * and the scope can easily propagate upstream into library code that didn't anticipate it
+	 * (resulting in unintended behaviour.)
 	 * <p>
 	 * In most cases, you should instead handle the error inside the specific function which may cause
 	 * it. Specifically, on each inner publisher you can use {@code doOnError} to log the error, and
@@ -6811,19 +6973,25 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *                          .onErrorResume(MyException.class, e -> Mono.empty()))
 	 * </pre>
 	 * <p>
-	 * This has the advantage of being much clearer, has no ambiguity with regards to operator support,
+	 * This has the advantage of being much clearer, has no ambiguity in regard to operator support,
 	 * and cannot leak upstream.
 	 *
 	 * @param type the {@link Class} of {@link Exception} that are resumed from.
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
 	 * and the value that triggered the error.
-	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 * @return a {@link Flux} indicating to its upstream operators that they should strive to continue processing in case of errors.
+	 *
+	 * @deprecated Use {@link #unsafe()} and replace with {@link FluxApiGroupUnsafe#influenceUpstreamToContinueOnErrors(Class, BiConsumer)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Flux<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
 		return onErrorContinue(type::isInstance, errorConsumer);
 	}
 
 	/**
+	 * See {@link FluxApiGroupUnsafe#influenceUpstreamToContinueOnErrors(Predicate, BiConsumer)}.
+	 * <p>
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the {@link Predicate} are recovered from (note that this
@@ -6834,7 +7002,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinueWithPredicate.svg" alt="">
 	 * <p>
-	 * Note that onErrorContinue() is a specialist operator that can make the behaviour of your
+	 * Note that this is a specialist operator that can make the behaviour of your
 	 * reactive chain unclear. It operates on upstream, not downstream operators, it requires specific
 	 * operator support to work, and the scope can easily propagate upstream into library code
 	 * that didn't anticipate it (resulting in unintended behaviour.)
@@ -6857,7 +7025,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
 	 * that triggered the error.
 	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 *
+	 * @deprecated Use {@link #unsafe()} and replace with {@link FluxApiGroupUnsafe#influenceUpstreamToContinueOnErrors(Predicate, BiConsumer)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Flux<T> onErrorContinue(Predicate<E> errorPredicate,
 			BiConsumer<Throwable, Object> errorConsumer) {
 		//this cast is ok as only T values will be propagated in this sequence
@@ -6871,6 +7043,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupUnsafe#stopInfluencingUpstreamToContinueOnErrors()}.
+	 * <p>
 	 * If an {@link #onErrorContinue(BiConsumer)} variant has been used downstream, reverts
 	 * to the default 'STOP' mode where errors are terminal events upstream. It can be
 	 * used for easier scoping of the on next failure strategy or to override the
@@ -6879,7 +7053,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} that terminates on errors, even if {@link #onErrorContinue(BiConsumer)}
 	 * was used downstream
+	 *
+	 * @deprecated Use {@link #unsafe()} and replace with {@link FluxApiGroupUnsafe#stopInfluencingUpstreamToContinueOnErrors()}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<T> onErrorStop() {
 		return subscriberContext(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
@@ -10310,6 +10488,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 
+	//TODO move into FluxApiGroupFlatMap ?
+	@Deprecated
 	final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
 			V>> mapper, boolean delayError, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
@@ -10323,6 +10503,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		));
 	}
 
+	//TODO move into FluxApiGroupFlatMap ?
+	@Deprecated
 	final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
 			int prefetch) {
