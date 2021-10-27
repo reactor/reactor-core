@@ -20,6 +20,7 @@ import org.reactivestreams.Publisher;
 
 /**
  * A set of {@link Flux} factory methods around concatenation of multiple publishers.
+ * Exposed through {@link Flux#fromConcatenating()}.
  *
  * @author Simon Baslé
  */
