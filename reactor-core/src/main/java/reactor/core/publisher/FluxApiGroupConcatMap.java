@@ -35,6 +35,7 @@ public final class FluxApiGroupConcatMap<T> {
 		this.source = source;
 	}
 
+	//FIXME find a better naming ? or should we use similar naming for FluxApiGroupFlatMap#interleaved ?
 	public <V> Flux<V> map(Function<? super T, ? extends Publisher<? extends V>> mapper) {
 		return source.concatMap(mapper);
 	}
@@ -56,11 +57,11 @@ public final class FluxApiGroupConcatMap<T> {
 		return source.concatMapDelayError(mapper, delayUntilEnd, prefetch);
 	}
 
-	public <R> Flux<R> mapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return source.concatMapIterable(mapper);
 	}
 
-	public <R> Flux<R> mapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
+	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
 		return source.concatMapIterable(mapper, prefetch);
 	}
 }

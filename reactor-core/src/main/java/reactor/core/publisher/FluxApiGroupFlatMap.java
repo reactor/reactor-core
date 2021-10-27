@@ -24,6 +24,8 @@ import org.reactivestreams.Publisher;
 import reactor.util.annotation.Nullable;
 
 /**
+ * A {@link Flux} API sub-group that offers all the flavors of flatMapping operators.
+ *
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
@@ -36,49 +38,49 @@ public final class FluxApiGroupFlatMap<T> {
 		this.source = source;
 	}
 
-	public <R> Flux<R> map(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+	public <R> Flux<R> interleaved(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return source.flatMap(mapper);
 	}
 
-	public <V> Flux<V> map(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency) {
+	public <V> Flux<V> interleaved(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency) {
 		return source.flatMap(mapper, concurrency);
 	}
 
-	public <V> Flux<V> map(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency, int prefetch) {
+	public <V> Flux<V> interleaved(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency, int prefetch) {
 		return source.flatMap(mapper, concurrency, prefetch);
 	}
 
-	public <V> Flux<V> mapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
+	public <V> Flux<V> interleavedDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
 									 int concurrency, int prefetch) {
 		return source.flatMapDelayError(mapper, concurrency, prefetch);
 	}
 
-	public <R> Flux<R> mapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return source.flatMapIterable(mapper);
 	}
 
-	public <R> Flux<R> mapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
+	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper,
 								   int prefetch) {
 		return source.flatMapIterable(mapper, prefetch);
 	}
 
-	public <R> Flux<R> mapSequential(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+	public <R> Flux<R> sequential(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return source.flatMapSequential(mapper);
 	}
 
-	public <R> Flux<R> mapSequential(Function<? super T, ? extends Publisher<? extends R>> mapper, int maxConcurrency) {
+	public <R> Flux<R> sequential(Function<? super T, ? extends Publisher<? extends R>> mapper, int maxConcurrency) {
 		return source.flatMapSequential(mapper, maxConcurrency);
 	}
 
-	public <R> Flux<R> mapSequential(Function<? super T, ? extends Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
+	public <R> Flux<R> sequential(Function<? super T, ? extends Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return source.flatMapSequential(mapper, maxConcurrency, prefetch);
 	}
 
-	public <R> Flux<R> mapSequentialDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
+	public <R> Flux<R> sequentialDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return source.flatMapSequentialDelayError(mapper, maxConcurrency, prefetch);
 	}
 
-	public <R> Flux<R> mapSignals(
+	public <R> Flux<R> signals(
 		@Nullable Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 		@Nullable Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 		@Nullable Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
