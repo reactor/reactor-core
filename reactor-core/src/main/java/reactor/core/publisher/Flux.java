@@ -2518,8 +2518,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			final Function<? super TUPLE, ? extends V> combinator) {
 
 		return onAssembly(new FluxBuffer<>(from(sources), Integer.MAX_VALUE, listSupplier())
-			.flatMaps().interleaved(
-				new Function<List<? extends Publisher<?>>, Publisher<V>>() {
+			.flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 					@Override
 					public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
 						return zip(Tuples.fnAny((Function<Tuple2, V>)
@@ -2549,11 +2548,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return new FluxApiGroupBuffer<>(this);
 	}
 
-	public final FluxApiGroupConcatMap<T> concatMaps() {
+	public final FluxApiGroupConcatMap<T> concatMapExtras() {
 		return new FluxApiGroupConcatMap<>(this);
 	}
 
-	public final FluxApiGroupFlatMap<T> flatMaps() {
+	public final FluxApiGroupFlatMap<T> flatMapExtras() {
 		return new FluxApiGroupFlatMap<>(this);
 	}
 
@@ -3914,14 +3913,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupConcatMap#map(Function)}.
-	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
 	 * preserving order using concatenation.
 	 * <p>
 	 * There are three dimensions to this operator that can be compared with
-	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * {@link Flux#flatMapExtras()} (and their {@link FluxApiGroupFlatMap#sequential(Function) flatMapSequential}
+	 * variants):
 	 * <ul>
 	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
 	 *     inner to complete before generating the next one and subscribing to it.</li>
@@ -3946,23 +3944,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#map(Function)}.
-	 * To be aggressively removed in 4.1.0.
+	 * @see #concatMapExtras()
 	 */
-	@Deprecated
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>> mapper) {
 		return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
-	 * See {@link FluxApiGroupConcatMap#map(Function, int)}.
-	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
 	 * preserving order using concatenation.
 	 * <p>
 	 * There are three dimensions to this operator that can be compared with
-	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * {@link Flux#flatMapExtras()} (and their {@link FluxApiGroupFlatMap#sequential(Function) flatMapSequential}
+	 * variants):
 	 * <ul>
 	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
 	 *     inner to complete before generating the next one and subscribing to it.</li>
@@ -3988,10 +3983,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#map(Function, int)}.
-	 * To be aggressively removed in 4.1.0.
+	 * @see #concatMapExtras()
 	 */
-	@Deprecated
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int prefetch) {
 		if (prefetch == 0) {
 			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, FluxConcatMap.ErrorMode.IMMEDIATE));
@@ -4001,7 +3994,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupConcatMap#mapDelayError(Function)}.
+	 * See {@link FluxApiGroupConcatMap#delayError(Function)}.
 	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
@@ -4035,7 +4028,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#mapDelayError(Function)}.
+	 * @deprecated Use {@link #concatMapExtras()} {@link FluxApiGroupConcatMap#delayError(Function)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4044,7 +4037,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupConcatMap#mapDelayError(Function, int)}.
+	 * See {@link FluxApiGroupConcatMap#delayError(Function, int)}.
 	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
@@ -4079,7 +4072,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#mapDelayError(Function, int)}.
+	 * @deprecated Use {@link #concatMapExtras()} {@link FluxApiGroupConcatMap#delayError(Function, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4088,7 +4081,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupConcatMap#mapDelayError(Function, boolean, int)}.
+	 * See {@link FluxApiGroupConcatMap#delayError(Function, boolean, int)}.
 	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
@@ -4124,7 +4117,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#mapDelayError(Function, boolean, int)}.
+	 * @deprecated Use {@link #concatMapExtras()} {@link FluxApiGroupConcatMap#delayError(Function, boolean, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4138,6 +4131,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupConcatMap#iterable(Function)}.
 	 * See {@link FluxApiGroupConcatMap#iterables(Function)}.
 	 * <p>
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
@@ -4173,7 +4167,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#iterables(Function)}.
+	 * @deprecated Use {@link #concatMapExtras()} {@link FluxApiGroupConcatMap#iterable(Function)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -4182,7 +4176,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupConcatMap#iterables(Function, int)}.
+	 * See {@link FluxApiGroupConcatMap#iterable(Function, int)}.
 	 * <p>
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * concatenating them into a single {@link Flux}.
@@ -4219,7 +4213,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
-	 * @deprecated Use {@link #concatMaps()} {@link FluxApiGroupConcatMap#iterables(Function, int)}.
+	 * @deprecated Use {@link #concatMapExtras()} {@link FluxApiGroupConcatMap#iterable(Function, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5400,14 +5394,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	  * See {@link FluxApiGroupFlatMap#interleaved(Function)}.
-	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux} through merging,
 	 * which allow them to interleave.
 	 * <p>
 	 * There are three dimensions to this operator that can be compared with
-	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * {@link FluxApiGroupFlatMap#sequential(Function) sequential flatMap} and {@link Flux#concatMapExtras()}:
 	 * <ul>
 	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
 	 *     subscribing to its inners.</li>
@@ -5433,24 +5425,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a new {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#interleaved(Function)}.
-	 * To be aggressively removed in 4.1.0.
+	 * @see #flatMapExtras()
 	 */
-	@Deprecated
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return flatMap(mapper, Queues.SMALL_BUFFER_SIZE, Queues
-				.XS_BUFFER_SIZE);
+		return flatMap(mapper, Queues.SMALL_BUFFER_SIZE, Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
-	 * See {@link FluxApiGroupFlatMap#interleaved(Function, int)}.
-	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux} through merging,
 	 * which allow them to interleave.
 	 * <p>
 	 * There are three dimensions to this operator that can be compared with
-	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * {@link FluxApiGroupFlatMap#sequential(Function) sequential flatMap} and {@link Flux#concatMapExtras()}:
 	 * <ul>
 	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
 	 *     subscribing to its inners.</li>
@@ -5481,24 +5468,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the merged output sequence type
 	 *
 	 * @return a new {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#interleaved(Function, int)}.
-	 * To be aggressively removed in 4.1.0.
+	 * @see #flatMapExtras()
 	 */
-	@Deprecated
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency) {
 		return flatMap(mapper, concurrency, Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
-	  * See {@link FluxApiGroupFlatMap#interleaved(Function, int, int)}.
-	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux} through merging,
 	 * which allow them to interleave.
 	 * <p>
-	 * There are three dimensions to this operator that can be compared with
-	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
 	 * <ul>
+
 	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
 	 *     subscribing to its inners.</li>
 	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
@@ -5532,17 +5514,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#interleaved(Function, int, int)}.
-	 * To be aggressively removed in 4.1.0.
+	 * @see #flatMapExtras()
 	 */
-	@Deprecated
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper,
 			int concurrency, int prefetch) {
 		return flatMap(mapper, false, concurrency, prefetch);
 	}
 
 	/**
-	 * See {@link FluxApiGroupFlatMap#interleavedDelayError(Function, int, int)}.
+	 * See {@link FluxApiGroupFlatMap#delayError(Function, int, int)}.
 	 * <p>
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux} through merging,
@@ -5582,7 +5562,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#interleavedDelayError(Function, int, int)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#delayError(Function, int, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5623,7 +5603,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the output {@link Publisher} type target
 	 *
 	 * @return a new {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#signals(Function, Function, Supplier)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#signals(Function, Function, Supplier)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5641,7 +5621,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupFlatMap#iterables(Function)}.
+	 * See {@link FluxApiGroupFlatMap#iterable(Function)}.
 	 * <p>
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
 	 * merging them into a single {@link Flux}. For each iterable, {@link Iterable#iterator()} will be called at least
@@ -5677,7 +5657,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#iterables(Function)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#iterable(Function)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5686,7 +5666,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupFlatMap#iterables(Function, int)}.
+	 * See {@link FluxApiGroupFlatMap#iterable(Function, int)}.
 	 * <p>
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
@@ -5724,7 +5704,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#iterables(Function, int)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#iterable(Function, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5766,7 +5746,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#sequential(Function)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#sequential(Function)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5811,7 +5791,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#sequential(Function, int)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#sequential(Function, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5860,7 +5840,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#sequential(Function, int, int)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#sequential(Function, int, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -5909,7 +5889,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated Use {@link #flatMaps()} {@link FluxApiGroupFlatMap#sequentialDelayError(Function, int, int)}.
+	 * @deprecated Use {@link #flatMapExtras()} {@link FluxApiGroupFlatMap#sequentialDelayError(Function, int, int)}.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated

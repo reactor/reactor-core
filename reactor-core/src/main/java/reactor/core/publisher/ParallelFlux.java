@@ -1148,12 +1148,12 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			? extends Publisher<? extends U>> composer) {
 		if (getPrefetch() > -1) {
 			return from(
-				groups().flatMaps().interleaved(composer::apply),
+				groups().flatMap(composer::apply),
 				parallelism(), getPrefetch(),
 				Queues.small());
 		}
 		else {
-			return from(groups().flatMaps().interleaved(composer::apply), parallelism());
+			return from(groups().flatMap(composer::apply), parallelism());
 		}
 	}
 

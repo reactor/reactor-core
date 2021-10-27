@@ -30,7 +30,7 @@ public final class FluxApiFactoryConcat {
 
 	static final FluxApiFactoryConcat INSTANCE = new FluxApiFactoryConcat();
 
-	FluxApiFactoryConcat() {
+	private FluxApiFactoryConcat() {
 	}
 
 	public <T> Flux<T> fromIterable(Iterable<? extends Publisher<? extends T>> sources) {

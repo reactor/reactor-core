@@ -245,7 +245,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
 		Flux.just(1)
 		    .hide()
-		    .flatMaps().interleaved(w -> up.asFlux().filter(v -> (v & 1) == 0), 1, 1)
+		    .flatMap(w -> up.asFlux().filter(v -> (v & 1) == 0), 1, 1)
 		    .subscribe(ts);
 
 		up.emitNext(1, FAIL_FAST);

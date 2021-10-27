@@ -21,7 +21,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
 /**
- * A {@link Flux} API sub-group that exposes all the concatMap operators and variants. Exposed via {@link Flux#concatMaps()}.
+ * A {@link Flux} API sub-group that exposes all the concatMap operators and variants. Exposed via {@link Flux#concatMapExtras()}.
  *
  * @author Simon Baslé
  */
@@ -35,33 +35,24 @@ public final class FluxApiGroupConcatMap<T> {
 		this.source = source;
 	}
 
-	//FIXME find a better naming ? or should we use similar naming for FluxApiGroupFlatMap#interleaved ?
-	public <V> Flux<V> map(Function<? super T, ? extends Publisher<? extends V>> mapper) {
-		return source.concatMap(mapper);
-	}
-
-	public <V> Flux<V> map(Function<? super T, ? extends Publisher<? extends V>> mapper, int prefetch) {
-		return source.concatMap(mapper, prefetch);
-	}
-
-	public <V> Flux<V> mapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper) {
+	public <V> Flux<V> delayError(Function<? super T, ? extends Publisher<? extends V>> mapper) {
 		return source.concatMapDelayError(mapper);
 	}
 
-	public <V> Flux<V> mapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper, int prefetch) {
+	public <V> Flux<V> delayError(Function<? super T, ? extends Publisher<? extends V>> mapper, int prefetch) {
 		return source.concatMapDelayError(mapper, prefetch);
 	}
 
-	public <V> Flux<V> mapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
-									 boolean delayUntilEnd, int prefetch) {
+	public <V> Flux<V> delayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
+								  boolean delayUntilEnd, int prefetch) {
 		return source.concatMapDelayError(mapper, delayUntilEnd, prefetch);
 	}
 
-	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+	public <R> Flux<R> iterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return source.concatMapIterable(mapper);
 	}
 
-	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
+	public <R> Flux<R> iterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
 		return source.concatMapIterable(mapper, prefetch);
 	}
 }

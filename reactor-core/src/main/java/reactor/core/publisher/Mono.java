@@ -3135,12 +3135,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 *
-	 * @see Flux#flatMaps()
+	 * @see Flux#flatMapExtras()
 	 */
 	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
-		return flux().flatMaps().signals(mapperOnNext, mapperOnError, mapperOnComplete);
+		return flux().flatMapExtras().signals(mapperOnNext, mapperOnError, mapperOnComplete);
 	}
 
 	/**

@@ -32,7 +32,7 @@ public final class FluxApiFactoryMerge {
 
 	public static final FluxApiFactoryMerge INSTANCE = new FluxApiFactoryMerge();
 
-	FluxApiFactoryMerge() {
+	private FluxApiFactoryMerge() {
 	}
 
 	public <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {

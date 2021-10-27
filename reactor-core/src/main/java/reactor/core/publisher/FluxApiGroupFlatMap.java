@@ -25,7 +25,7 @@ import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Flux} API sub-group that offers all the flavors of flatMapping operators.
- * Exposed via {@link Flux#flatMaps()}.
+ * Exposed via {@link Flux#flatMapExtras()}.
  *
  * @author Simon Baslé
  */
@@ -39,29 +39,17 @@ public final class FluxApiGroupFlatMap<T> {
 		this.source = source;
 	}
 
-	public <R> Flux<R> interleaved(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return source.flatMap(mapper);
-	}
-
-	public <V> Flux<V> interleaved(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency) {
-		return source.flatMap(mapper, concurrency);
-	}
-
-	public <V> Flux<V> interleaved(Function<? super T, ? extends Publisher<? extends V>> mapper, int concurrency, int prefetch) {
-		return source.flatMap(mapper, concurrency, prefetch);
-	}
-
-	public <V> Flux<V> interleavedDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
-									 int concurrency, int prefetch) {
+	public <V> Flux<V> delayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
+								  int concurrency, int prefetch) {
 		return source.flatMapDelayError(mapper, concurrency, prefetch);
 	}
 
-	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+	public <R> Flux<R> iterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return source.flatMapIterable(mapper);
 	}
 
-	public <R> Flux<R> iterables(Function<? super T, ? extends Iterable<? extends R>> mapper,
-								   int prefetch) {
+	public <R> Flux<R> iterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
+								int prefetch) {
 		return source.flatMapIterable(mapper, prefetch);
 	}
 
