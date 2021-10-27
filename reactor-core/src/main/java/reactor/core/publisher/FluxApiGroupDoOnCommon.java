@@ -19,6 +19,14 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 /**
+ * A {@link Flux} API sub-group that exposes most common side effects (most common signals like onNext/onComplete/onError..).
+ * Exposed via {@link Flux#doOn()}.
+ * <p>
+ * Additionally, exposes two extra sub-groups:
+ * <ul>
+ *     <li>{@link #advanced()}: Less common side effects (request/cancel signals) as well as more variants for the common ones.</li>
+ *     <li>{@link #combinationOf(Consumer)}: common and {@link #advanced()} side effects that can be fused together.</li>
+ * </ul>
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
@@ -36,12 +44,25 @@ public final class FluxApiGroupDoOnCommon<T> {
 	 * this level with more configuration parameters, or acting on signals that are more
 	 * rarely considered by most users.
 	 *
-	 * @return a new side effect api group for advanced side effects / logging
+	 * @return a new {@link FluxApiGroupDoOnAdvanced}, an api group for advanced side effects
 	 */
 	public FluxApiGroupDoOnAdvanced<T> advanced() {
 		return new FluxApiGroupDoOnAdvanced<>(this.source);
 	}
 
+	/**
+	 * Offer a way to define most signal-based side-effects (both from this class and {@link #advanced()})
+	 * in a block, allowing for the operators to merge (macro-fusion) as much as possible.
+	 * <p>
+	 * This is done by exposing a {@link FluxApiGroupSideEffects} instance to a {@link Consumer},
+	 * in which users can chain the desired fuseable side-effects.
+	 * //FIXME describe merging priority, peek, etc...
+	 *
+	 * @param sideEffectsSpec the {@link Consumer} that uses the provided {@link FluxApiGroupSideEffects}
+	 * to specify which side effects to fuse into a single operator.
+	 * @return a new {@link Flux} on which all the specified side effects are applied in as few steps
+	 * as possible
+	 */
 	public Flux<T> combinationOf(Consumer<FluxApiGroupSideEffects<T>> sideEffectsSpec) {
 		FluxApiGroupSideEffects<T> sideEffects = new FluxApiGroupSideEffects<>(this.source);
 		sideEffectsSpec.accept(sideEffects);
@@ -66,21 +87,5 @@ public final class FluxApiGroupDoOnCommon<T> {
 
 	public Flux<T> each(Consumer<? super Signal<T>> signalConsumer) {
 		return this.source.doOnEach(signalConsumer);
-	}
-
-	public Flux<T> eachLog() {
-		return this.source.log();
-	}
-
-	public Flux<T> eachLog(String category) {
-		return this.source.log(category);
-	}
-
-	public Flux<T> theBeginning(Runnable doFirst) {
-		return this.source.doFirst(doFirst);
-	}
-
-	public Flux<T> theEnd(Consumer<SignalType> doFinally) {
-		return this.source.doFinally(doFinally);
 	}
 }

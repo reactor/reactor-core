@@ -19,14 +19,14 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
-import java.util.logging.Level;
 
 import org.reactivestreams.Subscription;
 
-import reactor.util.Logger;
-import reactor.util.annotation.Nullable;
-
 /**
+ * A {@link Flux} API sub-group that exposes an extra set of side effects, either similar to the side effects exposed
+ * at top level (via {@link Flux#doOn()} with more configuration parameters, or acting on signals that are more
+ * rarely considered by most users. Exposed via {@link Flux#doOn() someFlux.doOn()}'s {@link FluxApiGroupDoOnCommon#advanced() advanced()} method.
+ *
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
@@ -61,21 +61,5 @@ public final class FluxApiGroupDoOnAdvanced<T> {
 
 	public Flux<T> onSubscribe(Consumer<? super Subscription> onSubscribe) {
 		return this.source.doOnSubscribe(onSubscribe);
-	}
-
-	public final Flux<T> log(@Nullable String category, Level level, SignalType... options) {
-		return log(category, level, false, options);
-	}
-
-	public final Flux<T> log(@Nullable String category, Level level, boolean showOperatorLine, SignalType... options) {
-		return this.source.log(category, level, showOperatorLine, options);
-	}
-
-	public final Flux<T> log(Logger logger) {
-		return log(logger, Level.INFO, false);
-	}
-
-	public final Flux<T> log(Logger logger, Level level, boolean showOperatorLine, SignalType... options) {
-		return this.source.log(logger, level, showOperatorLine, options);
 	}
 }
