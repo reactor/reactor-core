@@ -399,6 +399,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#fromIterable(Iterable)}.
+	 * <p>
 	 * Concatenate all sources provided in an {@link Iterable}, forwarding elements
 	 * emitted by the sources downstream.
 	 * <p>
@@ -413,26 +415,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all source sequences
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#fromIterable(Iterable)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> concat(Iterable<? extends Publisher<? extends T>> sources) {
 		return onAssembly(new FluxConcatIterable<>(sources));
 	}
 
 	/**
-	 * Concatenates the values to the end of the {@link Flux}
+	 * See {@link FluxApiFactoryConcat#fromPublisher(Publisher)}.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/concatWithValues.svg" alt="">
-	 *
-	 * @param values The values to concatenate
-	 *
-	 * @return a new {@link Flux} concatenating all source sequences
-	 */
-	@SafeVarargs
-	public final Flux<T> concatWithValues(T... values) {
-	    return concatWith(Flux.fromArray(values));
-	}
-
-	/**
 	 * Concatenate all sources emitted as an onNext signal from a parent {@link Publisher},
 	 * forwarding elements emitted by the sources downstream.
 	 * <p>
@@ -449,12 +442,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#fromPublisher(Publisher)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources) {
 		return concat(sources, Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#fromPublisher(Publisher, int)}.
+	 * <p>
 	 * Concatenate all sources emitted as an onNext signal from a parent {@link Publisher},
 	 * forwarding elements emitted by the sources downstream.
 	 * <p>
@@ -472,12 +470,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences
+	 * @deprecated Use {@link #fromConcatening()}  {@link FluxApiFactoryConcat#fromPublisher(Publisher, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
 		return from(sources).concatMap(identityFunction(), prefetch);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#allOf(Publisher[])}.
+	 * <p>
 	 * Concatenate all sources provided as a vararg, forwarding elements emitted by the
 	 * sources downstream.
 	 * <p>
@@ -492,13 +495,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all source sequences
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#allOf(Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
 		return onAssembly(new FluxConcatArray<>(false, sources));
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#fromPublisherDelayError(Publisher)}.
+	 * <p>
 	 * Concatenate all sources emitted as an onNext signal from a parent {@link Publisher},
 	 * forwarding elements emitted by the sources downstream.
 	 * <p>
@@ -516,12 +524,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences, delaying errors
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#fromPublisherDelayError(Publisher)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources) {
 		return concatDelayError(sources, Queues.XS_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#fromPublisherDelayError(Publisher, int)}.
+	 * <p>
 	 * Concatenate all sources emitted as an onNext signal from a parent {@link Publisher},
 	 * forwarding elements emitted by the sources downstream.
 	 * <p>
@@ -539,12 +552,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#fromPublisherDelayError(Publisher, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
 		return from(sources).concatMapDelayError(identityFunction(), prefetch);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#fromPublisherDelayError(Publisher, boolean, int)}.
+	 * <p>
 	 * Concatenate all sources emitted as an onNext signal from a parent {@link Publisher},
 	 * forwarding elements emitted by the sources downstream.
 	 * <p>
@@ -568,13 +586,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#fromPublisherDelayError(Publisher, boolean, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
-	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
-			T>> sources, boolean delayUntilEnd, int prefetch) {
+	@Deprecated
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources,
+											   boolean delayUntilEnd, int prefetch) {
 		return from(sources).concatMapDelayError(identityFunction(), delayUntilEnd, prefetch);
 	}
 
 	/**
+	 * See {@link FluxApiFactoryConcat#allOfDelayError(Publisher[])}.
+	 * <p>
 	 * Concatenate all sources provided as a vararg, forwarding elements emitted by the
 	 * sources downstream.
 	 * <p>
@@ -592,8 +615,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all source sequences
+	 * @deprecated Use {@link #fromConcatening()} {@link FluxApiFactoryConcat#allOfDelayError(Publisher[])}.
+	 * To be aggressively removed in 4.1.0.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> Flux<T> concatDelayError(Publisher<? extends T>... sources) {
 		return onAssembly(new FluxConcatArray<>(true, sources));
 	}
@@ -4174,7 +4200,21 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return concat(this, other);
+		return fromConcatening().allOf(this, other);
+	}
+
+	/**
+	 * Concatenates the values to the end of the {@link Flux}
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/concatWithValues.svg" alt="">
+	 *
+	 * @param values The values to concatenate
+	 *
+	 * @return a new {@link Flux} concatenating all source sequences
+	 */
+	@SafeVarargs
+	public final Flux<T> concatWithValues(T... values) {
+		return concatWith(Flux.fromArray(values));
 	}
 
 	/**

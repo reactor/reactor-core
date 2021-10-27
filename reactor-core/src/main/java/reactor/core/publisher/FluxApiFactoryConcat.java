@@ -16,20 +16,54 @@
 
 package reactor.core.publisher;
 
+import org.reactivestreams.Publisher;
+
 /**
+ * A set of {@link Flux} factory methods around concatenation of multiple publishers.
+ *
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
 @SuppressWarnings("deprecation")
 public final class FluxApiFactoryConcat {
 
-	public static final FluxApiFactoryConcat INSTANCE = new FluxApiFactoryConcat();
+	static final FluxApiFactoryConcat INSTANCE = new FluxApiFactoryConcat();
 
 	FluxApiFactoryConcat() {
 	}
 
-	//FIXME add all variant of concat factory methods
-	public void foo() {
+	public <T> Flux<T> fromIterable(Iterable<? extends Publisher<? extends T>> sources) {
+		return Flux.concat(sources);
+	}
 
+	public <T> Flux<T> fromPublisher(Publisher<? extends Publisher<? extends T>> sources) {
+		return Flux.concat(sources);
+	}
+
+	public <T> Flux<T> fromPublisher(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
+		return Flux.concat(sources, prefetch);
+	}
+
+	@SafeVarargs
+	public final <T> Flux<T> allOf(Publisher<? extends T>... sources) {
+		return Flux.concat(sources);
+	}
+
+	public <T> Flux<T> fromPublisherDelayError(Publisher<? extends Publisher<? extends T>> sources) {
+		return Flux.concatDelayError(sources);
+	}
+
+	public <T> Flux<T> fromPublisherDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
+		return Flux.concatDelayError(sources, prefetch);
+	}
+
+	public <T> Flux<T> fromPublisherDelayError(Publisher<? extends Publisher<? extends T>> sources,
+											   boolean delayUntilEnd, int prefetch) {
+		return Flux.concatDelayError(sources, delayUntilEnd, prefetch);
+	}
+
+	@SafeVarargs
+	public final <T> Flux<T> allOfDelayError(Publisher<? extends T>... sources) {
+		return Flux.concatDelayError(sources);
 	}
 }
