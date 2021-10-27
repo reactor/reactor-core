@@ -3136,9 +3136,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupBuffer#until(Predicate)}.
-	 * <p>
-	 * SEE
+	 * See {@link FluxApiGroupBuffer#includeUntil(Predicate)}.
 	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux} each time the given predicate returns true. Note that
@@ -3156,7 +3154,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	*
 	 * @return a buffered {@link Flux} of {@link List}
-	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#until(Predicate) .until} instead.
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#includeUntil(Predicate) .until} instead.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -3166,7 +3164,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupBuffer#until(Predicate, boolean)}.
+	 * See {@link FluxApiGroupBuffer#includeUntil(Predicate, boolean)}.
 	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux} each time the given predicate returns true. Note that
@@ -3187,7 +3185,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
 	 *
 	 * @return a buffered {@link Flux} of {@link List}
-	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#until(Predicate, boolean) .until} instead.
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#includeUntil(Predicate, boolean) .until} instead.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -3198,7 +3196,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupBuffer#untilChanged()}.
+	 * See {@link FluxApiGroupBuffer#includeUntilChanged()}.
 	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another) into multiple {@link List} buffers that will be emitted by the
@@ -3209,16 +3207,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 *
 	 * @return a buffered {@link Flux} of {@link List}
-	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#untilChanged() .untilChanged()} instead.
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#includeUntilChanged() .untilChanged()} instead.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
 	public final Flux<List<T>> bufferUntilChanged() {
-		return buffers().untilChanged();
+		return bufferUntilChanged(identityFunction());
 	}
 
 	/**
-	 * See {@link FluxApiGroupBuffer#untilChanged(Function)}.
+	 * See {@link FluxApiGroupBuffer#includeUntilChanged(Function)}.
 	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another), as compared by a key extracted through the user provided {@link
@@ -3231,7 +3229,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @return a buffered {@link Flux} of {@link List}
-	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#untilChanged(Function) .untilChanged} instead.
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#includeUntilChanged(Function) .untilChanged} instead.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -3240,7 +3238,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupBuffer#untilChanged(Function, BiPredicate)}.
+	 * See {@link FluxApiGroupBuffer#includeUntilChanged(Function, BiPredicate)}.
 	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another), as compared by a key extracted through the user provided {@link
@@ -3254,7 +3252,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param keySelector function to compute comparison key for each element
 	 * @param keyComparator predicate used to compare keys
 	 * @return a buffered {@link Flux} of {@link List}
-	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#untilChanged(Function, BiPredicate) .untilChanged} instead.
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#includeUntilChanged(Function, BiPredicate) .untilChanged} instead.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -3265,7 +3263,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * See {@link FluxApiGroupBuffer#splitIf(Predicate)}.
+	 * See {@link FluxApiGroupBuffer#includeWhile(Predicate)}.
 	 * <p>
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux}. Each buffer continues aggregating values while the
@@ -3285,7 +3283,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param predicate a predicate that triggers the next buffer when it becomes false.
 	 *
 	 * @return a buffered {@link Flux} of {@link List}
-	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#splitIf(Predicate) .splitIf} instead.
+	 * @deprecated use {@link #buffers()}{@link FluxApiGroupBuffer#includeWhile(Predicate) .splitIf} instead.
 	 * To be aggressively removed in 4.1.0.
 	 */
 	@Deprecated
@@ -9765,6 +9763,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#bySize(int)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
 	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
 	 * Each {@link Flux} window will onComplete after {@code maxSize} items have been routed.
@@ -9785,16 +9785,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#bySize(int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(int maxSize) {
 		return onAssembly(new FluxWindow<>(this, maxSize, Queues.get(maxSize)));
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#bySizeWithSkip(int, int)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows of size
 	 * {@code maxSize}, that each open every {@code skip} elements in the source.
 	 *
-	 * <p>
 	 * When maxSize < skip : dropping windows
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/windowWithMaxSizeLessThanSkipSize.svg" alt="">
@@ -9822,7 +9826,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param skip the number of items to count before opening and emitting a new window
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and opened every skipCount
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#bySizeWithSkip(int, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(int maxSize, int skip) {
 		return onAssembly(new FluxWindow<>(this,
 				maxSize,
@@ -9832,6 +9839,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#splitWhen(Publisher)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into continuous, non-overlapping windows
 	 * where the window boundary is signalled by another {@link Publisher}
 	 *
@@ -9851,13 +9860,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param boundary a {@link Publisher} to emit any item for a split signal and complete to terminate
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows delimited by a given {@link Publisher}
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#splitWhen(Publisher)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return onAssembly(new FluxWindowBoundary<>(this,
 				boundary, Queues.unbounded(Queues.XS_BUFFER_SIZE)));
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#byTime(Duration)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
 	 * for a {@code windowingTimespan} {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
 	 * Scheduler).
@@ -9878,12 +9892,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param windowingTimespan the {@link Duration} to delimit {@link Flux} windows
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#byTime(Duration)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(Duration windowingTimespan) {
 		return window(windowingTimespan, Schedulers.parallel());
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#byTimeWithSkip(Duration, Duration)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
 	 * for a given {@code windowingTimespan} {@link Duration}, after which it closes with onComplete.
 	 * Each window is opened at a regular {@code timeShift} interval, starting from the
@@ -9919,13 +9938,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
 	 * closed after a {@link Duration}
-	 *
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#byTimeWithSkip(Duration, Duration)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(Duration windowingTimespan, Duration openWindowEvery) {
 		return window(windowingTimespan, openWindowEvery, Schedulers.parallel());
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#byTime(Duration, Scheduler)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
 	 * for a {@code windowingTimespan} {@link Duration} (as measured on the provided {@link Scheduler}).
 	 *
@@ -9946,12 +9969,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#byTime(Duration, Scheduler)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(Duration windowingTimespan, Scheduler timer) {
 		return window(interval(windowingTimespan, timer));
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#byTimeWithSkip(Duration, Duration, Scheduler)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
 	 * for a given {@code windowingTimespan} {@link Duration}, after which it closes with onComplete.
 	 * Each window is opened at a regular {@code timeShift} interval, starting from the
@@ -9988,7 +10016,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
 	 * closed after a {@link Duration}
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#byTimeWithSkip(Duration, Duration, Scheduler)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(Duration windowingTimespan, Duration openWindowEvery, Scheduler timer) {
 		if (openWindowEvery.equals(windowingTimespan)) {
 			return window(windowingTimespan);
@@ -9997,6 +10028,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#bySizeOrTimeout(int, Duration)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
 	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
 	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
@@ -10020,12 +10053,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param maxTime the maximum {@link Duration} since the window was opened before closing it
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#bySizeOrTimeout(int, Duration)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime) {
 		return windowTimeout(maxSize, maxTime , Schedulers.parallel());
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#bySizeOrTimeout(int, Duration, Scheduler)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
 	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
 	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
@@ -10050,12 +10088,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#bySizeOrTimeout(int, Duration, Scheduler)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, Scheduler timer) {
 		return onAssembly(new FluxWindowTimeout<>(this, maxSize, maxTime.toNanos(), TimeUnit.NANOSECONDS, timer));
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeUntil(Predicate)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
 	 * given predicate. A new window is opened each time the predicate returns true, at which
 	 * point the previous window will receive the triggering element then onComplete.
@@ -10083,12 +10126,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeUntil(Predicate)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger) {
 		return windowUntil(boundaryTrigger, false);
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeUntil(Predicate, boolean)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
 	 * given predicate. A new window is opened each time the predicate returns true.
 	 * <p>
@@ -10121,12 +10169,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeUntil(Predicate, boolean)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return windowUntil(boundaryTrigger, cutBefore, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeUntil(Predicate, boolean, int)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the given
 	 * predicate and using a prefetch. A new window is opened each time the predicate
 	 * returns true.
@@ -10161,7 +10214,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param prefetch the request size to use for this {@link Flux}.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeUntil(Predicate, boolean, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
@@ -10172,6 +10228,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeUntilChanged()}.
+	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another) into multiple {@link Flux} windows.
 	 *
@@ -10191,12 +10249,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * or creation of a new window is triggered.
 	 *
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeUntilChanged()}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <V> Flux<Flux<T>> windowUntilChanged() {
 		return windowUntilChanged(identityFunction());
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeUntilChanged(Function)}.
+	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another), as compared by a key extracted through the user provided {@link
 	 * Function}, into multiple {@link Flux} windows.
@@ -10218,12 +10281,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeUntilChanged(Function)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? super V> keySelector) {
 		return windowUntilChanged(keySelector, equalPredicate());
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeUntilChanged(Function, BiPredicate)}.
+	 * <p>
 	 * Collect subsequent repetitions of an element (that is, if they arrive right after
 	 * one another), as compared by a key extracted through the user provided {@link
 	 * Function} and compared using a supplied {@link BiPredicate}, into multiple
@@ -10247,7 +10315,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param keySelector function to compute comparison key for each element
 	 * @param keyComparator predicate used to compare keys
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeUntilChanged(Function, BiPredicate)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? extends V> keySelector,
 			BiPredicate<? super V, ? super V> keyComparator) {
 		return Flux.defer(() -> windowUntil(new FluxBufferPredicate.ChangedPredicate<T, V>
@@ -10255,6 +10326,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeWhile(Predicate)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
 	 * while a given predicate matches the source elements. Once the predicate returns
 	 * false, the window closes with an onComplete and the triggering element is discarded.
@@ -10282,12 +10355,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @return a {@link Flux} of {@link Flux} windows, each containing
 	 * subsequent elements that all passed a predicate.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeWhile(Predicate)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate) {
 		return windowWhile(inclusionPredicate, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#includeWhile(Predicate, int)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
 	 * while a given predicate matches the source elements. Once the predicate returns
 	 * false, the window closes with an onComplete and the triggering element is discarded.
@@ -10316,7 +10394,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param prefetch the request size to use for this {@link Flux}.
 	 * @return a {@link Flux} of {@link Flux} windows, each containing
 	 * subsequent elements that all passed a predicate.
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#includeWhile(Predicate, int)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
@@ -10327,6 +10408,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * See {@link FluxApiGroupWindow#when(Publisher, Function)}.
+	 * <p>
 	 * Split this {@link Flux} sequence into potentially overlapping windows controlled by items of a
 	 * start {@link Publisher} and end {@link Publisher} derived from the start values.
 	 *
@@ -10357,7 +10440,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows opened by signals from a first
 	 * {@link Publisher} and lasting until a selected second {@link Publisher} emits
+	 * @deprecated Use {@link Flux#windows()} {@link FluxApiGroupWindow#when(Publisher, Function)}.
+	 * To be aggressively removed in 4.1.0.
 	 */
+	@Deprecated
 	public final <U, V> Flux<Flux<T>> windowWhen(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
 		return onAssembly(new FluxWindowWhen<>(this,

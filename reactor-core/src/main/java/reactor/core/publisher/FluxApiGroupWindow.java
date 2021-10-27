@@ -26,6 +26,8 @@ import org.reactivestreams.Publisher;
 import reactor.core.scheduler.Scheduler;
 
 /**
+ * A {@link Flux} API sub-group that exposes all the windowing operators. Exposed via {@link Flux#windows()}.
+ *
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
@@ -38,76 +40,76 @@ public final class FluxApiGroupWindow<T> {
 		this.source = source;
 	}
 
-	public final Flux<Flux<T>> window(int maxSize) {
+	public final Flux<Flux<T>> bySize(int maxSize) {
 		return source.window(maxSize);
 	}
 
-	public final Flux<Flux<T>> window(int maxSize, int skip) {
-		return source.window(maxSize, skip);
-	}
-
-	public final Flux<Flux<T>> window(Publisher<?> boundary) {
-		return source.window(boundary);
-	}
-
-	public final Flux<Flux<T>> window(Duration windowingTimespan) {
-		return source.window(windowingTimespan);
-	}
-
-	public final Flux<Flux<T>> window(Duration windowingTimespan, Duration openWindowEvery) {
-		return source.window(windowingTimespan, openWindowEvery);
-	}
-
-	public final Flux<Flux<T>> window(Duration windowingTimespan, Scheduler timer) {
-		return source.window(windowingTimespan, timer);
-	}
-
-	public final Flux<Flux<T>> window(Duration windowingTimespan, Duration openWindowEvery, Scheduler timer) {
-		return source.window(windowingTimespan, openWindowEvery, timer);
-	}
-
-	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime) {
+	public final Flux<Flux<T>> bySizeOrTimeout(int maxSize, Duration maxTime) {
 		return source.windowTimeout(maxSize, maxTime);
 	}
 
-	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, Scheduler timer) {
+	public final Flux<Flux<T>> bySizeOrTimeout(int maxSize, Duration maxTime, Scheduler timer) {
 		return source.windowTimeout(maxSize, maxTime, timer);
 	}
 
-	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger) {
+	public final Flux<Flux<T>> bySizeWithSkip(int maxSize, int skip) {
+		return source.window(maxSize, skip);
+	}
+
+	public final Flux<Flux<T>> byTime(Duration windowingTimespan) {
+		return source.window(windowingTimespan);
+	}
+
+	public final Flux<Flux<T>> byTime(Duration windowingTimespan, Scheduler timer) {
+		return source.window(windowingTimespan, timer);
+	}
+
+	public final Flux<Flux<T>> byTimeWithSkip(Duration windowingTimespan, Duration openWindowEvery) {
+		return source.window(windowingTimespan, openWindowEvery);
+	}
+
+	public final Flux<Flux<T>> byTimeWithSkip(Duration windowingTimespan, Duration openWindowEvery, Scheduler timer) {
+		return source.window(windowingTimespan, openWindowEvery, timer);
+	}
+
+	public final Flux<Flux<T>> includeUntil(Predicate<T> boundaryTrigger) {
 		return source.windowUntil(boundaryTrigger);
 	}
 
-	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
+	public final Flux<Flux<T>> includeUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return source.windowUntil(boundaryTrigger, cutBefore);
 	}
 
-	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
+	public final Flux<Flux<T>> includeUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return source.windowUntil(boundaryTrigger, cutBefore, prefetch);
 	}
 
-	public final <V> Flux<Flux<T>> windowUntilChanged() {
+	public final <V> Flux<Flux<T>> includeUntilChanged() {
 		return source.windowUntilChanged();
 	}
 
-	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? super V> keySelector) {
+	public final <V> Flux<Flux<T>> includeUntilChanged(Function<? super T, ? super V> keySelector) {
 		return source.windowUntilChanged(keySelector);
 	}
 
-	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? extends V> keySelector,
+	public final <V> Flux<Flux<T>> includeUntilChanged(Function<? super T, ? extends V> keySelector,
 													  BiPredicate<? super V, ? super V> keyComparator) {
 		return source.windowUntilChanged(keySelector, keyComparator);
 	}
 
-	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate) {
+	public final Flux<Flux<T>> includeWhile(Predicate<T> inclusionPredicate) {
 		return source.windowWhile(inclusionPredicate);
 	}
 
-	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
+	public final Flux<Flux<T>> includeWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return source.windowWhile(inclusionPredicate, prefetch);
 	}
 
-	public final <U, V> Flux<Flux<T>> windowWhen(Publisher<U> bucketOpening,
+	public final Flux<Flux<T>> splitWhen(Publisher<?> boundary) {
+		return source.window(boundary);
+	}
+
+	public final <U, V> Flux<Flux<T>> when(Publisher<U> bucketOpening,
 												 final Function<? super U, ? extends Publisher<V>> closeSelector) {
 		return source.windowWhen(bucketOpening, closeSelector);
 	}

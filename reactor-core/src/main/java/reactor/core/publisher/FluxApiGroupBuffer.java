@@ -98,7 +98,28 @@ public final class FluxApiGroupBuffer<T> {
 		return source.buffer(bufferingTimespan, openBufferEvery, timer);
 	}
 
-	public Flux<List<T>> splitIf(Predicate<? super T> predicate) {
+	public Flux<List<T>> includeUntil(Predicate<? super T> predicate) {
+		return source.bufferUntil(predicate);
+	}
+
+	public Flux<List<T>> includeUntil(Predicate<? super T> predicate, boolean cutBefore) {
+		return source.bufferUntil(predicate, cutBefore);
+	}
+
+	public Flux<List<T>> includeUntilChanged() {
+		return source.bufferUntilChanged();
+	}
+
+	public <V> Flux<List<T>> includeUntilChanged(Function<? super T, ? extends V> keySelector) {
+		return source.bufferUntilChanged(keySelector);
+	}
+
+	public <V> Flux<List<T>> includeUntilChanged(Function<? super T, ? extends V> keySelector,
+												 BiPredicate<? super V, ? super V> keyComparator) {
+		return source.bufferUntilChanged(keySelector, keyComparator);
+	}
+
+	public Flux<List<T>> includeWhile(Predicate<? super T> predicate) {
 		return source.bufferWhile(predicate);
 	}
 
@@ -108,27 +129,6 @@ public final class FluxApiGroupBuffer<T> {
 
 	public <C extends Collection<? super T>> Flux<C> splitWhen(Publisher<?> other, Supplier<C> bufferSupplier) {
 		return source.buffer(other, bufferSupplier);
-	}
-
-	public Flux<List<T>> until(Predicate<? super T> predicate) {
-		return source.bufferUntil(predicate);
-	}
-
-	public Flux<List<T>> until(Predicate<? super T> predicate, boolean cutBefore) {
-		return source.bufferUntil(predicate, cutBefore);
-	}
-
-	public <V> Flux<List<T>> untilChanged() {
-		return source.bufferUntilChanged();
-	}
-
-	public <V> Flux<List<T>> untilChanged(Function<? super T, ? extends V> keySelector) {
-		return source.bufferUntilChanged(keySelector);
-	}
-
-	public <V> Flux<List<T>> untilChanged(Function<? super T, ? extends V> keySelector,
-										  BiPredicate<? super V, ? super V> keyComparator) {
-		return source.bufferUntilChanged(keySelector, keyComparator);
 	}
 
 	public <U, V> Flux<List<T>> when(Publisher<U> bucketOpening,
