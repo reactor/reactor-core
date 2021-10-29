@@ -56,17 +56,17 @@ public final class FluxApiGroupDoOnCommon<T> {
 	 * <p>
 	 * This is done by exposing a {@link FluxApiGroupSideEffects} instance to a {@link Consumer},
 	 * in which users can chain the desired fuseable side-effects.
-	 * //FIXME describe merging priority, peek, etc...
 	 *
 	 * @param sideEffectsSpec the {@link Consumer} that uses the provided {@link FluxApiGroupSideEffects}
 	 * to specify which side effects to fuse into a single operator.
 	 * @return a new {@link Flux} on which all the specified side effects are applied in as few steps
 	 * as possible
 	 */
+	//FIXME remove if only FluxApiGroupSideEffects is kept
 	public Flux<T> combinationOf(Consumer<FluxApiGroupSideEffects<T>> sideEffectsSpec) {
-		FluxApiGroupSideEffects<T> sideEffects = new FluxApiGroupSideEffects<>(this.source);
+		FluxApiGroupSideEffects<T> sideEffects = new FluxApiGroupSideEffects<>();
 		sideEffectsSpec.accept(sideEffects);
-		return sideEffects.decoratedFlux();
+		return sideEffects.applyTo(this.source);
 	}
 
 	public Flux<T> next(Consumer<? super T> onNext) {

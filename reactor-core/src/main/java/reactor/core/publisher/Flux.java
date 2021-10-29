@@ -2560,9 +2560,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return new FluxApiGroupWindow<>(this);
 	}
 
-	//keep doFirst/doFinally directly accessible
+	//option 1, implies keeping doFirst/doFinally directly accessible
 	public final FluxApiGroupDoOnCommon<T> doOn() {
 		return new FluxApiGroupDoOnCommon<>(this);
+	}
+
+	//option 2: side effect spec (enables macro fusion)
+	public final Flux<T> sideEffects(Consumer<FluxApiGroupSideEffects<T>> sideEffectsSpec) {
+		FluxApiGroupSideEffects<T> sideEffects = new FluxApiGroupSideEffects<>();
+		sideEffectsSpec.accept(sideEffects);
+		return sideEffects.applyTo(this);
 	}
 
 	/**

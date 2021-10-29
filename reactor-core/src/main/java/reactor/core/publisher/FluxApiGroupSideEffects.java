@@ -22,77 +22,209 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Subscription;
 
+import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
+
 /**
- * This is a special subset of both {@link FluxApiGroupDoOnCommon} and {@link FluxApiGroupDoOnAdvanced} that is
- * exposed under {@link Flux#doOn()} via {@link FluxApiGroupDoOnCommon#combinationOf(Consumer)}.
- *
+ * A {@link Flux} API sub-group that exposes side effect operators to react to signals like onNext, onComplete, onError, etc...
+ * The sub-group is exposed via {@link Flux#sideEffects(Consumer)}, passed to the {@link Consumer}, and is <strong>mutative</strong>.
+ * <p>
+ * Calls to side-effect methods are cumulative with previous similar calls. For instance, calling {@link #doOnNext(Consumer)} twice
+ * (anywhere in the spec consumer) will combine the signal consumer of the first call c1 and of the second call c2 as
+ * {@link Consumer#andThen(Consumer) c1.andThen(c2)}.
+ * <p>
+ * This means that cumulated side effects are properly ordered in their declared order, even for downstream-to-upstream signals
+ * like {@link #doFirst}. Consider the following:
+ * <pre><code>
+ * flux.sideEffects(spec -> spec
+ *     .doFirst(behaviorA)
+ *     .doFirst(behaviorB)
+ * );
+ * //versus
+ * flux.sideEffects(spec -> spec.doFirst(behaviorA))
+ *     .sideEffects(spec -> spec.doFirst(behaviorB));
+ * </code></pre>
+ * In the first example, execution order is {@code behaviorA} then {@code behaviorB}. That is because a single instance of the doFirst
+ * operator is actually created.
+ * In the second example, execution order is inverted ( {@code behaviorA} then {@code behaviorB}). This is beacuse two instances of the
+ * operator are created
  * The idea is that when defining multiple side effects this way, they can be collapsed into one or two operator instances
  * by macro-fusion, as the lambda ensures the intermediate results are not used as dedicated {@link org.reactivestreams.Publisher}.
  *
  * @author Simon Baslé
  */
 //FIXME amend javadoc, ensure Flux methods point to this and not the reverse, ensure Flux javadocs are simplified and pointing to deprecation
-@SuppressWarnings("deprecation")
 public final class FluxApiGroupSideEffects<T> {
 
-	//FIXME implement macro-fusion
-	private Flux<T> decoratedFlux;
+	@Nullable private Runnable               doFirst;
+	@Nullable private Consumer<SignalType>   doFinally;
+	@Nullable private Consumer<T>            doOnNext;
+	@Nullable private Runnable               doOnComplete;
+	@Nullable private Consumer<Throwable>    doOnError;
+	@Nullable private Runnable               doAfterTerminate;
+	@Nullable private Consumer<Subscription> doOnSubscribe;
+	@Nullable private LongConsumer           doOnRequest;
+	@Nullable private Runnable               doOnCancel;
 
-	FluxApiGroupSideEffects(Flux<T> source) {
-		this.decoratedFlux = source;
-	}
+	FluxApiGroupSideEffects() { }
 
-	public FluxApiGroupSideEffects<T> onNext(Consumer<? super T> onNext) {
-		this.decoratedFlux = decoratedFlux.doOn().next(onNext);
+	public FluxApiGroupSideEffects<T> doFirst(Runnable onFirst) {
+		if (this.doFirst == null) {
+			this.doFirst = onFirst;
+		}
+		else {
+			Runnable r1 = this.doFirst;
+			this.doFirst = () -> {
+				r1.run();
+				onFirst.run();
+			};
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onComplete(Runnable onComplete) {
-		this.decoratedFlux = decoratedFlux.doOn().complete(onComplete);
+	@SuppressWarnings("unchecked")
+	public FluxApiGroupSideEffects<T> doFinally(Consumer<? super SignalType> onLastSignal) {
+		if (this.doFinally == null) {
+			this.doFinally = (Consumer<SignalType>) onLastSignal;
+		}
+		else {
+			this.doFinally = this.doFinally.andThen(onLastSignal);
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onError(Consumer<? super Throwable> onError) {
-		this.decoratedFlux = decoratedFlux.doOn().error(onError);
+	@SuppressWarnings("unchecked")
+	public FluxApiGroupSideEffects<T> doOnNext(Consumer<? super T> onNext) {
+		if (this.doOnNext == null) {
+			this.doOnNext = (Consumer<T>) onNext;
+		}
+		else {
+			this.doOnNext = this.doOnNext.andThen(onNext);
+		}
 		return this;
 	}
 
-	public <R extends Throwable> FluxApiGroupSideEffects<T> onError(Class<R> clazz, Consumer<? super R> onError) {
-		this.decoratedFlux = decoratedFlux.doOn().advanced().onError(clazz, onError);
+	@SuppressWarnings("unchecked")
+	public FluxApiGroupSideEffects<T> doOnError(Consumer<? super Throwable> onError) {
+		if (this.doOnError == null) {
+			this.doOnError = (Consumer<Throwable>) onError;
+		}
+		else {
+			this.doOnError = this.doOnError.andThen(onError);
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onError(Predicate<? super Throwable> predicate, Consumer<? super Throwable> onError) {
-		this.decoratedFlux = decoratedFlux.doOn().advanced().onError(predicate, onError);
+	public FluxApiGroupSideEffects<T> doOnComplete(Runnable onComplete) {
+		if (this.doOnComplete == null) {
+			this.doOnComplete = onComplete;
+		}
+		else {
+			Runnable r1 = this.doOnComplete;
+			Runnable r2 = onComplete;
+			this.doOnComplete = () -> {
+				r1.run();
+				r2.run();
+			};
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onTerminate(Runnable onTerminate) {
-		this.decoratedFlux = decoratedFlux.doOn().terminate(onTerminate);
+	public FluxApiGroupSideEffects<T> doOnCancel(Runnable onCancel) {
+		if (this.doOnCancel == null) {
+			this.doOnCancel = onCancel;
+		}
+		else {
+			Runnable r1 = this.doOnCancel;
+			Runnable r2 = onCancel;
+			this.doOnCancel = () -> {
+				r1.run();
+				r2.run();
+			};
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> afterTerminate(Runnable afterTerminate) {
-		this.decoratedFlux = decoratedFlux.doOn().advanced().afterTerminate(afterTerminate);
+	public FluxApiGroupSideEffects<T> doOnRequest(LongConsumer onRequest) {
+		if (this.doOnRequest == null) {
+			this.doOnRequest = onRequest;
+		}
+		else {
+			this.doOnRequest = this.doOnRequest.andThen(onRequest);
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onCancel(Runnable onCancel) {
-		this.decoratedFlux = decoratedFlux.doOn().advanced().onCancel(onCancel);
+	@SuppressWarnings("unchecked")
+	public FluxApiGroupSideEffects<T> doOnSubscriptionReceived(Consumer<? super Subscription> onSubscriptionReceived) {
+		if (this.doOnSubscribe == null) {
+			this.doOnSubscribe = (Consumer<Subscription>) onSubscriptionReceived;
+		}
+		else {
+			this.doOnSubscribe = this.doOnSubscribe.andThen(onSubscriptionReceived);
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onRequest(LongConsumer onRequest) {
-		this.decoratedFlux = decoratedFlux.doOn().advanced().onRequest(onRequest);
+	public FluxApiGroupSideEffects<T> doAfterTerminate(Runnable doAfterTerminate) {
+		if (this.doAfterTerminate == null) {
+			this.doAfterTerminate = doAfterTerminate;
+		}
+		else {
+			Runnable r1 = this.doAfterTerminate;
+			Runnable r2 = doAfterTerminate;
+			this.doAfterTerminate = () -> {
+				r1.run();
+				r2.run();
+			};
+		}
 		return this;
 	}
 
-	public FluxApiGroupSideEffects<T> onSubscribe(Consumer<? super Subscription> onSubscribe) {
-		this.decoratedFlux = decoratedFlux.doOn().advanced().onSubscribe(onSubscribe);
-		return this;
+	/**
+	 * Apply the spec to the {@link Flux} originally captured and return the decorated {@link Flux}.
+	 *
+	 * @return a {@link Flux} with side-effects, as instructed by this spec
+	 */
+	Flux<T> applyTo(Flux<T> source) {
+		if (this.doFirst != null) {
+			source = source.doFirst(this.doFirst);
+		}
+
+		Flux<T> peek;
+		boolean doPeek = this.doOnSubscribe != null || doOnNext != null || doOnError != null || doOnComplete != null
+			|| doAfterTerminate != null || doOnRequest != null || doOnCancel != null;
+		if (doPeek && source instanceof Fuseable) {
+			peek = new FluxPeekFuseable<>(
+				source,
+				this.doOnSubscribe,
+				this.doOnNext,
+				this.doOnError,
+				this.doOnComplete,
+				this.doAfterTerminate,
+				this.doOnRequest,
+				this.doOnCancel);
+		}
+		else if (doPeek) {
+			peek = new FluxPeek<>(
+				source,
+				this.doOnSubscribe,
+				this.doOnNext,
+				this.doOnError,
+				this.doOnComplete,
+				this.doAfterTerminate,
+				this.doOnRequest,
+				this.doOnCancel);
+		}
+		else {
+			peek = source;
+		}
+
+		if (doFinally != null) {
+			peek = peek.doFinally(this.doFinally);
+		}
+		return peek;
 	}
 
-	Flux<T> decoratedFlux() {
-		return this.decoratedFlux;
-	}
+	//TODO other applications could be introduced, eg. at Subscriber level for a context-aware version
 }
