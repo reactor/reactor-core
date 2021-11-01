@@ -23,13 +23,17 @@ jobs:
         java-version: 8
     - name: interpret version
       id: version
+      uses: gradle/gradle-build-action@v2
       #we only run the qualifyVersionGha task so that no other console printing can hijack this step's output
       #output: versionType, fullVersion
       #fails if versionType is BAD, which interrupts the workflow
-      run: ./gradlew qualifyVersionGha
+      with:
+        arguments: qualifyVersionGha
     - name: run checks
       id: checks
-      run: ./gradlew check
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: check
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
@@ -47,8 +51,13 @@ jobs:
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
-      run: |
-          ./gradlew assemble artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: |
+          assemble 
+          artifactoryPublish 
+          -Partifactory_publish_contextUrl=https://repo.spring.io 
+          -Partifactory_publish_repoKey=libs-snapshot-local
 
   #sign the milestone artifacts and deploy them to Artifactory
   deployMilestone:
@@ -68,8 +77,14 @@ jobs:
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
         ORG_GRADLE_PROJECT_signingKey: ${{secrets.SIGNING_KEY}}
         ORG_GRADLE_PROJECT_signingPassword: ${{secrets.SIGNING_PASSPHRASE}}
-      run: |
-          ./gradlew assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: |
+          assemble 
+          sign 
+          artifactoryPublish 
+          -Partifactory_publish_contextUrl=https://repo.spring.io 
+          -Partifactory_publish_repoKey=libs-milestone-local
     - name: tag
       run: |
         git config --local user.name 'reactorbot'
@@ -97,8 +112,15 @@ jobs:
         ORG_GRADLE_PROJECT_signingPassword: ${{secrets.SIGNING_PASSPHRASE}}
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
-      run: |
-          ./gradlew assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: |
+          assemble 
+          sign 
+          artifactoryPublish 
+          -Partifactory_publish_contextUrl=https://repo.spring.io  
+          -Partifactory_publish_repoKey=libs-release-local 
+          publishMavenJavaPublicationToSonatypeRepository
     - name: tag
       run: |
         git config --local user.name 'reactorbot'
