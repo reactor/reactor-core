@@ -16,57 +16,14 @@
 
 package reactor.test.subscriber;
 
-import java.util.function.Predicate;
-
 import reactor.core.Fuseable;
-import reactor.core.publisher.Operators;
-import reactor.core.publisher.Signal;
-import reactor.util.annotation.Nullable;
 
 /**
+ * Simple interface for a {@link reactor.core.Fuseable.ConditionalSubscriber} variant of the
+ * {@link TestSubscriber}.
+ *
  * @author Simon Baslé
  */
-public class ConditionalTestSubscriber<T> extends TestSubscriber<T> implements Fuseable.ConditionalSubscriber<T> {
+public interface ConditionalTestSubscriber<T> extends TestSubscriber<T>, Fuseable.ConditionalSubscriber<T> {
 
-	final Predicate<? super T> tryOnNextPredicate;
-
-	ConditionalTestSubscriber(TestSubscriberBuilder options,
-	                          Predicate<? super T> tryOnNextPredicate) {
-		super(options);
-		this.tryOnNextPredicate = tryOnNextPredicate;
-	}
-
-	@Override
-	public boolean tryOnNext(T t) {
-		int previousState = markOnNextStart();
-		boolean wasTerminated = isMarkedTerminated(previousState);
-		boolean wasOnNext = isMarkedOnNext(previousState);
-		if (wasTerminated || wasOnNext) {
-			//at this point, we know we haven't switched the markedOnNext bit. if it is set, let the other onNext unset it
-			this.protocolErrors.add(Signal.next(t));
-			return false;
-		}
-
-		try {
-			if (tryOnNextPredicate.test(t)) {
-				this.receivedOnNext.add(t);
-				if (cancelled.get()) {
-					this.receivedPostCancellation.add(t);
-				}
-				checkTerminatedAfterOnNext();
-				return true;
-			}
-			else {
-				Operators.onDiscard(t, currentContext());
-				checkTerminatedAfterOnNext();
-				return false;
-			}
-		}
-		catch (Throwable predicateError) {
-			markOnNextDone();
-			internalCancel();
-			onError(predicateError);
-			return false; //this is consistent with eg. Flux.filter
-		}
-	}
 }

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -52,10 +53,10 @@ import static org.mockito.Mockito.times;
 /**
  * @author Simon Baslé
  */
-//@Timeout(10)
-class TestSubscriberTest {
+@Timeout(10)
+class DefaultTestSubscriberTest {
 
-	private static final Logger LOGGER = Loggers.getLogger(TestSubscriberTest.class);
+	private static final Logger LOGGER = Loggers.getLogger(DefaultTestSubscriberTest.class);
 	private static final int RACE_DETECTION_LOOPS = 100;
 
 	@Nullable
@@ -72,21 +73,22 @@ class TestSubscriberTest {
 	@Test
 	void requestAccumulatesIfNotSubscribed() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().initialRequest(0L).build();
-		testSubscriber.request(1);
+		DefaultTestSubscriber<Integer> underTest = (DefaultTestSubscriber<Integer>) testSubscriber;
+		underTest.request(1);
 
-		assertThat(testSubscriber.requestedTotal)
+		assertThat(underTest.requestedTotal)
 				.as("requestedTotal before subscribe")
 				.isZero();
-		assertThat(testSubscriber.requestedPreSubscription)
+		assertThat(underTest.requestedPreSubscription)
 				.as("requestedPreSubscription before subscribe")
 				.isEqualTo(1L);
 
-		testSubscriber.onSubscribe(Operators.emptySubscription());
+		underTest.onSubscribe(Operators.emptySubscription());
 
-		assertThat(testSubscriber.requestedTotal)
+		assertThat(underTest.requestedTotal)
 				.as("requestedTotal after subscribe")
 				.isEqualTo(1L);
-		assertThat(testSubscriber.requestedPreSubscription)
+		assertThat(underTest.requestedPreSubscription)
 				.as("requestedPreSubscription after subscribe")
 				.isEqualTo(-1L);
 	}
@@ -94,21 +96,22 @@ class TestSubscriberTest {
 	@Test
 	void requestAccumulatedIfNotSubscribedStartsWithInitialRequest() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().initialRequest(123L).build();
-		testSubscriber.request(1);
+		DefaultTestSubscriber<Integer> underTest = (DefaultTestSubscriber<Integer>) testSubscriber;
+		underTest.request(1);
 
-		assertThat(testSubscriber.requestedTotal)
+		assertThat(underTest.requestedTotal)
 				.as("requestedTotal before subscribe")
 				.isZero();
-		assertThat(testSubscriber.requestedPreSubscription)
+		assertThat(underTest.requestedPreSubscription)
 				.as("requestedPreSubscription before subscribe")
 				.isEqualTo(124L);
 
-		testSubscriber.onSubscribe(Operators.emptySubscription());
+		underTest.onSubscribe(Operators.emptySubscription());
 
-		assertThat(testSubscriber.requestedTotal)
+		assertThat(underTest.requestedTotal)
 				.as("requestedTotal after subscribe")
 				.isEqualTo(124L);
-		assertThat(testSubscriber.requestedPreSubscription)
+		assertThat(underTest.requestedPreSubscription)
 				.as("requestedPreSubscription after subscribe")
 				.isEqualTo(-1L);
 	}
@@ -330,7 +333,7 @@ class TestSubscriberTest {
 	void requireFusionNoneAcceptsVanillaSubscription() {
 		final Subscription mock = Mockito.mock(Subscription.class);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
+		final DefaultTestSubscriber<Object> subscriber = (DefaultTestSubscriber<Object>) TestSubscriber.builder()
 				.requireFusion(Fuseable.NONE)
 				.build();
 
@@ -343,7 +346,7 @@ class TestSubscriberTest {
 	void requireFusionNoneNoneAcceptsVanillaSubscription() {
 		final Subscription mock = Mockito.mock(Subscription.class);
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
+		final DefaultTestSubscriber<Object> subscriber = (DefaultTestSubscriber<Object>) TestSubscriber.builder()
 				.requireFusion(Fuseable.NONE, Fuseable.NONE)
 				.build();
 
@@ -356,7 +359,7 @@ class TestSubscriberTest {
 	void syncPollInterruptedByCancel() {
 		AtomicInteger source = new AtomicInteger();
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.builder()
+		final DefaultTestSubscriber<Object> subscriber = (DefaultTestSubscriber<Object>) TestSubscriber.builder()
 				.requireFusion(Fuseable.ANY, Fuseable.SYNC)
 				.build();
 
@@ -458,7 +461,7 @@ class TestSubscriberTest {
 		AtomicBoolean extraSubCancelled = new AtomicBoolean();
 		Mockito.doAnswer(inv -> { extraSubCancelled.set(true); return null; }).when(extraSub).cancel();
 
-		final TestSubscriber<Object> subscriber = TestSubscriber.create();
+		final DefaultTestSubscriber<Object> subscriber = new DefaultTestSubscriber<>(new TestSubscriberBuilder());
 
 		subscriber.onSubscribe(sub);
 		subscriber.onSubscribe(extraSub);
@@ -566,12 +569,15 @@ class TestSubscriberTest {
 
 	@Test
 	void onNextNullWhenSyncFusionWithConcurrentOnNext() {
+		@SuppressWarnings("unchecked")
 		final Fuseable.QueueSubscription<Integer> mock = Mockito.mock(Fuseable.QueueSubscription.class);
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC);
 
-		final TestSubscriber<Integer> subscriber = TestSubscriber.builder()
+		final TestSubscriber<Integer> subscriberAbstract = TestSubscriber.builder()
 				.requireFusion(Fuseable.SYNC)
 				.build();
+		//massaging the type system to get to the state
+		final DefaultTestSubscriber<Integer> subscriber = (DefaultTestSubscriber<Integer>) subscriberAbstract;
 
 		//this is an artificial way of getting in the state where that message occurs,
 		//since it is hard to deterministically trigger (it would imply a badly formed
@@ -634,7 +640,7 @@ class TestSubscriberTest {
 			return null;
 		}).when(mock).cancel();
 
-		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		DefaultTestSubscriber<Integer> testSubscriber = new DefaultTestSubscriber<>(new TestSubscriberBuilder());
 		testSubscriber.onSubscribe(mock);
 
 		//force something that shouldn't happen
@@ -745,7 +751,8 @@ class TestSubscriberTest {
 		testSubscriber.onSubscribe(mock);
 
 		//force something that shouldn't happen
-		testSubscriber.terminalSignal = Signal.next(1);
+		DefaultTestSubscriber<Integer> underTest = (DefaultTestSubscriber<Integer>) testSubscriber;
+		underTest.terminalSignal = Signal.next(1);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(testSubscriber::expectTerminalError)
@@ -913,7 +920,7 @@ class TestSubscriberTest {
 	@Test
 	void checkSubscriptionFailureCalledByAllAccessors() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
-		testSubscriber.subscriptionFail("expected");
+		((DefaultTestSubscriber<Integer>) testSubscriber).subscriptionFail("expected");
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(testSubscriber::isTerminatedOrCancelled)
@@ -937,6 +944,9 @@ class TestSubscriberTest {
 	void scanSubscriber_completed() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
 
+		//smoke test expected class
+		assertThat(testSubscriber).isExactlyInstanceOf(DefaultTestSubscriber.class);
+
 		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before complete").isFalse();
 
 		testSubscriber.onComplete();
@@ -948,6 +958,9 @@ class TestSubscriberTest {
 	@Test
 	void scanSubscriber_error() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		//smoke test expected class
+		assertThat(testSubscriber).isExactlyInstanceOf(DefaultTestSubscriber.class);
 
 		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before onError").isFalse();
 		assertThat(testSubscriber.scan(Scannable.Attr.ERROR)).as("ERROR before onError").isNull();
@@ -963,10 +976,13 @@ class TestSubscriberTest {
 	void scanSubscriber_subscriptionFailReflected() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
 
+		//smoke test expected class
+		assertThat(testSubscriber).isExactlyInstanceOf(DefaultTestSubscriber.class);
+
 		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED before onError").isFalse();
 		assertThat(testSubscriber.scan(Scannable.Attr.ERROR)).as("ERROR before onError").isNull();
 
-		testSubscriber.subscriptionFail("expected");
+		((DefaultTestSubscriber<Integer>) testSubscriber).subscriptionFail("expected");
 
 		assertThat(testSubscriber.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after subscriptionFail").isTrue();
 		assertThat(testSubscriber.scan(Scannable.Attr.ERROR))
@@ -978,6 +994,9 @@ class TestSubscriberTest {
 	@Test
 	void scanSubscriber_cancelled() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+		//smoke test expected class
+		assertThat(testSubscriber).isExactlyInstanceOf(DefaultTestSubscriber.class);
 
 		assertThat(testSubscriber.scan(Scannable.Attr.CANCELLED)).as("CANCELLED before").isFalse();
 
@@ -992,6 +1011,9 @@ class TestSubscriberTest {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder()
 				.initialRequest(123L)
 				.build();
+
+		//smoke test expected class
+		assertThat(testSubscriber).isExactlyInstanceOf(DefaultTestSubscriber.class);
 
 		assertThat(testSubscriber.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(Scannable.Attr.RunStyle.SYNC);
 		assertThat(testSubscriber.scan(Scannable.Attr.PARENT))

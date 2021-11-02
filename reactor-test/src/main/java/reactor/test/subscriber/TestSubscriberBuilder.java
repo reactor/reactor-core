@@ -40,15 +40,15 @@ import reactor.util.context.ContextView;
 public final class TestSubscriberBuilder {
 
 	long                             initialRequest;
-	Context                          context;
-	TestSubscriber.FusionRequirement fusionRequirement;
-	int                              requestedFusionMode;
+	Context                                 context;
+	DefaultTestSubscriber.FusionRequirement fusionRequirement;
+	int                                     requestedFusionMode;
 	int                              expectedFusionMode;
 
 	TestSubscriberBuilder() {
 		this.initialRequest = Long.MAX_VALUE;
 		this.context = Context.empty();
-		this.fusionRequirement = TestSubscriber.FusionRequirement.NONE;
+		this.fusionRequirement = DefaultTestSubscriber.FusionRequirement.NONE;
 		this.requestedFusionMode = Fuseable.NONE;
 		this.expectedFusionMode = Fuseable.NONE;
 	}
@@ -56,7 +56,7 @@ public final class TestSubscriberBuilder {
 	/**
 	 * Enrich the {@link Context} with a single entry.
 	 *
-	 * @param key the key to put/set in the {@link Context} of the future {@link TestSubscriber}
+	 * @param key the key to put/set in the {@link Context} of the future {@link DefaultTestSubscriber}
 	 * @param value the value to associate with the key
 	 * @return this builder, mutated to have the key/value pair added to the {@link Context}
 	 */
@@ -68,7 +68,7 @@ public final class TestSubscriberBuilder {
 	/**
 	 * Enrich the {@link Context} by putting all entries of the given {@link ContextView} in it.
 	 *
-	 * @param toAdd the {@link ContextView} to add to the {@link Context} of the future {@link TestSubscriber}
+	 * @param toAdd the {@link ContextView} to add to the {@link Context} of the future {@link DefaultTestSubscriber}
 	 * @return this builder, mutated to have all {@link ContextView}'s key/value pairs added to the {@link Context}
 	 */
 	public TestSubscriberBuilder contextPutAll(ContextView toAdd) {
@@ -101,7 +101,7 @@ public final class TestSubscriberBuilder {
 	}
 
 	/**
-	 * Expect fusion to be possible with the {@link TestSubscriber}, with {@link Fuseable#NONE}) being a special case.
+	 * Expect fusion to be possible with the {@link DefaultTestSubscriber}, with {@link Fuseable#NONE}) being a special case.
 	 * Fusion will be negotiated at subscription, enforcing the need for a {@link reactor.core.Fuseable.QueueSubscription} to be passed.
 	 * Furthermore, the fusion mode returned from the negotiation with the {@link reactor.core.Fuseable.QueueSubscription}
 	 * is expected to be the same as the provided mode.
@@ -118,7 +118,7 @@ public final class TestSubscriberBuilder {
 	}
 
 	/**
-	 * Expect fusion to be possible with the {@link TestSubscriber}, with both parameters set to {@link Fuseable#NONE} being a special case.
+	 * Expect fusion to be possible with the {@link DefaultTestSubscriber}, with both parameters set to {@link Fuseable#NONE} being a special case.
 	 * Fusion will be negotiated at subscription, enforcing the need for a {@link reactor.core.Fuseable.QueueSubscription} to be passed.
 	 * Furthermore, the {@code negotiatedMode} is expected to be negotiated by the subscription
 	 * in response to requesting {@code requestedMode}.
@@ -133,10 +133,10 @@ public final class TestSubscriberBuilder {
 	 */
 	public TestSubscriberBuilder requireFusion(int requestedMode, int negotiatedMode) {
 		if (requestedMode == negotiatedMode && negotiatedMode == Fuseable.NONE) {
-			this.fusionRequirement = TestSubscriber.FusionRequirement.NONE;
+			this.fusionRequirement = DefaultTestSubscriber.FusionRequirement.NONE;
 		}
 		else {
-			this.fusionRequirement = TestSubscriber.FusionRequirement.FUSEABLE;
+			this.fusionRequirement = DefaultTestSubscriber.FusionRequirement.FUSEABLE;
 		}
 		this.requestedFusionMode = requestedMode;
 		this.expectedFusionMode = negotiatedMode;
@@ -144,40 +144,40 @@ public final class TestSubscriberBuilder {
 	}
 
 	/**
-	 * Enforce that the {@link Subscription} passed to the {@link TestSubscriber} isn't a {@link reactor.core.Fuseable.QueueSubscription}.
+	 * Enforce that the {@link Subscription} passed to the {@link DefaultTestSubscriber} isn't a {@link reactor.core.Fuseable.QueueSubscription}.
 	 * This is stricter than {@code requireFusion(Fuseable.NONE, Fuseable.NONE)}, which merely disables fusion but still accepts
 	 * the incoming subscription to be a QueueSubscription.
 	 *
 	 * @return this builder, mutated to reject all {@link reactor.core.Fuseable.QueueSubscription}
 	 */
 	public TestSubscriberBuilder requireNotFuseable() {
-		this.fusionRequirement = TestSubscriber.FusionRequirement.NOT_FUSEABLE;
+		this.fusionRequirement = DefaultTestSubscriber.FusionRequirement.NOT_FUSEABLE;
 		this.requestedFusionMode = Fuseable.NONE;
 		this.expectedFusionMode = Fuseable.NONE;
 		return this;
 	}
 
 	/**
-	 * Create a {@link reactor.core.Fuseable.ConditionalSubscriber} variant of {@link TestSubscriber} according
+	 * Create a {@link reactor.core.Fuseable.ConditionalSubscriber} variant of {@link DefaultTestSubscriber} according
 	 * to this builder.
 	 * The provided {@link Predicate} will be used as the implementation
 	 * of {@link reactor.core.Fuseable.ConditionalSubscriber#tryOnNext(Object)}.
 	 *
 	 * @param tryOnNext the {@link Predicate} to use as the {@link reactor.core.Fuseable.ConditionalSubscriber#tryOnNext tryOnNext} implementation
-	 * @param <T> the type of elements received by the {@link TestSubscriber}, defined by the predicate
-	 * @return a {@link TestSubscriber} that implements {@link reactor.core.Fuseable.ConditionalSubscriber}
+	 * @param <T> the type of elements received by the {@link DefaultTestSubscriber}, defined by the predicate
+	 * @return a {@link DefaultTestSubscriber} that implements {@link reactor.core.Fuseable.ConditionalSubscriber}
 	 */
 	public <T> ConditionalTestSubscriber<T> buildConditional(Predicate<? super T> tryOnNext) {
-		return new ConditionalTestSubscriber<>(this, tryOnNext);
+		return new DefaultConditionalTestSubscriber<T>(this, tryOnNext);
 	}
 
 	/**
-	 * Create a {@link TestSubscriber} according to this builder.
+	 * Create a {@link DefaultTestSubscriber} according to this builder.
 	 *
 	 * @param <T> the type of elements to be received by the subscriber
-	 * @return a new plain {@link TestSubscriber}
+	 * @return a new plain {@link DefaultTestSubscriber}
 	 */
 	public <T> TestSubscriber<T> build() {
-		return new TestSubscriber<>(this);
+		return new DefaultTestSubscriber<>(this);
 	}
 }

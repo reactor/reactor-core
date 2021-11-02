@@ -32,7 +32,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.THROWABLE;
 /**
  * @author Simon Baslé
  */
-class ConditionalTestSubscriberTest {
+class DefaultConditionalTestSubscriberTest {
 
 	@Test
 	void tryOnNextPassesAddsToList() {
