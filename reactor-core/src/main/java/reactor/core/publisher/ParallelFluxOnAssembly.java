@@ -20,7 +20,6 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.annotation.Nullable;
 
@@ -96,7 +95,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
-		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;

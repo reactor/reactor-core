@@ -79,7 +79,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ACTUAL_METADATA) return !snapshotStack.checkpointed;
+		if (key == Attr.ACTUAL_METADATA) return !snapshotStack.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);
@@ -134,7 +134,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	 */
 	static class AssemblySnapshot {
 
-		final boolean          checkpointed;
+		final boolean          isCheckpoint;
 		@Nullable
 		final String           description;
 		@Nullable
@@ -150,22 +150,30 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		AssemblySnapshot(String assemblyInformation) {
-			this.checkpointed = false;
+			this.isCheckpoint = false;
 			this.description = null;
 			this.assemblyInformationSupplier = null;
 			this.cached = assemblyInformation;
 		}
 
-		private AssemblySnapshot(boolean checkpointed, @Nullable String description,
+		private AssemblySnapshot(boolean isCheckpoint, @Nullable String description,
 								 @Nullable Supplier<String> assemblyInformationSupplier) {
-			this.checkpointed = checkpointed;
+			this.isCheckpoint = isCheckpoint;
 			this.description = description;
 			this.assemblyInformationSupplier = assemblyInformationSupplier;
+		}
+
+		public boolean hasDescription() {
+			return this.description != null;
 		}
 
 		@Nullable
 		public String getDescription() {
 			return description;
+		}
+
+		public boolean isCheckpoint() {
+			return this.isCheckpoint;
 		}
 
 		public boolean isLight() {
@@ -191,11 +199,11 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 	}
 
-	static final class AssemblyLightSnapshot extends AssemblySnapshot {
+	static final class CheckpointLightSnapshot extends AssemblySnapshot {
 
-		AssemblyLightSnapshot(@Nullable String description) {
+		CheckpointLightSnapshot(@Nullable String description) {
 			super(true, description, null);
-			cached = "checkpoint(\"" + description + "\")";
+			this.cached = "checkpoint(\"" + (description == null ? "" : description) + "\")";
 		}
 
 		@Override
@@ -215,10 +223,26 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 	}
 
+	static final class CheckpointHeavySnapshot extends AssemblySnapshot {
+
+		CheckpointHeavySnapshot(@Nullable String description, Supplier<String> assemblyInformationSupplier) {
+			super(true, description, assemblyInformationSupplier);
+		}
+
+		/**
+		 * The lightPrefix is used despite the exception not being a light one (it will have a callsite supplier).
+		 * @return the heavy checkpoint prefix, with description if relevant (eg. "checkpoint(heavy)")
+		 */
+		@Override
+		public String lightPrefix() {
+			return "checkpoint(" + (description == null ? "" : description) + ")";
+		}
+	}
+
 	static final class MethodReturnSnapshot extends AssemblySnapshot {
 
 		MethodReturnSnapshot(String method) {
-			super(true, method, null);
+			super(false, method, null);
 			cached = method;
 		}
 
@@ -320,8 +344,24 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		void add(Publisher<?> parent, Publisher<?> current, AssemblySnapshot snapshot) {
-			if (snapshot.isLight()) {
-				add(parent, current, snapshot.lightPrefix(), Objects.requireNonNull(snapshot.getDescription()));
+			if (snapshot.isCheckpoint()) {
+				if (snapshot.isLight()) {
+					add(parent, current, snapshot.lightPrefix(), Objects.requireNonNull(snapshot.getDescription()));
+				}
+				else {
+					String assemblyInformation = snapshot.toAssemblyInformation();
+					String[] parts = Traces.extractOperatorAssemblyInformationParts(assemblyInformation);
+
+					if (parts.length > 0) {
+						//we ignore the first part if there are two (classname and callsite). only use the line part
+						String line = parts[parts.length - 1];
+						add(parent, current, snapshot.lightPrefix(), line);
+					}
+					else {
+						//should not happen with heavy checkpoints
+						add(parent, current, snapshot.lightPrefix(), Objects.requireNonNull(snapshot.getDescription()));
+					}
+				}
 			}
 			else {
 				String assemblyInformation = snapshot.toAssemblyInformation();
@@ -476,7 +516,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.ACTUAL_METADATA) return !snapshotStack.checkpointed;
+			if (key == Attr.ACTUAL_METADATA) return !snapshotStack.isCheckpoint;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
