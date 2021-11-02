@@ -4,6 +4,7 @@ on:
     branches: # For branches, better to list them explicitly than regexp include
       - main
       - 3.3.x
+      - gen4
 jobs:
   # General job notes: we DON'T want to cancel any previous runs, especially in the case of a "back to snapshots" build right after a release push
   # We specify the ubuntu version to minimize the chances we have to deal with a migration during a release
