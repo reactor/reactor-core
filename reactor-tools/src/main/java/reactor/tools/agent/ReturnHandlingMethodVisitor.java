@@ -64,7 +64,7 @@ class ReturnHandlingMethodVisitor extends MethodVisitor {
             String currentSource,
             AtomicBoolean changed
     ) {
-        super(Opcodes.ASM7, visitor);
+        super(Opcodes.ASM9, visitor);
         this.changed = changed;
         this.currentClassName = currentClassName;
         this.currentMethod = currentMethod;
