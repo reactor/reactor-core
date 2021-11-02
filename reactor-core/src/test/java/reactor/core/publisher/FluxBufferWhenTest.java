@@ -580,7 +580,7 @@ public class FluxBufferWhenTest {
 
 		StepVerifier.create(source.flux()
 								  .bufferWhen(open, o -> close)
-								  .take(1), 2)
+								  .take(1, false), 2)
 					.then(() -> {
 						open.next(1);
 						close.complete();
@@ -602,7 +602,7 @@ public class FluxBufferWhenTest {
 
 		StepVerifier.create(source.flux()
 								  .bufferWhen(open, o -> close)
-								  .limitRequest(1))
+								  .take(1))
 					.then(() -> {
 						open.next(1);
 						close.complete();
@@ -843,7 +843,7 @@ public class FluxBufferWhenTest {
 	public void discardOnOpenError() {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ZERO, Duration.ofMillis(100)) // 0, 1, 2
 											   .map(Long::intValue)
-											   .take(3)
+											   .take(3, false)
 											   .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)), u -> (u == 2) ? null : Mono.never()))
 					.thenAwait(Duration.ofSeconds(2))
 					.expectErrorMessage("The bufferClose returned a null Publisher")
@@ -855,7 +855,7 @@ public class FluxBufferWhenTest {
 	public void discardOnBoundaryError() {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ZERO, Duration.ofMillis(100)) // 0, 1, 2
 											   .map(Long::intValue)
-											   .take(3)
+											   .take(3, false)
 											   .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)), u -> (u == 2) ? Mono.error(new IllegalStateException("boom")) : Mono.never()))
 					.thenAwait(Duration.ofSeconds(2))
 					.expectErrorMessage("boom")

@@ -739,7 +739,7 @@ Flux.just("foo", "bar")
 <1> `doFinally` consumes a `SignalType` for the type of termination.
 <2> Similarly to `finally` blocks, we always record the timing.
 <3> Here we also increment statistics in case of cancellation only.
-<4> `take(1)` cancels after one item is emitted.
+<4> `take(1)` requests exactly 1 from upstream, and cancels after one item is emitted.
 ====
 
 On the other hand, `using` handles the case where a `Flux` is derived from a

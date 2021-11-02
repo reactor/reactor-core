@@ -183,7 +183,7 @@ public class FluxFilterWhenTest {
 	public void take() {
 		StepVerifier.create(Flux.range(1, 10)
 		                        .filterWhen(v -> Mono.just(v % 2 == 0).hide())
-		                        .take(1))
+		                        .take(1, false))
 		            .expectNext(2)
 		            .verifyComplete();
 	}

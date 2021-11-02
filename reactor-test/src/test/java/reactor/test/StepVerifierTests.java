@@ -646,7 +646,7 @@ public class StepVerifierTests {
 		long interval = 200;
 		Flux<String> flux = Flux.interval(Duration.ofMillis(interval))
 		                        .map(l -> "foo")
-		                        .take(2);
+		                        .take(2, false);
 
 		Duration duration = StepVerifier.create(flux)
 		                                .thenAwait(Duration.ofSeconds(100))
@@ -662,7 +662,7 @@ public class StepVerifierTests {
 	public void verifyDurationTimeout() {
 		Flux<String> flux = Flux.interval(Duration.ofMillis(200))
 		                        .map(l -> "foo")
-		                        .take(2);
+		                        .take(2, false);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> StepVerifier.create(flux)
@@ -1035,7 +1035,7 @@ public class StepVerifierTests {
 	@Test
 	public void verifyVirtualTimeNoEventInterval() {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
-		                                       .take(2))
+		                                       .take(2, false))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(3))
 		            .expectNext(0L)
@@ -1050,7 +1050,7 @@ public class StepVerifierTests {
 	public void verifyVirtualTimeNoEventIntervalError() {
 		Throwable thrown = catchThrowable(() ->
 				StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
-				                                       .take(2))
+				                                       .take(2, false))
 				            .expectSubscription()
 				            .expectNoEvent(Duration.ofSeconds(3))
 				            .expectNext(0L)
@@ -1997,7 +1997,7 @@ public class StepVerifierTests {
 	@Test
 	public void takeAsyncFusedBackpressured() {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
-		StepVerifier.create(up.asFlux().take(3), 0)
+		StepVerifier.create(up.asFlux().take(3, false), 0)
 		            .expectFusion()
 		            .then(() -> up.emitNext("test", FAIL_FAST))
 		            .then(() -> up.emitNext("test", FAIL_FAST))
@@ -2012,7 +2012,7 @@ public class StepVerifierTests {
 	@Test
 	public void cancelAsyncFusion() {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
-		StepVerifier.create(up.asFlux().take(3), 0)
+		StepVerifier.create(up.asFlux().take(3, false), 0)
 		            .expectFusion()
 		            .then(() -> up.emitNext("test", FAIL_FAST))
 		            .then(() -> up.emitNext("test", FAIL_FAST))
@@ -2042,7 +2042,7 @@ public class StepVerifierTests {
 	public void virtualTimeSchedulerVeryLong() {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofMillis(1))
 		                                       .map(tick -> new Date())
-		                                       .take(100000)
+		                                       .take(100000, false)
 		                                       .collectList())
 		            .thenAwait(Duration.ofHours(1000))
 		            .consumeNextWith(list -> assertTrue(list.size() == 100000))
@@ -2155,7 +2155,7 @@ public class StepVerifierTests {
 			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
 			                                       return interval.map( tick -> message);
 		                                       })
-		                                       .take(size)
+		                                       .take(size, false)
 		                                       .collectList()
 		)
 		            .thenAwait(Duration.ofHours(1))
@@ -2175,7 +2175,7 @@ public class StepVerifierTests {
 			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
 			                                       return interval.map( tick -> message);
 		                                       }, 30,1)
-		                                       .take(size)
+		                                       .take(size, false)
 		                                       .collectList()
 		)
 		            .thenAwait(Duration.ofHours(2))
@@ -2200,7 +2200,7 @@ public class StepVerifierTests {
 			                                                                            .subscribeOn(parallel))
 			                                                      .subscribeOn(parallel);
 		                                       }, 1,30)
-		                                       .take(size)
+		                                       .take(size, false)
 		                                       .collectList()
 		)
 		            .thenAwait(Duration.ofMillis(1500 * (size + 10)))
@@ -2211,7 +2211,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void gh783_intervalFullyEmitted() {
-		StepVerifier.withVirtualTime(() -> Flux.just("foo").flatMap(message -> Flux.interval(Duration.ofMinutes(5)).take(12)))
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").flatMap(message -> Flux.interval(Duration.ofMinutes(5)).take(12, false)))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMinutes(5))
 		            .expectNext(0L)
@@ -2225,7 +2225,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void gh783_firstSmallAdvance() {
-		StepVerifier.withVirtualTime(() -> Flux.just("foo").flatMap(message -> Flux.interval(Duration.ofMinutes(5)).take(12)))
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").flatMap(message -> Flux.interval(Duration.ofMinutes(5)).take(12, false)))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMinutes(3))
 		            .thenAwait(Duration.ofHours(1))

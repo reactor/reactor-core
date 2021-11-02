@@ -120,7 +120,7 @@ public class FluxRepeatTest {
 
 		Flux.range(1, 2)
 		    .repeat()
-		    .take(9)
+		    .take(9, false)
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 1, 2, 1, 2, 1, 2, 1)

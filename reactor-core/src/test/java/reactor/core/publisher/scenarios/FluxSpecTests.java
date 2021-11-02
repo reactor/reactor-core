@@ -220,7 +220,7 @@ public class FluxSpecTests {
 		return Flux.range(1, Integer.MAX_VALUE)
 		           .delayElements(Duration.ofMillis(100))
 		           .sample(Duration.ofSeconds(4))
-		           .take(1);
+		           .take(1, false);
 	}
 
 	@Test
@@ -1047,7 +1047,7 @@ public class FluxSpecTests {
 		return Flux.range(0, 10000)
 		           .delayElements(Duration.ofMillis(150))
 		           .elapsed()
-		           .take(10)
+		           .take(10, false)
 		           .reduce(0L,
 				           (acc, next) -> acc > 0l ? ((next.getT1() + acc) / 2) :
 						           next.getT1());
@@ -1066,7 +1066,7 @@ public class FluxSpecTests {
 		return Flux.range(0, 10000)
 		           .delayElements(Duration.ofMillis(150))
 		           .elapsed()
-		           .take(10)
+		           .take(10, false)
 		           .reduce(0L,
 				           (acc, next) -> acc > 0l ? ((next.getT1() + acc) / 2) :
 						           next.getT1());

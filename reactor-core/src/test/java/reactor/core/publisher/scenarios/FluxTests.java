@@ -1470,7 +1470,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		try {
 			Flux.interval(Duration.ofMillis(100))
-			    .take(1)
+			    .take(1, false)
 			    .publishOn(Schedulers.parallel())
 			    .doOnCancel(latch::countDown)
 			    .subscribe(i -> {

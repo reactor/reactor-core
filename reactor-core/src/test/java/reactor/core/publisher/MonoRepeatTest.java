@@ -129,7 +129,7 @@ public class MonoRepeatTest {
 		AtomicInteger i = new AtomicInteger();
 		Mono.fromCallable(i::incrementAndGet)
 		    .repeat()
-		    .take(9)
+		    .take(9, false)
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9)

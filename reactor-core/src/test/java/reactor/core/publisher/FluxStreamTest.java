@@ -478,7 +478,7 @@ public class FluxStreamTest {
 
 		Flux.fromStream(stream)
 		    .publishOn(Schedulers.single())
-		    .take(10)
+		    .take(10, false)
 		    .doOnDiscard(Integer.class, i -> {})
 		    .blockLast(Duration.ofSeconds(1));
 

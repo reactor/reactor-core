@@ -1080,7 +1080,7 @@ class FluxCreateTest {
 			s.onDispose(() -> queue.close());
 		}, overflowStrategy);
 
-		StepVerifier.create(created.take(count).publishOn(Schedulers.parallel(), 1000))
+		StepVerifier.create(created.take(count, false).publishOn(Schedulers.parallel(), 1000))
 		            .expectNextCount(count)
 		            .expectComplete()
 		            .verify();
@@ -1271,7 +1271,7 @@ class FluxCreateTest {
 				.currentContext()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
-		                        .take(10)
+		                        .take(10, false)
 		                        .contextWrite(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -1284,7 +1284,7 @@ class FluxCreateTest {
 				.currentContext()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
-		                        .take(10)
+		                        .take(10, false)
 		                        .contextWrite(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)

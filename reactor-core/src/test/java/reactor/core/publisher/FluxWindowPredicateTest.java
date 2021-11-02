@@ -325,7 +325,7 @@ public class FluxWindowPredicateTest extends
 				    .map(retainedDetector::tracked)
 				    .concatWith(Mono.error(new Throwable("unexpected")))
 				    .windowUntilChanged()
-				    .take(50);
+				    .take(50, false);
 
 
 		StepVerifier.create(test)
@@ -904,7 +904,7 @@ public class FluxWindowPredicateTest extends
 		StepVerifier.create(Flux.just("red", "green", "#", "black", "white")
 		                        .log()
 		                        .windowWhile(s -> !s.equals("#"))
-		                        .flatMap(w -> w.take(1)))
+		                        .flatMap(w -> w.take(1, false)))
 		            .expectNext("red")
 		            .thenCancel()
 		            .verify();
@@ -1069,7 +1069,7 @@ public class FluxWindowPredicateTest extends
 		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
 		    .windowWhile(i -> i > 0, 1)
 		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-		                     .take(1).contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		                     .take(1, false).contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
 		    .log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
 		    .contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
 		    // stalls and times out without the fix due to insufficient request to upstream
@@ -1094,7 +1094,7 @@ public class FluxWindowPredicateTest extends
 		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
 		    .windowUntil(i -> i == 0, false, 1)
 		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-		                     .take(1).contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		                     .take(1, false).contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
 		    .log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
 		    .contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
 		    // stalls and times out without the fix due to insufficient request to upstream
@@ -1119,7 +1119,7 @@ public class FluxWindowPredicateTest extends
 		    .log("source", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
 		    .windowUntil(i -> i == 0, true, 1)
 		    .concatMap(w -> w.log("win", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
-		                     .take(1).contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
+		                     .take(1, false).contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add)))
 			.log("out", Level.FINE, ON_NEXT, REQUEST, ON_COMPLETE, CANCEL)
 		    .contextWrite(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add))
 		    // stalls and times out without the fix due to insufficient request to upstream

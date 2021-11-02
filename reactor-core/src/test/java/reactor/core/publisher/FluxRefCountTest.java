@@ -55,7 +55,7 @@ public class FluxRefCountTest {
 		test.subscribe(v -> {
 		}, e -> unexpectedCancellation.set(true));
 
-		StepVerifier.create(test.take(3))
+		StepVerifier.create(test.take(3, false))
 					.expectNextCount(3)
 					.verifyComplete();
 

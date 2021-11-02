@@ -42,7 +42,7 @@ public class FluxDelaySequenceTest {
 		Supplier<Flux<Tuple2<Long, Long>>> test = () -> Flux.interval(Duration.ofMillis(50))
 	                                                    .delaySequence(Duration.ofMillis(500))
 	                                                    .elapsed()
-	                                                        .take(33);
+	                                                    .take(33, false);
 
 		StepVerifier.withVirtualTime(test)
 		            .thenAwait(Duration.ofMillis(500 + 50))
@@ -73,7 +73,7 @@ public class FluxDelaySequenceTest {
 
 			return asymmetricDelays
 					.delaySequence(Duration.ofMillis(500))
-					.take(33)
+					.take(33, false)
 					.elapsed();
 		};
 
@@ -109,7 +109,7 @@ public class FluxDelaySequenceTest {
 		Flux<Tuple2<Long, Long>> test = Flux.interval(Duration.ofMillis(50))
 		                                    .onBackpressureDrop()
 		                                    .delayElements(Duration.ofMillis(500))
-		                                    .take(33)
+		                                    .take(33, false)
 		                                    .elapsed()
 		                                    .log();
 

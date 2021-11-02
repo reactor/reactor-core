@@ -160,7 +160,7 @@ public class FluxRepeatWhenTest {
 		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
 		                           .doOnCancel(() -> sourceCancelled.set(true));
 
-		Flux<Integer> repeat = source.repeatWhen(other -> other.take(1));
+		Flux<Integer> repeat = source.repeatWhen(other -> other.take(1, false));
 
 		StepVerifier.create(repeat)
 		            .expectSubscription()
@@ -377,7 +377,7 @@ public class FluxRepeatWhenTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRepeatWhen<Integer> test = new FluxRepeatWhen<>(parent, c -> c.take(3));
+		FluxRepeatWhen<Integer> test = new FluxRepeatWhen<>(parent, c -> c.take(3, false));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

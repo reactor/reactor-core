@@ -581,13 +581,12 @@ public class GuideTests {
 	public void errorHandlingDoFinally() {
 		LongAdder statsCancel = new LongAdder(); // <1>
 
-		Flux<String> flux =
-				Flux.just("foo", "bar")
-				    .doFinally(type -> {
-					    if (type == SignalType.CANCEL) // <2>
-						    statsCancel.increment(); // <3>
-				    })
-				    .take(1); // <4>
+		Flux<String> flux = Flux.just("foo", "bar")
+			.doFinally(type -> {
+				if (type == SignalType.CANCEL) // <2>
+					statsCancel.increment(); // <3>
+			})
+			.take(1); // <4>
 
 		StepVerifier.create(flux)
 	                .expectNext("foo")
@@ -660,7 +659,7 @@ public class GuideTests {
 		Flux.<String>error(new IllegalArgumentException()) // <1>
 				.doOnError(System.out::println) // <2>
 				.retryWhen(Retry.from(companion -> // <3>
-						companion.take(3))); // <4>
+						companion.take(3, false))); // <4>
 
 		StepVerifier.create(flux)
 	                .verifyComplete();

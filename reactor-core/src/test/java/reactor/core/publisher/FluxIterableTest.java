@@ -299,7 +299,7 @@ public class FluxIterableTest {
 
 		Flux.fromIterable(one)
 		    .publishOn(Schedulers.single())
-		    .take(10)
+		    .take(10, false)
 		    .doOnDiscard(Integer.class, i -> discardCount.incrementAndGet())
 		    .blockLast(Duration.ofSeconds(1));
 

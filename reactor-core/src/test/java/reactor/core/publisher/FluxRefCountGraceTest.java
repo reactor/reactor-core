@@ -54,7 +54,7 @@ public class FluxRefCountGraceTest {
 					.refCount(1, Duration.ofSeconds(200));
 
 			return Flux.merge(
-					multiplex.take(1),
+					multiplex.take(1, false),
 					Mono.delay(Duration.ofSeconds(5))
 					    .flatMapMany(ignore -> multiplex
 					    .materialize().elapsed().map(Object::toString))
@@ -88,7 +88,7 @@ public class FluxRefCountGraceTest {
 					.refCount(1, Duration.ofSeconds(200));
 
 			return Flux.merge(
-					multiplex.take(1),
+					multiplex.take(1, false),
 					Mono.delay(Duration.ofSeconds(5)).flatMapMany(ignore -> multiplex
 							.materialize().elapsed().map(Object::toString))
 			);
@@ -119,7 +119,7 @@ public class FluxRefCountGraceTest {
 					.refCount(1, Duration.ofSeconds(200));
 
 			return Flux.merge(
-					multiplex.take(1),
+					multiplex.take(1, false),
 					Mono.delay(Duration.ofSeconds(5))
 					    .flatMapMany(ignore -> multiplex
 					    .materialize().elapsed().map(Object::toString))
@@ -152,7 +152,7 @@ public class FluxRefCountGraceTest {
 					.refCount(1, Duration.ofSeconds(200));
 
 			return Flux.merge(
-					multiplex.take(1),
+					multiplex.take(1, false),
 					Mono.delay(Duration.ofSeconds(5)).flatMapMany(ignore -> multiplex
 							.materialize().elapsed().map(Object::toString))
 			);
@@ -181,7 +181,7 @@ public class FluxRefCountGraceTest {
 
 		test.subscribe(v -> {}, e -> unexpectedCancellation.set(true));
 
-		StepVerifier.create(test.take(3))
+		StepVerifier.create(test.take(3, false))
 		            .expectNextCount(3)
 		            .verifyComplete();
 

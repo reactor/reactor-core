@@ -522,7 +522,7 @@ class FluxMergeOrderedTest {
 	void take() {
 		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
-				.take(5)
+				.take(5, false)
 				.as(StepVerifier::create)
 				.expectNext(1, 2, 3, 4, 5)
 				.verifyComplete();
