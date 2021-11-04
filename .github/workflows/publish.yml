@@ -29,7 +29,9 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      run: ./gradlew check -Pjunit-tags=!slow
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: check -Pjunit-tags=!slow
 
   slowerChecks:
     # similar limitations as in prepare, but we parallelize slower tests here
@@ -43,7 +45,9 @@ jobs:
           java-version: 8
       - name: run slower tests
         id: slowerTests
-        run: ./gradlew test -Pjunit-tags=slow
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: test -Pjunit-tags=slow
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
