@@ -16,6 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
@@ -749,6 +753,27 @@ class FluxOnAssemblyTest {
 		StepVerifier.create(tested)
 		            .verifyErrorSatisfies(t -> assertThat(t).hasStackTraceContaining(
 				            "The stacktrace should have been enhanced by Reactor, but there was no message in OnAssemblyException"));
+	}
+
+	@Test
+	void onAssemblyExeptionSerializable() throws IOException {
+		Hooks.onOperatorDebug();
+		IllegalStateException sharedError = new IllegalStateException("shared");
+		int baseline = getBaseline();
+		Flux<String> source = Flux.error(sharedError);
+		Flux<String> chain1 = source.map(String::toLowerCase).filter(s -> s.length() < 4);
+		Flux<String> chain2 = source.filter(s -> s.length() > 5).map(String::toUpperCase);
+
+		Mono<Void> when = Mono.when(chain1, chain2);
+
+		assertThatIllegalStateException()
+				.isThrownBy(when::block)
+				.withMessage("shared")
+				.isSameAs(sharedError);
+
+		OutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream objectOutputStream = new ObjectOutputStream(baos);
+		objectOutputStream.writeObject(sharedError);
 	}
 
 	private Iterator<String> seekToBacktrace(String debugStack) {
