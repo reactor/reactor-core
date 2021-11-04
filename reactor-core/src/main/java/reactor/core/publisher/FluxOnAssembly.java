@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -257,7 +258,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 	}
 
-	static final class ObservedAtInformationNode {
+	static final class ObservedAtInformationNode implements Serializable {
+		private static final long serialVersionUID = 1L;
 
 		final int id;
 		final String operator;
