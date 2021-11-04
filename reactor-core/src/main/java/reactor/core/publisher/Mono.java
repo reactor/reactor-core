@@ -3113,7 +3113,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/flatMapMany.svg" alt="">
 	 *
 	 * @param mapper the
-	 * {@link Function} to produce a sequence of R from the the eventual passed {@link Subscriber#onNext}
+	 * {@link Function} to produce a sequence of R from the eventual passed {@link Subscriber#onNext}
 	 * @param <R> the merged sequence type
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
