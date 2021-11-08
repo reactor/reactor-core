@@ -177,27 +177,6 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that dynamically creates ExecutorService-based Workers and caches
-	 * the thread pools, reusing them once the Workers have been shut down.
-	 * <p>
-	 * The maximum number of created thread pools is unbounded.
-	 * <p>
-	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
-	 * factory to set a different value.
-	 * <p>
-	 * This scheduler is not restartable.
-	 *
-	 * @return default instance of a {@link Scheduler} that dynamically creates ExecutorService-based
-	 * Workers and caches the threads, reusing them once the Workers have been shut
-	 * down
-	 * @deprecated use {@link #boundedElastic()}, to be removed in 3.5.0
-	 */
-	@Deprecated
-	public static Scheduler elastic() {
-		return cache(CACHED_ELASTIC, ELASTIC, ELASTIC_SUPPLIER);
-	}
-
-	/**
 	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
 	 * Workers, reusing them once the Workers have been shut down. The underlying daemon
 	 * threads can be evicted if idle for more than {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
@@ -251,99 +230,6 @@ public abstract class Schedulers {
 	public static Scheduler immediate() {
 		return ImmediateScheduler.instance();
 	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates ExecutorService-based Workers and caches
-	 * the thread pools, reusing them once the Workers have been shut down.
-	 * <p>
-	 * The maximum number of created thread pools is unbounded.
-	 * <p>
-	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
-	 * factory to set a different value.
-	 * <p>
-	 * This scheduler is not restartable.
-	 *
-	 * @param name Thread prefix
-	 *
-	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
-	 * Workers and caches the thread pools, reusing them once the Workers have been shut
-	 * down
-	 * @deprecated use {@link #newBoundedElastic(int, int, String)}, to be removed in 3.5.0
-	 */
-	@Deprecated
-	public static Scheduler newElastic(String name) {
-		return newElastic(name, ElasticScheduler.DEFAULT_TTL_SECONDS);
-	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates ExecutorService-based Workers and caches
-	 * the thread pools, reusing them once the Workers have been shut down.
-	 * <p>
-	 * The maximum number of created thread pools is unbounded.
-	 * <p>
-	 * This scheduler is not restartable.
-	 *
-	 * @param name Thread prefix
-	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 *
-	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
-	 * Workers and caches the thread pools, reusing them once the Workers have been shut
-	 * down
-	 * @deprecated use {@link #newBoundedElastic(int, int, String, int)}, to be removed in 3.5.0
-	 */
-	@Deprecated
-	public static Scheduler newElastic(String name, int ttlSeconds) {
-		return newElastic(name, ttlSeconds, false);
-	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates ExecutorService-based Workers and caches
-	 * the thread pools, reusing them once the Workers have been shut down.
-	 * <p>
-	 * The maximum number of created thread pools is unbounded.
-	 * <p>
-	 * This scheduler is not restartable.
-	 *
-	 * @param name Thread prefix
-	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#dispose()} to exit the VM.
-	 *
-	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
-	 * Workers and caches the thread pools, reusing them once the Workers have been shut
-	 * down
-	 * @deprecated use {@link #newBoundedElastic(int, int, String, int, boolean)}, to be removed in 3.5.0
-	 */
-	@Deprecated
-	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
-		return newElastic(ttlSeconds,
-				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
-						Schedulers::defaultUncaughtException));
-	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates ExecutorService-based Workers and caches
-	 * the thread pools, reusing them once the Workers have been shut down.
-	 * <p>
-	 * The maximum number of created thread pools is unbounded.
-	 * <p>
-	 * This scheduler is not restartable.
-	 *
-	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
-	 *
-	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
-	 * Workers and caches the thread pools, reusing them once the Workers have been shut
-	 * down
-	 * @deprecated use {@link #newBoundedElastic(int, int, ThreadFactory, int)}, to be removed in 3.5.0
-	 */
-	@Deprecated
-	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-		final Scheduler fromFactory = factory.newElastic(ttlSeconds, threadFactory);
-		fromFactory.start();
-		return fromFactory;
-	}
-
 
 	/**
 	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
@@ -992,24 +878,6 @@ public abstract class Schedulers {
 	 * Public factory hook to override Schedulers behavior globally
 	 */
 	public interface Factory {
-
-		/**
-		 * {@link Scheduler} that dynamically creates Workers resources and caches
-		 * eventually, reusing them once the Workers have been shut down.
-		 * <p>
-		 * The maximum number of created workers is unbounded.
-		 *
-		 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-		 * @param threadFactory a {@link ThreadFactory} to use
-		 *
-		 * @return a new {@link Scheduler} that dynamically creates Workers resources and
-		 * caches eventually, reusing them once the Workers have been shut down
-		 * @deprecated use {@link Factory#newBoundedElastic(int, int, ThreadFactory, int)}, to be removed in 3.5.0
-		 */
-		@Deprecated
-		default Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-			return new ElasticScheduler(threadFactory, ttlSeconds);
-		}
 
 		/**
 		 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based

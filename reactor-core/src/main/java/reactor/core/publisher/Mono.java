@@ -218,25 +218,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
 	 * to subscribe to for each {@link Subscriber} downstream.
 	 * This operator behaves the same way as {@link #defer(Supplier)},
-	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
-	 * <p>
-	 * @param contextualMonoFactory a {@link Mono} factory
-	 * @param <T> the element type of the returned Mono instance
-	 * @return a deferred {@link Mono} deriving actual {@link Mono} from context values for each subscription
-	 * @deprecated use {@link #deferContextual(Function)} instead. to be removed in 3.5.0.
-	 */
-	@Deprecated
-	public static <T> Mono<T> deferWithContext(Function<Context, ? extends Mono<? extends T>> contextualMonoFactory) {
-		return deferContextual(view -> contextualMonoFactory.apply(Context.of(view)));
-	}
-
-	/**
-	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
-	 * to subscribe to for each {@link Subscriber} downstream.
-	 * This operator behaves the same way as {@link #defer(Supplier)},
 	 * but accepts a {@link Function} that will receive the current {@link ContextView} as an argument.
 	 *
 	 * <p>
@@ -327,43 +308,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public static <T> Mono<T> error(Supplier<? extends Throwable> errorSupplier) {
 		return onAssembly(new MonoErrorSupplied<>(errorSupplier));
-	}
-
-	/**
-	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
-	 * and replay that signal, effectively behaving like the fastest of these competing
-	 * sources.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
-	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
-	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
-	 * @deprecated use {@link #firstWithSignal(Mono[])}. To be removed in reactor 3.5.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return firstWithSignal(monos);
-	}
-
-	/**
-	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
-	 * and replay that signal, effectively behaving like the fastest of these competing
-	 * sources.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
-	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
-	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
-	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
-	 */
-	@Deprecated
-	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return firstWithSignal(monos);
 	}
 
 	/**
@@ -818,21 +762,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual, int prefetch) {
 		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, prefetch));
-	}
-
-	/**
-	 * Create a {@link Mono} emitting the {@link Context} available on subscribe.
-	 * If no Context is available, the mono will simply emit the
-	 * {@link Context#empty() empty Context}.
-	 *
-	 * @return a new {@link Mono} emitting current context
-	 * @see #subscribe(CoreSubscriber)
-	 * @deprecated Use {@link #deferContextual(Function)} or {@link #transformDeferredContextual(BiFunction)} to materialize
-	 * the context. To obtain the same Mono of Context, use {@code Mono.deferContextual(Mono::just)}. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public static Mono<Context> subscriberContext() {
-		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
 
 	/**
@@ -2471,30 +2400,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
-	 * The arguments will be null depending on success, success with data and error:
-	 * <ul>
-	 *     <li>null, null : completed without data</li>
-	 *     <li>T, null : completed with data</li>
-	 *     <li>null, Throwable : failed with/without data</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/doAfterSuccessOrError.svg" alt="">
-	 * <p>
-	 * The relevant signal is propagated downstream, then the {@link BiConsumer} is executed.
-	 *
-	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated prefer using {@link #doAfterTerminate(Runnable)} or {@link #doFinally(Consumer)}. will be removed in 3.5.0
-	 */
-	@Deprecated
-	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
-		return doOnTerminalSignal(this, null, null, afterSuccessOrError);
-	}
-
-	/**
 	 * Add behavior (side-effect) triggered after the {@link Mono} terminates, either by
 	 * completing downstream successfully or with an error.
 	 * <p>
@@ -2808,32 +2713,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		return doOnSignal(this, onSubscribe, null, null,  null);
-	}
-
-	/**
-	 * Add behavior triggered when the {@link Mono} terminates, either by emitting a value,
-	 * completing empty or failing with an error.
-	 * The value passed to the {@link Consumer} reflects the type of completion:
-	 * <ul>
-	 *     <li>null, null : completing without data. handler is executed right before onComplete is propagated downstream</li>
-	 *     <li>T, null : completing with data. handler is executed right before onNext is propagated downstream</li>
-	 *     <li>null, Throwable : failing. handler is executed right before onError is propagated downstream</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/doOnSuccessOrError.svg" alt="">
-	 * <p>
-	 * The {@link BiConsumer} is executed before propagating either onNext, onComplete or onError downstream.
-	 *
-	 * @param onSuccessOrError the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated prefer using {@link #doOnNext(Consumer)}, {@link #doOnError(Consumer)}, {@link #doOnTerminate(Runnable)} or {@link #doOnSuccess(Consumer)}. will be removed in 3.5.0
-	 */
-	@Deprecated
-	public final Mono<T> doOnSuccessOrError(BiConsumer<? super T, Throwable> onSuccessOrError) {
-		Objects.requireNonNull(onSuccessOrError, "onSuccessOrError");
-		return doOnTerminalSignal(this, v -> onSuccessOrError.accept(v, null), e -> onSuccessOrError.accept(null, e), null);
 	}
 
 	/**
@@ -4419,55 +4298,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public abstract void subscribe(CoreSubscriber<? super T> actual);
 
 	/**
-	 * Enrich a potentially empty downstream {@link Context} by adding all values
-	 * from the given {@link Context}, producing a new {@link Context} that is propagated
-	 * upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
-	 * state, returning a new one.
-	 *
-	 * @return a contextualized {@link Mono}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(ContextView)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Mono<T> subscriberContext(Context mergeContext) {
-		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
-	}
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by applying a {@link Function}
-	 * to it, producing a new {@link Context} that is propagated upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one.
-	 *
-	 * @return a contextualized {@link Mono}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(Function)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Mono<T> subscriberContext(Function<Context, Context> doOnContext) {
-		return new MonoContextWrite<>(this, doOnContext);
-	}
-
-	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
 	 * As such, placing this operator anywhere in the chain will also impact the execution
 	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
@@ -4930,7 +4760,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @deprecated prefer {@link #share()} to share a parent subscription, or use {@link Sinks}
 	 */
 	@Deprecated
-	public final MonoProcessor<T> toProcessor() {
+	//FIXME remove and integrate logic in another method ?
+	final MonoProcessor<T> toProcessor() {
 		if (this instanceof MonoProcessor) {
 			return (MonoProcessor<T>) this;
 		}

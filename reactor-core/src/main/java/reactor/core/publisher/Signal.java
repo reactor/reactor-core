@@ -229,18 +229,6 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	SignalType getType();
 
 	/**
-	 * Return the readonly {@link Context} that is accessible by the time this {@link Signal} was
-	 * emitted.
-	 *
-	 * @return an immutable {@link Context}, or an empty one if no context is available.
-	 * @deprecated use {@link #getContextView()} instead. To be removed in 3.5.0
-	 */
-	@Deprecated
-	default Context getContext() {
-		return Context.of(getContextView());
-	}
-
-	/**
 	 * Return the readonly {@link ContextView} that is accessible by the time this {@link Signal} was
 	 * emitted.
 	 *

@@ -463,7 +463,6 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources01")
-	@Deprecated
 	public void cancelWithoutHandlerAppliesCommit(Flux<String> source) {
 		TestResource testResource = new TestResource();
 
@@ -488,7 +487,6 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources01")
-	@Deprecated
 	public void cancelDefaultHandlerFailure(Flux<String> source) {
 		TestResource testResource = new TestResource();
 		final TestLogger tl = new TestLogger();
@@ -796,7 +794,6 @@ public class FluxUsingWhenTest {
 	}
 
 	@Test
-	@Deprecated
 	public void apiSingleAsyncCleanup() {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 
@@ -820,7 +817,6 @@ public class FluxUsingWhenTest {
 	}
 
 	@Test
-	@Deprecated
 	public void apiSingleAsyncCleanupFailure() {
 		final RuntimeException rollbackCause = new IllegalStateException("boom");
 		final AtomicReference<TestResource> ref = new AtomicReference<>();

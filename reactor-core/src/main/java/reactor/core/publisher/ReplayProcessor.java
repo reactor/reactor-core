@@ -51,7 +51,8 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * variations under {@link reactor.core.publisher.Sinks.MulticastReplaySpec Sinks.many().replay()}.
  */
 @Deprecated
-public final class ReplayProcessor<T> extends FluxProcessor<T, T>
+//FIXME turn into pure Sinks.Many
+final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		implements Fuseable, InternalManySink<T> {
 
 	/**

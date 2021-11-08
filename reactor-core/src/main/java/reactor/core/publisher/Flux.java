@@ -807,28 +807,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
 	 * subscribe and the {@link Function} can create a subscriber-specific instance.
 	 * This operator behaves the same way as {@link #defer(Supplier)},
-	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
-	 * If the supplier doesn't generate a new instance however, this operator will
-	 * effectively behave like {@link #from(Publisher)}.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/deferForFlux.svg" alt="">
-	 *
-	 * @param contextualPublisherFactory the {@link Publisher} {@link Function} to call on subscribe
-	 * @param <T>      the type of values passing through the {@link Flux}
-	 * @return a deferred {@link Flux} deriving actual {@link Flux} from context values for each subscription
-	 * @deprecated use {@link #deferContextual(Function)}
-	 */
-	@Deprecated
-	public static <T> Flux<T> deferWithContext(Function<Context, ? extends Publisher<T>> contextualPublisherFactory) {
-		return deferContextual(view -> contextualPublisherFactory.apply(Context.of(view)));
-	}
-
-	/**
-	 * Lazily supply a {@link Publisher} every time a {@link Subscription} is made on the
-	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
-	 * subscribe and the {@link Function} can create a subscriber-specific instance.
-	 * This operator behaves the same way as {@link #defer(Supplier)},
 	 * but accepts a {@link Function} that will receive the current {@link ContextView} as an argument.
 	 * If the function doesn't generate a new instance however, this operator will
 	 * effectively behave like {@link #from(Publisher)}.
@@ -908,45 +886,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		else {
 			return onAssembly(new FluxError<>(throwable));
 		}
-	}
-
-	/**
-	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
-	 * replay all signals from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The type of values in both source and output sequences
-	 *
-	 * @return a new {@link Flux} behaving like the fastest of its sources
-	 * @deprecated use {@link #firstWithSignal(Publisher[])}. To be removed in reactor 3.5.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
-		return firstWithSignal(sources);
-	}
-
-	/**
-	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
-	 * replay all signals from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The type of values in both source and output sequences
-	 *
-	 * @return a new {@link Flux} behaving like the fastest of its sources
-	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
-	 */
-	@Deprecated
-	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
-		return firstWithSignal(sources);
 	}
 
 	/**
@@ -1609,96 +1548,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> Flux<T> mergeComparingDelayError(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return from(sources[0]);
-		}
-		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, sources));
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by their natural order).
-	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingNaturalOrder.svg" alt="">
-	 *
-	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
-	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <I extends Comparable<? super I>> Flux<I> mergeOrdered(Publisher<? extends I>... sources) {
-		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by the provided
-	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
-	 * the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
-	 *
-	 * @param comparator the {@link Comparator} to use to find the smallest value
-	 * @param sources {@link Publisher} sources to merge
-	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Flux<T> mergeOrdered(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
-		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, comparator, sources);
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by the provided
-	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
-	 * the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
-	 *
-	 * @param prefetch the number of elements to prefetch from each source (avoiding too
-	 * many small requests to the source when picking)
-	 * @param comparator the {@link Comparator} to use to find the smallest value
-	 * @param sources {@link Publisher} sources to merge
-	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Flux<T> mergeOrdered(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -6282,44 +6131,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
 	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
-	 *
-	 * @param other the {@link Publisher} to merge with
-	 * @param otherComparator the {@link Comparator} to use for merging
-	 *
-	 * @return a new {@link Flux} that compares latest values from the given publisher
-	 * and this flux, using the smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingWith(Publisher, Comparator)} instead
-	 * (with the caveat that it defaults to NOT delaying errors, unlike this operator).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@Deprecated
-	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
-			Comparator<? super T> otherComparator) {
-		if (this instanceof FluxMergeComparing) {
-			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
-			return fluxMerge.mergeAdditionalSource(other, otherComparator);
-		}
-		return mergeOrdered(otherComparator, this, other);
-	}
-
-	/**
-	 * Merge data from this {@link Flux} and a {@link Publisher} into a reordered merge
-	 * sequence, by picking the smallest value from each sequence as defined by a provided
-	 * {@link Comparator}. Note that subsequent calls are combined, and their comparators are
-	 * in lexicographic order as defined by {@link Comparator#thenComparing(Comparator)}.
-	 * <p>
-	 * The combination step is avoided if the two {@link Comparator Comparators} are
-	 * {@link Comparator#equals(Object) equal} (which can easily be achieved by using the
-	 * same reference, and is also always true of {@link Comparator#naturalOrder()}).
-	 * <p>
-	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
-	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
-	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
-	 * another source.
-	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
 	 * <p>
 	 * mergeComparingWith doesn't delay errors by default, but it will inherit the delayError
@@ -7148,24 +6959,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			extends R>> transform, int prefetch) {
 		return onAssembly(new FluxPublishMulticast<>(this, transform, prefetch, Queues
 				.get(prefetch)));
-	}
-
-	/**
-	 * Prepare a {@link Mono} which shares this {@link Flux} sequence and dispatches the
-	 * first observed item to subscribers in a backpressure-aware manner.
-	 * This will effectively turn any type of sequence into a hot sequence when the first
-	 * {@link Subscriber} subscribes.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/publishNext.svg" alt="">
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use {@link #shareNext()} instead, or use `publish().next()` if you need
-	 * to `{@link ConnectableFlux#connect() connect()}. To be removed in 3.5.0
-	 */
-	@Deprecated
-	public final Mono<T> publishNext() {
-		//Should add a ConnectableMono to align with #publish()
-		return shareNext();
 	}
 
 	/**
@@ -8310,48 +8103,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Subscribe {@link Consumer} to this {@link Flux} that will respectively consume all the
-	 * elements in the sequence, handle errors, react to completion, and request upon subscription.
-	 * It will let the provided {@link Subscription subscriptionConsumer}
-	 * request the adequate amount of data, or request unbounded demand
-	 * {@code Long.MAX_VALUE} if no such consumer is provided.
-	 * <p>
-	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
-	 * {@link #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)}
-	 * and {@link #doOnSubscribe(Consumer)}.
-	 * <p>For a version that gives you more control over backpressure and the request, see
-	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
-	 * <p>
-	 * Keep in mind that since the sequence can be asynchronous, this will immediately
-	 * return control to the calling thread. This can give the impression the consumer is
-	 * not invoked when executing in a main thread or a unit test for instance.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/subscribeForFlux.svg" alt="">
-	 *
-	 * @param consumer the consumer to invoke on each value
-	 * @param errorConsumer the consumer to invoke on error signal
-	 * @param completeConsumer the consumer to invoke on complete signal
-	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
-	 * for the initial {@link Subscription#request(long) request}, or null for max request
-	 *
-	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
-	 * @deprecated Because users tend to forget to {@link Subscription#request(long) request} the subsciption. If
-	 * the behavior is really needed, consider using {@link #subscribeWith(Subscriber)}. To be removed in 3.5.
-	 */
-	@Deprecated
-	public final Disposable subscribe(
-			@Nullable Consumer<? super T> consumer,
-			@Nullable Consumer<? super Throwable> errorConsumer,
-			@Nullable Runnable completeConsumer,
-			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
-		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer,
-				completeConsumer,
-				subscriptionConsumer,
-				null));
-	}
-
-	/**
-	 * Subscribe {@link Consumer} to this {@link Flux} that will respectively consume all the
 	 * elements in the sequence, handle errors and react to completion. Additionally, a {@link Context}
 	 * is tied to the subscription. At subscription, an unbounded request is implicitly made.
 	 * <p>
@@ -8430,55 +8181,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see Flux#subscribe(Subscriber)
 	 */
 	public abstract void subscribe(CoreSubscriber<? super T> actual);
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by adding all values
-	 * from the given {@link Context}, producing a new {@link Context} that is propagated
-	 * upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
-	 * state, returning a new one.
-	 *
-	 * @return a contextualized {@link Flux}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(ContextView)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Flux<T> subscriberContext(Context mergeContext) {
-		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
-	}
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by applying a {@link Function}
-	 * to it, producing a new {@link Context} that is propagated upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one.
-	 *
-	 * @return a contextualized {@link Flux}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(Function)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Flux<T> subscriberContext(Function<Context, Context> doOnContext) {
-		return contextWrite(doOnContext);
-	}
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.

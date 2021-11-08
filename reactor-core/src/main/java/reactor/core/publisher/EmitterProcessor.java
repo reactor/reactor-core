@@ -63,7 +63,8 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * }</pre>
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T> {
+//FIXME turn into pure Sinks.Many
+final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];

@@ -91,7 +91,8 @@ import reactor.util.context.Context;
  * variations under {@link reactor.core.publisher.Sinks.UnicastSpec Sinks.many().unicast()}.
  */
 @Deprecated
-public final class UnicastProcessor<T> extends FluxProcessor<T, T>
+//FIXME turn into pure Sinks.Many
+final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>,
 		           InternalManySink<T> {
 

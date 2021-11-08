@@ -85,7 +85,8 @@ import reactor.util.context.Context;
  * except it doesn't terminate overflowing downstreams.
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T>
+//FIXME turn into pure Sinks.Many
+final class DirectProcessor<T> extends FluxProcessor<T, T>
 		implements DirectInnerContainer<T> {
 
 	/**

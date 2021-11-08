@@ -45,7 +45,8 @@ import static reactor.core.publisher.Sinks.Many;
  *  * or see https://github.com/reactor/reactor-core/issues/2431 for alternatives
  */
 @Deprecated
-public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
+//FIXME turn into pure Sinks.Many base, or removed entirely
+abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable, ContextHolder {
 
 	/**

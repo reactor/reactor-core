@@ -50,7 +50,8 @@ import reactor.util.context.Context;
  * or see https://github.com/reactor/reactor-core/issues/2431 for alternatives
  */
 @Deprecated
-public abstract class MonoProcessor<O> extends Mono<O>
+//FIXME turn into pure Sinks.One, or remove entirely
+abstract class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable,
 		           Subscription,
 		           Scannable {

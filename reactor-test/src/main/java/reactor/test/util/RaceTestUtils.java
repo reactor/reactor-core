@@ -121,19 +121,6 @@ public class RaceTestUtils {
 	}
 
 	/**
-	 * Synchronizes the execution of two {@link Runnable} as much as possible
-	 * to test race conditions. The method blocks until both have run to completion.
-	 * @param s the {@link Scheduler} on which to execute the runnables
-	 * @param r1 the first runnable
-	 * @param r2 the second runnable
-	 * @deprecated Use {@link #race(Scheduler, Runnable...)}. To be removed in 3.6.0, at the earliest.
-	 */
-	@Deprecated
-	public static void race(final Runnable r1, final Runnable r2, Scheduler s) {
-		race(s, r1, r2);
-	}
-
-	/**
 	 * Synchronizes the execution of several {@link Runnable}s as much as possible
 	 * to test race conditions. The method blocks until all have run to completion,
 	 * with a 5s timeout.
