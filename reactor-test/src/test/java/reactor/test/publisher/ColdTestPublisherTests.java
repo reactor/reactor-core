@@ -431,7 +431,7 @@ public class ColdTestPublisherTests {
 		cold.next("value");
 		final int timeout = 2;
 
-		StepVerifier.create(cold.mono().subscribeOn(Schedulers.elastic()))
+		StepVerifier.create(cold.mono().subscribeOn(Schedulers.boundedElastic()))
 				.expectSubscription()
 				.expectNext("value")
 				.expectComplete()

@@ -84,7 +84,7 @@ task japicmp(type: JapicmpTask) {
 	includeSynthetic = true
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
-	methodExcludes = [ ]
+	methodExcludes = [ "reactor.test.util.RaceTestUtils#race(java.lang.Runnable, java.lang.Runnable, reactor.core.scheduler.Scheduler)" ]
 	classExcludes = [ "reactor.test.StepVerifierExtensionsKt"	]
 }
 

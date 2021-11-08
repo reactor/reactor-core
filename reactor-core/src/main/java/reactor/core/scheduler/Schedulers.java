@@ -54,7 +54,6 @@ import static reactor.core.Exceptions.unwrap;
  * <ul>
  *     <li>{@link #parallel()}: Optimized for fast {@link Runnable} non-blocking executions </li>
  *     <li>{@link #single}: Optimized for low-latency {@link Runnable} one-off executions </li>
- *     <li>{@link #elastic()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) can grow indefinitely</li>
  *     <li>{@link #boundedElastic()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) is capped</li>
  *     <li>{@link #immediate}: to immediately run submitted {@link Runnable} instead of scheduling them (somewhat of a no-op or "null object" {@link Scheduler})</li>
  *     <li>{@link #fromExecutorService(ExecutorService)} to create new instances around {@link java.util.concurrent.Executors} </li>
@@ -338,7 +337,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, String name, int ttlSeconds, boolean daemon) {
 		return newBoundedElastic(threadCap, queuedTaskCap,
-				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
+				new ReactorThreadFactory(name, BoundedElasticScheduler.COUNTER, daemon, false,
 						Schedulers::defaultUncaughtException),
 				ttlSeconds);
 	}
@@ -584,7 +583,6 @@ public abstract class Schedulers {
 		//nulling out CACHED references ensures that the schedulers won't be disposed
 		//when setting the newFactory via setFactory
 		Snapshot snapshot = new Snapshot(
-				CACHED_ELASTIC.getAndSet(null),
 				CACHED_BOUNDED_ELASTIC.getAndSet(null),
 				CACHED_PARALLEL.getAndSet(null),
 				CACHED_SINGLE.getAndSet(null),
@@ -606,7 +604,6 @@ public abstract class Schedulers {
 		}
 		//Restore the atomic references first, so that concurrent calls to Schedulers either
 		//get a soon-to-be-shutdown instance or the restored instance
-		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(snapshot.oldElasticScheduler);
 		CachedScheduler oldBoundedElastic = CACHED_BOUNDED_ELASTIC.getAndSet(snapshot.oldBoundedElasticScheduler);
 		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(snapshot.oldParallelScheduler);
 		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(snapshot.oldSingleScheduler);
@@ -617,7 +614,6 @@ public abstract class Schedulers {
 		factory = snapshot.oldFactory;
 
 		//Shutdown the old CachedSchedulers, if any
-		if (oldElastic != null) oldElastic._dispose();
 		if (oldBoundedElastic != null) oldBoundedElastic._dispose();
 		if (oldParallel != null) oldParallel._dispose();
 		if (oldSingle != null) oldSingle._dispose();
@@ -833,12 +829,10 @@ public abstract class Schedulers {
 	 * Clear any cached {@link Scheduler} and call dispose on them.
 	 */
 	public static void shutdownNow() {
-		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(null);
 		CachedScheduler oldBoundedElastic = CACHED_BOUNDED_ELASTIC.getAndSet(null);
 		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(null);
 		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(null);
 
-		if (oldElastic != null) oldElastic._dispose();
 		if (oldBoundedElastic != null) oldBoundedElastic._dispose();
 		if (oldParallel != null) oldParallel._dispose();
 		if (oldSingle != null) oldSingle._dispose();
@@ -933,9 +927,6 @@ public abstract class Schedulers {
 	public static final class Snapshot implements Disposable {
 
 		@Nullable
-		final CachedScheduler oldElasticScheduler;
-
-		@Nullable
 		final CachedScheduler oldBoundedElasticScheduler;
 
 		@Nullable
@@ -946,12 +937,10 @@ public abstract class Schedulers {
 
 		final Factory oldFactory;
 
-		private Snapshot(@Nullable CachedScheduler oldElasticScheduler,
-				@Nullable CachedScheduler oldBoundedElasticScheduler,
+		private Snapshot(@Nullable CachedScheduler oldBoundedElasticScheduler,
 				@Nullable CachedScheduler oldParallelScheduler,
 				@Nullable CachedScheduler oldSingleScheduler,
 				Factory factory) {
-			this.oldElasticScheduler = oldElasticScheduler;
 			this.oldBoundedElasticScheduler = oldBoundedElasticScheduler;
 			this.oldParallelScheduler = oldParallelScheduler;
 			this.oldSingleScheduler = oldSingleScheduler;
@@ -961,7 +950,6 @@ public abstract class Schedulers {
 		@Override
 		public boolean isDisposed() {
 			return
-					(oldElasticScheduler == null || oldElasticScheduler.isDisposed()) &&
 					(oldBoundedElasticScheduler == null || oldBoundedElasticScheduler.isDisposed()) &&
 					(oldParallelScheduler == null || oldParallelScheduler.isDisposed()) &&
 					(oldSingleScheduler == null || oldSingleScheduler.isDisposed());
@@ -969,7 +957,6 @@ public abstract class Schedulers {
 
 		@Override
 		public void dispose() {
-			if (oldElasticScheduler != null) oldElasticScheduler._dispose();
 			if (oldBoundedElasticScheduler != null) oldBoundedElasticScheduler._dispose();
 			if (oldParallelScheduler != null) oldParallelScheduler._dispose();
 			if (oldSingleScheduler != null) oldSingleScheduler._dispose();
@@ -977,7 +964,6 @@ public abstract class Schedulers {
 	}
 
 	// Internals
-	static final String ELASTIC               = "elastic"; // IO stuff
 	static final String BOUNDED_ELASTIC       = "boundedElastic"; // Blocking stuff with scale to zero
 	static final String PARALLEL              = "parallel"; //scale up common tasks
 	static final String SINGLE                = "single"; //non blocking tasks
@@ -987,13 +973,9 @@ public abstract class Schedulers {
 
 
 	// Cached schedulers in atomic references:
-	static AtomicReference<CachedScheduler> CACHED_ELASTIC         = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_BOUNDED_ELASTIC = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_PARALLEL        = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_SINGLE          = new AtomicReference<>();
-
-	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
-			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
 
 	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER =
 			() -> newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE, DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,

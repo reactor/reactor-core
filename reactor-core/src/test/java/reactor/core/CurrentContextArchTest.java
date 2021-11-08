@@ -16,6 +16,7 @@
 
 package reactor.core;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -27,6 +28,9 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,16 +41,15 @@ public class CurrentContextArchTest {
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
 			.importPackagesOf(CoreSubscriber.class);
 
-	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
-	@SuppressWarnings("deprecation")
-	static JavaClasses FLUXPROCESSOR_CLASSES = new ClassFileImporter()
+	static JavaClasses SINKS_CLASSES = new ClassFileImporter()
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
-			.importPackagesOf(reactor.core.publisher.FluxProcessor.class);
+			.importPackagesOf(reactor.core.publisher.Sinks.class);
 
 	@Test
 	void smokeTestWhereClassesLoaded() {
 		assertThat(CORE_SUBSCRIBER_CLASSES).isNotEmpty();
+		assertThat(SINKS_CLASSES).isNotEmpty();
 	}
 
 	@Test
@@ -76,11 +79,13 @@ public class CurrentContextArchTest {
 	}
 
 	@Test
-	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
-	@SuppressWarnings("deprecation")
-	public void fluxProcessorsShouldNotUseDefaultCurrentContext() {
+	public void sinksShouldNotUseDefaultCurrentContext() {
 		classes()
-				.that().areAssignableTo(reactor.core.publisher.FluxProcessor.class)
+				.that().areAssignableTo(
+					DescribedPredicate.describe("Sinks.One|Many|Empty",
+						clazz -> clazz.isAssignableTo(Sinks.Many.class)
+							|| clazz.isAssignableTo(Sinks.One.class)
+							|| clazz.isAssignableTo(Sinks.Empty.class)))
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
 				.should(new ArchCondition<JavaClass>("not use the default currentContext()") {
 					@Override
@@ -90,10 +95,10 @@ public class CurrentContextArchTest {
 								.stream()
 								.filter(it -> "currentContext".equals(it.getName()))
 								.filter(it -> it.getRawParameterTypes().isEmpty())
-								//method declared in a class derived from FluxProcessor but NOT FluxProcessor itself !
-								.anyMatch(it -> it.getOwner().isAssignableTo(reactor.core.publisher.FluxProcessor.class)
-										&& !it.getOwner().isEquivalentTo(reactor.core.publisher.FluxProcessor.class));
-
+								//method declared in the current non-abstract class
+								.anyMatch(it ->
+									!it.getOwner().getModifiers().contains(JavaModifier.ABSTRACT)
+									&& !it.getOwner().isEquivalentTo(Flux.class));
 
 						if (!overridesMethod) {
 							events.add(SimpleConditionEvent.violated(
@@ -103,6 +108,6 @@ public class CurrentContextArchTest {
 						}
 					}
 				})
-				.check(FLUXPROCESSOR_CLASSES);
+				.check(SINKS_CLASSES);
 	}
 }

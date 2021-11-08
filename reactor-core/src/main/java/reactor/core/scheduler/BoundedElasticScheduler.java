@@ -68,10 +68,10 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	static final int DEFAULT_TTL_SECONDS = 60;
 
-	static final AtomicLong EVICTOR_COUNTER = new AtomicLong();
+	static final AtomicLong COUNTER = new AtomicLong();
 
 	static final ThreadFactory EVICTOR_FACTORY = r -> {
-		Thread t = new Thread(r, Schedulers.BOUNDED_ELASTIC + "-evictor-" + EVICTOR_COUNTER.incrementAndGet());
+		Thread t = new Thread(r, Schedulers.BOUNDED_ELASTIC + "-evictor-" + COUNTER.incrementAndGet());
 		t.setDaemon(true);
 		return t;
 	};

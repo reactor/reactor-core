@@ -2525,7 +2525,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Mono<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
+		return contextWrite(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**
@@ -3469,7 +3469,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
 		));
@@ -3559,7 +3559,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
 		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
 		));
@@ -3576,7 +3576,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * was used downstream
 	 */
 	public final Mono<T> onErrorStop() {
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.stop()));
 	}
@@ -4335,7 +4335,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Subscribe the given {@link Subscriber} to this {@link Mono} and return said
-	 * {@link Subscriber} (eg. a {@link MonoProcessor}).
+	 * {@link Subscriber} (eg. a StepVerifier from reactor-test).
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe with
 	 * @param <E> the reified type of the {@link Subscriber} for chaining
