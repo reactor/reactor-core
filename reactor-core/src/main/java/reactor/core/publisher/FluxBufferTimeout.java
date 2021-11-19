@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
@@ -126,6 +127,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		static final AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
 				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "index");
 
+		final AtomicBoolean completeSent = new AtomicBoolean(false);
 
 		volatile Disposable timespanRegistration;
 
@@ -189,44 +191,37 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		void flushCallback(@Nullable T ev) { //TODO investigate ev not used
-			final C v;
-			boolean flush = false;
 			synchronized (this) {
-				v = values;
+				C v = values;
 				if (v != null && !v.isEmpty()) {
-					values = bufferSupplier.get();
-					flush = true;
-				}
-			}
+					long r = requested;
+					if (r != 0L) {
+						if (r != Long.MAX_VALUE) {
+							long next;
+							for (; ; ) {
+								next = r - 1;
+								if (REQUESTED.compareAndSet(this, r, next)) {
+									values = bufferSupplier.get();
+									actual.onNext(v);
+									return;
+								}
 
-			if (flush) {
-				long r = requested;
-				if (r != 0L) {
-					if (r != Long.MAX_VALUE) {
-						long next;
-						for (;;) {
-							next = r - 1;
-							if (REQUESTED.compareAndSet(this, r, next)) {
-								actual.onNext(v);
-								return;
-							}
-
-							r = requested;
-							if (r <= 0L) {
-								break;
+								r = requested;
+								if (r <= 0L) {
+									break;
+								}
 							}
 						}
+						else {
+							values = bufferSupplier.get();
+							actual.onNext(v);
+							return;
+						}
 					}
-					else {
-						actual.onNext(v);
-						return;
-					}
-				}
 
-				cancel();
-				actual.onError(Exceptions.failWithOverflow(
-						"Could not emit buffer due to lack of requests"));
-				Operators.onDiscardMultiple(v, this.actual.currentContext());
+					// If we get here it's because we've satisfied the downstream requests but still have items to send
+					// so leave them buffered
+				}
 			}
 		}
 
@@ -284,6 +279,15 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				flushCallback(null);
 			}
 			finally {
+				// If there is still something buffered then hold off relaying the complete
+				if (values == null || values.isEmpty()) {
+					sendComplete();
+				}
+			}
+		}
+
+		void sendComplete() {
+			if (completeSent.compareAndSet(false, true)) {
 				actual.onComplete();
 			}
 		}
@@ -305,7 +309,20 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
+				final boolean flush = requested == 0;
 				Operators.addCap(REQUESTED, this, n);
+				if (flush) {
+					final boolean complete =
+							isCompleted() && values != null && !values.isEmpty();
+					try {
+						flushCallback(null);
+					}
+					finally {
+						if (complete && values != null && values.isEmpty()) {
+							sendComplete();
+						}
+					}
+				}
 				if (terminated != NOT_TERMINATED) {
 					return;
 				}
@@ -320,6 +337,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		final void requestMore(long n) {
+			if (n < 1L) {
+				return;
+			}
 			Subscription s = this.subscription;
 			if (s != null) {
 				Operators.addCap(OUTSTANDING, this, n);

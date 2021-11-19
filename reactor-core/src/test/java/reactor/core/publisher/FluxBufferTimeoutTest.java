@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractLongAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -87,26 +90,59 @@ public class FluxBufferTimeoutTest {
 		            .verifyComplete();
 	}
 
-	Flux<List<Integer>> scenario_bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow() {
-		return Flux.range(1, 6)
-		           .delayElements(Duration.ofMillis(300))
-		           .bufferTimeout(5, Duration.ofMillis(100));
+	Flux<List<Integer>> scenario_bufferWithTimeoutWhenDownstreamDemandIsLow() {
+		return Flux.range(1, 3)
+				   .delayElements(Duration.ofMillis(300))
+				   .bufferTimeout(5, Duration.ofMillis(100));
 	}
 
 	@Test
-	public void bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow() {
-		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow, 0)
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(300))
-		            .thenRequest(1)
-		            .expectNoEvent(Duration.ofMillis(100))
-		            .assertNext(s -> assertThat(s).containsExactly(1))
-		            .expectNoEvent(Duration.ofMillis(300))
-		            .verifyErrorSatisfies(e ->
-				            assertThat(e)
-						            .hasMessage("Could not emit buffer due to lack of requests")
-						            .isInstanceOf(IllegalStateException.class)
-		            );
+	public void bufferWithTimeoutWhenDownstreamDemandIsLow() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutWhenDownstreamDemandIsLow, 0)
+					.expectSubscription()
+					.expectNoEvent(Duration.ofMillis(300))
+					.thenRequest(1)
+					.expectNoEvent(Duration.ofMillis(100))
+					.assertNext(s -> assertThat(s).containsExactly(1))
+					.expectNoEvent(Duration.ofMillis(300))
+					.thenRequest(1)
+					.assertNext(s -> assertThat(s).containsExactly(2))
+					.expectNoEvent(Duration.ofMillis(300))
+					.thenRequest(1)
+					.assertNext(s -> assertThat(s).containsExactly(3))
+					.verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWithTimeoutAvoidingNegativeRequests() {
+		return Flux.range(1, 3)
+				   .delayElements(Duration.ofMillis(100))
+				   .doOnRequest(amount -> bubbledAssert(() -> assertThat(amount).isGreaterThan(0L)))
+				   .bufferTimeout(5, Duration.ofMillis(100));
+	}
+
+	private static void bubbledAssert(Callable<?> assertion) {
+		try {
+			assertion.call();
+		}
+		catch (Throwable e) {
+			throw Exceptions.bubble(e);
+		}
+	}
+
+	@Test
+	public void bufferWithTimeoutAvoidingNegativeRequests() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutAvoidingNegativeRequests, 0)
+					.expectSubscription()
+					.expectNoEvent(Duration.ofMillis(100))
+					.thenRequest(2)
+					.expectNoEvent(Duration.ofMillis(100))
+					.assertNext(s -> assertThat(s).containsExactly(1))
+					.expectNoEvent(Duration.ofMillis(100))
+					.assertNext(s -> assertThat(s).containsExactly(2))
+					.thenRequest(1) // This should not cause a negative upstream request
+					.expectNoEvent(Duration.ofMillis(100))
+					.thenCancel()
+					.verify();
 	}
 
 	@Test
