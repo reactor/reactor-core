@@ -192,7 +192,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		void flushCallback(@Nullable T ev) { //TODO investigate ev not used
 			synchronized (this) {
-				C v = values;
+				final C v = values;
 				if (v != null && !v.isEmpty()) {
 					long r = requested;
 					if (r != 0L) {
