@@ -320,6 +320,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		final void requestMore(long n) {
+			if (n < 1L) {
+				return;
+			}
 			Subscription s = this.subscription;
 			if (s != null) {
 				Operators.addCap(OUTSTANDING, this, n);
