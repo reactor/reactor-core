@@ -381,6 +381,72 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	}
 
 	@Test
+	public void discardOnInnerErrorWithPrefetch() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+						.concatMap(i -> {
+							if (i == 2) {
+								return Mono.defer(() -> Mono.error(new IllegalStateException("boom: value" + i)));
+							} else {
+								return Mono.defer(() -> Mono.just("value" + i));
+							}
+						}))
+				.expectNext("value1")
+				.expectErrorMessage("boom: value2")
+				.verifyThenAssertThat()
+				.hasDiscardedExactly(3);
+	}
+
+	@Test
+	public void discardOnInnerErrorCallableWithPrefetch() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+						.concatMap(i -> {
+							if (i == 2) {
+								return Mono.error(new IllegalStateException("boom: value" + i));
+							} else {
+								return Mono.just("value" + i);
+							}
+						}))
+				.expectNext("value1")
+				.expectErrorMessage("boom: value2")
+				.verifyThenAssertThat()
+				.hasDiscardedExactly(3);
+	}
+	
+	@Test
+	public void discardDelayedOnInnerErrorWithPrefetch() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+						.concatMapDelayError(i -> {
+							if (i == 2) {
+								return Mono.defer(() -> Mono.error(new IllegalStateException("boom: value" + i)));
+							} else {
+								return Mono.defer(() -> Mono.just("value" + i));
+							}
+						}))
+				.expectNext("value1")
+				.expectNext("value3")
+				.expectErrorMessage("boom: value2")
+				.verifyThenAssertThat()
+				.hasNotDiscardedElements();
+	}
+	
+	@Test
+	public void discardDelayedOnCallableInnerErrorWithPrefetch() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+						.concatMapDelayError(i -> {
+							if (i == 2) {
+								return Mono.error(new IllegalStateException("boom: value" + i));
+							} else {
+								return Mono.just("value" + i);
+							}
+						}))
+				.expectNext("value1")
+				.expectNext("value3")
+				.expectErrorMessage("boom: value2")
+				.verifyThenAssertThat()
+				.hasNotDiscardedElements();
+	}
+
+	@Test
 	public void discardOnCancel() {
 		StepVerifier.create(Flux.just(1, 2, 3)
 		                        .concatMap(i -> Mono.just("value" + i), implicitPrefetchValue()),

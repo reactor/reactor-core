@@ -307,6 +307,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 						e = Exceptions.terminate(ERROR, this);
 						if (e != TERMINATED) {
 							actual.onError(e);
+							Operators.onDiscardQueueWithClear(queue, this.ctx, null);
 						}
 					}
 				}
@@ -413,6 +414,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 									if (e_ != null) {
 										actual.onError(Operators.onOperatorError(s, e, v,
 												this.ctx));
+										Operators.onDiscardQueueWithClear(queue, this.ctx, null);
 										return;
 									}
 									else {
