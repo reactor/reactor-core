@@ -691,14 +691,14 @@ class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		Iterator<String> lines = seekToBacktrace(debugStack);
+		Iterator<String> lines = seekToTraceback(debugStack);
 
 		assertThat(lines.next())
-				.as("first backtrace line")
+				.as("first traceback line")
 				.contains("Flux.single ⇢ at reactor.core.publisher.FluxOnAssemblyTest.stackAndLightCheckpoint(FluxOnAssemblyTest.java:");
 
 		assertThat(lines.next())
-				.as("second backtrace line")
+				.as("second traceback line")
 				.endsWith("checkpoint ⇢ single");
 	}
 
@@ -719,14 +719,14 @@ class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		Iterator<String> lines = seekToBacktrace(debugStack);
+		Iterator<String> lines = seekToTraceback(debugStack);
 
 		assertThat(lines.next())
-				.as("first backtrace line")
+				.as("first traceback line")
 				.endsWith("checkpoint ⇢ after1");
 
 		assertThat(lines.next())
-				.as("second backtrace line")
+				.as("second traceback line")
 				.endsWith("checkpoint ⇢ after2");
 	}
 
@@ -776,7 +776,7 @@ class FluxOnAssemblyTest {
 		objectOutputStream.writeObject(sharedError);
 	}
 
-	private Iterator<String> seekToBacktrace(String debugStack) {
+	private Iterator<String> seekToTraceback(String debugStack) {
 		Iterator<String> lines = seekToSupressedAssembly(debugStack);
 		while (lines.hasNext()) {
 			String line = lines.next();

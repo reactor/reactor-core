@@ -135,7 +135,8 @@ start of your application.
 Later on, if an exception occurs, the failing operator is able to refer to that capture
 and to rework the stack trace, appending additional information.
 
-TIP: We call this captured assembly information a *traceback*.
+TIP: We call this captured assembly information (and additional information added to the
+exceptions by Reactor in general) a *traceback*.
 
 In the next section, we see how the stack trace differs and how to interpret
 that new information.
@@ -218,7 +219,7 @@ that line, we find out he meant to use the less restrictive `take(1)` instead.
 
 We have solved our problem.
 
-Now consider the following line in the stack trace:
+Now consider the following section in the stack trace:
 
 ====
 [source]
@@ -227,7 +228,7 @@ Error has been observed at the following site(s):
 ----
 ====
 
-That second part of the debug stack trace was not necessarily interesting in
+That second part of the traceback was not necessarily interesting in
 this particular example, because the error was actually happening in the last
 operator in the chain (the one closest to `subscribe`). Considering another
 example might make it more clear:
@@ -362,19 +363,6 @@ to the assembly traceback. This way, the stack trace is omitted and you rely on 
 description to identify the assembly site. `checkpoint(String)` imposes less processing
 cost than a regular `checkpoint`.
 
-//snippets are in FluxOnAssemblyTest
-`checkpoint(String)` includes "`light`" in its output (which can be handy when
-searching), as shown in the following example:
-
-====
-[source]
-----
-...
-	Suppressed: The stacktrace has been enhanced by Reactor, refer to additional information below:
-Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].
-----
-====
-
 Last but not least, if you want to add a more generic description to the checkpoint but
 still rely on the stack trace mechanism to identify the assembly site, you can force that
 behavior by using the `checkpoint("description", true)` version. We are now back to the
@@ -387,7 +375,7 @@ following example:
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
 	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)
 	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
-Error has been observed by the following operator(s):
+Error has been observed at the following site(s):
 	|_	ParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 ----
 <1> `descriptionCorrelation1234` is the description provided in the `checkpoint`.
@@ -396,9 +384,10 @@ Error has been observed by the following operator(s):
 The description could be a static identifier or user-readable description or a wider
 correlation ID (for instance, coming from a header in the case of an HTTP request).
 
-NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed
-snapshot stacks are appended as suppressed error output after the observing operator
-graph and following the same declarative order.
+NOTE: When global debugging is enabled in conjunction with checkpoints, the global debugging
+traceback style is applied and checkpoints are only reflected in the
+"Error has been observed..." section.
+As a result, the name of heavy checkpoints is not visible in this case.
 
 [[reactor-tools-debug]]
 == Production-ready Global Debugging
