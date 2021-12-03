@@ -14,12 +14,11 @@
  <path d="M36 63h656" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#a)"/>
  <circle cy="63" cx="82" r="23" fill="#6cb33e" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
  <circle cy="64" cx="221" r="23" fill="#e6ba31" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <circle cy="63" cx="306.02" r="23" fill="#45b8de" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <path d="M652 39h1l2 2v44l-2 2h-1l-2-2V41z" fill="#34302c"/>
+ <path d="M672 39h1l2 2v44l-2 2h-1l-2-2V41Z" fill="#34302c"/>
  <path d="M82 86v110" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
  <path d="m221 87 1 109" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
  <path d="m306.02 87 1 109" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <path d="M652 87v110" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
+ <path d="M672 87v110" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
  <path d="M36.28 137.7h493.74" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#a)"/>
  <circle cy="138" cx="152" r="23" fill="#ff5a01"/>
  <circle cy="138" cx="152" r="23" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -30,34 +29,33 @@
  <path d="M152 162v34" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
  <path d="M27 355h672" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#a)"/>
  <circle cy="351.77" cx="150" r="23" fill="#6cb33e" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <circle cy="353.53" cx="223.24" r="23" fill="#e6ba31" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <circle cy="351.53" cx="223.24" r="23" fill="#e6ba31" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
  <circle cy="355.02" cx="453.78" r="23" fill="#45b8de" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <path d="M652 331c2 0 2 1 2 2v44c0 1 0 2-2 2l-2-2v-44z" fill="#34302c"/>
- <path d="M150 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <path d="M222 283v29" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <path d="M515.23 282.42v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <path d="M652 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
+ <path d="M672 331c2 0 2 1 2 2v44c0 1 0 2-2 2l-2-2v-44z" fill="#34302c"/>
+ <path d="M150 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
+ <path d="M222 281v29" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
+ <path d="M567.23 282.42v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
+ <path d="M672 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
  <circle cy="351.69" cx="307.02" r="23" fill="#ff5a01" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <circle cy="354.26" cx="515.61" r="23" fill="#e739ce" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <path d="M454.03 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <path d="M307.02 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <text y="340.77" x="131" fill="#fff"><tspan font-size="16" font-weight="700" x="145" y="356.77" font-family="Tahoma,'Nimbus Sans L'">5</tspan></text>
- <text y="340.69" x="287.89" fill="#fff"><tspan font-size="16" font-weight="700" x="301.89" y="356.69" font-family="Tahoma,'Nimbus Sans L'">3</tspan></text>
- <text y="344.02" x="434.78" fill="#fff"><tspan font-size="16" font-weight="700" x="448.78" y="360.02" font-family="Tahoma,'Nimbus Sans L'">2</tspan></text>
- <text y="342.53" x="204.24" fill="#fff"><tspan font-size="16" font-weight="700" x="218.24" y="358.53" font-family="Tahoma,'Nimbus Sans L'">4</tspan></text>
- <text y="343.26" x="496.61" fill="#fff"><tspan font-size="16" font-weight="700" x="510.61" y="359.26" font-family="Tahoma,'Nimbus Sans L'">1</tspan></text>
+ <circle cy="354.26" cx="567.61" r="23" fill="#e739ce" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M454.03 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
+ <path d="M307.02 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
+ <text y="340.77" x="131" fill="#fff"><tspan font-size="16" font-weight="700" x="145" y="356.77" font-family="Tahoma, 'Nimbus Sans L'">5</tspan></text>
+ <text y="340.69" x="287.89" fill="#fff"><tspan font-size="16" font-weight="700" x="301.89" y="356.69" font-family="Tahoma, 'Nimbus Sans L'">3</tspan></text>
+ <text y="344.02" x="434.78" fill="#fff"><tspan font-size="16" font-weight="700" x="448.78" y="360.02" font-family="Tahoma, 'Nimbus Sans L'">2</tspan></text>
+ <text y="340.53" x="204.24" fill="#fff"><tspan font-size="16" font-weight="700" x="218.24" y="356.53" font-family="Tahoma, 'Nimbus Sans L'">4</tspan></text>
+ <text y="343.26" x="548.61" fill="#fff"><tspan font-size="16" font-weight="700" x="562.61" y="359.26" font-family="Tahoma, 'Nimbus Sans L'">1</tspan></text>
  <path d="M36 221h655" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
  <text x="63" y="52" fill="#fff"><tspan y="68" x="77" font-weight="700" font-size="16" font-family="Tahoma,'Nimbus Sans L'">5</tspan></text>
  <text x="133" y="128" fill="#fff"><tspan y="144" x="147" font-weight="700" font-size="16" font-family="Tahoma,'Nimbus Sans L'">3</tspan></text>
- <text x="287.02" y="52" fill="#fff"><tspan y="68" x="301.02" font-weight="700" font-size="16" font-family="Tahoma,'Nimbus Sans L'">2</tspan></text>
  <text x="203" y="53" fill="#fff"><tspan y="69" x="217" font-weight="700" font-size="16" font-family="Tahoma,'Nimbus Sans L'">4</tspan></text>
  <text x="433.78" y="127" fill="#fff"><tspan y="143" x="447.78" font-weight="700" font-size="16" font-family="Tahoma,'Nimbus Sans L'">1</tspan></text>
- <circle cx="579" cy="63" r="23" fill="#ff5a01" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <text y="52" x="560" fill="#fff"><tspan font-size="16" font-weight="700" x="574" y="68" font-family="Tahoma,'Nimbus Sans L'">0</tspan></text>
- <circle cx="580" cy="353.77" r="23" fill="#ff5a01" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
- <path d="M580 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
- <text x="561" y="342.77" fill="#fff"><tspan y="358.77" x="575" font-weight="700" font-size="16" font-family="Tahoma,'Nimbus Sans L'">0</tspan></text>
- <path d="m579 87 1 109" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" marker-end="url(#b)"/>
+ <circle cx="567" cy="63" r="23" fill="#ff5a01" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <text y="52" x="548" fill="#fff"><tspan font-size="16" font-weight="700" x="562" y="68" font-family="Tahoma, 'Nimbus Sans L'">0</tspan></text>
+ <circle cx="618" cy="353.77" r="23" fill="#ff5a01" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M618 283v28" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
+ <text x="599" y="342.77" fill="#fff"><tspan y="358.77" x="613" font-weight="700" font-size="16" font-family="Tahoma, 'Nimbus Sans L'">0</tspan></text>
+ <path d="m567 87 1 109" fill="none" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)"/>
  <text x="-123.58" y="236" fill="#34302c"><tspan font-size="24" font-weight="700" x="127.42" y="258" font-family="Tahoma, 'Nimbus Sans L'">mergeComparing(</tspan></text>
  <circle cy="249" cx="384.42" r="23" fill="#fff" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
  <text x="352.42" y="238"><tspan y="254" x="366.42" font-weight="400" font-size="16" font-family="Tahoma, 'Nimbus Sans L'">small</tspan></text>
@@ -70,4 +68,6 @@
  <path d="M487.42 251h39" fill="none" stroke="#000" marker-end="url(#c)"/>
  <text y="236" x="337.42" fill="#34302c"><tspan y="258" x="588.42" font-weight="700" font-size="24" font-family="Tahoma, 'Nimbus Sans L'">)</tspan></text>
  <text x="530.6" y="238"><tspan y="254" x="544.6" font-weight="700" font-size="16" font-family="Tahoma, 'Nimbus Sans L'">big</tspan></text>
+ <circle cy="63" cx="306.02" r="23" fill="#45b8de" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <text x="287.02" y="52" fill="#fff"><tspan y="68" x="301.02" font-weight="700" font-size="16" font-family="Tahoma, 'Nimbus Sans L'">2</tspan></text>
 </svg>
