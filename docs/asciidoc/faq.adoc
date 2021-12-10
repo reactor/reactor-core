@@ -179,7 +179,7 @@ Since `3.3.4.RELEASE`, Reactor comes with a builder for such a retry, to be used
 The following example showcases a simple use of the builder, with hooks logging message right before
 and after the retry attempt delays.
 It delays retries and increases the delay between each attempt (pseudocode:
-delay = attempt number * 100 milliseconds):
+delay = 100ms * 2^attempt_number_starting_at_zero):
 
 ====
 [source,java]
@@ -193,14 +193,14 @@ Flux.<String>error(new IllegalStateException("boom"))
 		})
 		.retryWhen(Retry
 				.backoff(3, Duration.ofMillis(100)).jitter(0d) // <2>
-				.doAfterRetry(rs -> System.out.println("retried at " + LocalTime.now())) // <3>
+				.doAfterRetry(rs -> System.out.println("retried at " + LocalTime.now() + ", attempt " + rs.totalRetries())) // <3>
 				.onRetryExhaustedThrow((spec, rs) -> rs.failure()) // <4>
 		);
 ----
 <1> We will log the time of errors emitted by the source and count them.
 <2> We configure an exponential backoff retry with at most 3 attempts and no jitter.
-<3> We also log the time at which the retry happens.
-<4> By default an `Exceptions.retryExhausted` exception would be thrown, with the last `failure()` as a cause.
+<3> We also log the time at which the retry happens, and the retry attempt number (starting from 0).
+<4> By default, an `Exceptions.retryExhausted` exception would be thrown, with the last `failure()` as a cause.
 Here we customize that to directly emit the cause as `onError`.
 ====
 
@@ -208,13 +208,14 @@ When subscribed to, this fails and terminates after printing out the following:
 
 ====
 ----
-java.lang.IllegalArgumentException at 18:02:29.338
-retried at 18:02:29.459 <1>
-java.lang.IllegalArgumentException at 18:02:29.460
-retried at 18:02:29.663 <2>
-java.lang.IllegalArgumentException at 18:02:29.663
-retried at 18:02:29.964 <3>
-java.lang.IllegalArgumentException at 18:02:29.964
+java.lang.IllegalStateException: boom at 00:00:00.0
+retried at 00:00:00.101, attempt 0 <1>
+java.lang.IllegalStateException: boom at 00:00:00.101
+retried at 00:00:00.304, attempt 1 <2>
+java.lang.IllegalStateException: boom at 00:00:00.304
+retried at 00:00:00.702, attempt 2 <3>
+java.lang.IllegalStateException: boom at 00:00:00.702
+
 ----
 <1> First retry after about 100ms
 <2> Second retry after about 200ms
