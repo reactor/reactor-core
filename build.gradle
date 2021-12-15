@@ -52,6 +52,54 @@ repositories { //needed at root for asciidoctor and nohttp-checkstyle
 	mavenCentral()
 }
 
+tasks.named("dependencyUpdates").configure {
+	def within = { String desc, String version, String constraint ->
+		if (!version.startWith(constraint)) {
+			reject("$desc must be kept on ${constraint}.x")
+		}
+	}
+	def strictly = { String desc, String version, String exactVersion ->
+		if (version != exactVersion) {
+			reject("$desc must be on ${exactVersion}")
+		}
+	}
+
+	checkConstraints = true
+	revision = "release"
+	resolutionStrategy {
+		componentSelection {
+			all {
+				if (it.candidate.module == "reactor-extra") {
+					within("JMH Reactor-Extra", it.candidate.version, libs.versions.allConstraints.jmhReactorExtra.get())
+				}
+				else if (it.candidate.module == "jsr305") {
+					// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
+					strictly("JSR 305", it.candidate.version, libs.versions.allConstraints.jsr305.get())
+				}
+				else if (it.candidate.module.contains("kotlin")) {
+					within("Kotlin", it.candidate.version, libs.versions.allConstraints.kotlin.get())
+				}
+				else if (it.candidate.module == "logback-classic") {
+					within("Logback", it.candidate.version, libs.versions.allConstraints.logback.get())
+				}
+				else if (it.candidate.module == "micrometer-core") {
+					// we want to be backward compatible with 1.3.0 all the way
+					strictly("Micrometer", it.candidate.version, libs.versions.allConstraints.micrometer.get())
+				}
+				else if (it.candidate.module == "slf4j-api") {
+					within("Slf4J", it.candidate.version, libs.versions.allConstraints.slf4j.get())
+				}
+			}
+		}
+	}
+}
+
+versionCatalogUpdate {
+	sortByKey = true
+	addDependencies = false
+	keepUnused = true
+}
+
 ext {
 	jdk = JavaVersion.current().majorVersion
 	jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
