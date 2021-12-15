@@ -57,8 +57,8 @@ task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
-	src "${repositories.mavenCentral().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
-	dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
+	src "${repositories.mavenCentral().url}io/projectreactor/reactor-test/${libs.versions.baseline.core.api.get()}/reactor-test-${libs.versions.baseline.core.api.get()}.jar"
+	dest "${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar"
 
 	finalizedBy { japicmp }
 }
@@ -68,16 +68,16 @@ task japicmp(type: JapicmpTask) {
 		println "Offline: skipping downloading of baseline and JAPICMP"
 	  	enabled = false
 	}
-	else if ("$compatibleVersion" == "SKIP") {
+	else if ("${libs.versions.baseline.core.api.get()}" == "SKIP") {
 		println "SKIP: Instructed to skip the baseline comparison"
 	  	enabled = false
 	}
 	else {
-		println "Will download and perform baseline comparison with ${compatibleVersion}"
+		println "Will download and perform baseline comparison with ${libs.versions.baseline.core.api.get()}"
 	  	dependsOn(downloadBaseline)
 	}
 
-	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
+	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar")
 	newClasspath = files(jar.archiveFile)
 	onlyBinaryIncompatibleModified = true
 	failOnModification = true
