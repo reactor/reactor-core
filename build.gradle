@@ -53,14 +53,18 @@ repositories { //needed at root for asciidoctor and nohttp-checkstyle
 }
 
 tasks.named("dependencyUpdates").configure {
-	def within = { String desc, String version, String constraint ->
-		if (!version.startWith(constraint)) {
-			reject("$desc must be kept on ${constraint}.x")
+	def within = { com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent version, String constraint ->
+		if (!version.candidate.version.startsWith(constraint)) {
+			def reason = "$version.candidate.displayName is not in the required ${constraint}.x line"
+			version.reject(reason)
 		}
 	}
-	def strictly = { String desc, String version, String exactVersion ->
-		if (version != exactVersion) {
-			reject("$desc must be on ${exactVersion}")
+	def strictly = { com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent version,
+									 String constraint, String reasonComplement ->
+		if (version.candidate.version != constraint) {
+			def reason = "$version.candidate.displayName rejected: must be kept on $constraint, $reasonComplement"
+			println reason
+			version.reject(reason)
 		}
 	}
 
@@ -69,25 +73,20 @@ tasks.named("dependencyUpdates").configure {
 	resolutionStrategy {
 		componentSelection {
 			all {
-				if (it.candidate.module == "reactor-extra") {
-					within("JMH Reactor-Extra", it.candidate.version, libs.versions.allConstraints.jmhReactorExtra.get())
+				if (candidate.module == "jsr305") {
+					strictly(it, libs.versions.allConstraints.jsr305.get(), "which is the last one with 'annotations' jar on compile classpath")
 				}
-				else if (it.candidate.module == "jsr305") {
-					// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
-					strictly("JSR 305", it.candidate.version, libs.versions.allConstraints.jsr305.get())
+				else if (candidate.module == "micrometer-core") {
+					strictly(it, libs.versions.allConstraints.micrometer.get(), "since we want to be backward compatible with 1.3.x all the way")
 				}
-				else if (it.candidate.module.contains("kotlin")) {
-					within("Kotlin", it.candidate.version, libs.versions.allConstraints.kotlin.get())
+				else if (candidate.module.contains("kotlin")) {
+					within(it, libs.versions.allConstraints.kotlin.get())
 				}
-				else if (it.candidate.module == "logback-classic") {
-					within("Logback", it.candidate.version, libs.versions.allConstraints.logback.get())
+				else if (candidate.module == "logback-classic") {
+					within(it, libs.versions.allConstraints.logback.get())
 				}
-				else if (it.candidate.module == "micrometer-core") {
-					// we want to be backward compatible with 1.3.0 all the way
-					strictly("Micrometer", it.candidate.version, libs.versions.allConstraints.micrometer.get())
-				}
-				else if (it.candidate.module == "slf4j-api") {
-					within("Slf4J", it.candidate.version, libs.versions.allConstraints.slf4j.get())
+				else if (candidate.module == "slf4j-api") {
+					within(it, libs.versions.allConstraints.slf4j.get())
 				}
 			}
 		}
