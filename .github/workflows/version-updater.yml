@@ -1,9 +1,8 @@
 name: Check for Version Updates
 on:
-  workflow_dispatch:
   schedule: #cron defaults to main branch
     - cron: '04 17 * * *'
-  pull_request:
+  push:
     branches:
       - versionsCatalogCronCheck
 jobs:
