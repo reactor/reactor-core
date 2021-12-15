@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
   schedule: #cron defaults to main branch
     - cron: '04 17 * * *'
+  pull_request:
+    branches:
+      - versionsCatalogCronCheck
 jobs:
   version-update:
     name: version update
