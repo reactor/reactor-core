@@ -57,64 +57,63 @@ configurations {
 
 dependencies {
 	// Reactive Streams
-	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
-	tckTestImplementation ("org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}") {
+	api libs.reactiveStreams
+	tckTestImplementation (libs.reactiveStreams.tck) {
 		// without this exclusion, testng brings an old version of junit which *embeds* an old version of hamcrest
 		// which gets picked up first and that we don't want. TCK runs fine w/o (old) junit 4.
 		exclude group: 'junit', module: 'junit'
 	}
+	tckTestImplementation libs.testNg
 
 	// JSR-305 annotations
-	compileOnly "com.google.code.findbugs:jsr305:$findbugsVersion"
-	testCompileOnly "com.google.code.findbugs:jsr305:$findbugsVersion"
+	compileOnly libs.jsr305
+	testCompileOnly libs.jsr305
 
 	// Optional Logging Operator
-	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
-	testCompileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+	compileOnly libs.slf4j
+	testCompileOnly libs.slf4j
 
 	// Optional Metrics
-	compileOnly "io.micrometer:micrometer-core:$micrometerVersion"
+	compileOnly libs.micrometer
 
 	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
-	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
-	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	compileOnly libs.kotlin.stdlib
+	testImplementation libs.kotlin.stdlib
 
 	// Optional BlockHound support
-	compileOnly "io.projectreactor.tools:blockhound:$blockhoundVersion"
+	compileOnly libs.blockhound
 	// Also make BlockHound visible in the CP of dedicated testset
-	blockHoundTestImplementation "io.projectreactor.tools:blockhound:$blockhoundVersion"
+	blockHoundTestImplementation libs.blockhound
 
 	// Optional JDK 9 Converter
-	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
+	jsr166backport libs.jsr166backport
 
-	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+	// Testing
+	testImplementation platform(libs.junit.bom)
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testImplementation "org.junit.platform:junit-platform-launcher"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-
-	testImplementation "ch.qos.logback:logback-classic:$logbackVersion" //need to access API to decrease some tests verbosity
-	// Testing
 	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
-
-	testImplementation "org.assertj:assertj-core:$assertJVersion"
-	testImplementation "org.mockito:mockito-core:$mockitoVersion"
-	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
-	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
-	testImplementation "com.pivovarit:throwing-function:$throwingFunctionVersion"
-	testImplementation "com.tngtech.archunit:archunit:$archUnitVersion"
+	testImplementation libs.logback //need to access API to decrease some tests verbosity
+	testImplementation libs.assertj
+	testImplementation libs.mockito
+	testImplementation libs.javaObjectLayout
+	testImplementation libs.awaitility
+	testImplementation libs.throwingFunction
+	testImplementation libs.archUnit
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
-	withMicrometerTestImplementation "io.micrometer:micrometer-core:$micrometerVersion"
+	withMicrometerTestImplementation libs.micrometer
 	withMicrometerTestImplementation sourceSets.test.output
 
-  	jcstressImplementation(project(":reactor-test")) {
-	  exclude module: 'reactor-core'
+	jcstressImplementation(project(":reactor-test")) {
+		exclude module: 'reactor-core'
 	}
-  	jcstressImplementation "ch.qos.logback:logback-classic:$logbackVersion"
+	jcstressImplementation libs.logback
 
 }
 

@@ -13,13 +13,13 @@ configurations {
 dependencies {
   // Use the baseline to avoid using new APIs in the benchmarks
   compileOnly "io.projectreactor:reactor-core:${perfBaselineVersion}"
-  compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
+  compileOnly libs.jsr305
 
-  implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
-  implementation "io.projectreactor.addons:reactor-extra:3.3.3.RELEASE", {
+  implementation libs.jmh.core
+  implementation libs.jmh.reactorExtra, {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
-  annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
+  annotationProcessor libs.jmh.annotations.processor
 
   current project(':reactor-core')
   baseline "io.projectreactor:reactor-core:${perfBaselineVersion}", {
