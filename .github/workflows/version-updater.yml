@@ -1,10 +1,7 @@
 name: Check for Version Updates
 on:
-  schedule: #cron defaults to main branch
+  schedule: #NB: cron defaults to main branch
     - cron: '04 17 * * *'
-  push:
-    branches:
-      - versionsCatalogCronCheck
 jobs:
   version-update:
     name: version update
@@ -22,11 +19,4 @@ jobs:
         id: check-report
         run: |
           cat build/dependencyUpdates/report.txt
-          grep -q ^'The following dependencies have later' build/dependencyUpdates/report.txt && echo "::error ::Dependencies updates" && exit 123
-      - uses: actions/upload-artifact@v2
-        name: Capture Version Report
-        if: failure()
-        with:
-          name: version-report
-          path: build/dependencyUpdates/report.txt
-          retention-days: 1
+          grep -q ^'The following dependencies have later' build/dependencyUpdates/report.txt && echo "::error ::There are version updates in main" && exit 123
