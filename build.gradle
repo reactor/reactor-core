@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent
 import org.gradle.util.VersionNumber
 import java.text.SimpleDateFormat
 
@@ -52,25 +53,25 @@ repositories { //needed at root for asciidoctor and nohttp-checkstyle
 	mavenCentral()
 }
 
-tasks.named("dependencyUpdates").configure {
-	def within = { com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent version, String constraint ->
-		if (!version.candidate.version.startsWith(constraint)) {
-			def reason = "$version.candidate.displayName is not in the required ${constraint}.x line"
-			version.reject(reason)
-		}
+// a utility function to reject candidate upgrades based on startsWith
+def within = { ComponentSelectionWithCurrent version, String constraint ->
+	if (!version.candidate.version.startsWith(constraint)) {
+		def reason = "$version.candidate.displayName is not in the required ${constraint}.x line"
+		version.reject(reason)
 	}
-	def strictly = { com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent version,
-									 String constraint, String reasonComplement ->
-		if (version.candidate.version != constraint) {
-			def reason = "$version.candidate.displayName rejected: must be kept on $constraint, $reasonComplement"
-			println reason
-			version.reject(reason)
-		}
+}
+// a utility function to reject candidate upgrades that are not strictly equal to expected version
+def strictly = { ComponentSelectionWithCurrent version, String constraint, String reasonComplement ->
+	if (version.candidate.version != constraint) {
+		def reason = "$version.candidate.displayName rejected: must be kept on $constraint, $reasonComplement"
+		version.reject(reason)
 	}
+}
 
-	checkConstraints = true
-	revision = "release"
-	resolutionStrategy {
+tasks.named("dependencyUpdates").configure {
+	checkConstraints = true // check dependency constraints and platforms
+	revision = "release" // disallow milestones
+	resolutionStrategy { // further avoid undesirable versions
 		componentSelection {
 			all {
 				if (candidate.module == "jsr305") {
@@ -94,7 +95,7 @@ tasks.named("dependencyUpdates").configure {
 }
 
 versionCatalogUpdate {
-	sortByKey = false
+	sortByKey = false //we put some constraints and baselines at the beginning
 	addDependencies = false
 	keepUnused = true
 }
