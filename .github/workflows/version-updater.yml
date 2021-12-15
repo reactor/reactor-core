@@ -1,0 +1,28 @@
+name: Check for Version Updates
+on:
+  workflow_dispatch:
+  schedule: #cron defaults to main branch
+    - cron: '04 17 * * *'
+jobs:
+  version-update:
+    name: version update
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      - uses: gradle/gradle-build-action@v2
+        name: gradle
+        with:
+          arguments: dependencyUpdates -DoutputFormatter=plain
+      - name: check report
+        id: check-report
+        run: "::set-output name=foundUpdates::$(cat build/dependencyUpdates/report.txt | grep \"The following dependencies have later\" -c)"
+      - uses: actions/upload-artifact@v2
+        name: Capture Version Report
+        if: ${{ failure() || steps.check-report.outputs.foundUpdates != 0 }}
+        with:
+          name: version-report
+          path: build/dependencyUpdates/report.*
+          retention-days: 1
