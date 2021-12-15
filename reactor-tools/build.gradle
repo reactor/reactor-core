@@ -35,28 +35,28 @@ configurations {
 dependencies {
     api project(":reactor-core")
 
-    compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
-    compileOnly "com.google.code.findbugs:annotations:${findbugsVersion}"
+    compileOnly libs.jsr305
+    compileOnly libs.jsr305
 
-    shaded "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
-    shaded "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    shaded libs.byteBuddy.api
+    shaded libs.byteBuddy.agent
     for (dependency in project.configurations.shaded.dependencies) {
         compileOnly(dependency)
         testRuntimeOnly(dependency)
         javaAgentTestRuntimeOnly(dependency)
     }
 
-    testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+    testImplementation platform(libs.junit.bom)
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation "cglib:cglib:$cgLibVersion"
+    testImplementation libs.assertj
+    testImplementation libs.cglib
 
-    jarFileTestImplementation "org.assertj:assertj-core:$assertJVersion"
+    jarFileTestImplementation libs.assertj
 
     buildPluginTestImplementation gradleTestKit()
-    buildPluginTestImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+    buildPluginTestImplementation platform(libs.junit.bom)
     buildPluginTestImplementation "org.junit.jupiter:junit-jupiter-api"
     buildPluginTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
@@ -176,9 +176,9 @@ task generateMockGradle(type: Copy) {
     filter(ReplaceTokens, tokens: [
       CORE: coreJar,
       AGENT: agentJar,
-      REACTIVE_STREAMS_VERSION: rootProject.ext.reactiveStreamsVersion,
-      JUNIT_BOM_VERSION: rootProject.ext.jUnitPlatformVersion,
-      BYTE_BUDDY_VERSION: rootProject.ext.byteBuddyVersion
+      REACTIVE_STREAMS_VERSION: libs.versions.reactiveStreams.get(),
+      JUNIT_BOM_VERSION: libs.versions.junit.get(),
+      BYTE_BUDDY_VERSION: libs.versions.bytebuddy.get()
     ])
 }
 
