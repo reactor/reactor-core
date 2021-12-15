@@ -12,17 +12,17 @@ configurations {
 
 dependencies {
   // Use the baseline to avoid using new APIs in the benchmarks
-  compileOnly "io.projectreactor:reactor-core:${perfBaselineVersion}"
+  compileOnly libs.reactor.perfBaseline.core
   compileOnly libs.jsr305
 
   implementation libs.jmh.core
-  implementation libs.jmh.reactorExtra, {
+  implementation libs.reactor.perfBaseline.extra, {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
   annotationProcessor libs.jmh.annotations.processor
 
   current project(':reactor-core')
-  baseline "io.projectreactor:reactor-core:${perfBaselineVersion}", {
+  baseline libs.reactor.perfBaseline.core, {
     changing = true
   }
 }
