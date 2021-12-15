@@ -21,7 +21,9 @@ jobs:
       - name: check report
         id: check-report
         run: |
-          echo "::set-output name=foundUpdates::$(cat build/dependencyUpdates/report.txt | grep \"The following dependencies have later\" -c)"
+          echo "::echo::on"
+          echo "::set-output name=foundUpdates::$(cat build/dependencyUpdates/report.txt | grep 'The following dependencies have later' -c)"
+          echo "::echo::off"
       - uses: actions/upload-artifact@v2
         name: Capture Version Report
         if: ${{ failure() || steps.check-report.outputs.foundUpdates != 0 }}
