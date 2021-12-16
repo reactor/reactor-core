@@ -1,6 +1,6 @@
 {
   "extends": [
-    "config:base"
+    "config:base",
     ":semanticPrefixChore",
     ":prHourlyLimit4",
     ":automergeDisabled",
