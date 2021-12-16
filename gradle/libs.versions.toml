@@ -1,8 +1,8 @@
 [versions]
 # Baselines, should be updated on every release
 baseline-core-api = "3.4.13"
-baseline-core-perf = "3.4.13"
-baseline-extra-perf = "3.3.8.RELEASE"
+baselinePerfCore = "3.4.13"
+baselinePerfExtra = "3.3.8.RELEASE"
 
 # Constraints to avoid too eager upgrades, used in versions plugin configuration
 constraints-jsr305 = "3.0.1"
@@ -17,6 +17,7 @@ assertj = "3.21.0"
 bytebuddy = "1.11.19"
 jmh = "1.33"
 jsr305 = "3.0.1"
+jsr166 = "1.0.0.RELEASE"
 junit = "5.8.0"
 kotlin = "1.5.31"
 logback = "1.2.5"
@@ -35,7 +36,7 @@ cglib = "cglib:cglib:3.3.0"
 javaObjectLayout = "org.openjdk.jol:jol-core:0.16"
 jmh-annotations-processor = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
-jsr166backport = "io.projectreactor:jsr166:1.0.0.RELEASE"
+jsr166backport = { module = "io.projectreactor:jsr166", version.ref = "jsr166" }
 jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
@@ -44,8 +45,8 @@ micrometer = { module = "io.micrometer:micrometer-core", version.ref = "micromet
 mockito = "org.mockito:mockito-core:3.12.4"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
-reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baseline.core.perf" }
-reactor-perfBaseline-extra = { module = "io.projectreactor.addons:reactor-extra", version.ref = "baseline.extra.perf" }
+reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
+reactor-perfBaseline-extra = { module = "io.projectreactor.addons:reactor-extra", version.ref = "baselinePerfExtra" }
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 testNg = "org.testng:testng:7.4.0"
 throwingFunction = "com.pivovarit:throwing-function:1.5.1"
