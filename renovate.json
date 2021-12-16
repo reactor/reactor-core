@@ -28,8 +28,13 @@
       "allowedVersions": "=1.3.0"
     },
     {
-      "matchDataSources": ["gradle-version"],
+      "matchManagers": ["gradle-wrapper"],
       "groupName": "Gradle",
+      "schedule": ["before 3am on Monday"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "Github Workflows",
       "schedule": ["before 3am on Monday"]
     }
   ]
