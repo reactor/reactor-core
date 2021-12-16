@@ -15,5 +15,19 @@
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
     "@pivotal-cla This is an Obvious Fix"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["com.google.code.findbugs:jsr305"],
+      "groupName": "JSR305 with annotations jar",
+      "groupSlug": "jsr305",
+      "allowedVersions": "=3.0.1"
+    },
+    {
+      "matchPackageNames": ["io.micrometer:micrometer-core"],
+      "groupName": "Micrometer 1.3.0",
+      "groupSlug": "micrometer",
+      "allowedVersions": "=1.3.0"
+    }
   ]
 }
