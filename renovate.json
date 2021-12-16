@@ -1,5 +1,19 @@
 {
   "extends": [
     "config:base"
+    ":semanticPrefixChore",
+    ":prHourlyLimit4",
+    ":automergeDisabled",
+    "group:allNonMajor",
+    ":label(type/dependency-upgrade)",
+    ":reviewer(reactor/core-team)",
+    ":timezone(Europe/Paris)",
+  ],
+  "schedule": [
+    "after 9am and before 8pm every day"
+  ],
+  "prBodyNotes": [
+    "Renovate has been configured to skip the CLA:",
+    "@pivotal-cla This is an Obvious Fix"
   ]
 }
