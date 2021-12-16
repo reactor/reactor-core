@@ -7,10 +7,8 @@
     "group:allNonMajor",
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
-    ":timezone(Europe/Paris)"
-  ],
-  "schedule": [
-    "after 9am and before 8pm every day"
+    ":timezone(Europe/Paris)",
+    "schedule:nonOfficeHours"
   ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
@@ -28,6 +26,11 @@
       "groupName": "Micrometer 1.3.0",
       "groupSlug": "micrometer",
       "allowedVersions": "=1.3.0"
+    },
+    {
+      "matchDataSources": ["gradle-version"],
+      "groupName": "Gradle",
+      "schedule": ["before 3am on Monday"]
     }
   ]
 }
