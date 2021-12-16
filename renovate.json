@@ -7,7 +7,7 @@
     "group:allNonMajor",
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
-    ":timezone(Europe/Paris)",
+    ":timezone(Europe/Paris)"
   ],
   "schedule": [
     "after 9am and before 8pm every day"
