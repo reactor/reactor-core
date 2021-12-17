@@ -24,9 +24,9 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.core.publisher.Operators.DeferredSubscription;
 import reactor.util.annotation.Nullable;
@@ -235,9 +235,10 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 			}
 			else {
 				super.terminate();
-				if (closureSubscriber != null) {
-					closureSubscriber.cancel();
-				}
+			}
+
+			if (closureSubscriber != null) {
+				closureSubscriber.cancel();
 			}
 		}
 

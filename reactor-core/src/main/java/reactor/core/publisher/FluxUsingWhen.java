@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
@@ -249,9 +250,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			}
 			else {
 				super.terminate();
-				if (closureSubscriber != null) {
-					closureSubscriber.cancel();
-				}
+			}
+
+			if (closureSubscriber != null) {
+				closureSubscriber.cancel();
 			}
 		}
 
@@ -419,7 +421,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 					actual.onSubscribe(this);
 				}
 				else {
-					arbiter.set(s);
+					if (!arbiter.set(s)) {
+						cancel();
+					}
 				}
 			}
 		}
