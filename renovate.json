@@ -10,6 +10,16 @@
     ":timezone(Europe/Paris)",
     "schedule:nonOfficeHours"
   ],
+  "hostRules": [
+    {
+      "matchHost": "https://repo.spring.io",
+      "enabled": false
+    },
+    {
+      "matchHost": "https://repo.spring.io/plugins-release",
+      "enabled": true
+    }
+  ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
     "@pivotal-cla This is an Obvious Fix"
