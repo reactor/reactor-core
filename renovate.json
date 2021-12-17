@@ -4,7 +4,6 @@
     ":semanticPrefixChore",
     ":prHourlyLimit4",
     ":automergeDisabled",
-    "group:allNonMajor",
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
     ":timezone(Europe/Paris)",
@@ -31,6 +30,14 @@
     },
     {
       "matchDepTypes": [ "plugin" ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "all non-major plugins",
+      "groupSlug": "plugins-minor-patch"
+    },
+    {
       "matchPackagePatterns": [ ".*jfrog.*" ],
       "matchUpdateTypes": [
         "minor",
