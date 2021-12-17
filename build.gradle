@@ -96,20 +96,20 @@ ext {
 
 	// Logging
 	slf4jVersion = '1.7.32'
-	logbackVersion = '1.2.5'
+	logbackVersion = '1.2.9'
 
 	// Testing
-	jUnitPlatformVersion = '5.8.0' //needs to be manually synchronized in buildSrc
+	jUnitPlatformVersion = '5.8.2' //needs to be manually synchronized in buildSrc
 	assertJVersion = '3.21.0' //needs to be manually synchronized in buildSrc
 	mockitoVersion = '3.12.4'
-	awaitilityVersion = '4.1.0'
+	awaitilityVersion = '4.1.1'
 	throwingFunctionVersion = '1.5.1'
 	javaObjectLayoutVersion = '0.16'
 	testNgVersion = '7.4.0'
-	archUnitVersion = '0.21.0'
+	archUnitVersion = '0.22.0'
 
 	// For reactor-tools
-	byteBuddyVersion = '1.11.19' //dependency, but plugin usage is now in a mock build done via TestKit
+	byteBuddyVersion = '1.12.5' //dependency, but plugin usage is now in a mock build done via TestKit
 	cgLibVersion = '3.3.0'
 
 	// JMH
