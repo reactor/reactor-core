@@ -22,6 +22,45 @@
   ],
   "packageRules": [
     {
+      "matchDatasources": ["maven"],
+      "registryUrls": [
+        "https://repo.maven.apache.org/maven2",
+        "https://oss.sonatype.org/content/repositories/releases/",
+        "https://plugins.gradle.org/m2/"
+      ]
+    },
+    {
+      "matchPackagePatterns": [
+        "*"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "all non-major library dependencies",
+      "groupSlug": "libs-minor-patch"
+    },
+    {
+      "matchPackagePatterns": [
+        "*jfrog*",
+        "*asciidoctor*",
+        "*bnd*",
+        "*undercouch*",
+        "*champeau*",
+        "*reyerizo*",
+        "*nohttp*",
+        "*johnrengelman*",
+        "*diffplug*",
+        "*unbroken-dome*"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "all non-major plugins",
+      "groupSlug": "plugins-minor-patch"
+    },
+    {
       "matchPackageNames": ["com.google.code.findbugs:jsr305"],
       "groupName": "JSR305 with annotations jar",
       "groupSlug": "jsr305",
@@ -42,14 +81,6 @@
       "matchManagers": ["github-actions"],
       "groupName": "Github Workflows",
       "schedule": ["before 3am on Monday"]
-    },
-    {
-      "matchDatasources": ["maven"],
-      "registryUrls": [
-        "https://repo.maven.apache.org/maven2",
-        "https://oss.sonatype.org/content/repositories/releases/",
-        "https://plugins.gradle.org/m2/"
-      ]
     }
   ]
 }
