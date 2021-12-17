@@ -8,9 +8,16 @@
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
     ":timezone(Europe/Paris)",
-    "schedule:nonOfficeHours",
-    ":disableHost(repo.spring.io)"
+    "schedule:nonOfficeHours"
   ],
+  "gradle": {
+   "enabled": "true",
+    "registryUrls": [
+      "https://repo.maven.apache.org/maven2",
+      "https://oss.sonatype.org/content/repositories/releases/",
+      "https://plugins.gradle.org/m2/"
+    ]
+  },
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
     "@pivotal-cla This is an Obvious Fix"
