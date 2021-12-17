@@ -18,6 +18,13 @@
       "https://plugins.gradle.org/m2/"
     ]
   },
+  "maven": {
+    "registryUrls": [
+      "https://repo.maven.apache.org/maven2",
+      "https://oss.sonatype.org/content/repositories/releases/",
+      "https://plugins.gradle.org/m2/"
+    ]
+  },
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
     "@pivotal-cla This is an Obvious Fix"
