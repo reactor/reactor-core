@@ -8,17 +8,8 @@
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
     ":timezone(Europe/Paris)",
-    "schedule:nonOfficeHours"
-  ],
-  "hostRules": [
-    {
-      "matchHost": "https://repo.spring.io",
-      "enabled": false
-    },
-    {
-      "matchHost": "https://repo.spring.io/plugins-release",
-      "enabled": true
-    }
+    "schedule:nonOfficeHours",
+    ":disableHost(repo.spring.io)
   ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
