@@ -16,7 +16,7 @@ dependencies {
   compileOnly "com.google.code.findbugs:jsr305:${findbugsVersion}"
 
   implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
-  implementation "io.projectreactor.addons:reactor-extra:3.3.3.RELEASE", {
+  implementation "io.projectreactor.addons:reactor-extra:3.4.6", {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
   annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
