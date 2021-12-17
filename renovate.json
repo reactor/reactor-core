@@ -9,7 +9,7 @@
     ":reviewer(reactor/core-team)",
     ":timezone(Europe/Paris)",
     "schedule:nonOfficeHours",
-    ":disableHost(repo.spring.io)
+    ":disableHost(repo.spring.io)"
   ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
