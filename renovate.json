@@ -31,28 +31,23 @@
       ]
     },
     {
-      "matchPackagePatterns": [
-        "*"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
+      "matchPackagePatterns": [ "*" ],
+      "matchUpdateTypes": [ "minor", "patch" ],
       "groupName": "all non-major library dependencies",
       "groupSlug": "libs-minor-patch"
     },
     {
       "matchPackagePatterns": [
-        "*jfrog*",
-        "*asciidoctor*",
-        "*bnd*",
-        "*undercouch*",
-        "*champeau*",
-        "*reyerizo*",
-        "*nohttp*",
-        "*johnrengelman*",
-        "*diffplug*",
-        "*unbroken-dome*"
+        ".*jfrog.*",
+        ".*asciidoctor.*",
+        ".*bnd.*",
+        ".*undercouch.*",
+        ".*champeau.*",
+        ".*reyerizo.*",
+        ".*nohttp.*",
+        ".*johnrengelman.*",
+        ".*diffplug.*",
+        ".*unbroken-dome.*"
       ],
       "matchUpdateTypes": [
         "minor",
