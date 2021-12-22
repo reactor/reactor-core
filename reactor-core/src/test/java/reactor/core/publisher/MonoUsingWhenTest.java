@@ -17,17 +17,21 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable.Attr;
 import reactor.core.publisher.MonoUsingWhen.ResourceSubscriber;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.context.Context;
@@ -36,6 +40,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class MonoUsingWhenTest {
+
+	@Test
+	void reproducer() throws InterruptedException {
+
+		Random random = new Random();
+		Releaseable releaseable = new Releaseable();
+
+		for (int i = 0; i < 100; i++) {
+			System.out.println(i);
+			runTest(random, releaseable);
+		}
+	}
+
+	private void runTest(Random random, Releaseable releaseable) throws InterruptedException {
+		Mono<Long> mono = Mono.usingWhen(Mono.fromSupplier(() -> releaseable)
+		                                     .delayElement(Duration.ofMillis(50)).doOnNext(Releaseable::allocate),
+				it -> Mono.delay(Duration.ofMillis(50), Schedulers.boundedElastic()),
+				Releaseable::release);
+
+		CompletableFuture<Long> future = mono.toFuture();
+
+		Thread.sleep(random.nextInt(200));
+		future.cancel(true);
+
+		Awaitility.await().atMost(Duration.ofSeconds(10)).until(releaseable::isReleased);
+	}
+
+	static class Releaseable {
+
+		private final AtomicBoolean released = new AtomicBoolean(true);
+
+		private final Mono<Void> releaser = Mono.fromRunnable(() -> this.released.set(true));
+
+		void allocate() {
+			System.out.println("alloc");
+			released.set(false);
+		}
+
+		boolean isReleased() {
+			return released.get();
+		}
+
+		Mono<Void> release() {
+			System.out.println("release");
+			return releaser;
+		}
+
+	}
 
 	@Test
 	public void nullResourcePublisherRejected() {

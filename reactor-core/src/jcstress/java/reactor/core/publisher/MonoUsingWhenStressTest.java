@@ -23,31 +23,35 @@ import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
-import org.openjdk.jcstress.infra.results.LLLLL_Result;
+import org.openjdk.jcstress.infra.results.LLLL_Result;
+import reactor.core.CoreSubscriber;
 
-import static org.openjdk.jcstress.annotations.Expect.*;
+import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
 public abstract class MonoUsingWhenStressTest {
 
 	//SENT, DERIVED, CLOSED, CANCELLED, VALUE OBSERVED
 	@JCStressTest
-	@Outcome(id = {"OK, 1, 1, 0, 100"}, expect = FORBIDDEN, desc = "generated, derived, closed but no emit observed")
-	@Outcome(id = {"OK, 0, 4040, 0, 0"}, expect = FORBIDDEN, desc = "generated, but otherwise unprocessed")
-	@Outcome(id = {"OK, 1, 1, 0, 101"}, expect = ACCEPTABLE, desc = "generated, derived, closed after emitted")
-	@Outcome(id = {"OK, 1, 0, 1, 0"}, expect = ACCEPTABLE, desc = "generated, derived, cancelled before emit observed")
-	@Outcome(id = {"CANCELLED, 0, 0, 0, 0"}, expect = ACCEPTABLE, desc = "cancelled before generation")
-	@Outcome(id = {"CANCELLED, 0, 1, 0, 0"}, expect = ACCEPTABLE_INTERESTING, desc = "cancelled before generation, but closed")
+	@Outcome(id = {"1, 0, 1, 0"}, expect = ACCEPTABLE, desc = "released")
+	@Outcome(id = {"0, 0, 0, 0"}, expect = ACCEPTABLE, desc = "not delivered")
+	@Outcome(id = {"1, 1, 0, 1000"}, expect = ACCEPTABLE, desc = "delivered and completed")
 	@State
 	public static class CancelCloseToResourceEmission {
 
 		final AtomicIntegerArray producedAndTerminatedOrCleaned = new AtomicIntegerArray(3);
-		Sinks.One<AtomicIntegerArray> resourceSink = Sinks.one();
+		StressSubscription<? super AtomicIntegerArray> resourceSink;
 
 		final Mono<Long> mono = Mono.usingWhen(
-			resourceSink.asMono(),
+			new Mono<AtomicIntegerArray>() {
+				@Override
+				public void subscribe(CoreSubscriber<? super AtomicIntegerArray> actual) {
+					resourceSink = new StressSubscription<>(actual);
+					actual.onSubscribe(resourceSink);
+				}
+			},
 			it -> {
 				it.incrementAndGet(0);
-				return Mono.never();
+				return Mono.empty();
 			},
 			it -> Mono.fromRunnable(() -> it.incrementAndGet(1)),
 			(it, error) -> Mono.fromRunnable(() -> it.incrementAndGet(1)),
@@ -61,8 +65,13 @@ public abstract class MonoUsingWhenStressTest {
 		}
 
 		@Actor
-		public void emit(LLLLL_Result result) {
-			result.r1 = resourceSink.tryEmitValue(producedAndTerminatedOrCleaned);
+		public void emit() {
+			if (resourceSink.cancelled.get()) {
+				return;
+			}
+
+			resourceSink.actual.onNext(producedAndTerminatedOrCleaned);
+			resourceSink.actual.onComplete();
 		}
 
 		@Actor
@@ -70,33 +79,12 @@ public abstract class MonoUsingWhenStressTest {
 			valueSubscriber.cancel();
 		}
 
-		@Actor
-		public void waitForTermination() {
-			long deadline = System.currentTimeMillis() + 500;
-			while (true) {
-				if (System.currentTimeMillis() > deadline) {
-					producedAndTerminatedOrCleaned.addAndGet(1, 4040);
-					return;
-				}
-				if (producedAndTerminatedOrCleaned.get(1) != 0 ||
-					producedAndTerminatedOrCleaned.get(2) != 0) {
-					return;
-				}
-				try {
-					Thread.sleep(50);
-				}
-				catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
 		@Arbiter
-		public void arbiter(LLLLL_Result result) {
-			result.r2 = producedAndTerminatedOrCleaned.get(0);
-			result.r3 = producedAndTerminatedOrCleaned.get(1);
-			result.r4 = producedAndTerminatedOrCleaned.get(2);
-			result.r5 = valueSubscriber.onNextCalls.get() +
+		public void arbiter(LLLL_Result result) {
+			result.r1 = producedAndTerminatedOrCleaned.get(0);
+			result.r2 = producedAndTerminatedOrCleaned.get(1);
+			result.r3 = producedAndTerminatedOrCleaned.get(2);
+			result.r4 = valueSubscriber.onNextCalls.get() +
 				valueSubscriber.onErrorCalls.get() * 100 +
 				valueSubscriber.onCompleteCalls.get() * 1000;
 		}

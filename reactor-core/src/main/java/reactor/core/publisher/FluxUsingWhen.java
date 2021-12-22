@@ -168,8 +168,6 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		Subscription resourceSubscription;
 		boolean      resourceProvided;
 
-		UsingWhenSubscriber<? super T, S> closureSubscriber;
-
 		ResourceSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super S, ? extends Publisher<? extends T>> resourceClosure,
 				Function<? super S, ? extends Publisher<?>> asyncComplete,
@@ -193,14 +191,13 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			resourceProvided = true;
 
 			final Publisher<? extends T> p = deriveFluxFromResource(resource, resourceClosure);
-			this.closureSubscriber = prepareSubscriberForResource(resource,
+
+			p.subscribe(FluxUsingWhen.<S, T>prepareSubscriberForResource(resource,
 					this.actual,
 					this.asyncComplete,
 					this.asyncError,
 					this.asyncCancel,
-					this);
-
-			p.subscribe(closureSubscriber);
+					this));
 
 			if (!isMonoSource) {
 				resourceSubscription.cancel();
@@ -246,15 +243,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		public void cancel() {
 			if (!resourceProvided) {
 				resourceSubscription.cancel();
-				super.cancel();
-			}
-			else {
-				super.terminate();
 			}
 
-			if (closureSubscriber != null) {
-				closureSubscriber.cancel();
-			}
+			super.cancel();
 		}
 
 		@Override
@@ -274,12 +265,6 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 		//state that differs in the different variants
 		final CoreSubscriber<? super T>                                            actual;
-
-		volatile Subscription                                                      s;
-		static final AtomicReferenceFieldUpdater<UsingWhenSubscriber, Subscription>SUBSCRIPTION =
-				AtomicReferenceFieldUpdater.newUpdater(UsingWhenSubscriber.class,
-						Subscription.class, "s");
-
 		//rest of the state is always the same
 		final S                                                                resource;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
@@ -296,6 +281,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
 		 */
 		Throwable error;
+		Subscription s;
 
 		UsingWhenSubscriber(CoreSubscriber<? super T> actual,
 				S resource,
@@ -320,7 +306,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return error != null;
 			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
-			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.CANCELLED) return callbackApplied == 3;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -336,21 +322,20 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void cancel() {
-			if (CALLBACK_APPLIED.compareAndSet(this, 0, 1)) {
-				if (Operators.terminate(SUBSCRIPTION, this)) {
-					try {
-						if (asyncCancel != null) {
-							Flux.from(asyncCancel.apply(resource))
-							    .subscribe(new CancelInner(this));
-						}
-						else {
-							Flux.from(asyncComplete.apply(resource))
-							    .subscribe(new CancelInner(this));
-						}
+			if (CALLBACK_APPLIED.compareAndSet(this, 0, 3)) {
+				this.s.cancel();
+				try {
+					if (asyncCancel != null) {
+						Flux.from(asyncCancel.apply(resource))
+						    .subscribe(new CancelInner(this));
 					}
-					catch (Throwable error) {
-						Loggers.getLogger(FluxUsingWhen.class).warn("Error generating async resource cleanup during onCancel", error);
+					else {
+						Flux.from(asyncComplete.apply(resource))
+						    .subscribe(new CancelInner(this));
 					}
+				}
+				catch (Throwable error) {
+					Loggers.getLogger(FluxUsingWhen.class).warn("Error generating async resource cleanup during onCancel", error);
 				}
 			}
 		}
@@ -362,7 +347,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onError(Throwable t) {
-			if (CALLBACK_APPLIED.compareAndSet(this, 0, 1)) {
+			if (CALLBACK_APPLIED.compareAndSet(this, 0, 2)) {
 				Publisher<?> p;
 
 				try {
@@ -421,9 +406,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 					actual.onSubscribe(this);
 				}
 				else {
-					if (!arbiter.set(s)) {
-						cancel();
-					}
+					arbiter.set(this);
 				}
 			}
 		}

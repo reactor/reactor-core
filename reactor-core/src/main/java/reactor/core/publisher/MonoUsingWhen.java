@@ -151,8 +151,6 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		Subscription        resourceSubscription;
 		boolean             resourceProvided;
 
-		UsingWhenSubscriber<? super T, S> closureSubscriber;
-
 		ResourceSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super S, ? extends Mono<? extends T>> resourceClosure,
 				Function<? super S, ? extends Publisher<?>> asyncComplete,
@@ -182,15 +180,12 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 
 			final Mono<? extends T> p = deriveMonoFromResource(resource, resourceClosure);
 
-			this.closureSubscriber =
-					prepareSubscriberForResource(resource,
-							this.actual,
-							this.asyncComplete,
-							this.asyncError,
-							this.asyncCancel,
-							this);
-
-			p.subscribe(closureSubscriber);
+			p.subscribe(MonoUsingWhen.<S, T>prepareSubscriberForResource(resource,
+					this.actual,
+					this.asyncComplete,
+					this.asyncError,
+					this.asyncCancel,
+					this));
 
 			if (!isMonoSource) {
 				resourceSubscription.cancel();
@@ -231,15 +226,9 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		public void cancel() {
 			if (!resourceProvided) {
 				resourceSubscription.cancel();
-				super.cancel();
-			}
-			else {
-				super.terminate();
 			}
 
-			if (closureSubscriber != null) {
-				closureSubscriber.cancel();
-			}
+			super.cancel();
 		}
 
 		@Override
