@@ -74,6 +74,78 @@ public abstract class Tuples implements Function {
 		return new Tuple2<>(t1, t2);
 	}
 
+	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(
+			T1 t1,
+			Tuple2<T2, T3> tuple2) {
+		return new Tuple3<>(t1, tuple2.t1, tuple2.t2);
+	}
+
+	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(
+			Tuple2<T1, T2> tuple2,
+			T3 t3) {
+		return new Tuple3<>(tuple2.t1, tuple2.t2, t3);
+	}
+
+	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(
+			T1 t1,
+			Tuple3<T2, T3, T4> tuple3) {
+		return new Tuple4<>(t1, tuple3.t1, tuple3.t2, tuple3.t3);
+	}
+
+	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(
+			Tuple3<T1, T2, T3> tuple3,
+			T4 t4) {
+		return new Tuple4<>(tuple3.t1, tuple3.t2, tuple3.t3, t4);
+	}
+
+	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(
+			T1 t1,
+			Tuple4<T2, T3, T4, T5> tuple4) {
+		return new Tuple5<>(t1, tuple4.t1, tuple4.t2, tuple4.t3, tuple4.t4);
+	}
+
+	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(
+			Tuple4<T1, T2, T3, T4> tuple4,
+			T5 t5) {
+		return new Tuple5<>(tuple4.t1, tuple4.t2, tuple4.t3, tuple4.t4, t5);
+	}
+
+	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(
+			T1 t1,
+			Tuple5<T2, T3, T4, T5, T6> tuple5) {
+		return new Tuple6<>(t1, tuple5.t1, tuple5.t2, tuple5.t3, tuple5.t4, tuple5.t5);
+	}
+
+	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(
+			Tuple5<T1, T2, T3, T4, T5> tuple5,
+			T6 t6) {
+		return new Tuple6<>(tuple5.t1, tuple5.t2, tuple5.t3, tuple5.t4, tuple5.t5, t6);
+	}
+
+	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(
+			T1 t1,
+			Tuple6<T2, T3, T4, T5, T6, T7> tuple6) {
+		return new Tuple7<>(t1, tuple6.t1, tuple6.t2, tuple6.t3, tuple6.t4, tuple6.t5, tuple6.t6);
+	}
+
+	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(
+			Tuple6<T1, T2, T3, T4, T5, T6> tuple6,
+			T7 t7) {
+		return new Tuple7<>(tuple6.t1, tuple6.t2, tuple6.t3, tuple6.t4, tuple6.t5, tuple6.t6, t7);
+	}
+
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> of(
+			T1 t1,
+			Tuple7<T2, T3, T4, T5, T6, T7, T8> tuple7) {
+		return new Tuple8<>(t1, tuple7.t1, tuple7.t2, tuple7.t3, tuple7.t4, tuple7.t5, tuple7.t6, tuple7.t7);
+	}
+
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> of(
+			Tuple7<T1, T2, T3, T4, T5, T6, T7> tuple7,
+			T8 t8) {
+		return new Tuple8<>(tuple7.t1, tuple7.t2, tuple7.t3, tuple7.t4, tuple7.t5, tuple7.t6, tuple7.t7, t8);
+	}
+
 	/**
 	 * Create a {@link Tuple3} with the given objects.
 	 *
