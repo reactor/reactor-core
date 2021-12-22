@@ -9789,9 +9789,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return windowTimeout(maxSize, maxTime , Schedulers.parallel());
 	}
 
-	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime,
-			boolean fairBackpressure) {
-		return windowTimeout(maxSize, maxTime , Schedulers.parallel(), true);
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, boolean fairBackpressure) {
+		return windowTimeout(maxSize, maxTime , Schedulers.parallel(), fairBackpressure);
 	}
 
 	/**
