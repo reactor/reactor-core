@@ -1919,7 +1919,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Creates a {@link Flux} that mirrors the most recently emitted {@link Publisher},
-	 * forwarding its data until a new {@link Publisher} comes in in the source.
+	 * forwarding its data until a new {@link Publisher} comes in the source.
 	 * <p>
 	 * The resulting {@link Flux} will complete once there are no new {@link Publisher} in
 	 * the source (source has completed) and the last mirrored {@link Publisher} has also
@@ -1938,7 +1938,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Creates a {@link Flux} that mirrors the most recently emitted {@link Publisher},
-	 * forwarding its data until a new {@link Publisher} comes in in the source.
+	 * forwarding its data until a new {@link Publisher} comes in the source.
 	 * <p>
 	 * The resulting {@link Flux} will complete once there are no new {@link Publisher} in
 	 * the source (source has completed) and the last mirrored {@link Publisher} has also
@@ -3454,7 +3454,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectWithCollector.svg" alt="">
 	 *
-	 * <p><strong>Discard Support:</strong> This operator discards the intermediate container (see {@link Collector#supplier()} upon
+	 * <p><strong>Discard Support:</strong> This operator discards the intermediate container (see {@link Collector#supplier()}) upon
 	 * cancellation, error or exception while applying the {@link Collector#finisher()}. Either the container type
 	 * is a {@link Collection} (in which case individual elements are discarded) or not (in which case the entire
 	 * container is discarded). In case the accumulator {@link BiConsumer} of the collector fails to accumulate
@@ -3836,7 +3836,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
-	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
+	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite})
 	 * if several sources error.
 	 *
 	 * <p>
@@ -3873,7 +3873,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
-	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
+	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite})
 	 * if several sources error.
 	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
 	 *
@@ -4131,7 +4131,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given {@link Duration}. Signals are delayed and continue on an user-specified
+	 * by a given {@link Duration}. Signals are delayed and continue on a user-specified
 	 * {@link Scheduler}, but empty sequences or immediate error signals are not delayed.
 	 *
 	 * <p>
@@ -4170,7 +4170,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @param delay {@link Duration} to shift the sequence by
 	 *
-	 * @return an shifted {@link Flux} emitting at the same frequency as the source
+	 * @return a shifted {@link Flux} emitting at the same frequency as the source
 	 */
 	public final Flux<T> delaySequence(Duration delay) {
 		return delaySequence(delay, Schedulers.parallel());
@@ -4182,7 +4182,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * as they are emitted, always resulting in the delay between two elements being
 	 * the same as in the source (only the first element is visibly delayed from the
 	 * previous event, that is the subscription).
-	 * Signals are delayed and continue on an user-specified {@link Scheduler}, but empty
+	 * Signals are delayed and continue on a user-specified {@link Scheduler}, but empty
 	 * sequences or immediate error signals are not delayed.
 	 * <p>
 	 * With this operator, a source emitting at 10Hz with a delaySequence {@link Duration}
@@ -4202,7 +4202,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param delay {@link Duration} to shift the sequence by
 	 * @param timer a time-capable {@link Scheduler} instance to delay signals on
 	 *
-	 * @return an shifted {@link Flux} emitting at the same frequency as the source
+	 * @return a shifted {@link Flux} emitting at the same frequency as the source
 	 */
 	public final Flux<T> delaySequence(Duration delay, Scheduler timer) {
 		return onAssembly(new FluxDelaySequence<>(this, delay, timer));
@@ -4969,7 +4969,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * That is: emit the values from this {@link Flux} first, then expand each at a first level of
 	 * recursion and emit all of the resulting values, then expand all of these at a second
-	 * level and so on..
+	 * level and so on.
 	 * <p>
 	 * For example, given the hierarchical structure
 	 * <pre>
@@ -4996,7 +4996,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
 	 * elements per level of recursion.
 	 *
-	 * @return an breadth-first expanded {@link Flux}
+	 * @return a breadth-first expanded {@link Flux}
 	 */
 	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
 			int capacityHint) {
@@ -5034,7 +5034,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param expander the {@link Function} applied at each level of recursion to expand
 	 * values into a {@link Publisher}, producing a graph.
 	 *
-	 * @return an breadth-first expanded {@link Flux}
+	 * @return a breadth-first expanded {@link Flux}
 	 */
 	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander) {
 		return expand(expander, Queues.SMALL_BUFFER_SIZE);
@@ -6486,7 +6486,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Evaluate each accepted value against the given {@link Class} type. If the
-	 * a value matches the type, it is passed into the resulting {@link Flux}. Otherwise
+	 * value matches the type, it is passed into the resulting {@link Flux}. Otherwise
 	 * the value is ignored and a request of 1 is emitted.
 	 *
 	 * <p>
@@ -6718,7 +6718,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements that it drops after having passed
 	 * them to the provided {@code onDropped} handler.
 	 *
-	 * @param onDropped the Consumer called when an value gets dropped due to lack of downstream requests
+	 * @param onDropped the Consumer called when a value gets dropped due to lack of downstream requests
 	 * @return a backpressured {@link Flux} that drops overflowing elements
 	 */
 	public final Flux<T> onBackpressureDrop(Consumer<? super T> onDropped) {
@@ -8892,7 +8892,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Relay values from this {@link Flux} until the specified {@link Duration} elapses.
 	 * <p>
 	 * If the duration is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
-	 * signals its first value (which is not not relayed, though).
+	 * signals its first value (which is not relayed, though).
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/takeWithTimespanForFlux.svg" alt="">
@@ -8911,7 +8911,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * as measured on the specified {@link Scheduler}.
 	 * <p>
 	 * If the duration is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
-	 * signals its first value (which is not not relayed, though).
+	 * signals its first value (which is not relayed, though).
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/takeWithTimespanForFlux.svg" alt="">
