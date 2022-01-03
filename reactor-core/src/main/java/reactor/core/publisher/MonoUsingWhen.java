@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.core.publisher.Operators.DeferredSubscription;
 import reactor.util.annotation.Nullable;
@@ -151,8 +151,6 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		Subscription        resourceSubscription;
 		boolean             resourceProvided;
 
-		UsingWhenSubscriber<? super T, S> closureSubscriber;
-
 		ResourceSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super S, ? extends Mono<? extends T>> resourceClosure,
 				Function<? super S, ? extends Publisher<?>> asyncComplete,
@@ -182,15 +180,12 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 
 			final Mono<? extends T> p = deriveMonoFromResource(resource, resourceClosure);
 
-			this.closureSubscriber =
-					prepareSubscriberForResource(resource,
-							this.actual,
-							this.asyncComplete,
-							this.asyncError,
-							this.asyncCancel,
-							this);
-
-			p.subscribe(closureSubscriber);
+			p.subscribe(MonoUsingWhen.<S, T>prepareSubscriberForResource(resource,
+					this.actual,
+					this.asyncComplete,
+					this.asyncError,
+					this.asyncCancel,
+					this));
 
 			if (!isMonoSource) {
 				resourceSubscription.cancel();
@@ -231,14 +226,9 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		public void cancel() {
 			if (!resourceProvided) {
 				resourceSubscription.cancel();
-				super.cancel();
 			}
-			else {
-				super.terminate();
-				if (closureSubscriber != null) {
-					closureSubscriber.cancel();
-				}
-			}
+
+			super.cancel();
 		}
 
 		@Override
