@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-	id "com.gradle.enterprise" version "3.6.1"
+	id "com.gradle.enterprise" version "3.8"
 }
 
 rootProject.name = 'reactor'
