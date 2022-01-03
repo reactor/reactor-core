@@ -18,8 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: setup java
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2
       with:
+        distribution: 'temurin'
         java-version: 8
     - name: interpret version
       id: version
@@ -40,8 +41,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: setup java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
+          distribution: 'temurin'
           java-version: 8
       - name: run slower tests
         id: slowerTests
@@ -58,8 +60,9 @@ jobs:
     environment: snapshots
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-java@v1
+    - uses: actions/setup-java@v2
       with:
+        distribution: 'temurin'
         java-version: 8
     - name: deploy
       env:
@@ -77,8 +80,9 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-java@v1
+    - uses: actions/setup-java@v2
       with:
+        distribution: 'temurin'
         java-version: 8
     - name: deploy
       env:
@@ -104,8 +108,9 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-java@v1
+    - uses: actions/setup-java@v2
       with:
+        distribution: 'temurin'
         java-version: 8
     - name: deploy
       env:
