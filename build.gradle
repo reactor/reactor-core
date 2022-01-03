@@ -96,11 +96,11 @@ ext {
 
 	// Logging
 	slf4jVersion = '1.7.32'
-	logbackVersion = '1.2.9'
+	logbackVersion = '1.2.10'
 
 	// Testing
 	jUnitPlatformVersion = '5.8.2' //needs to be manually synchronized in buildSrc
-	assertJVersion = '3.21.0' //needs to be manually synchronized in buildSrc
+	assertJVersion = '3.22.0' //needs to be manually synchronized in buildSrc
 	mockitoVersion = '4.2.0'
 	awaitilityVersion = '4.1.1'
 	throwingFunctionVersion = '1.5.1'
@@ -109,11 +109,11 @@ ext {
 	archUnitVersion = '0.22.0'
 
 	// For reactor-tools
-	byteBuddyVersion = '1.12.5' //dependency, but plugin usage is now in a mock build done via TestKit
+	byteBuddyVersion = '1.12.6' //dependency, but plugin usage is now in a mock build done via TestKit
 	cgLibVersion = '3.3.0'
 
 	// JMH
-	jmhVersion = '1.33'
+	jmhVersion = '1.34'
 }
 
 // only publish scan if a specific gradle entreprise server is passed
