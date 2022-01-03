@@ -101,7 +101,7 @@ ext {
 	// Testing
 	jUnitPlatformVersion = '5.8.2' //needs to be manually synchronized in buildSrc
 	assertJVersion = '3.21.0' //needs to be manually synchronized in buildSrc
-	mockitoVersion = '3.12.4'
+	mockitoVersion = '4.2.0'
 	awaitilityVersion = '4.1.1'
 	throwingFunctionVersion = '1.5.1'
 	javaObjectLayoutVersion = '0.16'
