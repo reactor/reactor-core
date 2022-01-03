@@ -219,7 +219,7 @@ java.lang.IllegalStateException: boom at 00:00:00.702
 ----
 <1> First retry after about 100ms
 <2> Second retry after about 200ms
-<3> Third retry after about 300ms
+<3> Third retry after about 400ms
 ====
 
 [[faq.thread-affinity-publishon]]
