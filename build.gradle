@@ -43,7 +43,7 @@ plugins {
 	id 'biz.aQute.bnd.builder' version '5.3.0' apply false
 	id 'io.spring.nohttp' version '0.0.9'
 	id "io.github.reyerizo.gradle.jcstress" version "0.8.11" apply false
-	id "com.diffplug.spotless" version "5.15.0"
+	id "com.diffplug.spotless" version "6.1.0"
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
