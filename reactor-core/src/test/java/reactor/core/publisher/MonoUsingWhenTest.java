@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -34,6 +35,8 @@ import reactor.core.publisher.MonoUsingWhen.ResourceSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,19 +44,22 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class MonoUsingWhenTest {
 
-	@Test
-	void reproducer() throws InterruptedException {
+	private static final Logger LOGGER = Loggers.getLogger(MonoUsingWhenTest.class);
 
+	// see https://github.com/reactor/reactor-core/issues/2836
+	@Test
+	@Tag("slow")
+	void cancelEarlyDoesNotLeak() throws InterruptedException {
 		Random random = new Random();
 		Releaseable releaseable = new Releaseable();
 
 		for (int i = 0; i < 100; i++) {
-			System.out.println(i);
-			runTest(random, releaseable);
+			LOGGER.debug("iteration #" + i);
+			runCancelEarlyDoesNotLeak(random, releaseable);
 		}
 	}
 
-	private void runTest(Random random, Releaseable releaseable) throws InterruptedException {
+	private void runCancelEarlyDoesNotLeak(Random random, Releaseable releaseable) throws InterruptedException {
 		Mono<Long> mono = Mono.usingWhen(Mono.fromSupplier(() -> releaseable)
 		                                     .delayElement(Duration.ofMillis(50)).doOnNext(Releaseable::allocate),
 				it -> Mono.delay(Duration.ofMillis(50), Schedulers.boundedElastic()),
