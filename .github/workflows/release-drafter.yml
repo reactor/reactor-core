@@ -6,8 +6,7 @@ on:
       - 3.3.x
 jobs:
   releaseDraft:
-    # Notes on prepare: this job has no access to secrets, only github token. As a result, all non-core actions are centralized here
-    # This includes the tagging and drafting of release notes. Still, when possible we favor plain run of gradle tasks
+    # Note this job has no access to secrets, only github token. When possible we favor plain run of gradle tasks.
     name: release-draft
     runs-on: ubuntu-20.04
     steps:
