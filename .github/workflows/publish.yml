@@ -51,21 +51,6 @@ jobs:
         with:
           arguments: test -Pjunit-tags=slow
 
-  #draft release notes only if this is a snapshot commit (ie. a merge of a PR)
-  releaseDrafter:
-    name: releaserDrafter
-    runs-on: ubuntu-20.04
-    needs: [ prepare ]
-    if: needs.prepare.outputs.versionType == 'SNAPSHOT'
-    steps:
-      # Renovate Bot should suggest updates to the action
-      - uses: release-drafter/release-drafter@v5.15.0
-        with:
-          disable-autolabeler: true
-          commitish: ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
     name: deploySnapshot
