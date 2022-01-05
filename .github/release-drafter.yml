@@ -1,19 +1,21 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
+change-template: '- $TITLE'
+filter-by-commitish: true
 template: |
   # :checklist: TODO below
    - [ ] Replace release train references
    - [ ] Replace older maintenance train references
    - [ ] Ensure changes from other maintenance release are indeed grouped and extra-indented
-  
+
   ${{ github.event.repository.name }} `$RESOLVED_VERSION` is part of **`2020.0.{SR}` Release Train (`Europium` SR{SR})**.
-  
+
   This release contains {SHORT DESCRIPTION OF THE CONTENTS}.
-  
+
   All changes from [`{OLDER_TRAIN}`](https://github.com/${{ github.repository }}/releases/tag/v{OLDER_TRAIN}) are also included and these are listed below with an additional level of indentation.
-  
+
   $CHANGES
-  
+
   ## :+1: Thanks to all contributors who participated to this release
   $CONTRIBUTORS
 categories:
@@ -34,13 +36,9 @@ categories:
       - 'type/documentation'
   - title: ':up: Dependency Upgrades'
     label: 'type/dependency-upgrade'
-change-template: '- $TITLE'
-change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+
 exclude-contributors:
   - 'simonbasle'
   - 'OlegDokuka'
   - 'violetagg'
   - 'pderop'
-  # - 'garyrussel'
-  # - 'acogoluegnes'
-filter-by-commitish: true
