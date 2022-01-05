@@ -1,0 +1,37 @@
+name: Release Notes Drafter
+on:
+  push:
+    branches: # For branches, better to list them explicitly than regexp include
+      - main
+      - 3.3.x
+jobs:
+  releaseDraft:
+    # Note this job has no access to secrets, only github token. When possible we favor plain run of gradle tasks.
+    name: release-draft
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - name: interpret version
+        id: version
+        #we only run the qualifyVersionGha task so that no other console printing can hijack this step's output
+        #output:
+        #  versionType: ${{ steps.version.outputs.versionType }}
+        #  fullVersion: ${{ steps.version.outputs.fullVersion }}
+        #fails if versionType is BAD, which interrupts the workflow
+        run: ./gradlew qualifyVersionGha
+      - name: compile release notes
+        # Renovate Bot should suggest updates to the action
+        uses: release-drafter/release-drafter@v5.15.0
+        id: notes
+        #draft release notes only if this is a snapshot commit (ie. a merge of a PR)
+        if: steps.version.outputs.versionType == 'SNAPSHOT'
+        with:
+          disable-autolabeler: true
+          commitish: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
