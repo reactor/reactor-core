@@ -61,6 +61,7 @@ task qualifyVersionGha() {
 			println "::error ::Unable to parse $version to a VersionNumber with recognizable qualifier"
 			throw new TaskExecutionException(tasks.getByName("qualifyVersionGha"), new IllegalArgumentException("Unable to parse $version to a VersionNumber with recognizable qualifier"))
 		}
+		println "Recognized $version as $versionType"
 	}
 }
 
