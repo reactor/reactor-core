@@ -1,6 +1,21 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
-filter-by-commitish: true
+template: |
+  # :checklist: TODO below
+   - [ ] Replace release train references
+   - [ ] Replace older maintenance train references
+   - [ ] Ensure changes from other maintenance release are indeed grouped and extra-indented
+  
+  ${{ github.event.repository.name }} `$RESOLVED_VERSION` is part of **`2020.0.{SR}` Release Train (`Europium` SR{SR})**.
+  
+  This release contains {SHORT DESCRIPTION OF THE CONTENTS}.
+  
+  All changes from [`{OLDER_TRAIN}`](https://github.com/${{ github.repository }}/releases/tag/v{OLDER_TRAIN}) are also included and these are listed below with an additional level of indentation.
+  
+  $CHANGES
+  
+  ## :+1: Thanks to all contributors who participated to this release
+  $CONTRIBUTORS
 categories:
   - title: ':warning: Update considerations and deprecations'
     labels:
@@ -28,19 +43,4 @@ exclude-contributors:
   - 'pderop'
   # - 'garyrussel'
   # - 'acogoluegnes'
-template: |
-  # :checklist: TODO below
-   - [ ] Replace release train references
-   - [ ] Replace older maintenance train references
-   - [ ] Ensure changes from other maintenance release are indeed grouped and extra-indented
-  
-  ${{ github.event.repository.name }} `$RESOLVED_VERSION` is part of **`2020.0.{SR}` Release Train (`Europium` SR{SR})**.
-  
-  This release contains {SHORT DESCRIPTION OF THE CONTENTS}.
-  
-  All changes from [`{OLDER_TRAIN}`](https://github.com/${{ github.repository }}/releases/tag/v{OLDER_TRAIN}) are also included and these are listed below with an additional level of indentation.
-  
-  $CHANGES
-  
-  ## :+1: Thanks to all contributors who participated to this release
-  $CONTRIBUTORS
+filter-by-commitish: true
