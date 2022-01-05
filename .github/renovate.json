@@ -71,6 +71,11 @@
       "groupName": "Micrometer 1.3.0",
       "groupSlug": "micrometer",
       "allowedVersions": "=1.3.0"
+    },
+    {
+      "matchPackagePrefixes": ["org.jetbrains.kotlin"],
+      "groupName": "Kotlin",
+      "allowedVersions": "<1.6.0"
     }
   ]
 }
