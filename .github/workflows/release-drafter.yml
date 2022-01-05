@@ -31,7 +31,7 @@ jobs:
         uses: release-drafter/release-drafter@v5.15.0
         id: notes
         #draft release notes only if this is a snapshot commit (ie. a merge of a PR)
-        if: needs.prepare.outputs.versionType == 'SNAPSHOT'
+        if: steps.version.outputs.versionType == 'SNAPSHOT'
         with:
           disable-autolabeler: true
           commitish: "main" #${{ github.ref_name }} # temporarily test the release note
