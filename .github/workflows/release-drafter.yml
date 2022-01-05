@@ -4,6 +4,7 @@ on:
     branches: # For branches, better to list them explicitly than regexp include
       - main
       - 3.3.x
+      - releaseDrafting
 jobs:
   releaseDraft:
     # Notes on prepare: this job has no access to secrets, only github token. As a result, all non-core actions are centralized here
@@ -33,6 +34,6 @@ jobs:
         if: needs.prepare.outputs.versionType == 'SNAPSHOT'
         with:
           disable-autolabeler: true
-          commitish: ${{ github.ref_name }}
+          commitish: "main" #${{ github.ref_name }} # temporarily test the release note
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
