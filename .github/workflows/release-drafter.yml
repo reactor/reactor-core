@@ -24,7 +24,7 @@ jobs:
         #  notesFrom: ${{ steps.version.outputs.notesFrom }} the vTag to generate notes from, or SKIP if no notes should be generated (ie not a snapshot)
         #  notesName: ${{ steps.version.outputs.notesName }} the vTag and name of the draft release, or SKIP if no notes should be generated (ie not a snapshot)
         #fails if version cannot be qualified, which interrupts the workflow. if no notes should be created, notesFrom is set to SKIP
-        run: .gradlew qualifyNotesGha
+        run: ./gradlew qualifyNotesGha
       - name: compile release notes
         uses: mikepenz/release-changelog-builder-action@v2.7.1
         id: notes
