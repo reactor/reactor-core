@@ -1,0 +1,38 @@
+{
+  "categories": [
+    {
+      "title": "## :warning: Update considerations and deprecations",
+      "labels": ["invalid", "wontfix"]
+    },
+    {
+      "title": "## :sparkles: New features and improvements",
+      "labels" : [ "enhancement" ]
+    },
+    {
+      "title": "## :lady_beetle: Bug fixes",
+      "labels": [ "bug" ]
+    },
+    {
+      "title": "## :book: Documentation, Tests and Build",
+      "labels": [ "documentation", "question" ]
+    },
+    {
+      "title": "## :up: Dependency Upgrades",
+      "labels": [ "upgrade" ]
+    }
+  ],
+  "ignore_labels": [
+    "ignore-changelog"
+  ],
+  "sort": "ASC",
+  "template": "# :memo: TODO below\n- [ ] Replace release train references\n- [ ] Replace older maintenance train references\n- [ ] Ensure changes from other maintenance release are indeed grouped and extra-indented\n- [ ] Classify or remove unclassified changes\n- [ ] be sure to remove the :memo: TODO sections\n\nReactor-Core `{VERSION}` is part of **`2020.0.{SR}` Release Train (`Europium` SR{SR})**.\n\nThis release contains {SHORT DESCRIPTION OF THE CONTENTS}.\n\nAll changes from [`{OLDER_TRAIN}`](https://github.com/reactor/reactor-core/releases/tag/v{OLDER_TRAIN}) are also included and these are listed below with an additional level of indentation.\n\n${{CHANGELOG}}## :memo: TODO Classify or remove the unclassified changes below:\n\n${{UNCATEGORIZED}}\n\n${{IGNORED}}",
+  "pr_template": "- ${{TITLE}} (#${{NUMBER}}, thanks @${{AUTHOR}})",
+  "empty_template": "- no changes",
+  "max_tags_to_fetch": 20,
+  "max_pull_requests": 200,
+  "max_back_track_time_days": 365,
+  "base_branches": [
+    "main",
+    "[0-9]+\\.[0-9]+\\.x"
+  ]
+}
