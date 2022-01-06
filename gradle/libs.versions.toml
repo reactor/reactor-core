@@ -9,7 +9,7 @@ asciidoctor = "3.3.2"
 bytebuddy = "1.12.6"
 jmh = "1.34"
 junit = "5.8.2"
-kotlin = "1.5.31"
+kotlin = "1.5.32"
 reactiveStreams = "1.0.3"
 
 [libraries]
