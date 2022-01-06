@@ -2,23 +2,23 @@
   "categories": [
     {
       "title": "## :warning: Update considerations and deprecations",
-      "labels": ["invalid", "wontfix"]
+      "labels": ["warn/api-change", "warn/behavior-change", "warn/blocker", "warn/deprecation", "warn/regression"]
     },
     {
       "title": "## :sparkles: New features and improvements",
-      "labels" : [ "enhancement" ]
+      "labels" : [ "type/enhancement" ]
     },
     {
       "title": "## :lady_beetle: Bug fixes",
-      "labels": [ "bug" ]
+      "labels": [ "type/bug" ]
     },
     {
       "title": "## :book: Documentation, Tests and Build",
-      "labels": [ "documentation", "question" ]
+      "labels": [ "type/documentation", "type/chores" ]
     },
     {
       "title": "## :up: Dependency Upgrades",
-      "labels": [ "upgrade" ]
+      "labels": [ "type/dependency-upgrade" ]
     }
   ],
   "ignore_labels": [
