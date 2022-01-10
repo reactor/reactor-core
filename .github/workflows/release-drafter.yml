@@ -26,7 +26,7 @@ jobs:
         #fails if version cannot be qualified, which interrupts the workflow. if no notes should be created, notesFrom is set to SKIP
         run: ./gradlew qualifyNotesGha
       - name: compile release notes
-        uses: mikepenz/release-changelog-builder-action@v2.7.1
+        uses: mikepenz/release-changelog-builder-action@v2.7.2
         id: notes
         if: steps.version.outputs.notesFrom != 'SKIP'
         with:
