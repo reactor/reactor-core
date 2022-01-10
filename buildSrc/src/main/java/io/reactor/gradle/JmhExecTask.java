@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,11 @@ package io.reactor.gradle;
 
 import java.io.File;
 
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -27,97 +31,99 @@ import org.gradle.api.tasks.options.Option;
  */
 class JmhExecTask extends JavaExec {
 
-	private String include;
-	private String fullInclude;
-	private String exclude;
-	private String format = "json";
-	private String profilers;
-	private String jmhJvmArgs;
-	private String verify;
+	private static final String DEFAULT_FORMAT = "json";
+
+	@Input
+	@Option(option = "include", description="configure bench inclusion using substring")
+	private final Property<String> include;
+
+	@Input
+	@Option(option = "fullInclude", description = "explicitly configure bench inclusion using full JMH style regexp")
+	private final Property<String> fullInclude;
+
+	@Input
+	@Option(option = "exclude", description = "explicitly configure bench exclusion using full JMH style regexp")
+	private final Property<String> exclude;
+
+	@Input
+	@Option(option = "format", description = "configure report format")
+	private final Property<String> format;
+
+	@Input
+	@Option(option = "profilers", description = "configure jmh profiler(s) to use, comma separated")
+	private final Property<String> profilers;
+
+	@Input
+	@Option(option = "jvmArgs", description = "configure additional JMH JVM arguments, comma separated")
+	private final Property<String> jmhJvmArgs;
+
+	@Input
+	@Option(option = "verify", description = "run in verify mode")
+	private final Property<String> verify;
 
 	public JmhExecTask() {
 		super();
 		getMainClass().set("org.openjdk.jmh.Main");
+		ObjectFactory objectFactory = this.getObjectFactory();
+		include = objectFactory.property(String.class);
+		fullInclude = objectFactory.property(String.class);
+		exclude = objectFactory.property(String.class);
+		format = objectFactory.property(String.class).convention(DEFAULT_FORMAT);
+		profilers = objectFactory.property(String.class);
+		jmhJvmArgs = objectFactory.property(String.class);
+		verify = objectFactory.property(String.class);
 	}
 
-	public String getInclude() {
+	@Optional
+	public Property<String> getInclude() {
 		return include;
 	}
 
-	@Option(option = "include", description="configure bench inclusion using substring")
-	public void setInclude(String include) {
-		this.include = include;
-	}
-
-	public String getFullInclude() {
+	@Optional
+	public Property<String> getFullInclude() {
 		return fullInclude;
 	}
 
-	@Option(option = "fullInclude", description = "explicitly configure bench inclusion using full JMH style regexp")
-	public void setFullInclude(String fullInclude) {
-		this.fullInclude = fullInclude;
-	}
-
-	public String getExclude() {
+	@Optional
+	public Property<String> getExclude() {
 		return exclude;
 	}
 
-	@Option(option = "exclude", description = "explicitly configure bench exclusion using full JMH style regexp")
-	public void setExclude(String exclude) {
-		this.exclude = exclude;
-	}
-
-	public String getFormat() {
+	@Optional
+	public Property<String> getFormat() {
 		return format;
 	}
 
-	@Option(option = "format", description = "configure report format")
-	public void setFormat(String format) {
-		this.format = format;
-	}
-
-	public String getProfilers() {
+	@Optional
+	public Property<String> getProfilers() {
 		return profilers;
 	}
 
-	@Option(option = "profilers", description = "configure jmh profiler(s) to use, comma separated")
-	public void setProfilers(String profilers) {
-		this.profilers = profilers;
-	}
-
-	public String getJmhJvmArgs() {
+	@Optional
+	public Property<String> getJmhJvmArgs() {
 		return jmhJvmArgs;
 	}
 
-	@Option(option = "jvmArgs", description = "configure additional JMH JVM arguments, comma separated")
-	public void setJmhJvmArgs(String jvmArgs) {
-		this.jmhJvmArgs = jvmArgs;
-	}
-
-	public String getVerify() {
+	@Optional
+	public Property<String> getVerify() {
 		return verify;
-	}
-
-	@Option(option = "verify", description = "run in verify mode")
-	public void setVerify(String verify) {
-		this.verify = verify;
 	}
 
 	@TaskAction
 	public void exec() {
-		File resultFile = getProject().file("build/reports/" + getName() + "/result." + format);
+		File resultFile = getProject().file("build/reports/" + getName() + "/result." + format.getOrElse(DEFAULT_FORMAT));
 
-		if (include != null) {
-			args(".*" + include + ".*");
+		if (include.isPresent()) {
+			args(".*" + include.get() + ".*");
 		}
-		else if (fullInclude != null) {
-			args(fullInclude);
+		else if (fullInclude.isPresent()) {
+			args(fullInclude.get());
 		}
 
-		if(exclude != null) {
-			args("-e", exclude);
+		if(exclude.isPresent()) {
+			args("-e", exclude.get());
 		}
-		if(verify != null) { // execute benchmarks with the minimum amount of execution (only to check if they are working)
+		if(verify.isPresent()) { // execute benchmarks with the minimum amount of execution (only to check if they are working)
 			System.out.println("Running in verify mode");
 			args("-f", 1);
 			args("-wi", 1);
@@ -125,19 +131,19 @@ class JmhExecTask extends JavaExec {
 		}
 		args("-foe", "true"); //fail-on-error
 		args("-v", "NORMAL"); //verbosity [SILENT, NORMAL, EXTRA]
-		if(profilers != null) {
-			for (String prof : profilers.split(",")) {
+		if(profilers.isPresent()) {
+			for (String prof : profilers.get().split(",")) {
 				args("-prof", prof);
 			}
 		}
 		args("-jvmArgsPrepend", "-Xmx3072m");
 		args("-jvmArgsPrepend", "-Xms3072m");
-		if(jmhJvmArgs != null) {
-			for(String jvmArg : jmhJvmArgs.split(" ")) {
+		if(jmhJvmArgs.isPresent()) {
+			for(String jvmArg : jmhJvmArgs.get().split(" ")) {
 				args("-jvmArgsPrepend", jvmArg);
 			}
 		}
-		args("-rf", format);
+		args("-rf", format.getOrElse(DEFAULT_FORMAT));
 		args("-rff", resultFile);
 
 		System.out.println("\nExecuting JMH with: " + getArgs() + "\n");
