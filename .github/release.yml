@@ -1,0 +1,28 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-changelog
+  categories:
+    - title: ":warning: Update considerations and deprecations"
+      labels:
+        - "warn/api-change"
+        - "warn/behavior-change"
+        - "warn/blocker"
+        - "warn/deprecation"
+        - "warn/regression"
+    - title: ":sparkles: New features and improvements"
+      labels:
+        - "type/enhancement"
+    - title: ":lady_beetle: Bug fixes"
+      labels:
+        - "type/bug"
+    - title: ":book: Documentation, Tests and Build"
+      labels:
+        - "type/documentation"
+        - "type/chores"
+    - title: ":up: Dependency Upgrades"
+      labels:
+        - "type/dependency-upgrade"
+    - title: ":question: Other Changes"
+      labels:
+        - "*"

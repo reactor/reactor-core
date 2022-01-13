@@ -51,23 +51,6 @@ static def qualifyVersion(String v) {
 	return "BAD"
 }
 
-static def computeTag(String v, int minusPatch) {
-	def versionNumber = VersionNumber.parse(v)
-	if (minusPatch > 0) minusPatch = 0
-
-	if (versionNumber == VersionNumber.UNKNOWN) return "BAD"
-	//in case version is not a snapshot (RC, no qualifier GA) => we SKIP
-	if (versionNumber.qualifier == null || versionNumber.qualifier != "SNAPSHOT") return "SKIP"
-	//in case of a .0, there's no easy way to compute previous tag (eg. 1.1.3 - 3) => we SKIP
-	if (minusPatch != 0 && versionNumber.micro + minusPatch <= 0) return "SKIP"
-
-	def major = versionNumber.major
-	def minor = versionNumber.minor
-	def micro = versionNumber.micro + minusPatch
-
-	return "v$major.$minor.$micro"
-}
-
 task qualifyVersionGha() {
 	doLast {
 		def versionType = qualifyVersion("$version")
@@ -79,32 +62,6 @@ task qualifyVersionGha() {
 			throw new TaskExecutionException(tasks.getByName("qualifyVersionGha"), new IllegalArgumentException("Unable to parse $version to a VersionNumber with recognizable qualifier"))
 		}
 		println "Recognized $version as $versionType"
-	}
-}
-
-task qualifyNotesGha() {
-	doLast {
-		def notesFrom = computeTag("$version", -1)
-		def notesName = computeTag("$version", 0)
-
-		if (notesFrom == "BAD") {
-			println "::set-output name=notesFrom::BAD"
-			println "::set-output name=notesName::BAD"
-			println "::set-output name=fullVersion::$version"
-			println "::error ::Unable to parse $version to a SNAPSHOT VersionNumber"
-			throw new TaskExecutionException(tasks.getByName("qualifyNotesGha"), new IllegalArgumentException("Unable to parse $version to a SNAPSHOT VersionNumber"))
-		}
-
-		println "::set-output name=notesFrom::$notesFrom"
-		println "::set-output name=notesName::$notesName"
-		println "::set-output name=fullVersion::$version"
-
-		if (notesFrom == "SKIP") {
-			println "Release Note drafting should be skipped for $version"
-		}
-		else {
-			println "Previous tag for $version should be $notesFrom, and this should update draft of $notesName release notes"
-		}
 	}
 }
 
