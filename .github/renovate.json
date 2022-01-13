@@ -23,28 +23,17 @@
       ]
     },
     {
-      "matchPackagePatterns": [ "*" ],
-      "matchUpdateTypes": [ "minor", "patch" ],
-      "groupName": "all non-major library dependencies",
-      "groupSlug": "libs-minor-patch"
+      "matchUpdateTypes": [ "patch" ],
+      "groupName": "library dependencies with new patch",
+      "groupSlug": "libs-patch"
     },
     {
       "matchDepTypes": [ "plugin" ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "groupName": "all non-major plugins",
-      "groupSlug": "plugins-minor-patch"
+      "groupName": null
     },
     {
       "matchPackagePatterns": [ ".*jfrog.*" ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "groupName": "all non-major plugins",
-      "groupSlug": "plugins-minor-patch"
+      "groupName": "jfrog plugins"
     },
     {
       "matchManagers": ["gradle-wrapper"],
