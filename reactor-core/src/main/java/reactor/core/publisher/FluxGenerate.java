@@ -290,6 +290,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 				if (n == e) {
 					state = s;
 					n = REQUESTED.addAndGet(this, -e);
+					e = 0L;
 					if (n == 0L) {
 						return;
 					}
