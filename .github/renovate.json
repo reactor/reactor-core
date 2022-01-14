@@ -7,7 +7,8 @@
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
     ":timezone(Europe/Paris)",
-    "schedule:nonOfficeHours"
+    "schedule:nonOfficeHours",
+    "helper:pinGitHubActionDigests"
   ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
