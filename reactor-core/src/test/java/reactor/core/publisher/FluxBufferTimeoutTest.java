@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -107,6 +109,31 @@ public class FluxBufferTimeoutTest {
 						            .hasMessage("Could not emit buffer due to lack of requests")
 						            .isInstanceOf(IllegalStateException.class)
 		            );
+	}
+
+	@Test
+	void bufferWithTimeoutAvoidingNegativeRequests() {
+		final List<Long> requestPattern = new CopyOnWriteArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+					Flux.range(1, 3)
+						.delayElements(Duration.ofMillis(100))
+						.doOnRequest(requestPattern::add)
+						.bufferTimeout(5, Duration.ofMillis(100)),
+				0)
+			.expectSubscription()
+			.expectNoEvent(Duration.ofMillis(100))
+			.thenRequest(2)
+			.expectNoEvent(Duration.ofMillis(100))
+			.assertNext(s -> assertThat(s).containsExactly(1))
+			.expectNoEvent(Duration.ofMillis(100))
+			.assertNext(s -> assertThat(s).containsExactly(2))
+			.thenRequest(1) // This should not cause a negative upstream request
+			.expectNoEvent(Duration.ofMillis(100))
+			.thenCancel()
+			.verify();
+
+		assertThat(requestPattern).allSatisfy(r -> assertThat(r).isPositive());
 	}
 
 	@Test
