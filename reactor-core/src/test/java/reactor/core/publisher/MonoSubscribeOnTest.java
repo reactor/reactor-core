@@ -163,26 +163,26 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classicWithTimeout() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		Mono.fromCallable(() -> {
-			try {
-				TimeUnit.SECONDS.sleep(2L);
-			}
-			catch (InterruptedException ignore) {
-			}
-			return 0;
-		})
-		    .timeout(Duration.ofMillis(100L))
-		    .onErrorResume(t -> Mono.fromCallable(() -> 1))
-		    .subscribeOn(afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "timeout")))
-		    .subscribe(ts);
+		final Scheduler timeoutScheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "timeout"));
 
-		ts.request(1);
-
-		ts.await(Duration.ofMillis(400))
-		  .assertValues(1)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(
+			Mono.fromCallable(() -> {
+					try {
+						TimeUnit.SECONDS.sleep(2L);
+					}
+					catch (InterruptedException ignore) {
+					}
+					return 0;
+				})
+				.timeout(Duration.ofMillis(100L))
+				.onErrorResume(t -> Mono.fromCallable(() -> 1))
+				.subscribeOn(timeoutScheduler),
+			0)
+			.expectSubscription()
+			.thenRequest(1)
+			.expectNext(1)
+			.expectComplete()
+			.verify(Duration.ofMillis(500));
 	}
 
 	@Test
