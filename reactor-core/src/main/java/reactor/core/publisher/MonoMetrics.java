@@ -40,6 +40,7 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 	final Tags          tags;
 
 	final MeterRegistry registryCandidate;
+	final String foo = "foo";
 
 	MonoMetrics(Mono<? extends T> mono) {
 		super(mono);

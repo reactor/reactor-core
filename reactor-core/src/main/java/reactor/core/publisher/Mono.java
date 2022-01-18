@@ -4548,9 +4548,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #name(String)
 	 * @see #metrics()
 	 */
-	public final Mono<T> tag(String key, String value) {
-		return MonoName.createOrAppend(this, key, value);
-	}
+//	public final Mono<T> tag(String key, String value) {
+//		return MonoName.createOrAppend(this, key, value);
+//	}
 
 	/**
 	 * Give this Mono a chance to resolve within a specified time frame but complete if it

@@ -339,71 +339,71 @@ public class ScannableTest {
 				.isEqualTo("map");
 	}
 
-	@Test
-	public void taggedMonoTest() {
-		Mono<Integer> tagged1 =
-				Mono.just(1)
-				    .tag("1", "One");
-
-
-		Mono<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
-		                               .tag("2", "Two")
-		                               .hide();
-
-		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
-		assertThat(scannedTags1)
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
-
-		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
-		assertThat(scannedTags2)
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
-	}
-
-	@Test
-	public void taggedHideMonoTest() {
-		Mono<Integer> tagged1 =
-				Mono.just(1)
-				    .hide()
-				    .tag("1", "One");
-
-
-		Mono<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
-		                               .tag("2", "Two")
-		                               .hide();
-
-		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
-		assertThat(scannedTags1)
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
-
-		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
-		assertThat(scannedTags2)
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
-	}
-
-	@Test
-	public void taggedAppendedMonoTest() {
-		Mono<Integer> tagged1 =
-				Mono.just(1)
-				    .tag("1", "One")
-				    .tag("2", "Two");
-
-		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
-		assertThat(scannedTags)
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
-	}
-
-	@Test
-	public void taggedAppendedHideMonoTest() {
-		Mono<Integer> tagged1 = Mono
-					.just(1)
-				    .hide()
-				    .tag("1", "One")
-				    .tag("2", "Two");
-
-		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
-		assertThat(scannedTags)
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
-	}
+//	@Test
+//	public void taggedMonoTest() {
+//		Mono<Integer> tagged1 =
+//				Mono.just(1)
+//				    .tag("1", "One");
+//
+//
+//		Mono<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
+//		                               .tag("2", "Two")
+//		                               .hide();
+//
+//		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+//		assertThat(scannedTags1)
+//				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+//
+//		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+//		assertThat(scannedTags2)
+//				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+//	}
+//
+//	@Test
+//	public void taggedHideMonoTest() {
+//		Mono<Integer> tagged1 =
+//				Mono.just(1)
+//				    .hide()
+//				    .tag("1", "One");
+//
+//
+//		Mono<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
+//		                               .tag("2", "Two")
+//		                               .hide();
+//
+//		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+//		assertThat(scannedTags1)
+//				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+//
+//		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+//		assertThat(scannedTags2)
+//				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+//	}
+//
+//	@Test
+//	public void taggedAppendedMonoTest() {
+//		Mono<Integer> tagged1 =
+//				Mono.just(1)
+//				    .tag("1", "One")
+//				    .tag("2", "Two");
+//
+//		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+//		assertThat(scannedTags)
+//				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+//	}
+//
+//	@Test
+//	public void taggedAppendedHideMonoTest() {
+//		Mono<Integer> tagged1 = Mono
+//					.just(1)
+//				    .hide()
+//				    .tag("1", "One")
+//				    .tag("2", "Two");
+//
+//		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+//		assertThat(scannedTags)
+//				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+//	}
 
 	@Test
 	public void namedParallelFluxTest() {
