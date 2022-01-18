@@ -18,12 +18,18 @@ jobs:
         name: spotless (license header)
         with:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
+      - uses: gradle/gradle-build-action@v2
+        name: api compatibility
+        with:
+          arguments: japicmp
       - name: how to fix
         if: failure()
         # the foreground (38;5) color code 022 is green
         run: |
           echo ":bulb: License headers of touched java files can be automatically fixed by running:"
           echo "\033[38;5;002m./gradlew spotlessApply\033[0m"
+          echo ""
+          echo ":warn: JApiCmp failures should be considered carefully and discussed with maintainers in the PR"
   core-fast:
     name: core fast tests
     runs-on: ubuntu-latest
