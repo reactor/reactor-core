@@ -16,10 +16,12 @@ jobs:
           java-version: 8
       - uses: gradle/gradle-build-action@v2
         name: spotless (license header)
+        if: always()
         with:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
       - uses: gradle/gradle-build-action@v2
         name: api compatibility
+        if: always()
         with:
           arguments: japicmp
       - name: how to fix
