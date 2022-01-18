@@ -19,7 +19,7 @@ jobs:
         with:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
       - name: how to fix
-        if: ${{ failure }}
+        if: failure()
         # the foreground (38;5) color code 022 is green
         run: |
           echo ":bulb: License headers of touched java files can be automatically fixed by running:"
