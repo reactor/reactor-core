@@ -272,9 +272,8 @@ public class MonoMetricsFuseableTest {
 	public void usesTagsFuseable() {
 		Mono<Integer> source = Mono.just(8)
 								   .name("usesTags")
-//								   .tag("tag1", "A")
-//		                           .tag("tag2", "foo")
-		                           ;
+								   .tag("tag1", "A")
+		                           .tag("tag2", "foo");
 
 		new MonoMetricsFuseable<>(source).block();
 

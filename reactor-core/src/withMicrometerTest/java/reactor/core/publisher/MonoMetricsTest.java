@@ -157,8 +157,8 @@ public class MonoMetricsTest {
 	public void usesTags() {
 		Mono<Integer> source = Mono.just(1)
 								   .name("usesTags")
-//								   .tag("tag1", "A")
-//								   .tag("tag2", "foo")
+								   .tag("tag1", "A")
+								   .tag("tag2", "foo")
 		                           .hide();
 
 		new MonoMetrics<>(source).block();
@@ -473,33 +473,33 @@ public class MonoMetricsTest {
 		    .verify(Duration.ofMillis(500));
 	}
 
-//	@Test
-//	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
-//		Mono<Integer> level1 = new MonoMetrics<>(
-//				Mono.just(1)
-//				    .name("pipelineMono")
-//				    .tag("operation", "rangeMono"));
-//
-//		Mono<String> level2 = new MonoMetricsFuseable<>(
-//				level1.map(Object::toString)
-//				      .name("pipelineMono")
-//				      .tag("operation", "mapMono"));
-//
-//		Mono<String> level3 = new MonoMetrics<>(
-//				level2.filter(i -> i.equals("one"))
-//				      .name("pipelineMono")
-//				      .tag("operation", "filterMono"));
-//
-//		level3.block();
-//
-//		Collection<Meter> meters = registry
-//				.find("pipelineMono" + METER_FLOW_DURATION)
-//				.tagKeys("operation")
-//				.meters();
-//
-//		assertThat(meters)
-//				.isNotEmpty()
-//				.extracting(m -> m.getId().getTag("operation"))
-//				.containsExactlyInAnyOrder("rangeMono", "mapMono", "filterMono");
-//	}
+	@Test
+	void ensureMetricsUsesTheTagValueClosestToItWhenCalledMultipleTimes() {
+		Mono<Integer> level1 = new MonoMetrics<>(
+				Mono.just(1)
+				    .name("pipelineMono")
+				    .tag("operation", "rangeMono"));
+
+		Mono<String> level2 = new MonoMetricsFuseable<>(
+				level1.map(Object::toString)
+				      .name("pipelineMono")
+				      .tag("operation", "mapMono"));
+
+		Mono<String> level3 = new MonoMetrics<>(
+				level2.filter(i -> i.equals("one"))
+				      .name("pipelineMono")
+				      .tag("operation", "filterMono"));
+
+		level3.block();
+
+		Collection<Meter> meters = registry
+				.find("pipelineMono" + METER_FLOW_DURATION)
+				.tagKeys("operation")
+				.meters();
+
+		assertThat(meters)
+				.isNotEmpty()
+				.extracting(m -> m.getId().getTag("operation"))
+				.containsExactlyInAnyOrder("rangeMono", "mapMono", "filterMono");
+	}
 }

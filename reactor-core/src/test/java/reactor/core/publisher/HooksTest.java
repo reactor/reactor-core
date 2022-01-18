@@ -888,7 +888,7 @@ public class HooksTest {
 				(sc, sub) -> liftSubscriber(sc, sub, liftCounter)));
 
 		StepVerifier.create(Mono.just(1)
-//		                        .tag("metric", "test")
+		                        .tag("metric", "test")
 		                        .log()
 		                        .log())
 		            .expectNext(101)

@@ -304,7 +304,7 @@ public class HooksTraceTest {
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-//		                        .tag("metric", "test")
+		                        .tag("metric", "test")
 		                        .log(null, Level.OFF)
 		                        .log(null, Level.OFF))
 		            .expectNext(2)
