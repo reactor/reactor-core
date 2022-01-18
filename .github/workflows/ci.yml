@@ -7,7 +7,7 @@ jobs:
     name: preliminary sanity checks
     runs-on: ubuntu-20.04
     steps:
-      - actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
           fetch-depth: 0 #needed by spotless
       - actions/setup-java@v2
