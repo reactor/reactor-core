@@ -51,13 +51,13 @@ Multiple producer threads may concurrently generate data on the sink by doing th
 [source,java]
 ----
 //thread1
-sink.emitNext(1, FAIL_FAST);
+replaySink.emitNext(1, FAIL_FAST);
 
 //thread2, later
-sink.emitNext(2, FAIL_FAST);
+replaySink.emitNext(2, FAIL_FAST);
 
 //thread3, concurrently with thread 2
-EmitResult result = sink.tryEmitNext(3); //would return FAIL_NON_SERIALIZED
+EmitResult result = replaySink.tryEmitNext(3); //would return FAIL_NON_SERIALIZED
 ----
 ====
 
