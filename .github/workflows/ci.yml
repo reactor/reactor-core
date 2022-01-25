@@ -25,7 +25,7 @@ jobs:
         with:
           arguments: japicmp
       - name: how to fix
-        if: always()
+        if: failure()
         # the foreground (38;5) color code 022 is green
         run: |
           echo "Tips for fixing errors in preliminary job:"
