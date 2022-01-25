@@ -32,6 +32,7 @@ jobs:
           echo -e "\033[38;5;255;48;5;022m ✅ License headers of touched java files can be automatically fixed by running:\033[0m\n\033[38;5;208;48;5;022m./gradlew spotlessApply\033[0m"
           echo ""
           echo -e "\033[38;5;255;48;5;202m ⚠️ JApiCmp failures should be considered carefully and discussed with maintainers in the PR\033[0m"
+          echo "If there are failures, the detail should be available in the logs of the api compatibility step above"
           exit -1
   core-fast:
     name: core fast tests
