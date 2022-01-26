@@ -314,15 +314,14 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				}
 				else {
 					long requestLimit = Operators.multiplyCap(requested, batchSize);
-					requestMore(requestLimit - outstanding);
+					if (requestLimit > outstanding) {
+						requestMore(requestLimit - outstanding);
+					}
 				}
 			}
 		}
 
 		final void requestMore(long n) {
-			if (n < 1L) {
-				return;
-			}
 			Subscription s = this.subscription;
 			if (s != null) {
 				Operators.addCap(OUTSTANDING, this, n);
