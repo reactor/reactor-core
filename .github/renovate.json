@@ -7,8 +7,7 @@
     ":label(type/dependency-upgrade)",
     ":reviewer(reactor/core-team)",
     ":timezone(Europe/Paris)",
-    "schedule:nonOfficeHours",
-    "helper:pinGitHubActionDigests"
+    "schedule:nonOfficeHours"
   ],
   "prBodyNotes": [
     "Renovate has been configured to skip the CLA:",
@@ -42,8 +41,9 @@
       "schedule": ["before 3am on Monday"]
     },
     {
-      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["action"],
       "groupName": "Github Workflows",
+      "pinDigests": true,
       "schedule": ["before 3am on Monday"]
     },
     {
