@@ -17,9 +17,9 @@ jobs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
     - name: setup java
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf # renovate: tag=v2
       with:
         distribution: 'temurin'
         java-version: 8
@@ -31,7 +31,7 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      uses: gradle/gradle-build-action@v2
+      uses: gradle/gradle-build-action@b9c806c75d3cb8998f905077e62bb670e7fa7e02 # renovate: tag=v2
       with:
         arguments: check -Pjunit-tags=!slow
 
@@ -40,15 +40,15 @@ jobs:
     name: slowerChecks
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
       - name: setup java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf # renovate: tag=v2
         with:
           distribution: 'temurin'
           java-version: 8
       - name: run slower tests
         id: slowerTests
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@b9c806c75d3cb8998f905077e62bb670e7fa7e02 # renovate: tag=v2
         with:
           arguments: test -Pjunit-tags=slow
 
@@ -60,8 +60,8 @@ jobs:
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v2
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
+    - uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf # renovate: tag=v2
       with:
         distribution: 'temurin'
         java-version: 8
@@ -80,8 +80,8 @@ jobs:
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v2
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
+    - uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf # renovate: tag=v2
       with:
         distribution: 'temurin'
         java-version: 8
@@ -102,8 +102,8 @@ jobs:
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v2
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
+    - uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf # renovate: tag=v2
       with:
         distribution: 'temurin'
         java-version: 8
@@ -125,7 +125,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
@@ -140,7 +140,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
