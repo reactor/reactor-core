@@ -39,7 +39,7 @@ testNg = "org.testng:testng:7.5"
 throwingFunction = "com.pivovarit:throwing-function:1.5.1"
 
 [plugins]
-artifactory = { id = "com.jfrog.artifactory", version = "4.26.1" }
+artifactory = { id = "com.jfrog.artifactory", version = "4.26.3" }
 asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" }
 asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.1.0" }
