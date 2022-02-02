@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -45,11 +46,13 @@ import java.util.stream.Stream;
 
 import com.pivovarit.function.ThrowingRunnable;
 import com.pivovarit.function.ThrowingSupplier;
+import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
+
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
@@ -61,6 +64,7 @@ import reactor.core.scheduler.BoundedElasticScheduler.BoundedServices;
 import reactor.core.scheduler.BoundedElasticScheduler.BoundedState;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.test.MockUtils;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.Logger;
@@ -101,10 +105,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	//note: blocking behavior is also tested in BoundedElasticSchedulerBlockhoundTest (separate sourceset)
 
-	@Override
-	protected BoundedElasticScheduler scheduler() {
+	protected BoundedElasticScheduler scheduler(int maxThreads) {
 		BoundedElasticScheduler scheduler =
-				afterTest.autoDispose(new BoundedElasticScheduler(4,
+				afterTest.autoDispose(new BoundedElasticScheduler(maxThreads,
 						Integer.MAX_VALUE,
 						new ReactorThreadFactory("boundedElasticSchedulerTest",
 								COUNTER,
@@ -114,6 +117,11 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 						10));
 		scheduler.start();
 		return scheduler;
+	}
+
+	@Override
+	protected BoundedElasticScheduler scheduler() {
+		return scheduler(4);
 	}
 
 	@Test
@@ -287,22 +295,97 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(new HashSet<>(Arrays.asList(state1, state2, state3, state4))).as("4 distinct").hasSize(4);
 		//cheat to make some look like more busy
-		s.boundedServices.busyQueue.remove(state1);
-		s.boundedServices.busyQueue.remove(state2);
-		s.boundedServices.busyQueue.remove(state3);
 		state1.markPicked();
 		state1.markPicked();
 		state1.markPicked();
 		state2.markPicked();
 		state2.markPicked();
 		state3.markPicked();
-		s.boundedServices.busyQueue.addAll(Arrays.asList(state1, state2, state3));
 
 		assertThat(s.boundedServices.pick()).as("picked least busy state4").isSameAs(state4);
 		//at this point state4 and state3 both are backing 1
 		assertThat(Arrays.asList(s.boundedServices.pick(), s.boundedServices.pick()))
 				.as("next 2 picks picked state4 and state3")
 				.containsExactlyInAnyOrder(state4, state3);
+	}
+
+	@ParameterizedTestWithName
+	@CsvSource(value= { "4, 1", "4, 100", "4, 1000",
+		"100, 1", "100, 100", "100, 1000",
+		"1000, 1", "1000, 100", "1000, 1000",
+		"10000, 1", "10000, 100", "10000, 1000"
+	} )
+	void whenCapReachedPicksLeastBusyExecutorWithContention(int maxThreads, int contention) throws InterruptedException {
+		BoundedElasticScheduler s = scheduler(maxThreads);
+		HashSet<BoundedElasticScheduler.BoundedState> boundedStates = new HashSet<>();
+		//reach the cap of workers and keep track of boundedStates
+		for (int i = 0; i < maxThreads; i++) {
+			boundedStates.add(afterTest.autoDispose(s.boundedServices.pick()));
+		}
+		assertThat(boundedStates).as("all distinct").hasSize(maxThreads);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicInteger countDown = new AtomicInteger(contention);
+		AtomicInteger errors = new AtomicInteger();
+
+		ExecutorService executorService = Executors.newFixedThreadPool(contention);
+
+		AtomicIntegerArray busyPattern = new AtomicIntegerArray(Math.max(5, contention));
+
+		for (int i = 0; i < contention; i++) {
+			executorService.submit(() -> {
+				if (countDown.get() <= 0) {
+					return;
+				}
+				try {
+					BoundedElasticScheduler.BoundedState bs = s.boundedServices.pick();
+
+					assertThat(boundedStates).as("picked a busy one").contains(bs);
+					assertThat(bs.markPicked()).isTrue();
+
+					int business = bs.markCount;
+					busyPattern.incrementAndGet(business);
+				}
+				catch (Throwable t) {
+					errors.incrementAndGet();
+					t.printStackTrace();
+					countDown.set(0);
+					latch.countDown();
+				}
+				finally {
+					if (countDown.decrementAndGet() <= 0) {
+						latch.countDown();
+					}
+				}
+			});
+		}
+		assertThat(latch.await(10, TimeUnit.SECONDS)).as("latch").isTrue();
+		executorService.shutdownNow();
+		assertThat(errors).as("errors").hasValue(0);
+
+		int maxPicks = 0;
+		for (int businessFactor = 0; businessFactor < busyPattern.length(); businessFactor++) {
+			int pickCount = busyPattern.get(businessFactor);
+			if (pickCount == 0) continue;
+
+			if (pickCount > maxPicks) maxPicks = pickCount;
+
+			LOGGER.trace("Picked {} times at business level {}", pickCount, businessFactor);
+		}
+
+		final int expectedMaxPick = Math.min(contention, maxThreads);
+		Offset<Integer> offset;
+		if (expectedMaxPick < 10) {
+			offset = Offset.offset(1);
+		}
+		else if (expectedMaxPick < 1000) {
+			offset = Offset.offset(10);
+		}
+		else {
+			offset = Offset.offset(50);
+		}
+		assertThat(maxPicks).as("maxPicks").isCloseTo(expectedMaxPick, offset);
+		LOGGER.info("Max picks {} ", maxPicks);
 	}
 
 	@Test
@@ -535,7 +618,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		Worker worker = scheduler.createWorker();
 
-		List<BoundedState> beforeEviction = new ArrayList<>(scheduler.boundedServices.busyQueue);
+		List<BoundedState> beforeEviction = new ArrayList<>(Arrays.asList(scheduler.boundedServices.busyArray));
 
 		assertThat(scheduler.estimateSize())
 				.as("before eviction")
@@ -560,7 +643,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.isZero();
 
 		afterTest.autoDispose(scheduler.createWorker());
-		assertThat(scheduler.boundedServices.busyQueue)
+		assertThat(scheduler.boundedServices.busyArray)
 				.as("after regrowth")
 				.isNotEmpty()
 				.hasSize(1)
@@ -593,7 +676,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		boundedElasticScheduler.schedulePeriodically(() -> {}, 1000, 100, TimeUnit.MILLISECONDS);
 
 		//any attempt at scheduling more task should result in rejection
-		ScheduledThreadPoolExecutor threadPoolExecutor = (ScheduledThreadPoolExecutor) boundedElasticScheduler.boundedServices.busyQueue.peek().executor;
+		ScheduledThreadPoolExecutor threadPoolExecutor = (ScheduledThreadPoolExecutor) boundedElasticScheduler.boundedServices.busyArray[0].executor;
 		assertThat(threadPoolExecutor.getQueue().size()).as("queue full").isEqualTo(9);
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 immediate").isThrownBy(() -> worker1.schedule(() -> {}));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 delayed").isThrownBy(() -> worker1.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
@@ -627,7 +710,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		afterTest.autoDispose(boundedElasticScheduler.createWorker());
 		afterTest.autoDispose(boundedElasticScheduler.createWorker());
-		boundedElasticScheduler.boundedServices.busyQueue.add(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
+		boundedElasticScheduler.boundedServices.setBusy(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
 
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("partially computable capacity").isEqualTo(-1);
 	}
@@ -638,9 +721,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(3, 5, Thread::new, 10));
 		boundedElasticScheduler.start();
 
-		boundedElasticScheduler.boundedServices.busyQueue.add(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
-		boundedElasticScheduler.boundedServices.busyQueue.add(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
-		boundedElasticScheduler.boundedServices.busyQueue.add(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
+		boundedElasticScheduler.boundedServices.setBusy(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
+		boundedElasticScheduler.boundedServices.setBusy(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
+		boundedElasticScheduler.boundedServices.setBusy(new BoundedState(boundedElasticScheduler.boundedServices, Executors.newSingleThreadScheduledExecutor()));
 
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("non-computable capacity").isEqualTo(-1);
 	}
@@ -1143,7 +1226,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 
 		assertThat(scheduler.boundedServices.get()).as("state count").isOne();
-		assertThat(scheduler.boundedServices.busyQueue.size() + scheduler.boundedServices.idleQueue.size()).as("busyOrIdle").isOne();
+		assertThat(scheduler.boundedServices.busyArray.length + scheduler.boundedServices.idleQueue.size()).as("busyOrIdle").isOne();
 
 	}
 	@Test
@@ -1162,7 +1245,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			);
 		}
 
-		assertThat(scheduler.boundedServices.busyQueue.size() + scheduler.boundedServices.idleQueue.size()).as("busyOrIdle").isOne();
+		assertThat(scheduler.boundedServices.busyArray.length + scheduler.boundedServices.idleQueue.size()).as("busyOrIdle").isOne();
 	}
 
 	//gh-1992 smoke test

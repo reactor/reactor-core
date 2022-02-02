@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +49,9 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 
 /**
  * Scheduler that hosts a pool of 0-N single-threaded {@link BoundedScheduledExecutorService} and exposes workers
@@ -65,6 +65,8 @@ import reactor.core.Scannable;
  * @author Simon Baslé
  */
 final class BoundedElasticScheduler implements Scheduler, Scannable {
+
+	static final Logger LOGGER = Loggers.getLogger(BoundedElasticScheduler.class);
 
 	static final int DEFAULT_TTL_SECONDS = 60;
 
@@ -262,7 +264,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * @return a best effort total count of the busy executors
 	 */
 	int estimateBusy() {
-		return BOUNDED_SERVICES.get(this).busyQueue.size();
+		return BOUNDED_SERVICES.get(this).busyArray.length;
 	}
 
 	/**
@@ -278,9 +280,9 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * @return the total task capacity, or {@literal -1} if any backing executor's task queue size cannot be instrumented
 	 */
 	int estimateRemainingTaskCapacity() {
-		Queue<BoundedState> busyQueue = BOUNDED_SERVICES.get(this).busyQueue;
+		BoundedState[] busyArray = BOUNDED_SERVICES.get(this).busyArray;
 		int totalTaskCapacity = maxTaskQueuedPerThread * maxThreads;
-		for (BoundedState state : busyQueue) {
+		for (BoundedState state : busyArray) {
 			int stateQueueSize = state.estimateQueueSize();
 			if (stateQueueSize >= 0) {
 				totalTaskCapacity -= stateQueueSize;
@@ -305,7 +307,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	@Override
 	public Stream<? extends Scannable> inners() {
 		BoundedServices services = BOUNDED_SERVICES.get(this);
-		return Stream.concat(services.busyQueue.stream(), services.idleQueue.stream())
+		return Stream.concat(Stream.of(services.busyArray), services.idleQueue.stream())
 		             .filter(obj -> obj != null && obj != CREATING);
 	}
 
@@ -340,22 +342,27 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
 		final Clock                               clock;
 		final Deque<BoundedState>                 idleQueue;
-		final PriorityBlockingQueue<BoundedState> busyQueue;
+
+		volatile BoundedState[]                                                   busyArray;
+		static final AtomicReferenceFieldUpdater<BoundedServices, BoundedState[]> BUSY_ARRAY =
+			AtomicReferenceFieldUpdater.newUpdater(BoundedServices.class, BoundedState[].class, "busyArray");
+
+		static final BoundedState[] ALL_IDLE = new BoundedState[0];
+		static final BoundedState[] ALL_SHUTDOWN = new BoundedState[0];
 
 		//constructor for SHUTDOWN
 		private BoundedServices() {
 			this.parent = null;
 			this.clock = Clock.fixed(Instant.EPOCH, ZONE_UTC);
-			this.busyQueue = new PriorityBlockingQueue<>();
 			this.idleQueue = new ConcurrentLinkedDeque<>();
+			this.busyArray = ALL_SHUTDOWN;
 		}
 
 		BoundedServices(BoundedElasticScheduler parent) {
 			this.parent = parent;
 			this.clock = parent.clock;
-			this.busyQueue = new PriorityBlockingQueue<>(parent.maxThreads,
-					Comparator.comparingInt(bs -> bs.markCount));
 			this.idleQueue = new ConcurrentLinkedDeque<>();
+			this.busyArray = ALL_IDLE;
 		}
 
 		/**
@@ -374,6 +381,69 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		}
 
 		/**
+		 * @param bs the state to set busy
+		 * @return true if the {@link BoundedState} could be added to the busy array (ie. we're not shut down), false if shutting down
+		 */
+		boolean setBusy(BoundedState bs) {
+			for (; ; ) {
+				BoundedState[] previous = busyArray;
+
+				if (previous == ALL_SHUTDOWN) {
+					return false;
+				}
+
+				int len = previous.length;
+				BoundedState[] replacement = new BoundedState[len + 1];
+				System.arraycopy(previous, 0, replacement, 0, len);
+				replacement[len] = bs;
+
+				if (BUSY_ARRAY.compareAndSet(this, previous, replacement)) {
+					return true;
+				}
+			}
+		}
+
+		void setIdle(BoundedState boundedState) {
+			for(;;) {
+				BoundedState[] arr = busyArray;
+				int len = arr.length;
+
+				if (len == 0) {
+					return;
+				}
+
+
+				BoundedState[] replacement = null;
+				if (len == 1) {
+					if (arr[0] == boundedState) {
+						replacement = ALL_IDLE;
+					}
+				}
+				else {
+					for (int i = 0; i < len; i++) {
+						BoundedState state = arr[i];
+						if (state == boundedState) {
+							replacement = new BoundedState[len - 1];
+							System.arraycopy(arr, 0, replacement, 0, i);
+							System.arraycopy(arr, i + 1, replacement, i, len - i - 1);
+							break;
+						}
+					}
+				}
+				if (replacement == null) {
+					//bounded state not found, ignore
+					return;
+				}
+				if (BUSY_ARRAY.compareAndSet(this, arr, replacement)) {
+					//impl. note: reversed order could lead to a race condition where state is added to idleQueue
+					//then concurrently pick()ed into busyQueue then removed from same busyQueue.
+					this.idleQueue.add(boundedState);
+					return;
+				}
+			}
+		}
+
+		/**
 		 * Pick a {@link BoundedState}, prioritizing idle ones then spinning up a new one if enough capacity.
 		 * Otherwise, picks an active one by taking from a {@link PriorityQueue}. The picking is
 		 * optimistically re-attempted if the picked slot cannot be marked as picked.
@@ -383,7 +453,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		BoundedState pick() {
 			for (;;) {
 				int a = get();
-				if (a == DISPOSED) {
+				if (a == DISPOSED || busyArray == ALL_SHUTDOWN) {
 					return CREATING; //synonym for shutdown, since the underlying executor is shut down
 				}
 
@@ -391,7 +461,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 					//try to find an idle resource
 					BoundedState bs = idleQueue.pollLast();
 					if (bs != null && bs.markPicked()) {
-						busyQueue.add(bs);
+						setBusy(bs);
 						return bs;
 					}
 					//else optimistically retry (implicit continue here)
@@ -402,17 +472,15 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 						ScheduledExecutorService s = Schedulers.decorateExecutorService(parent, parent.createBoundedExecutorService());
 						BoundedState newState = new BoundedState(this, s);
 						if (newState.markPicked()) {
-							busyQueue.add(newState);
+							setBusy(newState);
 							return newState;
 						}
 					}
 					//else optimistically retry (implicit continue here)
 				}
 				else {
-					//pick the least busy one
-					BoundedState s = busyQueue.poll();
+					BoundedState s = choseOneBusy();
 					if (s != null && s.markPicked()) {
-						busyQueue.add(s); //put it back in the queue with updated priority
 						return s;
 					}
 					//else optimistically retry (implicit continue here)
@@ -420,12 +488,29 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 			}
 		}
 
-		void setIdle(BoundedState boundedState) {
-			//impl. note: reversed order could lead to a race condition where state is added to idleQueue
-			//then concurrently pick()ed into busyQueue then removed from same busyQueue.
-			if (this.busyQueue.remove(boundedState)) {
-				this.idleQueue.add(boundedState);
+		@Nullable
+		private BoundedState choseOneBusy() {
+			BoundedState[] arr = busyArray;
+			int len = arr.length;
+			if (len == 0) {
+				return null; //implicit retry in the pick() loop
 			}
+			if (len == 1) {
+				return arr[0];
+			}
+
+			BoundedState choice = arr[0];
+			int leastBusy = Integer.MAX_VALUE;
+
+			for (int i = 0; i < arr.length; i++) {
+				BoundedState state = arr[i];
+				int busy = state.markCount;
+				if (busy < leastBusy) {
+					leastBusy = busy;
+					choice = state;
+				}
+			}
+			return choice;
 		}
 
 		@Override
@@ -437,7 +522,10 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		public void dispose() {
 			set(DISPOSED);
 			idleQueue.forEach(BoundedState::shutdown);
-			busyQueue.forEach(BoundedState::shutdown);
+			BoundedState[] arr = BUSY_ARRAY.getAndSet(this, ALL_SHUTDOWN);
+			for (int i = 0; i < arr.length; i++) {
+				arr[i].shutdown();
+			}
 		}
 	}
 
@@ -635,7 +723,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 			return "BoundedScheduledExecutorService{" + state + ", queued=" + queued + "/" + queueCapacity + ", completed=" + completed + '}';
 		}
 
-		private void ensureQueueCapacity(int taskCount) {
+		void ensureQueueCapacity(int taskCount) {
 			if (queueCapacity == Integer.MAX_VALUE) {
 				return;
 			}
