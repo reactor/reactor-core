@@ -69,9 +69,7 @@ import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 
-public final class OldBoundedElasticScheduler implements Scheduler, Scannable {
-
-	static final int DEFAULT_TTL_SECONDS = 60;
+final class OldBoundedElasticScheduler implements Scheduler, Scannable {
 
 	static final AtomicLong EVICTOR_COUNTER = new AtomicLong();
 
@@ -118,7 +116,7 @@ public final class OldBoundedElasticScheduler implements Scheduler, Scannable {
 	 * This constructor lets define millisecond-grained TTLs and a custom {@link Clock},
 	 * which can be useful for tests.
 	 */
-	public OldBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread,
+	OldBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread,
 							   ThreadFactory threadFactory, long ttlMillis, Clock clock) {
 		if (ttlMillis <= 0) {
 			throw new IllegalArgumentException("TTL must be strictly positive, was " + ttlMillis + "ms");
@@ -148,7 +146,7 @@ public final class OldBoundedElasticScheduler implements Scheduler, Scannable {
 	 * @param factory the {@link ThreadFactory} to name the backing threads
 	 * @param ttlSeconds the time-to-live (TTL) of idle threads, in seconds
 	 */
-	public OldBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory, int ttlSeconds) {
+	OldBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory, int ttlSeconds) {
 		this(maxThreads, maxTaskQueuedPerThread, factory, ttlSeconds * 1000L,
 			Clock.tickSeconds(BoundedServices.ZONE_UTC));
 	}
