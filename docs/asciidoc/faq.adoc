@@ -81,10 +81,9 @@ The following sample is even better (because it is simpler):
 ====
 [source,java]
 ----
-Flux<String> secrets = Flux
-  .just("something", "chain")
-  .map(secret -> secret.replaceAll(".", "*"))
-  .subscribe(next -> System.out.println("Received: " + next));
+Flux.just("something", "chain")
+    .map(secret -> secret.replaceAll(".", "*"))
+    .subscribe(next -> System.out.println("Received: " + next));
 ----
 ====
 
