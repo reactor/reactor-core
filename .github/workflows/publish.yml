@@ -3,6 +3,7 @@ on:
   push:
     branches: # For branches, better to list them explicitly than regexp include
       - main
+      - 3.4.x
       - 3.3.x
 permissions: read-all
 jobs:
