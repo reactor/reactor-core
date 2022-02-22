@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,6 +219,10 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                 if (i == a.length) {
                     Mono<T> m = this.lastMono;
                     if (m instanceof Callable) {
+                        if (isCancelled(this.state)) {
+                            //NB: in the non-callable case, this is handled by activeSubscription.cancel()
+                            return;
+                        }
                         T v;
                         try {
                             v = ((Callable<T>)m).call();
@@ -240,6 +244,10 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                     final Publisher<?> m = a[i];
 
                     if (m instanceof Callable) {
+                        if (isCancelled(this.state)) {
+                            //NB: in the non-callable case, this is handled by activeSubscription.cancel()
+                            return;
+                        }
                         try {
                             Operators.onDiscard(((Callable<?>) m).call(), currentContext());
                         }
