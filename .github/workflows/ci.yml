@@ -26,13 +26,15 @@ jobs:
           arguments: japicmp
       - name: how to fix
         if: failure()
-        # the foreground (38;5) color code 022 is green
+        # the foreground (38;5) color code 208 is orange. we also have bold, white bg (38;5;0;48;5;255m), white fg on black bg...
         run: |
-          echo "Tips for fixing errors in preliminary job:"
-          echo -e "\033[38;5;255;48;5;022m ✅ License headers of touched java files can be automatically fixed by running:\033[0m\n\033[38;5;208;48;5;022m./gradlew spotlessApply\033[0m"
+          echo -e "\n\033[38;5;0;48;5;208m \u001b[1m How to deal with errors in preliminary job: \u001b[0m\033[0m"
+          echo "(Have a look at the steps above to see what failed exactly)"
+          echo -e "\n - \u001b[1mSpotless (license headers)\u001b[0m failures on touched java files \033[38;5;255;48;5;0m\u001b[1mcan be automatically fixed by running\u001b[0m:"
+          echo -e "   \033[38;5;0;48;5;255m ./gradlew spotlessApply \033[0m"
+          echo -e "\n - \u001b[1mAPI Compatibility\u001b[0m failures should be considered carefully and \033[38;5;255;48;5;0m\u001b[1mdiscussed with maintainers in the PR\u001b[0m"
+          echo "   If there are failures, the detail should be available in the logs of the api compatibility step above"
           echo ""
-          echo -e "\033[38;5;255;48;5;202m ⚠️ JApiCmp failures should be considered carefully and discussed with maintainers in the PR\033[0m"
-          echo "If there are failures, the detail should be available in the logs of the api compatibility step above"
           exit -1
   core-fast:
     name: core fast tests
