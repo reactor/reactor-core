@@ -13,7 +13,7 @@ kotlin = "1.5.32"
 reactiveStreams = "1.0.3"
 
 [libraries]
-archUnit = "com.tngtech.archunit:archunit:0.22.0"
+archUnit = "com.tngtech.archunit:archunit:0.23.1"
 assertj = "org.assertj:assertj-core:3.22.0"
 awaitility = "org.awaitility:awaitility:4.1.1"
 blockhound = "io.projectreactor.tools:blockhound:1.0.6.RELEASE"
