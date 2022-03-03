@@ -227,11 +227,11 @@ public final class Sinks {
 	 */
 	static class OptimisticEmitFailureHandler implements EmitFailureHandler {
 
-        private final long deadline;
+		private final long deadline;
 
-        OptimisticEmitFailureHandler(Duration duration){
-	        this.deadline = System.nanoTime() + duration.toNanos();
-        }
+		OptimisticEmitFailureHandler(Duration duration){
+			this.deadline = System.nanoTime() + duration.toNanos();
+		}
 
 		@Override
 		public boolean onEmitFailure(SignalType signalType, EmitResult emitResult) {

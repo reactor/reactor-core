@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ task japicmp(type: JapicmpTask) {
 	// TODO after a .0 release, bump the gradle.properties baseline
 	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [ ]
-	methodExcludes = [ ]
+	methodExcludes = [ 'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)' ]
 }
 
 gradle.taskGraph.afterTask { task, state ->
