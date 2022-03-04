@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.Queue;
 
 import org.reactivestreams.Subscriber;
-
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -223,6 +222,24 @@ public final class Sinks {
 	}
 
 	/**
+	 *
+	 * @author Animesh Chaturvedi
+	 */
+	static class OptimisticEmitFailureHandler implements EmitFailureHandler {
+
+		private final long deadline;
+
+		OptimisticEmitFailureHandler(Duration duration){
+			this.deadline = System.nanoTime() + duration.toNanos();
+		}
+
+		@Override
+		public boolean onEmitFailure(SignalType signalType, EmitResult emitResult) {
+			return emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED) && (System.nanoTime() < this.deadline);
+		}
+	}
+
+	/**
 	 * A handler supporting the emit API (eg. {@link Many#emitNext(Object, Sinks.EmitFailureHandler)}),
 	 * checking non-successful emission results from underlying {@link Many#tryEmitNext(Object) tryEmit}
 	 * API calls to decide whether or not such calls should be retried.
@@ -241,6 +258,23 @@ public final class Sinks {
 		 * and trigger the failure handling immediately.
 		 */
 		EmitFailureHandler FAIL_FAST = (signalType, emission) -> false;
+
+		/**
+		 * Create an {@link EmitFailureHandler} which will busy loop in case of concurrent use
+		 * of the sink ({@link EmitResult#FAIL_NON_SERIALIZED}, up to a deadline.
+		 * The deadline is computed immediately from the current time (construction time)
+		 * + provided {@link Duration}.
+		 * <p>
+		 * As a result there will always be some delay between this computation and the actual first
+		 * use of the handler (at a minimum, the time it takes for the first sink emission attempt).
+		 * Consider this when choosing the {@link Duration}, and probably prefer something above 100ms.
+		 *
+		 * @param duration {@link Duration} for the deadline
+		 * @return an optimistic and bounded busy-looping {@link EmitFailureHandler}
+		 */
+		static EmitFailureHandler busyLooping(Duration duration){
+			return new OptimisticEmitFailureHandler(duration);
+		}
 
 		/**
 		 * Decide whether the emission should be retried, depending on the provided {@link EmitResult}

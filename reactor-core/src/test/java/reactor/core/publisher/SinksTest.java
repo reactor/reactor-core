@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -122,6 +121,59 @@ class SinksTest {
 					expectReplay(supplier, ALL),
 					expectBufferingBeforeFirstSubscriber(supplier, ALL)
 			);
+		}
+	}
+
+	@Nested
+	class OptimisticEmitFailureHandlerTest {
+		@Test
+		void shouldRetryOptimistically() {
+			Sinks.One<Object> sink = new InternalOneSinkTest.InternalOneSinkAdapter<Object>() {
+				final long duration = Duration.ofMillis(1000).toNanos() + System.nanoTime();
+				@Override
+				public Sinks.EmitResult tryEmitValue(Object value) {
+					return System.nanoTime() > duration ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_NON_SERIALIZED;
+				}
+
+				@Override
+				public Sinks.EmitResult tryEmitEmpty() {
+					throw new IllegalStateException();
+				}
+
+				@Override
+				public Sinks.EmitResult tryEmitError(Throwable error) {
+					throw new IllegalStateException();
+				}
+			};
+			assertThatNoException().isThrownBy(() -> {
+				sink.emitValue("Hello",
+						Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(1000)));
+			});
+		}
+
+		@Test
+		void shouldFailRetryOptimistically() {
+			Sinks.One<Object> sink = new InternalOneSinkTest.InternalOneSinkAdapter<Object>() {
+				final long duration = Duration.ofMillis(1000).toNanos() + System.nanoTime();
+				@Override
+				public Sinks.EmitResult tryEmitValue(Object value) {
+					return System.nanoTime() > duration ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_NON_SERIALIZED;
+				}
+
+				@Override
+				public Sinks.EmitResult tryEmitEmpty() {
+					throw new IllegalStateException();
+				}
+
+				@Override
+				public Sinks.EmitResult tryEmitError(Throwable error) {
+					throw new IllegalStateException();
+				}
+			};
+			assertThatExceptionOfType(Sinks.EmissionException.class).isThrownBy(() -> {
+				sink.emitValue("Hello",
+						Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(100)));
+			});
 		}
 	}
 
