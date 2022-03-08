@@ -77,8 +77,8 @@ task japicmp(type: JapicmpTask) {
 	  	dependsOn(downloadBaseline)
 	}
 
-	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar")
-	newClasspath = files(jar.archiveFile)
+	oldClasspath.from(files("${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar"))
+	newClasspath.from(files(jar.archiveFile))
 	onlyBinaryIncompatibleModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
