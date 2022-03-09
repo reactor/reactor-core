@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,32 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoPeekTest {
-
-	@Test
-	public void onMonoRejectedDoOnSuccessOrError() {
-		Mono<String> mp = Mono.error(new Exception("test"));
-		AtomicReference<Throwable> ref = new AtomicReference<>();
-
-		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
-		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(f));
-
-		mono.subscribe();
-
-		assertThat(ref.get()).hasMessage("test");
-	}
-
-	@Test
-	public void onMonoSuccessDoOnSuccessOrError() {
-		Mono<String> mp = Mono.just("test");
-		AtomicReference<String> ref = new AtomicReference<>();
-
-		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
-		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(s));
-
-		mono.subscribe();
-
-		assertThat(ref.get()).isEqualToIgnoringCase("test");
-	}
 
 	@Test
 	public void onMonoRejectedDoOnTerminate() {

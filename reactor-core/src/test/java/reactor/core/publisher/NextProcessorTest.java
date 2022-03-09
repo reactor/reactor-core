@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -256,21 +256,6 @@ class NextProcessorTest {
 	}
 
 	@Test
-	void rejectedDoOnSuccessOrError() {
-		NextProcessor<String> mp = new NextProcessor<>(null);
-		AtomicReference<Throwable> ref = new AtomicReference<>();
-
-		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
-		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(f));
-		mono.subscribe(v -> {}, e -> {});
-		mp.onError(new Exception("test"));
-
-		assertThat(ref.get()).hasMessage("test");
-		assertThat(mp.isSuccess()).isFalse();
-		assertThat(mp.isError()).isTrue();
-	}
-
-	@Test
 	void rejectedDoOnTerminate() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicInteger invoked = new AtomicInteger();
@@ -294,21 +279,6 @@ class NextProcessorTest {
 		assertThat(ref.get()).hasMessage("test");
 		assertThat(mp.isSuccess()).isFalse();
 		assertThat(mp.isError()).isTrue();
-	}
-
-	@Test
-	void successDoOnSuccessOrError() {
-		NextProcessor<String> mp = new NextProcessor<>(null);
-		AtomicReference<String> ref = new AtomicReference<>();
-
-		@SuppressWarnings("deprecation") // Because of doOnSuccessOrError, which will be removed in 3.5.0
-		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(s));
-		mono.subscribe();
-		mp.onNext("test");
-
-		assertThat(ref.get()).isEqualToIgnoringCase("test");
-		assertThat(mp.isSuccess()).isTrue();
-		assertThat(mp.isError()).isFalse();
 	}
 
 	@Test

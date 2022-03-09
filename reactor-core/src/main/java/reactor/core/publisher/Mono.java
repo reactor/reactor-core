@@ -2438,30 +2438,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
-	 * The arguments will be null depending on success, success with data and error:
-	 * <ul>
-	 *     <li>null, null : completed without data</li>
-	 *     <li>T, null : completed with data</li>
-	 *     <li>null, Throwable : failed with/without data</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/doAfterSuccessOrError.svg" alt="">
-	 * <p>
-	 * The relevant signal is propagated downstream, then the {@link BiConsumer} is executed.
-	 *
-	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated prefer using {@link #doAfterTerminate(Runnable)} or {@link #doFinally(Consumer)}. will be removed in 3.5.0
-	 */
-	@Deprecated
-	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
-		return doOnTerminalSignal(this, null, null, afterSuccessOrError);
-	}
-
-	/**
 	 * Add behavior (side-effect) triggered after the {@link Mono} terminates, either by
 	 * completing downstream successfully or with an error.
 	 * <p>
@@ -2775,32 +2751,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		return doOnSignal(this, onSubscribe, null, null,  null);
-	}
-
-	/**
-	 * Add behavior triggered when the {@link Mono} terminates, either by emitting a value,
-	 * completing empty or failing with an error.
-	 * The value passed to the {@link Consumer} reflects the type of completion:
-	 * <ul>
-	 *     <li>null, null : completing without data. handler is executed right before onComplete is propagated downstream</li>
-	 *     <li>T, null : completing with data. handler is executed right before onNext is propagated downstream</li>
-	 *     <li>null, Throwable : failing. handler is executed right before onError is propagated downstream</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/doOnSuccessOrError.svg" alt="">
-	 * <p>
-	 * The {@link BiConsumer} is executed before propagating either onNext, onComplete or onError downstream.
-	 *
-	 * @param onSuccessOrError the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated prefer using {@link #doOnNext(Consumer)}, {@link #doOnError(Consumer)}, {@link #doOnTerminate(Runnable)} or {@link #doOnSuccess(Consumer)}. will be removed in 3.5.0
-	 */
-	@Deprecated
-	public final Mono<T> doOnSuccessOrError(BiConsumer<? super T, Throwable> onSuccessOrError) {
-		Objects.requireNonNull(onSuccessOrError, "onSuccessOrError");
-		return doOnTerminalSignal(this, v -> onSuccessOrError.accept(v, null), e -> onSuccessOrError.accept(null, e), null);
 	}
 
 	/**
