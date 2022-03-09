@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,26 +60,16 @@ public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
 
-		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
-		final Scheduler elastic        = Schedulers.Factory.super.newElastic(60, Thread::new);
 		final Scheduler boundedElastic = Schedulers.Factory.super.newBoundedElastic(2, Integer.MAX_VALUE, Thread::new, 60);
 		final Scheduler single         = Schedulers.Factory.super.newSingle(Thread::new);
 		final Scheduler parallel       = Schedulers.Factory.super.newParallel(1, Thread::new);
 
 		TestSchedulers(boolean disposeOnInit) {
 			if (disposeOnInit) {
-				elastic.dispose();
 				boundedElastic.dispose();
 				single.dispose();
 				parallel.dispose();
 			}
-		}
-
-		@Override
-		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
-		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
-			return elastic;
 		}
 
 		@Override
@@ -332,35 +322,6 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void elasticSchedulerDefaultBlockingOk() throws InterruptedException {
-		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
-		Scheduler scheduler = Schedulers.newElastic("elasticSchedulerDefaultNonBlocking");
-		CountDownLatch latch = new CountDownLatch(1);
-		AtomicReference<Throwable> errorRef = new AtomicReference<>();
-		try {
-			scheduler.schedule(() -> {
-				try {
-					Mono.just("foo")
-					    .hide()
-					    .block();
-				}
-				catch (Throwable t) {
-					errorRef.set(t);
-				}
-				finally {
-					latch.countDown();
-				}
-			});
-			latch.await();
-		}
-		finally {
-			scheduler.dispose();
-		}
-
-		assertThat(errorRef.get()).isNull();
-	}
-
-	@Test
 	public void boundedElasticSchedulerDefaultBlockingOk() throws InterruptedException {
 		Scheduler scheduler = Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticSchedulerDefaultNonBlocking");
 		CountDownLatch latch = new CountDownLatch(1);
@@ -541,9 +502,6 @@ public class SchedulersTest {
 		Schedulers.setFactory(ts);
 
 		assertThat(Schedulers.newSingle("unused")).isEqualTo(ts.single);
-		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
-		Scheduler elastic = Schedulers.newElastic("unused");
-		assertThat(elastic).isEqualTo(ts.elastic);
 		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "unused")).isEqualTo(ts.boundedElastic);
 		assertThat(Schedulers.newParallel("unused")).isEqualTo(ts.parallel);
 
@@ -584,15 +542,12 @@ public class SchedulersTest {
 	@Test
 	public void shutdownNowClosesAllCachedSchedulers() {
 		Scheduler oldSingle = Schedulers.single();
-		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
-		Scheduler oldElastic = Schedulers.elastic();
 		Scheduler oldBoundedElastic = Schedulers.boundedElastic();
 		Scheduler oldParallel = Schedulers.parallel();
 
 		Schedulers.shutdownNow();
 
 		assertThat(oldSingle.isDisposed()).as("single() disposed").isTrue();
-		assertThat(oldElastic.isDisposed()).as("elastic() disposed").isTrue();
 		assertThat(oldBoundedElastic.isDisposed()).as("boundedElastic() disposed").isTrue();
 		assertThat(oldParallel.isDisposed()).as("parallel() disposed").isTrue();
 	}
@@ -918,33 +873,6 @@ public class SchedulersTest {
 		}
 	}
 
-
-	@Test
-	@Timeout(5)
-	public void elasticSchedulerThreadCheck() throws Exception{
-		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
-		Scheduler s = Schedulers.newElastic("work");
-		try {
-			Scheduler.Worker w = s.createWorker();
-
-			Thread currentThread = Thread.currentThread();
-			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
-			CountDownLatch latch = new CountDownLatch(1);
-
-			w.schedule(() -> {
-				taskThread.set(Thread.currentThread());
-				latch.countDown();
-			});
-
-			latch.await();
-
-			assertThat(taskThread.get()).isNotEqualTo(currentThread);
-		}
-		finally {
-			s.dispose();
-		}
-	}
-
 	@Test
 	@Timeout(5)
 	public void boundedElasticSchedulerThreadCheck() throws Exception {
@@ -1184,8 +1112,7 @@ public class SchedulersTest {
 
 		};
 
-		@SuppressWarnings("deprecation") // to be removed in 3.5 alongside Schedulers.elastic()
-		Scheduler elastic = Schedulers.elastic();
+		Scheduler elastic = Schedulers.boundedElastic();
 		//noop
 		elastic.dispose();
 	}
