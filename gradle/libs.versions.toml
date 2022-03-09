@@ -27,7 +27,7 @@ jsr305 = "com.google.code.findbugs:jsr305:3.0.1"
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer = "io.micrometer:micrometer-core:1.3.0"
-mockito = "org.mockito:mockito-core:4.3.1"
+mockito = "org.mockito:mockito-core:4.4.0"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
@@ -41,7 +41,7 @@ artifactory = { id = "com.jfrog.artifactory", version = "4.27.1" }
 asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" }
 asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.2.0" }
-download = { id = "de.undercouch.download", version = "5.0.1" }
+download = { id = "de.undercouch.download", version = "5.0.2" }
 japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.0" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.13" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.10" }
