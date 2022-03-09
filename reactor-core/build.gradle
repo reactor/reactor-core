@@ -163,6 +163,8 @@ task japicmp(type: JapicmpTask) {
 		"reactor.util.function.TupleExtensionsKt"
 	]
 	methodExcludes = [
+		'reactor.core.publisher.Mono#doAfterSuccessOrError(java.util.function.BiConsumer)',
+		'reactor.core.publisher.Mono#doOnSuccessOrError(java.util.function.BiConsumer)',
 		'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)',
 		'reactor.core.scheduler.Schedulers#elastic()',
 		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String)',
