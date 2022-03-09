@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -281,19 +281,5 @@ public interface Context extends ContextView {
 			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
-	}
-
-	/**
-	 * See {@link #putAll(ContextView)}.
-	 *
-	 * @deprecated will be removed in 3.5, kept for backward compatibility with 3.3. Until
-	 * then if you need to work around the deprecation, use {@link #putAll(ContextView)}
-	 * combined with {@link #readOnly()}
-	 * @param context the {@link Context} from which to copy entries
-	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
-	 */
-	@Deprecated
-	default Context putAll(Context context) {
-		return this.putAll(context.readOnly());
 	}
 }

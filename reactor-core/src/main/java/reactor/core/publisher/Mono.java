@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,25 +213,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public static <T> Mono<T> defer(Supplier<? extends Mono<? extends T>> supplier) {
 		return onAssembly(new MonoDefer<>(supplier));
-	}
-
-	/**
-	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
-	 * to subscribe to for each {@link Subscriber} downstream.
-	 * This operator behaves the same way as {@link #defer(Supplier)},
-	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
-	 * <p>
-	 * @param contextualMonoFactory a {@link Mono} factory
-	 * @param <T> the element type of the returned Mono instance
-	 * @return a deferred {@link Mono} deriving actual {@link Mono} from context values for each subscription
-	 * @deprecated use {@link #deferContextual(Function)} instead. to be removed in 3.5.0.
-	 */
-	@Deprecated
-	public static <T> Mono<T> deferWithContext(Function<Context, ? extends Mono<? extends T>> contextualMonoFactory) {
-		return deferContextual(view -> contextualMonoFactory.apply(Context.of(view)));
 	}
 
 	/**
@@ -819,21 +800,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual, int prefetch) {
 		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, prefetch));
-	}
-
-	/**
-	 * Create a {@link Mono} emitting the {@link Context} available on subscribe.
-	 * If no Context is available, the mono will simply emit the
-	 * {@link Context#empty() empty Context}.
-	 *
-	 * @return a new {@link Mono} emitting current context
-	 * @see #subscribe(CoreSubscriber)
-	 * @deprecated Use {@link #deferContextual(Function)} or {@link #transformDeferredContextual(BiFunction)} to materialize
-	 * the context. To obtain the same Mono of Context, use {@code Mono.deferContextual(Mono::just)}. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public static Mono<Context> subscriberContext() {
-		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
 
 	/**
@@ -2621,7 +2587,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Mono<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
+		return contextWrite(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**
@@ -3591,7 +3557,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
 		));
@@ -3681,7 +3647,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
 		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
 		));
@@ -3698,7 +3664,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * was used downstream
 	 */
 	public final Mono<T> onErrorStop() {
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.stop()));
 	}
@@ -4416,55 +4382,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see Publisher#subscribe(Subscriber)
 	 */
 	public abstract void subscribe(CoreSubscriber<? super T> actual);
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by adding all values
-	 * from the given {@link Context}, producing a new {@link Context} that is propagated
-	 * upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
-	 * state, returning a new one.
-	 *
-	 * @return a contextualized {@link Mono}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(ContextView)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Mono<T> subscriberContext(Context mergeContext) {
-		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
-	}
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by applying a {@link Function}
-	 * to it, producing a new {@link Context} that is propagated upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one.
-	 *
-	 * @return a contextualized {@link Mono}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(Function)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Mono<T> subscriberContext(Function<Context, Context> doOnContext) {
-		return new MonoContextWrite<>(this, doOnContext);
-	}
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
