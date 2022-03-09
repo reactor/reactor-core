@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1926,6 +1926,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * completed.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/switchOnNext.svg" alt="">
+	 * <p>
+	 * This operator requests the {@code mergedPublishers} source for an unbounded amount of inner publishers,
+	 * but doesn't request each inner {@link Publisher} unless the downstream has made
+	 * a corresponding request (no prefetch on publishers emitted by {@code mergedPublishers}).
 	 *
 	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
 	 * @param <T> the produced type
@@ -1933,7 +1937,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
-		return switchOnNext(mergedPublishers, Queues.XS_BUFFER_SIZE);
+		return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
+			identityFunction()));
 	}
 
 	/**
@@ -8760,16 +8765,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/switchMap.svg" alt="">
+	 * <p>
+	 * This operator requests the source for an unbounded amount, but doesn't
+	 * request each generated {@link Publisher} unless the downstream has made
+	 * a corresponding request (no prefetch of inner publishers).
 	 *
 	 * @param fn the {@link Function} to generate a {@link Publisher} for each source value
 	 * @param <V> the type of the return value of the transformation function
 	 *
 	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
 	 * for each source onNext
-	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
-		return switchMap(fn, Queues.XS_BUFFER_SIZE);
+		return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
 	}
 
 	/**
