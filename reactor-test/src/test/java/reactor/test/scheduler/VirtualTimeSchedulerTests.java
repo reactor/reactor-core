@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,27 +51,18 @@ public class VirtualTimeSchedulerTests {
 	@Test
 	public void allEnabled() {
 		assertThat(Schedulers.newParallel("")).isNotInstanceOf(VirtualTimeScheduler.class);
-		@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic
-		Scheduler elastic1 = Schedulers.newElastic("");
-		assertThat(elastic1).isNotInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isNotInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newSingle("")).isNotInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler.getOrSet();
 
 		assertThat(Schedulers.newParallel("")).isInstanceOf(VirtualTimeScheduler.class);
-		@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic
-		Scheduler elastic2 = Schedulers.newElastic("");
-		assertThat(elastic2).isInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newSingle("")).isInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
 		assertThat(Schedulers.newParallel("")).isSameAs(t);
-		@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic
-		Scheduler elastic3 = Schedulers.newElastic("");
-		assertThat(elastic3).isSameAs(t);
 		assertThat(Schedulers.newBoundedElastic(5, Integer.MAX_VALUE, "")).isSameAs(t); //same even though different parameter
 		assertThat(Schedulers.newSingle("")).isSameAs(t);
 	}
