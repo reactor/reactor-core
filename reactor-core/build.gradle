@@ -166,6 +166,15 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.publisher.Mono#doAfterSuccessOrError(java.util.function.BiConsumer)',
 		'reactor.core.publisher.Mono#doOnSuccessOrError(java.util.function.BiConsumer)',
 		'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)',
+		'reactor.core.publisher.Flux#deferWithContext(java.util.function.Function)',
+		'reactor.core.publisher.Flux#subscriberContext(reactor.util.context.Context)',
+		'reactor.core.publisher.Flux#subscriberContext(java.util.function.Function)',
+		'reactor.core.publisher.Mono#deferWithContext(java.util.function.Function)',
+		'reactor.core.publisher.Mono#subscriberContext()',
+		'reactor.core.publisher.Mono#subscriberContext(reactor.util.context.Context)',
+		'reactor.core.publisher.Mono#subscriberContext(java.util.function.Function)',
+		'reactor.core.publisher.Signal#getContext()',
+		'reactor.util.context.Context#putAll(reactor.util.context.Context)'
 	]
 }
 

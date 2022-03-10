@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -801,28 +801,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDefer<>(supplier));
-	}
-
-	/**
-	 * Lazily supply a {@link Publisher} every time a {@link Subscription} is made on the
-	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
-	 * subscribe and the {@link Function} can create a subscriber-specific instance.
-	 * This operator behaves the same way as {@link #defer(Supplier)},
-	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
-	 * If the supplier doesn't generate a new instance however, this operator will
-	 * effectively behave like {@link #from(Publisher)}.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/deferForFlux.svg" alt="">
-	 *
-	 * @param contextualPublisherFactory the {@link Publisher} {@link Function} to call on subscribe
-	 * @param <T>      the type of values passing through the {@link Flux}
-	 * @return a deferred {@link Flux} deriving actual {@link Flux} from context values for each subscription
-	 * @deprecated use {@link #deferContextual(Function)}
-	 */
-	@Deprecated
-	public static <T> Flux<T> deferWithContext(Function<Context, ? extends Publisher<T>> contextualPublisherFactory) {
-		return deferContextual(view -> contextualPublisherFactory.apply(Context.of(view)));
 	}
 
 	/**
@@ -4559,7 +4537,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Flux<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
+		return contextWrite(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**
@@ -6791,7 +6769,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
 		));
@@ -6875,7 +6853,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
 		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
 		));
@@ -6892,7 +6870,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * was used downstream
 	 */
 	public final Flux<T> onErrorStop() {
-		return subscriberContext(Context.of(
+		return contextWrite(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.stop()));
 	}
@@ -8485,55 +8463,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see Flux#subscribe(Subscriber)
 	 */
 	public abstract void subscribe(CoreSubscriber<? super T> actual);
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by adding all values
-	 * from the given {@link Context}, producing a new {@link Context} that is propagated
-	 * upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
-	 * state, returning a new one.
-	 *
-	 * @return a contextualized {@link Flux}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(ContextView)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Flux<T> subscriberContext(Context mergeContext) {
-		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
-	}
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context} by applying a {@link Function}
-	 * to it, producing a new {@link Context} that is propagated upstream.
-	 * <p>
-	 * The {@link Context} propagation happens once per subscription (not on each onNext):
-	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
-	 * the last operator of a chain towards the first.
-	 * <p>
-	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
-	 * visible to operators above it in the chain.
-	 *
-	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one.
-	 *
-	 * @return a contextualized {@link Flux}
-	 * @see Context
-	 * @deprecated Use {@link #contextWrite(Function)} instead. To be removed in 3.5.0.
-	 */
-	@Deprecated
-	public final Flux<T> subscriberContext(Function<Context, Context> doOnContext) {
-		return contextWrite(doOnContext);
-	}
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
