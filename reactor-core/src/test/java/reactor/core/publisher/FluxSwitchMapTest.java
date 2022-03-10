@@ -35,10 +35,12 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
+import static reactor.core.publisher.Sinks.EmitResult.FAIL_OVERFLOW;
 
 @SuppressWarnings("deprecation")
 public class FluxSwitchMapTest {
@@ -125,8 +127,8 @@ public class FluxSwitchMapTest {
 	}
 
 	@Test
-	public void noswitchBackpressured() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+	public void noswitchBackpressuredZeroPrefetch() {
+		TestSubscriber<Integer> ts = TestSubscriber.builder().initialRequest(0).build();
 
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
@@ -137,34 +139,24 @@ public class FluxSwitchMapTest {
 
 		sp1.emitNext(1, FAIL_FAST);
 
-		sp2.emitNext(10, FAIL_FAST);
-		sp2.emitNext(20, FAIL_FAST);
-		sp2.emitNext(30, FAIL_FAST);
-		sp2.emitNext(40, FAIL_FAST);
-		sp2.emitComplete(FAIL_FAST);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
+		assertThat(sp2.tryEmitNext(10)).as("tryEmit(10) before downstream request").isEqualTo(FAIL_OVERFLOW);
 
 		ts.request(2);
+		sp2.tryEmitNext(11).orThrow();
+		sp2.tryEmitNext(20).orThrow();
 
-		ts.assertValues(10, 20)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		sp1.emitComplete(FAIL_FAST);
-
-		ts.assertValues(10, 20)
-		  .assertNoError()
-		  .assertNotComplete();
+		assertThat(sp2.tryEmitNext(30)).as("tryEmit(30) before second downstream request").isEqualTo(FAIL_OVERFLOW);
 
 		ts.request(2);
+		sp2.tryEmitNext(31).orThrow();
+		sp2.tryEmitNext(40).orThrow();
+		sp2.tryEmitComplete().orThrow();
 
-		ts.assertValues(10, 20, 30, 40)
-		  .assertNoError()
-		  .assertComplete();
+		assertThat(ts.getReceivedOnNext()).as("received 4 onNext").containsExactly(11, 20, 31, 40);
+		assertThat(ts.isTerminatedComplete()).as("not completed until source complete").isFalse();
 
+		sp1.tryEmitComplete().orThrow();
+		assertThat(ts.isTerminatedComplete()).as("completed once source complete").isTrue();
 	}
 
 	@ParameterizedTestWithName
