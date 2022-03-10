@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,11 +207,6 @@ public class SchedulersMetricsTest {
 	static Stream<Arguments>  metricsSchedulers() {
 		return Stream.of(
 			arguments(Named.named("PARALLEL", (Supplier<Scheduler>) () -> Schedulers.newParallel("A", 1))),
-			arguments(Named.named("ELASTIC", (Supplier<Scheduler>) () -> {
-				@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic()
-				Scheduler newElastic = Schedulers.newElastic("A");
-				return newElastic;
-			})),
 			arguments(Named.named("BOUNDED_ELASTIC", (Supplier<Scheduler>) () -> Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "A")))
 		);
 	}

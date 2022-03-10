@@ -174,7 +174,13 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.publisher.Mono#subscriberContext(reactor.util.context.Context)',
 		'reactor.core.publisher.Mono#subscriberContext(java.util.function.Function)',
 		'reactor.core.publisher.Signal#getContext()',
-		'reactor.util.context.Context#putAll(reactor.util.context.Context)'
+		'reactor.util.context.Context#putAll(reactor.util.context.Context)',
+		'reactor.core.scheduler.Schedulers#elastic()',
+		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String)',
+		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int)',
+		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int, boolean)',
+		'reactor.core.scheduler.Schedulers#newElastic(int, java.util.concurrent.ThreadFactory)',
+		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)'
 	]
 }
 

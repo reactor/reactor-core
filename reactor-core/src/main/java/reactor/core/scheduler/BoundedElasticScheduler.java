@@ -70,6 +70,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	static final int DEFAULT_TTL_SECONDS = 60;
 
+	static final AtomicLong COUNTER = new AtomicLong();
 	static final AtomicLong EVICTOR_COUNTER = new AtomicLong();
 
 	static final ThreadFactory EVICTOR_FACTORY = r -> {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -446,12 +446,6 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		AllFactory(VirtualTimeScheduler s) {
 			this.s = s;
-		}
-
-		@Override
-		@SuppressWarnings("deprecation") // To be removed in 3.5.0
-		public Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-			return s;
 		}
 
 		@Override
