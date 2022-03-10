@@ -17,7 +17,9 @@
 package reactor.util.context;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 
 import reactor.util.annotation.Nullable;
 
