@@ -2,7 +2,7 @@
 = Reactor-Extra
 
 The `reactor-extra` artifact contains additional operators and utilities that are for
-users of `reactor-core` with advanced needs.
+users of `reactor-core` with advanced needs, or incubating operators.
 
 As this is a separate artifact, you need to explicitly add it to your build. The following
 example shows how to do so in Gradle:
@@ -62,8 +62,4 @@ mathematical operators, including `max`, `min`, `sumInt`, `averageDouble`, and o
 [[extra-schedulers]]
 == Schedulers
 
-Reactor-extra comes with several specialized schedulers:
-
-* `ForkJoinPoolScheduler` (in the `reactor.scheduler.forkjoin` package): Uses the Java `ForkJoinPool` to execute tasks.
-* `SwingScheduler` (in the `reactor.swing` package): Runs tasks in the Swing UI event loop thread, the `EDT`.
-* `SwtScheduler` (in the `reactor.swing` package): Runs tasks in the SWT UI event loop thread.
+Reactor-extra comes with the `ForkJoinPoolScheduler` (in the `reactor.scheduler.forkjoin` package): it uses the Java `ForkJoinPool` to execute tasks.
