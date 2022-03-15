@@ -50,15 +50,19 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	public List<Throwable> droppedErrors = new CopyOnWriteArrayList<>();
 
-	public AtomicReference<Operation> guard = new AtomicReference<>(null);
+	public AtomicReference<Throwable> guard = new AtomicReference<>(null);
 
 	public AtomicBoolean concurrentOnNext = new AtomicBoolean(false);
+	public Throwable stacktraceOnNext;
 
 	public AtomicBoolean concurrentOnError = new AtomicBoolean(false);
+	public Throwable stacktraceOnError;
 
 	public AtomicBoolean concurrentOnComplete = new AtomicBoolean(false);
+	public Throwable stacktraceOnComplete;
 
 	public AtomicBoolean concurrentOnSubscribe = new AtomicBoolean(false);
+	public Throwable stacktraceOnSubscribe;
 
 	public final AtomicInteger onNextCalls = new AtomicInteger();
 
@@ -100,11 +104,15 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	@Override
 	public void onSubscribe(Subscription subscription) {
-		if (!guard.compareAndSet(null, Operation.ON_SUBSCRIBE)) {
+		final RuntimeException exception = new RuntimeException("onSubscribe");
+		final Throwable previousException = guard.getAndSet(exception);
+		if (previousException != null) {
+			exception.addSuppressed(previousException);
+			stacktraceOnSubscribe = exception;
 			concurrentOnSubscribe.set(true);
 		} else {
 			final boolean wasSet = Operators.setOnce(S, this, subscription);
-			guard.compareAndSet(Operation.ON_SUBSCRIBE, null);
+			guard.compareAndSet(exception, null);
 
 			if (wasSet && initRequest > 0) {
 				subscription.request(initRequest);
@@ -115,33 +123,52 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	@Override
 	public void onNext(T value) {
-		if (!guard.compareAndSet(null, Operation.ON_NEXT)) {
+		final RuntimeException exception = new RuntimeException("onNext");
+		final Throwable previousException = guard.getAndSet(exception);
+		if (previousException != null) {
+			exception.addSuppressed(previousException);
+			stacktraceOnNext = exception;
 			concurrentOnNext.set(true);
 		} else {
-			guard.compareAndSet(Operation.ON_NEXT, null);
+			guard.compareAndSet(exception, null);
 		}
 		onNextCalls.incrementAndGet();
 	}
 
 	@Override
 	public void onError(Throwable throwable) {
-		if (!guard.compareAndSet(null, Operation.ON_ERROR)) {
+		final RuntimeException exception = new RuntimeException("onError");
+		final Throwable previousException = guard.getAndSet(exception);
+		if (previousException != null) {
+			exception.addSuppressed(previousException);
+			stacktraceOnError = exception;
 			concurrentOnError.set(true);
 		} else {
-			guard.compareAndSet(Operation.ON_ERROR, null);
+			guard.compareAndSet(exception, null);
 		}
 		error = throwable;
 		onErrorCalls.incrementAndGet();
 	}
 
+	Throwable oce;
 	@Override
 	public void onComplete() {
-		if (!guard.compareAndSet(null, Operation.ON_COMPLETE)) {
+		final RuntimeException exception = new RuntimeException("onComplete");
+		final Throwable previousException = guard.getAndSet(exception);
+		if (previousException != null) {
+			exception.addSuppressed(previousException);
+			stacktraceOnError = exception;
 			concurrentOnComplete.set(true);
 		} else {
-			guard.compareAndSet(Operation.ON_COMPLETE, null);
+			guard.compareAndSet(exception, null);
 		}
-		onCompleteCalls.incrementAndGet();
+
+		final int calls = onCompleteCalls.incrementAndGet();
+
+		if (calls > 1) {
+			throw new RuntimeException("boom", oce);
+		}
+		oce = exception;
 	}
 
 	public void request(long n) {

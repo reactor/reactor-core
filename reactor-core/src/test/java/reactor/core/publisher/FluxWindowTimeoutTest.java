@@ -119,6 +119,7 @@ public class FluxWindowTimeoutTest {
 		return Flux.range(1, 4)
 		           .concatMap(e -> Mono.delay(Duration.ofMillis(200))
 		                               .thenReturn(e))
+					.log("pre")
 		           .windowTimeout(5, Duration.ofMillis(100), true)
 				   .log("windowTimeout")
 		           .concatMap(flux -> flux.log("in").collectList(), 0)
