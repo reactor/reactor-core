@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,37 +37,38 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 @Timeout(5)
 public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String, String> {
 
-	abstract int implicitPrefetchValue();
+	abstract int testBasePrefetchValue();
 
 	@Override
 	protected final Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.shouldHitDropNextHookAfterTerminate(false)
-		                     .shouldHitDropErrorHookAfterTerminate(false)
-		                     .prefetch(implicitPrefetchValue() == 0 ? -1 : implicitPrefetchValue());
+			.shouldHitDropErrorHookAfterTerminate(false)
+			.prefetch(testBasePrefetchValue() == 0 ? -1 : testBasePrefetchValue())
+			.producerError(new RuntimeException("AbstractFluxConcatMapTest"));
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(f -> f.concatMap(Flux::just, implicitPrefetchValue())),
+				scenario(f -> f.concatMap(Flux::just, testBasePrefetchValue())),
 
-				scenario(f -> f.concatMap(d -> Flux.just(d).hide(), implicitPrefetchValue())),
+				scenario(f -> f.concatMap(d -> Flux.just(d).hide(), testBasePrefetchValue())),
 
-				scenario(f -> f.concatMap(d -> Flux.empty(), implicitPrefetchValue()))
+				scenario(f -> f.concatMap(d -> Flux.empty(), testBasePrefetchValue()))
 						.receiverEmpty(),
 
-				scenario(f -> f.concatMapDelayError(Flux::just, implicitPrefetchValue())),
+				scenario(f -> f.concatMapDelayError(Flux::just, testBasePrefetchValue())),
 
-				scenario(f -> f.concatMapDelayError(d -> Flux.just(d).hide(), implicitPrefetchValue())),
+				scenario(f -> f.concatMapDelayError(d -> Flux.just(d).hide(), testBasePrefetchValue())),
 
-				scenario(f -> f.concatMapDelayError(d -> Flux.empty(), implicitPrefetchValue()))
+				scenario(f -> f.concatMapDelayError(d -> Flux.empty(), testBasePrefetchValue()))
 						.receiverEmpty(),
 
 				//scenarios with fromCallable(() -> null)
-				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null), implicitPrefetchValue()))
+				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null), testBasePrefetchValue()))
 						.receiverEmpty(),
 
-				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null), implicitPrefetchValue()))
+				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null), testBasePrefetchValue()))
 						.shouldHitDropErrorHookAfterTerminate(true)
 						.receiverEmpty()
 		);
@@ -76,9 +77,9 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
-				scenario(f -> f.concatMap(Flux::just, implicitPrefetchValue())),
+				scenario(f -> f.concatMap(Flux::just, testBasePrefetchValue())),
 
-				scenario(f -> f.concatMapDelayError(Flux::just, implicitPrefetchValue()))
+				scenario(f -> f.concatMapDelayError(Flux::just, testBasePrefetchValue()))
 						.shouldHitDropErrorHookAfterTerminate(true)
 		);
 	}
@@ -88,16 +89,16 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		return Arrays.asList(
 				scenario(f -> f.concatMap(d -> {
 					throw exception();
-				}, implicitPrefetchValue())),
+				}, testBasePrefetchValue())),
 
-				scenario(f -> f.concatMap(d -> null, implicitPrefetchValue())),
+				scenario(f -> f.concatMap(d -> null, testBasePrefetchValue())),
 
 				scenario(f -> f.concatMapDelayError(d -> {
 					throw exception();
-				}, implicitPrefetchValue()))
+				}, testBasePrefetchValue()))
 						.shouldHitDropErrorHookAfterTerminate(true),
 
-				scenario(f -> f.concatMapDelayError(d -> null, implicitPrefetchValue()))
+				scenario(f -> f.concatMapDelayError(d -> null, testBasePrefetchValue()))
 						.shouldHitDropErrorHookAfterTerminate(true)
 		);
 	}
@@ -107,7 +108,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
-		    .concatMap(v -> Flux.range(v, 2), implicitPrefetchValue())
+		    .concatMap(v -> Flux.range(v, 2), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 2, 3)
@@ -121,7 +122,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		Flux.range(1, 2)
 		    .hide()
-		    .concatMap(v -> Flux.range(v, 2), implicitPrefetchValue())
+		    .concatMap(v -> Flux.range(v, 2), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 2, 3)
@@ -134,7 +135,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
-		    .concatMapDelayError(v -> Flux.range(v, 2), implicitPrefetchValue())
+		    .concatMapDelayError(v -> Flux.range(v, 2), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 2, 3)
@@ -148,7 +149,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		Flux.range(1, 2)
 		    .hide()
-		    .concatMapDelayError(v -> Flux.range(v, 2), implicitPrefetchValue())
+		    .concatMapDelayError(v -> Flux.range(v, 2), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 2, 3)
@@ -161,7 +162,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000)
-		    .concatMap(v -> Flux.range(v, 1000), implicitPrefetchValue())
+		    .concatMap(v -> Flux.range(v, 1000), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValueCount(1_000_000)
@@ -174,7 +175,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000_000)
-		    .concatMap(v -> Flux.just(v), implicitPrefetchValue())
+		    .concatMap(v -> Flux.just(v), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValueCount(1_000_000)
@@ -188,7 +189,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		Flux.range(1, 1000)
 		    .hide()
-		    .concatMap(v -> Flux.range(v, 1000), implicitPrefetchValue())
+		    .concatMap(v -> Flux.range(v, 1000), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValueCount(1_000_000)
@@ -201,7 +202,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000)
-		    .concatMapDelayError(v -> Flux.range(v, 1000), implicitPrefetchValue())
+		    .concatMapDelayError(v -> Flux.range(v, 1000), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValueCount(1_000_000)
@@ -214,7 +215,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000_000)
-		    .concatMapDelayError(v -> Flux.just(v), implicitPrefetchValue())
+		    .concatMapDelayError(v -> Flux.just(v), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValueCount(1_000_000)
@@ -228,7 +229,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		Flux.range(1, 1000)
 		    .hide()
-		    .concatMapDelayError(v -> Flux.range(v, 1000), implicitPrefetchValue())
+		    .concatMapDelayError(v -> Flux.range(v, 1000), testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValueCount(1_000_000)
@@ -242,7 +243,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux.range(1, 10000)
 		    .publishOn(Schedulers.single())
 		    .map(t -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + t + Thread.currentThread().getName()))
-		    .concatMap(Flux::just, implicitPrefetchValue())
+		    .concatMap(Flux::just, testBasePrefetchValue())
 		    .publishOn(Schedulers.boundedElastic())
 		    .distinct()
 		    .as(StepVerifier::create)
@@ -258,7 +259,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux.range(1, 10000)
 		    .publishOn(Schedulers.single())
 		    .map(t -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + t + Thread.currentThread().getName()))
-		    .concatMapDelayError(Flux::just, implicitPrefetchValue())
+		    .concatMapDelayError(Flux::just, testBasePrefetchValue())
 		    .publishOn(Schedulers.boundedElastic())
 		    .distinct()
 		    .as(StepVerifier::create)
@@ -277,7 +278,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -316,7 +317,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -350,7 +351,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -391,7 +392,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -422,7 +423,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		Flux.range(1, 2)
 		    .map(v -> v == 2 ? null : v)
-		    .concatMap(Flux::just, implicitPrefetchValue())
+		    .concatMap(Flux::just, testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -437,7 +438,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux.range(1, 2)
 		    .map(v -> v == 2 ? null : v)
 		    .filter(v -> true)
-		    .concatMap(Flux::just, implicitPrefetchValue())
+		    .concatMap(Flux::just, testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -456,7 +457,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		up.asFlux()
 		  .map(v -> v == 2 ? null : v)
-		  .concatMap(Flux::just, implicitPrefetchValue())
+		  .concatMap(Flux::just, testBasePrefetchValue())
 		  .subscribe(ts);
 
 		ts.assertValues(1)
@@ -477,7 +478,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		up.asFlux()
 		  .map(v -> v == 2 ? null : v)
 		  .filter(v -> true)
-		  .concatMap(Flux::just, implicitPrefetchValue())
+		  .concatMap(Flux::just, testBasePrefetchValue())
 		  .subscribe(ts);
 
 		ts.assertValues(1)
@@ -493,7 +494,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 				new Publisher[]{Flux.just(1), Flux.range(2, 3)};
 
 		Flux.range(0, 2)
-		    .concatMap(v -> sources[v], implicitPrefetchValue())
+		    .concatMap(v -> sources[v], testBasePrefetchValue())
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -511,7 +512,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		StepVerifier.create(Flux.just(Flux.just(1, 2)
 		                                  .concatWith(Flux.error(new Exception("test"))),
 				Flux.just(3, 4))
-		                        .concatMap(f -> f, implicitPrefetchValue()))
+		                        .concatMap(f -> f, testBasePrefetchValue()))
 		            .expectNext(1, 2)
 		            .verifyErrorMessage("test");
 	}
@@ -524,7 +525,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 						Flux.just(
 								Flux.just(1, 2),
 								Flux.error(new Exception("test")),
-								Flux.just(3, 4)), implicitPrefetchValue()))
+								Flux.just(3, 4)), testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
@@ -537,7 +538,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 				Mono.error(new Exception("test")),
 				Flux.just(3, 4)
 		);
-		StepVerifier.create(Flux.concatDelayError(sources, implicitPrefetchValue()))
+		StepVerifier.create(Flux.concatDelayError(sources, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
@@ -547,7 +548,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux<Integer> test = Flux
 				.just(1, 2)
 				.hide()
-				.<Integer>concatMap(f -> null, implicitPrefetchValue())
+				.<Integer>concatMap(f -> null, testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -570,7 +571,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 					else {
 						return Mono.just(f);
 					}
-				}, implicitPrefetchValue())
+				}, testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -594,7 +595,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 					else {
 						return Mono.just(f);
 					}
-				}, implicitPrefetchValue())
+				}, testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -615,7 +616,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 					if(f == 1) {
 						throw new ArithmeticException("boom");
 					}
-				}), implicitPrefetchValue())
+				}), testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -638,7 +639,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 					else {
 						return Mono.just(f);
 					}
-				}, implicitPrefetchValue())
+				}, testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 
@@ -664,7 +665,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 					else {
 						return Mono.just(f);
 					}
-				}, implicitPrefetchValue())
+				}, testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 
@@ -682,7 +683,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).onErrorStop(), implicitPrefetchValue())
+				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).onErrorStop(), testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -699,7 +700,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).onErrorStop(), implicitPrefetchValue())
+				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).onErrorStop(), testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -716,7 +717,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Mono.just(f).map(i -> 1/i), implicitPrefetchValue())
+				.concatMap(f ->  Mono.just(f).map(i -> 1/i), testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -733,7 +734,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i), implicitPrefetchValue())
+				.concatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i), testBasePrefetchValue())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
@@ -748,7 +749,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Test
 	public void discardOnDrainMapperError() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .concatMap(i -> { throw new IllegalStateException("boom"); }, implicitPrefetchValue()))
+		                        .concatMap(i -> { throw new IllegalStateException("boom"); }, testBasePrefetchValue()))
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1);
@@ -757,7 +758,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Test
 	public void discardDelayedOnDrainMapperError() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .concatMapDelayError(i -> { throw new IllegalStateException("boom"); }, implicitPrefetchValue()))
+		                        .concatMapDelayError(i -> { throw new IllegalStateException("boom"); }, testBasePrefetchValue()))
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1, 2, 3);
@@ -774,7 +775,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 					                        return Mono.just(i);
 	                                    },
 				                        false,
-				                        implicitPrefetchValue()
+				                        testBasePrefetchValue()
 		                        ))
 		            .expectNext(1)
 		            .expectErrorMessage("boom")
@@ -785,7 +786,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Test
 	public void publisherOfPublisherDelayEnd() {
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
-				Flux.just(3, 4)), false, implicitPrefetchValue()))
+				Flux.just(3, 4)), false, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyComplete();
 	}
@@ -793,7 +794,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Test
 	public void publisherOfPublisherDelayEnd2() {
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
-				Flux.just(3, 4)), true, implicitPrefetchValue()))
+				Flux.just(3, 4)), true, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyComplete();
 	}
@@ -803,7 +804,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		StepVerifier.create(Flux.just(Flux.just(1, 2)
 		                                  .concatWith(Flux.error(new Exception("test"))),
 				Flux.just(3, 4))
-		                        .concatMapDelayError(f -> f, false, implicitPrefetchValue()))
+		                        .concatMapDelayError(f -> f, false, testBasePrefetchValue()))
 		            .expectNext(1, 2)
 		            .verifyErrorMessage("test");
 	}
@@ -813,7 +814,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2)
 		                                                        .concatWith(Flux.error(new Exception(
 				                                                        "test"))),
-				Flux.just(3, 4)), false, implicitPrefetchValue()))
+				Flux.just(3, 4)), false, testBasePrefetchValue()))
 		            .expectNext(1, 2)
 		            .verifyErrorMessage("test");
 	}
@@ -823,7 +824,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2)
 		                                                        .concatWith(Flux.error(new Exception(
 				                                                        "test"))),
-				Flux.just(3, 4)), true, implicitPrefetchValue()))
+				Flux.just(3, 4)), true, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
@@ -833,7 +834,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		StepVerifier.create(Flux.just(Flux.just(1, 2)
 		                                  .concatWith(Flux.error(new Exception("test"))),
 				Flux.just(3, 4))
-		                        .concatMapDelayError(f -> f, true, implicitPrefetchValue()))
+		                        .concatMapDelayError(f -> f, true, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
@@ -848,7 +849,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		//gh-1101: default changed from BOUNDARY to END
-		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), false, implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), false, testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -882,7 +883,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
-		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), true, implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), true, testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -919,7 +920,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Test
 	public void publisherOfPublisherDelay() {
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
-				Flux.just(3, 4)), implicitPrefetchValue()))
+				Flux.just(3, 4)), testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyComplete();
 	}
@@ -927,7 +928,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	@Test
 	public void publisherOfPublisherDelayError() {
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2).concatWith(Flux.error(new Exception("test"))),
-				Flux.just(3, 4)), implicitPrefetchValue()))
+				Flux.just(3, 4)), testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
@@ -940,7 +941,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 						Flux.just(1, 2),
 						Flux.<Integer>error(new Exception("test")),
 						Flux.just(3, 4))
-				    .concatMapDelayError(f -> f, true, implicitPrefetchValue()))
+				    .concatMapDelayError(f -> f, true, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
@@ -953,14 +954,14 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 						Flux.just(1, 2),
 						Mono.<Integer>error(new Exception("test")),
 						Flux.just(3, 4))
-				    .concatMapDelayError(f -> f, true, implicitPrefetchValue()))
+				    .concatMapDelayError(f -> f, true, testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
 	}
 
 	@Test
 	public void publisherOfPublisher() {
-		StepVerifier.create(Flux.concat(Flux.just(Flux.just(1, 2), Flux.just(3, 4)), implicitPrefetchValue()))
+		StepVerifier.create(Flux.concat(Flux.just(Flux.just(1, 2), Flux.just(3, 4)), testBasePrefetchValue()))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyComplete();
 	}

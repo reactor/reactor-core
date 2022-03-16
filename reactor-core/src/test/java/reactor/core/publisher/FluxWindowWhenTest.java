@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -306,7 +306,7 @@ public class FluxWindowWhenTest {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
 		           .delayElements(Duration.ofMillis(99))
 		           .window(Duration.ofMillis(300), Duration.ofMillis(200))
-		           .concatMap(Flux::buffer);
+		           .concatMap(Flux::buffer, 1);
 	}
 
 	@Test

@@ -3743,6 +3743,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors will immediately short circuit current concat backlog.
+	 * Note that no prefetching is done on the source, which gets requested only if there
+	 * is downstream demand.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3754,9 +3756,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
-			mapper) {
-		return concatMap(mapper, Queues.XS_BUFFER_SIZE);
+	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>> mapper) {
+		return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -3778,7 +3779,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * Errors will immediately short circuit current concat backlog. The prefetch argument
-	 * allows to give an arbitrary prefetch size to the upstream source.
+	 * allows to give an arbitrary prefetch size to the upstream source, or to disable
+	 * prefetching with {@code 0}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3786,13 +3788,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
-	 * @param prefetch the number of values to prefetch from upstream source (set it to 0 if you don't want it to prefetch)
+	 * @param prefetch the number of values to prefetch from upstream source, or {@code 0} to disable prefetching
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
-			mapper, int prefetch) {
+	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int prefetch) {
 		if (prefetch == 0) {
 			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, FluxConcatMap.ErrorMode.IMMEDIATE));
 		}
@@ -3821,6 +3822,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
 	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite})
 	 * if several sources error.
+	 * Note that no prefetching is done on the source, which gets requested only if there
+	 * is downstream demand.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3834,7 +3837,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper) {
-		return concatMapDelayError(mapper, Queues.XS_BUFFER_SIZE);
+		return concatMapDelayError(mapper, 0);
 	}
 
 	/**
@@ -3858,7 +3861,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Errors in the individual publishers will be delayed at the end of the whole concat
 	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite})
 	 * if several sources error.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source,
+	 * or to disable prefetching with {@code 0}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3866,14 +3870,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
-	 * @param prefetch the number of values to prefetch from upstream source
+	 * @param prefetch the number of values to prefetch from upstream source, or {@code 0} to disable prefetching
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
-			extends V>> mapper, int prefetch) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper, int prefetch) {
 		return concatMapDelayError(mapper, true, prefetch);
 	}
 
@@ -3897,7 +3900,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Errors in the individual publishers will be delayed after the current concat
 	 * backlog if delayUntilEnd is false or after all sources if delayUntilEnd is true.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the upstream source,
+	 * or to disable prefetching with {@code 0}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMap.svg" alt="">
@@ -3907,14 +3911,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param delayUntilEnd delay error until all sources have been consumed instead of
 	 * after the current source
-	 * @param prefetch the number of values to prefetch from upstream source
+	 * @param prefetch the number of values to prefetch from upstream source, or {@code 0} to disable prefetching
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
-			extends V>> mapper, boolean delayUntilEnd, int prefetch) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
+												 boolean delayUntilEnd, int prefetch) {
 		FluxConcatMap.ErrorMode errorMode = delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY;
 		if (prefetch == 0) {
 			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, errorMode));

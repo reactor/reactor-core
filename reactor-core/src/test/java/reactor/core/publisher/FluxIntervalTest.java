@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -186,15 +187,19 @@ public class FluxIntervalTest {
     }
 
 
-    @Test
-	public void tickOverflow() {
-		StepVerifier.withVirtualTime(() ->
-				Flux.interval(Duration.ofMillis(50))
-				    .delayUntil(i -> Mono.delay(Duration.ofMillis(250))))
-		            .thenAwait(Duration.ofMinutes(1))
-		            .expectNextCount(6)
-		            .verifyErrorMessage("Could not emit tick 32 due to lack of requests (interval doesn't support small downstream requests that replenish slower than the ticks)");
-    }
+	@Test
+	void tickOverflow() {
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofMillis(50)), 0)
+			.expectSubscription()
+			.thenRequest(10)
+			.thenAwait(Duration.ofMillis(550))
+			.expectNextCount(10)
+			.expectErrorSatisfies(e -> assertThat(e)
+				.matches(Exceptions::isOverflow)
+				.hasMessage("Could not emit tick 10 due to lack of requests (interval doesn't support small downstream requests that replenish slower than the ticks)")
+			)
+			.verify(Duration.ofSeconds(1));
+	}
 
     @Test
 	public void shouldBeAbleToScheduleIntervalsWithLowGranularity() {
