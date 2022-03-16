@@ -231,18 +231,23 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				new ReactorThreadFactory("testSmallTaskCapacityReached", new AtomicLong(), false, false, null), 60));
 		scheduler.start();
 
+		AtomicBoolean interrupted = new AtomicBoolean();
+		AtomicInteger passed = new AtomicInteger();
+		scheduler.schedule(() -> {try {Thread.sleep(1000);} catch (InterruptedException ignored) { interrupted.set(true); }});
+		scheduler.schedule(() -> {}); //pending 1
 		assertThatExceptionOfType(RejectedExecutionException.class)
-				.isThrownBy(() ->
-						Flux.interval(Duration.ofSeconds(1), scheduler)
-						    .doOnNext(ignored -> System.out.println("emitted"))
-						    .publishOn(scheduler)
-						    .publishOn(scheduler)
-						    .publishOn(scheduler)
-						    .publishOn(scheduler)
-						    .doOnNext(ignored -> System.out.println("published"))
-						    .blockFirst(Duration.ofSeconds(2))
-				)
+				.isThrownBy(() -> {
+					//either task 1 is not interrupted and pending 2 will trip, or it is interrupted and pending 3 will trip
+					scheduler.schedule(passed::incrementAndGet); //pending 2
+					scheduler.schedule(passed::incrementAndGet); //pending 3
+				})
 				.withMessage("Task capacity of bounded elastic scheduler reached while scheduling 1 tasks (3/2)");
+		if (interrupted.get()) {
+			assertThat(passed).as("pending 2 passed when task 1 interrupted").hasValue(1);
+		}
+		else {
+			assertThat(passed).as("pending 2 didn't pass when task 1 uninterrupted").hasValue(0);
+		}
 	}
 
 	@Test
