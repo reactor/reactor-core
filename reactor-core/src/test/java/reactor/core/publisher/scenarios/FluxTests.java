@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ import reactor.util.function.Tuples;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
+import static reactor.core.Exceptions.unwrapMultipleExcludingTracebacks;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxTests extends AbstractReactorTest {
@@ -177,14 +178,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		Flux<Integer> source = Flux.range(0, 5);
 
-		Flux<String> concatMap = source.concatMapDelayError(mapFunction)
-		                               .doOnError(t -> concatSuppressed.addAll(
-		                               		Arrays.asList(t.getSuppressed())))
+		Flux<String> concatMap = source.concatMapDelayError(mapFunction, 32)
+		                               .doOnError(t -> concatSuppressed.addAll(unwrapMultipleExcludingTracebacks(t)))
 		                               .materialize()
 		                               .map(Object::toString);
 		Flux<String> flatMap = source.flatMapDelayError(mapFunction, 2, 32)
-		                             .doOnError(t -> flatSuppressed.addAll(
-		                             		Arrays.asList(t.getSuppressed())))
+		                             .doOnError(t -> flatSuppressed.addAll(unwrapMultipleExcludingTracebacks(t)))
 		                             .materialize()
 		                             .map(Object::toString);
 

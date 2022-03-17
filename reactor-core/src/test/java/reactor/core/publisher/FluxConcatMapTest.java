@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 
 	@Override
-	int implicitPrefetchValue() {
+	int testBasePrefetchValue() {
 		return Queues.XS_BUFFER_SIZE;
 	}
 
@@ -117,7 +117,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		source.asFlux()
-			  .concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
+			  .concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -157,7 +157,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		source.asFlux()
-			  .concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux())
+			  .concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), testBasePrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -373,7 +373,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		//also tests WeakScalar
 		StepVerifier.create(Flux.just(1, 2, 3)
 		                        .concatWith(Mono.error(new IllegalStateException("boom")))
-		                        .concatMap(i -> Mono.just("value" + i)),
+		                        .concatMap(i -> Mono.just("value" + i), testBasePrefetchValue()),
 				0)
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
@@ -389,7 +389,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 							} else {
 								return Mono.defer(() -> Mono.just("value" + i));
 							}
-						}))
+						}, testBasePrefetchValue()))
 				.expectNext("value1")
 				.expectErrorMessage("boom: value2")
 				.verifyThenAssertThat()
@@ -405,7 +405,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 							} else {
 								return Mono.just("value" + i);
 							}
-						}))
+						}, testBasePrefetchValue()))
 				.expectNext("value1")
 				.expectErrorMessage("boom: value2")
 				.verifyThenAssertThat()
@@ -421,7 +421,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 							} else {
 								return Mono.defer(() -> Mono.just("value" + i));
 							}
-						}))
+						}, testBasePrefetchValue()))
 				.expectNext("value1")
 				.expectNext("value3")
 				.expectErrorMessage("boom: value2")
@@ -438,7 +438,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 							} else {
 								return Mono.just("value" + i);
 							}
-						}))
+						}, testBasePrefetchValue()))
 				.expectNext("value1")
 				.expectNext("value3")
 				.expectErrorMessage("boom: value2")
@@ -449,7 +449,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	@Test
 	public void discardOnCancel() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .concatMap(i -> Mono.just("value" + i), implicitPrefetchValue()),
+		                        .concatMap(i -> Mono.just("value" + i), testBasePrefetchValue()),
 				0)
 		            .thenCancel()
 		            .verifyThenAssertThat()
@@ -482,7 +482,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	@Override
 	public void discardDelayedOnDrainMapperError() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .concatMapDelayError(i -> { throw new IllegalStateException("boom"); }))
+		                        .concatMapDelayError(i -> { throw new IllegalStateException("boom"); }, testBasePrefetchValue()))
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1);
