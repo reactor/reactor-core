@@ -835,7 +835,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				//expected to be interrupted
 			}
 		});
-		Thread.sleep(10); //small window to start the first task
+		Thread.sleep(50); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = worker.schedule(() -> taskRan.set(true));
 
