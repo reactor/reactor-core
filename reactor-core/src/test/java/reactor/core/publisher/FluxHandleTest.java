@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -483,9 +483,9 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
 
 	@Test
-	public void contextTest() {
+	void contextIsReadable() {
 		StepVerifier.create(Flux.just("foo")
-		                        .handle((d, s) -> s.next(s.currentContext()
+		                        .handle((d, s) -> s.next(s.getContextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .repeat(9)
@@ -496,10 +496,10 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void contextTestHide() {
+	void contextIsReadableHide() {
 		StepVerifier.create(Flux.just("foo")
 		                        .hide()
-		                        .handle((d, s) -> s.next(s.currentContext()
+		                        .handle((d, s) -> s.next(s.getContextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .repeat(9)
@@ -510,9 +510,9 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void contextTestFilter() {
+	void contextIsReadableFilter() {
 		StepVerifier.create(Flux.just("foo")
-		                        .handle((d, s) -> s.next(s.currentContext()
+		                        .handle((d, s) -> s.next(s.getContextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .filter(d -> true)
@@ -523,9 +523,9 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 	@Test
-	public void contextTestFilterHide() {
+	void contextIsReadableFilterHide() {
 		StepVerifier.create(Flux.just("foo")
-		                        .handle((d, s) -> s.next(s.currentContext()
+		                        .handle((d, s) -> s.next(s.getContextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .filter(d -> true)

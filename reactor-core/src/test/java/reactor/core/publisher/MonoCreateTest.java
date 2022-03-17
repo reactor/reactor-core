@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,8 +381,8 @@ public class MonoCreateTest {
 	}
 
 	@Test
-	public void contextTest() {
-		StepVerifier.create(Mono.create(s -> s.success(s.currentContext()
+	void contextTest() {
+		StepVerifier.create(Mono.create(s -> s.success(s.getContextView()
 		                                                .get(AtomicInteger.class)
 		                                                .incrementAndGet()))
 		                        .contextWrite(ctx -> ctx.put(AtomicInteger.class,

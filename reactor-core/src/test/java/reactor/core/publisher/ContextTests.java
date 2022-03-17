@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,14 +93,13 @@ public class ContextTests {
 	}
 
 	@Test
-	public void contextGet() throws InterruptedException {
-
+	void contextGet() {
 		StepVerifier.create(Flux.range(1, 1000)
 		                        .log()
-		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test") + "" + d))
 		                        .skip(3)
 		                        .take(3)
-		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test2") + "" + d))
 		                        .contextWrite(ctx -> ctx.put("test", "foo"))
 		                        .contextWrite(ctx -> ctx.put("test2", "bar"))
 		                        .log())
@@ -139,10 +138,10 @@ public class ContextTests {
 		                        .hide()
 		                        .log()
 		                        .map(d -> d)
-		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test") + "" + d))
 		                        .skip(3)
 		                        .take(3)
-		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test2") + "" + d))
 		                        .contextWrite(ctx -> ctx.put("test", "foo"))
 		                        .contextWrite(ctx -> ctx.put("test2", "bar"))
 		                        .log())
@@ -157,8 +156,8 @@ public class ContextTests {
 
 		StepVerifier.create(Mono.just(1)
 		                        .log()
-		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
-		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test2") + "" + d))
 		                        .contextWrite(ctx -> ctx.put("test2", "bar"))
 		                        .contextWrite(ctx -> ctx.put("test", "foo"))
 		                        .log())
@@ -172,8 +171,8 @@ public class ContextTests {
 		StepVerifier.create(Mono.just(1)
 		                        .hide()
 		                        .log()
-		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
-		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test") + "" + d))
+		                        .handle((d, c) -> c.next(c.getContextView().get("test2") + "" + d))
 		                        .contextWrite(ctx -> ctx.put("test", "foo"))
 		                        .contextWrite(ctx -> ctx.put("test2", "bar"))
 		                        .log())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -633,8 +633,8 @@ public class FluxRetryWhenTest {
 					    }
 				    })
 				    .retryWhen(Retry.from(retrySignalFlux -> retrySignalFlux.handle((rs, sink) -> {
-	                    Context ctx = sink.currentContext();
-	                    int rl = ctx.getOrDefault("retriesLeft", 0);
+	                    ContextView ctxView = sink.getContextView();
+	                    int rl = ctxView.getOrDefault("retriesLeft", 0);
 	                    if (rl > 0) {
 		                    sink.next(Context.of("retriesLeft", rl - 1));
 	                    }

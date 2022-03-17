@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1266,9 +1266,8 @@ class FluxCreateTest {
 	}
 
 	@Test
-	void contextTest() {
-		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s
-				.currentContext()
+	void contextIsReadable() {
+		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s.getContextView()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
 		                        .take(10)
@@ -1279,9 +1278,8 @@ class FluxCreateTest {
 	}
 
 	@Test
-	void contextTestPush() {
-		StepVerifier.create(Flux.push(s -> IntStream.range(0, 10).forEach(i -> s.next(s
-				.currentContext()
+	void contextIsReadablePush() {
+		StepVerifier.create(Flux.push(s -> IntStream.range(0, 10).forEach(i -> s.next(s.getContextView()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
 		                        .take(10)
