@@ -434,7 +434,7 @@ public class FluxGenerateTest {
 
 	@Test
 	void contextIsReadable() {
-		StepVerifier.create(Flux.generate(s -> s.next(s.getContextView()
+		StepVerifier.create(Flux.generate(s -> s.next(s.contextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .take(10)

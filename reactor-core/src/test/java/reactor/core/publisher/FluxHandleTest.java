@@ -485,7 +485,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	@Test
 	void contextIsReadable() {
 		StepVerifier.create(Flux.just("foo")
-		                        .handle((d, s) -> s.next(s.getContextView()
+		                        .handle((d, s) -> s.next(s.contextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .repeat(9)
@@ -499,7 +499,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	void contextIsReadableHide() {
 		StepVerifier.create(Flux.just("foo")
 		                        .hide()
-		                        .handle((d, s) -> s.next(s.getContextView()
+		                        .handle((d, s) -> s.next(s.contextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .repeat(9)
@@ -512,7 +512,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	@Test
 	void contextIsReadableFilter() {
 		StepVerifier.create(Flux.just("foo")
-		                        .handle((d, s) -> s.next(s.getContextView()
+		                        .handle((d, s) -> s.next(s.contextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .filter(d -> true)
@@ -525,7 +525,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	@Test
 	void contextIsReadableFilterHide() {
 		StepVerifier.create(Flux.just("foo")
-		                        .handle((d, s) -> s.next(s.getContextView()
+		                        .handle((d, s) -> s.next(s.contextView()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .filter(d -> true)

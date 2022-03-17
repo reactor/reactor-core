@@ -382,7 +382,7 @@ public class MonoCreateTest {
 
 	@Test
 	void contextTest() {
-		StepVerifier.create(Mono.create(s -> s.success(s.getContextView()
+		StepVerifier.create(Mono.create(s -> s.success(s.contextView()
 		                                                .get(AtomicInteger.class)
 		                                                .incrementAndGet()))
 		                        .contextWrite(ctx -> ctx.put(AtomicInteger.class,

@@ -443,7 +443,7 @@ public class FluxRepeatWhenTest {
 					    }
 				    })
 				    .repeatWhen(emittedEachAttempt -> emittedEachAttempt.handle((lastEmitted, sink) -> {
-					    ContextView ctxView = sink.getContextView();
+					    ContextView ctxView = sink.contextView();
 					    int rl = ctxView.getOrDefault("repeatsLeft", 0);
 					    if (rl > 0) {
 					        sink.next(Context.of(

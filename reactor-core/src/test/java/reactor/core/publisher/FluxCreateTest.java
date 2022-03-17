@@ -1267,7 +1267,7 @@ class FluxCreateTest {
 
 	@Test
 	void contextIsReadable() {
-		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s.getContextView()
+		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s.contextView()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
 		                        .take(10)
@@ -1279,7 +1279,7 @@ class FluxCreateTest {
 
 	@Test
 	void contextIsReadablePush() {
-		StepVerifier.create(Flux.push(s -> IntStream.range(0, 10).forEach(i -> s.next(s.getContextView()
+		StepVerifier.create(Flux.push(s -> IntStream.range(0, 10).forEach(i -> s.next(s.contextView()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
 		                        .take(10)

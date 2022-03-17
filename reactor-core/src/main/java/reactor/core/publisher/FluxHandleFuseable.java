@@ -101,7 +101,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		public ContextView getContextView() {
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 
@@ -458,7 +458,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		public ContextView getContextView() {
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 

@@ -135,7 +135,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		}
 
 		@Override
-		public ContextView getContextView() {
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 

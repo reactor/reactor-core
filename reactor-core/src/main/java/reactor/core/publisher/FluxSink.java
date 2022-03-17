@@ -83,7 +83,7 @@ public interface FluxSink<T> {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	ContextView getContextView();
+	ContextView contextView();
 
 
 	/**

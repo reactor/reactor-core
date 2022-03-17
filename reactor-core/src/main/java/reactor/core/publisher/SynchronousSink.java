@@ -65,7 +65,7 @@ public interface SynchronousSink<T> {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	ContextView getContextView();
+	ContextView contextView();
 
 	/**
 	 * @param e the exception to signal, not null

@@ -95,7 +95,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public ContextView getContextView() {
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 
@@ -300,7 +300,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public ContextView getContextView() {
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 
