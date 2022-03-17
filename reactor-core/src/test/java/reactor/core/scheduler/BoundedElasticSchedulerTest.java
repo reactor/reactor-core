@@ -750,7 +750,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(10); //small window to start the first task
+		Thread.sleep(50); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = boundedElasticScheduler.schedule(() -> taskRan.set(true));
 
@@ -778,7 +778,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(10); //small window to start the first task
+		Thread.sleep(50); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = worker.schedule(() -> taskRan.set(true));
 
@@ -805,7 +805,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				//expected to be interrupted
 			}
 		});
-		Thread.sleep(10); //small window to start the first task
+		Thread.sleep(50); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = boundedElasticScheduler.schedule(() -> taskRan.set(true));
 
@@ -865,7 +865,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(10); //small window to start the first task
+		Thread.sleep(50); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = worker.schedule(() -> ranTask.set(true));
 
@@ -908,7 +908,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(10); //small window to start the first task
+		Thread.sleep(50); //small window to start the first task
 		AtomicBoolean ranSecond = new AtomicBoolean();
 		Disposable task = worker.schedule(() -> ranSecond.set(true));
 
@@ -1458,7 +1458,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			bounded.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 			unbounded.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 
-			Thread.sleep(10); //give a small window for the task to be picked from the queue and completed
+			Thread.sleep(50); //give a small window for the task to be picked from the queue and completed
 
 			assertThat(bounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/123, completed=1}");
 			assertThat(unbounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/unbounded, completed=1}");
@@ -1478,7 +1478,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			bounded.submit(ThrowingRunnable.unchecked(() -> Thread.sleep(1000)));
 			unbounded.submit(ThrowingRunnable.unchecked(() -> Thread.sleep(1000)));
 
-			Thread.sleep(10); //give a small window for the task to be picked from the queue to reflect active
+			Thread.sleep(50); //give a small window for the task to be picked from the queue to reflect active
 
 			assertThat(bounded).hasToString("BoundedScheduledExecutorService{ACTIVE, queued=0/123, completed=0}");
 			assertThat(unbounded).hasToString("BoundedScheduledExecutorService{ACTIVE, queued=0/unbounded, completed=0}");
