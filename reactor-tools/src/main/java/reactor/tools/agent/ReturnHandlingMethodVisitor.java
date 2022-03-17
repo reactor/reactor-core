@@ -16,12 +16,12 @@
 
 package reactor.tools.agent;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.bytebuddy.jar.asm.Label;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.jar.asm.Opcodes;
 import net.bytebuddy.jar.asm.Type;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Checkpoints every method returning Mono/Flux/ParallelFlux,
@@ -84,6 +84,8 @@ class ReturnHandlingMethodVisitor extends MethodVisitor {
 
         if (!checkpointed && CallSiteInfoAddingMethodVisitor.isCorePublisher(owner)) {
             String returnType = Type.getReturnType(descriptor).getInternalName();
+            //note that ReactorDebugClassVisitor doesn't apply this visitor on return types other than Flux/Mono/ParallelFlux
+            //so the return type should always be lift-compatible
             if (returnType.startsWith("reactor/core/publisher/")) {
                 checkpointed = true;
             }
