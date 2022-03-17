@@ -8827,18 +8827,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/takeLimitRequestTrue.svg" alt="">
 	 * <p>
-	 * This is equivalent to {@link #take(long, boolean)} with {@code limitRequest == true},
-	 * which ensures that the total amount requested upstream is capped at {@code n}.
-	 * In that configuration, this operator never let the upstream produce more elements
-	 * than the cap, and it can be used to more strictly adhere to backpressure.
+	 * This ensures that the total amount requested upstream is capped at {@code n}, although smaller
+	 * requests can be made if the downstream makes requests &lt; n. In any case, this operator never lets
+	 * the upstream produce more elements than the cap, and it can be used to more strictly adhere to backpressure.
 	 * <p>
 	 * This mode is typically useful for cases where a race between request and cancellation can lead
 	 * the upstream to producing a lot of extraneous data, and such a production is undesirable (e.g.
 	 * a source that would send the extraneous data over the network).
+	 * It is equivalent to {@link #take(long, boolean)} with {@code limitRequest == true},
 	 * If there is a requirement for unbounded upstream request (eg. for performance reasons),
 	 * use {@link #take(long, boolean)} with {@code limitRequest=false} instead.
 	 *
-	 * @param n the number of items to emit from this {@link Flux}
+	 * @param n the maximum number of items to request from upstream and emit from this {@link Flux}
 	 *
 	 * @return a {@link Flux} limited to size N
 	 * @see #take(long, boolean)
