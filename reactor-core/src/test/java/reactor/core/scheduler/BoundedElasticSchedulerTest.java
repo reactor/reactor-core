@@ -734,15 +734,16 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void estimateRemainingTaskCapacityResetWhenDirectTaskIsExecuted()
-			throws InterruptedException {
+	void estimateRemainingTaskCapacityResetWhenDirectTaskIsExecuted() throws InterruptedException {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		boundedElasticScheduler.start();
 
+		CountDownLatch taskStartedLatch = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicBoolean taskRan = new AtomicBoolean();
 		//occupy the scheduler
 		boundedElasticScheduler.schedule(() -> {
+			taskStartedLatch.countDown();
 			try {
 				latch.await();
 			}
@@ -750,7 +751,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(50); //small window to start the first task
+		assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = boundedElasticScheduler.schedule(() -> taskRan.set(true));
 
@@ -761,16 +762,17 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void estimateRemainingTaskCapacityResetWhenWorkerTaskIsExecuted()
-			throws InterruptedException {
+	void estimateRemainingTaskCapacityResetWhenWorkerTaskIsExecuted() throws InterruptedException {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		boundedElasticScheduler.start();
 
 		Worker worker = afterTest.autoDispose(boundedElasticScheduler.createWorker());
+		CountDownLatch taskStartedLatch = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicBoolean taskRan = new AtomicBoolean();
 		//occupy the scheduler
 		worker.schedule(() -> {
+			taskStartedLatch.countDown();
 			try {
 				latch.await();
 			}
@@ -778,7 +780,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(50); //small window to start the first task
+		assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = worker.schedule(() -> taskRan.set(true));
 
@@ -789,15 +791,17 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void estimateRemainingTaskCapacityResetWhenDirectTaskIsDisposed()
+	void estimateRemainingTaskCapacityResetWhenDirectTaskIsDisposed()
 			throws InterruptedException {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		boundedElasticScheduler.start();
 
+		CountDownLatch taskStartedLatch = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicBoolean taskRan = new AtomicBoolean();
 		//occupy the scheduler
 		boundedElasticScheduler.schedule(() -> {
+			taskStartedLatch.countDown();
 			try {
 				latch.await();
 			}
@@ -805,7 +809,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				//expected to be interrupted
 			}
 		});
-		Thread.sleep(50); //small window to start the first task
+		assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = boundedElasticScheduler.schedule(() -> taskRan.set(true));
 
@@ -818,16 +822,17 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void estimateRemainingTaskCapacityResetWhenWorkerTaskIsDisposed()
-			throws InterruptedException {
+	void estimateRemainingTaskCapacityResetWhenWorkerTaskIsDisposed() throws InterruptedException {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		boundedElasticScheduler.start();
 
 		Worker worker = afterTest.autoDispose(boundedElasticScheduler.createWorker());
+		CountDownLatch taskStartedLatch = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicBoolean taskRan = new AtomicBoolean();
 		//occupy the scheduler
 		worker.schedule(() -> {
+			taskStartedLatch.countDown();
 			try {
 				latch.await();
 			}
@@ -835,7 +840,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				//expected to be interrupted
 			}
 		});
-		Thread.sleep(50); //small window to start the first task
+		assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = worker.schedule(() -> taskRan.set(true));
 
@@ -848,16 +853,18 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void taskPutInPendingQueueCanBeRemovedOnCancel() throws InterruptedException {
+	void taskPutInPendingQueueCanBeRemovedOnCancel() throws InterruptedException {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		boundedElasticScheduler.start();
 
 		Worker worker = afterTest.autoDispose(boundedElasticScheduler.createWorker());
 		AtomicBoolean ranTask = new AtomicBoolean();
+		CountDownLatch taskStartedLatch = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(1);
 
 		//block worker
 		worker.schedule(() -> {
+			taskStartedLatch.countDown();
 			try {
 				latch.await(5, TimeUnit.SECONDS);
 			}
@@ -865,7 +872,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(50); //small window to start the first task
+		assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
 		//enqueue task on worker
 		Disposable task = worker.schedule(() -> ranTask.set(true));
 
@@ -891,16 +898,18 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void taskPutInPendingQueueIsEventuallyExecuted() throws InterruptedException {
+	void taskPutInPendingQueueIsEventuallyExecuted() throws InterruptedException {
 		BoundedElasticScheduler boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		boundedElasticScheduler.start();
 
 		Worker worker = afterTest.autoDispose(boundedElasticScheduler.createWorker());
 
 		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch taskStartedLatch = new CountDownLatch(1);
 
 		//enqueue blocking task on worker
 		worker.schedule(() -> {
+			taskStartedLatch.countDown();
 			try {
 				latch.await(5, TimeUnit.SECONDS);
 			}
@@ -908,7 +917,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				e.printStackTrace();
 			}
 		});
-		Thread.sleep(50); //small window to start the first task
+		assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
 		AtomicBoolean ranSecond = new AtomicBoolean();
 		Disposable task = worker.schedule(() -> ranSecond.set(true));
 
@@ -1418,7 +1427,6 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	public void scanCapacityBounded() {
 		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(1, 123, Thread::new, 2));
 		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
-		Scheduler.Worker deferredWorker = afterTest.autoDispose(scheduler.createWorker());
 
 		assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capacity").isEqualTo(1);
 		assertThat(Scannable.from(activeWorker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(123);
@@ -1428,7 +1436,6 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	public void scanCapacityUnbounded() {
 		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 2));
 		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
-		Scheduler.Worker deferredWorker = afterTest.autoDispose(scheduler.createWorker());
 
 		assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capacity").isEqualTo(1);
 		assertThat(Scannable.from(activeWorker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(Integer.MAX_VALUE);
@@ -1447,18 +1454,19 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void toStringOfExecutorReflectsBoundedVsUnboundedAndCompletedVsQueued()
+	void toStringOfExecutorReflectsBoundedVsUnboundedAndCompletedVsQueued()
 			throws InterruptedException {
 		BoundedScheduledExecutorService bounded = new BoundedScheduledExecutorService(123, Thread::new);
 		BoundedScheduledExecutorService unbounded = new BoundedScheduledExecutorService(Integer.MAX_VALUE, Thread::new);
+		CountDownLatch taskStartedLatch = new CountDownLatch(2);
 
 		try {
-			bounded.submit(() -> {});
-			unbounded.submit(() -> {});
+			bounded.submit(taskStartedLatch::countDown);
+			unbounded.submit(taskStartedLatch::countDown);
 			bounded.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 			unbounded.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 
-			Thread.sleep(50); //give a small window for the task to be picked from the queue and completed
+			assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("tasks picked").isTrue(); //give a small window for the task to be picked from the queue and completed
 
 			assertThat(bounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/123, completed=1}");
 			assertThat(unbounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/unbounded, completed=1}");
@@ -1470,15 +1478,21 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void toStringOfExecutorReflectsIdleVsActive() throws InterruptedException {
+	void toStringOfExecutorReflectsIdleVsActive() throws InterruptedException {
 		BoundedScheduledExecutorService bounded = new BoundedScheduledExecutorService(123, Thread::new);
 		BoundedScheduledExecutorService unbounded = new BoundedScheduledExecutorService(Integer.MAX_VALUE, Thread::new);
+		CountDownLatch taskStartedLatch = new CountDownLatch(2);
+
+		Runnable runnable = ThrowingRunnable.unchecked(() -> {
+			taskStartedLatch.countDown();
+			Thread.sleep(1000);
+		});
 
 		try {
-			bounded.submit(ThrowingRunnable.unchecked(() -> Thread.sleep(1000)));
-			unbounded.submit(ThrowingRunnable.unchecked(() -> Thread.sleep(1000)));
+			bounded.submit(runnable);
+			unbounded.submit(runnable);
 
-			Thread.sleep(50); //give a small window for the task to be picked from the queue to reflect active
+			assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("tasks picked").isTrue(); //give a small window for the task to be picked from the queue to reflect active
 
 			assertThat(bounded).hasToString("BoundedScheduledExecutorService{ACTIVE, queued=0/123, completed=0}");
 			assertThat(unbounded).hasToString("BoundedScheduledExecutorService{ACTIVE, queued=0/unbounded, completed=0}");
