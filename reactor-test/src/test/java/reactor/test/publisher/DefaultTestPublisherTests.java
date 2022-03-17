@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -333,10 +333,10 @@ public class DefaultTestPublisherTests {
 	public void expectMaxRequestedNormal() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		Flux.from(publisher).limitRequest(5).subscribe();
+		Flux.from(publisher).take(5).subscribe();
 		publisher.assertMaxRequested(5);
 
-		Flux.from(publisher).limitRequest(10).subscribe();
+		Flux.from(publisher).take(10).subscribe();
 		publisher.assertSubscribers(2);
 		publisher.assertMaxRequested(10);
 	}
@@ -345,7 +345,7 @@ public class DefaultTestPublisherTests {
 	public void expectMaxRequestedWithUnbounded() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		Flux.from(publisher).limitRequest(5).subscribe();
+		Flux.from(publisher).take(5).subscribe();
 		publisher.assertMaxRequested(5);
 
 		Flux.from(publisher).subscribe();
@@ -357,7 +357,7 @@ public class DefaultTestPublisherTests {
 	public void expectMaxRequestedFailure() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		Flux.from(publisher).limitRequest(7).subscribe();
+		Flux.from(publisher).take(7).subscribe();
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> publisher.assertMaxRequested(6))

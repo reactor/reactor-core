@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ public class FluxExpandTest {
 	public void recursiveCountdownTake() {
 		StepVerifier.create(Flux.just(10)
 		                        .expand(countDown)
-		                        .take(5)
+		                        .take(5, false)
 		)
 		            .expectNext(10, 9, 8, 7, 6)
 		            .verifyComplete();
@@ -153,7 +153,7 @@ public class FluxExpandTest {
 	public void recursiveCountdownTakeDepth() {
 		StepVerifier.create(Flux.just(10)
 		                        .expandDeep(countDown)
-		                        .take(5)
+		                        .take(5, false)
 		)
 		            .expectNext(10, 9, 8, 7, 6)
 		            .verifyComplete();

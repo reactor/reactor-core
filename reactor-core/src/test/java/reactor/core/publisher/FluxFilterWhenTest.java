@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,7 +183,7 @@ public class FluxFilterWhenTest {
 	public void take() {
 		StepVerifier.create(Flux.range(1, 10)
 		                        .filterWhen(v -> Mono.just(v % 2 == 0).hide())
-		                        .take(1))
+		                        .take(1, false))
 		            .expectNext(2)
 		            .verifyComplete();
 	}

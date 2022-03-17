@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -712,7 +712,7 @@ public class FluxTakeTest {
 			int take = 3000;
 			RaceSubscriber<Integer> actual = new RaceSubscriber<>(take);
 			Flux.range(0, Integer.MAX_VALUE)
-			    .take(take)
+			    .take(take, false)
 			    .subscribe(actual);
 
 			actual.await(5, TimeUnit.SECONDS);
@@ -726,7 +726,7 @@ public class FluxTakeTest {
 			int take = 3000;
 			RaceSubscriber<Integer> actual = new RaceSubscriber<>(take);
 			Flux.range(0, Integer.MAX_VALUE)
-			    .take(take)
+			    .take(take, false)
 			    .filter(e -> true)
 			    .subscribe(actual);
 
@@ -742,7 +742,7 @@ public class FluxTakeTest {
 			RaceSubscriber<Integer> actual = new RaceSubscriber<>(take);
 			Flux.range(0, Integer.MAX_VALUE)
 			    .hide()
-			    .take(take)
+			    .take(take, false)
 			    .subscribe(actual);
 
 			actual.await(5, TimeUnit.SECONDS);

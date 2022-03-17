@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,8 +196,8 @@ public class FluxOnBackpressureBufferTest
 		AtomicInteger sourceCancelledAt = new AtomicInteger(-1);
 
 		StepVerifier.withVirtualTime(() ->
-						Flux.interval(Duration.ofSeconds(1)) // lets emit 1 item per second; starting with zero
-						    .take(8)
+						Flux.interval(Duration.ofSeconds(1))
+						    .take(8, false)
 						    .doOnNext(v -> sourceProduced.incrementAndGet())
 						    .doOnCancel(() -> sourceCancelledAt.set(sourceProduced.get() - 1))
 						    .onBackpressureBuffer(2, discardedItems::add)

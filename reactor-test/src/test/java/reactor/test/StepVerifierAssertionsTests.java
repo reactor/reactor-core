@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ public class StepVerifierAssertionsTests {
 			s.onComplete();
 			s.onNext("bar");
 			s.onNext("baz");
-		}).take(3))
+		}).take(3, false))
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verifyThenAssertThat()
@@ -55,7 +55,7 @@ public class StepVerifierAssertionsTests {
 				s.onNext("foo");
 				s.onComplete();
 				s.onNext("bar");
-			}).take(2))
+			}).take(2, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()
@@ -91,7 +91,7 @@ public class StepVerifierAssertionsTests {
 				s.onComplete();
 				s.onNext("bar");
 				s.onNext("baz");
-			}).take(3))
+			}).take(3, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()
@@ -112,7 +112,7 @@ public class StepVerifierAssertionsTests {
 				s.onComplete();
 				s.onNext("bar");
 				s.onNext("baz");
-			}).take(3))
+			}).take(3, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()
@@ -248,7 +248,7 @@ public class StepVerifierAssertionsTests {
 				s.onNext("foo");
 				s.onComplete();
 				s.onError(new IllegalStateException("boom"));
-			}).take(2))
+			}).take(2, false))
 			            .expectNext("foo")
 			            .expectComplete()
 			            .verifyThenAssertThat()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -434,7 +434,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 				    .doOnRequest(requests::add)
 				    .replay(7);
 
-		replay.take(13).subscribe(fiveThenEightSubscriber);
+		replay.take(13, false).subscribe(fiveThenEightSubscriber);
 		replay.subscribe(sevenThenEightSubscriber);
 		replay.connect();
 

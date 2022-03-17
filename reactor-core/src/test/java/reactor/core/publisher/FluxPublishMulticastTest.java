@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -404,7 +404,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 //                    .doOnCancel(() -> System.out.println("cancel 2"))
 			    .publish(Function.identity())
 //                    .doOnCancel(() -> System.out.println("cancel 1"))
-			    .take(5))
+			    .take(5, false))
 	                .expectNextCount(5)
 	                .verifyComplete();
 

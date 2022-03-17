@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -522,7 +522,7 @@ class FluxMergeOrderedTest {
 	void take() {
 		new FluxMergeComparing<>(2, Comparator.naturalOrder(), true,
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
-				.take(5)
+				.take(5, false)
 				.as(StepVerifier::create)
 				.expectNext(1, 2, 3, 4, 5)
 				.verifyComplete();

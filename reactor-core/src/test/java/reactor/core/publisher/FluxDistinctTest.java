@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -692,7 +692,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		                                 .map(i -> retainedDetector.tracked(new DistinctDefaultCancel(i)))
 		                                 .concatWith(Mono.error(new IllegalStateException("boom")))
 		                                 .distinct()
-		                                 .take(50);
+		                                 .take(50, false);
 
 		StepVerifier.create(test)
 		            .expectNextCount(50)

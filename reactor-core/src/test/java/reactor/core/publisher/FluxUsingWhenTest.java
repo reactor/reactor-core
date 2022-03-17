@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -385,7 +385,7 @@ public class FluxUsingWhenTest {
 				TestResource::commit,
 				TestResource::rollback,
 				TestResource::cancel)
-		                        .take(2);
+		                        .take(2, false);
 
 		StepVerifier.create(test)
 		            .expectNext("0", "1")
@@ -412,7 +412,7 @@ public class FluxUsingWhenTest {
 					      //immediate error to trigger the logging within the test
 					      .concatWith(Mono.error(new IllegalStateException("cancel error")))
 			)
-			                        .take(2);
+			                        .take(2, false);
 
 			StepVerifier.create(test)
 			            .expectNext("0", "1")
@@ -443,7 +443,7 @@ public class FluxUsingWhenTest {
 					TestResource::commit,
 					TestResource::rollback,
 					r -> null)
-			                        .take(2);
+			                        .take(2, false);
 
 			StepVerifier.create(test)
 			            .expectNext("0", "1")
@@ -475,7 +475,7 @@ public class FluxUsingWhenTest {
 						(tr, e) -> tr.rollback(new RuntimeException("placeholder rollback exception")),
 						TestResource::commit
 				)
-				.take(2);
+				.take(2, false);
 
 		StepVerifier.create(test)
 		            .expectNext("0", "1")
@@ -508,7 +508,7 @@ public class FluxUsingWhenTest {
 							(r, e) -> r.rollback(new RuntimeException("placeholder ignored rollback exception")),
 							completeOrCancel
 					)
-                    .take(2);
+					.take(2, false);
 
 			StepVerifier.create(test)
 			            .expectNext("0", "1")
@@ -710,7 +710,7 @@ public class FluxUsingWhenTest {
 				TestResource::rollback,
 				TestResource::cancel);
 
-		StepVerifier.create(flux.take(1), 1)
+		StepVerifier.create(flux.take(1, false), 1)
 		            .expectNext("Transaction started")
 		            .verifyComplete();
 
@@ -737,7 +737,7 @@ public class FluxUsingWhenTest {
 					TestResource::rollback,
 					TestResource::cancelError);
 
-			StepVerifier.create(flux.take(1), 1)
+			StepVerifier.create(flux.take(1, false), 1)
 			            .expectNext("Transaction started")
 			            .verifyComplete();
 
@@ -776,7 +776,7 @@ public class FluxUsingWhenTest {
 					TestResource::rollback,
 					TestResource::cancelNull);
 
-			StepVerifier.create(flux.take(1), 1)
+			StepVerifier.create(flux.take(1, false), 1)
 			            .expectNext("Transaction started")
 			            .verifyComplete();
 
@@ -963,7 +963,7 @@ public class FluxUsingWhenTest {
 				TestResource::rollback,
 				cancel -> cancelHandler)
 		    .contextWrite(Context.of(String.class, "contextual"))
-		    .take(1)
+		    .take(1, false)
 		    .as(StepVerifier::create)
 		    .expectNextCount(1)
 		    .verifyComplete();
@@ -993,7 +993,7 @@ public class FluxUsingWhenTest {
 				TestResource::rollback,
 				null)
 		    .contextWrite(Context.of(String.class, "contextual"))
-		    .take(1)
+		    .take(1, false)
 		    .as(StepVerifier::create)
 		    .expectNextCount(1)
 		    .verifyComplete();

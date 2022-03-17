@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -339,7 +339,7 @@ public class FluxRetryWhenTest {
 		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
 		                           .doOnCancel(() -> sourceCancelled.set(true));
 
-		Flux<Integer> retry = source.retryWhen(Retry.from(other -> other.take(1)));
+		Flux<Integer> retry = source.retryWhen(Retry.from(other -> other.take(1, false)));
 
 		StepVerifier.create(retry)
 		            .expectSubscription()
@@ -1027,7 +1027,7 @@ public class FluxRetryWhenTest {
 						.jitter(0d)
 						.transientErrors(true)
 				)
-				      .take(stopAfterCycles * elementPerCycle)
+				      .take(stopAfterCycles * elementPerCycle, false)
 				      .elapsed()
 				      .map(Tuple2::getT1)
 				      .doOnNext(pause -> { if (pause > 500) pauses.add(pause / 1000); })

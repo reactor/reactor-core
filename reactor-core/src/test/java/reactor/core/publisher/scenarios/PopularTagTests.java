@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,8 +67,8 @@ public class PopularTagTests extends AbstractReactorTest {
 		         .flatMap(s -> s.groupBy(w -> w)
 		                       .flatMap(w -> w.count().map(c -> Tuples.of(w.key(), c)))
 		                       .collectSortedList((a, b) -> -a.getT2().compareTo(b.getT2()))
-		                        .flatMapMany(Flux::fromIterable)
-		                       .take(10)
+		                       .flatMapMany(Flux::fromIterable)
+		                       .take(10, false)
 		                       .doAfterTerminate(() -> LOG.info("------------------------ window terminated" +
 						      "----------------------"))
 			)

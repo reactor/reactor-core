@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,7 +182,7 @@ public class FluxMetricsTest {
 		                            .hide();
 
 		new FluxMetrics<>(source2)
-				.take(3)
+				.take(3, false)
 				.blockLast();
 
 		assertThat(nextMeter.count()).isEqualTo(126L);
@@ -366,7 +366,7 @@ public class FluxMetricsTest {
 		                           .hide();
 
 		new FluxMetrics<>(source)
-				.take(1)
+				.take(1, false)
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)

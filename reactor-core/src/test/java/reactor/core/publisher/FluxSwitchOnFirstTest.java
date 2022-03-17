@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -823,7 +823,7 @@ public class FluxSwitchOnFirstTest {
                                                   .switchOnFirst((first, innerFlux) ->
                                                       innerFlux
                                                           .map(String::valueOf)
-                                                          .take(1)
+                                                          .take(1, false)
                                                   );
 
         publisher.next(1);
@@ -848,7 +848,7 @@ public class FluxSwitchOnFirstTest {
                                                           innerFlux
                                                                   .map(String::valueOf)
                                                   )
-                                                  .take(1);
+                                                  .take(1, false);
 
         publisher.next(1);
         publisher.next(2);

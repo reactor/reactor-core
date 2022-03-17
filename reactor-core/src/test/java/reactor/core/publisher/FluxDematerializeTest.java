@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,7 +266,7 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofSeconds(1))
 				    .map(i -> "tick" + i)
-				    .take(5)
+				    .take(5, false)
 				    .timestamp()
 				    .materialize()
 				    .<Tuple2<Long, String>>dematerialize()

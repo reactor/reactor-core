@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,7 +211,7 @@ public class MonoStreamCollectorTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10)
+				    .take(10, false)
 				    .collect(collector)
 		)
 		            .expectSubscription()
@@ -273,7 +273,7 @@ public class MonoStreamCollectorTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10)
+				    .take(10, false)
 				    .collect(collector)
 				    .doOnDiscard(Object.class, discarded::add))
 		            .expectSubscription()

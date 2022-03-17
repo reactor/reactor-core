@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -173,7 +173,7 @@ class FluxLimitRequestTest {
 		                         .take(10, true)
 		                         .doOnCancel(() -> operatorCancelled.set(true))
 		                         .doOnRequest(operatorRequested::add)
-		                         .take(3);
+		                         .take(3, false);
 
 		StepVerifier.create(test)
 		            .expectNextCount(3)

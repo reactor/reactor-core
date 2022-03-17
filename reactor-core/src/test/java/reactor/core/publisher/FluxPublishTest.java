@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -673,7 +673,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 				Flux.fromStream(Stream.iterate(0, i -> i + 1))
 				    .publish()
 				    .autoConnect()
-				    .take(10);
+				    .take(10, false);
 
 		StepVerifier.create(publish)
 		            .expectNextCount(10)

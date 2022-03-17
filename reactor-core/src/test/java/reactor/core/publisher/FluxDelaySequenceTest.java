@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class FluxDelaySequenceTest {
 		Supplier<Flux<Tuple2<Long, Long>>> test = () -> Flux.interval(Duration.ofMillis(50))
 	                                                    .delaySequence(Duration.ofMillis(500))
 	                                                    .elapsed()
-	                                                        .take(33);
+	                                                    .take(33, false);
 
 		StepVerifier.withVirtualTime(test)
 		            .thenAwait(Duration.ofMillis(500 + 50))
@@ -73,7 +73,7 @@ public class FluxDelaySequenceTest {
 
 			return asymmetricDelays
 					.delaySequence(Duration.ofMillis(500))
-					.take(33)
+					.take(33, false)
 					.elapsed();
 		};
 
@@ -109,7 +109,7 @@ public class FluxDelaySequenceTest {
 		Flux<Tuple2<Long, Long>> test = Flux.interval(Duration.ofMillis(50))
 		                                    .onBackpressureDrop()
 		                                    .delayElements(Duration.ofMillis(500))
-		                                    .take(33)
+		                                    .take(33, false)
 		                                    .elapsed()
 		                                    .log();
 

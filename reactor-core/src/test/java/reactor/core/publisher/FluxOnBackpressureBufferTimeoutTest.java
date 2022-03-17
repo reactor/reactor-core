@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,7 +182,7 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	public void take() {
 		StepVerifier.create(Flux.range(1, 5)
 		                        .onBackpressureBuffer(Duration.ofMinutes(1), Integer.MAX_VALUE, v -> {})
-		                        .take(2))
+		                        .take(2, false))
 		            .expectNext(1, 2)
 		            .verifyComplete();
 	}

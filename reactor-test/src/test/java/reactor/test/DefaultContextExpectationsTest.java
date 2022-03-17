@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,13 +74,13 @@ public class DefaultContextExpectationsTest {
 
 	@Test
 	public void contextAccessibleLastInChain() {
-		assertContextExpectation(s -> s.take(3).contextWrite(Context.of("a", "b")),
+		assertContextExpectation(s -> s.take(3, false).contextWrite(Context.of("a", "b")),
 				e -> e, 3);
 	}
 
 	@Test
 	public void contextAccessibleFirstInChain() {
-		assertContextExpectation(s -> s.contextWrite(Context.of("a", "b")).take(3),
+		assertContextExpectation(s -> s.contextWrite(Context.of("a", "b")).take(3, false),
 				e -> e, 3);
 	}
 

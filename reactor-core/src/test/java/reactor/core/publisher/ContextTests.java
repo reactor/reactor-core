@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class ContextTests {
 			                                return ctx;
 		                                })
 		                                .log())
-		    .take(10)
+		    .take(10, false)
 		    //ctx: test=baseSubscriber_take
 		    //return: test=baseSubscriber_take_range
 		    .contextWrite(ctx -> ctx.put("test", ctx.get("test") + "_range"))
@@ -83,7 +83,7 @@ public class ContextTests {
 				        })
 				        .log())
 		    .map(d -> d)
-		    .take(10)
+		    .take(10, false)
 		    .contextWrite(ctx -> ctx.put("test", "foo"))
 		    .contextWrite(ctx -> ctx.put("test2", "bar"))
 		    .log()
@@ -99,7 +99,7 @@ public class ContextTests {
 		                        .log()
 		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
 		                        .skip(3)
-		                        .take(3)
+		                        .take(3, false)
 		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
 		                        .contextWrite(ctx -> ctx.put("test", "foo"))
 		                        .contextWrite(ctx -> ctx.put("test2", "bar"))
@@ -141,7 +141,7 @@ public class ContextTests {
 		                        .map(d -> d)
 		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
 		                        .skip(3)
-		                        .take(3)
+		                        .take(3, false)
 		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
 		                        .contextWrite(ctx -> ctx.put("test", "foo"))
 		                        .contextWrite(ctx -> ctx.put("test2", "bar"))

@@ -6001,7 +6001,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
-	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * unlike with {@link #take(long)} which will cap the grand total request
 	 * amount.
 	 * <p>
 	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }.
@@ -6015,7 +6015,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure
 	 * @see #publishOn(Scheduler, int)
-	 * @see #limitRequest(long)
+	 * @see #take(long)
 	 */
 	public final Flux<T> limitRate(int prefetchRate) {
 		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
@@ -6033,7 +6033,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
-	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * unlike with {@link #take(long)} which will cap the grand total request
 	 * amount.
 	 * <p>
 	 * Similar to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() },
@@ -6057,7 +6057,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
 	 * replenishment request amount
 	 * @see #publishOn(Scheduler, int)
-	 * @see #limitRequest(long)
+	 * @see #take(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
 		return onAssembly(this.publishOn(Schedulers.immediate(), true, highTide, lowTide));
@@ -8764,27 +8764,28 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Take only the first N values from this {@link Flux}, if available.
-	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes.
+	 * If n is zero, the source isn't even subscribed to and the operator completes immediately upon subscription.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/take.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/takeLimitRequestTrue.svg" alt="">
 	 * <p>
-	 * <b>Warning:</b> The below behavior will change in 3.5.0 from that of
-	 * {@link #take(long, boolean) take(n, false)} to that of {@link #take(long, boolean) take(n, true)}.
-	 * See https://github.com/reactor/reactor-core/issues/2339
+	 * This ensures that the total amount requested upstream is capped at {@code n}, although smaller
+	 * requests can be made if the downstream makes requests &lt; n. In any case, this operator never lets
+	 * the upstream produce more elements than the cap, and it can be used to more strictly adhere to backpressure.
 	 * <p>
-	 * Note that this operator doesn't propagate the backpressure requested amount.
-	 * Rather, it makes an unbounded request and cancels once N elements have been emitted.
-	 * As a result, the source could produce a lot of extraneous elements in the meantime.
-	 * If that behavior is undesirable and you do not own the request from downstream
-	 * (e.g. prefetching operators), consider using {@link #limitRequest(long)} instead.
-   *
-	 * @param n the number of items to emit from this {@link Flux}
+	 * This mode is typically useful for cases where a race between request and cancellation can lead
+	 * the upstream to producing a lot of extraneous data, and such a production is undesirable (e.g.
+	 * a source that would send the extraneous data over the network).
+	 * It is equivalent to {@link #take(long, boolean)} with {@code limitRequest == true},
+	 * If there is a requirement for unbounded upstream request (eg. for performance reasons),
+	 * use {@link #take(long, boolean)} with {@code limitRequest=false} instead.
+	 *
+	 * @param n the maximum number of items to request from upstream and emit from this {@link Flux}
 	 *
 	 * @return a {@link Flux} limited to size N
 	 * @see #take(long, boolean)
 	 */
 	public final Flux<T> take(long n) {
-		return take(n, false);
+		return take(n, true);
 	}
 
 	/**
@@ -8796,7 +8797,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * at {@code n}. In that configuration, this operator never let the upstream produce more elements
 	 * than the cap, and it can be used to more strictly adhere to backpressure.
 	 * If n is zero, the source isn't even subscribed to and the operator completes immediately
-	 * upon subscription.
+	 * upon subscription (the behavior inherited from {@link #take(long)}).
 	 * <p>
 	 * This mode is typically useful for cases where a race between request and cancellation can lead
 	 * the upstream to producing a lot of extraneous data, and such a production is undesirable (e.g.
@@ -8806,8 +8807,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * If {@code limitRequest == false} this operator doesn't propagate the backpressure requested amount.
 	 * Rather, it makes an unbounded request and cancels once N elements have been emitted.
-	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes
-	 * (the behavior inherited from {@link #take(long)}).
+	 * If n is zero, the source is subscribed to but immediately cancelled, then the operator completes.
 	 * <p>
 	 * In this mode, the source could produce a lot of extraneous elements despite cancellation.
 	 * If that behavior is undesirable and you do not own the request from downstream
@@ -8868,7 +8868,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			return takeUntilOther(Mono.delay(timespan, timer));
 		}
 		else {
-			return take(0);
+			return take(0, false);
 		}
 	}
 

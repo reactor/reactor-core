@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void normalCancel() {
-		StepVerifier.create(Flux.range(1, 10).hide().doFinally(this).take(5))
+		StepVerifier.create(Flux.range(1, 10).hide().doFinally(this).take(5, false))
 		            .expectNoFusionSupport()
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
@@ -229,7 +229,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		                        .hide()
 		                        .doFinally(this)
 		                        .filter(i -> true)
-		                        .take(5))
+		                        .take(5, false))
 		            .expectNoFusionSupport()
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
