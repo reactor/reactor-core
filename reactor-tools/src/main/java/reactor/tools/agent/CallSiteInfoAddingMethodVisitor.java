@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package reactor.tools.agent;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.bytebuddy.jar.asm.Label;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.jar.asm.Opcodes;
 import net.bytebuddy.jar.asm.Type;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Adds callSite info to every operator call (except "checkpoint").
@@ -41,6 +41,12 @@ class CallSiteInfoAddingMethodVisitor extends MethodVisitor {
 
     static final String ADD_CALLSITE_INFO_METHOD = "(Lorg/reactivestreams/Publisher;Ljava/lang/String;)Lorg/reactivestreams/Publisher;";
 
+    /**
+     * Determine if a class (in the {@code com/package/ClassName} format) can be considered a CorePublisher.
+     *
+     * @param className the class name in the {@code com/package/ClassName} format
+     * @return true if it is exactly one of the CorePublisher interfaces (except ConnectableFlux), false otherwise
+     */
     static boolean isCorePublisher(String className) {
         switch (className) {
             case "reactor/core/publisher/Flux":
@@ -51,6 +57,18 @@ class CallSiteInfoAddingMethodVisitor extends MethodVisitor {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Determine if a class (in the {@code com/package/ClassName} format) is compatible with lift or equivalent
+     * wrapping done by Hooks. The return type of visited methods should be checked with this in order to
+     * verify their result can be wrapped with debug traceback.
+     *
+     * @param className the class name in the {@code com/package/ClassName} format
+     * @return true if it can be wrapped with debug traceback while maintaining the same type, false otherwise
+     */
+    static boolean isLiftCompatiblePublisher(String className) {
+        return isCorePublisher(className) || "reactor/core/publisher/ConnectableFlux".equals(className);
     }
 
     final String currentMethod;
@@ -91,7 +109,8 @@ class CallSiteInfoAddingMethodVisitor extends MethodVisitor {
                 return;
             }
             String returnType = Type.getReturnType(descriptor).getInternalName();
-            if (!returnType.startsWith("reactor/core/publisher/")) {
+            //Note this is the default path. If the return type is not lift-compatible (eg. MonoProcessor) then we shouldn't instrument it / wrap it
+            if (!isLiftCompatiblePublisher(returnType)) {
                 return;
             }
 
