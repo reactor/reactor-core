@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import reactor.core.Disposables;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Wraps the downstream Subscriber into a single emission object and calls the given
@@ -103,7 +104,13 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
+			return this.actual.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
 			return this.actual.currentContext();
 		}
 

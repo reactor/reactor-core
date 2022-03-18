@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.function.Function;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Interface to produce synchronously "one signal" to an underlying {@link Subscriber}.
@@ -50,8 +51,21 @@ public interface SynchronousSink<T> {
 	 *   {@link CoreSubscriber#currentContext()}
 	 *
 	 * @return the current subscriber {@link Context}.
+	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #getContextView() instead.
 	 */
+	@Deprecated
 	Context currentContext();
+
+	/**
+	 * Return the current subscriber's context as a {@link ContextView} for inspection.
+	 * <p>
+	 *   {@link Context} can be enriched downstream via {@link Mono#contextWrite(Function)}
+	 *   or {@link Flux#contextWrite(Function)} operators or directly by a child subscriber overriding
+	 *   {@link CoreSubscriber#currentContext()}
+	 *
+	 * @return the current subscriber {@link ContextView}.
+	 */
+	ContextView contextView();
 
 	/**
 	 * @param e the exception to signal, not null

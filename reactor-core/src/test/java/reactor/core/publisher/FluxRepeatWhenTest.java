@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -428,7 +428,7 @@ public class FluxRepeatWhenTest {
 	}
 
 	@Test
-	public void repeatWhenContextTrigger_MergesOriginalContext() {
+	void repeatWhenContextTrigger_MergesOriginalContext() {
 		final int REPEAT_COUNT = 3;
 		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
 		List<ContextView> contexts = Collections.synchronizedList(new ArrayList<>(4));
@@ -443,8 +443,8 @@ public class FluxRepeatWhenTest {
 					    }
 				    })
 				    .repeatWhen(emittedEachAttempt -> emittedEachAttempt.handle((lastEmitted, sink) -> {
-					    Context ctx = sink.currentContext();
-					    int rl = ctx.getOrDefault("repeatsLeft", 0);
+					    ContextView ctxView = sink.contextView();
+					    int rl = ctxView.getOrDefault("repeatsLeft", 0);
 					    if (rl > 0) {
 					        sink.next(Context.of(
 								    "repeatsLeft", rl - 1,

@@ -27,6 +27,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Generate signals one-by-one via a function callback.
@@ -120,8 +121,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
 
 		GenerateSubscription(CoreSubscriber<? super T> actual, S state,
-											 BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super
-		  S> stateConsumer) {
+							 BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
 			this.actual = actual;
 			this.state = state;
 			this.generator = generator;
@@ -129,7 +129,13 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
+			return actual.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 
