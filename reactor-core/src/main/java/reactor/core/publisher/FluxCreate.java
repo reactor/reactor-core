@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for each individual
@@ -138,8 +139,14 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
 			return sink.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
+			return sink.contextView();
 		}
 
 		@Override
@@ -327,8 +334,14 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
 			return sink.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
+			return sink.contextView();
 		}
 
 		@Override
@@ -424,7 +437,15 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
+			//we cache the context for hooks purposes, but this forces to go through the
+			// chain when queried for context, in case downstream can update the Context...
+			return actual.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
 			//we cache the context for hooks purposes, but this forces to go through the
 			// chain when queried for context, in case downstream can update the Context...
 			return actual.currentContext();

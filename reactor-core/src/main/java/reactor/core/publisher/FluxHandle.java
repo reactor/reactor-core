@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function as long as the handler function result is
@@ -88,7 +89,13 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
+			return actual.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 
@@ -287,7 +294,13 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
+		@Deprecated
 		public Context currentContext() {
+			return actual.currentContext();
+		}
+
+		@Override
+		public ContextView contextView() {
 			return actual.currentContext();
 		}
 

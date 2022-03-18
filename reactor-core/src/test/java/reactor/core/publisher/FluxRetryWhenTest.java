@@ -633,8 +633,8 @@ public class FluxRetryWhenTest {
 					    }
 				    })
 				    .retryWhen(Retry.from(retrySignalFlux -> retrySignalFlux.handle((rs, sink) -> {
-	                    Context ctx = sink.currentContext();
-	                    int rl = ctx.getOrDefault("retriesLeft", 0);
+	                    ContextView ctxView = sink.contextView();
+	                    int rl = ctxView.getOrDefault("retriesLeft", 0);
 	                    if (rl > 0) {
 		                    sink.next(Context.of("retriesLeft", rl - 1));
 	                    }
