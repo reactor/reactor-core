@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -59,6 +58,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -71,6 +71,36 @@ import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
 public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
+
+	@Test
+	void scheduledWithContext() {
+		ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
+		Schedulers.onScheduleHook("FluxPublishOnTest_noContext", r -> {
+			System.out.println("wrapping task without context");
+			return r;
+		});
+		Schedulers.onScheduleHookContextual("FluxPublishOnTest_withContext", (r, ctx) -> {
+			if (ctx.isEmpty()) return r;
+			final String fromContext = ctx.getOrDefault("key", "notFound");
+			return () -> {
+				System.out.println("running runnable");
+				threadLocal.set(fromContext);
+				r.run();
+				threadLocal.set("erased");
+			};
+		});
+
+		Flux.just("foo").hide()
+			.publishOn(Schedulers.single())
+			.map(v -> v + threadLocal.get())
+			.doOnComplete(() -> System.out.println("from doOnComplete " + threadLocal.get()))
+			.delayElements(Duration.ofSeconds(1), Schedulers.single())
+			.doOnNext(v -> System.out.println("delayed onNext(" + v + ") " + threadLocal.get()))
+			.contextWrite(Context.of("key", "customized"))
+			.as(StepVerifier::create)
+			.expectNext("foocustomized")
+			.verifyComplete();
+	}
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {

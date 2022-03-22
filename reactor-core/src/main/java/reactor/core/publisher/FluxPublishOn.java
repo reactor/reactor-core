@@ -30,7 +30,9 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.ContextView;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
@@ -108,7 +110,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	}
 
 	static final class PublishOnSubscriber<T>
-			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
+			implements QueueSubscription<T>, Schedulers.ContextRunnable, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -528,6 +530,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
+		@Override
+		public ContextView contextView() {
+			return currentContext().readOnly();
+		}
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
 			if (cancelled) {
 				Operators.onDiscard(v, actual.currentContext());
@@ -666,7 +673,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	}
 
 	static final class PublishOnConditionalSubscriber<T>
-			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
+			implements QueueSubscription<T>, Schedulers.ContextRunnable, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -848,6 +855,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
 			}
+		}
+
+		@Override
+		public ContextView contextView() {
+			return currentContext().readOnly();
 		}
 
 		void trySchedule(

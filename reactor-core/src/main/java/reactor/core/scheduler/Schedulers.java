@@ -43,6 +43,8 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -759,81 +761,137 @@ public abstract class Schedulers {
 	 *
 	 * @param key the key under which to set up the onScheduleHook sub-hook
 	 * @param decorator the {@link Runnable} decorator to add (or replace, if key is already present)
+	 * @see #onScheduleHookContextual(String, BiFunction)
 	 * @see #resetOnScheduleHook(String)
 	 * @see #resetOnScheduleHooks()
 	 */
 	public static void onScheduleHook(String key, Function<Runnable, Runnable> decorator) {
-		synchronized (onScheduleHooks) {
-			onScheduleHooks.put(key, decorator);
-			Function<Runnable, Runnable> newHook = null;
-			for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
+		onScheduleHookContextual(key, (r, c) ->
+			decorator.apply(r));
+	}
+
+	/**
+	 * Add or replace a named scheduling {@link BiFunction decorator}. With subsequent calls
+	 * to this method, the onScheduleHook hook can be a composite of several sub-hooks, each
+	 * with a different key.
+	 * <p>
+	 * The sub-hook is a {@link BiFunction} taking the scheduled {@link Runnable} and a
+	 * relevant {@link ContextView}, and returning a decorated {@link Runnable}.
+	 * Note that not all tasks submitted to a {@link Scheduler} are contextual, in which case
+	 * the caller must provide the {@link Context#empty() empty Context} as second input to
+	 * this sub-hook. Sub-hooks can choose to directly return the original {@link Runnable}
+	 * in such a case.
+	 *
+	 * @param key the key under which to set up the onScheduleHook sub-hook
+	 * @param decorator the {@link Runnable} decorator to add (or replace, if key is already present)
+	 * @see #onScheduleHook(String, Function) 
+	 * @see #resetOnScheduleHook(String)
+	 * @see #resetOnScheduleHooks()
+	 */
+	public static void onScheduleHookContextual(String key, BiFunction<Runnable, ContextView, Runnable> decorator) {
+		synchronized (onScheduleContextualHooks) {
+			onScheduleContextualHooks.put(key, decorator);
+			BiFunction<Runnable, ContextView, Runnable> newHook = null;
+			for (BiFunction<Runnable, ContextView, Runnable> function : onScheduleContextualHooks.values()) {
 				if (newHook == null) {
 					newHook = function;
 				}
 				else {
-					newHook = newHook.andThen(function);
+					final BiFunction<Runnable, ContextView, Runnable> prevHook = newHook;
+					newHook = (r, ctx) -> function.apply(prevHook.apply(r, ctx), ctx);
 				}
 			}
-			onScheduleHook = newHook;
+			onScheduleContextualHook = newHook;
 		}
 	}
 
 	/**
 	 * Reset a specific onScheduleHook {@link Function sub-hook} if it has been set up
-	 * via {@link #onScheduleHook(String, Function)}.
+	 * via {@link #onScheduleHook(String, Function)} or {@link #onScheduleHookContextual(String, BiFunction)}.
 	 *
 	 * @param key the key for onScheduleHook sub-hook to remove
 	 * @see #onScheduleHook(String, Function)
+	 * @see #onScheduleHookContextual(String, BiFunction)
 	 * @see #resetOnScheduleHooks()
 	 */
 	public static void resetOnScheduleHook(String key) {
-		synchronized (onScheduleHooks) {
-			onScheduleHooks.remove(key);
-			if (onScheduleHooks.isEmpty()) {
-				onScheduleHook = Function.identity();
+		synchronized (onScheduleContextualHooks) {
+			onScheduleContextualHooks.remove(key);
+			if (onScheduleContextualHooks.isEmpty()) {
+				onScheduleContextualHook = (r, c) -> r;
 			}
 			else {
-				Function<Runnable, Runnable> newHook = null;
-				for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
+				BiFunction<Runnable, ContextView, Runnable> newHook = null;
+				for (BiFunction<Runnable, ContextView, Runnable> function : onScheduleContextualHooks.values()) {
 					if (newHook == null) {
 						newHook = function;
 					}
 					else {
-						newHook = newHook.andThen(function);
+						final BiFunction<Runnable, ContextView, Runnable> prevHook = newHook;
+						newHook = (r, ctx) -> function.apply(prevHook.apply(r, ctx), ctx);
 					}
 				}
-				onScheduleHook = newHook;
+				onScheduleContextualHook = newHook;
 			}
 		}
 	}
 
 	/**
-	 * Remove all onScheduleHook {@link Function sub-hooks}.
+	 * Remove all sub-hooks that were set via either {@link #onScheduleHook(String, Function)}
+	 * or {@link #onScheduleHookContextual(String, BiFunction)}.
 	 *
 	 * @see #onScheduleHook(String, Function)
+	 * @see #onScheduleHookContextual(String, BiFunction)
 	 * @see #resetOnScheduleHook(String)
 	 */
 	public static void resetOnScheduleHooks() {
-		synchronized (onScheduleHooks) {
-			onScheduleHooks.clear();
-			onScheduleHook = null;
+		synchronized (onScheduleContextualHooks) {
+			onScheduleContextualHooks.clear();
+			onScheduleContextualHook = null;
 		}
 	}
 
 	/**
-	 * Applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)}.
+	 * For a given {@link Runnable} which isn't attached to the notion of {@link Context},
+	 * applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)} and
+	 * {@link Schedulers#onScheduleHookContextual(String, BiFunction)}.
+	 * The latter receives the {@link Context#empty() empty context} as the {@link ContextView}.
 	 *
-	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler}
+	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler} without the notion of context
 	 * @return decorated {@link Runnable} if any hook is registered, the original otherwise.
+	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using {@link #onSchedule(Runnable, ContextView)}
+	 * explicitly with {@link Context#empty() the empty context}.
 	 */
+	@Deprecated
 	public static Runnable onSchedule(Runnable runnable) {
-		Function<Runnable, Runnable> hook = onScheduleHook;
+		BiFunction<Runnable, ContextView, Runnable> hook = onScheduleContextualHook;
 		if (hook != null) {
-			return hook.apply(runnable);
+			return hook.apply(runnable, Context.empty());
 		}
 		else {
 			return runnable;
 		}
+	}
+
+	public interface ContextRunnable extends Runnable {
+		ContextView contextView();
+	}
+
+	/**
+	 * For a given {@link Runnable} which has a notion of  of {@link Context} attached to it,
+	 * applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)} and
+	 * {@link Schedulers#onScheduleHookContextual(String, BiFunction)}.
+	 *
+	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler} with the notion of context
+	 * @return decorated {@link Runnable} if any hook is registered, the original otherwise.
+	 */
+	public static Runnable onSchedule(Runnable runnable, ContextView context) {
+		BiFunction<Runnable, ContextView, Runnable> hook = onScheduleContextualHook;
+
+		if (hook != null) {
+			return hook.apply(runnable, context);
+		}
+		return runnable;
 	}
 
 	/**
@@ -1011,10 +1069,10 @@ public abstract class Schedulers {
 
 	static volatile Factory factory = DEFAULT;
 
-	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
+	private static final LinkedHashMap<String, BiFunction<Runnable, ContextView, Runnable>> onScheduleContextualHooks = new LinkedHashMap<>(1);
 
 	@Nullable
-	private static Function<Runnable, Runnable> onScheduleHook;
+	private static BiFunction<Runnable, ContextView, Runnable> onScheduleContextualHook;
 
 	/**
 	 * Get a {@link CachedScheduler} out of the {@code reference} or create one using the
@@ -1150,7 +1208,12 @@ public abstract class Schedulers {
 			@Nullable Disposable parent,
 			long delay,
 			TimeUnit unit) {
-		task = onSchedule(task);
+		if (task instanceof ContextRunnable) {
+			task = onSchedule(task, ((ContextRunnable) task).contextView());
+		}
+		else {
+			task = onSchedule(task, Context.empty());
+		}
 		SchedulerTask sr = new SchedulerTask(task, parent);
 		Future<?> f;
 		if (delay <= 0L) {
@@ -1169,7 +1232,12 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		task = onSchedule(task);
+		if (task instanceof ContextRunnable) {
+			task = onSchedule(task, ((ContextRunnable) task).contextView());
+		}
+		else {
+			task = onSchedule(task, Context.empty());
+		}
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
@@ -1199,7 +1267,12 @@ public abstract class Schedulers {
 			Runnable task,
 			long delay,
 			TimeUnit unit) {
-		task = onSchedule(task);
+		if (task instanceof ContextRunnable) {
+			task = onSchedule(task, ((ContextRunnable) task).contextView());
+		}
+		else {
+			task = onSchedule(task, Context.empty());
+		}
 
 		WorkerTask sr = new WorkerTask(task, tasks);
 		if (!tasks.add(sr)) {
@@ -1231,7 +1304,12 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		task = onSchedule(task);
+		if (task instanceof ContextRunnable) {
+			task = onSchedule(task, ((ContextRunnable) task).contextView());
+		}
+		else {
+			task = onSchedule(task, Context.empty());
+		}
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
