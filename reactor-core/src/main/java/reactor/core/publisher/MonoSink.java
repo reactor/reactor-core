@@ -27,6 +27,7 @@ import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Wrapper API around an actual downstream Subscriber
@@ -34,7 +35,7 @@ import reactor.util.context.ContextView;
  *
  * @param <T> the value type emitted
  */
-public interface MonoSink<T> {
+public interface MonoSink<T> extends Contextual {
 
 	/**
 	 * Complete without any value. <p>Calling this method multiple times or after the

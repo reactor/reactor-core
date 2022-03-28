@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Interface to produce synchronously "one signal" to an underlying {@link Subscriber}.
@@ -36,7 +37,7 @@ import reactor.util.context.ContextView;
  *
  * @param <T> the output value type
  */
-public interface SynchronousSink<T> {
+public interface SynchronousSink<T> extends Contextual {
 	/**
 	 * @see Subscriber#onComplete()
 	 */
