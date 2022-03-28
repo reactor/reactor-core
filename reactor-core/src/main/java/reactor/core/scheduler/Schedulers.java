@@ -762,12 +762,12 @@ public abstract class Schedulers {
 	 *
 	 * @param key the key under which to set up the onScheduleHook sub-hook
 	 * @param decorator the {@link Runnable} decorator to add (or replace, if key is already present)
-	 * @see #onScheduleHookContextual(String, BiFunction)
+	 * @see #onScheduleContextualHook(String, BiFunction)
 	 * @see #resetOnScheduleHook(String)
 	 * @see #resetOnScheduleHooks()
 	 */
 	public static void onScheduleHook(String key, Function<Runnable, Runnable> decorator) {
-		onScheduleHookContextual(key, (r, c) ->
+		onScheduleContextualHook(key, (r, c) ->
 			decorator.apply(r));
 	}
 
@@ -789,7 +789,7 @@ public abstract class Schedulers {
 	 * @see #resetOnScheduleHook(String)
 	 * @see #resetOnScheduleHooks()
 	 */
-	public static void onScheduleHookContextual(String key, BiFunction<Runnable, ContextView, Runnable> decorator) {
+	public static void onScheduleContextualHook(String key, BiFunction<Runnable, ContextView, Runnable> decorator) {
 		synchronized (onScheduleContextualHooks) {
 			onScheduleContextualHooks.put(key, decorator);
 			BiFunction<Runnable, ContextView, Runnable> newHook = null;
@@ -808,11 +808,11 @@ public abstract class Schedulers {
 
 	/**
 	 * Reset a specific onScheduleHook {@link Function sub-hook} if it has been set up
-	 * via {@link #onScheduleHook(String, Function)} or {@link #onScheduleHookContextual(String, BiFunction)}.
+	 * via {@link #onScheduleHook(String, Function)} or {@link #onScheduleContextualHook(String, BiFunction)}.
 	 *
 	 * @param key the key for onScheduleHook sub-hook to remove
 	 * @see #onScheduleHook(String, Function)
-	 * @see #onScheduleHookContextual(String, BiFunction)
+	 * @see #onScheduleContextualHook(String, BiFunction)
 	 * @see #resetOnScheduleHooks()
 	 */
 	public static void resetOnScheduleHook(String key) {
@@ -839,10 +839,10 @@ public abstract class Schedulers {
 
 	/**
 	 * Remove all sub-hooks that were set via either {@link #onScheduleHook(String, Function)}
-	 * or {@link #onScheduleHookContextual(String, BiFunction)}.
+	 * or {@link #onScheduleContextualHook(String, BiFunction)}.
 	 *
 	 * @see #onScheduleHook(String, Function)
-	 * @see #onScheduleHookContextual(String, BiFunction)
+	 * @see #onScheduleContextualHook(String, BiFunction)
 	 * @see #resetOnScheduleHook(String)
 	 */
 	public static void resetOnScheduleHooks() {
@@ -854,7 +854,7 @@ public abstract class Schedulers {
 
 	/**
 	 * For a given {@link Runnable}, applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)}
-	 * and {@link Schedulers#onScheduleHookContextual(String, BiFunction)}.
+	 * and {@link Schedulers#onScheduleContextualHook(String, BiFunction)}.
 	 * <p>
 	 * If the {@link Runnable} is a {@link Contextual}, its {@link ContextView} is retrieved
 	 * and passed as the second argument to the contextual hook(s) {@link BiFunction}.
