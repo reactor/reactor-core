@@ -62,9 +62,7 @@ import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 import static reactor.core.Scannable.Attr.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
@@ -73,7 +71,7 @@ import static reactor.core.scheduler.Schedulers.fromExecutorService;
 public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
-	void scheduledWithContext() {
+	void scheduledWithContext_hookBased() {
 		ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
 		Schedulers.onScheduleHook("FluxPublishOnTest_noContext", r -> {
 			System.out.println("wrapping task without context");
@@ -82,8 +80,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Schedulers.onScheduleHookContextual("FluxPublishOnTest_withContext", (r, ctx) -> {
 			if (ctx.isEmpty()) return r;
 			final String fromContext = ctx.getOrDefault("key", "notFound");
+			new RuntimeException("trace from hookContextual call (" + fromContext + ")" ).printStackTrace();
 			return () -> {
-				System.out.println("running runnable");
+				System.out.println("context instrumented runnable");
 				threadLocal.set(fromContext);
 				r.run();
 				threadLocal.set("erased");
@@ -92,7 +91,10 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		Flux.just("foo").hide()
 			.publishOn(Schedulers.single())
-			.map(v -> v + threadLocal.get())
+			.map(v -> {
+				System.out.println("mapping from thread " + Thread.currentThread().getName());
+				return v + threadLocal.get();
+			})
 			.doOnComplete(() -> System.out.println("from doOnComplete " + threadLocal.get()))
 			.delayElements(Duration.ofSeconds(1), Schedulers.single())
 			.doOnNext(v -> System.out.println("delayed onNext(" + v + ") " + threadLocal.get()))

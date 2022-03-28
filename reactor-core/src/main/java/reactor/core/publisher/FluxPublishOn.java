@@ -33,6 +33,7 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
@@ -110,7 +111,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	}
 
 	static final class PublishOnSubscriber<T>
-			implements QueueSubscription<T>, Schedulers.ContextRunnable, InnerOperator<T, T> {
+			implements QueueSubscription<T>, Runnable, Contextual, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -673,7 +674,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	}
 
 	static final class PublishOnConditionalSubscriber<T>
-			implements QueueSubscription<T>, Schedulers.ContextRunnable, InnerOperator<T, T> {
+			implements QueueSubscription<T>, Runnable, Contextual, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
