@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -29,6 +30,9 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -220,7 +224,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 		}
 	}
 
-	static final class ScheduledEmpty implements QueueSubscription<Void>, Runnable {
+	static final class ScheduledEmpty implements QueueSubscription<Void>, Runnable, Contextual {
 
 		final Subscriber<?> actual;
 
@@ -250,6 +254,14 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 					f.dispose();
 				}
 			}
+		}
+
+		@Override
+		public ContextView contextView() {
+			if (actual instanceof Contextual) {
+				return ((Contextual) actual).contextView();
+			}
+			return Context.empty();
 		}
 
 		@Override

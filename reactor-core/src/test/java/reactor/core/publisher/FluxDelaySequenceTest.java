@@ -19,18 +19,22 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxDelaySequence.DelaySubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -288,6 +292,63 @@ public class FluxDelaySequenceTest {
 
 		test.done = true;
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	void onNextAndOnCompleteScheduledWithContextInScope() {
+		final ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
+		Schedulers.onScheduleContextualHook("delaySequence", (r, c) -> {
+			final String fromContext = c.getOrDefault("key", "notFound");
+			return () -> {
+				threadLocal.set(fromContext);
+				r.run();
+				threadLocal.remove();
+			};
+		});
+
+		AtomicReference<String> onCompleteValue = new AtomicReference<>();
+
+		Flux.just(1, 2, 3)
+			.delaySequence(Duration.ofMillis(500))
+			.map(v -> {
+				String mapped = v + threadLocal.get();
+				//in order to verify below that the OnComplete runnable also set the threadLocal, we clear it here
+				threadLocal.remove();
+				return mapped;
+			})
+			.doOnComplete(() -> onCompleteValue.set(threadLocal.get()))
+			.as(p -> StepVerifier.create(p, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized"))))
+			.expectNext("1customized", "2customized", "3customized")
+			.verifyComplete();
+
+		assertThat(onCompleteValue).hasValue("customized");
+	}
+
+	@Test
+	void onErrorScheduledWithContextInScope() {
+		final ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
+		Schedulers.onScheduleContextualHook("delaySequence", (r, c) -> {
+			final String fromContext = c.getOrDefault("key", "notFound");
+			return () -> {
+				threadLocal.set(fromContext);
+				r.run();
+				threadLocal.remove();
+			};
+		});
+
+		AtomicReference<String> onErrorValue = new AtomicReference<>();
+
+		Flux.just(1) //we need some data to be delayed to trigger the scheduling of OnError object
+			.concatWith(Mono.error(new RuntimeException("expected")))
+			.delaySequence(Duration.ofMillis(500))
+			//in order to verify only the OnError is hooked, we remove the ThreadLocal value in onNext
+			.doOnNext(v -> threadLocal.remove())
+			.doOnError(e -> onErrorValue.set(threadLocal.get()))
+			.as(p -> StepVerifier.create(p, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized"))))
+			.expectNext(1)
+			.verifyErrorMessage("expected");
+
+		assertThat(onErrorValue).hasValue("customized");
 	}
 
 }

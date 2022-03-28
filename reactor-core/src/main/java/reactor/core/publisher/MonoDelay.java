@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -75,7 +77,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		return null;
 	}
 
-	static final class MonoDelayRunnable implements Runnable, InnerProducer<Long> {
+	static final class MonoDelayRunnable implements Runnable, Contextual, InnerProducer<Long> {
 		final CoreSubscriber<? super Long> actual;
 		final boolean failOnBackpressure;
 
@@ -234,6 +236,11 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		@Override
 		public CoreSubscriber<? super Long> actual() {
 			return actual;
+		}
+
+		@Override
+		public ContextView contextView() {
+			return actual.currentContext();
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -84,8 +87,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 		return null;
 	}
 
-	static final class IntervalRunnable implements Runnable, Subscription,
-	                                               InnerProducer<Long> {
+	static final class IntervalRunnable implements Runnable, Contextual, Subscription, InnerProducer<Long> {
 		final CoreSubscriber<? super Long> actual;
 
 		final Worker worker;
@@ -106,6 +108,11 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 		@Override
 		public CoreSubscriber<? super Long> actual() {
 			return actual;
+		}
+
+		@Override
+		public ContextView contextView() {
+			return actual.currentContext();
 		}
 
 		@Override
