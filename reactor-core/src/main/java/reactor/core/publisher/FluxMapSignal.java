@@ -142,7 +142,7 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 
             try {
                 v = Objects.requireNonNull(mapperNext.apply(t),
-		                "The mapper returned a null value.");
+		                "The mapper [" + mapperNext.getClass().getName() + "] returned a null value.");
             }
             catch (Throwable e) {
 	            done = true;
@@ -172,7 +172,7 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 
 	        try {
 		        v = Objects.requireNonNull(mapperError.apply(t),
-				        "The mapper returned a null value.");
+				        "The mapper [" + mapperError.getClass().getName() + "] returned a null value.");
 	        }
 	        catch (Throwable e) {
 		        done = true;
@@ -204,7 +204,7 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 
 	        try {
 		        v = Objects.requireNonNull(mapperComplete.get(),
-				        "The mapper returned a null value.");
+				        "The mapper [" + mapperComplete.getClass().getName() + "] returned a null value.");
 	        }
 	        catch (Throwable e) {
 		        done = true;
