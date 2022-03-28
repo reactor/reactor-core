@@ -104,7 +104,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 
 			try {
 				v = Objects.requireNonNull(mapper.apply(t),
-						"The mapper returned a null value.");
+						"The mapper [" + mapper.getClass().getName() + "] returned a null value.");
 			}
 			catch (Throwable e) {
 				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
