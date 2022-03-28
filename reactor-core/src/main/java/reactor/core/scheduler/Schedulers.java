@@ -45,6 +45,7 @@ import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -841,46 +842,28 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * For a given {@link Runnable} which isn't attached to the notion of {@link Context},
-	 * applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)} and
-	 * {@link Schedulers#onScheduleHookContextual(String, BiFunction)}.
-	 * The latter receives the {@link Context#empty() empty context} as the {@link ContextView}.
+	 * For a given {@link Runnable}, applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)}
+	 * and {@link Schedulers#onScheduleHookContextual(String, BiFunction)}.
+	 * <p>
+	 * If the {@link Runnable} is a {@link Contextual}, its {@link ContextView} is retrieved
+	 * and passed as the second argument to the contextual hook(s) {@link BiFunction}.
+	 * Otherwise, the {@link Context#empty() empty context} as the {@link ContextView}.
 	 *
-	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler} without the notion of context
+	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler}, possibly a {@link Contextual}
 	 * @return decorated {@link Runnable} if any hook is registered, the original otherwise.
-	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using {@link #onSchedule(Runnable, ContextView)}
-	 * explicitly with {@link Context#empty() the empty context}.
 	 */
-	@Deprecated
 	public static Runnable onSchedule(Runnable runnable) {
 		BiFunction<Runnable, ContextView, Runnable> hook = onScheduleContextualHook;
 		if (hook != null) {
-			return hook.apply(runnable, Context.empty());
+			ContextView context = Context.empty();
+			if (runnable instanceof Contextual) {
+				context = ((Contextual) runnable).contextView();
+			}
+			return hook.apply(runnable, context);
 		}
 		else {
 			return runnable;
 		}
-	}
-
-	public interface ContextRunnable extends Runnable {
-		ContextView contextView();
-	}
-
-	/**
-	 * For a given {@link Runnable} which has a notion of  of {@link Context} attached to it,
-	 * applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)} and
-	 * {@link Schedulers#onScheduleHookContextual(String, BiFunction)}.
-	 *
-	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler} with the notion of context
-	 * @return decorated {@link Runnable} if any hook is registered, the original otherwise.
-	 */
-	public static Runnable onSchedule(Runnable runnable, ContextView context) {
-		BiFunction<Runnable, ContextView, Runnable> hook = onScheduleContextualHook;
-
-		if (hook != null) {
-			return hook.apply(runnable, context);
-		}
-		return runnable;
 	}
 
 	/**
@@ -1190,12 +1173,7 @@ public abstract class Schedulers {
 			@Nullable Disposable parent,
 			long delay,
 			TimeUnit unit) {
-		if (task instanceof ContextRunnable) {
-			task = onSchedule(task, ((ContextRunnable) task).contextView());
-		}
-		else {
-			task = onSchedule(task, Context.empty());
-		}
+		task = onSchedule(task);
 		SchedulerTask sr = new SchedulerTask(task, parent);
 		Future<?> f;
 		if (delay <= 0L) {
@@ -1214,12 +1192,7 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		if (task instanceof ContextRunnable) {
-			task = onSchedule(task, ((ContextRunnable) task).contextView());
-		}
-		else {
-			task = onSchedule(task, Context.empty());
-		}
+		task = onSchedule(task);
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
@@ -1249,12 +1222,7 @@ public abstract class Schedulers {
 			Runnable task,
 			long delay,
 			TimeUnit unit) {
-		if (task instanceof ContextRunnable) {
-			task = onSchedule(task, ((ContextRunnable) task).contextView());
-		}
-		else {
-			task = onSchedule(task, Context.empty());
-		}
+		task = onSchedule(task);
 
 		WorkerTask sr = new WorkerTask(task, tasks);
 		if (!tasks.add(sr)) {
@@ -1286,12 +1254,7 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		if (task instanceof ContextRunnable) {
-			task = onSchedule(task, ((ContextRunnable) task).contextView());
-		}
-		else {
-			task = onSchedule(task, Context.empty());
-		}
+		task = onSchedule(task);
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
