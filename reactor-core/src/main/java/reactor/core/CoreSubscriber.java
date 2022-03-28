@@ -19,6 +19,8 @@ package reactor.core;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * A {@link Context} aware subscriber which has relaxed rules for §1.3 and §3.9
@@ -33,7 +35,7 @@ import reactor.util.context.Context;
  *
  * @since 3.1.0
  */
-public interface CoreSubscriber<T> extends Subscriber<T> {
+public interface CoreSubscriber<T> extends Subscriber<T>, Contextual {
 
 	/**
 	 * Request a {@link Context} from dependent components which can include downstream
@@ -43,6 +45,11 @@ public interface CoreSubscriber<T> extends Subscriber<T> {
 	 */
 	default Context currentContext(){
 		return Context.empty();
+	}
+
+	@Override
+	default ContextView contextView() {
+		return currentContext().readOnly();
 	}
 
 	/**
