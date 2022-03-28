@@ -77,7 +77,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			System.out.println("wrapping task without context");
 			return r;
 		});
-		Schedulers.onScheduleHookContextual("FluxPublishOnTest_withContext", (r, ctx) -> {
+		Schedulers.onScheduleContextualHook("FluxPublishOnTest_withContext", (r, ctx) -> {
 			if (ctx.isEmpty()) return r;
 			final String fromContext = ctx.getOrDefault("key", "notFound");
 			new RuntimeException("trace from hookContextual call (" + fromContext + ")" ).printStackTrace();
