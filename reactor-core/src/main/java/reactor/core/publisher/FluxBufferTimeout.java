@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -143,7 +144,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.timespan = timespan;
 			this.unit = unit;
 			this.timer = timer;
-			this.flushTask = () -> {
+			this.flushTask = Operators.contextualRunnable(() -> {
 				if (terminated == NOT_TERMINATED) {
 					int index;
 					for(;;){
@@ -157,7 +158,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					}
 					flushCallback(null);
 				}
-			};
+			}, this::contextView);
 
 			this.batchSize = maxSize;
 			this.bufferSupplier = bufferSupplier;

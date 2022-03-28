@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +43,7 @@ import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Scannable.from;
@@ -393,5 +393,26 @@ public class FluxBufferTimeoutTest {
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	void bufferTimeoutScheduledWithContextInScope() {
+		final ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
+		Schedulers.onScheduleContextualHook("bufferTimeout", (r, c) -> {
+			final String fromContext = c.getOrDefault("key", "notFound");
+			return () -> {
+				threadLocal.set(fromContext);
+				r.run();
+				threadLocal.remove();
+			};
+		});
+
+		Flux.just(1).concatWith(Mono.never())
+			.bufferTimeout(4, Duration.ofSeconds(1))
+			.map(list -> list.size() + threadLocal.get())
+			.as(p -> StepVerifier.create(p, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized"))))
+			.expectNext("1customized")
+			.thenCancel()
+			.verify(Duration.ofSeconds(2));
 	}
 }

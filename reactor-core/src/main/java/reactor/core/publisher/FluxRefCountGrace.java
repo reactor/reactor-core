@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -153,6 +154,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 	}
 
+	// note this class implements Runnable but not Contextual, as the timer aspect only occurs when no subscribers remain
 	static final class RefConnection implements Runnable, Consumer<Disposable> {
 
 		final FluxRefCountGrace<?> parent;

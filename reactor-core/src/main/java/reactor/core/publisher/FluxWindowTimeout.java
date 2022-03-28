@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * @author David Karnok
@@ -422,7 +424,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			return WIP.getAndIncrement(this) == 0;
 		}
 
-		static final class ConsumerIndexHolder implements Runnable {
+		static final class ConsumerIndexHolder implements Runnable, Contextual {
 
 			final long                       index;
 			final WindowTimeoutSubscriber<?> parent;
@@ -430,6 +432,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			ConsumerIndexHolder(long index, WindowTimeoutSubscriber<?> parent) {
 				this.index = index;
 				this.parent = parent;
+			}
+
+			@Override
+			public ContextView contextView() {
+				return parent.contextView();
 			}
 
 			@Override

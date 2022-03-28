@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -46,6 +47,8 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 import static reactor.core.Fuseable.NONE;
 
@@ -58,6 +61,11 @@ import static reactor.core.Fuseable.NONE;
  *
  */
 public abstract class Operators {
+
+	//FIXME add javadoc
+	public static Runnable contextualRunnable(Runnable runnable, Supplier<ContextView> contextViewSupplier) {
+		return new ContextualRunnable(runnable, contextViewSupplier);
+	}
 
 	/**
 	 * Cap an addition to Long.MAX_VALUE
@@ -2821,6 +2829,27 @@ public abstract class Operators {
 			return (s & HAS_COMPLETED) == HAS_COMPLETED;
 		}
 
+	}
+
+	private static class ContextualRunnable implements Runnable, Contextual {
+
+		private final Runnable              runnable;
+		private final Supplier<ContextView> contextViewSupplier;
+
+		ContextualRunnable(Runnable runnable, Supplier<ContextView> contextViewSupplier) {
+			this.runnable = runnable;
+			this.contextViewSupplier = contextViewSupplier;
+		}
+
+		@Override
+		public void run() {
+			this.runnable.run();
+		}
+
+		@Override
+		public ContextView contextView() {
+			return this.contextViewSupplier.get();
+		}
 	}
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * @author Simon Baslé
@@ -101,7 +104,7 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 			//we can also delay onError/onComplete when an onNext
 			//is "in flight"
 			DELAYED.incrementAndGet(this);
-			w.schedule(() -> delayedNext(t), delay, timeUnit);
+			w.schedule(Operators.contextualRunnable(() -> delayedNext(t), this::contextView), delay, timeUnit);
 		}
 
 		private void delayedNext(T t) {
@@ -165,11 +168,16 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		final class OnError implements Runnable {
+		final class OnError implements Runnable, Contextual {
 			private final Throwable t;
 
 			OnError(Throwable t) {
 				this.t = t;
+			}
+
+			@Override
+			public ContextView contextView() {
+				return actual.contextView();
 			}
 
 			@Override
@@ -182,7 +190,13 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 			}
 		}
 
-		final class OnComplete implements Runnable {
+		final class OnComplete implements Runnable, Contextual {
+
+			@Override
+			public ContextView contextView() {
+				return actual.contextView();
+			}
+
 			@Override
 			public void run() {
 				try {
