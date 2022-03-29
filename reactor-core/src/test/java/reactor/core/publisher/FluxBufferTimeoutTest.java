@@ -405,7 +405,7 @@ public class FluxBufferTimeoutTest {
 				.concatWith(Mono.never()),
 			f -> f.bufferTimeout(4, Duration.ofSeconds(1)),
 			helper -> helper.mappingTest()
-				.expectNext("[1]customized")
+				.expectNext("[1]customizedd")
 				.thenCancel()
 				.verify(Duration.ofSeconds(2))
 		);
