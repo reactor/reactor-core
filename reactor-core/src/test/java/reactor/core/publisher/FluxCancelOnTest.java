@@ -77,7 +77,7 @@ public class FluxCancelOnTest {
 					.thenCancel()
 					.verify(Duration.ofSeconds(2));
 
-				assertThat(helper.getResource()).as("cancelled with threadLocal").hasValue("customizedd");
+				assertThat(helper.getResource()).as("cancelled with threadLocal").hasValue("customized");
 			}
 		);
 	}
