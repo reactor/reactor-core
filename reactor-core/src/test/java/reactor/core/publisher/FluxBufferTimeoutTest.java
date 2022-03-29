@@ -28,9 +28,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -38,12 +41,12 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.TestGenerationUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Scannable.from;
@@ -395,24 +398,16 @@ public class FluxBufferTimeoutTest {
 		            .hasDiscardedExactly(1, 2, 3);
 	}
 
-	@Test
-	void bufferTimeoutScheduledWithContextInScope() {
-		final ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
-		Schedulers.onScheduleContextualHook("bufferTimeout", (r, c) -> {
-			final String fromContext = c.getOrDefault("key", "notFound");
-			return () -> {
-				threadLocal.set(fromContext);
-				r.run();
-				threadLocal.remove();
-			};
-		});
-
-		Flux.just(1).concatWith(Mono.never())
-			.bufferTimeout(4, Duration.ofSeconds(1))
-			.map(list -> list.size() + threadLocal.get())
-			.as(p -> StepVerifier.create(p, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized"))))
-			.expectNext("1customized")
-			.thenCancel()
-			.verify(Duration.ofSeconds(2));
+	@TestFactory
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("bufferTimeout",
+			Flux.just(1)
+				.concatWith(Mono.never()),
+			f -> f.bufferTimeout(4, Duration.ofSeconds(1)),
+			helper -> helper.mappingTest()
+				.expectNext("[1]customized")
+				.thenCancel()
+				.verify(Duration.ofSeconds(2))
+		);
 	}
 }
