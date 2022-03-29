@@ -462,6 +462,45 @@ Use it only if you see that some call-sites are not instrumented.
 to perform the self-attach.
 Self-attach may not work on some JVMs, please refer to ByteBuddy's documentation for more details.
 
+=== Configuring the buildpack for Spring Boot
+Spring Boot builds deployable images using https://paketo.io/[Packeto Buildpacks]. By default, the
+images use a minimal viable JRE, which do not include the JDK hooks required by the `ReactorDebugAgent`.
+To enable this feature in a production enviroment, the Spring Boot build plugins must be configured
+to use the JDK feature set.
+
+==== Gradle Configuration
+For building with the `io.spring.dependency-management` gradle plugin, include the following in your
+Gradle configuration. See the https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#build-image.examples.builder-configuration[Spring Documentation]
+for more information.
+=====
+[source,kotlin]
+----
+tasks.named<BootBuildImage>("bootBuildImage") {
+	environment = mapOf("BP_JVM_TYPE" to "JDK")
+}
+----
+=====
+
+==== Maven Configuration
+For building with the `spring-boot-maven-plugin` maven plugin, include the following in your Maven configuration. See the https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#build-image.examples.builder-configurationp[Spring Documentation]
+for more information.
+=====
+[source,xml]
+----
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <image>
+            <env>
+                <BP_JVM_TYPE>JDK</BP_JVM_TYPE>
+            </env>
+        </image>
+    </configuration>
+</plugin>
+----
+=====
+
 === Running ReactorDebugAgent as a Java Agent
 If your environment does not support ByteBuddy's self-attachment, you can run `reactor-tools` as a
 Java Agent:
