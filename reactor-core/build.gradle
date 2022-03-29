@@ -180,7 +180,8 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int)',
 		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int, boolean)',
 		'reactor.core.scheduler.Schedulers#newElastic(int, java.util.concurrent.ThreadFactory)',
-		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)'
+		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)',
+		'reactor.core.CoreSubscriber#contextView()'
 	]
 }
 
