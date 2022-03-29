@@ -311,10 +311,10 @@ public class FluxDelaySequenceTest {
 				.doOnComplete(() -> companion.resource.set(companion.threadLocal.get())),
 			helper -> {
 				helper.rawTest()
-					.expectNext("1customized", "2customized", "3customized")
+					.expectNext("1customizedd", "2customized", "3customized")
 					.verifyComplete();
 
-				assertThat(helper.getResource()).hasValue("customized");
+				assertThat(helper.getResource()).hasValue("customizedd");
 			});
 	}
 
@@ -335,7 +335,7 @@ public class FluxDelaySequenceTest {
 					.expectNext(1)
 					.verifyErrorMessage("expected");
 
-				assertThat(helper.getResource()).hasValue("customized");
+				assertThat(helper.getResource()).hasValue("customizedd");
 			});
 	}
 
