@@ -24,14 +24,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnBackpressureBufferTimeout.BackpressureBufferTimeoutSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.TestGenerationUtils;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
@@ -312,6 +316,24 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 		            .expectNext("1")
 		            .thenAwait(Duration.ofSeconds(1))
 		            .verifyComplete();
+	}
+
+	@TestFactory
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("onBackpressureBufferTimeout",
+			() -> new ArrayList<String>(),
+			companion -> Flux.just(1,2),
+			(source, companion) -> source.onBackpressureBuffer(Duration.ofMillis(500), 10,
+				evicted -> companion.resource.add(evicted + companion.threadLocal.get())),
+			helper -> {
+				helper.rawTest(options -> options.initialRequest(0L))
+					.expectSubscription()
+					.thenAwait(Duration.ofMillis(800))
+					.expectNoEvent(Duration.ofMillis(500))
+					.thenCancel()
+					.verify();
+				assertThat(helper.getResource()).containsExactly("1customized", "2customized");
+			});
 	}
 
 	@Test
