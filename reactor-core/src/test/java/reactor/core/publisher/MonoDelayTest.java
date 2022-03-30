@@ -19,8 +19,13 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -28,6 +33,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
+import reactor.test.TestGenerationUtils;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.context.Context;
 
@@ -142,5 +148,17 @@ public class MonoDelayTest {
 				.expectNoEvent(Duration.ofNanos(1))
 				.expectErrorMatches(Exceptions::isOverflow)
 				.verify(Duration.ofMillis(100));
+	}
+
+	@TestFactory
+	@Tag("scheduledWithContext")
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeMonoTests("monoDelay",
+			Mono.delay(Duration.ofMillis(500)),
+			Function.identity(),
+			helper -> helper.mappingTest()
+				.expectNext("0customized")
+				.verifyComplete()
+		);
 	}
 }

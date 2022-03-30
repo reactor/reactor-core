@@ -25,9 +25,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.function.ThrowingConsumer;
+import org.reactivestreams.Publisher;
 
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -45,6 +47,58 @@ public class TestGenerationUtils {
 	) {
 		return generateScheduledWithContextInScopeTests(operatorName, () -> null, threadLocalCompanion -> source,
 			(src, threadLocalCompanion) -> operatorUnderTest.apply(src), dynamicTestGenerator);
+	}
+
+	public static <R, T> Stream<DynamicTest> generateScheduledWithContextInScopeMonoTests(
+		String operatorName, Mono<R> source,
+		Function<Mono<R>, Mono<T>> operatorUnderTest,
+		ThrowingConsumer<ScheduledWithContextInScopeFluxTest<T, Void>> dynamicTestGenerator
+	) {
+		return generateScheduledWithContextInScopeMonoTests(operatorName, () -> null, threadLocalCompanion -> source,
+			(src, threadLocalCompanion) -> operatorUnderTest.apply(src), dynamicTestGenerator);
+	}
+
+	public static <R, T, RES> Stream<DynamicTest> generateScheduledWithContextInScopeMonoTests(
+		String operatorName,
+		Supplier<RES> resourceSupplier,
+		Function<ThreadLocalCompanion<RES>, Mono<R>> sourceGenerator,
+		BiFunction<Mono<R>, ThreadLocalCompanion<RES>, Mono<T>> operatorUnderTest,
+		ThrowingConsumer<ScheduledWithContextInScopeFluxTest<T, RES>> dynamicTestGenerator
+	) {
+		String testName = operatorName + "ScheduledWithContextInScope";
+
+		ThreadLocalCompanion<RES> mainThreadLocalCompanion = new ThreadLocalCompanion<>(resourceSupplier.get());
+
+		//we'd like to defer the creation of the source, but we have to create one instance eagerly to detect fusion
+		//this instance must not be used otherwise, since it could capture Schedulers that will be shutdown at the moment the test runs.
+		Mono<R> probeSource = sourceGenerator.apply(mainThreadLocalCompanion);
+		Mono<T> probeSourceAndOperator = operatorUnderTest.apply(probeSource, mainThreadLocalCompanion);
+		//prepare the Supplier that will be used to actually lazily assemble the tested Flux
+		Supplier<Flux<T>> mainTestedFluxSupplier = () -> {
+			Mono<R> source = sourceGenerator.apply(mainThreadLocalCompanion);
+			return operatorUnderTest.apply(source, mainThreadLocalCompanion).flux();
+		};
+
+		if (probeSource instanceof Fuseable && probeSourceAndOperator instanceof Fuseable) {
+			//both the source and the operator decorating the source are Fuseable. Create a hidden version.
+			ThreadLocalCompanion<RES> hiddenThreadLocalCompanion = new ThreadLocalCompanion<>(resourceSupplier.get());
+			Supplier<Flux<T>> hiddenTestedFluxSupplier = () -> {
+				Mono<R> source = sourceGenerator.apply(hiddenThreadLocalCompanion).hide();
+				return operatorUnderTest.apply(source, hiddenThreadLocalCompanion).flux();
+			};
+			return DynamicTest.stream(
+				Stream.of(
+					new ScheduledWithContextInScopeFluxTest<>(hiddenTestedFluxSupplier, hiddenThreadLocalCompanion, testName),
+					new ScheduledWithContextInScopeFluxTest<>(mainTestedFluxSupplier, mainThreadLocalCompanion, testName + "_fused")
+				),
+				dynamicTestGenerator
+			);
+		}
+		//otherwise, only add one test
+		return DynamicTest.stream(
+			Stream.of(new ScheduledWithContextInScopeFluxTest<>(mainTestedFluxSupplier, mainThreadLocalCompanion, testName)),
+			dynamicTestGenerator
+		);
 	}
 
 	public static <R, T, RES> Stream<DynamicTest> generateScheduledWithContextInScopeTests(

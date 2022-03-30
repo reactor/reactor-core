@@ -20,9 +20,14 @@ import java.time.Duration;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -32,6 +37,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.TestGenerationUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -226,6 +232,21 @@ public class FluxWindowTimeoutTest {
 		                        })
 		)
 		            .verifyError(RejectedExecutionException.class);
+	}
+
+	@TestFactory
+	@Tag("scheduledWithContext")
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("windowTimeout",
+			Flux.just(1, 2)
+				.concatWith(Mono.never()),
+			f -> f.windowTimeout(4, Duration.ofSeconds(1)),
+			helper -> helper.transformingTest(src -> src.concatMap(Flux::collectList)
+					.map(v -> "" + v + helper.getThreadLocal().get()))
+				.expectNext("[1, 2]customized")
+				.thenCancel()
+				.verify(Duration.ofSeconds(2))
+		);
 	}
 
 	@Test
