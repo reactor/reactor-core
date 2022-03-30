@@ -16,17 +16,24 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.TestGenerationUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Scannable.from;
@@ -73,6 +80,33 @@ public class FluxSubscribeOnValueTest {
 		catch (InterruptedException e) {
 			throw Exceptions.bubble(e);
 		}
+	}
+
+	@TestFactory
+	@Tag("scheduledWithContext")
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("subscribeOnValue",
+			Flux.just(1),
+			source -> source.subscribeOn(Schedulers.single()),
+			helper -> helper.mappingTest()
+				.expectNext("1customized")
+				.verifyComplete()
+		);
+	}
+
+	@TestFactory
+	@Tag("scheduledWithContext")
+	Stream<DynamicTest> scheduledWithContextInScopeRequest() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("subscribeOnValue_request",
+			Flux.just(1),
+			source -> source.subscribeOn(Schedulers.single()),
+			helper -> helper.mappingTest(options -> options.initialRequest(0L))
+				.expectSubscription()
+				.expectNoEvent(Duration.ofMillis(100))
+				.thenRequest(10)
+				.expectNext("1customized")
+				.verifyComplete()
+		);
 	}
 
 	@Test
