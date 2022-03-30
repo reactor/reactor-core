@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
@@ -297,6 +298,7 @@ public class FluxDelaySequenceTest {
 	}
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> onNextAndOnCompleteScheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("delaySequence_onNextAndOnComplete",
 			AtomicReference::new,
@@ -319,6 +321,7 @@ public class FluxDelaySequenceTest {
 	}
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> onErrorScheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("delaySequence_onError",
 			AtomicReference::new,

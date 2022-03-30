@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
@@ -399,6 +400,7 @@ public class FluxBufferTimeoutTest {
 	}
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> scheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("bufferTimeout",
 			Flux.just(1)

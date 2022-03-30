@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
@@ -219,6 +220,7 @@ public class FluxIntervalTest {
     }
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> scheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("interval",
 			Flux.interval(Duration.ofMillis(50)).take(3, false),

@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.Timeout;
@@ -66,6 +67,7 @@ public class FluxCancelOnTest {
 
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> scheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("cancelOn",
 			AtomicReference::new,

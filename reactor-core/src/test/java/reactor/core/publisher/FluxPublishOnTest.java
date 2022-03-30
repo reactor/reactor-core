@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.Timeout;
@@ -62,7 +63,6 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
-import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -1422,6 +1422,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> scheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("publishOn",
 			() -> new String[2],
