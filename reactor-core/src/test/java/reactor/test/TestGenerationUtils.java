@@ -118,6 +118,7 @@ public class TestGenerationUtils {
 
 		public Flux<T> setupAndGenerateSource() {
 			Schedulers.onScheduleContextualHook(testName, (r, c) -> {
+				if (c.isEmpty()) return r;
 				final String fromContext = c.getOrDefault("key", "notFound");
 				return () -> {
 					companion.threadLocal.set(fromContext);
