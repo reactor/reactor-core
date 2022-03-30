@@ -30,6 +30,8 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * @author Simon Baslé
@@ -99,48 +101,74 @@ public class TestGenerationUtils {
 		}
 	}
 
-	public static final class ScheduledWithContextInScopeFluxTest<T, RES> implements Named<ScheduledWithContextInScopeFluxTest<T, RES>> {
+	public static final class ScheduledWithContextInScopeFluxTest<T, RES> implements
+		Named<ScheduledWithContextInScopeFluxTest<T, RES>>, Contextual {
+
+		private static final Context DEFAULT_CONTEXT = Context.of("key", "customized");
 
 		private final Supplier<Flux<T>>         fluxSupplier;
-		private final ThreadLocalCompanion<RES> threadLocalCompanion;
+		private final ThreadLocalCompanion<RES> companion;
 		private final String                    testName;
 
-		public ScheduledWithContextInScopeFluxTest(Supplier<Flux<T>> fluxSupplier, ThreadLocalCompanion<RES> threadLocalCompanion, String name) {
+		public ScheduledWithContextInScopeFluxTest(Supplier<Flux<T>> fluxSupplier, ThreadLocalCompanion<RES> companion, String name) {
 			this.fluxSupplier = fluxSupplier;
-			this.threadLocalCompanion = threadLocalCompanion;
+			this.companion = companion;
 			testName = name;
 		}
 
-		private Flux<T> setupAndGenerateSource() {
+		public Flux<T> setupAndGenerateSource() {
 			Schedulers.onScheduleContextualHook(testName, (r, c) -> {
 				final String fromContext = c.getOrDefault("key", "notFound");
 				return () -> {
-					threadLocalCompanion.threadLocal.set(fromContext);
+					companion.threadLocal.set(fromContext);
 					r.run();
-					threadLocalCompanion.threadLocal.remove();
+					companion.threadLocal.remove();
 				};
 			});
 
 			return fluxSupplier.get();
 		}
 
+		@Override
+		public ContextView contextView() {
+			return DEFAULT_CONTEXT;
+		}
+
 		public RES getResource() {
-			return this.threadLocalCompanion.resource;
+			return this.companion.resource;
+		}
+
+		public ThreadLocal<String> getThreadLocal() {
+			return this.companion.threadLocal;
+		}
+
+		public StepVerifier.FirstStep<String> mappingTest(Consumer<StepVerifierOptions> optionsModifier) {
+			return transformingTest(f -> f.map(v -> "" + v + companion.threadLocal.get()),
+				optionsModifier);
 		}
 
 		public StepVerifier.FirstStep<String> mappingTest() {
-			Flux<String> transformed = setupAndGenerateSource().map(v -> "" + v + threadLocalCompanion.threadLocal.get());
-			return StepVerifier.create(transformed, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized")));
+			return transformingTest(f -> f.map(v -> "" + v + companion.threadLocal.get()),
+				options -> {});
 		}
 
 		public StepVerifier.FirstStep<T> rawTest() {
-			return StepVerifier.create(setupAndGenerateSource(), StepVerifierOptions.create().withInitialContext(Context.of("key", "customized")));
+			return transformingTest(Function.identity(), options -> {});
 		}
 
 		public StepVerifier.FirstStep<T> rawTest(Consumer<StepVerifierOptions> optionsModifier) {
+			return transformingTest(Function.identity(), optionsModifier);
+		}
+
+		public <T2> StepVerifier.FirstStep<T2> transformingTest(Function<Flux<T>, Flux<T2>> fluxTransformer) {
+			return transformingTest(fluxTransformer, options -> {});
+		}
+
+		public <T2> StepVerifier.FirstStep<T2> transformingTest(Function<Flux<T>, Flux<T2>> fluxTransformer, Consumer<StepVerifierOptions> optionsModifier) {
 			StepVerifierOptions options = StepVerifierOptions.create();
 			optionsModifier.accept(options);
-			return StepVerifier.create(setupAndGenerateSource(), options.withInitialContext(Context.of("key", "customized")));
+			Flux<T2> underTest = fluxTransformer.apply(setupAndGenerateSource());
+			return StepVerifier.create(underTest, options.withInitialContext(DEFAULT_CONTEXT));
 		}
 
 		@Override
