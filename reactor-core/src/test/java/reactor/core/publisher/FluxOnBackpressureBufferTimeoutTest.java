@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
@@ -319,6 +320,7 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	}
 
 	@TestFactory
+	@Tag("scheduledWithContext")
 	Stream<DynamicTest> scheduledWithContextInScope() {
 		return TestGenerationUtils.generateScheduledWithContextInScopeTests("onBackpressureBufferTimeout",
 			() -> new ArrayList<String>(),
