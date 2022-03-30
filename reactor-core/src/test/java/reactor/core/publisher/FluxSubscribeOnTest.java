@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,14 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -32,7 +37,9 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.TestGenerationUtils;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -335,5 +342,54 @@ public class FluxSubscribeOnTest {
 			s.dispose();
 			s2.dispose();
 		}
+	}
+
+	@TestFactory
+	@Tag("scheduledWithContext")
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("subscribeOn",
+			Flux.just(1,2),
+			source -> source.subscribeOn(Schedulers.parallel()),
+			helper -> helper.mappingTest()
+				.expectNext("1customized", "2customized")
+				.verifyComplete()
+		);
+	}
+
+	@TestFactory
+	@Tag("scheduledWithContext")
+	Stream<DynamicTest> scheduledWithContextInScopeRequest() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("subscribeOn_request",
+			AtomicReference::new,
+			companion -> Flux.just(1, 2),
+			(source, companion) -> source
+				.doOnRequest(l -> companion.resource.set(companion.threadLocal.get()))
+				.subscribeOn(Schedulers.parallel(), true),
+			helper -> {
+				//this test is slightly more involved than usual because we want to demonstrate
+				//requesting from another thread is also scheduled by the operator, with context.
+				Flux<String> toTest = helper.setupAndGenerateSource()
+					.map(v -> "" + v + helper.getThreadLocal().get());
+
+				TestSubscriber<String> testSubscriber = TestSubscriber.builder()
+					.initialRequest(0L)
+					.contextPutAll(helper.contextView())
+					.build();
+
+				toTest.subscribe(testSubscriber);
+
+				Schedulers.single().schedule(() -> testSubscriber.request(10), 100, TimeUnit.MILLISECONDS);
+
+				testSubscriber.block(Duration.ofSeconds(1)); //1s timeout
+
+				assertThat(testSubscriber.getReceivedOnNext())
+					.as("onNext had context")
+					.containsExactly("1customized", "2customized");
+
+				assertThat(helper.getResource())
+					.as("request scheduled with context")
+					.hasValue("customized");
+			}
+		);
 	}
 }
