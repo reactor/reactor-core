@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -77,7 +78,8 @@ public class FluxCancelOnTest {
 					.thenCancel()
 					.verify(Duration.ofSeconds(2));
 
-				assertThat(helper.getResource()).as("cancelled with threadLocal").hasValue("customized");
+				Awaitility.await().atMost(Duration.ofMillis(500)).untilAsserted(() ->
+					assertThat(helper.getResource()).as("cancelled with threadLocal").hasValue("customized"));
 			}
 		);
 	}
