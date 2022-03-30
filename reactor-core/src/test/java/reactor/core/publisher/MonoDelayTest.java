@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,17 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
-import reactor.test.TestGenerationUtils;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.context.Context;
 
@@ -150,15 +146,19 @@ public class MonoDelayTest {
 				.verify(Duration.ofMillis(100));
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeMonoTests("monoDelay",
-			Mono.delay(Duration.ofMillis(500)),
-			Function.identity(),
-			helper -> helper.mappingTest()
-				.expectNext("0customized")
-				.verifyComplete()
-		);
+	void scheduledWithContextInScope() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
+
+		Mono.delay(Duration.ofMillis(500))
+			.map(helper::map)
+			.doOnTerminate(helper.runTagged("onComplete"))
+			.doOnError(helper::consume)
+			.as(helper::stepVerifier)
+			.expectNext("0customized")
+			.verifyComplete();
+
+		helper.assertThatCapturedState().containsExactly("0->customized","onComplete->customized");
 	}
 }

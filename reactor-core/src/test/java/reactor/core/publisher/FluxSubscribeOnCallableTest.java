@@ -18,20 +18,17 @@ package reactor.core.publisher;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.StepVerifier;
-import reactor.test.TestGenerationUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -184,31 +181,33 @@ public class FluxSubscribeOnCallableTest {
 		            .verify();
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("subscribeOnCallable",
-			Mono.fromCallable(() -> 1).flux(),
-			source -> source.subscribeOn(Schedulers.single()),
-			helper -> helper.mappingTest()
-				.expectNext("1customized")
-				.verifyComplete()
-		);
+	void scheduledWithContextInScope() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
+
+		Mono.fromCallable(() -> 1)
+			.subscribeOn(Schedulers.single())
+			.map(helper::map)
+			.as(helper::stepVerifier)
+			.expectNext("1customized")
+			.verifyComplete();
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScopeRequest() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("subscribeOnCallable_request",
-			Mono.fromCallable(() -> 1).flux(),
-			source -> source.subscribeOn(Schedulers.single()),
-			helper -> helper.mappingTest(options -> options.initialRequest(0L))
-				.expectSubscription()
-				.expectNoEvent(Duration.ofMillis(100))
-				.thenRequest(10)
-				.expectNext("1customized")
-				.verifyComplete()
-		);
+	void scheduledWithContextInScopeRequest() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
+
+		Mono.fromCallable(() -> 1)
+			.subscribeOn(Schedulers.single())
+			.map(helper::map)
+			.as(helper.stepVerifierWithOptions(opts -> opts.initialRequest(0L)))
+			.expectSubscription()
+			.expectNoEvent(Duration.ofMillis(100))
+			.thenRequest(10)
+			.expectNext("1customized")
+			.verifyComplete();
 	}
 
 	@Test
