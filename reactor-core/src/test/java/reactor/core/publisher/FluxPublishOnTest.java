@@ -35,11 +35,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -54,6 +57,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
+import reactor.test.TestGenerationUtils;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
@@ -1416,6 +1420,23 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	    assertThat(request.sum()).as("request not compounded").isEqualTo(100L);
     }
 
+
+	@TestFactory
+	Stream<DynamicTest> scheduledWithContextInScope() {
+		return TestGenerationUtils.generateScheduledWithContextInScopeTests("publishOn",
+			() -> new String[2],
+			companion -> Flux.just("example"),
+			(source, companion) -> source.publishOn(Schedulers.single())
+				.doFirst(() -> companion.resource[0] = companion.threadLocal.get())
+				.doOnComplete(() -> companion.resource[1] = companion.threadLocal.get()),
+			helper -> {
+				helper.mappingTest()
+					.expectNext("examplecustomized")
+					.verifyComplete();
+				assertThat(helper.getResource()).as("onSubscribe|onComplete")
+					.containsExactly("none", "customized");
+			});
+	}
 
 	//this test demonstrates a hook with context
 	@Test
