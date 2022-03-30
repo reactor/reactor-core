@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.ContextView;
+import reactor.util.context.Contextual;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -72,7 +74,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 	}
 
 	static final class CallableSubscribeOnSubscription<T>
-			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
+			implements QueueSubscription<T>, InnerProducer<T>, Runnable, Contextual {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -125,6 +127,11 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 		@Override
 		public CoreSubscriber<? super T> actual() {
 			return actual;
+		}
+
+		@Override
+		public ContextView contextView() {
+			return actual.contextView();
 		}
 
 		@Override
@@ -272,7 +279,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 					if (s == NO_REQUEST_HAS_VALUE) {
 						if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
 							try {
-								Disposable f = scheduler.schedule(this::emitValue);
+								Disposable f = scheduler.schedule(Operators.contextualRunnable(this::emitValue, this::contextView));
 								setRequestFuture(f);
 							}
 							catch (RejectedExecutionException ree) {
