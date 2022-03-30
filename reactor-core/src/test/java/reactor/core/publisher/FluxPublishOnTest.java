@@ -1438,41 +1438,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			});
 	}
 
-	//this test demonstrates a hook with context
-	@Test
-	void scheduledWithContext_hookBased() {
-		ThreadLocal<String> threadLocal = ThreadLocal.withInitial(() -> "none");
-		Schedulers.onScheduleHook("FluxPublishOnTest_noContext", r -> {
-			System.out.println("wrapping task without context");
-			return r;
-		});
-		Schedulers.onScheduleContextualHook("FluxPublishOnTest_withContext", (r, ctx) -> {
-			if (ctx.isEmpty()) return r;
-			final String fromContext = ctx.getOrDefault("key", "notFound");
-			System.out.println("wrapping task with context (" + fromContext + ")");
-			return () -> {
-				System.out.println("context instrumented runnable");
-				threadLocal.set(fromContext);
-				r.run();
-				threadLocal.set("erased");
-			};
-		});
-
-		Flux.just("foo").hide()
-			.publishOn(Schedulers.single())
-			.map(v -> {
-				System.out.println("mapping from thread " + Thread.currentThread().getName());
-				return v + threadLocal.get();
-			})
-			.doOnComplete(() -> System.out.println("from doOnComplete " + threadLocal.get()))
-			.delayElements(Duration.ofSeconds(1), Schedulers.single())
-			.doOnNext(v -> System.out.println("delayed onNext(" + v + ") " + threadLocal.get()))
-			.contextWrite(Context.of("key", "customized"))
-			.as(StepVerifier::create)
-			.expectNext("foocustomized")
-			.verifyComplete();
-	}
-
 	private static class FailNullWorkerScheduler implements Scheduler {
 
 		@Override
