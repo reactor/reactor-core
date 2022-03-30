@@ -17,6 +17,7 @@
 package reactor.test;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -54,24 +55,35 @@ public class TestGenerationUtils {
 		String testName = operatorName + "ScheduledWithContextInScope";
 
 		ThreadLocalCompanion<RES> mainThreadLocalCompanion = new ThreadLocalCompanion<>(resourceSupplier.get());
-		Flux<R> mainSource = sourceGenerator.apply(mainThreadLocalCompanion);
-		Flux<T> mainSourceAndOperator = operatorUnderTest.apply(mainSource, mainThreadLocalCompanion);
 
-		if (mainSource instanceof Fuseable && mainSourceAndOperator instanceof Fuseable) {
+		//we'd like to defer the creation of the source, but we have to create one instance eagerly to detect fusion
+		//this instance must not be used otherwise, since it could capture Schedulers that will be shutdown at the moment the test runs.
+		Flux<R> probeSource = sourceGenerator.apply(mainThreadLocalCompanion);
+		Flux<T> probeSourceAndOperator = operatorUnderTest.apply(probeSource, mainThreadLocalCompanion);
+		//prepare the Supplier that will be used to actually lazily assemble the tested Flux
+		Supplier<Flux<T>> mainTestedFluxSupplier = () -> {
+			Flux<R> source = sourceGenerator.apply(mainThreadLocalCompanion);
+			return operatorUnderTest.apply(source, mainThreadLocalCompanion);
+		};
+
+		if (probeSource instanceof Fuseable && probeSourceAndOperator instanceof Fuseable) {
 			//both the source and the operator decorating the source are Fuseable. Create a hidden version.
 			ThreadLocalCompanion<RES> hiddenThreadLocalCompanion = new ThreadLocalCompanion<>(resourceSupplier.get());
-			Flux<R> hiddenSource = sourceGenerator.apply(hiddenThreadLocalCompanion).hide();
+			Supplier<Flux<T>> hiddenTestedFluxSupplier = () -> {
+				Flux<R> source = sourceGenerator.apply(hiddenThreadLocalCompanion).hide();
+				return operatorUnderTest.apply(source, hiddenThreadLocalCompanion);
+			};
 			return DynamicTest.stream(
 				Stream.of(
-					new ScheduledWithContextInScopeFluxTest<>(operatorUnderTest.apply(hiddenSource, hiddenThreadLocalCompanion), hiddenThreadLocalCompanion, testName),
-					new ScheduledWithContextInScopeFluxTest<>(mainSourceAndOperator, mainThreadLocalCompanion, testName + "_fused")
+					new ScheduledWithContextInScopeFluxTest<>(hiddenTestedFluxSupplier, hiddenThreadLocalCompanion, testName),
+					new ScheduledWithContextInScopeFluxTest<>(mainTestedFluxSupplier, mainThreadLocalCompanion, testName + "_fused")
 				),
 				dynamicTestGenerator
 			);
 		}
 		//otherwise, only add one test
 		return DynamicTest.stream(
-			Stream.of(new ScheduledWithContextInScopeFluxTest<>(mainSourceAndOperator, mainThreadLocalCompanion, testName)),
+			Stream.of(new ScheduledWithContextInScopeFluxTest<>(mainTestedFluxSupplier, mainThreadLocalCompanion, testName)),
 			dynamicTestGenerator
 		);
 	}
@@ -89,17 +101,17 @@ public class TestGenerationUtils {
 
 	public static final class ScheduledWithContextInScopeFluxTest<T, RES> implements Named<ScheduledWithContextInScopeFluxTest<T, RES>> {
 
-		private final Flux<T>                   source;
+		private final Supplier<Flux<T>>         fluxSupplier;
 		private final ThreadLocalCompanion<RES> threadLocalCompanion;
 		private final String                    testName;
 
-		public ScheduledWithContextInScopeFluxTest(Flux<T> source, ThreadLocalCompanion<RES> threadLocalCompanion, String name) {
-			this.source = source;
+		public ScheduledWithContextInScopeFluxTest(Supplier<Flux<T>> fluxSupplier, ThreadLocalCompanion<RES> threadLocalCompanion, String name) {
+			this.fluxSupplier = fluxSupplier;
 			this.threadLocalCompanion = threadLocalCompanion;
 			testName = name;
 		}
 
-		private void setup() {
+		private Flux<T> setupAndGenerateSource() {
 			Schedulers.onScheduleContextualHook(testName, (r, c) -> {
 				final String fromContext = c.getOrDefault("key", "notFound");
 				return () -> {
@@ -108,6 +120,8 @@ public class TestGenerationUtils {
 					threadLocalCompanion.threadLocal.remove();
 				};
 			});
+
+			return fluxSupplier.get();
 		}
 
 		public RES getResource() {
@@ -115,14 +129,18 @@ public class TestGenerationUtils {
 		}
 
 		public StepVerifier.FirstStep<String> mappingTest() {
-			setup();
-			Flux<String> transformed = source.map(v -> "" + v + threadLocalCompanion.threadLocal.get());
+			Flux<String> transformed = setupAndGenerateSource().map(v -> "" + v + threadLocalCompanion.threadLocal.get());
 			return StepVerifier.create(transformed, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized")));
 		}
 
 		public StepVerifier.FirstStep<T> rawTest() {
-			setup();
-			return StepVerifier.create(source, StepVerifierOptions.create().withInitialContext(Context.of("key", "customized")));
+			return StepVerifier.create(setupAndGenerateSource(), StepVerifierOptions.create().withInitialContext(Context.of("key", "customized")));
+		}
+
+		public StepVerifier.FirstStep<T> rawTest(Consumer<StepVerifierOptions> optionsModifier) {
+			StepVerifierOptions options = StepVerifierOptions.create();
+			optionsModifier.accept(options);
+			return StepVerifier.create(setupAndGenerateSource(), options.withInitialContext(Context.of("key", "customized")));
 		}
 
 		@Override

@@ -82,7 +82,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	}
 
 	static final class ScheduledScalar<T>
-			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
+			implements QueueSubscription<T>, InnerProducer<T>, Runnable, Contextual {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -119,6 +119,11 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 		@Override
 		public CoreSubscriber<? super T> actual() {
 			return actual;
+		}
+
+		@Override
+		public ContextView contextView() {
+			return actual.contextView();
 		}
 
 		@Override
