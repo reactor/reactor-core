@@ -28,13 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -42,7 +39,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestGenerationUtils;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
@@ -399,17 +396,18 @@ public class FluxBufferTimeoutTest {
 		            .hasDiscardedExactly(1, 2, 3);
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("bufferTimeout",
-			Flux.just(1)
-				.concatWith(Mono.never()),
-			f -> f.bufferTimeout(4, Duration.ofSeconds(1)),
-			helper -> helper.mappingTest()
-				.expectNext("[1]customized")
-				.thenCancel()
-				.verify(Duration.ofSeconds(2))
-		);
+	void scheduledWithContextInScope() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
+
+		Flux.just(1)
+			.concatWith(Mono.never())
+			.bufferTimeout(4, Duration.ofSeconds(1))
+			.map(helper::map)
+			.as(helper::stepVerifier)
+			.expectNext("[1]customized")
+			.thenCancel()
+			.verify(Duration.ofSeconds(2));
 	}
 }

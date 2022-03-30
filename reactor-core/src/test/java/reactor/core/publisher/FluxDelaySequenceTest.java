@@ -35,7 +35,7 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxDelaySequence.DelaySubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestGenerationUtils;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.function.Tuple2;
@@ -297,49 +297,44 @@ public class FluxDelaySequenceTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> onNextAndOnCompleteScheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("delaySequence_onNextAndOnComplete",
-			AtomicReference::new,
-			companion -> Flux.just(1, 2, 3),
-			(source, companion) -> source.delaySequence(Duration.ofMillis(500))
-				.map(v -> {
-					String mapped = v + companion.threadLocal.get();
-					//in order to verify below that the OnComplete runnable also set the threadLocal, we clear it here
-					companion.threadLocal.remove();
-					return mapped;
-				})
-				.doOnComplete(() -> companion.resource.set(companion.threadLocal.get())),
-			helper -> {
-				helper.rawTest()
-					.expectNext("1customized", "2customized", "3customized")
-					.verifyComplete();
+	void scheduledWithContextInScopeOnNextAndOnComplete() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
 
-				assertThat(helper.getResource()).hasValue("customized");
-			});
+		Flux.just(1, 2, 3)
+			.delaySequence(Duration.ofMillis(500))
+			.map(v -> {
+				String mapped = v + helper.threadLocal.get();
+				//in order to verify below that the OnComplete runnable also set the threadLocal, we clear it here
+				helper.threadLocal.remove();
+				return mapped;
+			})
+			.doOnComplete(helper.runTagged("onComplete"))
+			.as(helper::stepVerifier)
+			.expectNext("1customized", "2customized", "3customized")
+			.verifyComplete();
+
+		helper.assertThatCapturedState()
+			.containsExactly("onComplete->customized");
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> onErrorScheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("delaySequence_onError",
-			AtomicReference::new,
-			companion -> Flux
-				.just(1) //we need some data to be delayed to trigger the scheduling of OnError object
-				.concatWith(Mono.error(new RuntimeException("expected"))),
-			(source, companion) -> source
-				.delaySequence(Duration.ofMillis(500))
-				//in order to verify only the OnError is hooked, we remove the ThreadLocal value in onNext
-				.doOnNext(v -> companion.threadLocal.remove())
-				.doOnError(e -> companion.resource.set(companion.threadLocal.get())),
-			helper -> {
-				helper.rawTest()
-					.expectNext(1)
-					.verifyErrorMessage("expected");
+	void scheduledWithContextInScopeOnError() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
 
-				assertThat(helper.getResource()).hasValue("customized");
-			});
+		Flux.just(1) //we need some data to be delayed to trigger the scheduling of OnError object
+			.concatWith(Mono.error(new RuntimeException("expected")))
+			.delaySequence(Duration.ofMillis(500))
+			//in order to verify only the OnError is hooked, we remove the ThreadLocal value in onNext
+			.doOnNext(v -> helper.threadLocal.remove())
+			.doOnError(e -> helper.runTagged("onError").run())
+			.as(helper::stepVerifier)
+			.expectNext(1)
+			.verifyErrorMessage("expected");
+
+		helper.assertThatCapturedState().containsExactly("onError->customized");
 	}
 
 }

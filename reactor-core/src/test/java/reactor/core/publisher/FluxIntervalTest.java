@@ -19,23 +19,19 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.StepVerifier;
-import reactor.test.TestGenerationUtils;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -219,14 +215,16 @@ public class FluxIntervalTest {
 		            .verify();
     }
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("interval",
-			Flux.interval(Duration.ofMillis(50)).take(3, false),
-			Function.identity(),
-			helper -> helper.mappingTest()
-				.expectNext("0customized", "1customized", "2customized")
-				.verifyComplete());
+	void scheduledWithContextInScope() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
+
+		Flux.interval(Duration.ofMillis(50))
+			.take(3, false)
+			.map(helper::map)
+			.as(helper::stepVerifier)
+			.expectNext("0customized", "1customized", "2customized")
+			.verifyComplete();
 	}
 }

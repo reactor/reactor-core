@@ -19,13 +19,10 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
@@ -33,7 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestGenerationUtils;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,24 +63,24 @@ public class FluxCancelOnTest {
 	}
 
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("cancelOn",
-			AtomicReference::new,
-			companion -> Flux.never().doOnCancel(() -> companion.resource.set(companion.threadLocal.get())),
-			(source, companion) -> source.cancelOn(Schedulers.single()),
-			helper -> {
-				helper.rawTest()
-					.expectSubscription()
-					.expectNoEvent(Duration.ofMillis(100))
-					.thenCancel()
-					.verify(Duration.ofSeconds(2));
+	void scheduledWithContextInScope() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
 
-				Awaitility.await().atMost(Duration.ofMillis(500)).untilAsserted(() ->
-					assertThat(helper.getResource()).as("cancelled with threadLocal").hasValue("customized"));
-			}
-		);
+		Flux.never()
+			.doOnCancel(helper.runTagged("onCancel"))
+			.cancelOn(Schedulers.single())
+			.as(helper::stepVerifier)
+			.expectSubscription()
+			.expectNoEvent(Duration.ofMillis(100))
+			.thenCancel()
+			.verify(Duration.ofSeconds(2));
+
+		Awaitility.await().atMost(Duration.ofMillis(500)).untilAsserted(() ->
+			helper.assertThatCapturedState()
+				.as("cancelled with threadLocal")
+				.containsExactly("onCancel->customized"));
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,12 @@ import java.time.Duration;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -36,8 +33,8 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.StepVerifier;
-import reactor.test.TestGenerationUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -234,19 +231,20 @@ public class FluxWindowTimeoutTest {
 		            .verifyError(RejectedExecutionException.class);
 	}
 
-	@TestFactory
+	@Test
 	@Tag("scheduledWithContext")
-	Stream<DynamicTest> scheduledWithContextInScope() {
-		return TestGenerationUtils.generateScheduledWithContextInScopeTests("windowTimeout",
-			Flux.just(1, 2)
-				.concatWith(Mono.never()),
-			f -> f.windowTimeout(4, Duration.ofSeconds(1)),
-			helper -> helper.transformingTest(src -> src.concatMap(Flux::collectList)
-					.map(v -> "" + v + helper.getThreadLocal().get()))
-				.expectNext("[1, 2]customized")
-				.thenCancel()
-				.verify(Duration.ofSeconds(2))
-		);
+	void scheduledWithContextInScope() {
+		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
+
+		Flux.just(1, 2)
+			.concatWith(Mono.never())
+			.windowTimeout(4, Duration.ofSeconds(1))
+			.concatMap(Flux::collectList)
+			.map(helper::map)
+			.as(helper::stepVerifier)
+			.expectNext("[1, 2]customized")
+			.thenCancel()
+			.verify(Duration.ofSeconds(2));
 	}
 
 	@Test
