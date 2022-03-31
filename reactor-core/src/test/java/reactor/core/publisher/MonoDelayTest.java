@@ -152,7 +152,7 @@ public class MonoDelayTest {
 		ContextPropagationUtils.ThreadLocalHelper helper = new ContextPropagationUtils.ThreadLocalHelper();
 
 		Mono.delay(Duration.ofMillis(500))
-			.map(helper::map)
+			.map(helper::mapAndConsume)
 			.doOnTerminate(helper.runTagged("onComplete"))
 			.doOnError(helper::consume)
 			.as(helper::stepVerifier)
