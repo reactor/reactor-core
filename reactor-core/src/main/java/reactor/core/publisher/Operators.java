@@ -62,11 +62,6 @@ import static reactor.core.Fuseable.NONE;
  */
 public abstract class Operators {
 
-	//FIXME add javadoc
-	public static Runnable contextualRunnable(Runnable runnable, Supplier<ContextView> contextViewSupplier) {
-		return new ContextualRunnable(runnable, contextViewSupplier);
-	}
-
 	/**
 	 * Cap an addition to Long.MAX_VALUE
 	 *
@@ -143,6 +138,18 @@ public abstract class Operators {
 	public static void complete(Subscriber<?> s) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onComplete();
+	}
+
+	/**
+	 * Create a {@link Runnable} that is a {@link Contextual}, delegating the {@link Contextual#contextView()} method
+	 * to a {@link Supplier} (which can typically be a method reference) for lazy retrieval of the context.
+	 *
+	 * @param runnable the task to associate a {@link ContextView} with
+	 * @param contextViewSupplier the {@link Supplier} of {@link ContextView} for the task
+	 * @return the {@link Contextual} {@link Runnable}
+	 */
+	public static Runnable contextualRunnable(Runnable runnable, Supplier<ContextView> contextViewSupplier) {
+		return new ContextualRunnable(runnable, contextViewSupplier);
 	}
 
 	/**
@@ -2831,10 +2838,10 @@ public abstract class Operators {
 
 	}
 
-	private static class ContextualRunnable implements Runnable, Contextual {
+	final static class ContextualRunnable implements Runnable, Contextual {
 
-		private final Runnable              runnable;
-		private final Supplier<ContextView> contextViewSupplier;
+		final Supplier<ContextView> contextViewSupplier;
+		final Runnable              runnable;
 
 		ContextualRunnable(Runnable runnable, Supplier<ContextView> contextViewSupplier) {
 			this.runnable = runnable;
