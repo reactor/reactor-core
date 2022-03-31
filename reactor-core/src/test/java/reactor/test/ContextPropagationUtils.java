@@ -221,7 +221,7 @@ public class ContextPropagationUtils {
 			Consumer<StepVerifierOptions> optionsModifier) {
 			StepVerifierOptions options = StepVerifierOptions.create();
 			optionsModifier.accept(options);
-			Context context = options.getInitialContext().putAll(CONTEXT);
+			Context context = options.getInitialContext() == null ? Context.of(CONTEXT) : options.getInitialContext().putAll(CONTEXT);
 			options.withInitialContext(context);
 
 			return underTest -> StepVerifier.create(underTest, options);
