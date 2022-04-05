@@ -307,7 +307,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	final FluxReplay.ReplayBuffer<T> buffer;
-	final boolean instantDeath;
 
 	Subscription subscription;
 
@@ -320,7 +319,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	ReplayProcessor(FluxReplay.ReplayBuffer<T> buffer) {
 		this.buffer = buffer;
-		this.instantDeath = buffer instanceof FluxReplay.SizeAndTimeBoundReplayBuffer && ((FluxReplay.SizeAndTimeBoundReplayBuffer) buffer).maxAge == 0L;
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 
@@ -507,9 +505,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		//note: ReplayProcessor can so far ALWAYS buffer the element, no FAIL_ZERO_SUBSCRIBER here
 		b.add(t);
 		for (FluxReplay.ReplaySubscription<T> rs : subscribers) {
-			if (instantDeath) {
-				rs.actual().onNext(t);
-			}
 			b.replay(rs);
 		}
 		return Sinks.EmitResult.OK;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -432,10 +432,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@Override
 		public void add(T value) {
 			final TimedNode<T> tail = this.tail;
-			final long addedTime = scheduler.now(TimeUnit.NANOSECONDS);
 			final TimedNode<T> n = new TimedNode<>(tail.index + 1,
 					value,
-					addedTime);
+					scheduler.now(TimeUnit.NANOSECONDS));
 			tail.set(n);
 			this.tail = n;
 			int s = size;
@@ -445,7 +444,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			else {
 				size = s + 1;
 			}
-			long limit = addedTime - maxAge;
+			long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 
 			TimedNode<T> h = head;
 			TimedNode<T> next;
@@ -456,19 +455,17 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					break;
 				}
 
-				boolean atTailWhenZeroDuration = (maxAge == 0 && next.time == limit && next == n);
-				if (next.time > limit || atTailWhenZeroDuration) {
+				if (next.time > limit || next.get() == tail) {
 					if (removed != 0) {
 						size = size - removed;
 						head = h;
 					}
-					if (atTailWhenZeroDuration) {
-						size--;
-						TimedNode<T> empty = new TimedNode<>(-1, null, 0L);
-						head = empty;
-						this.tail = empty;
-					}
 					break;
+				}
+				else if (removed == 5000) {
+					size = size - removed;
+					removed = 0;
+					head = h;
 				}
 
 				h = next;
