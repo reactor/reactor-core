@@ -138,6 +138,15 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				this.value = value;
 				this.time = time;
 			}
+
+			@Override
+			public String toString() {
+				return "TimedNode{" +
+					"index=" + index +
+					", value=" + value +
+					", time=" + time +
+					'}';
+			}
 		}
 
 		final int       limit;
@@ -423,9 +432,10 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@Override
 		public void add(T value) {
 			final TimedNode<T> tail = this.tail;
+			final long addedTime = scheduler.now(TimeUnit.NANOSECONDS);
 			final TimedNode<T> n = new TimedNode<>(tail.index + 1,
 					value,
-					scheduler.now(TimeUnit.NANOSECONDS));
+					addedTime);
 			tail.set(n);
 			this.tail = n;
 			int s = size;
@@ -435,7 +445,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			else {
 				size = s + 1;
 			}
-			long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
+			long limit = addedTime - maxAge;
 
 			TimedNode<T> h = head;
 			TimedNode<T> next;
@@ -446,10 +456,17 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					break;
 				}
 
-				if (next.time > limit) {
+				boolean atTailWhenZeroDuration = (maxAge == 0 && next.time == limit && next == n);
+				if (next.time > limit || atTailWhenZeroDuration) {
 					if (removed != 0) {
 						size = size - removed;
 						head = h;
+					}
+					if (atTailWhenZeroDuration) {
+						size--;
+						TimedNode<T> empty = new TimedNode<>(-1, null, 0L);
+						head = empty;
+						this.tail = empty;
 					}
 					break;
 				}

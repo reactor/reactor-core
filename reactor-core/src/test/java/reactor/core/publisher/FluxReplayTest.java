@@ -22,10 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.assertj.core.data.Offset;
+import org.assertj.core.data.Percentage;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +41,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -65,6 +69,58 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	static final Logger log = Loggers.getLogger(FluxReplayTest.class);
+
+	@Test
+	void shouldNotLeakWhenDurationZeroAndNoSubscribers() {
+		vtsStop(); //we want to verify the clock fix too
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.many().replay().limit(Duration.ZERO);
+
+		for (int i = 0; i < 1_000_000; i++) {
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+		}
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(130L)); //TODO investigate remaining 130 references
+			});
+	}
+
+	@Test
+	void shouldNotLeakWhenDurationZeroAndTwoLateSubscribers() {
+		vtsStop(); //we want to verify the clock fix too
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.many().replay().limit(Duration.ZERO);
+
+		final AtomicInteger receivedLateSubscriber1 = new AtomicInteger();
+		final AtomicInteger receivedLateSubscriber2 = new AtomicInteger();
+		for (int i = 0; i < 1_000_000; i++) {
+			if (i == 250_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber1.incrementAndGet());
+			}
+			else if (i == 700_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber2.incrementAndGet());
+			}
+
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+		}
+
+		assertThat(receivedLateSubscriber1).as("late subscriber1 received").hasValue(750_000);
+		assertThat(receivedLateSubscriber2).as("late subscriber2 received").hasValue(300_000);
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(130L)); //TODO investigate remaining 130 references
+			});
+	}
 
 	@Test
 	void checkTimeCacheResubscribesAndCompletesAfterRepetitions() {
