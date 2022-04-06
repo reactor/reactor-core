@@ -432,11 +432,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@Override
 		public void add(T value) {
 			final TimedNode<T> tail = this.tail;
-			final TimedNode<T> n = new TimedNode<>(tail.index + 1,
+			final TimedNode<T> valueNode = new TimedNode<>(tail.index + 1,
 					value,
 					scheduler.now(TimeUnit.NANOSECONDS));
-			tail.set(n);
-			this.tail = n;
+			tail.set(valueNode);
+			this.tail = valueNode;
 			int s = size;
 			if (s == limit) {
 				head = head.get();
@@ -445,6 +445,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				size = s + 1;
 			}
 			long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
+
+			if (maxAge == 0) {
+				head = valueNode;
+				return;
+			}
 
 			TimedNode<T> h = head;
 			TimedNode<T> next;
@@ -455,17 +460,14 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					break;
 				}
 
-				if (next.time > limit || next.get() == tail) {
+				if (next.time > limit || next == valueNode) {
+					//if we have reached the newly added node, its time cannot be > limit.
+					//at that point we want to make sure the "removed" nodes are actually dropped.
 					if (removed != 0) {
 						size = size - removed;
 						head = h;
 					}
 					break;
-				}
-				else if (removed == 5000) {
-					size = size - removed;
-					removed = 0;
-					head = h;
 				}
 
 				h = next;

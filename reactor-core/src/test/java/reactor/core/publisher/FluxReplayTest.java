@@ -74,30 +74,58 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	static final Logger log = Loggers.getLogger(FluxReplayTest.class);
 
+	// === overrides to configure the abstract test ===
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(Integer.MAX_VALUE)
+			.shouldAssertPostTerminateState(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+			scenario(f -> f.replay().autoConnect()),
+
+			scenario(f -> f.replay().refCount())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_touchAndAssertState() {
+		return Arrays.asList(
+			scenario(f -> f.replay().autoConnect())
+		);
+	}
+
+	// === start of tests ===
+
 	@Test
+	@Tag("slow")
 	void shouldNotLeakWhenDurationZeroAndNoSubscribers() {
 		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
 
-		Sinks.Many<Integer> sink = Sinks.many().replay().limit(Duration.ZERO);
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ZERO);
 
 		for (int i = 0; i < 1_000_000; i++) {
 			sink.tryEmitNext(detector.tracked(i)).orThrow();
 		}
 		System.gc();
-		Awaitility.await().atMost(Duration.ofSeconds(5))
+		Awaitility.await().atMost(Duration.ofSeconds(2))
 			.untilAsserted(() -> {
 				assertThat(detector.finalizedCount())
 					.as("finalized so far")
-					.isCloseTo(detector.trackedTotal(), Offset.offset(200L));
+					.isCloseTo(detector.trackedTotal(), Offset.offset(131L));
 			});
 		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
 	}
 
 	@Test
+	@Tag("slow")
 	void shouldNotLeakWhenDurationZeroAndTwoLateSubscribers() {
 		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
 
-		Sinks.Many<Integer> sink = Sinks.many().replay().limit(Duration.ZERO);
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ZERO);
 
 		final AtomicInteger receivedLateSubscriber1 = new AtomicInteger();
 		final AtomicInteger receivedLateSubscriber2 = new AtomicInteger();
@@ -120,12 +148,73 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 			.untilAsserted(() -> {
 				assertThat(detector.finalizedCount())
 					.as("finalized so far")
-					.isCloseTo(detector.trackedTotal(), Offset.offset(200L));
+					.isCloseTo(detector.trackedTotal(), Offset.offset(131L));
 			});
 		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
 	}
 
 	@Test
+	@Tag("VirtualTime")
+	void shouldNotLeakWhenDurationTinyAndNoSubscribers() {
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ofNanos(100));
+
+		for (int i = 0; i < 1_000_000; i++) {
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+		}
+
+		vts.advanceTimeBy(Duration.ofNanos(101));
+		sink.tryEmitNext(detector.tracked(-1)).orThrow();
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(131L));
+			});
+		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
+	}
+
+	@Test
+	@Tag("VirtualTime")
+	void shouldNotLeakWhenDurationTinyAndTwoLateSubscribers() {
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ofNanos(100));
+
+		final AtomicInteger receivedLateSubscriber1 = new AtomicInteger();
+		final AtomicInteger receivedLateSubscriber2 = new AtomicInteger();
+		for (int i = 0; i < 1_000_000; i++) {
+			if (i == 250_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber1.incrementAndGet());
+			}
+			else if (i == 700_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber2.incrementAndGet());
+			}
+
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+			vts.advanceTimeBy(Duration.ofNanos(100));
+		}
+
+		sink.tryEmitNext(detector.tracked(-1)).orThrow();
+
+		assertThat(receivedLateSubscriber1).as("late subscriber1 received").hasValue(750_001);
+		assertThat(receivedLateSubscriber2).as("late subscriber2 received").hasValue(300_001);
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(130L));
+			});
+		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
+	}
+
+	@Test
+	@Tag("slow")
 	void checkTimeCacheResubscribesAndCompletesAfterRepetitions() {
 		Flux<Integer> flow = getSource2()
 				.doOnSubscribe(__ -> log.debug("Loading source..."))
@@ -192,32 +281,6 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 			return channel;
 		});
 	}
-
-	// === overrides to configure the abstract test ===
-
-	@Override
-	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(Integer.MAX_VALUE)
-				.shouldAssertPostTerminateState(false);
-	}
-
-	@Override
-	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
-		return Arrays.asList(
-				scenario(f -> f.replay().autoConnect()),
-
-				scenario(f -> f.replay().refCount())
-		);
-	}
-
-	@Override
-	protected List<Scenario<String, String>> scenarios_touchAndAssertState() {
-		return Arrays.asList(
-				scenario(f -> f.replay().autoConnect())
-		);
-	}
-
-	// === start of tests ===
 
 	@Test
 	public void failPrefetch() {
