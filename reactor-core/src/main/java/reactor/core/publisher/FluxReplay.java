@@ -446,11 +446,16 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			}
 			long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 
+			//short-circuit if maxAge == 0: no sense in keeping any old value.
+			//we still want to keep the newly added value in order for the immediately following replay
+			//to propagate it to currently registered subscribers.
 			if (maxAge == 0) {
 				head = valueNode;
 				return;
 			}
 
+			//otherwise, start walking the linked list in order to find the first node > time limit
+			//(in which case we'll have passed all nodes that have reached the TTL).
 			TimedNode<T> h = head;
 			TimedNode<T> next;
 			int removed = 0;
@@ -461,8 +466,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				}
 
 				if (next.time > limit || next == valueNode) {
-					//if we have reached the newly added node, its time cannot be > limit.
-					//at that point we want to make sure the "removed" nodes are actually dropped.
+					//next == valueNode case causes head swap and actual removal, even if its time cannot be > limit.
+					//otherwise we'd skip removal and re-walk the whole linked list on next add, retaining outdated values for nothing.
 					if (removed != 0) {
 						size = size - removed;
 						head = h;
