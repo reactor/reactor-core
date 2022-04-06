@@ -16,6 +16,8 @@
 
 package reactor.test;
 
+import java.util.function.BiFunction;
+
 import io.micrometer.contextpropagation.ContextAccessor;
 import io.micrometer.contextpropagation.ContextContainer;
 import io.micrometer.contextpropagation.Namespace;
@@ -25,6 +27,10 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
+ * A micrometer context-propagation-api {@link ThreadLocalAccessor} and {@link ContextAccessor} used to propagate
+ * {@link reactor.test.ContextPropagationUtils.ThreadLocalHelper} values in tests around the
+ * {@link reactor.core.scheduler.Schedulers#onScheduleContextualHook(String, BiFunction)} hook.
+ *
  * @author Simon Baslé
  */
 public final class ContextPropagationUtilsPropagator implements ThreadLocalAccessor, ContextAccessor<ContextView, Context> {
