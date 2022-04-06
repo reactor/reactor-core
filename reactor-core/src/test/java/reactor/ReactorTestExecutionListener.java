@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.platform.launcher.TestPlan;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.util.LoggerUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -57,6 +58,8 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 		Schedulers.resetOnHandleError();
 		Schedulers.resetFactory();
 		Schedulers.resetOnScheduleHooks();
+
+		ContextPropagationUtils.THREAD_LOCAL_REF.set(null);
 
 		// TODO capture non-default schedulers and shutdown them
 	}

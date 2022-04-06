@@ -18,10 +18,12 @@ package reactor.test;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.micrometer.contextpropagation.ContextContainer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 import org.reactivestreams.Publisher;
@@ -37,6 +39,12 @@ import reactor.util.context.ContextView;
  * @author Simon Baslé
  */
 public class ContextPropagationUtils {
+
+	/**
+	 * Stores the current test's thread local if the test uses a {@link ThreadLocalHelper}. Will be reset to null by
+	 * {@link reactor.ReactorTestExecutionListener} after each test, so we're sure that the TL is not polluted by other tests.
+	 */
+	public static final AtomicReference<ThreadLocal<String>> THREAD_LOCAL_REF = new AtomicReference<>(null);
 
 	/**
 	 * Test helper class to install a {@link Schedulers#onScheduleContextualHook(String, BiFunction) hook} that restores
@@ -73,16 +81,16 @@ public class ContextPropagationUtils {
 		 */
 		public ThreadLocalHelper() {
 			this.capturedState = new CopyOnWriteArrayList<>();
-			threadLocal = ThreadLocal.withInitial(() -> "none");
+			this.threadLocal = ThreadLocal.withInitial(() -> "none");
+			THREAD_LOCAL_REF.set(threadLocal);
 
 			Schedulers.onScheduleContextualHook("threadLocalHelper", (r, c) -> {
 				if (c.isEmpty()) return r;
-				final String fromContext = c.getOrDefault("threadLocalHelper", "notFound");
-				return () -> {
-					threadLocal.set(fromContext);
-					r.run();
-					threadLocal.remove();
-				};
+
+				ContextContainer container = ContextContainer.create();
+				container.captureContext(c);
+
+				return () -> container.tryScoped(r);
 			});
 		}
 
@@ -143,7 +151,7 @@ public class ContextPropagationUtils {
 		 * Method reference can be used as a {@link Runnable} for operators like doOnComplete.
 		 */
 		public void run() {
-			this.capturedState.add(threadLocal.get());
+			this.capturedState.add(this.threadLocal.get());
 		}
 
 		/**
@@ -156,7 +164,7 @@ public class ContextPropagationUtils {
 		 * @return a {@link Runnable} that captures the tag + threadLocal value
 		 */
 		public Runnable runTagged(String tag) {
-			return () -> this.capturedState.add(tag + "->" + threadLocal.get());
+			return () -> this.capturedState.add(tag + "->" + this.threadLocal.get());
 		}
 
 		/**
@@ -241,6 +249,6 @@ public class ContextPropagationUtils {
 		/**
 		 * The {@link ContextView} used by the hook and context-writing methods.
 		 */
-		public static final ContextView CONTEXT = Context.of("threadLocalHelper", "customized");
+		public static final ContextView CONTEXT = Context.of(ContextPropagationUtilsPropagator.IN_CONTEXT_KEY, "customized");
 	}
 }

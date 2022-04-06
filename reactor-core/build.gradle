@@ -111,6 +111,7 @@ dependencies {
 	testImplementation libs.awaitility
 	testImplementation libs.throwingFunction
 	testImplementation libs.archUnit
+	testImplementation libs.contextPropagation
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.

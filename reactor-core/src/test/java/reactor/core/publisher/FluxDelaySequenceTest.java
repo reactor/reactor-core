@@ -19,15 +19,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;

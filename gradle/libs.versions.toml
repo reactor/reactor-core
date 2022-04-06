@@ -20,6 +20,7 @@ blockhound = "io.projectreactor.tools:blockhound:1.0.6.RELEASE"
 byteBuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
 byteBuddy-api = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 cglib = "cglib:cglib:3.3.0"
+contextPropagation = "io.micrometer:context-propagation-api:1.0.0-SNAPSHOT"
 javaObjectLayout = "org.openjdk.jol:jol-core:0.16"
 jmh-annotations-processor = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
