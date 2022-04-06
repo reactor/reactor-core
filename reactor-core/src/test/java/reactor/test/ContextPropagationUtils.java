@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.micrometer.contextpropagation.ContextContainer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 import org.reactivestreams.Publisher;
@@ -37,6 +38,8 @@ import reactor.util.context.ContextView;
  * @author Simon Baslé
  */
 public class ContextPropagationUtils {
+
+	public static final ThreadLocal<String> THREAD_LOCAL = ThreadLocal.withInitial(() -> "none");
 
 	/**
 	 * Test helper class to install a {@link Schedulers#onScheduleContextualHook(String, BiFunction) hook} that restores
@@ -66,23 +69,20 @@ public class ContextPropagationUtils {
 	public static final class ThreadLocalHelper {
 
 		public final List<String>        capturedState;
-		public final ThreadLocal<String> threadLocal;
 
 		/**
 		 * Constructs the helper and installs a {@link ThreadLocal}-restoring hook.
 		 */
 		public ThreadLocalHelper() {
 			this.capturedState = new CopyOnWriteArrayList<>();
-			threadLocal = ThreadLocal.withInitial(() -> "none");
 
 			Schedulers.onScheduleContextualHook("threadLocalHelper", (r, c) -> {
 				if (c.isEmpty()) return r;
-				final String fromContext = c.getOrDefault("threadLocalHelper", "notFound");
-				return () -> {
-					threadLocal.set(fromContext);
-					r.run();
-					threadLocal.remove();
-				};
+
+				ContextContainer container = ContextContainer.create();
+				container.captureContext(c);
+
+				return () -> container.tryScoped(r);
 			});
 		}
 
@@ -95,7 +95,7 @@ public class ContextPropagationUtils {
 		 * @return a {@link String} concatenation of the input + the {@link ThreadLocal} value
 		 */
 		public <R> String map(R input) {
-			return "" + input + this.threadLocal.get();
+			return "" + input + THREAD_LOCAL.get();
 		}
 
 		/**
@@ -109,8 +109,8 @@ public class ContextPropagationUtils {
 		 * @return a {@link String} concatenation of the input + the {@link ThreadLocal} value
 		 */
 		public <R> String mapAndConsume(R input) {
-			this.capturedState.add(input + "->" + this.threadLocal.get());
-			return "" + input + this.threadLocal.get();
+			this.capturedState.add(input + "->" + THREAD_LOCAL.get());
+			return "" + input + THREAD_LOCAL.get();
 		}
 
 		/**
@@ -122,7 +122,7 @@ public class ContextPropagationUtils {
 		 * @param <R> the type of input
 		 */
 		public <R> void consume(R input) {
-			this.capturedState.add(input + "->" + this.threadLocal.get());
+			this.capturedState.add(input + "->" + THREAD_LOCAL.get());
 		}
 
 		/**
@@ -134,7 +134,7 @@ public class ContextPropagationUtils {
 		 * @param <R> the type of input
 		 */
 		public <R> void ignore(R input) {
-			this.capturedState.add(this.threadLocal.get());
+			this.capturedState.add(THREAD_LOCAL.get());
 		}
 
 		/**
@@ -143,7 +143,7 @@ public class ContextPropagationUtils {
 		 * Method reference can be used as a {@link Runnable} for operators like doOnComplete.
 		 */
 		public void run() {
-			this.capturedState.add(threadLocal.get());
+			this.capturedState.add(THREAD_LOCAL.get());
 		}
 
 		/**
@@ -156,7 +156,7 @@ public class ContextPropagationUtils {
 		 * @return a {@link Runnable} that captures the tag + threadLocal value
 		 */
 		public Runnable runTagged(String tag) {
-			return () -> this.capturedState.add(tag + "->" + threadLocal.get());
+			return () -> this.capturedState.add(tag + "->" + THREAD_LOCAL.get());
 		}
 
 		/**
@@ -241,6 +241,6 @@ public class ContextPropagationUtils {
 		/**
 		 * The {@link ContextView} used by the hook and context-writing methods.
 		 */
-		public static final ContextView CONTEXT = Context.of("threadLocalHelper", "customized");
+		public static final ContextView CONTEXT = Context.of(ContextPropagationUtilsPropagator.IN_CONTEXT_KEY, "customized");
 	}
 }

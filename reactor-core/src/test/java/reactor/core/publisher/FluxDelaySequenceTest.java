@@ -305,9 +305,9 @@ public class FluxDelaySequenceTest {
 		Flux.just(1, 2, 3)
 			.delaySequence(Duration.ofMillis(500))
 			.map(v -> {
-				String mapped = v + helper.threadLocal.get();
+				String mapped = v + ContextPropagationUtils.THREAD_LOCAL.get();
 				//in order to verify below that the OnComplete runnable also set the threadLocal, we clear it here
-				helper.threadLocal.remove();
+				ContextPropagationUtils.THREAD_LOCAL.remove();
 				return mapped;
 			})
 			.doOnComplete(helper.runTagged("onComplete"))
@@ -328,7 +328,7 @@ public class FluxDelaySequenceTest {
 			.concatWith(Mono.error(new RuntimeException("expected")))
 			.delaySequence(Duration.ofMillis(500))
 			//in order to verify only the OnError is hooked, we remove the ThreadLocal value in onNext
-			.doOnNext(v -> helper.threadLocal.remove())
+			.doOnNext(v -> ContextPropagationUtils.THREAD_LOCAL.remove())
 			.doOnError(e -> helper.runTagged("onError").run())
 			.as(helper::stepVerifier)
 			.expectNext(1)
