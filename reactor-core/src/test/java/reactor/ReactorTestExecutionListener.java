@@ -25,6 +25,7 @@ import org.junit.platform.launcher.TestPlan;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
+import reactor.test.ContextPropagationUtils;
 import reactor.test.util.LoggerUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -57,6 +58,8 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 		Schedulers.resetOnHandleError();
 		Schedulers.resetFactory();
 		Schedulers.resetOnScheduleHooks();
+
+		ContextPropagationUtils.THREAD_LOCAL_REF.set(null);
 
 		// TODO capture non-default schedulers and shutdown them
 	}
