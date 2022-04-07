@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -51,11 +52,20 @@ class SinkEmptyMulticastTest {
 	@Test
 	void currentSubscriberCountReflectsCancellation() {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
-		StepVerifier.create(mp)
-				.thenCancel()
-				.verify();
 
-		assertThat(mp.currentSubscriberCount()).isEqualTo(0);
+		//this one tests immediate cancellation, potentially short-circuiting add()
+		StepVerifier.create(mp)
+			.thenCancel()
+			.verify();
+
+		assertThat(mp.currentSubscriberCount()).as("cancelled during add").isZero();
+
+		//this one tests deferred cancellation when the subscriber has 100% been add()ed
+		Disposable disposable = mp.subscribe();
+		assertThat(mp.currentSubscriberCount()).as("effective add").isOne();
+
+		disposable.dispose();
+		assertThat(mp.currentSubscriberCount()).as("disposing effective subscriber").isZero();
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,6 +124,11 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 		NextInner(CoreSubscriber<? super T> actual, SinkOneMulticast<T> parent) {
 			super(actual);
 			this.parent = parent;
+		}
+
+		@Override
+		protected void doOnCancel() {
+			parent.remove(this);
 		}
 
 		@Override
