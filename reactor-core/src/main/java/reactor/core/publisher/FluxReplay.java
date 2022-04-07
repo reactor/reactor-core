@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,6 +137,15 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				this.index = index;
 				this.value = value;
 				this.time = time;
+			}
+
+			@Override
+			public String toString() {
+				return "TimedNode{" +
+					"index=" + index +
+					", value=" + value +
+					", time=" + time +
+					'}';
 			}
 		}
 
@@ -423,11 +432,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@Override
 		public void add(T value) {
 			final TimedNode<T> tail = this.tail;
-			final TimedNode<T> n = new TimedNode<>(tail.index + 1,
+			final TimedNode<T> valueNode = new TimedNode<>(tail.index + 1,
 					value,
 					scheduler.now(TimeUnit.NANOSECONDS));
-			tail.set(n);
-			this.tail = n;
+			tail.set(valueNode);
+			this.tail = valueNode;
 			int s = size;
 			if (s == limit) {
 				head = head.get();
@@ -437,6 +446,16 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			}
 			long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 
+			//short-circuit if maxAge == 0: no sense in keeping any old value.
+			//we still want to keep the newly added value in order for the immediately following replay
+			//to propagate it to currently registered subscribers.
+			if (maxAge == 0) {
+				head = valueNode;
+				return;
+			}
+
+			//otherwise, start walking the linked list in order to find the first node > time limit
+			//(in which case we'll have passed all nodes that have reached the TTL).
 			TimedNode<T> h = head;
 			TimedNode<T> next;
 			int removed = 0;
@@ -446,7 +465,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					break;
 				}
 
-				if (next.time > limit) {
+				if (next.time > limit || next == valueNode) {
+					//next == valueNode case causes head swap and actual removal, even if its time cannot be > limit.
+					//otherwise we'd skip removal and re-walk the whole linked list on next add, retaining outdated values for nothing.
 					if (removed != 0) {
 						size = size - removed;
 						head = h;

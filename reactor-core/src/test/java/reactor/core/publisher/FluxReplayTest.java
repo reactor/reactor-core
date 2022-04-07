@@ -23,12 +23,15 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.assertj.core.data.Offset;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
@@ -38,25 +41,30 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
+	@Nullable
 	VirtualTimeScheduler vts;
 
 	@BeforeEach
-	public void vtsStart() {
-		//delayElements (notably) now uses parallel() so VTS must be enabled everywhere
-		vts = VirtualTimeScheduler.getOrSet();
+	public void vtsStart(TestInfo testInfo) {
+		if (testInfo.getTags().contains("VirtualTime")) {
+			//delayElements (notably) now uses parallel() so VTS must be enabled everywhere
+			vts = VirtualTimeScheduler.getOrSet();
+		}
 	}
 
 	@AfterEach
@@ -66,13 +74,152 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	static final Logger log = Loggers.getLogger(FluxReplayTest.class);
 
+	// === overrides to configure the abstract test ===
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(Integer.MAX_VALUE)
+			.shouldAssertPostTerminateState(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+			scenario(f -> f.replay().autoConnect()),
+
+			scenario(f -> f.replay().refCount())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_touchAndAssertState() {
+		return Arrays.asList(
+			scenario(f -> f.replay().autoConnect())
+		);
+	}
+
+	// === start of tests ===
+
 	@Test
+	@Tag("slow")
+	void shouldNotLeakWhenDurationZeroAndNoSubscribers() {
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ZERO);
+
+		for (int i = 0; i < 1_000_000; i++) {
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+		}
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(131L));
+			});
+		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
+	}
+
+	@Test
+	@Tag("slow")
+	void shouldNotLeakWhenDurationZeroAndTwoLateSubscribers() {
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ZERO);
+
+		final AtomicInteger receivedLateSubscriber1 = new AtomicInteger();
+		final AtomicInteger receivedLateSubscriber2 = new AtomicInteger();
+		for (int i = 0; i < 1_000_000; i++) {
+			if (i == 250_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber1.incrementAndGet());
+			}
+			else if (i == 700_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber2.incrementAndGet());
+			}
+
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+		}
+
+		assertThat(receivedLateSubscriber1).as("late subscriber1 received").hasValue(750_000);
+		assertThat(receivedLateSubscriber2).as("late subscriber2 received").hasValue(300_000);
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(131L));
+			});
+		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
+	}
+
+	@Test
+	@Tag("VirtualTime")
+	void shouldNotLeakWhenDurationTinyAndNoSubscribers() {
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ofNanos(100));
+
+		for (int i = 0; i < 1_000_000; i++) {
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+		}
+
+		vts.advanceTimeBy(Duration.ofNanos(101));
+		sink.tryEmitNext(detector.tracked(-1)).orThrow();
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(131L));
+			});
+		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
+	}
+
+	@Test
+	@Tag("VirtualTime")
+	void shouldNotLeakWhenDurationTinyAndTwoLateSubscribers() {
+		MemoryUtils.RetainedDetector detector = new MemoryUtils.RetainedDetector();
+
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().limit(Duration.ofNanos(100));
+
+		final AtomicInteger receivedLateSubscriber1 = new AtomicInteger();
+		final AtomicInteger receivedLateSubscriber2 = new AtomicInteger();
+		for (int i = 0; i < 1_000_000; i++) {
+			if (i == 250_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber1.incrementAndGet());
+			}
+			else if (i == 700_000) {
+				sink.asFlux().subscribe(v -> receivedLateSubscriber2.incrementAndGet());
+			}
+
+			sink.tryEmitNext(detector.tracked(i)).orThrow();
+			vts.advanceTimeBy(Duration.ofNanos(100));
+		}
+
+		sink.tryEmitNext(detector.tracked(-1)).orThrow();
+
+		assertThat(receivedLateSubscriber1).as("late subscriber1 received").hasValue(750_001);
+		assertThat(receivedLateSubscriber2).as("late subscriber2 received").hasValue(300_001);
+
+		System.gc();
+		Awaitility.await().atMost(Duration.ofSeconds(2))
+			.untilAsserted(() -> {
+				assertThat(detector.finalizedCount())
+					.as("finalized so far")
+					.isCloseTo(detector.trackedTotal(), Offset.offset(130L));
+			});
+		//TODO investigate remaining references. prior to #2994 fix it would retain all elements and have abysmal performance
+	}
+
+	@Test
+	@Tag("slow")
 	void checkTimeCacheResubscribesAndCompletesAfterRepetitions() {
-		VirtualTimeScheduler.reset();
 		Flux<Integer> flow = getSource2()
-				.doOnSubscribe(__ -> log.info("Loading source..."))
+				.doOnSubscribe(__ -> log.debug("Loading source..."))
 				.cache(Duration.ofMillis(200))
-				.doOnSubscribe(__ -> log.info("Pooling cycle starting..."))
+				.doOnSubscribe(__ -> log.debug("Pooling cycle starting..."))
 				.flatMap(this::process, 2)
 				.repeat(1000);
 
@@ -87,7 +234,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	private Mono<Integer> process(int channel) {
 		return Mono.just(channel)
-		           .doOnNext(rec -> log.info("Processing: {}", rec))
+		           .doOnNext(rec -> log.debug("Processing: {}", rec))
 		           .delayElement(Duration.ofMillis(5));
 	}
 
@@ -100,7 +247,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		final AtomicInteger pollEnd = new AtomicInteger();
 
 		Flux<String> flow = getSource()
-				.doOnSubscribe(__ -> log.info("Loading source #" + sourceLoad.incrementAndGet()))
+				.doOnSubscribe(__ -> log.debug("Loading source #" + sourceLoad.incrementAndGet()))
 				.cache(Duration.ofSeconds(1), vts)
 				.flatMap(v -> {
 					if (v == 1) {
@@ -121,7 +268,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	private Flux<Integer> getSource() {
 		return Flux.just(1, 2, 3, 4, 5)
-		           .doOnRequest(r -> log.info("source.request({})", r == Long.MAX_VALUE ? "unbounded" : r))
+		           .doOnRequest(r -> log.debug("source.request({})", r == Long.MAX_VALUE ? "unbounded" : r))
 		           .hide();
 	}
 
@@ -130,36 +277,10 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 			timeScheduler.advanceTimeBy(Duration.ofMillis(1001));
 		}
 		return Mono.fromCallable(() -> {
-			log.info("Processing: {}", channel);
+			log.debug("Processing: {}", channel);
 			return channel;
 		});
 	}
-
-	// === overrides to configure the abstract test ===
-
-	@Override
-	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(Integer.MAX_VALUE)
-				.shouldAssertPostTerminateState(false);
-	}
-
-	@Override
-	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
-		return Arrays.asList(
-				scenario(f -> f.replay().autoConnect()),
-
-				scenario(f -> f.replay().refCount())
-		);
-	}
-
-	@Override
-	protected List<Scenario<String, String>> scenarios_touchAndAssertState() {
-		return Arrays.asList(
-				scenario(f -> f.replay().autoConnect())
-		);
-	}
-
-	// === start of tests ===
 
 	@Test
 	public void failPrefetch() {
@@ -178,6 +299,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFlux() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -206,6 +328,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxFused() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -233,6 +356,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxTTL() {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
@@ -259,6 +383,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxTTLFused() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -285,6 +410,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxTTLMillis() {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
@@ -311,6 +437,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxTTLNanos() {
 		Flux<Integer> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofNanos(1000), vts)
@@ -335,6 +462,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxHistoryTTL() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -362,6 +490,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@Tag("VirtualTime")
 	public void cacheFluxHistoryTTLFused() {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
