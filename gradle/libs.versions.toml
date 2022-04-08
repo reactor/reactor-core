@@ -9,6 +9,7 @@ asciidoctor = "3.3.2"
 bytebuddy = "1.12.8"
 jmh = "1.35"
 junit = "5.8.2"
+micrometer = "2.0.0-SNAPSHOT"
 reactiveStreams = "1.0.3"
 
 [libraries]
@@ -26,7 +27,10 @@ jsr166backport = "io.projectreactor:jsr166:1.0.0.RELEASE"
 jsr305 = "com.google.code.findbugs:jsr305:3.0.1"
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 logback = "ch.qos.logback:logback-classic:1.2.11"
-micrometer = "io.micrometer:micrometer-core:1.3.0"
+micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
+micrometer-binders = { module = "io.micrometer:micrometer-binders" }
+micrometer-commons = { module = "io.micrometer:micrometer-commons" }
+micrometer-core = { module = "io.micrometer:micrometer-core" }
 mockito = "org.mockito:mockito-core:4.4.0"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }

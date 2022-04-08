@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
+import io.micrometer.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.search.Search;
 
 import reactor.core.Disposable;
@@ -73,7 +73,7 @@ final class SchedulerMetricDecorator
 				executorDifferentiator.computeIfAbsent(scheduler, key -> new AtomicInteger(0))
 				                      .getAndIncrement();
 
-		Tags tags = Tags.of(TAG_SCHEDULER_ID, schedulerId);
+		Tag[] tags = new Tag[] { Tag.of(TAG_SCHEDULER_ID, schedulerId) };
 
 		/*
 		Design note: we assume that a given Scheduler won't apply the decorator twice to the
