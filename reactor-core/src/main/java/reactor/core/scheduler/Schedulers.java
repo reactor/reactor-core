@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,8 +198,8 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
-	 * Workers, reusing them once the Workers have been shut down. The underlying daemon
+	 * The common <em>boundedElastic</em> instance, a {@link Scheduler} that dynamically creates a bounded number of
+	 * ExecutorService-based Workers, reusing them once the Workers have been shut down. The underlying daemon
 	 * threads can be evicted if idle for more than {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
 	 * <p>
 	 * The maximum number of created threads is bounded by a {@code cap} (by default
@@ -218,20 +218,34 @@ public abstract class Schedulers {
 	 * The picking of the backing thread is also done once and for all at worker creation, so
 	 * tasks could be delayed due to two workers sharing the same backing thread and submitting long-running tasks,
 	 * despite another backing thread becoming idle in the meantime.
+	 * <p>
+	 * Only one instance of this common scheduler will be created on the first call and is cached. The same instance
+	 * is returned on subsequent calls until it is disposed.
+	 * <p>
+	 * One cannot directly {@link Scheduler#dispose() dispose} the common instances, as they are cached and shared
+	 * between callers. They can however be all {@link #shutdownNow() shut down} together, or replaced by a
+	 * {@link #setFactory(Factory) change in Factory}.
 	 *
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
-	 * the number of backing threads and after that on the number of enqueued tasks,
-	 * that reuses threads and evict idle ones
+	 * @return the common <em>boundedElastic</em> instance, a {@link Scheduler} that dynamically creates workers with
+	 * an upper bound to the number of backing threads and after that on the number of enqueued tasks, that reuses
+	 * threads and evict idle ones
 	 */
 	public static Scheduler boundedElastic() {
 		return cache(CACHED_BOUNDED_ELASTIC, BOUNDED_ELASTIC, BOUNDED_ELASTIC_SUPPLIER);
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * The common <em>parallel</em> instance, a {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * ExecutorService-based workers and is suited for parallel work.
+	 * <p>
+	 * Only one instance of this common scheduler will be created on the first call and is cached. The same instance
+	 * is returned on subsequent calls until it is disposed.
+	 * <p>
+	 * One cannot directly {@link Scheduler#dispose() dispose} the common instances, as they are cached and shared
+	 * between callers. They can however be all {@link #shutdownNow() shut down} together, or replaced by a
+	 * {@link #setFactory(Factory) change in Factory}.
 	 *
-	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * @return the common <em>parallel</em> instance, a {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler parallel() {
@@ -372,7 +386,7 @@ public abstract class Schedulers {
 	 * @param threadCap maximum number of underlying threads to create
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 	 * @param name Thread prefix
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
+	 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 	 * the number of backing threads and after that on the number of enqueued tasks,
 	 * that reuses threads and evict idle ones
 	 */
@@ -408,7 +422,7 @@ public abstract class Schedulers {
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 	 * @param name Thread prefix
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
+	 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 	 * the number of backing threads and after that on the number of enqueued tasks,
 	 * that reuses threads and evict idle ones
 	 */
@@ -446,7 +460,7 @@ public abstract class Schedulers {
 	 * @param name Thread prefix
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
 	 * @param daemon are backing threads {@link Thread#setDaemon(boolean) daemon threads}
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
+	 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 	 * the number of backing threads and after that on the number of enqueued tasks,
 	 * that reuses threads and evict idle ones
 	 */
@@ -486,7 +500,7 @@ public abstract class Schedulers {
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 	 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
+	 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 	 * the number of backing threads and after that on the number of enqueued tasks,
 	 * that reuses threads and evict idle ones
 	 */
@@ -565,9 +579,8 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work. This type of {@link Scheduler} detects and rejects usage
-	 * 	 * of blocking Reactor APIs.
+	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker. This type of {@link Scheduler}
+	 * detects and rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Component and thread name prefix
 	 *
@@ -579,9 +592,8 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work. This type of {@link Scheduler} detects and rejects usage
-	 * of blocking Reactor APIs.
+	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker. This type of {@link Scheduler}
+	 * detects and rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
@@ -596,8 +608,7 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work.
+	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker.
 	 *
 	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
 	 * {@link Scheduler}
@@ -959,10 +970,17 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work. Will cache the returned schedulers for subsequent calls until dispose.
+	 * The common <em>single</em> instance, a {@link Scheduler} that hosts a single-threaded ExecutorService-based
+	 * worker.
+	 * <p>
+	 * Only one instance of this common scheduler will be created on the first call and is cached. The same instance
+	 * is returned on subsequent calls until it is disposed.
+	 * <p>
+	 * One cannot directly {@link Scheduler#dispose() dispose} the common instances, as they are cached and shared
+	 * between callers. They can however be all {@link #shutdownNow() shut down} together, or replaced by a
+	 * {@link #setFactory(Factory) change in Factory}.
 	 *
-	 * @return default instance of a {@link Scheduler} that hosts a single-threaded
+	 * @return the common <em>single</em> instance, a {@link Scheduler} that hosts a single-threaded
 	 * ExecutorService-based worker
 	 */
 	public static Scheduler single() {
@@ -1023,7 +1041,7 @@ public abstract class Schedulers {
 		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
 		 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
 		 *
-		 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
+		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 		 * the number of backing threads, reuses threads and evict idle ones
 		 */
 		default Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
