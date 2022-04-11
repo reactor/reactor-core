@@ -71,6 +71,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.awaitility.Awaitility.await;
 
 /**
  * @author Simon Baslé
@@ -757,7 +758,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("capacity when running").isZero();
 		latch.countDown();
-		Awaitility.await().untilTrue(taskRan);
+		await().untilTrue(taskRan);
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("capacity after run").isOne();
 	}
 
@@ -786,7 +787,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("capacity when running").isZero();
 		latch.countDown();
-		Awaitility.await().untilTrue(taskRan);
+		await().untilTrue(taskRan);
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("capacity after run").isOne();
 	}
 
@@ -925,7 +926,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		assertThat(boundedElasticScheduler.estimateRemainingTaskCapacity()).as("queue full").isZero();
 
 		latch.countDown();
-		Awaitility.await().atMost(100, TimeUnit.MILLISECONDS)
+		await().atMost(100, TimeUnit.MILLISECONDS)
 		          .pollInterval(10, TimeUnit.MILLISECONDS)
 		          .pollDelay(10, TimeUnit.MILLISECONDS)
 		          .untilAsserted(() -> assertThat(ranSecond)
@@ -1463,13 +1464,16 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		try {
 			bounded.submit(taskStartedLatch::countDown);
 			unbounded.submit(taskStartedLatch::countDown);
-			bounded.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
-			unbounded.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
+			bounded.schedule(() -> {}, 1, TimeUnit.SECONDS);
+			unbounded.schedule(() -> {}, 1, TimeUnit.SECONDS);
 
 			assertThat(taskStartedLatch.await(1, TimeUnit.SECONDS)).as("tasks picked").isTrue(); //give a small window for the task to be picked from the queue and completed
 
-			assertThat(bounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/123, completed=1}");
-			assertThat(unbounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/unbounded, completed=1}");
+			Awaitility.with().pollDelay(Duration.ofMillis(50))
+				.await().atMost(Duration.ofMillis(500)).untilAsserted(() -> {
+					assertThat(bounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/123, completed=1}");
+					assertThat(unbounded).hasToString("BoundedScheduledExecutorService{IDLE, queued=1/unbounded, completed=1}");
+				});
 		}
 		finally {
 			bounded.shutdownNow();
