@@ -89,6 +89,7 @@ public class ContextPropagationUtils {
 
 				ContextContainer container = ContextContainer.create();
 				container.captureContext(c);
+				container.captureThreadLocalValues();
 
 				return () -> container.tryScoped(r);
 			});
