@@ -822,7 +822,7 @@ p a > code:hover {
     margin-right: auto;
     margin-top: 0;
     margin-bottom: 0;
-    max-width: 62.5em;
+    max-width: max(80em, 60%);
     *zoom: 1;
     position: relative;
     padding-left: 4em;
