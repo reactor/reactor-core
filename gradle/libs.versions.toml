@@ -28,7 +28,6 @@ jsr305 = "com.google.code.findbugs:jsr305:3.0.1"
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
-micrometer-binders = { module = "io.micrometer:micrometer-binders" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 mockito = "org.mockito:mockito-core:4.4.0"

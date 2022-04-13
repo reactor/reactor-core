@@ -86,7 +86,6 @@ dependencies {
 	compileOnly platform(libs.micrometer.bom)
 	compileOnly libs.micrometer.commons
 	compileOnly libs.micrometer.core
-	compileOnly libs.micrometer.binders
 
 	// Optional BlockHound support
 	compileOnly libs.blockhound
@@ -116,7 +115,6 @@ dependencies {
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
 	withMicrometerTestImplementation platform(libs.micrometer.bom)
-	withMicrometerTestImplementation libs.micrometer.binders
 	withMicrometerTestImplementation libs.micrometer.commons
 	withMicrometerTestImplementation libs.micrometer.core
 	withMicrometerTestImplementation sourceSets.test.output
