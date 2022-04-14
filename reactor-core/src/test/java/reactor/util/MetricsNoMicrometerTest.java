@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,16 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * <p>For tests that validate metrics usage when micrometer <em>is</em> present,
  * please have a look at the {@code withMicrometerTest} sourceset.</p>
  *
+ * <p>For tests that validate that deprecated core metrics operators are NO-OP as well
+ * when the reactor-metrics-micrometer module is on the classpath, see tests in that module.</p>
+ *
  * @author Simon Baslé
  */
+@Deprecated
 public class MetricsNoMicrometerTest {
 
 	@Test
-	public void isMicrometerAvailable() {
+	public void micrometerIsNotAvailable() {
 		assertThat(Metrics.isInstrumentationAvailable()).isFalse();
 	}
 

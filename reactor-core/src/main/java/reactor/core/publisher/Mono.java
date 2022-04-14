@@ -3405,7 +3405,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @see #name(String)
 	 * @see #tag(String, String)
+	 * @deprecated Prefer using the {@link #listen(Supplier)} io.projectreactor.observability:reactor-metrics-micrometer module. To be removed
+	 * in 3.6.0 at the earliest.
 	 */
+	@Deprecated
 	public final Mono<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
 			return this;

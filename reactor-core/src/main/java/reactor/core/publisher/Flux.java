@@ -6427,7 +6427,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @see #name(String)
 	 * @see #tag(String, String)
+	 * @deprecated Prefer using the io.projectreactor.observability:reactor-metrics-micrometer module. To be removed
+	 * in 3.6.0 at the earliest.
 	 */
+	@Deprecated
 	public final Flux<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
 			return this;

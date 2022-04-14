@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import static reactor.core.publisher.FluxMetrics.*;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
+@Deprecated
 final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 
 	final String        name;
