@@ -13,4 +13,9 @@ public class InnerStressSubscriber<T> extends StressSubscriber<T> {
 		super.onComplete();
 		this.parent.subscription.request(1);
 	}
+
+	@Override
+	public void cancel() {
+		super.cancel();
+	}
 }

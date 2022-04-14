@@ -197,13 +197,10 @@ public class FluxWindowTimeoutTest {
 	public void longDelaysStartEndEmitEmptyWindows() {
 		StepVerifier.withVirtualTime(() -> Mono.just("foo")
 		                                       .delayElement(Duration.ofMillis(400 + 400 + 300))
-		                                       .concatWith(Mono.delay(Duration.ofMillis(
-				                                                       100 + 400 + 100))
+		                                       .concatWith(Mono.delay(Duration.ofMillis(100 + 400 + 100))
 		                                                       .then(Mono.empty()))
-		                                       .windowTimeout(1000,
-				                                       Duration.ofMillis(400),
-				                                       true)
-		                                       .concatMap(Flux::collectList))
+		                                       .windowTimeout(1000, Duration.ofMillis(400), true)
+		                                       .concatMap(Flux::collectList).log())
 		            .thenAwait(Duration.ofHours(1))
 		            .assertNext(l -> assertThat(l).isEmpty())
 		            .assertNext(l -> assertThat(l).isEmpty())

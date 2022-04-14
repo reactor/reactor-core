@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,6 +69,8 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	public final AtomicInteger onNextDiscarded = new AtomicInteger();
 
+	public final List<T> discardedValues = new ArrayList<>();
+
 	public final AtomicInteger onErrorCalls = new AtomicInteger();
 
 	public final AtomicInteger onCompleteCalls = new AtomicInteger();
@@ -94,7 +97,10 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 				(Consumer<Throwable>) throwable -> {
 					droppedErrors.add(throwable);
 				}),
-				(__) -> onNextDiscarded.incrementAndGet());
+				(value) -> {
+					onNextDiscarded.incrementAndGet();
+					discardedValues.add((T) value);
+				});
 	}
 
 	@Override
@@ -123,7 +129,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	@Override
 	public void onNext(T value) {
-		final RuntimeException exception = new RuntimeException("onNext");
+		final RuntimeException exception = new RuntimeException("onNext" + value);
 		final Throwable previousException = guard.getAndSet(exception);
 		if (previousException != null) {
 			exception.addSuppressed(previousException);
@@ -157,7 +163,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 		final Throwable previousException = guard.getAndSet(exception);
 		if (previousException != null) {
 			exception.addSuppressed(previousException);
-			stacktraceOnError = exception;
+			stacktraceOnComplete = exception;
 			concurrentOnComplete.set(true);
 		} else {
 			guard.compareAndSet(exception, null);
