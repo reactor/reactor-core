@@ -17,11 +17,12 @@
 package reactor.metrics.micrometer;
 
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,6 +46,9 @@ class MicrometerListenerConfigurationTest {
 		"someName,someTag"
 	})
 	void fromFlux(@Nullable String name, @Nullable String tag) {
+		MeterRegistry expectedRegistry = new SimpleMeterRegistry();
+		Clock expectedClock = Clock.SYSTEM;
+
 		Flux<Integer> flux = Flux.just(1, 2, 3);
 
 		if (name != null) {
@@ -54,10 +58,10 @@ class MicrometerListenerConfigurationTest {
 			flux = flux.tag("tag", tag);
 		}
 
-		MicrometerListenerConfiguration configuration = MicrometerListenerConfiguration.fromFlux(flux);
+	MicrometerListenerConfiguration configuration = MicrometerListenerConfiguration.fromFlux(flux, expectedRegistry, expectedClock);
 
-		assertThat(configuration.clock).as("clock").isSameAs(Clock.SYSTEM);
-		assertThat(configuration.registry).as("registry").isSameAs(Micrometer.getRegistry());
+		assertThat(configuration.clock).as("clock").isSameAs(expectedClock);
+		assertThat(configuration.registry).as("registry").isSameAs(expectedRegistry);
 		assertThat(configuration.isMono).as("isMono").isFalse();
 
 		assertThat(configuration.sequenceName)
@@ -84,6 +88,9 @@ class MicrometerListenerConfigurationTest {
 		"someName,someTag"
 	})
 	void fromMono(@Nullable String name, @Nullable String tag) {
+		MeterRegistry expectedRegistry = new SimpleMeterRegistry();
+		Clock expectedClock = Clock.SYSTEM;
+
 		Mono<Integer> mono = Mono.just(1);
 
 		if (name != null) {
@@ -93,10 +100,10 @@ class MicrometerListenerConfigurationTest {
 			mono = mono.tag("tag", tag);
 		}
 
-		MicrometerListenerConfiguration configuration = MicrometerListenerConfiguration.fromMono(mono);
+		MicrometerListenerConfiguration configuration = MicrometerListenerConfiguration.fromMono(mono, expectedRegistry, expectedClock);
 
-		assertThat(configuration.clock).as("clock").isSameAs(Clock.SYSTEM);
-		assertThat(configuration.registry).as("registry").isSameAs(Micrometer.getRegistry());
+		assertThat(configuration.clock).as("clock").isSameAs(expectedClock);
+		assertThat(configuration.registry).as("registry").isSameAs(expectedRegistry);
 		assertThat(configuration.isMono).as("isMono").isTrue();
 
 		assertThat(configuration.sequenceName)
