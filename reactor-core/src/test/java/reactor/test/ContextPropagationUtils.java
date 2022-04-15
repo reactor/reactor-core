@@ -89,7 +89,7 @@ public class ContextPropagationUtils {
 
 				ContextContainer container = ContextContainer.create();
 				container.captureContext(c);
-				container.captureThreadLocalValues();
+				//we EXPLICITLY don't want to captureThreadLocalValues here, because it would erase the values captured from Context
 
 				return () -> container.tryScoped(r);
 			});

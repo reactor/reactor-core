@@ -58,17 +58,26 @@ public final class ContextPropagationUtilsPropagator implements ThreadLocalAcces
 
 	@Override
 	public void captureValues(ContextContainer container) {
-		container.put(IN_CONTEXT_KEY, ContextPropagationUtils.THREAD_LOCAL_REF.get());
+		ThreadLocal<String> tlToUse = ContextPropagationUtils.THREAD_LOCAL_REF.get();
+		if (tlToUse != null) {
+			container.put(IN_CONTEXT_KEY, tlToUse.get());
+		}
 	}
 
 	@Override
 	public void restoreValues(ContextContainer container) {
-		ContextPropagationUtils.THREAD_LOCAL_REF.get().set(container.get(IN_CONTEXT_KEY));
+		ThreadLocal<String> tlToUse = ContextPropagationUtils.THREAD_LOCAL_REF.get();
+		if (tlToUse != null) {
+			tlToUse.set(container.get(IN_CONTEXT_KEY));
+		}
 	}
 
 	@Override
 	public void resetValues(ContextContainer container) {
-		ContextPropagationUtils.THREAD_LOCAL_REF.get().remove();
+		ThreadLocal<String> tlToUse = ContextPropagationUtils.THREAD_LOCAL_REF.get();
+		if (tlToUse != null) {
+			tlToUse.remove();
+		}
 	}
 
 	@Override
