@@ -16,12 +16,20 @@
 
 package reactor.metrics.micrometer;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.observability.SignalListenerFactory;
 
 public final class Micrometer {
+
+	private static final String SCHEDULERS_DECORATOR_KEY = "reactor.metrics.micrometer.schedulerDecorator";
 
 	private static MeterRegistry registry = Metrics.globalRegistry;
 
@@ -42,7 +50,62 @@ public final class Micrometer {
 		return registry;
 	}
 
+	/**
+	 * A {@link reactor.util.observability.SignalListener} factory that will ultimately produce Micrometer metrics
+	 * to the configured default {@link #getRegistry() registry}.
+	 * To be used with either the {@link reactor.core.publisher.Flux#listen(SignalListenerFactory)} or
+	 * {@link reactor.core.publisher.Mono#listen(SignalListenerFactory)} operator.
+	 *
+	 * @param <T> the type of onNext in the target publisher
+	 * @return a {@link reactor.util.observability.SignalListenerFactory} to record metrics
+	 */
 	public static <T> SignalListenerFactory<T, ?> metrics() {
 		return new MicrometerListenerFactory<>();
+	}
+
+	/**
+	 * A {@link reactor.util.observability.SignalListener} factory that will ultimately produce Micrometer metrics
+	 * to the provided {@link MeterRegistry} using the provided {@link Clock} for timings.
+	 * To be used with either the {@link reactor.core.publisher.Flux#listen(SignalListenerFactory)} or
+	 * {@link reactor.core.publisher.Mono#listen(SignalListenerFactory)} operator.
+	 *
+	 * @param <T> the type of onNext in the target publisher
+	 * @return a {@link reactor.util.observability.SignalListenerFactory} to record metrics
+	 */
+	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry registry, Clock clock) {
+		return new MicrometerListenerFactory<T>() {
+			@Override
+			protected Clock useClock() {
+				return clock;
+			}
+
+			@Override
+			protected MeterRegistry useRegistry() {
+				return registry;
+			}
+		};
+	}
+
+	/**
+	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}
+	 * (or scheduler implementations which use {@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}).
+	 * <p>
+	 * The {@link MeterRegistry} to use can be configured via {@link #useRegistry(MeterRegistry)}
+	 * prior to using this method, the default being {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
+	 *
+	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers,
+	 * which doesn't change the Factory.
+	 */
+	public static void enableSchedulersMetricsDecorator() {
+		Schedulers.addExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY,
+			new MicrometerSchedulerMetricsDecorator(getRegistry()));
+	}
+
+	/**
+	 * If {@link #enableSchedulersMetricsDecorator()} has been previously called, removes the decorator.
+	 * No-op if {@link #enableSchedulersMetricsDecorator()} hasn't been called.
+	 */
+	public static void disableSchedulersMetricsDecorator() {
+		Schedulers.removeExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY);
 	}
 }

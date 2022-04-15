@@ -16,6 +16,8 @@
 
 package reactor.metrics.micrometer;
 
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.reactivestreams.Publisher;
 
 import reactor.core.publisher.Flux;
@@ -25,21 +27,30 @@ import reactor.util.observability.SignalListener;
 import reactor.util.observability.SignalListenerFactory;
 
 /**
+ * A {@link SignalListenerFactory} for {@link MicrometerListener}.
+ *
  * @author Simon Baslé
  */
-public final class MicrometerListenerFactory<T> implements
-	SignalListenerFactory<T, MicrometerListenerConfiguration> {
+class MicrometerListenerFactory<T> implements SignalListenerFactory<T, MicrometerListenerConfiguration> {
+
+	protected Clock useClock() {
+		return Clock.SYSTEM;
+	}
+
+	protected MeterRegistry useRegistry() {
+		return Micrometer.getRegistry();
+	}
 
 	@Override
 	public MicrometerListenerConfiguration initializePublisherState(Publisher<? extends T> source) {
 		if (source instanceof Mono) {
-			return MicrometerListenerConfiguration.fromMono((Mono<?>) source);
+			return MicrometerListenerConfiguration.fromMono((Mono<?>) source, useRegistry(), useClock());
 		}
 		else if (source instanceof Flux) {
-			return MicrometerListenerConfiguration.fromFlux((Flux<?>) source);
+			return MicrometerListenerConfiguration.fromFlux((Flux<?>) source, useRegistry(), useClock());
 		}
 		else {
-			return MicrometerListenerConfiguration.fromFlux(Flux.from(source));
+			return MicrometerListenerConfiguration.fromFlux(Flux.from(source), useRegistry(), useClock());
 		}
 	}
 

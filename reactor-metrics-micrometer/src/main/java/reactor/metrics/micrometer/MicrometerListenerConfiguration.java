@@ -34,28 +34,29 @@ import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
 
 /**
+ * A companion configuration object for {@link MicrometerListener} that serves as the state created by
+ * {@link MicrometerListenerFactory}.
+ *
  * @author Simon Baslé
  */
 final class MicrometerListenerConfiguration {
 
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerListenerConfiguration.class);
 
-	static MicrometerListenerConfiguration fromFlux(Flux<?> source) {
-		Clock clock = Clock.SYSTEM;
+	static MicrometerListenerConfiguration fromFlux(Flux<?> source, MeterRegistry meterRegistry, Clock clock) {
 		Tags defaultTags = MicrometerListener.DEFAULT_TAGS_FLUX;
 		final String name = resolveName(source, LOGGER);
 		final Tags tags = resolveTags(source, defaultTags);
 
-		return new MicrometerListenerConfiguration(name, tags, Micrometer.getRegistry(), clock, false);
+		return new MicrometerListenerConfiguration(name, tags, meterRegistry, clock, false);
 	}
 
-	static MicrometerListenerConfiguration fromMono(Mono<?> source) {
-		Clock clock = Clock.SYSTEM;
+	static MicrometerListenerConfiguration fromMono(Mono<?> source, MeterRegistry meterRegistry, Clock clock) {
 		Tags defaultTags = MicrometerListener.DEFAULT_TAGS_MONO;
 		final String name = resolveName(source, LOGGER);
 		final Tags tags = resolveTags(source, defaultTags);
 
-		return new MicrometerListenerConfiguration(name, tags, Micrometer.getRegistry(), clock, true);
+		return new MicrometerListenerConfiguration(name, tags, meterRegistry, clock, true);
 	}
 
 	/**
