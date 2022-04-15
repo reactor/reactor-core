@@ -3244,7 +3244,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #listen(Function)
 	 */
 	public Mono<T> listen(SignalListenerFactory<T, ?> listenerFactory) {
-		//TODO also support a Fuseable version
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoListenFuseable<>(this, listenerFactory));
+		}
 		return onAssembly(new MonoListen<>(this, listenerFactory));
 	}
 

@@ -61,8 +61,8 @@ final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> impl
 			signalListener.doFirst();
 		}
 		catch (Throwable listenerError) {
+			signalListener.handleListenerError(listenerError);
 			Operators.error(actual, listenerError);
-			signalListener.doFinally(SignalType.ON_ERROR);
 			return null;
 		}
 
@@ -137,7 +137,7 @@ final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> impl
 					handleListenerErrorPreSubscription(listenerError, s);
 					return;
 				}
-				actual.onSubscribe(s); //should trigger requestFusion
+				actual.onSubscribe(this); //should trigger requestFusion
 			}
 		}
 

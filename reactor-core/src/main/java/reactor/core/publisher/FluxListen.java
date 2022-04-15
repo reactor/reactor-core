@@ -20,10 +20,8 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 import reactor.util.observability.SignalListener;
 import reactor.util.observability.SignalListenerFactory;
 
@@ -61,9 +59,9 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 		try {
 			signalListener.doFirst();
 		}
-		catch (Throwable observerError) {
-			Operators.error(actual, observerError);
-			signalListener.doFinally(SignalType.ON_ERROR);
+		catch (Throwable listenerError) {
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
 			return null;
 		}
 
@@ -174,7 +172,7 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 					handleListenerErrorPreSubscription(observerError, s);
 					return;
 				}
-				actual.onSubscribe(s);
+				actual.onSubscribe(this);
 			}
 		}
 
@@ -286,7 +284,6 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void cancel() {
-			Context ctx = actual.currentContext();
 			try {
 				listener.doOnCancel();
 			}

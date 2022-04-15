@@ -57,9 +57,9 @@ final class MonoListen<T, STATE> extends InternalMonoOperator<T, T> {
 		try {
 			signalListener.doFirst();
 		}
-		catch (Throwable observerError) {
-			Operators.error(actual, observerError);
-			signalListener.doFinally(SignalType.ON_ERROR);
+		catch (Throwable listenerError) {
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
 			return null;
 		}
 
@@ -73,6 +73,7 @@ final class MonoListen<T, STATE> extends InternalMonoOperator<T, T> {
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PREFETCH) return -1;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);

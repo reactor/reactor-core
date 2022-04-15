@@ -6178,7 +6178,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #listen(Function)
 	 */
 	public Flux<T> listen(SignalListenerFactory<T, ?> listenerFactory) {
-		//TODO also support a Fuseable version
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxListenFuseable<>(this, listenerFactory));
+		}
 		return onAssembly(new FluxListen<>(this, listenerFactory));
 	}
 
