@@ -98,4 +98,8 @@ public abstract class DefaultSignalListener<T> implements SignalListener<T> {
 	@Override
 	public void doOnMalformedOnError(Throwable error) throws Throwable {
 	}
+
+	@Override
+	public void handleListenerError(Throwable listenerError) {
+	}
 }
