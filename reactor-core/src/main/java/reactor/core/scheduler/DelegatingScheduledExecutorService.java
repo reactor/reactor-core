@@ -26,7 +26,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class DelegatingScheduledExecutorService implements ScheduledExecutorService {
+class DelegatingScheduledExecutorService implements ScheduledExecutorService {
 
 	final ScheduledExecutorService scheduledExecutorService;
 
