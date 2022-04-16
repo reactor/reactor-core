@@ -548,10 +548,19 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"4, 2, 2, 0, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 2, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 2, 2, 0, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 3, 3, 0, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 3, 3, 0, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 3, 3, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 0, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 3, 3, 0, 5"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 3, 3, 1, 5"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 1, 6"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 0, 6"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 0, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 0, 5"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 1, 5"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 1, 6"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 0, 6"}, expect = ACCEPTABLE, desc = "")
 	@State
@@ -727,6 +736,10 @@ public class FluxWindowTimeoutStressTest {
 		public void arbiter(LL_Result result) {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscriber.onCompleteCalls.get() + subscriber.onErrorCalls.get() * 2L;
+
+			if (result.toString().equals("0, 1")) {
+				throw new IllegalStateException("boom " + parent.signals.toString());
+			}
 
 			if (subscriber.concurrentOnNext.get()) {
 				throw new RuntimeException("concurrentOnNext");
