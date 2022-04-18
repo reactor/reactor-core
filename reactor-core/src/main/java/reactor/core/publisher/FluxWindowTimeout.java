@@ -899,7 +899,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						timer.dispose();
 					}
 
-					if (!isCancelledByParent(previousState)) {
+					if (!isCancelledByParent(previousState) && !isSending(previousState)) {
 						this.parent.tryCreateNextWindow(this, previousState);
 					}
 				}
