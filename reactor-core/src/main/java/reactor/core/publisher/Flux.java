@@ -8959,7 +8959,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #tap(Function)
 	 * @see #tap(SignalListenerFactory)
 	 */
-	public Flux<T> tap(Supplier<SignalListener<T>> simpleListenerGenerator) {
+	public final Flux<T> tap(Supplier<SignalListener<T>> simpleListenerGenerator) {
 		return tap(new SignalListenerFactory<T, Void>() {
 			@Override
 			public Void initializePublisherState(Publisher<? extends T> ignored) {
@@ -8991,7 +8991,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #tap(Supplier)
 	 * @see #tap(SignalListenerFactory)
 	 */
-	public Flux<T> tap(Function<ContextView, SignalListener<T>> listenerGenerator) {
+	public final Flux<T> tap(Function<ContextView, SignalListener<T>> listenerGenerator) {
 		return tap(new SignalListenerFactory<T, Void>() {
 			@Override
 			public Void initializePublisherState(Publisher<? extends T> ignored) {
@@ -9024,7 +9024,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #tap(Supplier)
 	 * @see #tap(Function)
 	 */
-	public Flux<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
+	public final Flux<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxTapFuseable<>(this, listenerFactory));
 		}

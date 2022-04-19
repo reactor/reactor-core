@@ -4495,7 +4495,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #tap(Function)
 	 * @see #tap(SignalListenerFactory)
 	 */
-	public Mono<T> tap(Supplier<SignalListener<T>> simpleListenerGenerator) {
+	public final Mono<T> tap(Supplier<SignalListener<T>> simpleListenerGenerator) {
 		return tap(new SignalListenerFactory<T, Void>() {
 			@Override
 			public Void initializePublisherState(Publisher<? extends T> ignored) {
@@ -4527,7 +4527,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #tap(Supplier)
 	 * @see #tap(SignalListenerFactory)
 	 */
-	public Mono<T> tap(Function<ContextView, SignalListener<T>> listenerGenerator) {
+	public final Mono<T> tap(Function<ContextView, SignalListener<T>> listenerGenerator) {
 		return tap(new SignalListenerFactory<T, Void>() {
 			@Override
 			public Void initializePublisherState(Publisher<? extends T> ignored) {
@@ -4560,7 +4560,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #tap(Supplier)
 	 * @see #tap(Function)
 	 */
-	public Mono<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
+	public final Mono<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoTapFuseable<>(this, listenerFactory));
 		}
