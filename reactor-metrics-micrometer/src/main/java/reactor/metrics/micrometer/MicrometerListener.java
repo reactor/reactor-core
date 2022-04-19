@@ -120,7 +120,7 @@ final class MicrometerListener<T> implements SignalListener<T> {
 	@Override
 	public void doOnNext(T t) {
 		valued = true;
-		if (configuration.isMono || onNextIntervalTimer == null) {
+		if (onNextIntervalTimer == null) { //NB: interval timer is only null if isMono
 			//record valued completion directly
 			recordOnComplete(configuration.sequenceName, configuration.commonTags, configuration.registry, subscribeToTerminateSample);
 			return;

@@ -53,8 +53,8 @@ public final class Micrometer {
 	/**
 	 * A {@link reactor.util.observability.SignalListener} factory that will ultimately produce Micrometer metrics
 	 * to the configured default {@link #getRegistry() registry}.
-	 * To be used with either the {@link reactor.core.publisher.Flux#listen(SignalListenerFactory)} or
-	 * {@link reactor.core.publisher.Mono#listen(SignalListenerFactory)} operator.
+	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
+	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 *
 	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link reactor.util.observability.SignalListenerFactory} to record metrics
@@ -66,8 +66,8 @@ public final class Micrometer {
 	/**
 	 * A {@link reactor.util.observability.SignalListener} factory that will ultimately produce Micrometer metrics
 	 * to the provided {@link MeterRegistry} using the provided {@link Clock} for timings.
-	 * To be used with either the {@link reactor.core.publisher.Flux#listen(SignalListenerFactory)} or
-	 * {@link reactor.core.publisher.Mono#listen(SignalListenerFactory)} operator.
+	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
+	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 *
 	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link reactor.util.observability.SignalListenerFactory} to record metrics
