@@ -20,8 +20,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxTap.TapSubscriber;
 import reactor.util.annotation.Nullable;
-import reactor.util.observability.SignalListener;
-import reactor.util.observability.SignalListenerFactory;
+import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 
 /**
  * A generic per-Subscription side effect {@link Mono} that notifies a {@link SignalListener} of most events.

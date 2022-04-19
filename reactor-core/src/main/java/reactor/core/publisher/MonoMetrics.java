@@ -20,9 +20,6 @@ import io.micrometer.core.instrument.*;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
-
-import static reactor.core.publisher.FluxMetrics.*;
 
 /**
  * Activate metrics gathering on a {@link Mono}, assumes Micrometer is on the classpath.
@@ -45,8 +42,8 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 	MonoMetrics(Mono<? extends T> mono) {
 		super(mono);
 
-		this.name = resolveName(mono);
-		this.tags = resolveTags(mono, DEFAULT_TAGS_MONO);
+		this.name = FluxMetrics.resolveName(mono);
+		this.tags = FluxMetrics.resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
 
 		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();
 	}
@@ -90,7 +87,7 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		final public void cancel() {
-			recordCancel(sequenceName, commonTags, registry, subscribeToTerminateSample);
+			FluxMetrics.recordCancel(sequenceName, commonTags, registry, subscribeToTerminateSample);
 			s.cancel();
 		}
 
@@ -100,31 +97,31 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 				return;
 			}
 			done = true;
-			recordOnCompleteEmpty(sequenceName, commonTags, registry, subscribeToTerminateSample);
+			FluxMetrics.recordOnCompleteEmpty(sequenceName, commonTags, registry, subscribeToTerminateSample);
 			actual.onComplete();
 		}
 
 		@Override
 		final public void onError(Throwable e) {
 			if (done) {
-				recordMalformed(sequenceName, commonTags, registry);
+				FluxMetrics.recordMalformed(sequenceName, commonTags, registry);
 				Operators.onErrorDropped(e, actual.currentContext());
 				return;
 			}
 			done = true;
-			recordOnError(sequenceName, commonTags, registry, subscribeToTerminateSample, e);
+			FluxMetrics.recordOnError(sequenceName, commonTags, registry, subscribeToTerminateSample, e);
 			actual.onError(e);
 		}
 
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				recordMalformed(sequenceName, commonTags, registry);
+				FluxMetrics.recordMalformed(sequenceName, commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
-			recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
+			FluxMetrics.recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
 			actual.onNext(t);
 			actual.onComplete();
 		}
@@ -132,7 +129,7 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				recordOnSubscribe(sequenceName, commonTags, registry);
+				FluxMetrics.recordOnSubscribe(sequenceName, commonTags, registry);
 				this.subscribeToTerminateSample = Timer.start(clock);
 				this.s = s;
 				actual.onSubscribe(this);

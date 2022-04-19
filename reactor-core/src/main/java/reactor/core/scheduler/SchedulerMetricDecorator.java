@@ -34,7 +34,7 @@ import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 import reactor.util.Metrics;
 
-@Deprecated //this class is duplicated in reactor-metrics-micrometer
+@Deprecated //this class is duplicated in reactor-core-micrometer
 final class SchedulerMetricDecorator
 			implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
 			           Disposable {

@@ -17,10 +17,10 @@
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'java-library'
 
-description = 'Reactor Micrometer Metrics support'
+description = 'Reactor-Core Micrometer Metrics support'
 
 version = "$metricsMicrometerVersion"
-group = "io.projectreactor.observability"
+group = "io.projectreactor"
 
 ext {
 	def osgiVersion = osgiVersion("$metricsMicrometerVersion")
@@ -28,14 +28,14 @@ ext {
 	bndOptions = [
 		"Export-Package": [
 			"!*internal*",
-			"reactor.metrics.micrometer*;version=$osgiVersion;-noimport:=true"
+			"reactor.core.observability.micrometer*;version=$osgiVersion;-noimport:=true"
 		].join(","),
 		"Import-Package": [
 			"!javax.annotation",
 			"*"
 		].join(","),
-		"Bundle-Name" : "reactor-metrics-micrometer",
-		"Bundle-SymbolicName" : "io.projectreactor.observability.reactor-metrics-micrometer",
+		"Bundle-Name" : "reactor-core-micrometer",
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-core-micrometer",
 		"Bundle-Version" : "$osgiVersion"
 	]
 }
@@ -75,9 +75,9 @@ tasks.withType(Test).all {
 
 jar {
 	manifest {
-		attributes 'Implementation-Title': 'reactor-metrics-micrometer',
+		attributes 'Implementation-Title': 'reactor-core-micrometer',
 			'Implementation-Version': project.version,
-			'Automatic-Module-Name': 'reactor.metrics.micrometer'
+			'Automatic-Module-Name': 'reactor.core.micrometer'
 	}
 	bnd(bndOptions)
 }

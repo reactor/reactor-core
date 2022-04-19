@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,15 +23,21 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 
+import reactor.core.observability.SignalListener;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.observability.SignalListenerFactory;
+import reactor.core.observability.SignalListenerFactory;
 
 public final class Micrometer {
 
-	private static final String SCHEDULERS_DECORATOR_KEY = "reactor.metrics.micrometer.schedulerDecorator";
-
+	private static final String SCHEDULERS_DECORATOR_KEY = "reactor.core.observability.micrometer.schedulerDecorator";
 	private static MeterRegistry registry = Metrics.globalRegistry;
+
+	/**
+	 * The default "name" to use as a prefix for meter IDs if the instrumented sequence doesn't
+	 * define a {@link reactor.core.publisher.Flux#name(String) name}.
+	 */
+	public static final String DEFAULT_METER_PREFIX = "reactor";
 
 	/**
 	 * Set the registry to use in reactor for metrics related purposes.
@@ -51,26 +57,42 @@ public final class Micrometer {
 	}
 
 	/**
-	 * A {@link reactor.util.observability.SignalListener} factory that will ultimately produce Micrometer metrics
+	 * A {@link SignalListener} factory that will ultimately produce Micrometer metrics
 	 * to the configured default {@link #getRegistry() registry}.
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
+	 * <p>
+	 * When used in a {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} operator, meter names use
+	 * the {@link reactor.core.publisher.Flux#name(String)} set upstream of the tap as id prefix if applicable
+	 * or default to {@link #DEFAULT_METER_PREFIX}. Similarly, upstream tags are gathered and added
+	 * to the default set of tags for meters.
+	 * <p>
+	 * Note that some monitoring systems like Prometheus require to have the exact same set of
+	 * tags for each meter bearing the same name.
 	 *
 	 * @param <T> the type of onNext in the target publisher
-	 * @return a {@link reactor.util.observability.SignalListenerFactory} to record metrics
+	 * @return a {@link SignalListenerFactory} to record metrics
 	 */
 	public static <T> SignalListenerFactory<T, ?> metrics() {
 		return new MicrometerListenerFactory<>();
 	}
 
 	/**
-	 * A {@link reactor.util.observability.SignalListener} factory that will ultimately produce Micrometer metrics
+	 * A {@link SignalListener} factory that will ultimately produce Micrometer metrics
 	 * to the provided {@link MeterRegistry} using the provided {@link Clock} for timings.
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
+	 * <p>
+	 * When used in a {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} operator, meter names use
+	 * the {@link reactor.core.publisher.Flux#name(String)} set upstream of the tap as id prefix if applicable
+	 * or default to {@link #DEFAULT_METER_PREFIX}. Similarly, upstream tags are gathered and added
+	 * to the default set of tags for meters.
+	 * <p>
+	 * Note that some monitoring systems like Prometheus require to have the exact same set of
+	 * tags for each meter bearing the same name.
 	 *
 	 * @param <T> the type of onNext in the target publisher
-	 * @return a {@link reactor.util.observability.SignalListenerFactory} to record metrics
+	 * @return a {@link SignalListenerFactory} to record metrics
 	 */
 	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry registry, Clock clock) {
 		return new MicrometerListenerFactory<T>() {

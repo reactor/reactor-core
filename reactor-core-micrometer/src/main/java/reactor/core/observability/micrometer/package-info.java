@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-
 /**
  * Support of Micrometer 1.10+ instrumentation on reactor-core classes.
  */
 @NonNullApi
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import reactor.util.annotation.NonNullApi;

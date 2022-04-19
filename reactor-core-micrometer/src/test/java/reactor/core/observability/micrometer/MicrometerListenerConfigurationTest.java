@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -66,7 +66,7 @@ class MicrometerListenerConfigurationTest {
 
 		assertThat(configuration.sequenceName)
 			.as("sequenceName")
-			.isEqualTo(name == null ? MicrometerListener.REACTOR_DEFAULT_NAME : name);
+			.isEqualTo(name == null ? Micrometer.DEFAULT_METER_PREFIX : name);
 
 		if (tag == null) {
 			assertThat(configuration.commonTags.stream().map(t -> t.getKey() + "=" + t.getValue()))
@@ -108,7 +108,7 @@ class MicrometerListenerConfigurationTest {
 
 		assertThat(configuration.sequenceName)
 			.as("sequenceName")
-			.isEqualTo(name == null ? MicrometerListener.REACTOR_DEFAULT_NAME : name);
+			.isEqualTo(name == null ? Micrometer.DEFAULT_METER_PREFIX : name);
 
 		if (tag == null) {
 			assertThat(configuration.commonTags.stream().map(t -> t.getKey() + "=" + t.getValue()))
@@ -129,7 +129,7 @@ class MicrometerListenerConfigurationTest {
 
 		String resolvedName = MicrometerListenerConfiguration.resolveName(flux, logger);
 
-		assertThat(resolvedName).isEqualTo(MicrometerListener.REACTOR_DEFAULT_NAME);
+		assertThat(resolvedName).isEqualTo(Micrometer.DEFAULT_METER_PREFIX);
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
 	}
 
@@ -162,7 +162,7 @@ class MicrometerListenerConfigurationTest {
 
 		String resolvedName = MicrometerListenerConfiguration.resolveName(publisher, testLogger);
 
-		assertThat(resolvedName).as("resolved name").isEqualTo(MicrometerListener.REACTOR_DEFAULT_NAME);
+		assertThat(resolvedName).as("resolved name").isEqualTo(Micrometer.DEFAULT_METER_PREFIX);
 		assertThat(testLogger.getErrContent()).contains("Attempting to activate metrics but the upstream is not Scannable. You might want to use `name()` (and optionally `tags()`) right before this listener");
 	}
 

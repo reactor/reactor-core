@@ -19,7 +19,7 @@ plugins {
 
 rootProject.name = 'reactor'
 
-include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools', 'reactor-metrics-micrometer'
+include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools', 'reactor-core-micrometer'
 
 //libs catalog is declared in ./gradle/libs.versions.toml
 //TODO remove once Version Catalogs are stabilized. It is also activated in buildSrc

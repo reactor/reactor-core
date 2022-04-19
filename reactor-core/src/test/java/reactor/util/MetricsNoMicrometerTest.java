@@ -36,9 +36,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * <p>For tests that validate metrics usage when micrometer <em>is</em> present,
  * please have a look at the {@code withMicrometerTest} sourceset.</p>
  *
- * <p>For tests that validate that deprecated core metrics operators are NO-OP as well
- * when the reactor-metrics-micrometer module is on the classpath, see tests in that module.</p>
- *
  * @author Simon Baslé
  */
 @Deprecated

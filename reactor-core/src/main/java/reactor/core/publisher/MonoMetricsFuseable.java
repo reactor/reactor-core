@@ -26,9 +26,6 @@ import reactor.core.Fuseable;
 import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
-import static reactor.core.publisher.FluxMetrics.resolveName;
-import static reactor.core.publisher.FluxMetrics.resolveTags;
-
 /**
  * Activate metrics gathering on a {@link Mono} (Fuseable version), assumes Micrometer is on the classpath.
 
@@ -49,8 +46,8 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 	MonoMetricsFuseable(Mono<? extends T> mono) {
 		super(mono);
 
-		this.name = resolveName(mono);
-		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
+		this.name = FluxMetrics.resolveName(mono);
+		this.tags = FluxMetrics.resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
 
 		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();;
 	}

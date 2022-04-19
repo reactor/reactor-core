@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,7 +66,7 @@ class MicrometerListenerTest {
 	@Test
 	void initialStateFluxWithDefaultName() {
 		configuration = new MicrometerListenerConfiguration(
-			MicrometerListener.REACTOR_DEFAULT_NAME,
+			Micrometer.DEFAULT_METER_PREFIX,
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
 			virtualClock,
@@ -81,7 +81,7 @@ class MicrometerListenerTest {
 		assertThat(registry.getMetersAsString().split("\n"))
 			.as("registered meters: onNextIntervalTimer")
 			.containsExactly(
-				MicrometerListener.REACTOR_DEFAULT_NAME + ".onNext.delay(TIMER)[testTag1='testTagValue1', testTag2='testTagValue2']; count=0.0, total_time=0.0 seconds, max=0.0 seconds"
+				Micrometer.DEFAULT_METER_PREFIX + ".onNext.delay(TIMER)[testTag1='testTagValue1', testTag2='testTagValue2']; count=0.0, total_time=0.0 seconds, max=0.0 seconds"
 			);
 
 		assertThat(registry.remove(listener.onNextIntervalTimer))
@@ -123,7 +123,7 @@ class MicrometerListenerTest {
 	@Test
 	void initialStateMono() {
 		configuration = new MicrometerListenerConfiguration(
-			MicrometerListener.REACTOR_DEFAULT_NAME,
+			Micrometer.DEFAULT_METER_PREFIX,
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
 			virtualClock,
@@ -257,22 +257,6 @@ class MicrometerListenerTest {
 			.isEqualTo(100);
 	}
 
-	/*
-	@Override
-	public void doOnNext(T t) {
-		valued = true;
-		if (configuration.isMono || onNextIntervalTimer == null) {
-			//record valued completion directly
-			recordOnComplete(configuration.sequenceName, configuration.commonTags, configuration.registry, subscribeToTerminateSample);
-			return;
-		}
-		//record the delay since previous onNext/onSubscribe. This also records the count.
-		long last = this.lastNextEventNanos;
-		this.lastNextEventNanos = configuration.clock.monotonicTime();
-		this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
-	}
-	 */
-
 	@Test
 	void doOnNextRecordsInterval() {
 		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
@@ -299,7 +283,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnNextRecordsInterval_defaultName() {
-		configuration = new MicrometerListenerConfiguration(MicrometerListener.REACTOR_DEFAULT_NAME, Tags.empty(),
+		configuration = new MicrometerListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(),
 			registry, virtualClock, false);
 		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
 		listener.doOnSubscription();
@@ -310,7 +294,7 @@ class MicrometerListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("lastEventNanos recorded").isEqualTo(100);
 
-		assertThat(registry.find(MicrometerListener.REACTOR_DEFAULT_NAME + MicrometerListener.METER_FLOW_DURATION).meters())
+		assertThat(registry.find(Micrometer.DEFAULT_METER_PREFIX + MicrometerListener.METER_FLOW_DURATION).meters())
 			.as("no flow.duration meter yet")
 			.isEmpty();
 
@@ -393,7 +377,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnRequestDefaultNameIgnoresRequest() {
-		configuration = new MicrometerListenerConfiguration(MicrometerListener.REACTOR_DEFAULT_NAME, Tags.empty(), registry, virtualClock, false);
+		configuration = new MicrometerListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(), registry, virtualClock, false);
 		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
 		assertThatCode(() -> listener.doOnRequest(100L)).doesNotThrowAnyException();
 		assertThat(listener.requestedCounter).isNull();

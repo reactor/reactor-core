@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,8 +23,8 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
-import reactor.util.observability.SignalListener;
-import reactor.util.observability.SignalListenerFactory;
+import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 
 /**
  * A {@link SignalListenerFactory} for {@link MicrometerListener}.

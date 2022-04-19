@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,10 +26,9 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.util.annotation.Nullable;
-import reactor.util.observability.SignalListener;
+import reactor.core.observability.SignalListener;
 
 /**
  * A {@link SignalListener} that activates metrics gathering using Micrometer 1.x.
@@ -66,7 +65,7 @@ final class MicrometerListener<T> implements SignalListener<T> {
 					"Measures delays between onNext signals (or between onSubscribe and first onNext)")
 				.register(configuration.registry);
 
-			if (!REACTOR_DEFAULT_NAME.equals(configuration.sequenceName)) {
+			if (!Micrometer.DEFAULT_METER_PREFIX.equals(configuration.sequenceName)) {
 				this.requestedCounter = DistributionSummary.builder(configuration.sequenceName + METER_REQUESTED)
 					.tags(configuration.commonTags)
 					.description(
@@ -183,11 +182,6 @@ final class MicrometerListener<T> implements SignalListener<T> {
 		// NO-OP
 	}
 
-	/**
-	 * The default sequence name that will be used for instrumented {@link Flux} and {@link Mono} that don't have a
-	 * {@link Flux#name(String) name}.
-	 */
-	static final String REACTOR_DEFAULT_NAME = "reactor";
 	/**
 	 * Meter that counts the number of events received from a malformed source (ie an onNext after an onComplete).
 	 */

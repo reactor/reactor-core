@@ -557,7 +557,7 @@ public abstract class Schedulers {
 	 * </p>
 	 *
 	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers, which doesn't change the Factory.
-	 * @deprecated prefer using the equivalent method in reactor-metrics-micrometer module. To be removed at the earliest in 3.6.0.
+	 * @deprecated prefer using the equivalent method in reactor-core-micrometer module. To be removed at the earliest in 3.6.0.
 	 */
 	@Deprecated
 	public static void enableMetrics() {
@@ -570,7 +570,7 @@ public abstract class Schedulers {
 	 * If {@link #enableMetrics()} has been previously called, removes the decorator.
 	 * No-op if {@link #enableMetrics()} hasn't been called.
 	 *
-	 * @deprecated prefer using the equivalent method in reactor-metrics-micrometer module. To be removed at the earliest in 3.6.0.
+	 * @deprecated prefer using the equivalent method in reactor-core-micrometer module. To be removed at the earliest in 3.6.0.
 	 */
  	@Deprecated
 	public static void disableMetrics() {

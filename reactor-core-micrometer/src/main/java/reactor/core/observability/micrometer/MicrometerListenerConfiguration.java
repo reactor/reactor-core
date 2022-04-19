@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.metrics.micrometer;
+package reactor.core.observability.micrometer;
 
 import java.util.LinkedList;
 import java.util.function.BiFunction;
@@ -71,13 +71,13 @@ final class MicrometerListenerConfiguration {
 		Scannable scannable = Scannable.from(source);
 		if (!scannable.isScanAvailable()) {
 			logger.warn("Attempting to activate metrics but the upstream is not Scannable. You might want to use `name()` (and optionally `tags()`) right before this listener");
-			return MicrometerListener.REACTOR_DEFAULT_NAME;
+			return Micrometer.DEFAULT_METER_PREFIX;
 		}
 
 		String nameOrDefault = scannable.name();
 		if (scannable.stepName()
 			.equals(nameOrDefault)) {
-			return MicrometerListener.REACTOR_DEFAULT_NAME;
+			return Micrometer.DEFAULT_METER_PREFIX;
 		}
 		else {
 			return nameOrDefault;
