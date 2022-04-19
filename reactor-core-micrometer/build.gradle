@@ -82,8 +82,4 @@ jar {
 	bnd(bndOptions)
 }
 
-tasks.withType(Test).all {
-	useJUnitPlatform()
-}
-
 //TODO once 1.0.0 is released, introduce JAPICMP checks
