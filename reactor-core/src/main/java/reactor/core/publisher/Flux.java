@@ -57,9 +57,9 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.publisher.FluxOnAssembly.CheckpointHeavySnapshot;
 import reactor.core.publisher.FluxOnAssembly.CheckpointLightSnapshot;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -78,6 +78,8 @@ import reactor.util.function.Tuple6;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
+import reactor.util.observability.SignalListener;
+import reactor.util.observability.SignalListenerFactory;
 import reactor.util.retry.Retry;
 
 /**
@@ -8937,6 +8939,96 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> takeWhile(Predicate<? super T> continuePredicate) {
 		return onAssembly(new FluxTakeWhile<>(this, continuePredicate));
+	}
+
+	/**
+	 * Tap into Reactive Streams signals emitted or received by this {@link Flux} and notify a stateful per-{@link Subscriber}
+	 * {@link SignalListener}.
+	 * <p>
+	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
+	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
+	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
+	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
+	 * the exception.
+	 * <p>
+	 * This simplified variant assumes the state is purely initialized within the {@link Supplier},
+	 * as it is called for each incoming {@link Subscriber} without additional context.
+	 *
+	 * @param simpleListenerGenerator the {@link Supplier} to create a new {@link SignalListener} on each subscription
+	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
+	 * @see #tap(Function)
+	 * @see #tap(SignalListenerFactory)
+	 */
+	public final Flux<T> tap(Supplier<SignalListener<T>> simpleListenerGenerator) {
+		return tap(new SignalListenerFactory<T, Void>() {
+			@Override
+			public Void initializePublisherState(Publisher<? extends T> ignored) {
+				return null;
+			}
+
+			@Override
+			public SignalListener<T> createListener(Publisher<? extends T> ignored1, ContextView ignored2, Void ignored3) {
+				return simpleListenerGenerator.get();
+			}
+		});
+	}
+
+	/**
+	 * Tap into Reactive Streams signals emitted or received by this {@link Flux} and notify a stateful per-{@link Subscriber}
+	 * {@link SignalListener}.
+	 * <p>
+	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
+	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
+	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
+	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
+	 * the exception.
+	 * <p>
+	 * This simplified variant allows the {@link SignalListener} to be constructed for each subscription
+	 * with access to the incoming {@link Subscriber}'s {@link ContextView}.
+	 *
+	 * @param listenerGenerator the {@link Function} to create a new {@link SignalListener} on each subscription
+	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
+	 * @see #tap(Supplier)
+	 * @see #tap(SignalListenerFactory)
+	 */
+	public final Flux<T> tap(Function<ContextView, SignalListener<T>> listenerGenerator) {
+		return tap(new SignalListenerFactory<T, Void>() {
+			@Override
+			public Void initializePublisherState(Publisher<? extends T> ignored) {
+				return null;
+			}
+
+			@Override
+			public SignalListener<T> createListener(Publisher<? extends T> ignored1, ContextView listenerContext, Void ignored2) {
+				return listenerGenerator.apply(listenerContext);
+			}
+		});
+	}
+
+	/**
+	 * Tap into Reactive Streams signals emitted or received by this {@link Flux} and notify a stateful per-{@link Subscriber}
+	 * {@link SignalListener} created by the provided {@link SignalListenerFactory}.
+	 * <p>
+	 * The factory will initialize a {@link SignalListenerFactory#initializePublisherState(Publisher) state object} for
+	 * each {@link Flux} or {@link Mono} instance it is used with, and that state will be cached and exposed for each
+	 * incoming {@link Subscriber} in order to generate the associated {@link SignalListenerFactory#createListener(Publisher, ContextView, Object) listener}.
+	 * <p>
+	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
+	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
+	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
+	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
+	 * the exception.
+	 *
+	 * @param listenerFactory the {@link SignalListenerFactory} to create a new {@link SignalListener} on each subscription
+	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
+	 * @see #tap(Supplier)
+	 * @see #tap(Function)
+	 */
+	public final Flux<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxTapFuseable<>(this, listenerFactory));
+		}
+		return onAssembly(new FluxTap<>(this, listenerFactory));
 	}
 
 	/**
