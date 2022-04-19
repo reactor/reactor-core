@@ -50,7 +50,7 @@ class MicrometerListenerFactory<T> implements SignalListenerFactory<T, Micromete
 			return MicrometerListenerConfiguration.fromFlux((Flux<?>) source, useRegistry(), useClock());
 		}
 		else {
-			return MicrometerListenerConfiguration.fromFlux(Flux.from(source), useRegistry(), useClock());
+			throw new IllegalArgumentException("MicrometerListenerFactory must only be used via the tap operator / with a Flux or Mono");
 		}
 	}
 
