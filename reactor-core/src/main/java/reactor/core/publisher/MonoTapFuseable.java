@@ -27,15 +27,15 @@ import reactor.util.observability.SignalListenerFactory;
  *
  * @author Simon Baslé
  */
-final class MonoListenFuseable<T, STATE> extends InternalMonoOperator<T, T> implements Fuseable {
+final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> implements Fuseable {
 
-	final SignalListenerFactory<T, STATE> factory;
-	final STATE                           publisherState;
+	final SignalListenerFactory<T, STATE> tapFactory;
+	final STATE                           commonTapState;
 
-	MonoListenFuseable(Mono<? extends T> source, SignalListenerFactory<T, STATE> factory) {
+	MonoTapFuseable(Mono<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
 		super(source);
-		this.factory = factory;
-		this.publisherState = factory.initializePublisherState(source);
+		this.tapFactory = tapFactory;
+		this.commonTapState = tapFactory.initializePublisherState(source);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ final class MonoListenFuseable<T, STATE> extends InternalMonoOperator<T, T> impl
 		SignalListener<T> signalListener;
 		try {
 			//TODO replace currentContext() with contextView() when available
-			signalListener = factory.createListener(source, actual.currentContext().readOnly(), publisherState);
+			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
 			Operators.error(actual, generatorError);
@@ -64,9 +64,9 @@ final class MonoListenFuseable<T, STATE> extends InternalMonoOperator<T, T> impl
 
 		if (actual instanceof ConditionalSubscriber) {
 			//noinspection unchecked
-			return new FluxListenFuseable.ListenConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+			return new FluxTapFuseable.TapConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
 		}
-		return new FluxListenFuseable.ListenFuseableSubscriber<>(actual, signalListener);
+		return new FluxTapFuseable.TapFuseableSubscriber<>(actual, signalListener);
 	}
 
 	@Nullable

@@ -31,15 +31,15 @@ import reactor.util.observability.SignalListenerFactory;
  *
  * @author Simon Baslé
  */
-final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> implements Fuseable {
+final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> implements Fuseable {
 
-	final SignalListenerFactory<T, STATE> lifter;
-	final STATE                           publisherState;
+	final SignalListenerFactory<T, STATE> tapFactory;
+	final STATE                           commonTapState;
 
-	FluxListenFuseable(Flux<? extends T> source, SignalListenerFactory<T, STATE> lifter) {
+	FluxTapFuseable(Flux<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
 		super(source);
-		this.lifter = lifter;
-		this.publisherState = lifter.initializePublisherState(source);
+		this.tapFactory = tapFactory;
+		this.commonTapState = tapFactory.initializePublisherState(source);
 	}
 
 	@Override
@@ -50,7 +50,7 @@ final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> impl
 		SignalListener<T> signalListener;
 		try {
 			//TODO replace currentContext() with contextView() when available
-			signalListener = lifter.createListener(source, actual.currentContext().readOnly(), publisherState);
+			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
 			Operators.error(actual, generatorError);
@@ -68,9 +68,9 @@ final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> impl
 
 		if (actual instanceof ConditionalSubscriber) {
 			//noinspection unchecked
-			return new ListenConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+			return new TapConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
 		}
-		return new ListenFuseableSubscriber<>(actual, signalListener);
+		return new TapFuseableSubscriber<>(actual, signalListener);
 	}
 
 	@Nullable
@@ -82,12 +82,12 @@ final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> impl
 	}
 
 	//TODO support onErrorContinue around listener errors
-	static class ListenFuseableSubscriber<T> extends FluxListen.ListenSubscriber<T> implements QueueSubscription<T> {
+	static class TapFuseableSubscriber<T> extends FluxTap.TapSubscriber<T> implements QueueSubscription<T> {
 
 		int mode;
 		QueueSubscription<T> qs;
 
-		ListenFuseableSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
+		TapFuseableSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
 			super(actual, signalListener);
 		}
 
@@ -261,11 +261,11 @@ final class FluxListenFuseable<T, STATE> extends InternalFluxOperator<T, T> impl
 		}
 	}
 
-	static final class ListenConditionalFuseableSubscriber<T> extends ListenFuseableSubscriber<T> implements ConditionalSubscriber<T> {
+	static final class TapConditionalFuseableSubscriber<T> extends TapFuseableSubscriber<T> implements ConditionalSubscriber<T> {
 
 		final ConditionalSubscriber<? super T> actualConditional;
 
-		public ListenConditionalFuseableSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
+		public TapConditionalFuseableSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
 			super(actual, signalListener);
 			this.actualConditional = actual;
 		}

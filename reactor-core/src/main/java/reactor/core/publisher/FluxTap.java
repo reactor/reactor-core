@@ -30,15 +30,15 @@ import reactor.util.observability.SignalListenerFactory;
  *
  * @author Simon Baslé
  */
-final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
+final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 
-	final SignalListenerFactory<T, STATE> lifter;
-	final STATE                           publisherState;
+	final SignalListenerFactory<T, STATE> tapFactory;
+	final STATE                           commonTapState;
 
-	FluxListen(Flux<? extends T> source, SignalListenerFactory<T, STATE> lifter) {
+	FluxTap(Flux<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
 		super(source);
-		this.lifter = lifter;
-		this.publisherState = lifter.initializePublisherState(source);
+		this.tapFactory = tapFactory;
+		this.commonTapState = tapFactory.initializePublisherState(source);
 	}
 
 	@Override
@@ -49,7 +49,7 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 		SignalListener<T> signalListener;
 		try {
 			//TODO replace currentContext() with contextView() when available
-			signalListener = lifter.createListener(source, actual.currentContext().readOnly(), publisherState);
+			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
 			Operators.error(actual, generatorError);
@@ -67,9 +67,9 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 
 		if (actual instanceof ConditionalSubscriber) {
 			//noinspection unchecked
-			return new ListenConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+			return new TapConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
 		}
-		return new ListenSubscriber<>(actual, signalListener);
+		return new TapSubscriber<>(actual, signalListener);
 	}
 
 	@Nullable
@@ -81,7 +81,7 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 	}
 
 	//TODO support onErrorContinue around listener errors
-	static class ListenSubscriber<T> implements InnerOperator<T, T> {
+	static class TapSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 		final SignalListener<T>         listener;
@@ -89,7 +89,7 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 		boolean done;
 		Subscription s;
 
-		ListenSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
+		TapSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
 			this.actual = actual;
 			this.listener = signalListener;
 		}
@@ -306,11 +306,11 @@ final class FluxListen<T, STATE> extends InternalFluxOperator<T, T> {
 		}
 	}
 
-	static final class ListenConditionalSubscriber<T> extends ListenSubscriber<T> implements ConditionalSubscriber<T> {
+	static final class TapConditionalSubscriber<T> extends TapSubscriber<T> implements ConditionalSubscriber<T> {
 
 		final ConditionalSubscriber<? super T> actualConditional;
 
-		public ListenConditionalSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
+		public TapConditionalSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
 			super(actual, signalListener);
 			this.actualConditional = actual;
 		}

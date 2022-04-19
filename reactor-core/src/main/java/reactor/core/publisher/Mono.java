@@ -3164,93 +3164,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Listen to signals emitted or received by this {@link Mono} with a stateful per-{@link Subscriber}
-	 * {@link SignalListener}.
-	 * <p>
-	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
-	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
-	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
-	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop} the exception.
-	 * <p>
-	 * This simplified variant assumes the state is purely initialized in the {@link Supplier},
-	 * as it is called for each incoming {@link Subscriber} without additional context.
-	 *
-	 * @param simpleListenerGenerator the {@link Supplier} to create a new {@link SignalListener} on each subscription
-	 * @return a new {@link Mono} with side effects defined by generated {@link SignalListener}
-	 * @see #listen(Function)
-	 * @see #listen(SignalListenerFactory)
-	 */
-	public Mono<T> listen(Supplier<SignalListener<T>> simpleListenerGenerator) {
-		return listen(new SignalListenerFactory<T, Void>() {
-			@Override
-			public Void initializePublisherState(Publisher<? extends T> ignored) {
-				return null;
-			}
-
-			@Override
-			public SignalListener<T> createListener(Publisher<? extends T> ignored1, ContextView ignored2, Void ignored3) {
-				return simpleListenerGenerator.get();
-			}
-		});
-	}
-
-	/**
-	 * Listen to signals emitted or received by this {@link Mono} with a stateful per-{@link Subscriber}
-	 * {@link SignalListener}.
-	 * <p>
-	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
-	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
-	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
-	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop} the exception.
-	 * <p>
-	 * This simplified variant allows the {@link SignalListener} to be constructed for each subscription
-	 * with access to the incoming {@link Subscriber}'s {@link ContextView}.
-	 *
-	 * @param listenerGenerator the {@link Function} to create a new {@link SignalListener} on each subscription
-	 * @return a new {@link Mono} with side effects defined by generated {@link SignalListener}
-	 * @see #listen(Supplier)
-	 * @see #listen(SignalListenerFactory)
-	 */
-	public Mono<T> listen(Function<ContextView, SignalListener<T>> listenerGenerator) {
-		return listen(new SignalListenerFactory<T, Void>() {
-			@Override
-			public Void initializePublisherState(Publisher<? extends T> ignored) {
-				return null;
-			}
-
-			@Override
-			public SignalListener<T> createListener(Publisher<? extends T> ignored1, ContextView listenerContext, Void ignored2) {
-				return listenerGenerator.apply(listenerContext);
-			}
-		});
-	}
-
-	/**
-	 * Listen to signals emitted or received by this {@link Mono} with a stateful per-{@link Subscriber}
-	 * {@link SignalListener} created by the provided {@link SignalListenerFactory}.
-	 * <p>
-	 * The factory will initialize a {@link SignalListenerFactory#initializePublisherState(Publisher) state object} for
-	 * each {@link Flux} or {@link Mono} instance it is used with, and that state will be cached and exposed for each
-	 * incoming {@link Subscriber} in order to generate the associated {@link SignalListenerFactory#createListener(Publisher, ContextView, Object) listener}.
-	 * <p>
-	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
-	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
-	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
-	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop} the exception.
-	 *
-	 * @param listenerFactory the {@link SignalListenerFactory} to create a new {@link SignalListener} on each subscription
-	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
-	 * @see #listen(Supplier)
-	 * @see #listen(Function)
-	 */
-	public Mono<T> listen(SignalListenerFactory<T, ?> listenerFactory) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoListenFuseable<>(this, listenerFactory));
-		}
-		return onAssembly(new MonoListen<>(this, listenerFactory));
-	}
-
-	/**
 	 * Observe all Reactive Streams signals and trace them using {@link Logger} support.
 	 * Default will use {@link Level#INFO} and {@code java.util.logging}.
 	 * If SLF4J is available, it will be used instead.
@@ -4562,6 +4475,96 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> takeUntilOther(Publisher<?> other) {
 		return onAssembly(new MonoTakeUntilOther<>(this, other));
+	}
+
+	/**
+	 * Tap into Reactive Streams signals emitted or received by this {@link Mono} and notify a stateful per-{@link Subscriber}
+	 * {@link SignalListener}.
+	 * <p>
+	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
+	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
+	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
+	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
+	 * the exception.
+	 * <p>
+	 * This simplified variant assumes the state is purely initialized within the {@link Supplier},
+	 * as it is called for each incoming {@link Subscriber} without additional context.
+	 *
+	 * @param simpleListenerGenerator the {@link Supplier} to create a new {@link SignalListener} on each subscription
+	 * @return a new {@link Mono} with side effects defined by generated {@link SignalListener}
+	 * @see #tap(Function)
+	 * @see #tap(SignalListenerFactory)
+	 */
+	public Mono<T> tap(Supplier<SignalListener<T>> simpleListenerGenerator) {
+		return tap(new SignalListenerFactory<T, Void>() {
+			@Override
+			public Void initializePublisherState(Publisher<? extends T> ignored) {
+				return null;
+			}
+
+			@Override
+			public SignalListener<T> createListener(Publisher<? extends T> ignored1, ContextView ignored2, Void ignored3) {
+				return simpleListenerGenerator.get();
+			}
+		});
+	}
+
+	/**
+	 * Tap into Reactive Streams signals emitted or received by this {@link Mono} and notify a stateful per-{@link Subscriber}
+	 * {@link SignalListener}.
+	 * <p>
+	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
+	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
+	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
+	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
+	 * the exception.
+	 * <p>
+	 * This simplified variant allows the {@link SignalListener} to be constructed for each subscription
+	 * with access to the incoming {@link Subscriber}'s {@link ContextView}.
+	 *
+	 * @param listenerGenerator the {@link Function} to create a new {@link SignalListener} on each subscription
+	 * @return a new {@link Mono} with side effects defined by generated {@link SignalListener}
+	 * @see #tap(Supplier)
+	 * @see #tap(SignalListenerFactory)
+	 */
+	public Mono<T> tap(Function<ContextView, SignalListener<T>> listenerGenerator) {
+		return tap(new SignalListenerFactory<T, Void>() {
+			@Override
+			public Void initializePublisherState(Publisher<? extends T> ignored) {
+				return null;
+			}
+
+			@Override
+			public SignalListener<T> createListener(Publisher<? extends T> ignored1, ContextView listenerContext, Void ignored2) {
+				return listenerGenerator.apply(listenerContext);
+			}
+		});
+	}
+
+	/**
+	 * Tap into Reactive Streams signals emitted or received by this {@link Mono} and notify a stateful per-{@link Subscriber}
+	 * {@link SignalListener} created by the provided {@link SignalListenerFactory}.
+	 * <p>
+	 * The factory will initialize a {@link SignalListenerFactory#initializePublisherState(Publisher) state object} for
+	 * each {@link Flux} or {@link Mono} instance it is used with, and that state will be cached and exposed for each
+	 * incoming {@link Subscriber} in order to generate the associated {@link SignalListenerFactory#createListener(Publisher, ContextView, Object) listener}.
+	 * <p>
+	 * Any exception thrown by the {@link SignalListener} methods causes the subscription to be cancelled
+	 * and the subscriber to be terminated with an {@link Subscriber#onError(Throwable) onError signal} of that
+	 * exception. Note that {@link SignalListener#doFinally(SignalType)}, {@link SignalListener#doAfterComplete()} and
+	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
+	 * the exception.
+	 *
+	 * @param listenerFactory the {@link SignalListenerFactory} to create a new {@link SignalListener} on each subscription
+	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
+	 * @see #tap(Supplier)
+	 * @see #tap(Function)
+	 */
+	public Mono<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoTapFuseable<>(this, listenerFactory));
+		}
+		return onAssembly(new MonoTap<>(this, listenerFactory));
 	}
 
 	/**

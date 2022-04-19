@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxListen.ListenSubscriber;
+import reactor.core.publisher.FluxTap.TapSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.observability.SignalListener;
 import reactor.util.observability.SignalListenerFactory;
@@ -28,15 +28,15 @@ import reactor.util.observability.SignalListenerFactory;
  *
  * @author Simon Baslé
  */
-final class MonoListen<T, STATE> extends InternalMonoOperator<T, T> {
+final class MonoTap<T, STATE> extends InternalMonoOperator<T, T> {
 
-	final SignalListenerFactory<T, STATE> factory;
-	final STATE                           publisherState;
+	final SignalListenerFactory<T, STATE> tapFactory;
+	final STATE                           commonTapState;
 
-	MonoListen(Mono<? extends T> source, SignalListenerFactory<T, STATE> factory) {
+	MonoTap(Mono<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
 		super(source);
-		this.factory = factory;
-		this.publisherState = factory.initializePublisherState(source);
+		this.tapFactory = tapFactory;
+		this.commonTapState = tapFactory.initializePublisherState(source);
 	}
 
 	@Override
@@ -47,7 +47,7 @@ final class MonoListen<T, STATE> extends InternalMonoOperator<T, T> {
 		SignalListener<T> signalListener;
 		try {
 			//TODO replace currentContext() with contextView() when available
-			signalListener = factory.createListener(source, actual.currentContext().readOnly(), publisherState);
+			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
 			Operators.error(actual, generatorError);
@@ -65,9 +65,9 @@ final class MonoListen<T, STATE> extends InternalMonoOperator<T, T> {
 
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			//noinspection unchecked
-			return new FluxListen.ListenConditionalSubscriber<>((Fuseable.ConditionalSubscriber<? super T>) actual, signalListener);
+			return new FluxTap.TapConditionalSubscriber<>((Fuseable.ConditionalSubscriber<? super T>) actual, signalListener);
 		}
-		return new ListenSubscriber<>(actual, signalListener);
+		return new TapSubscriber<>(actual, signalListener);
 	}
 
 	@Nullable

@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Nested;
@@ -45,7 +44,7 @@ import static org.assertj.core.api.Assertions.*;
 /**
  * @author Simon Baslé
  */
-class FluxListenTest {
+class FluxTapTest {
 
 	private static class TestSignalListener<T> implements SignalListener<T> {
 
@@ -169,7 +168,7 @@ class FluxListenTest {
 
 		Flux<Integer> fullFlux = Flux.just(1, 2, 3).hide();
 
-		fullFlux.listen(() -> testSignalListener)
+		fullFlux.tap(() -> testSignalListener)
 			.subscribeWith(TestSubscriber.create());
 
 		assertThat(testSignalListener.listenerErrors).as("listener errors").isEmpty();
@@ -195,7 +194,7 @@ class FluxListenTest {
 
 		Flux<Integer> fullFlux = Flux.just(1, 2, 3).concatWith(Mono.error(expectedError)).hide();
 
-		fullFlux.listen(() -> testSignalListener)
+		fullFlux.tap(() -> testSignalListener)
 			.subscribeWith(TestSubscriber.create());
 
 		assertThat(testSignalListener.listenerErrors).as("listener errors").isEmpty();
@@ -221,7 +220,7 @@ class FluxListenTest {
 
 		Flux<Integer> fullFlux = Flux.just(1, 2, 3).hide();
 
-		fullFlux.listen(() -> testSignalListener)
+		fullFlux.tap(() -> testSignalListener)
 			.subscribeWith(testSubscriber);
 
 		assertThat(testSignalListener.listenerErrors).as("listener errors").isEmpty();
@@ -276,7 +275,7 @@ class FluxListenTest {
 
 		Flux<Integer> fullFlux = Flux.just(1, 2, 3).hide();
 
-		fullFlux.listen(() -> testSignalListener)
+		fullFlux.tap(() -> testSignalListener)
 			.subscribeWith(testSubscriber);
 
 		assertThat(testSignalListener.listenerErrors).as("listener errors").isEmpty();
@@ -319,7 +318,7 @@ class FluxListenTest {
 		TestSubscriber<Integer> ignored = TestSubscriber.create();
 
 		testPublisher.flux().hide()
-			.listen(() -> testSignalListener)
+			.tap(() -> testSignalListener)
 			.subscribeWith(ignored);
 
 		testPublisher.next(1, 2, 3);
@@ -375,7 +374,7 @@ class FluxListenTest {
 		TestSubscriber<Integer> ignored = TestSubscriber.create();
 
 		testPublisher.flux().hide()
-			.listen(() -> testSignalListener)
+			.tap(() -> testSignalListener)
 			.subscribeWith(ignored);
 
 		testPublisher.next(1, 2, 3);
@@ -433,7 +432,7 @@ class FluxListenTest {
 		Throwable malformedError = new RuntimeException("expected malformed onError");
 
 		testPublisher.flux().hide()
-			.listen(() -> testSignalListener)
+			.tap(() -> testSignalListener)
 			.subscribeWith(ignored);
 
 		testPublisher.next(1, 2, 3);
@@ -484,7 +483,7 @@ class FluxListenTest {
 	@Test
 	void throwingCreateListener() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
-		FluxListen<Integer, Void> test = new FluxListen<>(Flux.just(1),
+		FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1),
 			new SignalListenerFactory<Integer, Void>() {
 				@Override
 				public Void initializePublisherState(Publisher<? extends Integer> source) {
@@ -519,7 +518,7 @@ class FluxListenTest {
 			}
 		};
 
-		FluxListen<Integer, Void> test = new FluxListen<>(Flux.just(1), factoryOf(listener));
+		FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1), factoryOf(listener));
 
 		assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 			.doesNotThrowAnyException();
@@ -534,7 +533,7 @@ class FluxListenTest {
 	}
 
 	@Nested
-	class FluxListenFuseableTest {
+	class FluxTapFuseableTest {
 
 		@Test
 		void implementationSmokeTest() {
@@ -542,21 +541,21 @@ class FluxListenTest {
 			//the TestSubscriber "requireFusion" configuration below is intentionally inverted
 			//so that an exception describing the actual Subscription is thrown when calling block()
 			TestSubscriber<Integer> testSubscriberForFuseable = TestSubscriber.builder().requireNotFuseable().build();
-			Flux<Integer> fuseable = fuseableSource.listen(TestSignalListener::new);
+			Flux<Integer> fuseable = fuseableSource.tap(TestSignalListener::new);
 
 			assertThat(fuseableSource).as("smoke test fuseableSource").isInstanceOf(Fuseable.class);
-			assertThat(fuseable).as("fuseable").isInstanceOf(FluxListenFuseable.class);
+			assertThat(fuseable).as("fuseable").isInstanceOf(FluxTapFuseable.class);
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> fuseable.subscribeWith(testSubscriberForFuseable).block())
-				.as("ListenFuseableSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListenFuseable$ListenFuseableSubscriber");
+				.as("TapFuseableSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTapFuseable$TapFuseableSubscriber");
 		}
 
 		@Test
 		void throwingCreateListener() {
 			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
-			FluxListenFuseable<Integer, Void> test = new FluxListenFuseable<>(Flux.just(1),
+			FluxTapFuseable<Integer, Void> test = new FluxTapFuseable<>(Flux.just(1),
 				new SignalListenerFactory<Integer, Void>() {
 					@Override
 					public Void initializePublisherState(Publisher<? extends Integer> source) {
@@ -585,7 +584,7 @@ class FluxListenTest {
 			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
 			TestSignalListener<Integer> listener = new TestSignalListener<>();
 
-			FluxListenFuseable<Integer, Void> test = new FluxListenFuseable<>(Flux.just(1), factoryOf(listener));
+			FluxTapFuseable<Integer, Void> test = new FluxTapFuseable<>(Flux.just(1), factoryOf(listener));
 
 			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 				.doesNotThrowAnyException();
@@ -610,7 +609,7 @@ class FluxListenTest {
 				}
 			};
 
-			FluxListenFuseable<Integer, Void> test = new FluxListenFuseable<>(Flux.just(1), factoryOf(listener));
+			FluxTapFuseable<Integer, Void> test = new FluxTapFuseable<>(Flux.just(1), factoryOf(listener));
 
 			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 				.doesNotThrowAnyException();
@@ -634,7 +633,7 @@ class FluxListenTest {
 	}
 
 	@Nested
-	class FluxListenConditionalTest {
+	class FluxTapConditionalTest {
 
 		@Test
 		void implementationSmokeTest() {
@@ -642,22 +641,22 @@ class FluxListenTest {
 			//the TestSubscriber "requireFusion" configuration below is intentionally inverted
 			//so that an exception describing the actual Subscription is thrown when calling block()
 			TestSubscriber<Integer> conditionalTestSubscriber = TestSubscriber.builder().requireFusion(2).buildConditional(i -> true);
-			Flux<Integer> normal = normalSource.listen(TestSignalListener::new);
+			Flux<Integer> normal = normalSource.tap(TestSignalListener::new);
 
 			assertThat(normalSource).as("smoke test normal source").isNotInstanceOf(Fuseable.class);
-			assertThat(normal).as("normal").isInstanceOf(FluxListen.class);
+			assertThat(normal).as("normal").isInstanceOf(FluxTap.class);
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> normal.subscribeWith(conditionalTestSubscriber).block())
-				.as("ListenConditionalSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListen$ListenConditionalSubscriber");
+				.as("TapConditionalSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTap$TapConditionalSubscriber");
 		}
 
 		//TODO test tryOnNext
 	}
 
 	@Nested
-	class FluxListenConditionalFuseableTest {
+	class FluxTapConditionalFuseableTest {
 
 		//TODO test tryOnNext
 
@@ -667,30 +666,30 @@ class FluxListenTest {
 			//the TestSubscriber "requireFusion" configuration below is intentionally inverted
 			//so that an exception describing the actual Subscription is thrown when calling block()
 			TestSubscriber<Integer> conditionalTestSubscriberForFuseable = TestSubscriber.builder().requireNotFuseable().buildConditional(i -> true);
-			Flux<Integer> fuseable = fuseableSource.listen(TestSignalListener::new);
+			Flux<Integer> fuseable = fuseableSource.tap(TestSignalListener::new);
 
 			assertThat(fuseableSource).as("smoke test fuseableSource").isInstanceOf(Fuseable.class);
-			assertThat(fuseable).as("fuseable").isInstanceOf(FluxListenFuseable.class);
+			assertThat(fuseable).as("fuseable").isInstanceOf(FluxTapFuseable.class);
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> fuseable.subscribeWith(conditionalTestSubscriberForFuseable).block())
-				.as("ListenConditionalFuseableSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListenFuseable$ListenConditionalFuseableSubscriber");
+				.as("TapConditionalFuseableSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTapFuseable$TapConditionalFuseableSubscriber");
 		}
 	}
 
 	@Nested
-	class MonoListenTest {
+	class MonoTapTest {
 
 		@Test
-		void subscriberImplementationsFromFluxListen() {
+		void subscriberImplementationsFromFluxTap() {
 			Mono<Integer> normalSource = Mono.just(1).hide();
 
 			assertThat(normalSource).as("smoke test normalSource").isNotInstanceOf(Fuseable.class);
 
-			Mono<Integer> normal = normalSource.listen(TestSignalListener::new);
+			Mono<Integer> normal = normalSource.tap(TestSignalListener::new);
 
-			assertThat(normal).as("normal").isInstanceOf(MonoListen.class);
+			assertThat(normal).as("normal").isInstanceOf(MonoTap.class);
 
 			//the TestSubscriber "requireFusion" configuration below are intentionally inverted
 			//so that an exception describing the actual Subscription is thrown when calling block()
@@ -699,19 +698,19 @@ class FluxListenTest {
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> normal.subscribeWith(testSubscriberForNormal).block())
-				.as("ListenSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListen$ListenSubscriber");
+				.as("TapSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTap$TapSubscriber");
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> normal.subscribeWith(testSubscriberForNormalConditional).block())
-				.as("ListenConditionalSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListen$ListenConditionalSubscriber");
+				.as("TapConditionalSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTap$TapConditionalSubscriber");
 		}
 
 		@Test
 		void throwingCreateListener() {
 			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
-			MonoListen<Integer, Void> test = new MonoListen<>(Mono.just(1),
+			MonoTap<Integer, Void> test = new MonoTap<>(Mono.just(1),
 				new SignalListenerFactory<Integer, Void>() {
 					@Override
 					public Void initializePublisherState(Publisher<? extends Integer> source) {
@@ -740,7 +739,7 @@ class FluxListenTest {
 			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
 			TestSignalListener<Integer> listener = new TestSignalListener<>();
 
-			MonoListen<Integer, Void> test = new MonoListen<>(Mono.just(1), factoryOf(listener));
+			MonoTap<Integer, Void> test = new MonoTap<>(Mono.just(1), factoryOf(listener));
 
 			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 				.doesNotThrowAnyException();
@@ -765,7 +764,7 @@ class FluxListenTest {
 				}
 			};
 
-			MonoListen<Integer, Void> test = new MonoListen<>(Mono.just(1), factoryOf(listener));
+			MonoTap<Integer, Void> test = new MonoTap<>(Mono.just(1), factoryOf(listener));
 
 			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 				.doesNotThrowAnyException();
@@ -781,17 +780,17 @@ class FluxListenTest {
 	}
 	
 	@Nested
-	class MonoListenFuseableTest {
+	class MonoTapFuseableTest {
 
 		@Test
-		void subscriberImplementationsFromFluxListenFuseable() {
+		void subscriberImplementationsFromFluxTapFuseable() {
 			Mono<Integer> fuseableSource = Mono.just(1);
 
 			assertThat(fuseableSource).as("smoke test fuseableSource").isInstanceOf(Fuseable.class);
 
-			Mono<Integer> fuseable = fuseableSource.listen(TestSignalListener::new);
+			Mono<Integer> fuseable = fuseableSource.tap(TestSignalListener::new);
 
-			assertThat(fuseable).as("fuseable").isInstanceOf(MonoListenFuseable.class);
+			assertThat(fuseable).as("fuseable").isInstanceOf(MonoTapFuseable.class);
 
 			//the TestSubscriber "requireFusion" configuration below are intentionally inverted
 			//so that an exception describing the actual Subscription is thrown when calling block()
@@ -800,19 +799,19 @@ class FluxListenTest {
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> fuseable.subscribeWith(testSubscriberForFuseable).block())
-				.as("ListenFuseableSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListenFuseable$ListenFuseableSubscriber");
+				.as("TapFuseableSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTapFuseable$TapFuseableSubscriber");
 
 			assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> fuseable.subscribeWith(testSubscriberForFuseableConditional).block())
-				.as("ListenFuseableConditionalSubscriber")
-				.withMessageContaining("got reactor.core.publisher.FluxListenFuseable$ListenConditionalFuseableSubscriber");
+				.as("TapFuseableConditionalSubscriber")
+				.withMessageContaining("got reactor.core.publisher.FluxTapFuseable$TapConditionalFuseableSubscriber");
 		}
 
 		@Test
 		void throwingCreateListener() {
 			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
-			MonoListenFuseable<Integer, Void> test = new MonoListenFuseable<>(Mono.just(1),
+			MonoTapFuseable<Integer, Void> test = new MonoTapFuseable<>(Mono.just(1),
 				new SignalListenerFactory<Integer, Void>() {
 					@Override
 					public Void initializePublisherState(Publisher<? extends Integer> source) {
@@ -841,7 +840,7 @@ class FluxListenTest {
 			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
 			TestSignalListener<Integer> listener = new TestSignalListener<>();
 
-			MonoListenFuseable<Integer, Void> test = new MonoListenFuseable<>(Mono.just(1), factoryOf(listener));
+			MonoTapFuseable<Integer, Void> test = new MonoTapFuseable<>(Mono.just(1), factoryOf(listener));
 
 			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 				.doesNotThrowAnyException();
@@ -866,7 +865,7 @@ class FluxListenTest {
 				}
 			};
 
-			MonoListenFuseable<Integer, Void> test = new MonoListenFuseable<>(Mono.just(1), factoryOf(listener));
+			MonoTapFuseable<Integer, Void> test = new MonoTapFuseable<>(Mono.just(1), factoryOf(listener));
 
 			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
 				.doesNotThrowAnyException();
@@ -882,12 +881,12 @@ class FluxListenTest {
 	}
 
 	@Nested
-	class ListenScannableTest {
+	class TapScannableTest {
 
 		@Test
-		void scanFluxListen() {
+		void scanFluxTap() {
 			Flux<Integer> source = Flux.just(1);
-			FluxListen<Integer, Void> testPublisher = new FluxListen<>(source, ignoredFactory());
+			FluxTap<Integer, Void> testPublisher = new FluxTap<>(source, ignoredFactory());
 
 			Scannable test = Scannable.from(testPublisher);
 			assertThat(test).isSameAs(testPublisher)
@@ -899,9 +898,9 @@ class FluxListenTest {
 		}
 
 		@Test
-		void scanFluxListenFuseable() {
+		void scanFluxTapFuseable() {
 			Flux<Integer> source = Flux.just(1);
-			FluxListenFuseable<Integer, Void> testPublisher = new FluxListenFuseable<>(source, ignoredFactory());
+			FluxTapFuseable<Integer, Void> testPublisher = new FluxTapFuseable<>(source, ignoredFactory());
 
 			Scannable test = Scannable.from(testPublisher);
 			assertThat(test).isSameAs(testPublisher)
@@ -915,7 +914,7 @@ class FluxListenTest {
 		@Test
 		void scanMonoListen() {
 			Mono<Integer> source = Mono.just(1);
-			MonoListen<Integer, Void> testPublisher = new MonoListen<>(source, ignoredFactory());
+			MonoTap<Integer, Void> testPublisher = new MonoTap<>(source, ignoredFactory());
 
 			Scannable test = Scannable.from(testPublisher);
 			assertThat(test).isSameAs(testPublisher)
@@ -929,7 +928,7 @@ class FluxListenTest {
 		@Test
 		void scanMonoListenFuseable() {
 			Mono<Integer> source = Mono.just(1);
-			MonoListenFuseable<Integer, Void> testPublisher = new MonoListenFuseable<>(source, ignoredFactory());
+			MonoTapFuseable<Integer, Void> testPublisher = new MonoTapFuseable<>(source, ignoredFactory());
 
 			Scannable test = Scannable.from(testPublisher);
 			assertThat(test).isSameAs(testPublisher)
@@ -945,7 +944,7 @@ class FluxListenTest {
 			CoreSubscriber<Integer> actual = Operators.drainSubscriber();
 			Subscription subscription = Operators.emptySubscription();
 
-			FluxListen.ListenSubscriber<?> subscriber = new FluxListen.ListenSubscriber<>(
+			FluxTap.TapSubscriber<?> subscriber = new FluxTap.TapSubscriber<>(
 				actual, new TestSignalListener<>());
 
 			subscriber.onSubscribe(subscription);
@@ -967,7 +966,7 @@ class FluxListenTest {
 			ConditionalSubscriber<? super Integer> actual = Operators.toConditionalSubscriber(Operators.drainSubscriber());
 			Subscription subscription = Operators.emptySubscription();
 
-			FluxListen.ListenConditionalSubscriber<?> subscriber = new FluxListen.ListenConditionalSubscriber<>(
+			FluxTap.TapConditionalSubscriber<?> subscriber = new FluxTap.TapConditionalSubscriber<>(
 				actual, new TestSignalListener<>());
 
 			subscriber.onSubscribe(subscription);
@@ -989,7 +988,7 @@ class FluxListenTest {
 			CoreSubscriber<Integer> actual = Operators.drainSubscriber();
 			Subscription subscription = Operators.emptySubscription();
 
-			FluxListenFuseable.ListenFuseableSubscriber<?> subscriber = new FluxListenFuseable.ListenFuseableSubscriber<>(
+			FluxTapFuseable.TapFuseableSubscriber<?> subscriber = new FluxTapFuseable.TapFuseableSubscriber<>(
 				actual, new TestSignalListener<>());
 
 			subscriber.onSubscribe(subscription);
@@ -1011,7 +1010,8 @@ class FluxListenTest {
 			ConditionalSubscriber<? super Integer> actual = Operators.toConditionalSubscriber(Operators.drainSubscriber());
 			Subscription subscription = Operators.emptySubscription();
 
-			FluxListenFuseable.ListenConditionalFuseableSubscriber<?> subscriber = new FluxListenFuseable.ListenConditionalFuseableSubscriber<>(
+			FluxTapFuseable.TapConditionalFuseableSubscriber<?>
+				subscriber = new FluxTapFuseable.TapConditionalFuseableSubscriber<>(
 				actual, new TestSignalListener<>());
 
 			subscriber.onSubscribe(subscription);
