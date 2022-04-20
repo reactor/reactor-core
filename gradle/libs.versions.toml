@@ -9,7 +9,7 @@ asciidoctor = "3.3.2"
 bytebuddy = "1.12.9"
 jmh = "1.35"
 junit = "5.8.2"
-micrometer = "1.10.0-SNAPSHOT"
+micrometer = "1.10.0-M1"
 reactiveStreams = "1.0.3"
 
 [libraries]
