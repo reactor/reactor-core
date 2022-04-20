@@ -83,7 +83,9 @@ public interface MonoSink<T> {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	ContextView contextView();
+	default ContextView contextView() {
+		return this.currentContext();
+	}
 
 	/**
 	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of

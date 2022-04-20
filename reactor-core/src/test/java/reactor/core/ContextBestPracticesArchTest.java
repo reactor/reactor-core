@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,15 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.MonoSink;
+import reactor.core.publisher.SynchronousSink;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CurrentContextArchTest {
+class ContextBestPracticesArchTest {
 
 	static JavaClasses CORE_SUBSCRIBER_CLASSES = new ClassFileImporter()
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -50,7 +55,7 @@ public class CurrentContextArchTest {
 	}
 
 	@Test
-	public void corePublishersShouldNotUseDefaultCurrentContext() {
+	void corePublishersShouldNotUseDefaultCurrentContext() {
 		classes()
 				.that().implement(CoreSubscriber.class)
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
@@ -78,7 +83,7 @@ public class CurrentContextArchTest {
 	@Test
 	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
 	@SuppressWarnings("deprecation")
-	public void fluxProcessorsShouldNotUseDefaultCurrentContext() {
+	void fluxProcessorsShouldNotUseDefaultCurrentContext() {
 		classes()
 				.that().areAssignableTo(reactor.core.publisher.FluxProcessor.class)
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
@@ -104,5 +109,36 @@ public class CurrentContextArchTest {
 					}
 				})
 				.check(FLUXPROCESSOR_CLASSES);
+	}
+
+	@Test
+	void oldSinksShouldNotUseDefaultCurrentContext() {
+		classes()
+			.that().implement(SynchronousSink.class)
+			.or().implement(FluxSink.class)
+			.or().implement(MonoSink.class)
+			.and().doNotHaveModifier(JavaModifier.ABSTRACT)
+			.should(new ArchCondition<JavaClass>("not use the default contextView()") {
+				@Override
+				public void check(JavaClass item, ConditionEvents events) {
+					boolean overridesMethod = item
+						.getAllMethods()
+						.stream()
+						.filter(it -> "contextView".equals(it.getName()))
+						.filter(it -> it.getRawParameterTypes().isEmpty())
+						.anyMatch(it -> !it.getOwner().isEquivalentTo(SynchronousSink.class)
+							&& !it.getOwner().isEquivalentTo(FluxSink.class)
+							&& !it.getOwner().isEquivalentTo(MonoSink.class)
+						);
+
+					if (!overridesMethod) {
+						events.add(SimpleConditionEvent.violated(
+							item,
+							item.getFullName() + item.getSourceCodeLocation() + ": contextView() is not overridden"
+						));
+					}
+				}
+			})
+			.check(CORE_SUBSCRIBER_CLASSES);
 	}
 }
