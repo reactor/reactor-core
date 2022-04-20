@@ -3,8 +3,6 @@
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) [![Latest](https://img.shields.io/github/release/reactor/reactor-core/all.svg)]() 
 
-[![Download](https://api.bintray.com/packages/spring/jars/io.projectreactor/images/download.svg)](https://bintray.com/spring/jars/io.projectreactor/_latestVersion)
-
 [![CI on GHA](https://github.com/reactor/reactor-core/actions/workflows/publish.yml/badge.svg)](https://github.com/reactor/reactor-core/actions/workflows/publish.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/reactor/reactor-core.svg)]()
 [![Code Quality: Java](https://img.shields.io/lgtm/grade/java/g/reactor/reactor-core.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/reactor/reactor-core/context:java)
@@ -82,7 +80,7 @@ A Reactive Streams Publisher with basic flow operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each subscription (_Flux#subscribe()_, ...) or multicasting operations (such as _Flux#publish_ and _Flux#publishNext_).
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flux.png" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flux.png" width="500" style="background-color: white">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
 
 Flux in action :
 ```java
@@ -101,7 +99,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.4.1/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mono.svg" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.4.1/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/mono.svg" width="500" style="background-color: white">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
 
 Mono in action :
 ```java
