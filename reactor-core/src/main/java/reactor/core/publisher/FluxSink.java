@@ -84,7 +84,9 @@ public interface FluxSink<T> extends Contextual {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	ContextView contextView();
+	default ContextView contextView() {
+		return currentContext();
+	}
 
 
 	/**

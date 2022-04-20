@@ -36,8 +36,8 @@ import reactor.test.ParameterizedTestWithName;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.context.ContextView;
-import reactor.util.observability.SignalListener;
-import reactor.util.observability.SignalListenerFactory;
+import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 
 import static org.assertj.core.api.Assertions.*;
 

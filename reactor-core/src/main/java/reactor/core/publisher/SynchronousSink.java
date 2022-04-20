@@ -66,7 +66,9 @@ public interface SynchronousSink<T> extends Contextual {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	ContextView contextView();
+	default ContextView contextView() {
+		return currentContext();
+	}
 
 	/**
 	 * @param e the exception to signal, not null

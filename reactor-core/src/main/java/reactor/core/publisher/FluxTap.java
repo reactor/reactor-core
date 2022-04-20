@@ -22,8 +22,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
-import reactor.util.observability.SignalListener;
-import reactor.util.observability.SignalListenerFactory;
+import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 
 /**
  * A generic per-Subscription side effect {@link Flux} that notifies a {@link SignalListener} of most events.
