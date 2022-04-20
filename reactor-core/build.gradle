@@ -162,7 +162,12 @@ task japicmp(type: JapicmpTask) {
 	// TODO after a .0 release, bump the gradle.properties baseline
 	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [ ]
-	methodExcludes = [ 'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)' ]
+	methodExcludes = [
+		'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)',
+		'reactor.core.publisher.FluxSink#contextView()',
+		'reactor.core.publisher.MonoSink#contextView()',
+		'reactor.core.publisher.SynchronousSink#contextView()'
+	]
 }
 
 gradle.taskGraph.afterTask { task, state ->
