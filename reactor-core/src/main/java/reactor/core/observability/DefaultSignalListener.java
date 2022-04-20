@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.util.observability;
+package reactor.core.observability;
 
 import reactor.core.Fuseable;
 import reactor.core.publisher.SignalType;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.util.observability;
+package reactor.core.observability;
 
 import org.reactivestreams.Publisher;
 

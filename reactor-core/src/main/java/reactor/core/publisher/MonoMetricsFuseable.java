@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,6 @@ import reactor.core.Fuseable;
 import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
-import static reactor.core.publisher.FluxMetrics.resolveName;
-import static reactor.core.publisher.FluxMetrics.resolveTags;
-
 /**
  * Activate metrics gathering on a {@link Mono} (Fuseable version), assumes Micrometer is on the classpath.
 
@@ -38,6 +35,7 @@ import static reactor.core.publisher.FluxMetrics.resolveTags;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
+@Deprecated
 final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final String name;
@@ -48,8 +46,8 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 	MonoMetricsFuseable(Mono<? extends T> mono) {
 		super(mono);
 
-		this.name = resolveName(mono);
-		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
+		this.name = FluxMetrics.resolveName(mono);
+		this.tags = FluxMetrics.resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
 
 		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();;
 	}

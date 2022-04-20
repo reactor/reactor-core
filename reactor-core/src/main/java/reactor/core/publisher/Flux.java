@@ -78,8 +78,8 @@ import reactor.util.function.Tuple6;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
-import reactor.util.observability.SignalListener;
-import reactor.util.observability.SignalListenerFactory;
+import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 import reactor.util.retry.Retry;
 
 /**
@@ -6427,7 +6427,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @see #name(String)
 	 * @see #tag(String, String)
+	 * @deprecated Prefer using the {@link #tap(SignalListenerFactory)} with the {@link SignalListenerFactory} provided by
+	 * the new reactor-core-micrometer module. To be removed in 3.6.0 at the earliest.
 	 */
+	@Deprecated
 	public final Flux<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
 			return this;
@@ -6443,7 +6446,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
 	 * <p>
-	 * If {@link #metrics()} operator is called later in the chain, this name will be used as a prefix for meters' name.
+	 * The name is typically visible at assembly time by the {@link #tap(SignalListenerFactory)} operator,
+	 * which could for example be configured with a metrics listener using the name as a prefix for meters' id.
 	 *
 	 * @param name a name for the sequence
 	 *
@@ -8746,11 +8750,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Tag this flux with a key/value pair. These can be retrieved as a {@link Set} of
 	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
-	 * traversed
-	 * by {@link Scannable#parents()}).
+	 * traversed by {@link Scannable#parents()}).
 	 * <p>
-	 * Note that some monitoring systems like Prometheus require to have the exact same set of
-	 * tags for each meter bearing the same name.
+	 * The name is typically visible at assembly time by the {@link #tap(SignalListenerFactory)} operator,
+	 * which could for example be configured with a metrics listener applying the tag(s) to its meters.
 	 *
 	 * @param key a tag key
 	 * @param value a tag value

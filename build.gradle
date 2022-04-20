@@ -49,6 +49,27 @@ repositories { //needed at root for asciidoctor and nohttp-checkstyle
 	mavenCentral()
 }
 
+def osgiVersion(String v) {
+	def versionNumber = VersionNumber.parse(v)
+	def result
+	if (versionNumber.qualifier == null || versionNumber.qualifier.size() == 0) {
+		result = "${v}.RELEASE"
+		println "$v is a release, will use $result for bnd"
+	}
+	else if (versionNumber.qualifier.equalsIgnoreCase("SNAPSHOT")) {
+		def sdf = new SimpleDateFormat("yyyyMMddHHmm");
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		def buildTimestamp = sdf.format(new Date())
+		result = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.BUILD-$buildTimestamp"
+		println "$v is a snapshot, will use $result for bnd"
+	}
+	else {
+		result = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.${versionNumber.qualifier}"
+		println "$v is neither release nor snapshot, will use $result for bnd"
+	}
+	return result
+}
+
 ext {
 	jdk = JavaVersion.current().majorVersion
 	jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
@@ -57,22 +78,7 @@ ext {
 	}
 	println "JDK Javadoc link for this build is ${rootProject.jdkJavadoc}"
 
-	versionNumber = VersionNumber.parse(version.toString())
-	if (versionNumber.qualifier == null || versionNumber.qualifier.size() == 0) {
-		osgiVersion = "${version}.RELEASE"
-		println "$version is a release, will use $osgiVersion for bnd"
-	}
-	else if (versionNumber.qualifier.equalsIgnoreCase("SNAPSHOT")) {
-		def sdf = new SimpleDateFormat("yyyyMMddHHmm");
-		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-		def buildTimestamp = sdf.format(new Date())
-		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.BUILD-$buildTimestamp"
-		println "$version is a snapshot, will use $osgiVersion for bnd"
-	}
-	else {
-		osgiVersion = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.${versionNumber.qualifier}"
-		println "$version is neither release nor snapshot, will use $osgiVersion for bnd"
-	}
+	osgiVersion = osgiVersion(version.toString())
 
 	/*
 	 * Note that all dependencies and their versions are now defined in
