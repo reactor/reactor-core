@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -38,24 +40,18 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 import static reactor.core.Scannable.Attr;
-import static reactor.core.Scannable.Attr.BUFFERED;
-import static reactor.core.Scannable.Attr.CANCELLED;
-import static reactor.core.Scannable.Attr.CAPACITY;
-import static reactor.core.Scannable.Attr.PREFETCH;
-import static reactor.core.Scannable.Attr.TERMINATED;
-import static reactor.core.scheduler.Schedulers.DEFAULT_POOL_SIZE;
+import static reactor.core.Scannable.Attr.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
+import static reactor.core.scheduler.Schedulers.DEFAULT_POOL_SIZE;
 
 /**
  * @author Stephane Maldini
@@ -63,6 +59,9 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 // This is ok as this class tests the deprecated EmitterProcessor. Will be removed with it in 3.5.
 @SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
+
+	@RegisterExtension
+	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
 	public void currentSubscriberCount() {
@@ -77,6 +76,29 @@ public class EmitterProcessorTest {
 		sink.asFlux().subscribe();
 
 		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/3028
+	@Test
+	void concurrentSubscriberDisposalDoesntLeak() {
+		for (int repetition = 0; repetition < 20; repetition++) {
+			Scheduler disposeScheduler = afterTest.autoDispose(Schedulers.newParallel("concurrentSubscriberDisposalDoesntLeak", 5));
+
+			List<Disposable> toDisposeInMultipleThreads = new ArrayList<>();
+			Sinks.Many<Integer> sink = EmitterProcessor.create();
+
+			for (int i = 0; i < 10; i++) {
+				toDisposeInMultipleThreads.add(
+					sink.asFlux().subscribe(null, null, null, Context.of("inner", "#" + i))
+				);
+			}
+
+			toDisposeInMultipleThreads.forEach(disposable -> disposeScheduler.schedule(disposable::dispose));
+
+			Awaitility.await().atMost(Duration.ofSeconds(2))
+				.alias("no more subscribers")
+				.untilAsserted(() -> assertThat(sink.currentSubscriberCount()).as("subscriberCount").isZero());
+		}
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1364
