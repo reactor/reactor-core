@@ -676,7 +676,8 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
-			if (result.toString().equals("4, 2, 3, 0, 3") || result.toString().equals("4, 2, 3, 0, 2") || result.toString().startsWith("2,")) {
+			if (result.toString().equals("4, 2, 3, 0, 3") || result.toString().equals(
+					"4, 2, 3, 0, 2") || result.toString().startsWith("2,") || result.toString().equals("4, 3, 3, 1, 2")) {
 				throw new IllegalStateException("boom " + result + " " + windowTimeoutSubscriber.signals);
 			}
 

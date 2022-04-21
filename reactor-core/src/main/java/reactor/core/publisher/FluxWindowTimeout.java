@@ -265,7 +265,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public void request(long n) {
-			for (;;) {
 				final long state = this.state;
 				final long requested = state & Long.MAX_VALUE;
 
@@ -285,10 +284,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final boolean isUnsentWindow =
 						previousActiveWindow != null
 								&& previousActiveWindow.parentPreviousRequested == 0
-								&& !InnerWindow.isSent(tPeviousState = InnerWindow.markSending(previousActiveWindow));
+								&& !InnerWindow.isSent(tPeviousState = InnerWindow.markSending(previousActiveWindow))
+						        && !InnerWindow.isSending(tPeviousState);
 				if (InnerWindow.isCancelledByParent(tPeviousState) || (isUnsentWindow && InnerWindow.isFinalized(tPeviousState))) {
 					return;
 				}
+
+			for (;;) {
 				final long previousRequested = Operators.addCap(requested, n);
 				long nextRequested = previousRequested;
 				long realRequested = nextRequested;
@@ -299,6 +301,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (STATE.compareAndSet(this, state, HAS_ACTIVE_WINDOW | nextRequested)) {
+					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
 					if (requested == 0) {
 						// no active window flag means that timeout has happened for
 						// the previous window, but due to lack of demand we can't
@@ -601,6 +604,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long requested = state & Long.MAX_VALUE;
 
 				if (requested > 0) {
+					if (!InnerWindow.isSent(previousState)) {
+						previousState = InnerWindow.markSending(currentWindow);
+					}
+
 					if (requested != Long.MAX_VALUE && !STATE.compareAndSet(this, state, (requested - 1) | HAS_ACTIVE_WINDOW)) {
 						continue;
 					}
@@ -1274,7 +1281,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		static final long RECEIVED_SHIFT_BITS      = 21;
 
 		long s =
-				0b0110_0010_0110_0000_0000_0000_0000_0000_0000_0000_0100_0000_0000_0000_0000_0000L;
+				0b0000_0010_0100_0000_0000_0000_0000_0000_0000_0000_0010_0000_0000_0000_0000_0000L;
 
 		static <T> long markSent(InnerWindow<T> instance) {
 			for (; ; ) {
