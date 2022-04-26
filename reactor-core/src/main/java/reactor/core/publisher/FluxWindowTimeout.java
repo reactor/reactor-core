@@ -105,13 +105,23 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		final int                             limit;
 		final Queue<String> signals = new ArrayBlockingQueue<>(500);
 
-		volatile long state;
-
+		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<WindowTimeoutWithBackpressureSubscriber> STATE =
-				AtomicLongFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, "state");
+		static final AtomicLongFieldUpdater<WindowTimeoutWithBackpressureSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, "requested");
 
-		static final long HAS_ACTIVE_WINDOW = 0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowTimeoutWithBackpressureSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, "state");
+
+		static final long HAS_ACTIVE_WINDOW  = 0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_UNSENT_WINDOW  = 0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_SENDING_WINDOW = 0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long WINDOW_INDEX_MASK  = 0b0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111_1111_1111_1111L;
+		static final long STATE_INDEX_MASK   = 0b0000_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000_0000_0000L;
+
 
 		long producerIndex;
 		boolean done;
@@ -265,42 +275,25 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public void request(long n) {
-				final long state = this.state;
-				final long requested = state & Long.MAX_VALUE;
+			if (Operators.addCap(REQUESTED, this, n) == Long.MAX_VALUE) {
+				return;
+			}
 
-				if (requested == Long.MAX_VALUE) {
-					return;
-				}
-
-				final InnerWindow<T> previousActiveWindow = this.window;
-
-				if (InnerWindow.TERMINATED == previousActiveWindow) {
-					return;
-				}
-
-				final boolean hasNoActiveWindow =
-						(state & HAS_ACTIVE_WINDOW) != HAS_ACTIVE_WINDOW;
-				long tPeviousState = 0;
-				final boolean isUnsentWindow =
-						previousActiveWindow != null
-								&& previousActiveWindow.parentPreviousRequested == 0
-								&& !InnerWindow.isSent(tPeviousState = InnerWindow.markSending(previousActiveWindow))
-						        && !InnerWindow.isSending(tPeviousState);
-				if (InnerWindow.isCancelledByParent(tPeviousState) || (isUnsentWindow && InnerWindow.isFinalized(tPeviousState))) {
-					return;
-				}
+			final InnerWindow<T> previousActiveWindow = this.window;
+			if (InnerWindow.TERMINATED == previousActiveWindow) {
+				return;
+			}
 
 			for (;;) {
-				final long previousRequested = Operators.addCap(requested, n);
-				long nextRequested = previousRequested;
-				long realRequested = nextRequested;
-
-				if (nextRequested != Long.MAX_VALUE) {
-					realRequested = realRequested - (hasNoActiveWindow ? 1 : 0) - (isUnsentWindow ? 1 : 0);
-					nextRequested = Math.max(0, realRequested);
+				final int previousState = this.state;
+				if (hasActiveWindow(previousState) && !hasUnsentWindow(previousState)) {
+					return;
 				}
 
-				if (STATE.compareAndSet(this, state, HAS_ACTIVE_WINDOW | nextRequested)) {
+
+
+				if (STATE.compareAndSet(this, previousState,
+						previousState ^ (hasUnsentWindow(previousState) ? HAS_UNSENT_WINDOW : 0) )) {
 					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
 					if (requested == 0) {
 						// no active window flag means that timeout has happened for
@@ -468,11 +461,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		boolean tryCreateNextWindow(InnerWindow<T> currentWindow) {
 			for (;;) {
-				final long state = this.state;
+				final long state = this.requested;
 				final long requested = state & Long.MAX_VALUE;
 
 				if (requested > 0) {
-					if (requested != Long.MAX_VALUE && !STATE.compareAndSet(this, state, (requested - 1) | HAS_ACTIVE_WINDOW)) {
+					if (requested != Long.MAX_VALUE && !REQUESTED.compareAndSet(this, state, (requested - 1) | HAS_ACTIVE_WINDOW)) {
 						continue;
 					}
 
@@ -533,7 +526,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 					return true;
 				} else if (currentWindow.parentPreviousRequested > 0 || InnerWindow.isSent(currentWindow.state)) {
-					if (!STATE.compareAndSet(this, state, HAS_ACTIVE_WINDOW)) {
+					if (!REQUESTED.compareAndSet(this, state, HAS_ACTIVE_WINDOW)) {
 						continue;
 					}
 
@@ -592,7 +585,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return true;
 				}
 
-				if (STATE.compareAndSet(this, state, 0)) {
+				if (REQUESTED.compareAndSet(this, state, 0)) {
 					return false;
 				}
 			}
@@ -600,7 +593,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		void tryCreateNextWindow(InnerWindow<T> currentWindow, long previousState) {
 			for (;;) {
-				final long state = this.state;
+				final long state = this.requested;
 				final long requested = state & Long.MAX_VALUE;
 
 				if (requested > 0) {
@@ -608,7 +601,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						previousState = InnerWindow.markSending(currentWindow);
 					}
 
-					if (requested != Long.MAX_VALUE && !STATE.compareAndSet(this, state, (requested - 1) | HAS_ACTIVE_WINDOW)) {
+					if (requested != Long.MAX_VALUE && !REQUESTED.compareAndSet(this, state, (requested - 1) | HAS_ACTIVE_WINDOW)) {
 						continue;
 					}
 
@@ -643,7 +636,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 					return;
 				} else if (currentWindow.parentPreviousRequested > 0 || InnerWindow.isSent(previousState)) {
-					if (!STATE.compareAndSet(this, state, HAS_ACTIVE_WINDOW)) {
+					if (!REQUESTED.compareAndSet(this, state, HAS_ACTIVE_WINDOW)) {
 						continue;
 					}
 
@@ -669,7 +662,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				if (STATE.compareAndSet(this, state, 0)) {
+				if (REQUESTED.compareAndSet(this, state, 0)) {
 					return;
 				}
 			}
