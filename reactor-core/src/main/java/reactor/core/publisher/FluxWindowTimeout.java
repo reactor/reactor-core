@@ -277,7 +277,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (!shouldBeUnsent) {
 						this.actual.onNext(nextWindow);
 					}
-
 				}
 			}
 		}
