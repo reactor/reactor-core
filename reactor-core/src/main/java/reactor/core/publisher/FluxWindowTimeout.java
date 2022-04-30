@@ -111,16 +111,26 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				AtomicLongFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, "requested");
 
 
-		volatile int state;
+		volatile long state;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowTimeoutWithBackpressureSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, "state");
+		static final AtomicLongFieldUpdater<WindowTimeoutWithBackpressureSubscriber> STATE =
+				AtomicLongFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, "state");
 
-		static final long HAS_ACTIVE_WINDOW  = 0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long HAS_UNSENT_WINDOW  = 0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long HAS_SENDING_WINDOW = 0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long WINDOW_INDEX_MASK  = 0b0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111_1111_1111_1111L;
-		static final long STATE_INDEX_MASK   = 0b0000_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long CANCELLED_FLAG       =
+				0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_ACTIVE_WINDOW    =
+				0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_UNSENT_WINDOW    =
+				0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_SENDING_WINDOW   =
+				0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_WORK_IN_PROGRESS =
+				0b0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long WINDOW_INDEX_MASK    =
+				0b0000_0000_0000_0000_0000_0000_0000_0000_0111_1111_1111_1111_1111_1111_1111_1111L;
+		static final long STAMP_INDEX_MASK     =
+				0b0000_0111_1111_1111_1111_1111_1111_1111_1000_0000_0000_0000_0000_0000_0000_0000L;
+		static final int  STAMP_INDEX_SHIFT    = 31;
 
 
 		long producerIndex;
@@ -131,11 +141,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		volatile InnerWindow<T> window;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowTimeoutWithBackpressureSubscriber, InnerWindow>
-				WINDOW = AtomicReferenceFieldUpdater.newUpdater(
-				WindowTimeoutWithBackpressureSubscriber.class,
-				InnerWindow.class,
-				"window");
+		static final AtomicReferenceFieldUpdater<WindowTimeoutWithBackpressureSubscriber, InnerWindow> WINDOW =
+				AtomicReferenceFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, InnerWindow.class, "window");
 
 		WindowTimeoutWithBackpressureSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int maxSize,
@@ -273,164 +280,78 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
+		static boolean hasUnsentWindow(long state) {
+			return (state & HAS_UNSENT_WINDOW) == HAS_UNSENT_WINDOW;
+		}
+
+		static boolean hasActiveWindow(long state) {
+			return (state & HAS_ACTIVE_WINDOW) == HAS_ACTIVE_WINDOW;
+		}
+
+		static boolean isCancelled(long state) {
+			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
+		}
+
+		static long incrementStamp(long state) {
+			return (((state & STAMP_INDEX_MASK) >> STAMP_INDEX_SHIFT + 1) << STAMP_INDEX_SHIFT) & STAMP_INDEX_MASK;
+		}
+
+		static boolean hasWorkInProgress(long state) {
+			return (state & HAS_WORK_IN_PROGRESS) == HAS_WORK_IN_PROGRESS;
+		}
+
+		static long incrementWindowIndex(long state) {
+			return ((state & WINDOW_INDEX_MASK) + 1) & WINDOW_INDEX_MASK;
+		}
+
+		static int windowIndex(long state) {
+			return (int) (state & WINDOW_INDEX_MASK);
+		}
+
 		@Override
 		public void request(long n) {
-			if (Operators.addCap(REQUESTED, this, n) == Long.MAX_VALUE) {
+			final long previousRequested = Operators.addCap(REQUESTED, this, n);
+			if (previousRequested == Long.MAX_VALUE) {
 				return;
 			}
 
-			final InnerWindow<T> previousActiveWindow = this.window;
-			if (InnerWindow.TERMINATED == previousActiveWindow) {
-				return;
-			}
-
+			long previousState;
+			boolean hasUnsentWindow;
 			for (;;) {
-				final int previousState = this.state;
-				if (hasActiveWindow(previousState) && !hasUnsentWindow(previousState)) {
+			    previousState = this.state;
+
+				if (isCancelled(previousState)) {
 					return;
 				}
 
-
-
-				if (STATE.compareAndSet(this, previousState,
-						previousState ^ (hasUnsentWindow(previousState) ? HAS_UNSENT_WINDOW : 0) )) {
-					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
-					if (requested == 0) {
-						// no active window flag means that timeout has happened for
-						// the previous window, but due to lack of demand we can't
-						// open the next one and wait for the demand.
-						// In such scenario, existing window has to be terminated
-						if (hasNoActiveWindow) {
-							final InnerWindow<T> nextWindow = new InnerWindow<>(this.maxSize, this, previousRequested, realRequested > -1);
-
-							final boolean wasSet = WINDOW.compareAndSet(this, previousActiveWindow, nextWindow);
-
-							if (isUnsentWindow) {
-
-								this.actual.onNext(previousActiveWindow);
-								final long previousState = previousActiveWindow.markSentAndSendComplete();
-								if (
-										(!InnerWindow.isTerminatedByParent(tPeviousState) && InnerWindow.isTerminatedByParent(previousState))
-										|| (InnerWindow.isTerminatedByParent(tPeviousState) && InnerWindow.hasValues(tPeviousState))
-								) {
-									final Throwable t = this.error;
-									if (t != null) {
-										this.actual.onError(t);
-									} else {
-										this.actual.onComplete();
-									}
-									return;
-								}
-
-								if (!wasSet) {
-									return;
-								}
-
-								if (realRequested > -1) {
-									this.actual.onNext(nextWindow);
-									if (InnerWindow.isTerminatedByParent(InnerWindow.markSent(nextWindow))) {
-										return;
-									}
-								}
-
-								try {
-									nextWindow.scheduleTimeout();
-								} catch (Throwable t) {
-									this.s.cancel();
-									final long nextWindowPreviousState = nextWindow.sendErrorByParent(t);
-									if (!InnerWindow.isTerminatedByParent(nextWindowPreviousState)) {
-										this.actual.onError(t);
-									}
-									return;
-								}
-
-								final long received = InnerWindow.received(previousState);
-								if (received > 0) {
-									this.s.request(received);
-								}
-							} else {
-								if (!wasSet) {
-									return;
-								}
-
-								if (previousActiveWindow != null) {
-									final long previousState = previousActiveWindow.sendComplete();
-
-									if (InnerWindow.isTerminatedByParent(previousState)) {
-										return;
-									}
-
-									this.actual.onNext(nextWindow);
-
-									if (InnerWindow.isTerminatedByParent(InnerWindow.markSent(nextWindow))) {
-										final Throwable t = this.error;
-										if (t != null) {
-											nextWindow.sendErrorByParent(t);
-											this.actual.onError(t);
-										} else {
-											nextWindow.sendCompleteByParent();
-											this.actual.onComplete();
-										}
-										return;
-									}
-
-									try {
-										nextWindow.scheduleTimeout();
-									} catch (Throwable t) {
-										this.s.cancel();
-										final long nextWindowPreviousState = nextWindow.sendErrorByParent(t);
-										if (!InnerWindow.isTerminatedByParent(nextWindowPreviousState)) {
-											this.actual.onError(t);
-										}
-										return;
-									}
-
-									final long received = InnerWindow.received(previousState);
-									if (received > 0) {
-										this.s.request(received);
-									}
-								} else {
-									this.actual.onNext(nextWindow);
-									if (InnerWindow.isTerminatedByParent(InnerWindow.markSent(nextWindow))) {
-										final Throwable t = this.error;
-										if (t != null) {
-											this.actual.onError(t);
-										} else {
-											this.actual.onComplete();
-										}
-										return;
-									}
-
-									try {
-										nextWindow.scheduleTimeout();
-									} catch (Throwable t) {
-										this.s.cancel();
-										final long nextWindowPreviousState = nextWindow.sendErrorByParent(t);
-										if (!InnerWindow.isTerminatedByParent(nextWindowPreviousState)) {
-											this.actual.onError(t);
-										}
-										return;
-									}
-
-									this.s.request(this.maxSize);
-								}
-							}
-						} else if (isUnsentWindow) {
-							this.actual.onNext(previousActiveWindow);
-							final long previousState = InnerWindow.markSent(previousActiveWindow);
-							if ((!InnerWindow.isTerminatedByParent(tPeviousState) && InnerWindow.isTerminatedByParent(previousState))
-							|| InnerWindow.isTerminatedByParent(tPeviousState) && InnerWindow.hasValues(tPeviousState)) {
-								final Throwable t = this.error;
-								if (t != null) {
-									this.actual.onError(t);
-								} else {
-									this.actual.onComplete();
-								}
-								return;
-							}
-						}
+				hasUnsentWindow = hasUnsentWindow(previousState);
+				if ((hasActiveWindow(previousState) && !hasUnsentWindow) || hasWorkInProgress(previousState)) {
+					if (STATE.compareAndSet(this, previousState, previousState &~ STAMP_INDEX_MASK | incrementStamp(previousState))) {
+						return;
 					}
-					return;
+
+					continue;
+				}
+
+				final long nextState =
+						previousState ^ (hasUnsentWindow ? HAS_UNSENT_WINDOW : 0) |
+						(hasUnsentWindow ? 0 : incrementWindowIndex(previousState)) |
+						HAS_WORK_IN_PROGRESS;
+				if (STATE.compareAndSet(this, previousState, nextState)) {
+//					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
+
+					break;
+				}
+			}
+
+			if (hasUnsentWindow) {
+				final InnerWindow<T> currentUnsentWindow = this.window;
+
+				this.actual.onNext(currentUnsentWindow);
+
+				final long previousInnerWindowState = InnerWindow.markSent(currentUnsentWindow);
+				if (InnerWindow.isTimeout(previousInnerWindowState) || InnerWindow.isTerminated(previousInnerWindowState)) {
+					final InnerWindow<T> nextWindow = new InnerWindow<T>(this.maxSize, this, );
 				}
 			}
 		}
@@ -695,7 +616,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		final WindowTimeoutWithBackpressureSubscriber<T> parent;
 		final int                                        max;
 		final Queue<T>                                   queue;
-		final long                                       parentPreviousRequested;
 		final long                                       createTime;
 		final long                                       random = ThreadLocalRandom.current().nextInt();
 
@@ -727,18 +647,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		 InnerWindow(
 				int max,
 				WindowTimeoutWithBackpressureSubscriber<T> parent,
-				long parentPreviousRequested,
-				boolean markUnsentAndSending) {
+				boolean markUnsent) {
 			this.max = max;
 			this.parent = parent;
 			this.queue = Queues.<T>get(max).get();
-			this.parentPreviousRequested = parentPreviousRequested;
 
-			if (parentPreviousRequested == 0) {
+			if (markUnsent) {
 				STATE.lazySet(this, UNSENT_STATE);
-			}
-			else if (markUnsentAndSending) {
-				STATE.lazySet(this, UNSENT_STATE | SENDING_STATE);
 			}
 
 			parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) + this +
@@ -1263,15 +1178,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				0b0000_0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long UNSENT_STATE             =
 				0b0000_0000_0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long SENDING_STATE            =
-				0b0000_0000_0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long TIMEOUT_PROCESSED_STATE  =
-				0b0000_0000_0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long WORK_IN_PROGRESS_MAX     =
-				0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_1111_1111_1111_1111_1111L;
+				0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0011_1111_1111_1111_1111_1111L;
 		static final long RECEIVED_MASK            =
-				0b0000_0000_0000_1111_1111_1111_1111_1111_1111_1111_1110_0000_0000_0000_0000_0000L;
-		static final long RECEIVED_SHIFT_BITS      = 21;
+				0b0000_0000_0001_1111_1111_1111_1111_1111_1111_1111_1100_0000_0000_0000_0000_0000L;
+		static final long RECEIVED_SHIFT_BITS      = 22;
 
 		long s =
 				0b0000_0010_0100_0000_0000_0000_0000_0000_0000_0000_0010_0000_0000_0000_0000_0000L;
@@ -1280,29 +1191,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			for (; ; ) {
 				final long state = instance.state;
 
-				if (isSent(state)) {
-					return state;
-				}
-
-				final long nextState = state ^ UNSENT_STATE ^ SENDING_STATE;
-				if (STATE.compareAndSet(instance, state, nextState)) {
-					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mse-" + formatState(state) + "-" + formatState(nextState));
-					return state;
-				}
-			}
-		}
-
-		static <T> long markSentAndTerminated(InnerWindow<T> instance) {
-			for (; ; ) {
-				final long state = instance.state;
-
 				if (isCancelled(state)) {
 					return state;
 				}
 
 				final long nextState =
-						(state ^ UNSENT_STATE ^ SENDING_STATE) |
-								TERMINATED_STATE |
+						(state ^ UNSENT_STATE) |
+						(isTimeout(state) ? TERMINATED_STATE : 0) |
 								(
 									hasSubscriberSet(state)
 											? hasValues(state)
