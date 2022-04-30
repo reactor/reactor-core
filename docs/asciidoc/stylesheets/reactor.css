@@ -755,11 +755,13 @@ table thead tr th, table tfoot tr th, table tbody tr td, table tr td, table tfoo
     -webkit-border-radius: 6px;
     border-radius: 6px;
     text-shadow: none;
+    overflow-wrap: anywhere;
 }
 
 @media only screen and (min-width: 1280px) {
     *:not(pre) > code {
         white-space: nowrap;
+        overflow-wrap: normal;
     }
 }
 
@@ -1417,6 +1419,7 @@ table.pyhltable .linenodiv {
     margin-top: -.25em;
     padding-bottom: 0.5625em;
     font-size: 0.8125em;
+    overflow-wrap: break-word;
 }
 
 .quoteblock .attribution br {
