@@ -750,12 +750,19 @@ table thead tr th, table tfoot tr th, table tbody tr td, table tr td, table tfoo
 *:not(pre) > code {
     font-size: inherit;
     padding: 0;
-    white-space: nowrap;
     background-color: inherit;
     border: 0 solid #dddddd;
     -webkit-border-radius: 6px;
     border-radius: 6px;
     text-shadow: none;
+    overflow-wrap: anywhere;
+}
+
+@media only screen and (min-width: 1280px) {
+    *:not(pre) > code {
+        white-space: nowrap;
+        overflow-wrap: normal;
+    }
 }
 
 pre, pre > code {
@@ -1096,6 +1103,10 @@ p a > code:hover {
     color: #34302d;
 }
 
+.paragraph {
+    overflow-wrap: break-word;
+}
+
 .imageblock, .literalblock, .listingblock, .mathblock, .verseblock, .videoblock {
     margin-bottom: 1.25em;
     margin-top: 1.25em;
@@ -1104,6 +1115,10 @@ p a > code:hover {
 .admonitionblock td.content > .title, .exampleblock > .title, .imageblock > .title, .listingblock > .title, .literalblock > .title, .mathblock > .title, .openblock > .title, .paragraph > .title, .quoteblock > .title, .sidebarblock > .title, .tableblock > .title, .verseblock > .title, .videoblock > .title, .dlist > .title, .olist > .title, .ulist > .title, .qlist > .title, .hdlist > .title {
     text-align: left;
     font-weight: bold;
+}
+
+.tableblock {
+    overflow-wrap: anywhere;
 }
 
 .tableblock > caption {
@@ -1122,6 +1137,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p {
     border: 0;
     background: none;
     width: 100%;
+    table-layout: fixed;
 }
 
 .admonitionblock > table td.icon {
@@ -1143,6 +1159,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p {
     padding-right: 1.25em;
     border-left: 1px solid #dcd2c9;
     color: #34302d;
+    overflow-wrap: break-word;
 }
 
 .admonitionblock > table td.content > :last-child > :last-child {
@@ -1402,6 +1419,7 @@ table.pyhltable .linenodiv {
     margin-top: -.25em;
     padding-bottom: 0.5625em;
     font-size: 0.8125em;
+    overflow-wrap: break-word;
 }
 
 .quoteblock .attribution br {
@@ -1496,6 +1514,10 @@ ol > li p, ul > li p, ul dd, ol dd, .olist .olist, .ulist .ulist, .ulist .olist,
     margin-bottom: 0.625em;
 }
 
+.ulist {
+    overflow-wrap: break-word;
+}
+
 ul.unstyled, ol.unnumbered, ul.checklist, ul.none {
     list-style-type: none;
 }
@@ -1586,6 +1608,10 @@ td.hdlist1, td.hdlist2 {
 
 .literalblock + .colist, .listingblock + .colist {
     margin-top: -0.5em;
+}
+
+.colist > table {
+    overflow-wrap: anywhere;
 }
 
 .colist > table tr > td:first-of-type {
@@ -1956,6 +1982,7 @@ body {
     font-weight: normal;
     position: relative;
     left: -0.0625em;
+    overflow-wrap: break-word;
 }
 
 #content h2 {
