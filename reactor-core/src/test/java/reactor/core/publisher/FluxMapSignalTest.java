@@ -136,6 +136,44 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	void mapOnNextRejectsNull() {
+		FluxMapTest.NullFunction<String, Mono<Integer>> mapper = new FluxMapTest.NullFunction<>();
+		Flux.just("test")
+			.flatMap(mapper, null, null)
+			.as(StepVerifier::create)
+			.verifyErrorSatisfies(err -> assertThat(err)
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.")
+			);
+	}
+
+	@Test
+	void mapOnErrorRejectsNull() {
+		final IllegalStateException originalException = new IllegalStateException("expected");
+		FluxMapTest.NullFunction<Throwable, Mono<Integer>> mapper = new FluxMapTest.NullFunction<>();
+		Flux.error(originalException)
+			.flatMap(null, mapper, null)
+			.as(StepVerifier::create)
+			.verifyErrorSatisfies(err -> assertThat(err)
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.")
+				.hasSuppressedException(originalException)
+			);
+	}
+
+	@Test
+	void mapOnCompleteRejectsNull() {
+		FluxMapTest.NullSupplier<Mono<Integer>> mapper = new FluxMapTest.NullSupplier<>();
+		Flux.just("test")
+			.flatMap(null, null, mapper)
+			.as(StepVerifier::create)
+			.verifyErrorSatisfies(err -> assertThat(err)
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullSupplier] returned a null value.")
+			);
+	}
+
+	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
 		FluxMapSignal<Integer, Integer> test = new FluxMapSignal<>(parent, v -> v, e -> 1, () -> 10);
