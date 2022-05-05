@@ -653,6 +653,21 @@ public interface StepVerifier {
 		Step<T> as(String description);
 
 		/**
+		 * Provide a {@link Predicate} that will turn this StepVerifier's subscribers into
+		 * {@link reactor.core.Fuseable.ConditionalSubscriber} and drive the {@link reactor.core.Fuseable.ConditionalSubscriber#tryOnNext(Object)}
+		 * behavior of these subscribers. Set to {@code null} to deactivate (the default).
+		 *
+		 * @param tryOnNextPredicate the {@link Predicate} to use for conditional tryOnNext path
+		 * @return the verifier for final {@link #verify()} call
+		 */
+		default Step<T> enableConditionalSupport(@Nullable Predicate<? super T> tryOnNextPredicate) {
+			if (tryOnNextPredicate != null) {
+				throw new UnsupportedOperationException("This implementation of StepVerifier doesn't support ConditionalSubscriber mode");
+			}
+			return this;
+		}
+
+		/**
 		 * Expect an element and consume with the given consumer.Any {@code
 		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
 		 * #verify() verification}.
