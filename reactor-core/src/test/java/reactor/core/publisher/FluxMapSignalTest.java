@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,6 +133,44 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 		.log())
 		            .expectNext(2, 10)
 		            .verifyComplete();
+	}
+
+	@Test
+	void mapOnNextRejectsNull() {
+		FluxMapTest.NullFunction<String, Mono<Integer>> mapper = new FluxMapTest.NullFunction<>();
+		Flux.just("test")
+			.flatMap(mapper, null, null)
+			.as(StepVerifier::create)
+			.verifyErrorSatisfies(err -> assertThat(err)
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.")
+			);
+	}
+
+	@Test
+	void mapOnErrorRejectsNull() {
+		final IllegalStateException originalException = new IllegalStateException("expected");
+		FluxMapTest.NullFunction<Throwable, Mono<Integer>> mapper = new FluxMapTest.NullFunction<>();
+		Flux.error(originalException)
+			.flatMap(null, mapper, null)
+			.as(StepVerifier::create)
+			.verifyErrorSatisfies(err -> assertThat(err)
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.")
+				.hasSuppressedException(originalException)
+			);
+	}
+
+	@Test
+	void mapOnCompleteRejectsNull() {
+		FluxMapTest.NullSupplier<Mono<Integer>> mapper = new FluxMapTest.NullSupplier<>();
+		Flux.just("test")
+			.flatMap(null, null, mapper)
+			.as(StepVerifier::create)
+			.verifyErrorSatisfies(err -> assertThat(err)
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullSupplier] returned a null value.")
+			);
 	}
 
 	@Test
