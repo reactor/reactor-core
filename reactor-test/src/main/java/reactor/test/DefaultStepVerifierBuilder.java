@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -916,6 +916,20 @@ final class DefaultStepVerifierBuilder<T>
 			VirtualTimeScheduler vts = null;
 			if (parent.vtsLookup != null) {
 				vts = parent.vtsLookup.get();
+			}
+			if (parent.tryOnNextPredicate != null) {
+				return new DefaultConditionalVerifySubscriber<>(
+						this.parent.script,
+						this.parent.messageFormatter,
+						this.parent.initialRequest,
+						this.requestedFusionMode,
+						this.expectedFusionMode,
+						this.debugEnabled,
+						this.parent.options.getInitialContext(),
+						vts,
+						null,
+						parent.tryOnNextPredicate
+				);
 			}
 			return new DefaultVerifySubscriber<>(
 					this.parent.script,
@@ -1842,14 +1856,17 @@ final class DefaultStepVerifierBuilder<T>
 		final Predicate<? super T> tryOnNextPredicate;
 
 		/**
-		 * The constructor used for verification, where a VirtualTimeScheduler can be
-		 * passed
-		 *
 		 * @param tryOnNextPredicate the {@link Predicate} that drives {@link #tryOnNext(Object)} behavior
 		 */
-		DefaultConditionalVerifySubscriber(List<Event<T>> script, MessageFormatter messageFormatter,
-				@Nullable Context initialContext, @Nullable VirtualTimeScheduler vts, long initialRequest,
-				int requestedFusionMode, int expectedFusionMode, boolean debugEnabled, @Nullable Disposable postVerifyCleanup,
+		DefaultConditionalVerifySubscriber(List<Event<T>> script,
+				MessageFormatter messageFormatter,
+				long initialRequest,
+				int requestedFusionMode,
+				int expectedFusionMode,
+				boolean debugEnabled,
+				@Nullable Context initialContext,
+				@Nullable VirtualTimeScheduler vts,
+				@Nullable Disposable postVerifyCleanup,
 				Predicate<? super T> tryOnNextPredicate) {
 			super(script, messageFormatter, initialRequest, requestedFusionMode, expectedFusionMode, debugEnabled, initialContext, vts, postVerifyCleanup);
 			this.tryOnNextPredicate = tryOnNextPredicate;
@@ -1857,7 +1874,11 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public boolean tryOnNext(T t) {
-			return tryOnNextPredicate.test(t);
+			boolean consumed = tryOnNextPredicate.test(t);
+			if (consumed) {
+				onNext(t); //record the value
+			}
+			return consumed;
 		}
 	}
 
