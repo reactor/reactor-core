@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 
@@ -33,9 +39,11 @@ import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.ConditionalTestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
+import reactor.util.annotation.Nullable;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxMapTest extends FluxOperatorTest<String, String> {
@@ -125,16 +133,65 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		  .assertNotComplete();
 	}
 
-	@Test
-	public void mapperReturnsNull() {
-		AssertSubscriber<Object> ts = AssertSubscriber.create();
+	@TestFactory
+	Stream<DynamicTest> mapperReturnsNull() {
+		Function<Integer, Integer> mapper = new NullFunction<>();
 
-		just.map(v -> null)
-		    .subscribe(ts);
+		Stream<Named<Flux<Integer>>> sources = Stream.of(
+			Named.named("normal", Flux.just(1).hide()),
+			Named.named("fused", Flux.just(1))
+		);
 
-		ts.assertError(NullPointerException.class)
-		  .assertNoValues()
-		  .assertNotComplete();
+		return DynamicTest.stream(sources, src -> {
+			Flux<Integer> underTest = src.map(mapper);
+
+			underTest
+				.as(StepVerifier::create)
+				.verifyErrorSatisfies(err -> assertThat(err)
+					.isInstanceOf(NullPointerException.class)
+					.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.")
+				);
+		});
+	}
+
+	@TestFactory
+	Stream<DynamicTest> mapperReturnsNullConditional() {
+		Function<Integer, Integer> mapper = new NullFunction<>();
+
+		Stream<Named<Boolean>> fusionModes = Stream.of(
+			Named.named("normal", false),
+			Named.named("fused", true)
+		);
+
+		return DynamicTest.stream(fusionModes, fused -> {
+			//the error will terminate the downstream, so we need two pairs: normal path and tryOnNext path
+			ConditionalTestSubscriber<Integer> testSubscriberTryPath = TestSubscriber.builder().buildConditional(i -> true);
+			ConditionalTestSubscriber<Integer> testSubscriberNormalPath = TestSubscriber.builder().buildConditional(i -> true);
+			Fuseable.ConditionalSubscriber<Integer> conditionalSubscriberNormalPath;
+			Fuseable.ConditionalSubscriber<Integer> conditionalSubscriberTryPath;
+			if (fused) {
+				conditionalSubscriberNormalPath = new FluxMapFuseable.MapFuseableConditionalSubscriber<>(testSubscriberNormalPath, mapper);
+				conditionalSubscriberTryPath = new FluxMapFuseable.MapFuseableConditionalSubscriber<>(testSubscriberTryPath, mapper);
+			}
+			else {
+				conditionalSubscriberNormalPath = new FluxMap.MapConditionalSubscriber<>(testSubscriberNormalPath, mapper);
+				conditionalSubscriberTryPath = new FluxMap.MapConditionalSubscriber<>(testSubscriberTryPath, mapper);
+			}
+
+			//test the non-conditional path
+			conditionalSubscriberNormalPath.onNext(1);
+			assertThat(testSubscriberNormalPath.expectTerminalError())
+				.as("normal path")
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.");
+
+			//test the conditional path
+			conditionalSubscriberTryPath.tryOnNext(2);
+			assertThat(testSubscriberTryPath.expectTerminalError())
+				.as("try path")
+				.isInstanceOf(NullPointerException.class)
+				.hasMessage("The mapper [reactor.core.publisher.FluxMapTest$NullFunction] returned a null value.");
+		});
 	}
 
 	@Test
@@ -512,6 +569,24 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		}
 		finally {
 			Hooks.resetOnNextError();
+		}
+	}
+
+	static class NullFunction<T, R> implements Function<T, R> {
+
+		@Nullable
+		@Override
+		public R apply(T t) {
+			return null;
+		}
+	}
+
+	static class NullSupplier<T> implements Supplier<T> {
+
+		@Nullable
+		@Override
+		public T get() {
+			return null;
 		}
 	}
 }

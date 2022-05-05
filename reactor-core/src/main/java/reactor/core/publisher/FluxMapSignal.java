@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,8 +141,10 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
             R v;
 
             try {
-                v = Objects.requireNonNull(mapperNext.apply(t),
-		                "The mapper returned a null value.");
+                v = mapperNext.apply(t);
+                if (v == null) {
+                    throw new NullPointerException("The mapper [" + mapperNext.getClass().getName() + "] returned a null value.");
+                }
             }
             catch (Throwable e) {
 	            done = true;
@@ -171,8 +173,10 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 	        R v;
 
 	        try {
-		        v = Objects.requireNonNull(mapperError.apply(t),
-				        "The mapper returned a null value.");
+                v = mapperError.apply(t);
+                if (v == null) {
+                    throw new NullPointerException("The mapper [" + mapperError.getClass().getName() + "] returned a null value.");
+                }
 	        }
 	        catch (Throwable e) {
 		        done = true;
@@ -203,8 +207,10 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 	        R v;
 
 	        try {
-		        v = Objects.requireNonNull(mapperComplete.get(),
-				        "The mapper returned a null value.");
+                v = mapperComplete.get();
+                if (v == null) {
+                    throw new NullPointerException("The mapper [" + mapperComplete.getClass().getName() + "] returned a null value.");
+                }
 	        }
 	        catch (Throwable e) {
 		        done = true;
