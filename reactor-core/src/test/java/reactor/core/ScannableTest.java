@@ -476,6 +476,65 @@ public class ScannableTest {
 	}
 
 	@Test
+	void tagsWhenAKeyIsDefinedInMultipleParents() {
+		Flux<Integer> f = Flux.just(1, 2, 3)
+			.tag("key1", "earlyValue1")
+			.tag("key2", "earlyValue2")
+			.tag("key1", "earlyOverwriteValue1")
+			.filter(i -> true)
+			.tag("key1", "lateValue1")
+			.tag("key2", "lateValue2")
+			.tag("key1", "lateOverwriteValue1");
+
+		assertThat(Scannable.from(f).tags().map(t2 -> t2.getT1() + "=" + t2.getT2()))
+			.containsExactlyInAnyOrder("key1=lateOverwriteValue1", "key2=lateValue2");
+	}
+
+	@Test
+	void tagsWithDuplicatesWhenAKeyIsDefinedInMultipleParents() {
+		Flux<Integer> f = Flux.just(1, 2, 3)
+			.tag("key1", "earlyValue1")
+			.tag("key2", "earlyValue2")
+			.tag("key1", "earlyOverwriteValue1")
+			.filter(i -> true)
+			.tag("key1", "lateValue1")
+			.tag("key2", "lateValue2")
+			.tag("key1", "lateOverwriteValue1");
+
+		assertThat(Scannable.from(f).tags(true).map(t2 -> t2.getT1() + "=" + t2.getT2()))
+			.containsExactly( //note: the order between key1 and key2 for each "source" is set-dependent
+				"key2=lateValue2",
+				"key1=lateValue1",
+				"key1=lateOverwriteValue1",
+				"key2=earlyValue2",
+				"key1=earlyValue1",
+				"key1=earlyOverwriteValue1"
+			);
+	}
+
+	@Test
+	void tagsWithDuplicatesReversedWhenAKeyIsDefinedInMultipleParents() {
+		Flux<Integer> f = Flux.just(1, 2, 3)
+			.tag("key1", "earlyValue1")
+			.tag("key2", "earlyValue2")
+			.tag("key1", "earlyOverwriteValue1")
+			.filter(i -> true)
+			.tag("key1", "lateValue1")
+			.tag("key2", "lateValue2")
+			.tag("key1", "lateOverwriteValue1");
+
+		assertThat(Scannable.from(f).tags(true, true).map(t2 -> t2.getT1() + "=" + t2.getT2()))
+			.containsExactly( //note: the order between key1 and key2 for each "source" is set-dependent
+				"key1=earlyOverwriteValue1",
+				"key2=earlyValue2",
+				"key1=earlyValue1", //TODO that one would disappear with a change from Set to Map
+				"key1=lateValue1",
+				"key2=lateValue2",
+				"key1=lateOverwriteValue1"
+			);
+	}
+
+	@Test
 	public void scanForParentIsSafe() {
 		Scannable scannable = key -> "String";
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@ package reactor.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -33,6 +36,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * A Scannable component exposes state in a non strictly memory consistent way and
@@ -588,25 +592,131 @@ public interface Scannable {
 	}
 
 	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} and stream all the
-	 * observed tags
+	 * Visit this {@link Scannable} and its {@link #parents()} from closest to furthest and
+	 * return a {@link Stream} of the discoverable tags. It is important to note that:
+	 * <ul>
+	 *     <li>
+	 *         tags can only be discovered until no parent can be inspected, which happens either
+	 *         when the source publisher has been reached or when a non-reactor intermediate operator
+	 *         is present in the parent chain (ie. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
+	 *     </li>
+	 *     <li>
+	 *         tags can be defined in "groups", ie contiguous {@code tag} operators define a
+	 *         single set of tags.
+	 *     </li>
+	 *     <li>
+	 *         in the returned {@link Stream}, tags appear in reverse order of the groups:
+	 *         groups closest to this call appear first, then the groups defined by a direct
+	 *         parent, then groups defined in a parent of the parent...
+	 *     </li>
+	 *     <li>
+	 *         in case a tag key is defined in multiple groups, this method deduplicates
+	 *         and keeps the tag value defined the closest to this {@link Scannable}.
+	 *     </li>
+	 * </ul>
+	 * This is equivalent to {@link #tags(boolean) tags(false)}.
 	 *
 	 * @return the stream of tags for this {@link Scannable} and its parents
+	 * @see #tags(boolean)
 	 */
 	default Stream<Tuple2<String, String>> tags() {
-		Stream<Tuple2<String, String>> parentTags =
-				parents().flatMap(s -> s.scan(Attr.TAGS));
+		return tags(false, false);
+	}
 
-		Stream<Tuple2<String, String>> thisTags = scan(Attr.TAGS);
+	//TODO if that behavior is changed (Set to Map), note that inside a single group no duplication occurs
+	/**
+	 * Visit this {@link Scannable} and its {@link #parents()} and stream all the
+	 * observed tags, optionally including duplicates. It is important to note that:
+	 * <ul>
+	 *     <li>
+	 *         tags can only be discovered until no parent can be inspected, which happens either
+	 *         when the source publisher has been reached or when a non-reactor intermediate operator
+	 *         is present in the parent chain (ie. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
+	 *     </li>
+	 *     <li>
+	 *         tags can be defined in "groups", ie contiguous {@code tag} operator calls define a
+	 *         single set of tags.
+	 *     </li>
+	 *     <li>
+	 *         a tag entry can be defined in multiple groups though, and this method can
+	 *         be configured to output such duplicates if desired.
+	 *     </li>
+	 *     <li>
+	 *         in the returned {@link Stream}, tags appear in reverse order of the groups:
+	 *         groups closest to this call appear first, then the groups defined by a direct
+	 *         parent, then groups defined in a parent of the parent...
+	 *     </li>
+	 * </ul>
+	 *
+	 * @return the stream of tags for this {@link Scannable} then its parents, possibly including
+	 * duplicates from parents
+	 */
+	default Stream<Tuple2<String, String>> tags(boolean includeDuplicatesFromParents) {
+		return tags(includeDuplicatesFromParents, false);
+	}
 
-		if (thisTags == null) {
-			return parentTags;
+	//TODO if that behavior is changed (Set to Map), note that inside a single group no duplication occurs
+	/**
+	 * Visit this {@link Scannable} and its {@link #parents()} (which can optionally
+	 * be traversed from topmost to bottommost) and stream all the observed tags,
+	 * optionally including duplicates. It is important to note that:
+	 * <ul>
+	 *     <li>
+	 *         tags can only be discovered until no parent can be inspected, which happens either
+	 *         when the source publisher has been reached or when a non-reactor intermediate operator
+	 *         is present in the parent chain (ie. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
+	 *     </li>
+	 *     <li>
+	 *         tags can be defined in "groups", ie contiguous {@code tag} operator calls define a
+	 *         single set of tags.
+	 *     </li>
+	 *     <li>
+	 *         a tag entry can be defined in multiple groups though, and this method can
+	 *         be configured to output such duplicates if desired.
+	 *     </li>
+	 *     <li>
+	 *         if {@code parentsFirst} is set to {@code true}, tags appear in the returned {@link Stream}
+	 *         in group declarative order (grandparent->parent->this). Otherwise they appear in reverse order
+	 *         of the groups (this->parent->grandparent).
+	 *     </li>
+	 * </ul>
+	 *
+	 * @return the stream of tags for this {@link Scannable} and its parents, possibly including
+	 * duplicates from parents
+	 */
+	default Stream<Tuple2<String, String>> tags(boolean includeDuplicatesFromParents, boolean parentsFirst) {
+		Stream<Scannable> sources;
+		if (parentsFirst) {
+			List<Scannable> parentsReversed = parents().collect(Collectors.toList());
+			Collections.reverse(parentsReversed);
+			parentsReversed.add(this);
+			sources = parentsReversed.stream();
+		}
+		else {
+			sources = Stream.concat(Stream.of(this), parents());
 		}
 
-		return Stream.concat(
-				thisTags,
-				parentTags
-		);
+		if (includeDuplicatesFromParents) {
+			return sources
+				.flatMap(s -> {
+					Stream<Tuple2<String, String>> tags = s.scan(Attr.TAGS);
+					if (tags == null) {
+						return Stream.empty();
+					}
+					return tags;
+				});
+		}
+		else {
+			final Set<String> keyspace = new HashSet<>();
+			return sources
+				.flatMap(s -> {
+					Stream<Tuple2<String, String>> tags = s.scan(Attr.TAGS);
+					if (tags == null) {
+						return Stream.empty();
+					}
+					return tags.filter(tuple -> keyspace.add(tuple.getT1()));
+				});
+		}
 	}
 
 }
