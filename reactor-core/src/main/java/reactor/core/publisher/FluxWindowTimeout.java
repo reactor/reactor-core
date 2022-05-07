@@ -452,7 +452,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		void tryCreateNextWindow() {
+		void tryCreateNextWindow(int windowIndex) {
 			long previousState;
 			long expectedState;
 			boolean hasUnsentWindow;
@@ -469,7 +469,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				if ((windowIndex(previousState) != 0 && !hasUnsentWindow) || hasWorkInProgress(previousState)) {
+				if (windowIndex(previousState) != windowIndex) {
+					return;
+				}
+
+				if (hasWorkInProgress(previousState)) {
 					if (STATE.compareAndSet(this, previousState, previousState &~ STAMP_INDEX_MASK | incrementStamp(previousState))) {
 						return;
 					}
@@ -711,7 +715,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						timer.dispose();
 					}
 
-					this.parent.tryCreateNextWindow(this);
+					this.parent.tryCreateNextWindow();
 				}
 			} else {
 				previousState = markHasValues(this);
@@ -747,38 +751,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			return true;
-		}
-
-		long sendComplete() {
-
-			final long previousState = markTimeoutProcessedAndTerminated(this);
-			if (isFinalized(previousState) || isTerminated(previousState)) {
-				return previousState;
-			}
-
-			if (hasSubscriberSet(previousState)) {
-				if (this.mode == ASYNC) {
-					this.actual.onComplete();
-					return previousState;
-				}
-
-				if (hasWorkInProgress(previousState)) {
-					return previousState;
-				}
-
-				if (isCancelled(previousState)) {
-					clearAndFinalize();
-					return previousState;
-				}
-
-				if (hasValues(previousState)) {
-					drain((previousState | TERMINATED_STATE) + 1);
-				} else {
-					this.actual.onComplete();
-				}
-			}
-
-			return previousState;
 		}
 
 		long sendCompleteByParent() {
@@ -855,38 +827,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					drain((previousState | TERMINATED_STATE | PARENT_TERMINATED_STATE) + 1);
 				} else {
 					this.actual.onError(error);
-				}
-			}
-
-			return previousState;
-		}
-
-		public long markSentAndSendComplete() {
-			final long previousState = markSentAndTerminated(this);
-			if (isFinalized(previousState) || isTerminated(previousState)) {
-				return previousState;
-			}
-
-			if (hasSubscriberSet(previousState)) {
-				if (this.mode == ASYNC) {
-					this.actual.onComplete();
-					return previousState;
-				}
-
-				if (hasWorkInProgress(previousState)) {
-					return previousState;
-				}
-
-				if (isCancelled(previousState)) {
-					clearAndFinalize();
-					return previousState;
-				}
-
-				if (hasValues(previousState)) {
-					drain(((previousState ^ UNSENT_STATE ^ SENDING_STATE) | TERMINATED_STATE) + 1);
-				}
-				else {
-					this.actual.onComplete();
 				}
 			}
 
@@ -988,11 +928,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				return;
 			}
 
-			if (!this.parent.tryCreateNextWindow(this)) {
-				if (isTerminatedByParent(markTimeoutProcessed(this))) {
-					this.parent.actual.onComplete();
-				}
-			}
+			this.parent.tryCreateNextWindow();
 		}
 
 		@Override
