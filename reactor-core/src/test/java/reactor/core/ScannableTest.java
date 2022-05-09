@@ -17,9 +17,11 @@
 package reactor.core;
 
 import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -476,61 +478,42 @@ public class ScannableTest {
 	}
 
 	@Test
-	void tagsWhenAKeyIsDefinedInMultipleParents() {
+	void tagsIncludesDuplicatesAndReverseDeclarationOrder() {
 		Flux<Integer> f = Flux.just(1, 2, 3)
-			.tag("key1", "earlyValue1")
 			.tag("key2", "earlyValue2")
+			.tag("key1", "earlyValue1")
 			.tag("key1", "earlyOverwriteValue1")
-			.filter(i -> true)
+			.filter(i -> true) //this separates two macro-fused tag stages
 			.tag("key1", "lateValue1")
 			.tag("key2", "lateValue2")
 			.tag("key1", "lateOverwriteValue1");
 
-		assertThat(Scannable.from(f).tags().map(t2 -> t2.getT1() + "=" + t2.getT2()))
-			.containsExactlyInAnyOrder("key1=lateOverwriteValue1", "key2=lateValue2");
-	}
-
-	@Test
-	void tagsWithDuplicatesWhenAKeyIsDefinedInMultipleParents() {
-		Flux<Integer> f = Flux.just(1, 2, 3)
-			.tag("key1", "earlyValue1")
-			.tag("key2", "earlyValue2")
-			.tag("key1", "earlyOverwriteValue1")
-			.filter(i -> true)
-			.tag("key1", "lateValue1")
-			.tag("key2", "lateValue2")
-			.tag("key1", "lateOverwriteValue1");
-
-		assertThat(Scannable.from(f).tags(true).map(t2 -> t2.getT1() + "=" + t2.getT2()))
-			.containsExactly( //note: the order between key1 and key2 for each "source" is set-dependent
-				"key2=lateValue2",
-				"key1=lateValue1",
-				"key1=lateOverwriteValue1",
-				"key2=earlyValue2",
-				"key1=earlyValue1",
-				"key1=earlyOverwriteValue1"
+		assertThat(Scannable.from(f).tags())
+			.containsExactly(
+				Tuples.of("key2", "earlyValue2"),
+				Tuples.of("key1", "earlyValue1"),
+				Tuples.of("key1", "earlyOverwriteValue1"),
+				Tuples.of("key1", "lateValue1"),
+				Tuples.of("key2", "lateValue2"),
+				Tuples.of("key1", "lateOverwriteValue1")
 			);
 	}
 
 	@Test
-	void tagsWithDuplicatesReversedWhenAKeyIsDefinedInMultipleParents() {
+	void tagsDeduplicatedUsesLatestValueButOriginalKeyOrder() {
 		Flux<Integer> f = Flux.just(1, 2, 3)
-			.tag("key1", "earlyValue1")
 			.tag("key2", "earlyValue2")
+			.tag("key1", "earlyValue1")
 			.tag("key1", "earlyOverwriteValue1")
-			.filter(i -> true)
+			.filter(i -> true) //this separates two macro-fused tag stages
 			.tag("key1", "lateValue1")
 			.tag("key2", "lateValue2")
 			.tag("key1", "lateOverwriteValue1");
 
-		assertThat(Scannable.from(f).tags(true, true).map(t2 -> t2.getT1() + "=" + t2.getT2()))
-			.containsExactly( //note: the order between key1 and key2 for each "source" is set-dependent
-				"key1=earlyOverwriteValue1",
-				"key2=earlyValue2",
-				"key1=earlyValue1", //TODO that one would disappear with a change from Set to Map
-				"key1=lateValue1",
-				"key2=lateValue2",
-				"key1=lateOverwriteValue1"
+		assertThat(Scannable.from(f).tagsDeduplicated())
+			.containsExactly(
+				new AbstractMap.SimpleImmutableEntry<>("key2", "lateValue2"),
+				new AbstractMap.SimpleImmutableEntry<>("key1", "lateOverwriteValue1")
 			);
 	}
 
@@ -674,7 +657,7 @@ public class ScannableTest {
 		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
-						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:612)",
+						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:667)",
 						"map"
 				);
 	}

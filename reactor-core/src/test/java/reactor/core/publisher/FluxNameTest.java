@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ public class FluxNameTest {
 	public void scanOperator() throws Exception {
 		Tuple2<String, String> tag1 = Tuples.of("foo", "oof");
 		Tuple2<String, String> tag2 = Tuples.of("bar", "rab");
-		Set<Tuple2<String, String>> tags = new HashSet<>();
+		List<Tuple2<String, String>> tags = new ArrayList<>();
 		tags.add(tag1);
 		tags.add(tag2);
 

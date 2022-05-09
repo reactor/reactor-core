@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -42,15 +47,14 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 	final String name;
 
-	final Set<Tuple2<String, String>> tags;
+	final List<Tuple2<String, String>> tagsWithDuplication;
 
-	@SuppressWarnings("unchecked")
 	static <T> Flux<T> createOrAppend(Flux<T> source, String name) {
 		Objects.requireNonNull(name, "name");
 
 		if (source instanceof FluxName) {
 			FluxName<T> s = (FluxName<T>) source;
-			return new FluxName<>(s.source, name, s.tags);
+			return new FluxName<>(s.source, name, s.tagsWithDuplication);
 		}
 		if (source instanceof FluxNameFuseable) {
 			FluxNameFuseable<T> s = (FluxNameFuseable<T>) source;
@@ -62,41 +66,49 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 		return new FluxName<>(source, name, null);
 	}
 
-	@SuppressWarnings("unchecked")
 	static <T> Flux<T> createOrAppend(Flux<T> source, String tagName, String tagValue) {
 		Objects.requireNonNull(tagName, "tagName");
 		Objects.requireNonNull(tagValue, "tagValue");
 
-		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+		Tuple2<String, String> newTag = Tuples.of(tagName, tagValue);
 
 		if (source instanceof FluxName) {
 			FluxName<T> s = (FluxName<T>) source;
-			if(s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+			List<Tuple2<String, String>> tags;
+			if(s.tagsWithDuplication != null) {
+				tags = new LinkedList<>(s.tagsWithDuplication);
+				tags.add(newTag);
+			}
+			else {
+				tags = Collections.singletonList(newTag);
 			}
 			return new FluxName<>(s.source, s.name, tags);
 		}
+
 		if (source instanceof FluxNameFuseable) {
 			FluxNameFuseable<T> s = (FluxNameFuseable<T>) source;
+			Set<Tuple2<String, String>> tags;
 			if (s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+				tags = new LinkedHashSet<>(s.tags);
+				tags.add(newTag);
+			}
+			else {
+				tags = Collections.singleton(newTag);
 			}
 			return new FluxNameFuseable<>(s.source, s.name, tags);
 		}
 		if (source instanceof Fuseable) {
-			return new FluxNameFuseable<>(source, null, tags);
+			return new FluxNameFuseable<>(source, null, Collections.singleton(newTag)); //FIXME
 		}
-		return new FluxName<>(source, null, tags);
+		return new FluxName<>(source, null, Collections.singletonList(newTag));
 	}
 
 	FluxName(Flux<? extends T> source,
 			@Nullable String name,
-			@Nullable Set<Tuple2<String, String>> tags) {
+			@Nullable List<Tuple2<String, String>> tags) {
 		super(source);
 		this.name = name;
-		this.tags = tags;
+		this.tagsWithDuplication = tags;
 	}
 
 	@Override
@@ -111,8 +123,8 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 			return name;
 		}
 
-		if (key == Attr.TAGS && tags != null) {
-			return tags.stream();
+		if (key == Attr.TAGS && tagsWithDuplication != null) {
+			return tagsWithDuplication.stream();
 		}
 
 		if (key == RUN_STYLE) {
@@ -121,6 +133,4 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 		return super.scanUnsafe(key);
 	}
-
-
 }

@@ -21,7 +21,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterators;
@@ -592,131 +594,46 @@ public interface Scannable {
 	}
 
 	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} from closest to furthest and
-	 * return a {@link Stream} of the discoverable tags. It is important to note that:
-	 * <ul>
-	 *     <li>
-	 *         tags can only be discovered until no parent can be inspected, which happens either
-	 *         when the source publisher has been reached or when a non-reactor intermediate operator
-	 *         is present in the parent chain (ie. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
-	 *     </li>
-	 *     <li>
-	 *         tags can be defined in "groups", ie contiguous {@code tag} operators define a
-	 *         single set of tags.
-	 *     </li>
-	 *     <li>
-	 *         in the returned {@link Stream}, tags appear in reverse order of the groups:
-	 *         groups closest to this call appear first, then the groups defined by a direct
-	 *         parent, then groups defined in a parent of the parent...
-	 *     </li>
-	 *     <li>
-	 *         in case a tag key is defined in multiple groups, this method deduplicates
-	 *         and keeps the tag value defined the closest to this {@link Scannable}.
-	 *     </li>
-	 * </ul>
-	 * This is equivalent to {@link #tags(boolean) tags(false)}.
+	 * Visit this {@link Scannable} and its {@link #parents()}, starting by the furthest reachable parent,
+	 * and return a {@link Stream} of the tags which includes duplicates and outputs tags in declaration order
+	 * (grandparent tag(s) &gt; parent tag(s)  &gt; current tag(s)).
+	 * <p>
+	 * Tags can only be discovered until no parent can be inspected, which happens either
+	 * when the source publisher has been reached or when a non-reactor intermediate operator
+	 * is present in the parent chain (i.e. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
 	 *
-	 * @return the stream of tags for this {@link Scannable} and its parents
-	 * @see #tags(boolean)
+	 * @return the stream of tags for this {@link Scannable} and its reachable parents, including duplicates
+	 * @see #tagsDeduplicated()
 	 */
 	default Stream<Tuple2<String, String>> tags() {
-		return tags(false, false);
+		List<Scannable> sources = new LinkedList<>();
+
+		Scannable aSource = this;
+		while (aSource != null && aSource.isScanAvailable()) {
+			sources.add(0, aSource);
+			aSource = aSource.scan(Attr.PARENT);
+		}
+
+		return sources.stream()
+			.flatMap(source -> source.scanOrDefault(Attr.TAGS, Stream.empty()));
 	}
 
-	//TODO if that behavior is changed (Set to Map), note that inside a single group no duplication occurs
 	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} and stream all the
-	 * observed tags, optionally including duplicates. It is important to note that:
-	 * <ul>
-	 *     <li>
-	 *         tags can only be discovered until no parent can be inspected, which happens either
-	 *         when the source publisher has been reached or when a non-reactor intermediate operator
-	 *         is present in the parent chain (ie. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
-	 *     </li>
-	 *     <li>
-	 *         tags can be defined in "groups", ie contiguous {@code tag} operator calls define a
-	 *         single set of tags.
-	 *     </li>
-	 *     <li>
-	 *         a tag entry can be defined in multiple groups though, and this method can
-	 *         be configured to output such duplicates if desired.
-	 *     </li>
-	 *     <li>
-	 *         in the returned {@link Stream}, tags appear in reverse order of the groups:
-	 *         groups closest to this call appear first, then the groups defined by a direct
-	 *         parent, then groups defined in a parent of the parent...
-	 *     </li>
-	 * </ul>
+	 * Visit this {@link Scannable} and its {@link #parents()}, starting by the furthest reachable parent,
+	 * deduplicate tags that have a common key by favoring the value declared last (current tag(s) &gt; parent tag(s) &gt; grandparent tag(s))
+	 * and return a {@link Map} of the deduplicated tags. Note that while the values are the "latest", the key iteration order reflects
+	 * the tags' declaration order.
+	 * <p>
+	 * Tags can only be discovered until no parent can be inspected, which happens either
+	 * when the source publisher has been reached or when a non-reactor intermediate operator
+	 * is present in the parent chain (i.e. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
 	 *
-	 * @return the stream of tags for this {@link Scannable} then its parents, possibly including
-	 * duplicates from parents
+	 * @return a {@link Map} of deduplicated tags from this {@link Scannable} and its reachable parents
+	 * @see #tags()
 	 */
-	default Stream<Tuple2<String, String>> tags(boolean includeDuplicatesFromParents) {
-		return tags(includeDuplicatesFromParents, false);
-	}
-
-	//TODO if that behavior is changed (Set to Map), note that inside a single group no duplication occurs
-	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} (which can optionally
-	 * be traversed from topmost to bottommost) and stream all the observed tags,
-	 * optionally including duplicates. It is important to note that:
-	 * <ul>
-	 *     <li>
-	 *         tags can only be discovered until no parent can be inspected, which happens either
-	 *         when the source publisher has been reached or when a non-reactor intermediate operator
-	 *         is present in the parent chain (ie. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
-	 *     </li>
-	 *     <li>
-	 *         tags can be defined in "groups", ie contiguous {@code tag} operator calls define a
-	 *         single set of tags.
-	 *     </li>
-	 *     <li>
-	 *         a tag entry can be defined in multiple groups though, and this method can
-	 *         be configured to output such duplicates if desired.
-	 *     </li>
-	 *     <li>
-	 *         if {@code parentsFirst} is set to {@code true}, tags appear in the returned {@link Stream}
-	 *         in group declarative order (grandparent->parent->this). Otherwise they appear in reverse order
-	 *         of the groups (this->parent->grandparent).
-	 *     </li>
-	 * </ul>
-	 *
-	 * @return the stream of tags for this {@link Scannable} and its parents, possibly including
-	 * duplicates from parents
-	 */
-	default Stream<Tuple2<String, String>> tags(boolean includeDuplicatesFromParents, boolean parentsFirst) {
-		Stream<Scannable> sources;
-		if (parentsFirst) {
-			List<Scannable> parentsReversed = parents().collect(Collectors.toList());
-			Collections.reverse(parentsReversed);
-			parentsReversed.add(this);
-			sources = parentsReversed.stream();
-		}
-		else {
-			sources = Stream.concat(Stream.of(this), parents());
-		}
-
-		if (includeDuplicatesFromParents) {
-			return sources
-				.flatMap(s -> {
-					Stream<Tuple2<String, String>> tags = s.scan(Attr.TAGS);
-					if (tags == null) {
-						return Stream.empty();
-					}
-					return tags;
-				});
-		}
-		else {
-			final Set<String> keyspace = new HashSet<>();
-			return sources
-				.flatMap(s -> {
-					Stream<Tuple2<String, String>> tags = s.scan(Attr.TAGS);
-					if (tags == null) {
-						return Stream.empty();
-					}
-					return tags.filter(tuple -> keyspace.add(tuple.getT1()));
-				});
-		}
+	default Map<String, String> tagsDeduplicated() {
+		return tags().collect(Collectors.toMap(Tuple2::getT1, Tuple2::getT2,
+			(s1, s2) -> s2, LinkedHashMap::new));
 	}
 
 }
