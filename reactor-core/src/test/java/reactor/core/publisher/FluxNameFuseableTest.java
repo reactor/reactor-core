@@ -16,7 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -33,9 +35,7 @@ public class FluxNameFuseableTest {
 	public void scanOperator() throws Exception {
 		Tuple2<String, String> tag1 = Tuples.of("foo", "oof");
 		Tuple2<String, String> tag2 = Tuples.of("bar", "rab");
-		Set<Tuple2<String, String>> tags = new HashSet<>();
-		tags.add(tag1);
-		tags.add(tag2);
+		List<Tuple2<String, String>> tags = Arrays.asList(tag1, tag2);
 
 		Flux<Integer> source = Flux.range(1, 4).map(i -> i);
 		FluxNameFuseable<Integer> test = new FluxNameFuseable<>(source, "foo", tags);
