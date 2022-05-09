@@ -17,8 +17,10 @@
 package reactor.core.observability.micrometer;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -95,13 +97,11 @@ final class MicrometerListenerConfiguration {
 		Scannable scannable = Scannable.from(source);
 
 		if (scannable.isScanAvailable()) {
-			LinkedList<Tuple2<String, String>> scannableTags = new LinkedList<>();
-			scannable.tags().forEach(scannableTags::push);
-			return scannableTags.stream()
-				//Note the combiner below is for parallel streams, which won't be used
-				//For the identity, `commonTags` should be ok (even if reduce uses it multiple times)
-				//since it deduplicates
-				.reduce(tags, TAG_ACCUMULATOR, TAG_COMBINER);
+			List<Tag> discoveredTags = scannable.tagsDeduplicated()
+				.entrySet().stream()
+				.map(e -> Tag.of(e.getKey(), e.getValue()))
+				.collect(Collectors.toList());
+			return tags.and(discoveredTags);
 		}
 
 		return tags;
@@ -124,9 +124,4 @@ final class MicrometerListenerConfiguration {
 		this.sequenceName = sequenceName;
 		this.registry = registryCandidate;
 	}
-
-	static final BiFunction<Tags, Tuple2<String, String>, Tags> TAG_ACCUMULATOR =
-		(prev, tuple) -> prev.and(Tag.of(tuple.getT1(), tuple.getT2()));
-
-	static final BinaryOperator<Tags>                           TAG_COMBINER    = Tags::and;
 }
