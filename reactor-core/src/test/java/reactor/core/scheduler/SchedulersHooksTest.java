@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
 import reactor.test.AutoDisposingExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,7 @@ public class SchedulersHooksTest {
 	@AfterEach
 	public void resetAllHooks() {
 		Schedulers.resetOnScheduleHooks();
+		Schedulers.resetOnHandleError();
 	}
 
 	@Test
@@ -143,6 +145,102 @@ public class SchedulersHooksTest {
 				"k2#0",
 				"k3#0"
 		);
+	}
+
+	@Test
+	void onHandleErrorWithKeyIsAdditive() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(1));
+		Schedulers.onHandleError("k2", (t, error) -> tracker.addAndGet(10));
+		Schedulers.onHandleError("k3", (t, error) -> tracker.addAndGet(100));
+
+		Schedulers.handleError(new IllegalStateException("expected"));
+
+		assertThat(tracker).as("3 handlers invoked").hasValue(111);
+	}
+
+	@Test
+	void onHandleErrorWithKeyReplaces() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(1));
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(10));
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(100));
+
+		Schedulers.handleError(new IllegalStateException("expected"));
+
+		assertThat(tracker).as("last k1 invoked").hasValue(100);
+	}
+
+	@Test
+	void onHandleErrorWithNoKeyIsAdditiveWithOtherKeys() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(1));
+		Schedulers.onHandleError("k2", (t, error) -> tracker.addAndGet(10));
+		Schedulers.onHandleError("k3", (t, error) -> tracker.addAndGet(100));
+
+		Schedulers.handleError(new IllegalStateException("expected1"));
+
+		assertThat(tracker).as("3 handlers invoked prior to setting anonymous hook part").hasValue(111);
+		tracker.set(0);
+
+		Schedulers.onHandleError((t, error) -> tracker.addAndGet(1000));
+		Schedulers.handleError(new IllegalStateException("expected2"));
+
+		assertThat(tracker).as("4 handlers invoked after anonymous hook part").hasValue(1111);
+	}
+
+	@Test
+	void onHandleErrorWithKeyIgnoresUnknownRemovals() {
+		assertThatCode(() -> Schedulers.resetOnHandleError("k1"))
+			.doesNotThrowAnyException();
+	}
+
+	@Test
+	void onHandleErrorResetOneKey() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(1));
+		Schedulers.onHandleError("k2", (t, error) -> tracker.addAndGet(10));
+		Schedulers.onHandleError("k3", (t, error) -> tracker.addAndGet(100));
+		Schedulers.resetOnHandleError("k2");
+
+		Schedulers.handleError(new IllegalStateException("expected"));
+
+		assertThat(tracker).hasValue(101);
+	}
+
+	@Test
+	void onHandleErrorResetAll() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError("k1", (t, error) -> tracker.addAndGet(1));
+		Schedulers.onHandleError("k2", (t, error) -> tracker.addAndGet(10));
+		Schedulers.onHandleError("k3", (t, error) -> tracker.addAndGet(100));
+		Schedulers.resetOnHandleError();
+
+		Schedulers.handleError(new IllegalStateException("expected"));
+
+		assertThat(tracker).hasValue(0);
+	}
+
+	@Test
+	void onHandleErrorResetAnonymousHook() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError((t, error) -> tracker.addAndGet(100));
+		Schedulers.resetOnHandleError();
+
+		Schedulers.handleError(new IllegalStateException("expected"));
+
+		assertThat(tracker).hasValue(0);
+	}
+
+	@Test
+	void onHandleErrorWithUnknownSubKeyDoesntResetAnonymousHook() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onHandleError((t, error) -> tracker.addAndGet(100));
+		Schedulers.resetOnHandleError("k1");
+
+		Schedulers.handleError(new IllegalStateException("expected"));
+
+		assertThat(tracker).hasValue(100);
 	}
 
 	private static class TrackingDecorator implements Function<Runnable, Runnable> {
