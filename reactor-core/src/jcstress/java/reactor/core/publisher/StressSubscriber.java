@@ -67,6 +67,8 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	public final AtomicInteger onNextCalls = new AtomicInteger();
 
+	public final List<T> receivedValues = new ArrayList<>();
+
 	public final AtomicInteger onNextDiscarded = new AtomicInteger();
 
 	public final List<T> discardedValues = new ArrayList<>();
@@ -138,6 +140,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 		} else {
 			guard.compareAndSet(exception, null);
 		}
+		receivedValues.add(value);
 		onNextCalls.incrementAndGet();
 	}
 

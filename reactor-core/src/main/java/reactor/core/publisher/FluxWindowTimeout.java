@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -118,29 +117,26 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		static final long CANCELLED_FLAG       =
 				0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long TERMINATED_FLAG       =
+		static final long TERMINATED_FLAG      =
 				0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long HAS_UNSENT_WINDOW    =
+		static final long HAS_ACTIVE_WINDOW    =
 				0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long HAS_WORK_IN_PROGRESS =
+		static final long HAS_UNSENT_WINDOW    =
 				0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_WORK_IN_PROGRESS =
+				0b0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long STAMP_INDEX_MASK     =
-				0b0000_1111_1111_1111_1111_1111_1111_1111_1000_0000_0000_0000_0000_0000_0000_0000L;
+				0b0000_0111_1111_1111_1111_1111_1111_1111_1000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long WINDOW_INDEX_MASK    =
 				0b0000_0000_0000_0000_0000_0000_0000_0000_0111_1111_1111_1111_1111_1111_1111_1111L;
 		static final int  STAMP_INDEX_SHIFT    = 31;
 
-
-		long producerIndex;
 		boolean done;
 		Throwable error;
 
 		Subscription s;
 
-		volatile InnerWindow<T> window;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowTimeoutWithBackpressureSubscriber, InnerWindow> WINDOW =
-				AtomicReferenceFieldUpdater.newUpdater(WindowTimeoutWithBackpressureSubscriber.class, InnerWindow.class, "window");
+		InnerWindow<T> window;
 
 		WindowTimeoutWithBackpressureSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int maxSize,
@@ -172,30 +168,111 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public void onNext(T t) {
-			final long producerIndex = this.producerIndex;
-			this.producerIndex = producerIndex + 1;
+			if (this.done) {
+				Operators.onNextDropped(t, this.actual.currentContext());
+				return;
+			}
 
-			while (true) {
-				final InnerWindow<T> window = this.window;
-				if (InnerWindow.TERMINATED == window) {
-					Operators.onDiscard(t, this.currentContext());
+			this.signals.add("value added " + t);
+
+			while(true) {
+				if (isCancelled(this.state)) {
+					this.signals.add("value discarded " + t);
+					Operators.onDiscard(t, this.actual.currentContext());
 					return;
 				}
 
+				final InnerWindow<T> window = this.window;
 				if (window.sendNext(t)) {
+					this.signals.add("value sent " + t);
 					return;
+				}
+			}
+		}
+
+		static <T> long markTerminated(WindowTimeoutWithBackpressureSubscriber<T> instance) {
+			for(;;) {
+				final long previousState = instance.state;
+
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return previousState;
+				}
+
+				final long nextState = previousState | TERMINATED_FLAG;
+				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					instance.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-ter-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
+					return previousState;
 				}
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
+			if (this.done) {
+				Operators.onErrorDropped(t, this.actual.currentContext());
+				return;
+			}
 
+			this.error = t;
+			this.done = true;
+
+			final long previousState = markTerminated(this);
+
+			if (isCancelled(previousState) || isTerminated(previousState)) {
+				return;
+			}
+
+			final InnerWindow<T> window = this.window;
+			if (window != null) {
+				window.sendError(t);
+
+				if (hasUnsentWindow(previousState)) {
+					return;
+				}
+			}
+
+			if (hasWorkInProgress(previousState)) {
+				return;
+			}
+
+			this.actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
+			if (this.done) {
+				return;
+			}
 
+			this.done = true;
+
+
+			final long previousState = markTerminated(this);
+
+			if (isCancelled(previousState) || isTerminated(previousState)) {
+				return;
+			}
+
+			InnerWindow<T> window = this.window;
+			if (window != null) {
+				window.sendComplete();
+
+				if (hasUnsentWindow(previousState)) {
+					return;
+				}
+			}
+
+			if (hasWorkInProgress(previousState)) {
+				return;
+			}
+
+			this.actual.onComplete();
+		}
+
+		static boolean hasActiveWindow(long state) {
+			return (state & HAS_ACTIVE_WINDOW) == HAS_ACTIVE_WINDOW;
 		}
 
 		static boolean hasUnsentWindow(long state) {
@@ -211,7 +288,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		static long incrementStamp(long state) {
-			return (((state & STAMP_INDEX_MASK) >> STAMP_INDEX_SHIFT + 1) << STAMP_INDEX_SHIFT) & STAMP_INDEX_MASK;
+			return ((((state & STAMP_INDEX_MASK) >> STAMP_INDEX_SHIFT) + 1) << STAMP_INDEX_SHIFT) & STAMP_INDEX_MASK;
 		}
 
 		static boolean hasWorkInProgress(long state) {
@@ -230,16 +307,17 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			for (;;) {
 				final long currentState = instance.state;
 
-				if (expectedState != currentState) {
-					return currentState;
-				}
-
-				final long nextState = (incrementIndex
-						? (currentState &~ WINDOW_INDEX_MASK) ^ HAS_WORK_IN_PROGRESS | incrementWindowIndex(currentState)
-						: currentState ^ HAS_WORK_IN_PROGRESS) |
-						(setUnsetFlag ? HAS_UNSENT_WINDOW : 0);
+				final long clearState = currentState & ~HAS_UNSENT_WINDOW;
+				final long nextState = (
+					incrementIndex
+						? (clearState &~ WINDOW_INDEX_MASK) ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0) | incrementWindowIndex(currentState)
+						: clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0)
+				) | (setUnsetFlag ? HAS_UNSENT_WINDOW : 0);
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
-//					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
+					instance.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) +
+							"ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-mwd-" + InnerWindow.formatState(currentState)+"-" + InnerWindow.formatState(nextState));
 					return nextState;
 				}
 			}
@@ -262,25 +340,83 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				hasUnsentWindow = hasUnsentWindow(previousState);
-
-				if (isTerminated(previousState) && !hasUnsentWindow) {
-					return;
-				}
-
-				if ((windowIndex(previousState) != 0 && !hasUnsentWindow) || hasWorkInProgress(previousState)) {
-					if (STATE.compareAndSet(this, previousState, previousState &~ STAMP_INDEX_MASK | incrementStamp(previousState))) {
+				if (hasWorkInProgress(previousState)) {
+					long nextState = (previousState & ~STAMP_INDEX_MASK) | incrementStamp(previousState);
+					if (STATE.compareAndSet(this, previousState, nextState)) {
+						this.signals.offer("ParentWindow " +
+								"-" + Thread.currentThread().getId() +
+								"-req-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
 						return;
 					}
 
 					continue;
 				}
 
+				hasUnsentWindow = hasUnsentWindow(previousState);
+
+				if (!hasUnsentWindow && (isTerminated(previousState) || hasActiveWindow(previousState))) {
+					return;
+				}
+
 				expectedState =
 						previousState ^ (hasUnsentWindow ? HAS_UNSENT_WINDOW : 0) |
-						HAS_WORK_IN_PROGRESS;
+						HAS_WORK_IN_PROGRESS |
+						HAS_ACTIVE_WINDOW;
 				if (STATE.compareAndSet(this, previousState, expectedState)) {
-//					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
+					this.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-req-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(expectedState));
+					break;
+				}
+			}
+
+			drain(previousState, expectedState);
+		}
+
+		void tryCreateNextWindow(int windowIndex) {
+			long previousState;
+			long expectedState;
+
+			for (;;) {
+				previousState = this.state;
+
+				if (isCancelled(previousState)) {
+					this.signals.offer("ParentWindow21 " +
+							"-" + Thread.currentThread().getId() +
+							"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(previousState));
+					return;
+				}
+
+				if (windowIndex(previousState) > windowIndex) {
+					this.signals.offer("ParentWindow1 " +
+							"-" + Thread.currentThread().getId() +
+							"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(previousState));
+					return;
+				}
+
+				if (hasWorkInProgress(previousState)) {
+					final long nextState =
+							((previousState &~ STAMP_INDEX_MASK) &~ HAS_ACTIVE_WINDOW) | incrementStamp(previousState);
+					if (STATE.compareAndSet(this, previousState, nextState)) {
+
+						this.signals.offer("ParentWindow31 " +
+								"-" + Thread.currentThread().getId() +
+								"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
+						return;
+					}
+
+					continue;
+				}
+
+				if (isTerminated(previousState) && !hasUnsentWindow(previousState)) {
+					return;
+				}
+
+				expectedState = previousState | HAS_WORK_IN_PROGRESS | HAS_ACTIVE_WINDOW;
+				if (STATE.compareAndSet(this, previousState, expectedState)) {
+					this.signals.offer("ParentWindow42 " +
+							"-" + Thread.currentThread().getId() +
+							"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(expectedState));
 					break;
 				}
 			}
@@ -292,32 +428,43 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			for (;;) {
 				long n = this.requested;
 
+				final boolean hasUnsentWindow = hasUnsentWindow(previousState);
 				if (n > 0) {
-					boolean hasUnsentWindow = hasUnsentWindow(previousState);
 					if (hasUnsentWindow) {
 						final InnerWindow<T> currentUnsentWindow = this.window;
 
+						// Delivers current unsent window
 						this.actual.onNext(currentUnsentWindow);
 
 						if (n != Long.MAX_VALUE) {
 							n = REQUESTED.decrementAndGet(this);
 						}
 
+						// Marks as sent current unsent window. Also, delivers
+						// onComplete to the window subscriber if it was not delivered
+						final long previousInnerWindowState = currentUnsentWindow.sendSent();
+
 						if (isTerminated(expectedState)) {
 							Throwable e = this.error;
 							if (e != null) {
+								if (!isTerminated(previousInnerWindowState)) {
+									currentUnsentWindow.sendError(e);
+								}
 								this.actual.onError(e);
 							}
 							else {
+								if (!isTerminated(previousInnerWindowState)) {
+									currentUnsentWindow.sendComplete();
+								}
 								this.actual.onComplete();
 							}
 							return;
 						}
 
-						final long previousInnerWindowState = InnerWindow.markSent(currentUnsentWindow);
-						if (InnerWindow.isTimeout(previousInnerWindowState)a || InnerWindow.isTerminated(previousInnerWindowState)) {
-							final boolean shouldBeUnsent = n <= 0;
-							final InnerWindow<T> nextWindow = new InnerWindow<>(this.maxSize, this, shouldBeUnsent);
+						if (InnerWindow.isTimeout(previousInnerWindowState) || InnerWindow.isTerminated(previousInnerWindowState)) {
+							final boolean shouldBeUnsent = n == 0;
+							final InnerWindow<T> nextWindow =
+									new InnerWindow<>(this.maxSize, this, windowIndex(expectedState) + 1, shouldBeUnsent);
 
 							this.window = nextWindow;
 
@@ -329,20 +476,23 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 								}
 							}
 
-							previousState = expectedState;
+							previousState = (expectedState &~ WINDOW_INDEX_MASK) |
+									(shouldBeUnsent ? HAS_UNSENT_WINDOW : 0) |
+									incrementWindowIndex(previousState & WINDOW_INDEX_MASK);
 							expectedState = markWorkDone(this,
 									expectedState,
 									true,
 									shouldBeUnsent);
 
 							if (isCancelled(expectedState)) {
+								nextWindow.sendCancel();
 								if (shouldBeUnsent) {
 									Operators.onDiscard(nextWindow, this.actual.currentContext());
 								}
 								return;
 							}
 
-							if (isTerminated(expectedState)) {
+							if (isTerminated(expectedState) && !shouldBeUnsent) {
 								final Throwable e = this.error;
 								if (e != null) {
 									this.actual.onError(e);
@@ -353,31 +503,23 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 								return;
 							}
 
+							nextWindow.scheduleTimeout(); // TODO: try-catch
+
+							final long nextRequest = InnerWindow.received(previousInnerWindowState);
+							if (nextRequest > 0) {
+								this.signals.offer(nextWindow + " request" + nextRequest);
+								this.s.request(nextRequest);
+							}
+
+
 							if (!hasWorkInProgress(expectedState)) {
-								nextWindow.scheduleTimeout(); // TODO: try-catch
-
-								final long received = InnerWindow.received(previousInnerWindowState);
-								if (received > 0) {
-									this.s.request(received);
-								}
-
 								return;
 							}
 
 							// TODO: ???
-						}
-						else {
-							final InnerWindow<T> nextWindow = new InnerWindow<>(this.maxSize, this, false);
-
-							this.window = nextWindow;
-
-							this.actual.onNext(nextWindow);
-
-							if (n != Long.MAX_VALUE) {
-								REQUESTED.decrementAndGet(this);
-							}
-
-							expectedState = markWorkDone(this, expectedState, true, false);
+						} else {
+							previousState = (expectedState &~ HAS_UNSENT_WINDOW);
+							expectedState = markWorkDone(this, expectedState, false, false);
 
 							if (isCancelled(expectedState)) {
 								return;
@@ -395,20 +537,114 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							}
 
 							if (!hasWorkInProgress(expectedState)) {
-								nextWindow.scheduleTimeout(); // TODO: try-catch
-
-								this.s.request(this.maxSize);
+								return;
 							}
+
+							// TODO: ???
+						}
+
+					} else {
+						final InnerWindow<T> nextWindow =
+								new InnerWindow<>(this.maxSize, this, windowIndex(expectedState) + 1, false);
+
+						final InnerWindow<T> previousWindow = this.window;
+
+						this.window = nextWindow;
+
+						this.actual.onNext(nextWindow);
+
+						if (n != Long.MAX_VALUE) {
+							REQUESTED.decrementAndGet(this);
+						}
+
+						previousState = (expectedState &~ WINDOW_INDEX_MASK) | incrementWindowIndex(expectedState);
+						expectedState = markWorkDone(this, expectedState, true, false);
+
+						if (isCancelled(expectedState)) {
+							previousWindow.sendCancel();
+							nextWindow.sendCancel();
+							return;
+						}
+
+						if (isTerminated(expectedState)) {
+							final Throwable e = this.error;
+							if (e != null) {
+								previousWindow.sendError(e);
+								nextWindow.sendError(e);
+								this.actual.onError(e);
+							}
+							else {
+								previousWindow.sendComplete();
+								nextWindow.sendComplete();
+								this.actual.onComplete();
+							}
+							return;
+						}
+
+						nextWindow.scheduleTimeout(); // TODO: try-catch
+						final long nextRequest;
+						if (previousWindow == null) {
+							nextRequest = this.maxSize;
+						}
+						else {
+							long previousActiveWindowState = previousWindow.sendComplete();
+							nextRequest = InnerWindow.received(previousActiveWindowState);
+						}
+						if (nextRequest > 0) {
+							this.signals.offer(nextWindow + " request" + nextRequest);
+							this.s.request(nextRequest);
+						}
+
+						if (!hasWorkInProgress(expectedState)) {
+							return;
 						}
 					}
-				} else {
-					expectedState = markWorkDone(this, expectedState, false, false);
+				}
+				else if (n == 0 && !hasUnsentWindow) {
+					final InnerWindow<T> nextWindow =
+							new InnerWindow<>(this.maxSize, this, windowIndex(expectedState) + 1, true);
+
+					final InnerWindow<T> previousWindow = this.window;
+					this.window = nextWindow;
+
+					// doesn't propagate through onNext since window is unsent
+
+					previousState =
+							(expectedState &~ WINDOW_INDEX_MASK) | HAS_UNSENT_WINDOW | incrementWindowIndex(previousState & WINDOW_INDEX_MASK);
+					expectedState = markWorkDone(this, expectedState, true, true);
+
+					if (isCancelled(expectedState)) {
+						previousWindow.sendCancel();
+						nextWindow.sendCancel();
+						Operators.onDiscard(nextWindow, this.actual.currentContext());
+						return;
+					}
+
+					// window is deliberately unsent, we can not deliver it since no
+					// demand even if it is terminated
+
+					nextWindow.scheduleTimeout(); // TODO: try-catch
+					long previousActiveWindowState = previousWindow.sendComplete();
+					final long nextRequest = InnerWindow.received(previousActiveWindowState);
+
+					if (nextRequest > 0) {
+						this.signals.offer(nextWindow + " request" + nextRequest);
+						this.s.request(nextRequest);
+					}
+
+					if (!hasWorkInProgress(expectedState)) {
+						return;
+					}
+				}
+				else {
+					previousState = expectedState;
+					expectedState = markWorkDone(this, expectedState, false, hasUnsentWindow);
 
 					if (isCancelled(expectedState)) {
 						return;
 					}
 
-					if (isTerminated(expectedState) && !hasUnsentWindow(previousState)) {
+					if (isTerminated(expectedState) && !hasUnsentWindow(expectedState)) {
 						final Throwable e = this.error;
 						if (e != null) {
 							this.actual.onError(e);
@@ -428,67 +664,37 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		@Override
-		public void cancel() {
-			this.s.cancel();
-			for (; ; ) {
-				final InnerWindow<T> window = this.window;
-				if (window == InnerWindow.TERMINATED) {
-					return;
+		static <T> long markCancelled(WindowTimeoutWithBackpressureSubscriber<T> instance) {
+			for (;;) {
+				final long previousState = instance.state;
+				if ((isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
+					return previousState;
 				}
 
-				if (window != null) {
-					final long previousState = window.cancelByParent();
-					if (!InnerWindow.isSent(previousState) && !InnerWindow.isSending(previousState)) {
-						Operators.onDiscard(window, this.currentContext());
-						return;
-					}
-				}
-
-				if (WINDOW.compareAndSet(this, window, InnerWindow.TERMINATED)) {
-					this.signals.add("cancelled");
-					return;
+				final long nextState = previousState | CANCELLED_FLAG;
+				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					return previousState;
 				}
 			}
 		}
 
-		void tryCreateNextWindow(int windowIndex) {
-			long previousState;
-			long expectedState;
-			boolean hasUnsentWindow;
-			for (;;) {
-				previousState = this.state;
-
-				if (isCancelled(previousState)) {
-					return;
-				}
-
-				hasUnsentWindow = hasUnsentWindow(previousState);
-
-				if (isTerminated(previousState) && !hasUnsentWindow) {
-					return;
-				}
-
-				if (windowIndex(previousState) != windowIndex) {
-					return;
-				}
-
-				if (hasWorkInProgress(previousState)) {
-					if (STATE.compareAndSet(this, previousState, previousState &~ STAMP_INDEX_MASK | incrementStamp(previousState))) {
-						return;
-					}
-
-					continue;
-				}
-
-				expectedState = previousState | HAS_WORK_IN_PROGRESS;
-				if (STATE.compareAndSet(this, previousState, expectedState)) {
-//					this.signals.add("Added_request_" + Thread.currentThread() + "_" + state + "-" + (HAS_ACTIVE_WINDOW | nextRequested));
-					break;
-				}
+		@Override
+		public void cancel() {
+			final long previousState = markCancelled(this);
+			if ((isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
+				return;
 			}
 
-			drain(previousState, expectedState);
+			this.s.cancel();
+
+			final InnerWindow<T> currentActiveWindow = this.window;
+			if (currentActiveWindow != null) {
+				if (!InnerWindow.isSent(currentActiveWindow.sendCancel())) {
+					if (!hasWorkInProgress(previousState)) {
+						Operators.onDiscard(currentActiveWindow, this.actual.currentContext());
+					}
+				}
+			}
 		}
 
 		Disposable schedule(Runnable runnable, long createTime) {
@@ -512,14 +718,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 	static final class InnerWindow<T> extends Flux<T>
 			implements InnerProducer<T>, Fuseable.QueueSubscription<T>, Runnable {
 
-		static final InnerWindow<?> TERMINATED = new InnerWindow<>();
 		static final Disposable DISPOSED = Disposables.disposed();
 
 		final WindowTimeoutWithBackpressureSubscriber<T> parent;
 		final int                                        max;
 		final Queue<T>                                   queue;
 		final long                                       createTime;
-		final long                                       random = ThreadLocalRandom.current().nextInt();
+		final int                                        index;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -549,10 +754,12 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		 InnerWindow(
 				int max,
 				WindowTimeoutWithBackpressureSubscriber<T> parent,
+				int index,
 				boolean markUnsent) {
 			this.max = max;
 			this.parent = parent;
 			this.queue = Queues.<T>get(max).get();
+			this.index = index;
 
 			if (markUnsent) {
 				STATE.lazySet(this, UNSENT_STATE);
@@ -565,19 +772,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			this.createTime = parent.now();
 		}
 
-		private InnerWindow() {
-			this.max = Integer.MAX_VALUE;
-			this.parent = null;
-			this.queue = null;
-			this.createTime = Long.MAX_VALUE;
-		}
-
 		@Override
 		public void subscribe(CoreSubscriber<? super T> actual) {
 			long previousState = markSubscribedOnce(this);
 			if (hasSubscribedOnce(previousState)) {
-				Operators.error(actual,
-						new IllegalStateException("Only one subscriber allowed"));
+				Operators.error(actual, new IllegalStateException("Only one subscriber allowed"));
 				return;
 			}
 
@@ -636,7 +835,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			clearAndFinalize();
 		}
 
-		long cancelByParent() {
+		long sendCancel() {
 			for (;;) {
 				final long state = this.state;
 
@@ -647,7 +846,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long cleanState = state & ~WORK_IN_PROGRESS_MAX;
 				final long nextState = cleanState |
 						TERMINATED_STATE |
-						CANCELLED_PARENT_STATE |
+						PARENT_CANCELLED_STATE |
 						(
 							hasSubscriberSet(state)
 								? hasValues(state)
@@ -715,7 +914,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						timer.dispose();
 					}
 
-					this.parent.tryCreateNextWindow();
+					if (isSent(previousState)) {
+						this.parent.tryCreateNextWindow(this.index);
+					}
 				}
 			} else {
 				previousState = markHasValues(this);
@@ -723,12 +924,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (isFinalized(previousState)) {
-				if (!isCancelledBySubscriberOrByParent(previousState)) {
-					queue.poll();
-					return false;
-				} else {
+				if (isCancelledBySubscriberOrByParent(previousState)) {
 					clearQueue();
 					return true;
+				}
+				else {
+					queue.poll();
+					return false;
 				}
 			}
 
@@ -753,8 +955,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			return true;
 		}
 
-		long sendCompleteByParent() {
-			final long previousState = markTerminatedByParent(this);
+		long sendComplete() {
+			final long previousState = markTerminated(this);
 			if (isFinalized(previousState) || isTerminated(previousState)) {
 				return previousState;
 			}
@@ -783,7 +985,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (hasValues(previousState)) {
-					drain((previousState | TERMINATED_STATE | PARENT_TERMINATED_STATE) + 1);
+					drain((previousState | TERMINATED_STATE) + 1);
 				} else {
 					this.actual.onComplete();
 				}
@@ -792,10 +994,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			return previousState;
 		}
 
-		long sendErrorByParent(Throwable error) {
+		long sendError(Throwable error) {
 			 this.error = error;
 
-			final long previousState = markTerminatedByParent(this);
+			final long previousState = markTerminated(this);
 			if (isFinalized(previousState) || isTerminated(previousState)) {
 				return previousState;
 			}
@@ -824,9 +1026,40 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (hasValues(previousState)) {
-					drain((previousState | TERMINATED_STATE | PARENT_TERMINATED_STATE) + 1);
+					drain((previousState | TERMINATED_STATE) + 1);
 				} else {
 					this.actual.onError(error);
+				}
+			}
+
+			return previousState;
+		}
+
+		long sendSent() {
+			final long previousState = markSent(this);
+			if (isFinalized(previousState) || !isTerminated(previousState) && !isTimeout(previousState)) {
+				return previousState;
+			}
+
+			if (hasSubscriberSet(previousState)) {
+				if (this.mode == ASYNC) {
+					this.actual.onComplete();
+					return previousState;
+				}
+
+				if (hasWorkInProgress(previousState)) {
+					return previousState;
+				}
+
+				if (isCancelled(previousState)) {
+					clearAndFinalize();
+					return previousState;
+				}
+
+				if (hasValues(previousState)) {
+					drain(((previousState ^ UNSENT_STATE) | TERMINATED_STATE) + 1);
+				} else {
+					this.actual.onComplete();
 				}
 			}
 
@@ -920,15 +1153,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		@Override
 		public void run() {
 			long previousState = markTimeout(this);
-			if (isTerminated(previousState)) {
+			if (isTerminated(previousState) || isCancelledByParent(previousState) || !isSent(previousState)) {
 				return;
 			}
 
-			if (isCancelledByParent(previousState)) {
-				return;
-			}
-
-			this.parent.tryCreateNextWindow();
+			this.parent.tryCreateNextWindow(this.index);
 		}
 
 		@Override
@@ -993,30 +1222,28 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long TERMINATED_STATE         =
 				0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long PARENT_TERMINATED_STATE  =
+		static final long PARENT_CANCELLED_STATE   =
 				0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long CANCELLED_STATE          =
 				0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long TIMEOUT_STATE            =
 				0b0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long CANCELLED_PARENT_STATE   =
-				0b0000_0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long HAS_VALUES_STATE         =
-				0b0000_0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+				0b0000_0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long HAS_SUBSCRIBER_STATE     =
-				0b0000_0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+				0b0000_0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long HAS_SUBSCRIBER_SET_STATE =
-				0b0000_0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+				0b0000_0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long UNSENT_STATE             =
-				0b0000_0000_0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
-		static final long WORK_IN_PROGRESS_MAX     =
-				0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0011_1111_1111_1111_1111_1111L;
+				0b0000_0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 		static final long RECEIVED_MASK            =
-				0b0000_0000_0001_1111_1111_1111_1111_1111_1111_1111_1100_0000_0000_0000_0000_0000L;
-		static final long RECEIVED_SHIFT_BITS      = 22;
+				0b0000_0000_0111_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000L;
+		static final long WORK_IN_PROGRESS_MAX     =
+				0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111_1111L;
+		static final long RECEIVED_SHIFT_BITS      = 24;
 
-		long s =
-				0b0000_0010_0100_0000_0000_0000_0000_0000_0000_0000_0010_0000_0000_0000_0000_0000L;
+		static long s =
+				0b0100_0111_0000_0000_0000_0000_0000_0000_0000_0010_0000_0000_0000_0000_0000_0001L;
 
 		static <T> long markSent(InnerWindow<T> instance) {
 			for (; ; ) {
@@ -1028,14 +1255,15 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState =
 						(state ^ UNSENT_STATE) |
-						(isTimeout(state) ? TERMINATED_STATE : 0) |
-								(
-									hasSubscriberSet(state)
-											? hasValues(state)
-												? incrementWork(state & WORK_IN_PROGRESS_MAX)
-                                                : FINALIZED_STATE
-											: 0
-								);
+						((isTimeout(state) || isTerminated(state))
+								? TERMINATED_STATE | (
+										hasSubscriberSet(state)
+												? hasValues(state)
+													? incrementWork(state & WORK_IN_PROGRESS_MAX)
+	                                                : FINALIZED_STATE
+												: 0
+									)
+								: 0);
 				if (STATE.compareAndSet(instance, state, nextState)) {
 					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mst-" + formatState(state)+"-" + formatState(nextState));
 					return state;
@@ -1045,22 +1273,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		static boolean isSent(long state) {
 			return (state & UNSENT_STATE) == 0;
-		}
-
-		static <T> long markSending(InnerWindow<T> instance) {
-			for (; ; ) {
-				final long state = instance.state;
-
-				if (isSent(state) || isFinalized(state)) {
-					return state;
-				}
-
-				final long nextState = state | UNSENT_STATE;
-				if (STATE.compareAndSet(instance, state, nextState)) {
-					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-msg-" + formatState(state)+"-" + formatState(nextState));
-					return state;
-				}
-			}
 		}
 
 		static <T> long markTimeout(InnerWindow<T> instance) {
@@ -1104,7 +1316,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		static boolean isCancelledBySubscriberOrByParent(long state) {
-			return (state & CANCELLED_STATE) == CANCELLED_STATE  || (state & CANCELLED_PARENT_STATE) == CANCELLED_PARENT_STATE;
+			return (state & CANCELLED_STATE) == CANCELLED_STATE  || (state & PARENT_CANCELLED_STATE) == PARENT_CANCELLED_STATE;
 		}
 
 		static boolean isCancelled(long state) {
@@ -1112,7 +1324,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		static boolean isCancelledByParent(long state) {
-			return (state & CANCELLED_PARENT_STATE) == CANCELLED_PARENT_STATE;
+			return (state & PARENT_CANCELLED_STATE) == PARENT_CANCELLED_STATE;
 		}
 
 		static <T> long markHasValues(InnerWindow<T> instance) {
@@ -1120,14 +1332,15 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long state = instance.state;
 
 				if (isFinalized(state)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mhv-" + formatState(state) + "-" + formatState(state));
 					return state;
 				}
 
 				final long nextState;
 				if (hasSubscriberSet(state)) {
-					if (instance.mode == ASYNC) {
-						return state;
-					}
+//					if (instance.mode == ASYNC) {
+//						return state;
+//					}
 					final long cleanState =
 							(state & ~WORK_IN_PROGRESS_MAX) & ~RECEIVED_MASK;
 					nextState = cleanState |
@@ -1159,14 +1372,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return state;
 				}
 
+				final long cleanState =
+						(state & ~WORK_IN_PROGRESS_MAX) & ~RECEIVED_MASK;
 				final long nextState;
 				if (hasSubscriberSet(state)) {
-					if (instance.mode == ASYNC) {
-						return state;
-					}
-
-					final long cleanState =
-							(state & ~WORK_IN_PROGRESS_MAX) & ~RECEIVED_MASK;
 					nextState = cleanState |
 							HAS_VALUES_STATE |
 							TERMINATED_STATE |
@@ -1174,7 +1383,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							incrementWork(state & WORK_IN_PROGRESS_MAX);
 				}
 				else {
-					final long cleanState = state & ~WORK_IN_PROGRESS_MAX & ~RECEIVED_MASK;
 					nextState = cleanState |
 							HAS_VALUES_STATE |
 							TERMINATED_STATE |
@@ -1221,7 +1429,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		static <T> long markTimeoutProcessedAndTerminated(InnerWindow<T> instance) {
+		static <T> long markTerminated(InnerWindow<T> instance) {
 			for (; ; ) {
 				final long state = instance.state;
 
@@ -1247,44 +1455,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		static <T> long markTerminatedByParent(InnerWindow<T> instance) {
-			for (; ; ) {
-				final long state = instance.state;
-
-				if (isCancelledByParent(state) || isTerminatedByParent(state)) {
-					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mtp-" + formatState(state)+"-" + formatState(state));
-					return state;
-				}
-
-
-				final long cleanState = state & ~WORK_IN_PROGRESS_MAX;
-				long nextState = cleanState |
-								TERMINATED_STATE |
-								PARENT_TERMINATED_STATE;
-
-				if (hasSubscriberSet(state)) {
-					if (hasValues(state)) {
-						nextState |= incrementWork(state & WORK_IN_PROGRESS_MAX);
-					} else {
-						nextState |= FINALIZED_STATE;
-					}
-				} else if (!hasSubscribedOnce(state) && !hasValues(state)) {
-					nextState |= FINALIZED_STATE;
-				}
-
-				if (STATE.compareAndSet(instance, state, nextState)) {
-					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mtp-" + formatState(state)+"-" + formatState(nextState));
-					return state;
-				}
-			}
-		}
-
 		static boolean isTerminated(long state) {
 			return (state & TERMINATED_STATE) == TERMINATED_STATE;
-		}
-
-		static boolean isTerminatedByParent(long state) {
-			return (state & PARENT_TERMINATED_STATE) == PARENT_TERMINATED_STATE;
 		}
 
 		static long incrementWork(long currentWork) {
@@ -1342,6 +1514,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				long expectedState,
 				boolean hasValues) {
 			final long state = instance.state;
+
 			if (expectedState != state) {
 				return state;
 			}
@@ -1386,7 +1559,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public String toString() {
-			return super.toString() + " " + random;
+			return super.toString() + " " + index;
 		}
 	}
 

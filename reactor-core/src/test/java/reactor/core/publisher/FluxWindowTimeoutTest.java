@@ -115,26 +115,22 @@ public class FluxWindowTimeoutTest {
 		System.out.println("Completed test.");
 	}
 
-	Flux<List<Integer>> scenario_bufferWithTimeoutWhenDownstreamDemandIsLow() {
-		return Flux.range(1, 4)
-		           .concatMap(e -> Mono.delay(Duration.ofMillis(200))
-		                               .thenReturn(e))
-					.log("pre")
-		           .windowTimeout(5, Duration.ofMillis(100), true)
-				   .log("windowTimeout")
-		           .concatMap(flux -> flux.log("in").collectList(), 0)
-		           .log("Post");
-	}
-
 	@Test
 	public void bufferWithTimeoutWhenDownstreamDemandIsLow() {
-		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutWhenDownstreamDemandIsLow,
+		StepVerifier.withVirtualTime(() ->
+				            Flux.range(1, 4)
+				                .concatMap(e -> Mono.delay(Duration.ofMillis(200))
+				                                    .thenReturn(e))
+				                .log("pre")
+				                .windowTimeout(5, Duration.ofMillis(100), true)
+				                .log("windowTimeout")
+				                .concatMap(flux -> flux.log("in").collectList(), 0)
+				                .log("Post"),
 				            1)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
-		            .expectNoEvent(Duration.ofMillis(100))
 		            .assertNext(s -> assertThat(s).isEmpty())
-		            .expectNoEvent(Duration.ofMillis(200))
+		            .expectNoEvent(Duration.ofMillis(300))
 		            .thenRequest(1)
 		            .assertNext(s -> assertThat(s).containsExactly(1))
 		            .expectNoEvent(Duration.ofMillis(1000))
@@ -199,8 +195,13 @@ public class FluxWindowTimeoutTest {
 		                                       .delayElement(Duration.ofMillis(400 + 400 + 300))
 		                                       .concatWith(Mono.delay(Duration.ofMillis(100 + 400 + 100))
 		                                                       .then(Mono.empty()))
+				                               .log()
 		                                       .windowTimeout(1000, Duration.ofMillis(400), true)
-		                                       .concatMap(Flux::collectList).log())
+				            .log("b")
+		                                       .flatMap(flux -> flux.doOnError(t -> {
+												   t.toString();
+		                                       }).log("inner").collectList())
+				            .log("c"))
 		            .thenAwait(Duration.ofHours(1))
 		            .assertNext(l -> assertThat(l).isEmpty())
 		            .assertNext(l -> assertThat(l).isEmpty())
