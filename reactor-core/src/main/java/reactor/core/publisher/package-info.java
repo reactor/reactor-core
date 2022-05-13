@@ -27,14 +27,14 @@
  *
  * <h2>Processors</h2>
  * The following
- * {@link org.reactivestreams.Processor} extending {@link reactor.core.publisher.FluxProcessor} are available:
+ * {@link org.reactivestreams.Processor} extending {@link reactor.core.publisher.SinkManyAbstractBase} are available:
  * <ul>
  *         <li>A synchronous/non-opinionated pub-sub replaying capable event emitter :
  *         {@link reactor.core.publisher.EmitterProcessor},
  *         {@link reactor.core.publisher.ReplayProcessor},
- *         {@link reactor.core.publisher.UnicastProcessor} and
+ *         {@link reactor.core.publisher.SinkManyUnicast} and
  *         {@link reactor.core.publisher.DirectProcessor}</li>
- *         <li>{@link reactor.core.publisher.FluxProcessor} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
+ *         <li>{@link reactor.core.publisher.SinkManyAbstractBase} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
  * </ul>
  * <p>
  **

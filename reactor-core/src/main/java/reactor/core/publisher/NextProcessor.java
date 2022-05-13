@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CorePublisher;
@@ -35,9 +36,7 @@ import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-// NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.
-@SuppressWarnings("deprecation")
-class NextProcessor<O> extends MonoProcessor<O> {
+class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.core.Disposable, Scannable {
 
 	/**
 	 * This boolean indicates a usage as `Mono#share()` where, for alignment with Flux#share(), the removal of all
@@ -46,6 +45,41 @@ class NextProcessor<O> extends MonoProcessor<O> {
 	final boolean isRefCounted;
 
 	volatile NextInner<O>[] subscribers;
+
+	/**
+	 * Block the calling thread indefinitely, waiting for the completion of this {@code MonoProcessor}. If the
+	 * {@link NextProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 *
+	 * @return the value of this {@code MonoProcessor}
+	 */
+	@Override
+	@Nullable
+	public O block() {
+		return block(null);
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return isTerminated();
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
+	 */
+	public final boolean isError() {
+		return getError() != null;
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 */
+	public final boolean isSuccess() {
+		return isTerminated() && !isError();
+	}
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<NextProcessor, NextInner[]> SUBSCRIBERS =
@@ -82,7 +116,17 @@ class NextProcessor<O> extends MonoProcessor<O> {
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
 	}
 
-	@Override
+	/**
+	 * Returns the value that completed this {@link NextProcessor}. Returns {@code null} if the {@link NextProcessor} has not been completed. If the
+	 * {@link NextProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 *
+	 * @return the value that completed the {@link NextProcessor}, or {@code null} if it has not been completed
+	 *
+	 * @throws RuntimeException if the {@link NextProcessor} was completed with an error
+	 * @deprecated this method is discouraged, consider peeking into a MonoProcessor by {@link Mono#toFuture() turning it into a CompletableFuture}
+	 */
+	@Deprecated
+	@Nullable
 	public O peek() {
 		if (!isTerminated()) {
 			return null;
@@ -101,6 +145,15 @@ class NextProcessor<O> extends MonoProcessor<O> {
 		return null;
 	}
 
+	/**
+		 * Block the calling thread for the specified time, waiting for the completion of this {@code MonoProcessor}. If the
+		 * {@link NextProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+		 *
+		 * @param timeout the timeout value as a {@link Duration}
+		 *
+		 * @return the value of this {@code MonoProcessor} or {@code null} if the timeout is reached and the {@code MonoProcessor} has
+		 * not completed
+		 */
 	@Override
 	@Nullable
 	public O block(@Nullable Duration timeout) {
@@ -128,7 +181,7 @@ class NextProcessor<O> extends MonoProcessor<O> {
 					return value;
 				}
 				if (timeout != null && delay < System.nanoTime()) {
-					cancel();
+					doCancel();
 					throw new IllegalStateException("Timeout on Mono blocking read");
 				}
 
@@ -304,11 +357,20 @@ class NextProcessor<O> extends MonoProcessor<O> {
 		return EmitResult.OK;
 	}
 
+	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT)
 			return subscription;
-		return super.scanUnsafe(key);
+		//touch guard
+		boolean t = isTerminated();
+
+		if (key == Attr.TERMINATED) return t;
+		if (key == Attr.ERROR) return getError();
+		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+		return null;
 	}
 
 	@Override
@@ -316,7 +378,11 @@ class NextProcessor<O> extends MonoProcessor<O> {
 		return Operators.multiSubscribersContext(subscribers);
 	}
 
-	@Override
+	/**
+		 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+		 *
+		 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+		 */
 	public long downstreamCount() {
 		return subscribers.length;
 	}
@@ -347,10 +413,7 @@ class NextProcessor<O> extends MonoProcessor<O> {
 		}
 	}
 
-	@Override
-	// This method is inherited from a deprecated class and will be removed in 3.5.
-	@SuppressWarnings("deprecation")
-	public void cancel() {
+	void doCancel() { //TODO compare with the cancellation in remove(), do we need both approaches?
 		if (isTerminated()) {
 			return;
 		}
@@ -373,20 +436,22 @@ class NextProcessor<O> extends MonoProcessor<O> {
 		}
 	}
 
-	@Override
-	// This method is inherited from a deprecated class and will be removed in 3.5.
-	@SuppressWarnings("deprecation")
-	public boolean isCancelled() {
-		return subscription == Operators.cancelledSubscription() && !isTerminated();
-	}
-
-	@Override
+	/**
+		 * Indicates whether this {@code MonoProcessor} has been terminated by the
+		 * source producer with a success or an error.
+		 *
+		 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+		 */
 	public boolean isTerminated() {
 		return subscribers == TERMINATED;
 	}
 
+	/**
+		 * Return the produced {@link Throwable} error if any or null
+		 *
+		 * @return the produced {@link Throwable} error if any or null
+		 */
 	@Nullable
-	@Override
 	public Throwable getError() {
 		return error;
 	}

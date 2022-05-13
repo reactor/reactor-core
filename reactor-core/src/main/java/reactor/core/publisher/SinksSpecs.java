@@ -224,23 +224,17 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer() {
-			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
-			final EmitterProcessor<T> original = EmitterProcessor.create();
-			return wrapMany(original);
+			return wrapMany(new EmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE));
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize) {
-			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
-			final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize);
-			return wrapMany(original);
+			return wrapMany(new EmitterProcessor<>(true, bufferSize));
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
-			final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize, autoCancel);
-			return wrapMany(original);
+			return wrapMany(new EmitterProcessor<>(autoCancel, bufferSize));
 		}
 
 		@Override
@@ -346,28 +340,25 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer() {
-			@SuppressWarnings("deprecation") // UnicastProcessor will be removed in 3.5.
-			final UnicastProcessor<T> original = UnicastProcessor.create();
+			final SinkManyUnicast<T> original = SinkManyUnicast.create();
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(Queue<T> queue) {
-			@SuppressWarnings("deprecation") // UnicastProcessor will be removed in 3.5.
-			final UnicastProcessor<T> original = UnicastProcessor.create(queue);
+			final SinkManyUnicast<T> original = SinkManyUnicast.create(queue);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(Queue<T> queue, Disposable endCallback) {
-			@SuppressWarnings("deprecation") // UnicastProcessor will be removed in 3.5.
-			final UnicastProcessor<T> original = UnicastProcessor.create(queue, endCallback);
+			final SinkManyUnicast<T> original = SinkManyUnicast.create(queue, endCallback);
 			return wrapMany(original);
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureError() {
-			final UnicastManySinkNoBackpressure<T> original = UnicastManySinkNoBackpressure.create();
+			final SinkManyUnicastNoBackpressure<T> original = SinkManyUnicastNoBackpressure.create();
 			return wrapMany(original);
 		}
 	}

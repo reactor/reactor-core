@@ -56,87 +56,12 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks} through
- * variations of {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}.
- * If you really need the subscribe-to-upstream functionality of a {@link org.reactivestreams.Processor}, switch
- * to {@link Sinks.ManyWithUpstream} with {@link Sinks#unsafe()} variants of
- * {@link Sinks.MulticastUnsafeSpec#onBackpressureBuffer() Sinks.unsafe().many().multicast().onBackpressureBuffer()}.
- * <p/>This processor was blocking in {@link EmitterProcessor#onNext(Object)}. This behaviour can be implemented with the {@link Sinks} API by calling
- * {@link Sinks.Many#tryEmitNext(Object)} and retrying, e.g.:
- * <pre>{@code while (sink.tryEmitNext(v).hasFailed()) {
- *     LockSupport.parkNanos(10);
- * }
- * }</pre>
  */
-@Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T>,
-	Sinks.ManyWithUpstream<T> {
+final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
+	Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
-	 * backlog size and auto-cancel.
-	 *
-	 * @param <E> Type of processed signals
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create() {
-		return create(Queues.SMALL_BUFFER_SIZE, true);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
-	 * backlog size and the provided auto-cancel.
-	 *
-	 * @param <E> Type of processed signals
-	 * @param autoCancel automatically cancel
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, boolean)}
-	 * using the old default of {@link Queues#SMALL_BUFFER_SIZE} for the {@code bufferSize}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using the provided backlog size, with auto-cancel.
-	 *
-	 * @param <E> Type of processed signals
-	 * @param bufferSize the internal buffer size to hold signals
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int) Sinks.many().multicast().onBackpressureBuffer(bufferSize)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create(int bufferSize) {
-		return create(bufferSize, true);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using the provided backlog size and auto-cancellation.
-	 *
-	 * @param <E> Type of processed signals
-	 * @param bufferSize the internal buffer size to hold signals
-	 * @param autoCancel automatically cancel
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, autoCancel)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, bufferSize);
-	}
 
 	final int prefetch;
 
@@ -356,7 +281,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		return this;
 	}
 
-	@Override
+	/**
+		 * Return true if {@code FluxProcessor<T, T>}
+		 *
+		 * @return true if {@code FluxProcessor<T, T>}
+		 */
 	protected boolean isIdentityProcessor() {
 		return true;
 	}
@@ -369,6 +298,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	public int getPending() {
 		Queue<T> q = queue;
 		return q != null ? q.size() : 0;
+	}
+
+	@Override
+	public void dispose() {
+		onError(new CancellationException("Disposed"));
 	}
 
 	@Override
@@ -406,7 +340,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 	}
 
-	@Override
+	/**
+		 * Current error if any, default to null
+		 *
+		 * @return Current error if any, default to null
+		 */
 	@Nullable
 	public Throwable getError() {
 		return error;
@@ -419,12 +357,20 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		return Operators.cancelledSubscription() == s;
 	}
 
-	@Override
+	/**
+		 * Return the processor buffer capacity if any or {@link Integer#MAX_VALUE}
+		 *
+		 * @return processor buffer capacity if any or {@link Integer#MAX_VALUE}
+		 */
 	final public int getBufferSize() {
 		return prefetch;
 	}
 
-	@Override
+	/**
+		 * Has this upstream finished or "completed" / "failed" ?
+		 *
+		 * @return has this upstream finished or "completed" / "failed" ?
+		 */
 	public boolean isTerminated() {
 		return done && getPending() == 0;
 	}
@@ -442,7 +388,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		if (key == Attr.CANCELLED) return isCancelled();
 		if (key == Attr.PREFETCH) return getPrefetch();
 
-		return super.scanUnsafe(key);
+		if (key == Attr.TERMINATED) return isTerminated();
+		if (key == Attr.ERROR) return getError();
+		if (key == Attr.CAPACITY) return getBufferSize();
+
+		return null;
 	}
 
 	final void drain() {
@@ -669,7 +619,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 	}
 
-	@Override
+	/**
+		 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+		 *
+		 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+		 */
 	public long downstreamCount() {
 		return subscribers.length;
 	}

@@ -652,7 +652,7 @@ class NextProcessorTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
-		test.cancel();
+		test.doCancel();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
@@ -760,29 +760,6 @@ class NextProcessorTest {
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
-	void toProcessorDisposeBeforeValueSendsCancellationException() {
-		Mono<String> processor = Mono.<String>never().toProcessor();
-		AtomicReference<Throwable> e1 = new AtomicReference<>();
-		AtomicReference<Throwable> e2 = new AtomicReference<>();
-		AtomicReference<Throwable> e3 = new AtomicReference<>();
-		AtomicReference<Throwable> late = new AtomicReference<>();
-
-		processor.subscribe(v -> Assertions.fail("expected first subscriber to error"), e1::set);
-		processor.subscribe(v -> Assertions.fail("expected second subscriber to error"), e2::set);
-		processor.subscribe(v -> Assertions.fail("expected third subscriber to error"), e3::set);
-
-		processor.subscribe().dispose();
-
-		assertThat(e1.get()).isInstanceOf(CancellationException.class);
-		assertThat(e2.get()).isInstanceOf(CancellationException.class);
-		assertThat(e3.get()).isInstanceOf(CancellationException.class);
-
-		processor.subscribe(v -> Assertions.fail("expected late subscriber to error"), late::set);
-		assertThat(late.get()).isInstanceOf(CancellationException.class);
-	}
-
-	@Test
 	void sharedDisposeBeforeValueDoesNotDisposeProcessor() {
 		AtomicInteger cancellationErrorCount = new AtomicInteger();
 		Mono<String> processor = Mono.<String>never().share();
@@ -828,7 +805,7 @@ class NextProcessorTest {
 
 		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
 
-		((NextProcessor<?>) sinkCancelled).cancel();
+		sinkCancelled.doCancel();
 
 		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
 	}

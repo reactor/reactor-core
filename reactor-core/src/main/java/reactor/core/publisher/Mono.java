@@ -4379,7 +4379,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Subscribe the given {@link Subscriber} to this {@link Mono} and return said
-	 * {@link Subscriber} (eg. a {@link MonoProcessor}).
+	 * {@link Subscriber}, allowing subclasses with a richer API to be used fluently.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe with
 	 * @param <E> the reified type of the {@link Subscriber} for chaining
@@ -4882,26 +4882,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final CompletableFuture<T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>(false));
-	}
-
-	/**
-	 * Wrap this {@link Mono} into a {@link MonoProcessor} (turning it hot and allowing to block,
-	 * cancel, as well as many other operations). Note that the {@link MonoProcessor}
-	 * is subscribed to its parent source if any.
-	 *
-	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
-	 * @deprecated prefer {@link #share()} to share a parent subscription, or use {@link Sinks}
-	 */
-	@Deprecated
-	public final MonoProcessor<T> toProcessor() {
-		if (this instanceof MonoProcessor) {
-			return (MonoProcessor<T>) this;
-		}
-		else {
-			NextProcessor<T> result = new NextProcessor<>(this);
-			result.connect();
-			return result;
-		}
 	}
 
 	/**

@@ -27,9 +27,9 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import org.junit.jupiter.api.Test;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.MonoSink;
+import reactor.core.publisher.SinkManyAbstractBase;
 import reactor.core.publisher.SynchronousSink;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -47,7 +47,7 @@ class ContextBestPracticesArchTest {
 	static JavaClasses FLUXPROCESSOR_CLASSES = new ClassFileImporter()
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
-			.importPackagesOf(reactor.core.publisher.FluxProcessor.class);
+			.importPackagesOf(SinkManyAbstractBase.class);
 
 	@Test
 	void smokeTestWhereClassesLoaded() {
@@ -85,7 +85,7 @@ class ContextBestPracticesArchTest {
 	@SuppressWarnings("deprecation")
 	void fluxProcessorsShouldNotUseDefaultCurrentContext() {
 		classes()
-				.that().areAssignableTo(reactor.core.publisher.FluxProcessor.class)
+				.that().areAssignableTo(SinkManyAbstractBase.class)
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
 				.should(new ArchCondition<JavaClass>("not use the default currentContext()") {
 					@Override
@@ -96,8 +96,8 @@ class ContextBestPracticesArchTest {
 								.filter(it -> "currentContext".equals(it.getName()))
 								.filter(it -> it.getRawParameterTypes().isEmpty())
 								//method declared in a class derived from FluxProcessor but NOT FluxProcessor itself !
-								.anyMatch(it -> it.getOwner().isAssignableTo(reactor.core.publisher.FluxProcessor.class)
-										&& !it.getOwner().isEquivalentTo(reactor.core.publisher.FluxProcessor.class));
+								.anyMatch(it -> it.getOwner().isAssignableTo(SinkManyAbstractBase.class)
+										&& !it.getOwner().isEquivalentTo(SinkManyAbstractBase.class));
 
 
 						if (!overridesMethod) {

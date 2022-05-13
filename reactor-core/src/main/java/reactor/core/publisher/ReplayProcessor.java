@@ -18,15 +18,18 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
@@ -47,12 +50,10 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
- * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks} through
- * variations under {@link reactor.core.publisher.Sinks.MulticastReplaySpec Sinks.many().replay()}.
  */
-@Deprecated
-public final class ReplayProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable, InternalManySink<T> {
+final class ReplayProcessor<T> extends Flux<T> implements InternalManySink<T>, CoreSubscriber<T>, ContextHolder, Disposable, Fuseable, Scannable {
+
+	//TODO make it a ManyUpstreamAdapter as well? (must be done in 3.4.x first)
 
 	/**
 	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
@@ -66,11 +67,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
 	 * {@link Subscriber}
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#latest() Sinks.many().replay().latest()}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> cacheLast() {
+	static <T> ReplayProcessor<T> cacheLast() {
 		return cacheLastOrDefault(null);
 	}
 
@@ -89,11 +87,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
 	 * {@link Subscriber}, or a default one if nothing was pushed yet
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#latestOrDefault(Object) Sinks.many().replay().latestOrDefault(value)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> cacheLastOrDefault(@Nullable T value) {
+	static <T> ReplayProcessor<T> cacheLastOrDefault(@Nullable T value) {
 		ReplayProcessor<T> b = create(1);
 		if (value != null) {
 			b.onNext(value);
@@ -109,11 +104,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
 	 * {@link Subscriber}.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#all() Sinks.many().replay().all()}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <E> ReplayProcessor<E> create() {
+	static <E> ReplayProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -126,11 +118,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays a limited history to each new
 	 * {@link Subscriber}.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#limit(int) Sinks.many().replay().limit(historySize)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <E> ReplayProcessor<E> create(int historySize) {
+	static <E> ReplayProcessor<E> create(int historySize) {
 		return create(historySize, false);
 	}
 
@@ -144,12 +133,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
 	 * {@link Subscriber} if configured as unbounded, a limited history otherwise.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#limit(int) Sinks.many().replay().limit(historySize)}
-	 * for bounded cases ({@code unbounded == false}) or {@link Sinks.MulticastReplaySpec#all(int) Sinks.many().replay().all(bufferSize)}
-	 * otherwise (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
+	static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
 		FluxReplay.ReplayBuffer<E> buffer;
 		if (unbounded) {
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
@@ -185,11 +170,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param maxAge the maximum age of the contained items
 	 *
 	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#limit(Duration) Sinks.many().replay().limit(maxAge)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge) {
+	static <T> ReplayProcessor<T> createTimeout(Duration maxAge) {
 		return createTimeout(maxAge, Schedulers.parallel());
 	}
 
@@ -218,11 +200,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param maxAge the maximum age of the contained items
 	 *
 	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#limit(Duration, Scheduler) Sinks.many().replay().limit(maxAge, scheduler)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge, Scheduler scheduler) {
+	static <T> ReplayProcessor<T> createTimeout(Duration maxAge, Scheduler scheduler) {
 		return createSizeAndTimeout(Integer.MAX_VALUE, maxAge, scheduler);
 	}
 
@@ -254,11 +233,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
 	 * will evict them from its history based on their age.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#limit(int, Duration) Sinks.many().replay().limit(size, maxAge)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
+	static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
 		return createSizeAndTimeout(size, maxAge, Schedulers.parallel());
 	}
 
@@ -290,11 +266,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
 	 * will evict them from its history based on their age.
-	 * @deprecated use {@link Sinks.MulticastReplaySpec#limit(int, Duration, Scheduler) Sinks.many().replay().limit(size, maxAge, scheduler)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
 	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size,
+	static <T> ReplayProcessor<T> createSizeAndTimeout(int size,
 			Duration maxAge,
 			Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler is null");
@@ -339,19 +312,15 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	@Nullable
-	public Throwable getError() {
-		return buffer.getError();
-	}
-
-	@Override
-	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT){
 			return subscription;
 		}
 		if (key == Attr.CAPACITY) return buffer.capacity();
+		if (key == Attr.TERMINATED) return buffer.isDone();
+		if (key == Attr.ERROR) return buffer.getError();
 
-		return super.scanUnsafe(key);
+		return null;
 	}
 
 	@Override
@@ -360,12 +329,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public long downstreamCount() {
-		return subscribers.length;
+	public void dispose() {
+		emitError(new CancellationException("Disposed"), Sinks.EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override
-	public boolean isTerminated() {
+	public boolean isDisposed() {
 		return buffer.isDone();
 	}
 
@@ -518,11 +487,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public Flux<T> asFlux() {
 		return this;
-	}
-
-	@Override
-	protected boolean isIdentityProcessor() {
-		return true;
 	}
 
 	static final class ReplayInner<T>

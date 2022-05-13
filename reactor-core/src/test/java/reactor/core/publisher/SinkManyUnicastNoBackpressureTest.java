@@ -28,11 +28,11 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
-class UnicastManySinkNoBackpressureTest {
+class SinkManyUnicastNoBackpressureTest {
 
 	@Test
 	void currentSubscriberCount() {
-		Sinks.Many<Integer> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Integer> sink = SinkManyUnicastNoBackpressure.create();
 
 		assertThat(sink.currentSubscriberCount()).isZero();
 
@@ -43,25 +43,25 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void noSubscribers() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 		assertThat(sink.tryEmitNext("hi")).isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
 	void noSubscribersTryError() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 		assertThat(sink.tryEmitError(new NullPointerException())).isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
 	void noSubscribersTryComplete() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 		assertThat(sink.tryEmitComplete()).isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
 	void noRequest() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 
 		StepVerifier.create(sink.asFlux(), 0)
 		            .then(() -> {
@@ -73,7 +73,7 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void singleRequest() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 
 		StepVerifier.create(sink.asFlux(), 1)
 		            .then(() -> {
@@ -90,7 +90,7 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void cancelled() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 
 		StepVerifier.create(sink.asFlux(), 0).thenCancel().verify();
 
@@ -99,7 +99,7 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void completed() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 		sink.asFlux().subscribe();
 		sink.tryEmitComplete().orThrow();
 
@@ -108,7 +108,7 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void errored() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 		sink.asFlux().subscribe(v -> {}, e -> {});
 		sink.tryEmitError(new IllegalArgumentException("boom")).orThrow();
 
@@ -117,7 +117,7 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void beforeSubscriberEmitNextIsIgnoredKeepsSinkOpen() {
-		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Object> sink = SinkManyUnicastNoBackpressure.create();
 
 		sink.emitNext("hi", FAIL_FAST);
 
@@ -134,7 +134,7 @@ class UnicastManySinkNoBackpressureTest {
 
 	@Test
 	void scanTerminatedCancelled() {
-		Sinks.Many<Integer> sink = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Integer> sink = SinkManyUnicastNoBackpressure.create();
 		sink.asFlux().subscribe();
 
 		assertThat(sink.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
@@ -147,15 +147,15 @@ class UnicastManySinkNoBackpressureTest {
 
 		assertThat(sink.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
 
-		((UnicastManySinkNoBackpressure<?>) sink).cancel();
+		((SinkManyUnicastNoBackpressure<?>) sink).cancel();
 
 		assertThat(sink.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
 	}
 
 	@Test
 	void inners() {
-		Sinks.Many<Integer> sink1 = UnicastManySinkNoBackpressure.create();
-		Sinks.Many<Integer> sink2 = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Integer> sink1 = SinkManyUnicastNoBackpressure.create();
+		Sinks.Many<Integer> sink2 = SinkManyUnicastNoBackpressure.create();
 		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
 		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
 
