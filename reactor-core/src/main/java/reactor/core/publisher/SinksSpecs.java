@@ -30,7 +30,7 @@ import reactor.util.annotation.Nullable;
 
 final class SinksSpecs {
 
-	static final Sinks.UnsafeRootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
+	static final Sinks.RootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
 	static final Sinks.RootSpec DEFAULT_ROOT_SPEC = new RootSpecImpl(true);
 
 	abstract static class AbstractSerializedSink {
@@ -62,7 +62,7 @@ final class SinksSpecs {
 		}
 	}
 
-	static final class RootSpecImpl implements Sinks.UnsafeRootSpec,
+	static final class RootSpecImpl implements Sinks.RootSpec,
 	                                     Sinks.ManySpec,
 	                                     Sinks.MulticastSpec,
 	                                     Sinks.MulticastReplaySpec {

@@ -105,7 +105,7 @@ public final class Sinks {
 	 *
 	 * @return {@link RootSpec}
 	 */
-	public static UnsafeRootSpec unsafe() {
+	public static RootSpec unsafe() {
 		return SinksSpecs.UNSAFE_ROOT_SPEC;
 	}
 
@@ -296,7 +296,7 @@ public final class Sinks {
 	 * An abstraction adjacent to {@link Processor} that combines downstream usage as a {@link Flux}
 	 * (see {@link #asFlux()}) and upstream usage as a {@link CoreSubscriber} (via {@link #subscribeTo(Publisher)}).
 	 * Implementations have similar characteristics to a {@link Sinks.Many}, but are instantiated via
-	 * {@link Sinks#unsafe()}.{@link UnsafeRootSpec#manyToUpstream() manyToUpstream()}.
+	 * {@link Sinks#unsafe()}.{@link RootSpec#manyToUpstream() manyToUpstream()}.
 	 *
 	 * @apiNote The {@link Subscriber} is intentionally not exposed, unlike in {@link FluxProcessor} where the API required external
 	 * synchronization to abide to the Reactive Streams spec, a requirement that was generally overlooked.
@@ -333,7 +333,7 @@ public final class Sinks {
 		/**
 		 * A {@link ManyUpstreamAdapter} with characteristics matching the
 		 * {@link MulticastSpec#onBackpressureBuffer()} (as instantiated via
-		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link UnsafeRootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
+		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link RootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
 		 *
 		 * @return the {@link ManyUpstreamAdapter}
 		 * @see reactor.core.publisher.EmitterProcessor
@@ -343,7 +343,7 @@ public final class Sinks {
 		/**
 		 * A {@link Processor} with characteristics matching the
 		 * {@link MulticastSpec#onBackpressureBuffer(int)} (as instantiated via
-		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link UnsafeRootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
+		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link RootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
 		 *
 		 * @param bufferSize the maximum queue size
 		 * @return the {@link ManyUpstreamAdapter}
@@ -354,7 +354,7 @@ public final class Sinks {
 		/**
 		 * A {@link Processor} with characteristics matching the
 		 * {@link MulticastSpec#onBackpressureBuffer(int, boolean)} (as instantiated via
-		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link UnsafeRootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
+		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link RootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
 		 *
 		 * @param bufferSize the maximum queue size
 		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
@@ -367,26 +367,9 @@ public final class Sinks {
 
 	/**
 	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
-	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many} without thread-safety
-	 * and synchronization. Also includes a {@link #manyToUpstream()} set of {@link Processor}-like
-	 * factories.
-	 */
-	public interface UnsafeRootSpec extends RootSpec {
-
-		/**
-		 * Provides {@link ManyUpstreamAdapter} implementations that have characteristics similar to
-		 * relevant {@link Sinks.Many} but should be used exclusively as a bridge between an upstream
-		 * {@link Publisher} and (possibly several) downstream {@link Subscriber}(s).
-		 *
-		 * @apiNote The {@link Subscriber} is intentionally not exposed, unlike in {@link FluxProcessor} where the API required external
-		 * synchronization to abide to the Reactive Streams spec, a requirement that was generally overlooked.
-		 */
-		ManyUpstreamSpec manyToUpstream();
-	}
-
-	/**
-	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
 	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many}.
+	 * Also includes a {@link #manyToUpstream()} set of {@link Processor}-like
+	 * factories.
 	 */
 	public interface RootSpec {
 
@@ -421,6 +404,16 @@ public final class Sinks {
 		 * @return {@link ManySpec}
 		 */
 		ManySpec many();
+
+		/**
+		 * Provides {@link ManyUpstreamAdapter} implementations that have characteristics similar to
+		 * relevant {@link Sinks.Many} but should be used exclusively as a bridge between an upstream
+		 * {@link Publisher} and (possibly several) downstream {@link Subscriber}(s).
+		 *
+		 * @apiNote The {@link Subscriber} is intentionally not exposed, unlike in {@link FluxProcessor} where the API required external
+		 * synchronization to abide to the Reactive Streams spec, a requirement that was generally overlooked.
+		 */
+		ManyUpstreamSpec manyToUpstream();
 	}
 
 	/**
