@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,11 @@ import reactor.core.publisher.Sinks.Empty;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.publisher.Sinks.One;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.annotation.Nullable;
 
 final class SinksSpecs {
 
-	static final Sinks.RootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
+	static final Sinks.UnsafeRootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
 	static final Sinks.RootSpec DEFAULT_ROOT_SPEC = new RootSpecImpl(true);
 
 	abstract static class AbstractSerializedSink {
@@ -61,18 +62,27 @@ final class SinksSpecs {
 		}
 	}
 
-	static final class RootSpecImpl implements Sinks.RootSpec,
+	static final class RootSpecImpl implements Sinks.UnsafeRootSpec,
 	                                     Sinks.ManySpec,
 	                                     Sinks.MulticastSpec,
 	                                     Sinks.MulticastReplaySpec {
 
 		final boolean serialized;
-		final Sinks.UnicastSpec unicastSpec; //needed because UnicastSpec method names overlap with MulticastSpec
+		final Sinks.UnicastSpec      unicastSpec; //needed because UnicastSpec method names overlap with MulticastSpec
+		@Nullable
+		final Sinks.ManyUpstreamSpec manyUpstreamSpec; //needed because ProcessorSpec method names overlap with MulticastSpec
 
 		RootSpecImpl(boolean serialized) {
 			this.serialized = serialized;
 			//there will only be as many instances of UnicastSpecImpl as there are RootSpecImpl instances (2)
 			this.unicastSpec = new UnicastSpecImpl(serialized);
+			//there will only be as many instances of UnicastSpecImpl as there are RootSpecImpl instances with serialized==false (1)
+			if (!serialized) {
+				this.manyUpstreamSpec = new ManyUpstreamSpecImpl();
+			}
+			else {
+				this.manyUpstreamSpec = null;
+			}
 		}
 
 		<T, EMPTY extends Empty<T> & ContextHolder> Empty<T> wrapEmpty(EMPTY original) {
@@ -109,6 +119,14 @@ final class SinksSpecs {
 		@Override
 		public <T> One<T> one() {
 			return wrapOne(new SinkOneMulticast<>());
+		}
+
+		@Override
+		public Sinks.ManyUpstreamSpec manyToUpstream() {
+			if (manyUpstreamSpec == null) {
+				throw new IllegalStateException("manyToUpstream() should not be reachable on serialized RootSpecImpl");
+			}
+			return this.manyUpstreamSpec;
 		}
 
 		@Override
@@ -273,6 +291,30 @@ final class SinksSpecs {
 		public <T> Many<T> onBackpressureError() {
 			final UnicastManySinkNoBackpressure<T> original = UnicastManySinkNoBackpressure.create();
 			return wrapMany(original);
+		}
+	}
+
+	static final class ManyUpstreamSpecImpl implements Sinks.ManyUpstreamSpec {
+
+		@Override
+		public <T> Sinks.ManyUpstreamAdapter<T> onBackpressureBuffer() {
+			@SuppressWarnings("deprecation")
+			Sinks.ManyUpstreamAdapter<T> processor = EmitterProcessor.create();
+			return processor;
+		}
+
+		@Override
+		public <T> Sinks.ManyUpstreamAdapter<T> onBackpressureBuffer(int bufferSize) {
+			@SuppressWarnings("deprecation")
+			Sinks.ManyUpstreamAdapter<T> processor = EmitterProcessor.create(bufferSize);
+			return processor;
+		}
+
+		@Override
+		public <T> Sinks.ManyUpstreamAdapter<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
+			@SuppressWarnings("deprecation")
+			Sinks.ManyUpstreamAdapter<T> processor = EmitterProcessor.create(bufferSize, autoCancel);
+			return processor;
 		}
 	}
 }

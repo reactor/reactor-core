@@ -19,7 +19,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Queue;
 
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -101,7 +105,7 @@ public final class Sinks {
 	 *
 	 * @return {@link RootSpec}
 	 */
-	public static RootSpec unsafe() {
+	public static UnsafeRootSpec unsafe() {
 		return SinksSpecs.UNSAFE_ROOT_SPEC;
 	}
 
@@ -286,6 +290,98 @@ public final class Sinks {
 		 * @return {@code true} if the operation should be retried, {@code false} otherwise.
 		 */
 		boolean onEmitFailure(SignalType signalType, EmitResult emitResult);
+	}
+
+	/**
+	 * An abstraction adjacent to {@link Processor} that combines downstream usage as a {@link Flux}
+	 * (see {@link #asFlux()}) and upstream usage as a {@link CoreSubscriber} (via {@link #subscribeTo(Publisher)}).
+	 * Implementations have similar characteristics to a {@link Sinks.Many}, but are instantiated via
+	 * {@link Sinks#unsafe()}.{@link UnsafeRootSpec#manyToUpstream() manyToUpstream()}.
+	 *
+	 * @apiNote The {@link Subscriber} is intentionally not exposed, unlike in {@link FluxProcessor} where the API required external
+	 * synchronization to abide to the Reactive Streams spec, a requirement that was generally overlooked.
+	 * This is introduced as a simplifying replacement of the deprecated {@link FluxProcessor}s, both in API and scope.
+	 *
+	 * @param <T> the type of data from the upstream {@link Publisher} and in the output {@link Flux}
+	 */
+	public interface ManyUpstreamAdapter<T> extends Scannable, Disposable {
+
+		/**
+		 * Attach this {@link ManyUpstreamAdapter} to an upstream {@link Publisher} by subscribing to it.
+		 * <p>
+		 * This should generally be the last step in using the adapter, after the downstream usage patterns
+		 * have been defined, and must be done only once.
+		 *
+		 * @param upstream the {@link Publisher} to subscribe to
+		 */
+		void subscribeTo(Publisher<? extends T> upstream);
+
+		/**
+		 * Return a {@link Flux} view of this adapter. Every call returns the same instance.
+		 *
+		 * @return the {@link Flux} view associated to this {@link ManyUpstreamAdapter}
+		 * @see Many#asFlux()
+		 */
+		Flux<T> asFlux();
+	}
+
+	/**
+	 * A spec that produces variants of {@link ManyUpstreamAdapter} rather than {@link Sinks}.
+	 */
+	public interface ManyUpstreamSpec {
+
+		/**
+		 * A {@link ManyUpstreamAdapter} with characteristics matching the
+		 * {@link MulticastSpec#onBackpressureBuffer()} (as instantiated via
+		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link UnsafeRootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
+		 *
+		 * @return the {@link ManyUpstreamAdapter}
+		 * @see reactor.core.publisher.EmitterProcessor
+		 */
+		<T> ManyUpstreamAdapter<T> onBackpressureBuffer();
+
+		/**
+		 * A {@link Processor} with characteristics matching the
+		 * {@link MulticastSpec#onBackpressureBuffer(int)} (as instantiated via
+		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link UnsafeRootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
+		 *
+		 * @param bufferSize the maximum queue size
+		 * @return the {@link ManyUpstreamAdapter}
+		 * @see reactor.core.publisher.EmitterProcessor
+		 */
+		<T> ManyUpstreamAdapter<T> onBackpressureBuffer(int bufferSize);
+
+		/**
+		 * A {@link Processor} with characteristics matching the
+		 * {@link MulticastSpec#onBackpressureBuffer(int, boolean)} (as instantiated via
+		 * Sinks.{@link Sinks#unsafe() unsafe()}.{@link UnsafeRootSpec#many() many()}.{@link ManySpec#multicast() multicast()}).
+		 *
+		 * @param bufferSize the maximum queue size
+		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
+		 * @return the {@link ManyUpstreamAdapter}
+		 * @see reactor.core.publisher.EmitterProcessor
+		 */
+		<T> ManyUpstreamAdapter<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
+
+	}
+
+	/**
+	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
+	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many} without thread-safety
+	 * and synchronization. Also includes a {@link #manyToUpstream()} set of {@link Processor}-like
+	 * factories.
+	 */
+	public interface UnsafeRootSpec extends RootSpec {
+
+		/**
+		 * Provides {@link ManyUpstreamAdapter} implementations that have characteristics similar to
+		 * relevant {@link Sinks.Many} but should be used exclusively as a bridge between an upstream
+		 * {@link Publisher} and (possibly several) downstream {@link Subscriber}(s).
+		 *
+		 * @apiNote The {@link Subscriber} is intentionally not exposed, unlike in {@link FluxProcessor} where the API required external
+		 * synchronization to abide to the Reactive Streams spec, a requirement that was generally overlooked.
+		 */
+		ManyUpstreamSpec manyToUpstream();
 	}
 
 	/**

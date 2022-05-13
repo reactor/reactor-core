@@ -73,6 +73,15 @@ class SinksTest {
 		assertThat(Sinks.unsafe().empty()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
 	}
 
+	@Test
+	void manyAdapterNotAvailableOnRootSpec() {
+		SinksSpecs.RootSpecImpl serializedRootSpec = new SinksSpecs.RootSpecImpl(true);
+
+		assertThat(serializedRootSpec.manyUpstreamSpec).as("manyUpstreamSpec").isNull();
+		assertThatIllegalStateException().isThrownBy(serializedRootSpec::manyToUpstream)
+			.withMessage("manyToUpstream() should not be reachable on serialized RootSpecImpl");
+	}
+
 
 	@Nested
 	class Multicast {

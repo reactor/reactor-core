@@ -43,6 +43,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -62,6 +63,37 @@ public class EmitterProcessorTest {
 
 	@RegisterExtension
 	AutoDisposingExtension afterTest = new AutoDisposingExtension();
+
+	@Test
+	void smokeTestManyUpstreamAdapter() throws InterruptedException {
+		final Sinks.ManyUpstreamAdapter<Integer> adapter = Sinks.unsafe().manyToUpstream().onBackpressureBuffer();
+		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
+		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
+		final Flux<Integer> upstream = Flux.range(1, 10);
+
+		adapter.asFlux()
+			.publishOn(Schedulers.parallel())
+			.skip(8)
+			.log()
+			.subscribe(testSubscriber1);
+
+		adapter.asFlux()
+			.publishOn(Schedulers.parallel())
+			.skipLast(8)
+			.subscribe(testSubscriber2);
+
+		adapter.subscribeTo(upstream);
+
+		testSubscriber1.block();
+		testSubscriber2.block();
+
+		assertThat(adapter).isInstanceOf(EmitterProcessor.class);
+		assertThat(testSubscriber1.getReceivedOnNext()).as("ts1 onNexts").containsExactly(9, 10);
+		assertThat(testSubscriber1.isTerminatedComplete()).as("ts1 isTerminatedComplete").isTrue();
+
+		assertThat(testSubscriber2.getReceivedOnNext()).as("ts2 onNexts").containsExactly(1, 2);
+		assertThat(testSubscriber2.isTerminatedComplete()).as("ts2 isTerminatedComplete").isTrue();
+	}
 
 	@Test
 	public void currentSubscriberCount() {

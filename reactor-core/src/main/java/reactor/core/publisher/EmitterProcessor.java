@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -54,8 +55,10 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @author Stephane Maldini
  * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks} through
  * variations of {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}.
- * This processor was blocking in {@link EmitterProcessor#onNext(Object)}.
- * This behaviour can be implemented with the {@link Sinks} API by calling
+ * If you really need the subscribe-to-upstream functionality of a {@link org.reactivestreams.Processor}, switch
+ * to {@link reactor.core.publisher.Sinks.ManyUpstreamAdapter} with variants of
+ * {@link Sinks.ManyUpstreamSpec#onBackpressureBuffer() Sinks.unsafe().manyToUpstream().onBackpressureBuffer()}.
+ * <p/>This processor was blocking in {@link EmitterProcessor#onNext(Object)}. This behaviour can be implemented with the {@link Sinks} API by calling
  * {@link Sinks.Many#tryEmitNext(Object)} and retrying, e.g.:
  * <pre>{@code while (sink.tryEmitNext(v).hasFailed()) {
  *     LockSupport.parkNanos(10);
@@ -63,7 +66,8 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * }</pre>
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T> {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T>,
+	Sinks.ManyUpstreamAdapter<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -190,6 +194,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@Override
 	public Context currentContext() {
 		return Operators.multiSubscribersContext(subscribers);
+	}
+
+	@Override
+	public void subscribeTo(Publisher<? extends T> upstream) {
+		upstream.subscribe(this);
 	}
 
 	@Override
