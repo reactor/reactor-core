@@ -65,8 +65,8 @@ public class EmitterProcessorTest {
 	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
-	void smokeTestManyUpstreamAdapter() throws InterruptedException {
-		final Sinks.ManyUpstreamAdapter<Integer> adapter = Sinks.unsafe().manyToUpstream().onBackpressureBuffer();
+	void smokeTestManySubscriber() {
+		final Sinks.ManySubscriber<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
 		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
 		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
 		final Flux<Integer> upstream = Flux.range(1, 10);

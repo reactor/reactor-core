@@ -34,6 +34,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -72,16 +73,6 @@ class SinksTest {
 	void unsafeEmptyIsNotSerialized() {
 		assertThat(Sinks.unsafe().empty()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
 	}
-
-	@Test
-	void manyAdapterNotAvailableOnRootSpec() {
-		SinksSpecs.RootSpecImpl serializedRootSpec = new SinksSpecs.RootSpecImpl(true);
-
-		assertThat(serializedRootSpec.manyUpstreamSpec).as("manyUpstreamSpec").isNull();
-		assertThatIllegalStateException().isThrownBy(serializedRootSpec::manyToUpstream)
-			.withMessage("manyToUpstream() should not be reachable on serialized RootSpecImpl");
-	}
-
 
 	@Nested
 	class Multicast {
