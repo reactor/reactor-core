@@ -336,7 +336,7 @@ public final class Sinks {
 	 * guards against concurrent access. These raw sinks need more advanced understanding
 	 * of the Reactive Streams specification in order to be correctly used.
 	 * <p>
-	 * Some flavors of {@link Sinks.Many} are {@link ManySubscriber} which additionally
+	 * Some flavors of {@link Sinks.Many} are {@link ManyWithUpstream} which additionally
 	 * support being turned into a {@link CoreSubscriber} and  attached to an upstream {@link Publisher}.
 	 * Please note that when this is done, one MUST stop using emit/tryEmit APIs and should refrain
 	 * from directly calling {@link Subscriber} methods, reserving signal creation to be the sole
@@ -358,7 +358,7 @@ public final class Sinks {
 		/**
 		 * {@inheritDoc}
 		 * <p>
-		 * Some flavors return a {@link ManySubscriber}, allowing usage similar to a {@link org.reactivestreams.Processor} with an upstream {@link Publisher}.
+		 * Some flavors return a {@link ManyWithUpstream}, allowing usage similar to a {@link org.reactivestreams.Processor} with an upstream {@link Publisher}.
 		 */
 		@Override
 		ManyUnsafeSpec many();
@@ -393,13 +393,13 @@ public final class Sinks {
 	public interface MulticastUnsafeSpec extends  MulticastSpec {
 
 		@Override
-		<T> ManySubscriber<T> onBackpressureBuffer();
+		<T> ManyWithUpstream<T> onBackpressureBuffer();
 
 		@Override
-		<T> ManySubscriber<T> onBackpressureBuffer(int bufferSize);
+		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize);
 
 		@Override
-		<T> ManySubscriber<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
+		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
 	}
 
 	public interface ManyUnsafeSpec extends ManySpec {
@@ -949,11 +949,11 @@ public final class Sinks {
 	/**
 	 * A {@link Sinks.Many} which additionally allows being used as a {@link CoreSubscriber}
 	 * and  attached to an upstream {@link Publisher}, which is an advanced pattern requiring
-	 * external synchronization. See {@link #asSubscriber()} for more details.
+	 * external synchronization. See {@link #subscribeTo(Publisher)}} for more details.
 	 *
 	 * @param <T> the type of data emitted by the sink
 	 */
-	public interface ManySubscriber<T> extends Many<T> {
+	public interface ManyWithUpstream<T> extends Many<T> {
 
 		/**
 		 * View this {@link Sinks.Many} as a {@link CoreSubscriber}, allowing to subscribe it to
@@ -962,10 +962,28 @@ public final class Sinks {
 		 * Note that when this is done, one MUST stop using emit/tryEmit APIs and should refrain
 		 * from directly calling {@link Subscriber} methods, reserving signal creation to be the sole
 		 * responsibility of the upstream {@link Publisher}.
+		 * <p>
+		 * Note that there is no direct way of detaching such a {@link Subscriber} from its
+		 * upstream. For this, prefer using {@link #subscribeTo(Publisher)}.
+		 *
+		 * @return the {@link Sinks.ManyWithUpstream} viewed as a {@link CoreSubscriber}
+		 * @see #subscribeTo(Publisher)
 		 */
 		CoreSubscriber<T> asSubscriber();
 
-		void subscribeTo(Publisher<? extends T> upstream);
+		/**
+		 * Explicitly subscribe this {@link Sinks.Many} to an upstream {@link Publisher} without
+		 * exposing it as a {@link Subscriber} at all.
+		 * <p>
+		 * Note that when this is done, one MUST stop using emit/tryEmit APIs, reserving signal
+		 * creation to be the sole responsibility of the upstream {@link Publisher}.
+		 * <p>
+		 * The returned {@link Disposable} provides a way of both unsubscribing from the upstream
+		 * and terminating the sink: currently registered subscribers downstream receive an {@link Subscriber#onError(Throwable) onError}
+		 * signal with a {@link java.util.concurrent.CancellationException} and further attempts at subscribing
+		 * to the sink will trigger a similar signal..
+		 */
+		Disposable subscribeTo(Publisher<? extends T> upstream);
 
 	}
 

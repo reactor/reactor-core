@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +67,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	void smokeTestManySubscriber() {
-		final Sinks.ManySubscriber<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
 		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
 		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
 		final Flux<Integer> upstream = Flux.range(1, 10);
@@ -93,6 +94,34 @@ public class EmitterProcessorTest {
 
 		assertThat(testSubscriber2.getReceivedOnNext()).as("ts2 onNexts").containsExactly(1, 2);
 		assertThat(testSubscriber2.isTerminatedComplete()).as("ts2 isTerminatedComplete").isTrue();
+	}
+
+	@Test
+	void smokeTestSubscribeAndDispose() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
+		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
+		final Flux<Integer> upstream = Flux.never();
+
+		adapter.asFlux().subscribe(testSubscriber1);
+
+		Disposable disposable = adapter.subscribeTo(upstream);
+
+		assertThat(testSubscriber1.isTerminatedOrCancelled()).as("ts1 live before dispose");
+
+		disposable.dispose();
+
+		assertThat(disposable.isDisposed()).as("disposable isDisposed").isTrue();
+
+		assertThat(testSubscriber1.expectTerminalError()).as("ts1 onError")
+			.isInstanceOf(CancellationException.class)
+			.hasMessage("Disposed");
+
+		adapter.asFlux().subscribe(testSubscriber2);
+
+		assertThat(testSubscriber1.expectTerminalError()).as("ts2 late subscription onError")
+			.isInstanceOf(CancellationException.class)
+			.hasMessage("Disposed");
 	}
 
 	@Test
