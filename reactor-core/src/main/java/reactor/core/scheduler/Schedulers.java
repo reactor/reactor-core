@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.MeterRegistry;
+
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -102,9 +104,6 @@ public abstract class Schedulers {
 			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticQueueSize"))
 			        .map(Integer::parseInt)
 			        .orElse(100000);
-
-	@Nullable
-	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -508,18 +507,68 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Define a hook that is executed when a {@link Scheduler} has
+	 * Define a hook anonymous part that is executed alongside keyed parts when a {@link Scheduler} has
 	 * {@link #handleError(Throwable) handled an error}. Note that it is executed after
 	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
 	 * case when a fatal error occurs (see {@link Exceptions#throwIfJvmFatal(Throwable)}).
+	 * <p>
+	 * This variant uses an internal private key, which allows the method to be additive with
+	 * {@link #onHandleError(String, BiConsumer)}. Prefer adding and removing handler parts
+	 * for keys that you own via {@link #onHandleError(String, BiConsumer)} nonetheless.
 	 *
-	 * @param c the new hook to set.
+	 * @param subHook the new {@link BiConsumer} to set as the hook's anonymous part.
+	 * @see #onHandleError(String, BiConsumer)
 	 */
-	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
+	public static void onHandleError(BiConsumer<Thread, ? super Throwable> subHook) {
+		Objects.requireNonNull(subHook, "onHandleError");
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("Hooking new default: onHandleError");
+			LOGGER.debug("Hooking onHandleError anonymous part");
 		}
-		onHandleErrorHook = Objects.requireNonNull(c, "onHandleError");
+		synchronized (LOGGER) {
+			onHandleErrorHooks.put(Schedulers.class.getName() + ".ON_HANDLE_ERROR_ANONYMOUS_PART", (BiConsumer<Thread, Throwable>) subHook);
+			onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
+		}
+	}
+
+	/**
+	 * Define a keyed hook part that is executed alongside other parts when a {@link Scheduler} has
+	 * {@link #handleError(Throwable) handled an error}. Note that it is executed after
+	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
+	 * case when a fatal error occurs (see {@link Exceptions#throwIfJvmFatal(Throwable)}).
+	 * <p>
+	 * Calling this method twice with the same key replaces the old hook part
+	 * of the same key. Calling this method twice with two different keys is otherwise additive.
+	 * Note that {@link #onHandleError(BiConsumer)} also defines an anonymous part which
+	 * effectively uses a private internal key, making it also additive with this method.
+	 *
+	 * @param key the {@link String} key identifying the hook part to set/replace.
+	 * @param subHook the new hook part to set for the given key.
+	 */
+	@SuppressWarnings("unchecked")
+	public static void onHandleError(String key, BiConsumer<Thread, ? super Throwable> subHook) {
+		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(subHook, "onHandleError");
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Hooking onHandleError part with key {}", key);
+		}
+		synchronized (LOGGER) {
+			onHandleErrorHooks.put(key, (BiConsumer<Thread, Throwable>) subHook);
+			onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
+		}
+	}
+
+	@Nullable
+	private static BiConsumer<Thread, ? super Throwable> createOrAppendHandleError(Collection<BiConsumer<Thread, Throwable>> subHooks) {
+		BiConsumer<Thread, Throwable> composite = null;
+		for (BiConsumer<Thread, Throwable> value : subHooks) {
+			if (composite != null) {
+				composite = composite.andThen(value);
+			}
+			else {
+				composite = value;
+			}
+		}
+		return composite;
 	}
 
 	/**
@@ -636,13 +685,37 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Reset the {@link #onHandleError(BiConsumer)} hook to the default no-op behavior.
+	 * Reset the {@link #onHandleError(BiConsumer)} hook to the default no-op behavior, erasing
+	 * all sub-hooks that might have individually added via {@link #onHandleError(String, BiConsumer)}
+	 * or the whole hook set via {@link #onHandleError(BiConsumer)}.
+	 *
+	 * @see #resetOnHandleError(String)
 	 */
 	public static void resetOnHandleError() {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("Reset to factory defaults: onHandleError");
 		}
-		onHandleErrorHook = null;
+		synchronized (LOGGER) {
+			onHandleErrorHooks.clear();
+			onHandleErrorHook = null;
+		}
+	}
+
+	/**
+	 * Reset a specific onHandleError hook part keyed to the provided {@link String},
+	 * removing that sub-hook if it has previously been defined via {@link #onHandleError(String, BiConsumer)}.
+	 */
+	public static void resetOnHandleError(String key) {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Remove onHandleError sub-hook {}", key);
+		}
+		synchronized (LOGGER) {
+			//avoid resetting monolithic hook if no keyed hook has been set
+			//also avoid resetting anything if the key is unknown
+			if (onHandleErrorHooks.remove(key) != null) {
+				onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
+			}
+		}
 	}
 
 	/**
@@ -1015,6 +1088,11 @@ public abstract class Schedulers {
 			DECORATORS = new LinkedHashMap<>();
 
 	static volatile Factory factory = DEFAULT;
+
+	private static final LinkedHashMap<String, BiConsumer<Thread, Throwable>> onHandleErrorHooks = new LinkedHashMap<>(1);
+
+	@Nullable
+	static BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
 	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
 
