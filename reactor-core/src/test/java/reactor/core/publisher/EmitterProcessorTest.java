@@ -129,7 +129,7 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
-	void subscribeToUpstreamTwiceCancelsSecondSubscription() {
+	void subscribeToUpstreamTwiceSkipsSecondSubscription() {
 		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
 		final TestPublisher<Integer> upstream1 = TestPublisher.create();
 		final TestPublisher<Integer> upstream2 = TestPublisher.create();
@@ -141,40 +141,9 @@ public class EmitterProcessorTest {
 		assertThat(sub2.isDisposed()).as("second subscription cancelled").isTrue();
 
 		upstream1.assertMinRequested(123);
+
+		upstream2.assertWasNotSubscribed();
 		upstream2.assertWasNotRequested();
-	}
-
-	@Test
-	void subscribeToUpstreamTwiceFavorsSubscribeTo() {
-		AtomicInteger subscribeToWins = new AtomicInteger();
-		final int loops = 10_000;
-		for (int i = 0; i < loops; i++) {
-			final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
-			final TestPublisher<Integer> upstream1 = TestPublisher.create();
-			final TestPublisher<Integer> upstream2 = TestPublisher.create();
-
-			final boolean[] winner = new boolean[] { false, false };
-
-			RaceTestUtils.race(
-				() -> {
-					Disposable sub = adapter.subscribeTo(upstream1);
-					winner[0] = !sub.isDisposed();
-				},
-				() -> {
-					CoreSubscriber<Integer> sub = adapter.asSubscriber();
-					upstream2.subscribe(sub);
-					winner[1] = !upstream2.wasCancelled();
-				}
-			);
-
-			assertThat(winner).as("only one winner in loop #" + i).containsExactlyInAnyOrder(true, false);
-			if (winner[0]) {
-				subscribeToWins.incrementAndGet();
-			}
-		}
-		assertThat(subscribeToWins)
-			.as("80% of subscribeTo win")
-			.hasValueCloseTo(loops, Percentage.withPercentage(80));
 	}
 
 	@Test

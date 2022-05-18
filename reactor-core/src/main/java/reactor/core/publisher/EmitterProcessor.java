@@ -205,10 +205,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		return Operators.multiSubscribersContext(subscribers);
 	}
 
-	@Override
-	public CoreSubscriber<T> asSubscriber() {
-		return this;
-	}
 
 	private boolean isDetached() {
 		return s == Operators.cancelledSubscription() && done && error instanceof CancellationException;
@@ -382,19 +378,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public void onSubscribe(final Subscription s) {
-		EmitterDisposable ed = new EmitterDisposable(this);
-		//since upstreamDisposable is set _before_ upstream.subscribe(this) in #subscribeTo
-		//we can tell this means the subscription was done via another path (asSubscriber).
-		//we can at this point prevent further subscribeTo calls.
-		//there is still a window between subscription and onSubscribe where an intermediate
-		//subscribeTo would not see a "classic" subscription and return a Disposable that targets
-		//that classic subscription instead of the one from the subscribeTo Publisher...
-		//if we detect subscribeTo was used, we immediately cancel the off-band subscription
-		//so that subscribeTo gets precedence.
-		if (!UPSTREAM_DISPOSABLE.compareAndSet(this, null, ed)) {
-			s.cancel();
-			return;
-		}
+		//since the CoreSubscriber nature isn't exposed to the user, the only path to onSubscribe is
+		//already guarded by UPSTREAM_DISPOSABLE. just in case the publisher misbehaves we still use setOnce
 		if (Operators.setOnce(S, this, s)) {
 			if (s instanceof Fuseable.QueueSubscription) {
 				@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =

@@ -956,22 +956,6 @@ public final class Sinks {
 	public interface ManyWithUpstream<T> extends Many<T> {
 
 		/**
-		 * View this {@link Sinks.Many} as a {@link CoreSubscriber}, allowing to subscribe it to
-		 * an upstream {@link Publisher}.
-		 * <p>
-		 * Note that when this is done, one MUST stop using emit/tryEmit APIs and should refrain
-		 * from directly calling {@link Subscriber} methods, reserving signal creation to be the sole
-		 * responsibility of the upstream {@link Publisher}.
-		 * <p>
-		 * Note that there is no direct way of detaching such a {@link Subscriber} from its
-		 * upstream. For this, prefer using {@link #subscribeTo(Publisher)}.
-		 *
-		 * @return the {@link Sinks.ManyWithUpstream} viewed as a {@link CoreSubscriber}
-		 * @see #subscribeTo(Publisher)
-		 */
-		CoreSubscriber<T> asSubscriber();
-
-		/**
 		 * Explicitly subscribe this {@link Sinks.Many} to an upstream {@link Publisher} without
 		 * exposing it as a {@link Subscriber} at all.
 		 * <p>
@@ -985,8 +969,6 @@ public final class Sinks {
 		 * <p>
 		 * The returned {@link Disposable} is an instance that is already {@link Disposable#isDisposed() disposed} when this method has been
 		 * previously called, as a {@link Subscriber} cannot be subscribed to more than one {@link Publisher}.
-		 * Note that subscriptions using the {@link #asSubscriber()} API cannot be reliably detected that way,
-		 * and might substitute with the currently attempted subscription with regard to the {@link Disposable} target.
 		 */
 		Disposable subscribeTo(Publisher<? extends T> upstream);
 
