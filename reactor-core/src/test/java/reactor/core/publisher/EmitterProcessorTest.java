@@ -23,10 +23,12 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.assertj.core.data.Percentage;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -43,8 +45,10 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.subscriber.TestSubscriber;
+import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -115,13 +119,62 @@ public class EmitterProcessorTest {
 
 		assertThat(testSubscriber1.expectTerminalError()).as("ts1 onError")
 			.isInstanceOf(CancellationException.class)
-			.hasMessage("Disposed");
+			.hasMessage("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
 
 		adapter.asFlux().subscribe(testSubscriber2);
 
 		assertThat(testSubscriber1.expectTerminalError()).as("ts2 late subscription onError")
 			.isInstanceOf(CancellationException.class)
-			.hasMessage("Disposed");
+			.hasMessage("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
+	}
+
+	@Test
+	void subscribeToUpstreamTwiceCancelsSecondSubscription() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
+		final TestPublisher<Integer> upstream1 = TestPublisher.create();
+		final TestPublisher<Integer> upstream2 = TestPublisher.create();
+
+		Disposable sub1 = adapter.subscribeTo(upstream1);
+		Disposable sub2 = adapter.subscribeTo(upstream2);
+
+		assertThat(sub1.isDisposed()).as("first subscription active").isFalse();
+		assertThat(sub2.isDisposed()).as("second subscription cancelled").isTrue();
+
+		upstream1.assertMinRequested(123);
+		upstream2.assertWasNotRequested();
+	}
+
+	@Test
+	void subscribeToUpstreamTwiceFavorsSubscribeTo() {
+		AtomicInteger subscribeToWins = new AtomicInteger();
+		final int loops = 10_000;
+		for (int i = 0; i < loops; i++) {
+			final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
+			final TestPublisher<Integer> upstream1 = TestPublisher.create();
+			final TestPublisher<Integer> upstream2 = TestPublisher.create();
+
+			final boolean[] winner = new boolean[] { false, false };
+
+			RaceTestUtils.race(
+				() -> {
+					Disposable sub = adapter.subscribeTo(upstream1);
+					winner[0] = !sub.isDisposed();
+				},
+				() -> {
+					CoreSubscriber<Integer> sub = adapter.asSubscriber();
+					upstream2.subscribe(sub);
+					winner[1] = !upstream2.wasCancelled();
+				}
+			);
+
+			assertThat(winner).as("only one winner in loop #" + i).containsExactlyInAnyOrder(true, false);
+			if (winner[0]) {
+				subscribeToWins.incrementAndGet();
+			}
+		}
+		assertThat(subscribeToWins)
+			.as("80% of subscribeTo win")
+			.hasValueCloseTo(loops, Percentage.withPercentage(80));
 	}
 
 	@Test

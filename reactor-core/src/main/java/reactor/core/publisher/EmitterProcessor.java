@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -156,6 +157,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
 
+	volatile EmitterDisposable upstreamDisposable;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
+			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
+
+
 	@SuppressWarnings("unused")
 	volatile int wip;
 
@@ -210,7 +217,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	private boolean detach() {
 		if (Operators.terminate(S, this)) {
 			done = true;
-			CancellationException detachException = new CancellationException("Disposed"); //TODO better message?
+			CancellationException detachException = new CancellationException("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
 			if (ERROR.compareAndSet(EmitterProcessor.this, null, detachException)) {
 				Queue<T> q = queue;
 				if (q != null) {
@@ -227,8 +234,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public Disposable subscribeTo(Publisher<? extends T> upstream) {
-		upstream.subscribe(this);
-		return new EmitterDisposable(this);
+		EmitterDisposable ed = new EmitterDisposable(this);
+		if (UPSTREAM_DISPOSABLE.compareAndSet(this, null, ed)) {
+			upstream.subscribe(this);
+			return ed;
+		}
+		return Disposables.disposed();
 	}
 
 	@Override
@@ -371,6 +382,19 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public void onSubscribe(final Subscription s) {
+		EmitterDisposable ed = new EmitterDisposable(this);
+		//since upstreamDisposable is set _before_ upstream.subscribe(this) in #subscribeTo
+		//we can tell this means the subscription was done via another path (asSubscriber).
+		//we can at this point prevent further subscribeTo calls.
+		//there is still a window between subscription and onSubscribe where an intermediate
+		//subscribeTo would not see a "classic" subscription and return a Disposable that targets
+		//that classic subscription instead of the one from the subscribeTo Publisher...
+		//if we detect subscribeTo was used, we immediately cancel the off-band subscription
+		//so that subscribeTo gets precedence.
+		if (!UPSTREAM_DISPOSABLE.compareAndSet(this, null, ed)) {
+			s.cancel();
+			return;
+		}
 		if (Operators.setOnce(S, this, s)) {
 			if (s instanceof Fuseable.QueueSubscription) {
 				@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
