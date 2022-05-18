@@ -30,8 +30,8 @@
  * {@link org.reactivestreams.Processor} extending {@link reactor.core.publisher.SinkManyAbstractBase} are available:
  * <ul>
  *         <li>A synchronous/non-opinionated pub-sub replaying capable event emitter :
- *         {@link reactor.core.publisher.EmitterProcessor},
- *         {@link reactor.core.publisher.ReplayProcessor},
+ *         {@link reactor.core.publisher.SinkManyEmitterProcessor},
+ *         {@link reactor.core.publisher.SinkManyReplayProcessor},
  *         {@link reactor.core.publisher.SinkManyUnicast} and
  *         {@link reactor.core.publisher.DirectProcessor}</li>
  *         <li>{@link reactor.core.publisher.SinkManyAbstractBase} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
@@ -40,6 +40,7 @@
  **
  * @author Stephane Maldini
  */
+//FIXME remove processors from package-info
 @NonNullApi
 package reactor.core.publisher;
 
