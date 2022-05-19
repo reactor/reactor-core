@@ -223,6 +223,7 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"2, 2, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 3, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest1_2 {
@@ -349,12 +350,27 @@ public class FluxWindowTimeoutStressTest {
 	}
 
 	@JCStressTest
-	@Outcome(id = {"2, 1, 1, 1, 2"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 1, 1, 1, 4"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 2, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 2, 2, 1, 3"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 2, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {
+			"8, 4, 4, 1, 8",
+			"8, 5, 5, 1, 8",
+			"8, 5, 5, 1, 9",
+			"8, 5, 5, 1, 10",
+			"8, 6, 6, 1, 8",
+			"8, 6, 6, 1, 9",
+			"8, 6, 6, 1, 10",
+			"8, 7, 7, 1, 8",
+			"8, 7, 7, 1, 9",
+			"8, 7, 7, 1, 10",
+			"8, 8, 8, 1, 8",
+			"8, 8, 8, 1, 9",
+			"8, 8, 8, 1, 10",
+			"8, 9, 9, 1, 8",
+			"8, 9, 9, 1, 9",
+			"8, 9, 9, 1, 10",
+			"8, 9, 9, 0, 8",
+			"8, 9, 9, 0, 9",
+			"8, 9, 9, 0, 10",
+	}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest1_3 {
 
@@ -511,8 +527,8 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + " " + windowTimeoutSubscriber.signals);
 			}
 
-			if (result.toString().startsWith("6") || result.toString().startsWith("7")) {
-				throw new RuntimeException("boom " + result + " " + windowTimeoutSubscriber.signals);
+			if (result.toString().startsWith("6") || result.toString().startsWith("7") || result.toString().startsWith("8, 4, 5") || result.toString().startsWith("8, 5, 6")) {
+				throw new RuntimeException("boom " + result + " "+ mainSubscriber.receivedValues + " " + windowTimeoutSubscriber.signals);
 			}
 		}
 	}
@@ -526,23 +542,27 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"2, 1, 2, 1, 2"}, expect = ACCEPTABLE_INTERESTING, desc = "")
 	@Outcome(id = {"2, 1, 2, 1, 4"}, expect = ACCEPTABLE_INTERESTING, desc = "")
 	@State
-	public static class FluxWindowTimoutStressTest2 {
+	public static class FluxWindowTimoutStressTest2_0 {
 
 		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
 		StressSubscriber<Long> subscriber1 = new StressSubscriber<>();
 		StressSubscriber<Long> subscriber2 = new StressSubscriber<>();
+		StressSubscriber<Long> subscriber3 = new StressSubscriber<>();
 		final StressSubscriber<Flux<Long>> mainSubscriber          =
-				new StressSubscriber<Flux<Long>>(2) {
+				new StressSubscriber<Flux<Long>>(3) {
 					int index = 0;
 
 					@Override
 					public void onNext(Flux<Long> window) {
 						super.onNext(window);
-						if (index++ == 0) {
-							window.subscribe(subscriber1);
-						}
-						else {
-							window.subscribe(subscriber2);
+						switch (index++) {
+							case 0:
+								window.subscribe(subscriber1);
+								break;
+							case 1:
+								window.subscribe(subscriber2);
+							case 2:
+								window.subscribe(subscriber3);
 						}
 					}
 				};
@@ -596,9 +616,9 @@ public class FluxWindowTimeoutStressTest {
 		@Arbiter
 		public void arbiter(LLLLL_Result result) {
 			result.r1 =
-					subscriber1.onNextCalls.get() + subscriber1.onNextDiscarded.get() + subscriber2.onNextCalls.get();
+					subscriber1.onNextCalls.get() + subscriber1.onNextDiscarded.get() + subscriber2.onNextCalls.get() + subscriber3.onNextCalls.get();
 			result.r2 =
-					subscriber1.onCompleteCalls.get() + subscriber2.onCompleteCalls.get();
+					subscriber1.onCompleteCalls.get() + subscriber2.onCompleteCalls.get()  + subscriber3.onCompleteCalls.get();
 			result.r3 = mainSubscriber.onNextCalls.get();
 			result.r4 = mainSubscriber.onCompleteCalls.get();
 			result.r5 = subscription.requested;
