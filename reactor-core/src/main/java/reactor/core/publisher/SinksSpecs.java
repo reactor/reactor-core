@@ -99,17 +99,17 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer() {
-			return new EmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
+			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
 		}
 
 		@Override
 		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer(int bufferSize) {
-			return new EmitterProcessor<>(true, bufferSize);
+			return new SinkManyEmitterProcessor<>(true, bufferSize);
 		}
 
 		@Override
 		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			return new EmitterProcessor<>(autoCancel, bufferSize);
+			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize);
 		}
 
 		@Override

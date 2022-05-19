@@ -84,8 +84,8 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 
 	volatile EmitterDisposable upstreamDisposable;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
 
 	@SuppressWarnings("unused")
@@ -139,7 +139,7 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 		if (Operators.terminate(S, this)) {
 			done = true;
 			CancellationException detachException = new CancellationException("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
-			if (ERROR.compareAndSet(EmitterProcessor.this, null, detachException)) {
+			if (ERROR.compareAndSet(this, null, detachException)) {
 				Queue<T> q = queue;
 				if (q != null) {
 					q.clear();
@@ -652,9 +652,9 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 	static final class EmitterDisposable implements Disposable {
 
 		@Nullable
-		EmitterProcessor<?> target;
+		SinkManyEmitterProcessor<?> target;
 
-		public EmitterDisposable(EmitterProcessor<?> emitterProcessor) {
+		public EmitterDisposable(SinkManyEmitterProcessor<?> emitterProcessor) {
 			this.target = emitterProcessor;
 		}
 
@@ -665,7 +665,7 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 
 		@Override
 		public void dispose() {
-			EmitterProcessor<?> t = target;
+			SinkManyEmitterProcessor<?> t = target;
 			if (t == null) {
 				return;
 			}
