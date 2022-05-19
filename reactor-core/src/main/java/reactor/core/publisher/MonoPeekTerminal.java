@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -321,7 +321,22 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		public T poll() {
 			assert queueSubscription != null;
 			boolean d = done;
-			T v = queueSubscription.poll();
+			T v;
+			try {
+				v = queueSubscription.poll();
+			}
+			catch (Throwable pe) {
+				if (parent.onErrorCall != null) {
+					try {
+						parent.onErrorCall.accept(pe);
+					}
+					catch (Throwable t) {
+						t = Operators.onOperatorError(null, pe, t, actual.currentContext());
+						throw Exceptions.propagate(t);
+					}
+				}
+				throw pe;
+			}
 			if (!valued && (v != null || d || sourceMode == SYNC)) {
 				valued = true;
 				//TODO include onEmptyCall here as well?
@@ -334,16 +349,8 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 								actual.currentContext()));
 					}
 				}
-				if (parent.onAfterTerminateCall != null) {
-					try {
-						parent.onAfterTerminateCall.accept(v, null);
-					}
-					catch (Throwable t) {
-						Operators.onErrorDropped(Operators.onOperatorError(t,
-								actual.currentContext()),
-								actual.currentContext());
-					}
-				}
+				//if parent.onAfterTerminateCall is set, fusion MUST be negotiated to NONE
+				//because there's no way to correctly support onAfterError in the poll() scenario
 			}
 			return v;
 		}
@@ -362,7 +369,13 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		@Override
 		public int requestFusion(int requestedMode) {
 			int m;
-			if (queueSubscription == null) { //source wasn't actually Fuseable
+			if (queueSubscription == null || parent.onAfterTerminateCall != null) {
+				/*
+				Two cases where the configuration doesn't allow fusion:
+				 - source wasn't actually Fuseable
+				 - onAfterTerminateCall is set (which cannot be correctly implemented in the case
+				   qs.poll() throws)
+				 */
 				m = NONE;
 			}
 			else if ((requestedMode & THREAD_BARRIER) != 0) {

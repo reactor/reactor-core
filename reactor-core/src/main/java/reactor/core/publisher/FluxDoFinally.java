@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 
 		Subscription s;
 
-		boolean syncFused;
+		int fusionMode;
 
 		DoFinallySubscriber(CoreSubscriber<? super T> actual, Consumer<SignalType> onFinally) {
 			this.actual = actual;
@@ -183,16 +183,25 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
+		public void onNext(T t) {
+			if (fusionMode == ASYNC) {
+				actual.onNext(null);
+			}
+			super.onNext(t);
+		}
+
+		@Override
 		public int requestFusion(int mode) {
 			QueueSubscription<T> qs = this.qs;
 			if (qs != null && (mode & Fuseable.THREAD_BARRIER) == 0) {
 				int m = qs.requestFusion(mode);
-				if (m != Fuseable.NONE) {
-					syncFused = m == Fuseable.SYNC;
+				if (m == SYNC || m == ASYNC) {
+					this.fusionMode = m;
+					return m;
 				}
-				return m;
 			}
-			return Fuseable.NONE;
+			this.fusionMode = NONE;
+			return NONE;
 		}
 
 		@Override
@@ -213,8 +222,21 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 			if (qs == null) {
 				return null;
 			}
-			T v = qs.poll();
-			if (v == null && syncFused) {
+			boolean interrupted = true;
+			T v;
+			try {
+				v = qs.poll();
+				interrupted = false;
+			}
+			catch (Throwable pollError) {
+				throw pollError;
+			}
+			finally {
+				if (interrupted) {
+					runFinally(SignalType.ON_ERROR);
+				}
+			}
+			if (v == null && this.fusionMode == SYNC) {
 				runFinally(SignalType.ON_COMPLETE);
 			}
 			return v;
