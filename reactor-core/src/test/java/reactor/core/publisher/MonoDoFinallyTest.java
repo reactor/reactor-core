@@ -123,31 +123,6 @@ public class MonoDoFinallyTest implements Consumer<SignalType> {
 	}
 
 	@Test
-	public void syncFused() {
-		StepVerifier.create(Mono.just(1).doFinally(this))
-		            .expectFusion(SYNC)
-		            .expectNext(1)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void syncFusedConditional() {
-		StepVerifier.create(Mono.just(1).doFinally(this).filter(i -> true))
-		            .expectFusion(SYNC)
-		            .expectNext(1)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-
-	@Test
 	public void nullCallback() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
 			Mono.just(1).doFinally(null);

@@ -307,7 +307,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onAfterSuccessOrErrorFusion() {
+	public void onAfterSuccessOrErrorFuseableNegotiatedNone() {
 		LongAdder invoked = new LongAdder();
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -323,7 +323,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono.log())
-		            .expectFusion()
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
@@ -334,7 +334,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onAfterSuccessOrErrorFusionConditional() {
+	public void onAfterSuccessOrErrorFuseableConditionalNegotiatedNone() {
 		LongAdder invoked = new LongAdder();
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -351,7 +351,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-		            .expectFusion()
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
@@ -382,7 +382,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onAfterTerminateFusion() {
+	void onAfterTerminateFuseableNegotiatedNone() {
 		LongAdder invoked = new LongAdder();
 
 		Mono<Integer> mono = Flux
@@ -391,16 +391,16 @@ public class MonoPeekAfterTest {
 				.doAfterTerminate(invoked::increment);
 
 		StepVerifier.create(mono.log())
-		            .expectFusion()
-		            .expectNext(55)
-		            .expectComplete()
-		            .verify();
+			.expectFusion(Fuseable.ANY, Fuseable.NONE)
+			.expectNext(55)
+			.expectComplete()
+			.verify();
 
 		assertThat(invoked.intValue()).isEqualTo(1);
 	}
 
 	@Test
-	public void onAfterTerminateFusionConditional() {
+	public void onAfterTerminateFuseableConditionalNegotiatedNone() {
 		LongAdder invoked = new LongAdder();
 
 		Mono<Integer> mono = Flux
@@ -410,10 +410,10 @@ public class MonoPeekAfterTest {
 				.doAfterTerminate(invoked::increment);
 
 		StepVerifier.create(mono)
-		            .expectFusion()
-		            .expectNext(55)
-		            .expectComplete()
-		            .verify();
+			.expectFusion(Fuseable.ANY, Fuseable.NONE)
+			.expectNext(55)
+			.expectComplete()
+			.verify();
 
 		assertThat(invoked.intValue()).isEqualTo(1);
 	}
@@ -701,7 +701,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void testCallbacksFusionSync() {
+	void testCallbacksWithAfterTerminateNegotiatesFusionNone() {
 		AtomicReference<Integer> successInvocation = new AtomicReference<>();
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
 		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
@@ -717,7 +717,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-		            .expectFusion(Fuseable.SYNC, Fuseable.SYNC) //TODO in 3.0.3 this doesn't work
+		            .expectFusion(Fuseable.SYNC, Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
@@ -728,7 +728,29 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void testCallbacksFusionAsync() {
+	void testCallbacksFusionSync() {
+		AtomicReference<Integer> successInvocation = new AtomicReference<>();
+		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
+
+		Mono<Integer> source = Mono.fromDirect(Flux.range(55, 1));
+
+		Mono<Integer> mono = new MonoPeekTerminal<>(source,
+				successInvocation::set,
+				errorInvocation::set,
+				null); //afterTerminate forces the negotiation of fusion mode NONE
+
+		StepVerifier.create(mono)
+		            .expectFusion(Fuseable.SYNC)
+		            .expectNext(55)
+		            .expectComplete()
+		            .verify();
+
+		assertThat((Object) successInvocation.get()).isEqualTo(55);
+		assertThat(errorInvocation).hasValue(null);
+	}
+
+	@Test
+	void testCallbacksFusionAsync() {
 		AtomicReference<Integer> successInvocation = new AtomicReference<>();
 		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
@@ -740,10 +762,7 @@ public class MonoPeekAfterTest {
 		Mono<Integer> mono = new MonoPeekTerminal<>(source,
 				successInvocation::set,
 				errorInvocation::set,
-				(v, t) -> {
-					afterTerminateInvocation.set(v);
-					errorInvocation.set(t);
-				});
+				null); //afterTerminate forces the negotiation of fusion mode NONE
 
 		StepVerifier.create(mono)
 		            .expectFusion(Fuseable.ASYNC)
