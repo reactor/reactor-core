@@ -44,7 +44,7 @@ final class MonoDoFinally<T> extends InternalMonoOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return FluxDoFinally.createSubscriber(actual, onFinally, false);
+		return FluxDoFinally.createSubscriber(actual, onFinally);
 	}
 
 	@Override
