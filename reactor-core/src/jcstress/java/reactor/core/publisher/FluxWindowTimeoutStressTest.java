@@ -638,7 +638,7 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
 			}
 
-			if (result.toString().equals("1, 2, 2, 1, 2")) {
+			if (result.toString().startsWith("2, 1, 3")) {
 				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
@@ -747,7 +747,7 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
 			}
 
-			if (result.toString().equals("1, 2, 2, 1, 2")) {
+			if (result.toString().startsWith("2, 1, 3")) {
 				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
