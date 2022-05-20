@@ -689,7 +689,7 @@ public class MonoPeekAfterTest {
 					errorInvocation.set(t);
 				});
 
-		StepVerifier.create(mono)
+		StepVerifier.create(mono.log())
 		            .expectFusion(Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
@@ -753,7 +753,6 @@ public class MonoPeekAfterTest {
 	void testCallbacksFusionAsync() {
 		AtomicReference<Integer> successInvocation = new AtomicReference<>();
 		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
-		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
 
 		Mono<Integer> source = Flux
 				.range(1, 10)
@@ -772,7 +771,6 @@ public class MonoPeekAfterTest {
 
 		assertThat((Object) successInvocation.get()).isEqualTo(55);
 		assertThat(errorInvocation).hasValue(null);
-		assertThat((Object) afterTerminateInvocation.get()).isEqualTo(55);
 	}
 
 	@Test
