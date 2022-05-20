@@ -534,13 +534,19 @@ public class FluxWindowTimeoutStressTest {
 	}
 
 	@JCStressTest
+	@Outcome(id = {"2, 0, 1, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 1, 1, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 1, 1, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 1, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 1, 2, 1, 2"}, expect = ACCEPTABLE_INTERESTING, desc = "")
-	@Outcome(id = {"2, 1, 2, 1, 4"}, expect = ACCEPTABLE_INTERESTING, desc = "")
+	@Outcome(id = {"2, 2, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 3, 1, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest2_0 {
 
@@ -561,8 +567,10 @@ public class FluxWindowTimeoutStressTest {
 								break;
 							case 1:
 								window.subscribe(subscriber2);
+								break;
 							case 2:
 								window.subscribe(subscriber3);
+								break;
 						}
 					}
 				};
@@ -630,15 +638,11 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
-			if (result.toString().equals("0, 0, 1, 0, 2")) {
-				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
-			}
-
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
 				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
 			}
 
-			if (result.toString().startsWith("2, 1, 3")) {
+			if (result.toString().startsWith("2, 2, 3, 0, 3")) {
 				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
