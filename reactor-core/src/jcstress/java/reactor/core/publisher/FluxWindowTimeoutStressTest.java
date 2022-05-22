@@ -546,6 +546,9 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"2, 2, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 3, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 3, 0, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 3, 0, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 3, 0, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
@@ -644,7 +647,7 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
 			}
 
-			if (result.toString().startsWith("2, 2, 3, 0, 3")) {
+			if (result.toString().startsWith("2, 2, 3, 0, 3") || result.toString().startsWith("2, 2, 3, 0, 4")) {
 				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
@@ -656,8 +659,15 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"2, 2, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 2, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"2, 1, 2, 1, 2"}, expect = ACCEPTABLE_INTERESTING, desc = "")
-	@Outcome(id = {"2, 1, 2, 1, 4"}, expect = ACCEPTABLE_INTERESTING, desc = "")
+	@Outcome(id = {"2, 2, 2, 0, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 2, 0, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 2, 2, 0, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 0, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 0, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 0, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 1, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 1, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest2_1 {
 
@@ -745,15 +755,11 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
-			if (result.toString().equals("0, 0, 1, 0, 2")) {
-				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
-			}
-
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
 				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
 			}
 
-			if (result.toString().startsWith("2, 1, 3")) {
+			if (result.toString().startsWith("2, 1, 3") || result.toString().startsWith("3, 2, 2")) {
 				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
@@ -774,6 +780,7 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"4, 2, 2, 0, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 0, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 0, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 3, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 0, 4"}, expect = ACCEPTABLE, desc = "")
@@ -781,12 +788,16 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"4, 3, 3, 1, 5"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 1, 6"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 3, 3, 0, 6"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 0, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 1, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 0, 3"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 0, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 0, 5"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 1, 5"}, expect = ACCEPTABLE, desc = "")
-	@Outcome(id = {"4, 4, 4, 1, 6"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"4, 4, 4, 0, 6"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"4, 4, 4, 1, 6"}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest2_2 {
 
@@ -900,9 +911,12 @@ public class FluxWindowTimeoutStressTest {
 				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
-			if (result.toString().equals("4, 2, 3, 0, 3") || result.toString().equals(
-					"4, 2, 3, 0, 2") || result.toString().startsWith("2,") || result.toString().equals("4, 3, 3, 1, 2")) {
-				throw new IllegalStateException("boom " + result + " " + windowTimeoutSubscriber.signals);
+			if (result.toString().startsWith("3, ")) {
+				throw new IllegalStateException("boom " + result + " " + subscriber1.receivedValues + " " +  subscriber1.discardedValues + " "
+						+ subscriber2.receivedValues + " " +  subscriber2.discardedValues + " "
+						+ subscriber3.receivedValues + " " +  subscriber3.discardedValues + " "
+						+ subscriber4.receivedValues + " " +  subscriber4.discardedValues + " "
+						+  windowTimeoutSubscriber.signals);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {

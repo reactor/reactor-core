@@ -748,6 +748,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = previousState | CANCELLED_FLAG;
 				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					instance.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-mcd-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
 					return previousState;
 				}
 			}
@@ -975,7 +978,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			int received = this.received + 1 ;
 			this.received = received;
 
-			this.queue.offer(t);
+			this.parent.signals.add(this + " " + this.queue.offer(t) +  " "  + t);
 
 			final long previousState;
 			final long nextState;
@@ -1000,6 +1003,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			if (isFinalized(previousState)) {
 				if (isCancelledBySubscriberOrByParent(previousState)) {
+					this.parent.signals.add(this + " try clear " + t);
 					clearQueue();
 					return true;
 				}
@@ -1284,11 +1288,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		void clearQueue() {
+			this.parent.signals.offer(this + " clearQueue");
 			final Queue<T> q = this.queue;
 			final Context context = this.actual.currentContext();
 
 			T v;
 			while ((v = q.poll()) != null) {
+				this.parent.signals.offer(this + " discard " + v);
 				Operators.onDiscard(v, context);
 			}
 		}
@@ -1444,6 +1450,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long state = instance.state;
 
 				if (isFinalized(state)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mhv1-" + formatState(state) + "-" + formatState(state));
 					return state;
 				}
 
