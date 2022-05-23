@@ -66,6 +66,33 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 public class StepVerifierTests {
 
 	@Test
+	void enableConditionalWithDefaultSubscriptionExpectation() {
+		StepVerifier.create(Flux.just("example"))
+			.enableConditionalSupport(s -> true)
+			.expectNext("example")
+			.verifyComplete();
+	}
+
+	@Test
+	void enableConditionalWithCustomSubscriptionExpectation() {
+		StepVerifier.create(Flux.just("example"))
+			.enableConditionalSupport(s -> true)
+			.expectSubscriptionMatches(sub -> sub instanceof Fuseable.QueueSubscription)
+			.expectNext("example")
+			.verifyComplete();
+	}
+
+	@Test
+	@Timeout(4)
+	void conditionalSupportFilteringTryOnNextMatchesExpectations() {
+		//NB the request(n) is needed to trigger slow path in FluxArray. 2 should be enough as "of" is skipped by the predicate
+		StepVerifier.create(Flux.just("example", "of", "case"), 2)
+			.enableConditionalSupport(s -> s.length() > 3)
+			.expectNext("example", "case")
+			.verifyComplete();
+	}
+
+	@Test
 	public void expectationErrorWithGenericValueFormatterBypassesExtractor() {
 		Flux<String> flux = Flux.just("foobar");
 		StepVerifierOptions options = StepVerifierOptions

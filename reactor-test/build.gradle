@@ -84,7 +84,9 @@ task japicmp(type: JapicmpTask) {
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
 	classExcludes = [ "reactor.test.StepVerifierExtensionsKt" ]
-	methodExcludes = [ ]
+	methodExcludes = [
+		'reactor.test.StepVerifier$FirstStep#enableConditionalSupport(java.util.function.Predicate)'
+	]
 }
 
 tasks.withType(Test).all {
