@@ -135,10 +135,10 @@ public class EmitterProcessorTest {
 		final TestPublisher<Integer> upstream2 = TestPublisher.create();
 
 		Disposable sub1 = adapter.subscribeTo(upstream1);
-		Disposable sub2 = adapter.subscribeTo(upstream2);
+
+		assertThatIllegalStateException().isThrownBy(() -> adapter.subscribeTo(upstream2));
 
 		assertThat(sub1.isDisposed()).as("first subscription active").isFalse();
-		assertThat(sub2.isDisposed()).as("second subscription cancelled").isTrue();
 
 		upstream1.assertMinRequested(123);
 

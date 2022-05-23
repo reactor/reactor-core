@@ -965,10 +965,10 @@ public final class Sinks {
 		 * The returned {@link Disposable} provides a way of both unsubscribing from the upstream
 		 * and terminating the sink: currently registered subscribers downstream receive an {@link Subscriber#onError(Throwable) onError}
 		 * signal with a {@link java.util.concurrent.CancellationException} and further attempts at subscribing
-		 * to the sink will trigger a similar signal.
+		 * to the sink will trigger a similar signal immediately (in which case the returned {@link Disposable} might be no-op).
 		 * <p>
-		 * The returned {@link Disposable} is an instance that is already {@link Disposable#isDisposed() disposed} when this method has been
-		 * previously called, as a {@link Subscriber} cannot be subscribed to more than one {@link Publisher}.
+		 * Any attempt at subscribing the same {@link ManyWithUpstream} multiple times throws an {@link IllegalStateException}
+		 * indicating that the subscription must be unique.
 		 */
 		Disposable subscribeTo(Publisher<? extends T> upstream);
 

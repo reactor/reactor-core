@@ -235,7 +235,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			upstream.subscribe(this);
 			return ed;
 		}
-		return Disposables.disposed();
+		throw new IllegalStateException("A Sinks.ManyWithUpstream must be subscribed to a source only once");
 	}
 
 	@Override
