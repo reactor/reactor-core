@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -979,6 +979,21 @@ public interface StepVerifier {
 	 * @param <T> the type of values that the subscriber contains
 	 */
 	interface FirstStep<T> extends Step<T> {
+
+		/**
+		 * Provide a {@link Predicate} that will turn this StepVerifier's subscribers into
+		 * {@link reactor.core.Fuseable.ConditionalSubscriber} and drive the {@link reactor.core.Fuseable.ConditionalSubscriber#tryOnNext(Object)}
+		 * behavior of these subscribers. Set to {@code null} to deactivate (the default).
+		 *
+		 * @param tryOnNextPredicate the {@link Predicate} to use for conditional tryOnNext path
+		 * @return the verifier for final {@link #verify()} call
+		 */
+		default FirstStep<T> enableConditionalSupport(@Nullable Predicate<? super T> tryOnNextPredicate) {
+			if (tryOnNextPredicate != null) {
+				throw new UnsupportedOperationException("This implementation of StepVerifier doesn't support ConditionalSubscriber mode");
+			}
+			return this;
+		}
 
 		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow

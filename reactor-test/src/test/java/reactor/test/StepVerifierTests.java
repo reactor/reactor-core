@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,33 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
  * @author Simon Basle
  */
 public class StepVerifierTests {
+
+	@Test
+	void enableConditionalWithDefaultSubscriptionExpectation() {
+		StepVerifier.create(Flux.just("example"))
+			.enableConditionalSupport(s -> true)
+			.expectNext("example")
+			.verifyComplete();
+	}
+
+	@Test
+	void enableConditionalWithCustomSubscriptionExpectation() {
+		StepVerifier.create(Flux.just("example"))
+			.enableConditionalSupport(s -> true)
+			.expectSubscriptionMatches(sub -> sub instanceof Fuseable.QueueSubscription)
+			.expectNext("example")
+			.verifyComplete();
+	}
+
+	@Test
+	@Timeout(4)
+	void conditionalSupportFilteringTryOnNextMatchesExpectations() {
+		//NB the request(n) is needed to trigger slow path in FluxArray. 2 should be enough as "of" is skipped by the predicate
+		StepVerifier.create(Flux.just("example", "of", "case"), 2)
+			.enableConditionalSupport(s -> s.length() > 3)
+			.expectNext("example", "case")
+			.verifyComplete();
+	}
 
 	@Test
 	public void expectationErrorWithGenericValueFormatterBypassesExtractor() {

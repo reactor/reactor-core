@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,6 +193,8 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Nullable
 	Supplier<? extends Publisher<? extends T>> sourceSupplier;
+	@Nullable
+	Predicate<? super T> tryOnNextPredicate;
 	long hangCheckRequested;
 	int  requestedFusionMode = -1;
 	int  expectedFusionMode  = -1;
@@ -219,6 +221,12 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifierBuilder<T> as(String description) {
 		this.script.add(new DescriptionEvent<>(description));
+		return this;
+	}
+
+	@Override
+	public DefaultStepVerifierBuilder<T> enableConditionalSupport(@Nullable Predicate<? super T> tryOnNextPredicate) {
+		this.tryOnNextPredicate = tryOnNextPredicate;
 		return this;
 	}
 
@@ -853,7 +861,22 @@ final class DefaultStepVerifierBuilder<T>
 			try {
 				Publisher<? extends T> publisher = parent.sourceSupplier.get();
 
-				DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
+				DefaultVerifySubscriber<T> newVerifier;
+				if (this.parent.tryOnNextPredicate != null) {
+					newVerifier = new DefaultConditionalVerifySubscriber<>(
+						this.parent.script,
+						this.parent.messageFormatter,
+						this.parent.initialRequest,
+						this.requestedFusionMode,
+						this.expectedFusionMode,
+						this.debugEnabled,
+						this.parent.options.getInitialContext(),
+						vts,
+						vtsCleanup,
+						this.parent.tryOnNextPredicate);
+				}
+				else {
+					newVerifier = new DefaultVerifySubscriber<>(
 						this.parent.script,
 						this.parent.messageFormatter,
 						this.parent.initialRequest,
@@ -863,6 +886,7 @@ final class DefaultStepVerifierBuilder<T>
 						this.parent.options.getInitialContext(),
 						vts,
 						vtsCleanup);
+				}
 
 				publisher.subscribe(newVerifier);
 				return newVerifier;
@@ -893,6 +917,20 @@ final class DefaultStepVerifierBuilder<T>
 			if (parent.vtsLookup != null) {
 				vts = parent.vtsLookup.get();
 			}
+			if (parent.tryOnNextPredicate != null) {
+				return new DefaultConditionalVerifySubscriber<>(
+						this.parent.script,
+						this.parent.messageFormatter,
+						this.parent.initialRequest,
+						this.requestedFusionMode,
+						this.expectedFusionMode,
+						this.debugEnabled,
+						this.parent.options.getInitialContext(),
+						vts,
+						null,
+						parent.tryOnNextPredicate
+				);
+			}
 			return new DefaultVerifySubscriber<>(
 					this.parent.script,
 					this.parent.messageFormatter,
@@ -907,7 +945,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	}
 
-	final static class DefaultVerifySubscriber<T>
+	static class DefaultVerifySubscriber<T>
 			extends AtomicReference<Subscription>
 			implements StepVerifier, CoreSubscriber<T>, Scannable {
 
@@ -1810,6 +1848,38 @@ final class DefaultStepVerifierBuilder<T>
 			throw messageFormatter.assertionError(messageBuilder.toString(), errors);
 		}
 
+	}
+
+	static class DefaultConditionalVerifySubscriber<T> extends DefaultVerifySubscriber<T>
+		implements Fuseable.ConditionalSubscriber<T> {
+
+		final Predicate<? super T> tryOnNextPredicate;
+
+		/**
+		 * @param tryOnNextPredicate the {@link Predicate} that drives {@link #tryOnNext(Object)} behavior
+		 */
+		DefaultConditionalVerifySubscriber(List<Event<T>> script,
+				MessageFormatter messageFormatter,
+				long initialRequest,
+				int requestedFusionMode,
+				int expectedFusionMode,
+				boolean debugEnabled,
+				@Nullable Context initialContext,
+				@Nullable VirtualTimeScheduler vts,
+				@Nullable Disposable postVerifyCleanup,
+				Predicate<? super T> tryOnNextPredicate) {
+			super(script, messageFormatter, initialRequest, requestedFusionMode, expectedFusionMode, debugEnabled, initialContext, vts, postVerifyCleanup);
+			this.tryOnNextPredicate = tryOnNextPredicate;
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			boolean consumed = tryOnNextPredicate.test(t);
+			if (consumed) {
+				onNext(t); //record the value
+			}
+			return consumed;
+		}
 	}
 
 	static class DefaultStepVerifierAssertions implements StepVerifier.Assertions {

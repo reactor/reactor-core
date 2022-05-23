@@ -87,7 +87,9 @@ task japicmp(type: JapicmpTask) {
 	includeSynthetic = true
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
-	methodExcludes = [ ]
+	methodExcludes = [
+		'reactor.test.StepVerifier$FirstStep#enableConditionalSupport(java.util.function.Predicate)'
+	]
 }
 
 tasks.withType(Test).all {

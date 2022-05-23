@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,10 @@ import java.util.Queue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
+import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.test.DefaultStepVerifierBuilder.DefaultVerifySubscriber;
 import reactor.test.DefaultStepVerifierBuilder.DescriptionEvent;
@@ -201,5 +204,31 @@ public class DefaultStepVerifierBuilderTests {
 		assertThat(queue).hasSize(3)
 		                 .extracting(Event::getDescription)
 		                 .containsExactly("A", "foo", "baz");
+	}
+
+	@Test
+	void enableConditionalSupportProducesAConditionalSubscriber() {
+		DefaultStepVerifierBuilder<Object> builder = new DefaultStepVerifierBuilder<>(StepVerifierOptions.create(), Mono::empty);
+
+		assertThat(builder.build().toSubscriber())
+			.as("without enableConditionalSupport")
+			.isNotInstanceOf(Fuseable.ConditionalSubscriber.class);
+
+		assertThat(builder.enableConditionalSupport(i -> true).build().toSubscriber())
+			.as("with enableConditionalSupport")
+			.isInstanceOf(Fuseable.ConditionalSubscriber.class);
+	}
+
+	@Test
+	void enableConditionalSupportProducesAConditionalSubscriberAndSubscribes() {
+		DefaultStepVerifierBuilder<Object> builder = new DefaultStepVerifierBuilder<>(StepVerifierOptions.create(), Mono::empty);
+
+		assertThat(builder.build().toVerifierAndSubscribe())
+			.as("without enableConditionalSupport")
+			.isNotInstanceOf(Fuseable.ConditionalSubscriber.class);
+
+		assertThat(builder.enableConditionalSupport(i -> true).build().toVerifierAndSubscribe())
+			.as("with enableConditionalSupport")
+			.isInstanceOf(Fuseable.ConditionalSubscriber.class);
 	}
 }
