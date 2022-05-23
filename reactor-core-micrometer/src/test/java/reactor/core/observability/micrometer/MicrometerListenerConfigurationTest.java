@@ -228,6 +228,25 @@ class MicrometerListenerConfigurationTest {
 	}
 
 	@Test
+	void resolveTags_multipleScatteredTagsSetAboveWithDeduplication() {
+		Tags defaultTags = Tags.of("common1", "commonValue1");
+		Flux<Integer> flux = Flux.just(1)
+			.tag("k1", "v1")
+			.tag("k2", "oldV2")
+			.filter(i -> i % 2 == 0)
+			.tag("k2", "v2")
+			.map(i -> i + 10);
+
+		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(flux, defaultTags);
+
+		assertThat(resolvedTags.stream().map(Object::toString)).containsExactly(
+			"tag(common1=commonValue1)",
+			"tag(k1=v1)",
+			"tag(k2=v2)"
+		);
+	}
+
+	@Test
 	void resolveTags_notScannable() {
 		Tags defaultTags = Tags.of("common1", "commonValue1");
 		Publisher<Object> publisher = Operators::complete;

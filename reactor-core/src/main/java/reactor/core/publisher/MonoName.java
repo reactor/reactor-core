@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -38,7 +38,7 @@ final class MonoName<T> extends InternalMonoOperator<T, T> {
 
 	final String name;
 
-	final Set<Tuple2<String, String>> tags;
+	final List<Tuple2<String, String>> tagsWithDuplicates;
 
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> createOrAppend(Mono<T> source, String name) {
@@ -46,11 +46,11 @@ final class MonoName<T> extends InternalMonoOperator<T, T> {
 
 		if (source instanceof MonoName) {
 			MonoName<T> s = (MonoName<T>) source;
-			return new MonoName<>(s.source, name, s.tags);
+			return new MonoName<>(s.source, name, s.tagsWithDuplicates);
 		}
 		if (source instanceof MonoNameFuseable) {
 			MonoNameFuseable<T> s = (MonoNameFuseable<T>) source;
-			return new MonoNameFuseable<>(s.source, name, s.tags);
+			return new MonoNameFuseable<>(s.source, name, s.tagsWithDuplicates);
 		}
 		if (source instanceof Fuseable) {
 			return new MonoNameFuseable<>(source, name, null);
@@ -58,41 +58,48 @@ final class MonoName<T> extends InternalMonoOperator<T, T> {
 		return new MonoName<>(source, name, null);
 	}
 
-	@SuppressWarnings("unchecked")
 	static <T> Mono<T> createOrAppend(Mono<T> source, String tagName, String tagValue) {
 		Objects.requireNonNull(tagName, "tagName");
 		Objects.requireNonNull(tagValue, "tagValue");
 
-		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+		Tuple2<String, String> newTag = Tuples.of(tagName, tagValue);
 
 		if (source instanceof MonoName) {
 			MonoName<T> s = (MonoName<T>) source;
-			if(s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+			List<Tuple2<String, String>> tags;
+			if(s.tagsWithDuplicates != null) {
+				tags = new LinkedList<>(s.tagsWithDuplicates);
+				tags.add(newTag);
+			}
+			else {
+				tags = Collections.singletonList(newTag);
 			}
 			return new MonoName<>(s.source, s.name, tags);
 		}
 		if (source instanceof MonoNameFuseable) {
 			MonoNameFuseable<T> s = (MonoNameFuseable<T>) source;
-			if (s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+			List<Tuple2<String, String>> tags;
+			if (s.tagsWithDuplicates != null) {
+				tags = new LinkedList<>(s.tagsWithDuplicates);
+				tags.add(newTag);
+			}
+			else {
+				tags = Collections.singletonList(newTag);
 			}
 			return new MonoNameFuseable<>(s.source, s.name, tags);
 		}
 		if (source instanceof Fuseable) {
-			return new MonoNameFuseable<>(source, null, tags);
+			return new MonoNameFuseable<>(source, null, Collections.singletonList(newTag));
 		}
-		return new MonoName<>(source, null, tags);
+		return new MonoName<>(source, null, Collections.singletonList(newTag));
 	}
 
 	MonoName(Mono<? extends T> source,
 			@Nullable String name,
-			@Nullable Set<Tuple2<String, String>> tags) {
+			@Nullable List<Tuple2<String, String>> tags) {
 		super(source);
 		this.name = name;
-		this.tags = tags;
+		this.tagsWithDuplicates = tags;
 	}
 
 	@Override
@@ -107,8 +114,8 @@ final class MonoName<T> extends InternalMonoOperator<T, T> {
 			return name;
 		}
 
-		if (key == Attr.TAGS && tags != null) {
-			return tags.stream();
+		if (key == Attr.TAGS && tagsWithDuplicates != null) {
+			return tagsWithDuplicates.stream();
 		}
 
 		if (key == Attr.RUN_STYLE) {

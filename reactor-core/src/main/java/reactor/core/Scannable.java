@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,14 @@ package reactor.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -33,6 +38,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * A Scannable component exposes state in a non strictly memory consistent way and
@@ -588,25 +594,46 @@ public interface Scannable {
 	}
 
 	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} and stream all the
-	 * observed tags
+	 * Visit this {@link Scannable} and its {@link #parents()}, starting by the furthest reachable parent,
+	 * and return a {@link Stream} of the tags which includes duplicates and outputs tags in declaration order
+	 * (grandparent tag(s) &gt; parent tag(s)  &gt; current tag(s)).
+	 * <p>
+	 * Tags can only be discovered until no parent can be inspected, which happens either
+	 * when the source publisher has been reached or when a non-reactor intermediate operator
+	 * is present in the parent chain (i.e. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
 	 *
-	 * @return the stream of tags for this {@link Scannable} and its parents
+	 * @return the stream of tags for this {@link Scannable} and its reachable parents, including duplicates
+	 * @see #tagsDeduplicated()
 	 */
 	default Stream<Tuple2<String, String>> tags() {
-		Stream<Tuple2<String, String>> parentTags =
-				parents().flatMap(s -> s.scan(Attr.TAGS));
+		List<Scannable> sources = new LinkedList<>();
 
-		Stream<Tuple2<String, String>> thisTags = scan(Attr.TAGS);
-
-		if (thisTags == null) {
-			return parentTags;
+		Scannable aSource = this;
+		while (aSource != null && aSource.isScanAvailable()) {
+			sources.add(0, aSource);
+			aSource = aSource.scan(Attr.PARENT);
 		}
 
-		return Stream.concat(
-				thisTags,
-				parentTags
-		);
+		return sources.stream()
+			.flatMap(source -> source.scanOrDefault(Attr.TAGS, Stream.empty()));
+	}
+
+	/**
+	 * Visit this {@link Scannable} and its {@link #parents()}, starting by the furthest reachable parent,
+	 * deduplicate tags that have a common key by favoring the value declared last (current tag(s) &gt; parent tag(s) &gt; grandparent tag(s))
+	 * and return a {@link Map} of the deduplicated tags. Note that while the values are the "latest", the key iteration order reflects
+	 * the tags' declaration order.
+	 * <p>
+	 * Tags can only be discovered until no parent can be inspected, which happens either
+	 * when the source publisher has been reached or when a non-reactor intermediate operator
+	 * is present in the parent chain (i.e. a stage that is not {@link Scannable} for {@link Attr#PARENT}).
+	 *
+	 * @return a {@link Map} of deduplicated tags from this {@link Scannable} and its reachable parents
+	 * @see #tags()
+	 */
+	default Map<String, String> tagsDeduplicated() {
+		return tags().collect(Collectors.toMap(Tuple2::getT1, Tuple2::getT2,
+			(s1, s2) -> s2, LinkedHashMap::new));
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.Set;
+import java.util.List;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -24,7 +24,6 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
-import static reactor.core.Scannable.Attr.RunStyle.SYNC;
 
 /**
  * An operator that just bears a name or a set of tags, which can be retrieved via the
@@ -37,14 +36,14 @@ final class MonoNameFuseable<T> extends InternalMonoOperator<T, T> implements Fu
 
 	final String name;
 
-	final Set<Tuple2<String, String>> tags;
+	final List<Tuple2<String, String>> tagsWithDuplicates;
 
 	MonoNameFuseable(Mono<? extends T> source,
 			@Nullable String name,
-			@Nullable Set<Tuple2<String, String>> tags) {
+			@Nullable List<Tuple2<String, String>> tags) {
 		super(source);
 		this.name = name;
-		this.tags = tags;
+		this.tagsWithDuplicates = tags;
 	}
 
 	@Override
@@ -59,8 +58,8 @@ final class MonoNameFuseable<T> extends InternalMonoOperator<T, T> implements Fu
 			return name;
 		}
 
-		if (key == Attr.TAGS && tags != null) {
-			return tags.stream();
+		if (key == Attr.TAGS && tagsWithDuplicates != null) {
+			return tagsWithDuplicates.stream();
 		}
 
 		if (key == RUN_STYLE) {

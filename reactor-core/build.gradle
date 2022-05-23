@@ -187,7 +187,8 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)',
 		'reactor.core.publisher.FluxSink#contextView()',
 		'reactor.core.publisher.MonoSink#contextView()',
-		'reactor.core.publisher.SynchronousSink#contextView()'
+		'reactor.core.publisher.SynchronousSink#contextView()',
+		'reactor.core.Scannable#tagsDeduplicated()'
 	]
 }
 

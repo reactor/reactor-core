@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -42,7 +42,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 
 	final String name;
 
-	final Set<Tuple2<String, String>> tags;
+	final List<Tuple2<String, String>> tagsWithDuplicates;
 
 	@SuppressWarnings("unchecked")
 	static <T> ParallelFlux<T> createOrAppend(ParallelFlux<T> source, String name) {
@@ -50,7 +50,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 
 		if (source instanceof ParallelFluxName) {
 			ParallelFluxName<T> s = (ParallelFluxName<T>) source;
-			return new ParallelFluxName<>(s.source, name, s.tags);
+			return new ParallelFluxName<>(s.source, name, s.tagsWithDuplicates);
 		}
 		return new ParallelFluxName<>(source, name, null);
 	}
@@ -60,25 +60,29 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		Objects.requireNonNull(tagName, "tagName");
 		Objects.requireNonNull(tagValue, "tagValue");
 
-		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+		Tuple2<String, String> newTag = Tuples.of(tagName, tagValue);
 
 		if (source instanceof ParallelFluxName) {
 			ParallelFluxName<T> s = (ParallelFluxName<T>) source;
-			if(s.tags != null) {
-				tags = new HashSet<>(tags);
-				tags.addAll(s.tags);
+			List<Tuple2<String, String>> tags;
+			if(s.tagsWithDuplicates != null) {
+				tags = new LinkedList<>(s.tagsWithDuplicates);
+				tags.add(newTag);
+			}
+			else {
+				tags = Collections.singletonList(newTag);
 			}
 			return new ParallelFluxName<>(s.source, s.name, tags);
 		}
-		return new ParallelFluxName<>(source, null, tags);
+		return new ParallelFluxName<>(source, null, Collections.singletonList(newTag));
 	}
 
 	ParallelFluxName(ParallelFlux<T> source,
 			@Nullable String name,
-			@Nullable Set<Tuple2<String, String>> tags) {
+			@Nullable List<Tuple2<String, String>> tags) {
 		this.source = source;
 		this.name = name;
-		this.tags = tags;
+		this.tagsWithDuplicates = tags;
 	}
 
 	@Override
@@ -98,8 +102,8 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 			return name;
 		}
 
-		if (key == Attr.TAGS && tags != null) {
-			return tags.stream();
+		if (key == Attr.TAGS && tagsWithDuplicates != null) {
+			return tagsWithDuplicates.stream();
 		}
 
 		if (key == Attr.PARENT) return source;
