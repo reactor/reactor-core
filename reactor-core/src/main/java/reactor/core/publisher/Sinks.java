@@ -390,6 +390,11 @@ public final class Sinks {
 		MulticastReplaySpec replay();
 	}
 
+	/**
+	 * Provides multicast : 1 sink, N {@link Subscriber}.
+	 * <p>
+	 * This {@link MulticastSpec} provides {@link Sinks#unsafe() unsafe} flavors, including some {@link ManyWithUpstream} implementations.
+	 */
 	public interface MulticastUnsafeSpec extends  MulticastSpec {
 
 		@Override
@@ -402,6 +407,11 @@ public final class Sinks {
 		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
 	}
 
+	/**
+	 *  Provides {@link Sinks.Many} specs for sinks which can emit multiple elements.
+	 *  <p>
+	 *  This {@link ManySpec} provides {@link Sinks#unsafe() unsafe} flavors, including some {@link ManyWithUpstream} implementations.
+	 */
 	public interface ManyUnsafeSpec extends ManySpec {
 
 		@Override
