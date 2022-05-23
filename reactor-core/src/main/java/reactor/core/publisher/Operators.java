@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1776,7 +1776,7 @@ public abstract class Operators {
 
 		@Override
 		public final void clear() {
-			STATE.lazySet(this, FUSED_CONSUMED);
+			STATE.lazySet(this, FUSED_ASYNC_CONSUMED);
 			this.value = null;
 		}
 
@@ -1790,12 +1790,12 @@ public abstract class Operators {
 		public final void complete(@Nullable O v) {
 			for (; ; ) {
 				int state = this.state;
-				if (state == FUSED_EMPTY) {
+				if (state == FUSED_ASYNC_EMPTY) {
 					setValue(v);
 					//sync memory since setValue is non volatile
-					if (STATE.compareAndSet(this, FUSED_EMPTY, FUSED_READY)) {
+					if (STATE.compareAndSet(this, FUSED_ASYNC_EMPTY, FUSED_ASYNC_READY)) {
 						Subscriber<? super O> a = actual;
-						a.onNext(v);
+						a.onNext(null);
 						a.onComplete();
 						return;
 					}
@@ -1850,7 +1850,7 @@ public abstract class Operators {
 
 		@Override
 		public final boolean isEmpty() {
-			return this.state != FUSED_READY;
+			return this.state != FUSED_ASYNC_READY;
 		}
 
 		@Override
@@ -1877,7 +1877,7 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public final O poll() {
-			if (STATE.compareAndSet(this, FUSED_READY, FUSED_CONSUMED)) {
+			if (STATE.compareAndSet(this, FUSED_ASYNC_READY, FUSED_ASYNC_CONSUMED)) {
 				O v = value;
 				value = null;
 				return v;
@@ -1918,7 +1918,7 @@ public abstract class Operators {
 		@Override
 		public int requestFusion(int mode) {
 			if ((mode & ASYNC) != 0) {
-				STATE.lazySet(this, FUSED_EMPTY);
+				STATE.lazySet(this, FUSED_ASYNC_EMPTY);
 				return ASYNC;
 			}
 			return NONE;
@@ -1963,21 +1963,21 @@ public abstract class Operators {
 		/**
 		 * Indicates the Subscription has been cancelled.
 		 */
-		static final int CANCELLED = 4;
+		static final int CANCELLED         = 4;
 		/**
-		 * Indicates this Subscription is in fusion mode and is currently empty.
+		 * Indicates this Subscription is in ASYNC fusion mode and is currently empty.
 		 */
-		static final int FUSED_EMPTY    = 8;
+		static final int FUSED_ASYNC_EMPTY = 8;
 		/**
-		 * Indicates this Subscription is in fusion mode and has a value.
+		 * Indicates this Subscription is in ASYNC fusion mode and has a value.
 		 */
-		static final int FUSED_READY    = 16;
+		static final int FUSED_ASYNC_READY    = 16;
 		/**
-		 * Indicates this Subscription is in fusion mode and its value has been consumed.
+		 * Indicates this Subscription is in ASYNC fusion mode and its value has been consumed.
 		 */
-		static final int FUSED_CONSUMED = 32;
+		static final int FUSED_ASYNC_CONSUMED = 32;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MonoSubscriber> STATE =
+		static final AtomicIntegerFieldUpdater<MonoSubscriber> STATE                =
 				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");
 	}
 

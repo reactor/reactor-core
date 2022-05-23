@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,25 @@ import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class FluxDoOnEachTest {
+
+
+	// see https://github.com/reactor/reactor-core/issues/3044
+	@Test
+	void doOnEachAsyncFusionDoesntTriggerOnNextTwice() {
+		List<String> signals = new ArrayList<>();
+		StepVerifier.create(Flux.just("a", "b", "c")
+				.collectList()
+				.doOnEach(sig -> signals.add(sig.toString()))
+			)
+			.expectFusion(Fuseable.ASYNC)
+			.expectNext(Arrays.asList("a", "b", "c"))
+			.verifyComplete();
+
+		assertThat(signals).containsExactly(
+			"doOnEach_onNext([a, b, c])",
+			"onComplete()"
+		);
+	}
 
 	@Test
 	public void nullSource() {
