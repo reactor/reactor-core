@@ -18,14 +18,18 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -54,8 +58,10 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @author Stephane Maldini
  * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks} through
  * variations of {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}.
- * This processor was blocking in {@link EmitterProcessor#onNext(Object)}.
- * This behaviour can be implemented with the {@link Sinks} API by calling
+ * If you really need the subscribe-to-upstream functionality of a {@link org.reactivestreams.Processor}, switch
+ * to {@link Sinks.ManyWithUpstream} with {@link Sinks#unsafe()} variants of
+ * {@link Sinks.MulticastUnsafeSpec#onBackpressureBuffer() Sinks.unsafe().many().multicast().onBackpressureBuffer()}.
+ * <p/>This processor was blocking in {@link EmitterProcessor#onNext(Object)}. This behaviour can be implemented with the {@link Sinks} API by calling
  * {@link Sinks.Many#tryEmitNext(Object)} and retrying, e.g.:
  * <pre>{@code while (sink.tryEmitNext(v).hasFailed()) {
  *     LockSupport.parkNanos(10);
@@ -63,7 +69,8 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * }</pre>
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T> {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T>,
+	Sinks.ManyWithUpstream<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -150,6 +157,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
 
+	volatile EmitterDisposable upstreamDisposable;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
+			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
+
+
 	@SuppressWarnings("unused")
 	volatile int wip;
 
@@ -190,6 +203,39 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@Override
 	public Context currentContext() {
 		return Operators.multiSubscribersContext(subscribers);
+	}
+
+
+	private boolean isDetached() {
+		return s == Operators.cancelledSubscription() && done && error instanceof CancellationException;
+	}
+
+	private boolean detach() {
+		if (Operators.terminate(S, this)) {
+			done = true;
+			CancellationException detachException = new CancellationException("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
+			if (ERROR.compareAndSet(EmitterProcessor.this, null, detachException)) {
+				Queue<T> q = queue;
+				if (q != null) {
+					q.clear();
+				}
+				for (FluxPublish.PubSubInner<T> inner : terminate()) {
+					inner.actual.onError(detachException);
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public Disposable subscribeTo(Publisher<? extends T> upstream) {
+		EmitterDisposable ed = new EmitterDisposable(this);
+		if (UPSTREAM_DISPOSABLE.compareAndSet(this, null, ed)) {
+			upstream.subscribe(this);
+			return ed;
+		}
+		throw new IllegalStateException("A Sinks.ManyWithUpstream must be subscribed to a source only once");
 	}
 
 	@Override
@@ -332,6 +378,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public void onSubscribe(final Subscription s) {
+		//since the CoreSubscriber nature isn't exposed to the user, the only path to onSubscribe is
+		//already guarded by UPSTREAM_DISPOSABLE. just in case the publisher misbehaves we still use setOnce
 		if (Operators.setOnce(S, this, s)) {
 			if (s instanceof Fuseable.QueueSubscription) {
 				@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
@@ -644,6 +692,32 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		void removeAndDrainParent() {
 			parent.remove(this);
 			parent.drain();
+		}
+	}
+
+	static final class EmitterDisposable implements Disposable {
+
+		@Nullable
+		EmitterProcessor<?> target;
+
+		public EmitterDisposable(EmitterProcessor<?> emitterProcessor) {
+			this.target = emitterProcessor;
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return target == null || target.isDetached();
+		}
+
+		@Override
+		public void dispose() {
+			EmitterProcessor<?> t = target;
+			if (t == null) {
+				return;
+			}
+			if (t.detach() || t.isDetached()) {
+				target = null;
+			}
 		}
 	}
 
