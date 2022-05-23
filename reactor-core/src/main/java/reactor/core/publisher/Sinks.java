@@ -337,10 +337,10 @@ public final class Sinks {
 	 * of the Reactive Streams specification in order to be correctly used.
 	 * <p>
 	 * Some flavors of {@link Sinks.Many} are {@link ManyWithUpstream} which additionally
-	 * support being turned into a {@link CoreSubscriber} and  attached to an upstream {@link Publisher}.
-	 * Please note that when this is done, one MUST stop using emit/tryEmit APIs and should refrain
-	 * from directly calling {@link Subscriber} methods, reserving signal creation to be the sole
-	 * responsibility of the upstream {@link Publisher}. The list of such flavors is as follows:
+	 * support being subscribed to an upstream {@link Publisher}, at most once.
+	 * Please note that when this is done, one MUST stop using emit/tryEmit APIs, reserving signal
+	 * creation to be the sole responsibility of the upstream {@link Publisher}.
+	 * The list of such flavors is as follows:
 	 * <ul>
 	 *     <li>
 	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer() onBackpressureBuffer()}
@@ -358,7 +358,7 @@ public final class Sinks {
 		/**
 		 * {@inheritDoc}
 		 * <p>
-		 * Some flavors return a {@link ManyWithUpstream}, allowing usage similar to a {@link org.reactivestreams.Processor} with an upstream {@link Publisher}.
+		 * Some flavors return a {@link ManyWithUpstream}, supporting being subscribed to an upstream {@link Publisher}.
 		 */
 		@Override
 		ManyUnsafeSpec many();
@@ -947,9 +947,8 @@ public final class Sinks {
 	}
 
 	/**
-	 * A {@link Sinks.Many} which additionally allows being used as a {@link CoreSubscriber}
-	 * and  attached to an upstream {@link Publisher}, which is an advanced pattern requiring
-	 * external synchronization. See {@link #subscribeTo(Publisher)}} for more details.
+	 * A {@link Sinks.Many} which additionally allows being subscribed to an upstream {@link Publisher},
+	 * which is an advanced pattern requiring external synchronization. See {@link #subscribeTo(Publisher)}} for more details.
 	 *
 	 * @param <T> the type of data emitted by the sink
 	 */
