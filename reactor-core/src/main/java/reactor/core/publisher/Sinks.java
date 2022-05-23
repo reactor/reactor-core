@@ -19,7 +19,10 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Queue;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -61,7 +64,7 @@ public final class Sinks {
 	 * @see RootSpec#empty()
 	 */
 	public static <T> Sinks.Empty<T> empty() {
-		return SinksSpecs.DEFAULT_ROOT_SPEC.empty();
+		return SinksSpecs.DEFAULT_SINKS.empty();
 	}
 
 	/**
@@ -76,7 +79,7 @@ public final class Sinks {
 	 * @see RootSpec#one()
 	 */
 	public static <T> Sinks.One<T> one() {
-		return SinksSpecs.DEFAULT_ROOT_SPEC.one();
+		return SinksSpecs.DEFAULT_SINKS.one();
 	}
 
 	/**
@@ -88,20 +91,20 @@ public final class Sinks {
 	 * @see RootSpec#many()
 	 */
 	public static ManySpec many() {
-		return SinksSpecs.DEFAULT_ROOT_SPEC.many();
+		return SinksSpecs.DEFAULT_SINKS.many();
 	}
 
 	/**
-	 * Return a {@link RootSpec root spec} for more advanced use cases such as building operators.
+	 * Return a {@link UnsafeSpec root spec} for more advanced use cases such as building operators.
 	 * Unsafe {@link Sinks.Many}, {@link Sinks.One} and {@link Sinks.Empty} are not serialized nor thread safe,
 	 * which implies they MUST be externally synchronized so as to respect the Reactive Streams specification.
 	 * This can typically be the case when the sinks are being called from within a Reactive Streams-compliant context,
 	 * like a {@link Subscriber} or an operator. In turn, this allows the sinks to have less overhead, since they
 	 * don't care to detect concurrent access anymore.
 	 *
-	 * @return {@link RootSpec}
+	 * @return {@link UnsafeSpec}
 	 */
-	public static RootSpec unsafe() {
+	public static UnsafeSpec unsafe() {
 		return SinksSpecs.UNSAFE_ROOT_SPEC;
 	}
 
@@ -328,6 +331,39 @@ public final class Sinks {
 	}
 
 	/**
+	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
+	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many}, but without the
+	 * guards against concurrent access. These raw sinks need more advanced understanding
+	 * of the Reactive Streams specification in order to be correctly used.
+	 * <p>
+	 * Some flavors of {@link Sinks.Many} are {@link ManyWithUpstream} which additionally
+	 * support being subscribed to an upstream {@link Publisher}, at most once.
+	 * Please note that when this is done, one MUST stop using emit/tryEmit APIs, reserving signal
+	 * creation to be the sole responsibility of the upstream {@link Publisher}.
+	 * The list of such flavors is as follows:
+	 * <ul>
+	 *     <li>
+	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer() onBackpressureBuffer()}
+	 *     </li>
+	 *     <li>
+	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer(int) onBackpressureBuffer(int)}
+	 *     </li>
+	 *     <li>
+	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer(int, boolean) onBackpressureBuffer(int, boolean)}
+	 *     </li>
+	 * </ul>
+	 */
+	public interface UnsafeSpec extends RootSpec {
+
+		/**
+		 * {@inheritDoc}
+		 * <p>
+		 * Some flavors return a {@link ManyWithUpstream}, supporting being subscribed to an upstream {@link Publisher}.
+		 */
+		@Override
+		ManyUnsafeSpec many();
+	}
+	/**
 	 * Provides {@link Sinks.Many} specs for sinks which can emit multiple elements
 	 */
 	public interface ManySpec {
@@ -352,6 +388,34 @@ public final class Sinks {
 		 * @return {@link MulticastReplaySpec}
 		 */
 		MulticastReplaySpec replay();
+	}
+
+	/**
+	 * Provides multicast : 1 sink, N {@link Subscriber}.
+	 * <p>
+	 * This {@link MulticastSpec} provides {@link Sinks#unsafe() unsafe} flavors, including some {@link ManyWithUpstream} implementations.
+	 */
+	public interface MulticastUnsafeSpec extends  MulticastSpec {
+
+		@Override
+		<T> ManyWithUpstream<T> onBackpressureBuffer();
+
+		@Override
+		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize);
+
+		@Override
+		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
+	}
+
+	/**
+	 *  Provides {@link Sinks.Many} specs for sinks which can emit multiple elements.
+	 *  <p>
+	 *  This {@link ManySpec} provides {@link Sinks#unsafe() unsafe} flavors, including some {@link ManyWithUpstream} implementations.
+	 */
+	public interface ManyUnsafeSpec extends ManySpec {
+
+		@Override
+		MulticastUnsafeSpec multicast();
 	}
 
 	/**
@@ -890,6 +954,33 @@ public final class Sinks {
 		 * @return the {@link Flux} view associated to this {@link Sinks.Many}
 		 */
 		Flux<T> asFlux();
+	}
+
+	/**
+	 * A {@link Sinks.Many} which additionally allows being subscribed to an upstream {@link Publisher},
+	 * which is an advanced pattern requiring external synchronization. See {@link #subscribeTo(Publisher)}} for more details.
+	 *
+	 * @param <T> the type of data emitted by the sink
+	 */
+	public interface ManyWithUpstream<T> extends Many<T> {
+
+		/**
+		 * Explicitly subscribe this {@link Sinks.Many} to an upstream {@link Publisher} without
+		 * exposing it as a {@link Subscriber} at all.
+		 * <p>
+		 * Note that when this is done, one MUST stop using emit/tryEmit APIs, reserving signal
+		 * creation to be the sole responsibility of the upstream {@link Publisher}.
+		 * <p>
+		 * The returned {@link Disposable} provides a way of both unsubscribing from the upstream
+		 * and terminating the sink: currently registered subscribers downstream receive an {@link Subscriber#onError(Throwable) onError}
+		 * signal with a {@link java.util.concurrent.CancellationException} and further attempts at subscribing
+		 * to the sink will trigger a similar signal immediately (in which case the returned {@link Disposable} might be no-op).
+		 * <p>
+		 * Any attempt at subscribing the same {@link ManyWithUpstream} multiple times throws an {@link IllegalStateException}
+		 * indicating that the subscription must be unique.
+		 */
+		Disposable subscribeTo(Publisher<? extends T> upstream);
+
 	}
 
 	/**

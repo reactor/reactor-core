@@ -19,13 +19,16 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.assertj.core.data.Percentage;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -42,7 +45,10 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.TestSubscriber;
+import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -62,6 +68,83 @@ public class EmitterProcessorTest {
 
 	@RegisterExtension
 	AutoDisposingExtension afterTest = new AutoDisposingExtension();
+
+	@Test
+	void smokeTestManySubscriber() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
+		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
+		final Flux<Integer> upstream = Flux.range(1, 10);
+
+		adapter.asFlux()
+			.publishOn(Schedulers.parallel())
+			.skip(8)
+			.log()
+			.subscribe(testSubscriber1);
+
+		adapter.asFlux()
+			.publishOn(Schedulers.parallel())
+			.skipLast(8)
+			.subscribe(testSubscriber2);
+
+		adapter.subscribeTo(upstream);
+
+		testSubscriber1.block();
+		testSubscriber2.block();
+
+		assertThat(adapter).isInstanceOf(EmitterProcessor.class);
+		assertThat(testSubscriber1.getReceivedOnNext()).as("ts1 onNexts").containsExactly(9, 10);
+		assertThat(testSubscriber1.isTerminatedComplete()).as("ts1 isTerminatedComplete").isTrue();
+
+		assertThat(testSubscriber2.getReceivedOnNext()).as("ts2 onNexts").containsExactly(1, 2);
+		assertThat(testSubscriber2.isTerminatedComplete()).as("ts2 isTerminatedComplete").isTrue();
+	}
+
+	@Test
+	void smokeTestSubscribeAndDispose() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
+		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
+		final Flux<Integer> upstream = Flux.never();
+
+		adapter.asFlux().subscribe(testSubscriber1);
+
+		Disposable disposable = adapter.subscribeTo(upstream);
+
+		assertThat(testSubscriber1.isTerminatedOrCancelled()).as("ts1 live before dispose");
+
+		disposable.dispose();
+
+		assertThat(disposable.isDisposed()).as("disposable isDisposed").isTrue();
+
+		assertThat(testSubscriber1.expectTerminalError()).as("ts1 onError")
+			.isInstanceOf(CancellationException.class)
+			.hasMessage("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
+
+		adapter.asFlux().subscribe(testSubscriber2);
+
+		assertThat(testSubscriber1.expectTerminalError()).as("ts2 late subscription onError")
+			.isInstanceOf(CancellationException.class)
+			.hasMessage("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
+	}
+
+	@Test
+	void subscribeToUpstreamTwiceSkipsSecondSubscription() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
+		final TestPublisher<Integer> upstream1 = TestPublisher.create();
+		final TestPublisher<Integer> upstream2 = TestPublisher.create();
+
+		Disposable sub1 = adapter.subscribeTo(upstream1);
+
+		assertThatIllegalStateException().isThrownBy(() -> adapter.subscribeTo(upstream2));
+
+		assertThat(sub1.isDisposed()).as("first subscription active").isFalse();
+
+		upstream1.assertMinRequested(123);
+
+		upstream2.assertWasNotSubscribed();
+		upstream2.assertWasNotRequested();
+	}
 
 	@Test
 	public void currentSubscriberCount() {

@@ -166,7 +166,8 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)',
 		'reactor.core.publisher.FluxSink#contextView()',
 		'reactor.core.publisher.MonoSink#contextView()',
-		'reactor.core.publisher.SynchronousSink#contextView()'
+		'reactor.core.publisher.SynchronousSink#contextView()',
+		'reactor.core.publisher.Sinks#unsafe()'
 	]
 }
 
