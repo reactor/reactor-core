@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,7 +265,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 	static class DoOnEachFuseableSubscriber<T> extends DoOnEachSubscriber<T>
 			implements Fuseable, Fuseable.QueueSubscription<T> {
 
-		boolean syncFused;
+		int fusionMode;
 
 		DoOnEachFuseableSubscriber(CoreSubscriber<? super T> actual,
 				Consumer<? super Signal<T>> onSignal, boolean isMono) {
@@ -273,15 +273,25 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
+		public void onNext(T t) {
+			if (this.fusionMode == Fuseable.ASYNC) {
+				actual.onNext(null);
+				return;
+			}
+			super.onNext(t);
+		}
+
+		@Override
 		public int requestFusion(int mode) {
 			QueueSubscription<T> qs = this.qs;
 			if (qs != null && (mode & Fuseable.THREAD_BARRIER) == 0) {
 				int m = qs.requestFusion(mode);
-				if (m != Fuseable.NONE) {
-					syncFused = m == Fuseable.SYNC;
+				if (m == Fuseable.SYNC || m == Fuseable.ASYNC) {
+					this.fusionMode = m;
+					return m;
 				}
-				return m;
 			}
+			this.fusionMode = NONE;
 			return Fuseable.NONE;
 		}
 
@@ -302,7 +312,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 				return null;
 			}
 			T v = qs.poll();
-			if (v == null && syncFused) {
+			if (v == null && this.fusionMode == SYNC) {
 				state = STATE_DONE;
 				try {
 					onSignal.accept(Signal.complete(cachedContext));
