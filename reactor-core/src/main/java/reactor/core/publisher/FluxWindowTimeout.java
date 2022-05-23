@@ -102,7 +102,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		final int                             maxSize;
 		final Scheduler.Worker                worker;
 		final int                             limit;
-		final Queue<String> signals = new ArrayBlockingQueue<>(5000);
+		final Queue<String> signals = new ArrayBlockingQueue<>(10000);
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -716,6 +716,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					previousState = expectedState | HAS_WORK_IN_PROGRESS;
 
 					if (isCancelled(expectedState)) {
+						final InnerWindow<T> currentWindow = this.window;
+						final long previousWindowState = currentWindow.sendCancel();
+						if (!InnerWindow.isSent(previousWindowState)) {
+							Operators.onDiscard(currentWindow, this.actual.currentContext());
+						}
 						return;
 					}
 
@@ -934,7 +939,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						);
 
 				if (STATE.compareAndSet(this, state, nextState)) {
-					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-cfp-" + formatState(state)+"-" + formatState(nextState));
+					this.parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) + this +
+							"-" + Thread.currentThread().getId() + "-cfp-" + formatState(state)+"-" + formatState(nextState));
 
 					if (isFinalized(state)) {
 						return state;
@@ -992,9 +998,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						timer.dispose();
 					}
 
-//					if (isSent(previousState)) {
+					if (!isCancelledByParent(previousState)) {
 						this.parent.tryCreateNextWindow(this.index);
-//					}
+					}
 				}
 			} else {
 				previousState = markHasValues(this);
@@ -1003,7 +1009,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			if (isFinalized(previousState)) {
 				if (isCancelledBySubscriberOrByParent(previousState)) {
-					this.parent.signals.add(this + " try clear " + t);
+					this.parent.signals.add(this + "-" + Thread.currentThread().getId()  + " try clear " + t);
 					clearQueue();
 					return true;
 				}
@@ -1156,6 +1162,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				while (e < r) {
 					final T v = q.poll();
 
+					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-drn-" + v);
+
 					empty = v == null;
 					if (checkTerminated(this.produced + e, a, v)) {
 						return;
@@ -1288,13 +1296,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		void clearQueue() {
-			this.parent.signals.offer(this + " clearQueue");
+			this.parent.signals.offer(this+ "-" + Thread.currentThread().getId()  + " clearQueue");
 			final Queue<T> q = this.queue;
 			final Context context = this.actual.currentContext();
 
 			T v;
 			while ((v = q.poll()) != null) {
-				this.parent.signals.offer(this + " discard " + v);
+				this.parent.signals.offer(this + "-" + Thread.currentThread().getId()  + " discard " + v);
 				Operators.onDiscard(v, context);
 			}
 		}
