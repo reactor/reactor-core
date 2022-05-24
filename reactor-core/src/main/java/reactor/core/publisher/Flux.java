@@ -8568,13 +8568,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link Subscriber} to this {@link Flux} and return said
-	 * {@link Subscriber} (eg. a {@link SinkManyAbstractBase}).
-	 *
-	 * <blockquote><pre>
-	 * {@code flux.subscribeWith(EmitterProcessor.create()).subscribe() }
-	 * </pre></blockquote>
-	 *
+	 * Subscribe a provided instance of a subclass of {@link Subscriber} to this {@link Flux}
+	 * and return said instance for further chaining calls. This is similar to {@link #as(Function)},
+	 * except a subscription is explicitly performed by this method.
+	 * <p>
 	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe with and return

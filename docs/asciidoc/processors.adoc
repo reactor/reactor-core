@@ -1,3 +1,21 @@
+In Reactor a sink is a class that allows safe manual triggering of signals in a standalone fashion, creating a `Publisher`-like structure capable of dealing with multiple `Subscriber` (with the exception of `unicast()` flavors).
+
+Before `3.5.0`, there was also a set of `Processor` implementations which has been phased out.
+
+[[sinks]]
+= Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
+
+Default flavors of `Sinks` exposed by reactor-core ensure that multi-threaded usage is detected
+and cannot lead to spec violations or undefined behavior from the perspective of downstream
+subscribers. When using the `tryEmit*` API, parallel calls fail fast. When using the `emit*`
+API, the provided `EmissionFailureHandler` may allow to retry on contention (eg. busy looping),
+otherwise the sink will terminate with an error.
+
+This is an improvement over `Processor.onNext`, which must be synchronized externally or
+lead to undefined behavior from the perspective of the downstream subscribers.
+
+[NOTE]
+====
 Processors are a special kind of `Publisher` that are also a `Subscriber`.
 They were originally intended as a possible representation of an intermediate step that
 could then be shared between Reactive Streams implementations.
@@ -12,28 +30,7 @@ Processors are actually probably marginally useful, unless one comes across a Re
 based API that requires a `Subscriber` to be passed, rather than exposing a `Publisher`.
 
 Sinks are usually a better alternative.
-In Reactor a sink is a class that allows safe manual triggering of signals. It can either
-be associated to a subscription (from inside an operator) or completely standalone.
-
-Since `3.4.0`, sinks become the first class citizen and `Processor` are being phased out entirely:
-
- - both abstract and concrete `FluxProcessor` and `MonoProcessor` are deprecated and slated for removal in 3.5.0
- - sinks which are not produced by an operator are constructed through factory methods in the `Sinks` class.
- - we expect all processor usages to be replaceable with either an existing operator or a new sink from `Sinks`.
- Users have time until 3.5 to surface situations where that isn't the case, while falling back to using the deprecated APIs
- in the meantime.
-
-[[sinks]]
-= Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
-
-Default flavors of `Sinks` exposed by reactor-core ensure that multi-threaded usage is detected
-and cannot lead to spec violations or undefined behavior from the perspective of downstream
-subscribers. When using the `tryEmit*` API, parallel calls fail fast. When using the `emit*`
-API, the provided `EmissionFailureHandler` may allow to retry on contention (eg. busy looping),
-otherwise the sink will terminate with an error.
-
-This is an improvement over `Processor.onNext`, which must be synchronized externally or
-lead to undefined behavior from the perspective of the downstream subscribers.
+====
 
 The `Sinks` builder provide a guided API to the main supported producer types.
 You will recognize some of the behavior found in `Flux` such as `onBackpressureBuffer`.

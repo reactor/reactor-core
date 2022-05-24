@@ -47,10 +47,10 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	volatile NextInner<O>[] subscribers;
 
 	/**
-	 * Block the calling thread indefinitely, waiting for the completion of this {@code MonoProcessor}. If the
+	 * Block the calling thread indefinitely, waiting for the completion of this {@link NextProcessor}. If the
 	 * {@link NextProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 	 *
-	 * @return the value of this {@code MonoProcessor}
+	 * @return the value of this {@link NextProcessor}
 	 */
 	@Override
 	@Nullable
@@ -64,18 +64,18 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	}
 
 	/**
-	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
+	 * Indicates whether this {@link NextProcessor} has been completed with an error.
 	 *
-	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
+	 * @return {@code true} if this {@link NextProcessor} was completed with an error, {@code false} otherwise.
 	 */
 	public final boolean isError() {
 		return getError() != null;
 	}
 
 	/**
-	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
+	 * Indicates whether this {@link NextProcessor} has been successfully completed a value.
 	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 * @return {@code true} if this {@link NextProcessor} is successful, {@code false} otherwise.
 	 */
 	public final boolean isSuccess() {
 		return isTerminated() && !isError();
@@ -123,7 +123,7 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	 * @return the value that completed the {@link NextProcessor}, or {@code null} if it has not been completed
 	 *
 	 * @throws RuntimeException if the {@link NextProcessor} was completed with an error
-	 * @deprecated this method is discouraged, consider peeking into a MonoProcessor by {@link Mono#toFuture() turning it into a CompletableFuture}
+	 * @deprecated this method is discouraged, consider peeking into a {@link NextProcessor} by {@link Mono#toFuture() turning it into a CompletableFuture}
 	 */
 	@Deprecated
 	@Nullable
@@ -146,12 +146,12 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	}
 
 	/**
-		 * Block the calling thread for the specified time, waiting for the completion of this {@code MonoProcessor}. If the
+		 * Block the calling thread for the specified time, waiting for the completion of this {@link NextProcessor}. If the
 		 * {@link NextProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 		 *
 		 * @param timeout the timeout value as a {@link Duration}
 		 *
-		 * @return the value of this {@code MonoProcessor} or {@code null} if the timeout is reached and the {@code MonoProcessor} has
+		 * @return the value of this {@link NextProcessor} or {@code null} if the timeout is reached and the {@link NextProcessor} has
 		 * not completed
 		 */
 	@Override
@@ -437,10 +437,10 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	}
 
 	/**
-		 * Indicates whether this {@code MonoProcessor} has been terminated by the
+		 * Indicates whether this {@link NextProcessor} has been terminated by the
 		 * source producer with a success or an error.
 		 *
-		 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+		 * @return {@code true} if this {@link NextProcessor} is successful, {@code false} otherwise.
 		 */
 	public boolean isTerminated() {
 		return subscribers == TERMINATED;

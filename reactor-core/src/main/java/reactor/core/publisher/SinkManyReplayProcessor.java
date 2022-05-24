@@ -52,11 +52,9 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  */
 final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySink<T>, CoreSubscriber<T>, ContextHolder, Disposable, Fuseable, Scannable {
 
-	//TODO make it a ManyUpstreamAdapter as well? (must be done in 3.4.x first)
-
 	/**
 	 * Create a {@link SinkManyReplayProcessor} that caches the last element it has pushed,
-	 * replaying it to late subscribers. This is a buffer-based ReplayProcessor with
+	 * replaying it to late subscribers. This is a buffer-based SinkManyReplayProcessor with
 	 * a history size of 1.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/replaylast.png"
@@ -75,7 +73,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * Create a {@link SinkManyReplayProcessor} that caches the last element it has pushed,
 	 * replaying it to late subscribers. If a {@link Subscriber} comes in <b>before</b>
 	 * any value has been pushed, then the {@code defaultValue} is emitted instead. 
-	 * This is a buffer-based ReplayProcessor with a history size of 1.
+	 * This is a buffer-based SinkManyReplayProcessor with a history size of 1.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/replaylastd.png"
 	 * alt="">
@@ -147,7 +145,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	/**
 	 * Creates a time-bounded replay processor.
 	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
+	 * In this setting, the {@code SinkManyReplayProcessor} internally tags each observed item
 	 * with a timestamp value supplied by the {@link Schedulers#parallel()} and keeps only
 	 * those whose age is less than the supplied time value converted to milliseconds. For
 	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
@@ -157,7 +155,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * Once the processor is terminated, subscribers subscribing to it will receive items
 	 * that remained in the buffer after the terminal signal, regardless of their age.
 	 * <p>
-	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * If an subscriber subscribes while the {@code SinkManyReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have an age less than the
 	 * specified time, and each item observed thereafter, even if the buffer evicts items
 	 * due to the time constraint in the mean time. In other words, once an subscriber
@@ -165,7 +163,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * items at the beginning of the sequence.
 	 * <p>
 	 *
-	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param <T> the type of items observed and emitted by the sink
 	 * @param maxAge the maximum age of the contained items
 	 *
 	 * @return a new {@link SinkManyReplayProcessor} that replays elements based on their age.
@@ -177,7 +175,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	/**
 	 * Creates a time-bounded replay processor.
 	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
+	 * In this setting, the {@code SinkManyReplayProcessor} internally tags each observed item
 	 * with a timestamp value supplied by the {@link Scheduler} and keeps only
 	 * those whose age is less than the supplied time value converted to milliseconds. For
 	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
@@ -187,7 +185,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * Once the processor is terminated, subscribers subscribing to it will receive items
 	 * that remained in the buffer after the terminal signal, regardless of their age.
 	 * <p>
-	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * If an subscriber subscribes while the {@code SinkManyReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have an age less than the
 	 * specified time, and each item observed thereafter, even if the buffer evicts items
 	 * due to the time constraint in the mean time. In other words, once an subscriber
@@ -195,7 +193,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * items at the beginning of the sequence.
 	 * <p>
 	 *
-	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param <T> the type of items observed and emitted by the sink
 	 * @param maxAge the maximum age of the contained items
 	 *
 	 * @return a new {@link SinkManyReplayProcessor} that replays elements based on their age.
@@ -207,18 +205,18 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	/**
 	 * Creates a time- and size-bounded replay processor.
 	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each received item
+	 * In this setting, the {@code SinkManyReplayProcessor} internally tags each received item
 	 * with a timestamp value supplied by the {@link Schedulers#parallel()} and holds at
 	 * most
 	 * {@code size} items in its internal buffer. It evicts items from the start of the
 	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
 	 * or the buffer reaches its {@code size} limit.
 	 * <p>
-	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
+	 * When subscribers subscribe to a terminated {@code SinkManyReplayProcessor}, they observe
 	 * the items that remained in the buffer after the terminal signal, regardless of
 	 * their age, but at most {@code size} items.
 	 * <p>
-	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * If an subscriber subscribes while the {@code SinkManyReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have age less than the
 	 * specified time and each subsequent item, even if the buffer evicts items due to the
 	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
@@ -226,7 +224,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * beginning of the sequence.
 	 * <p>
 	 *
-	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param <T> the type of items observed and emitted by the sink
 	 * @param maxAge the maximum age of the contained items
 	 * @param size the maximum number of buffered items
 	 *
@@ -240,17 +238,17 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	/**
 	 * Creates a time- and size-bounded replay processor.
 	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each received item
+	 * In this setting, the {@code SinkManyReplayProcessor} internally tags each received item
 	 * with a timestamp value supplied by the {@link Scheduler} and holds at most
 	 * {@code size} items in its internal buffer. It evicts items from the start of the
 	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
 	 * or the buffer reaches its {@code size} limit.
 	 * <p>
-	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
+	 * When subscribers subscribe to a terminated {@code SinkManyReplayProcessor}, they observe
 	 * the items that remained in the buffer after the terminal signal, regardless of
 	 * their age, but at most {@code size} items.
 	 * <p>
-	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * If an subscriber subscribes while the {@code SinkManyReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have age less than the
 	 * specified time and each subsequent item, even if the buffer evicts items due to the
 	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
@@ -258,7 +256,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * beginning of the sequence.
 	 * <p>
 	 *
-	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param <T> the type of items observed and emitted by the sink
 	 * @param maxAge the maximum age of the contained items in milliseconds
 	 * @param size the maximum number of buffered items
 	 * @param scheduler the {@link Scheduler} that provides the current time
@@ -470,7 +468,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
-		//note: ReplayProcessor can so far ALWAYS buffer the element, no FAIL_ZERO_SUBSCRIBER here
+		//note: SinkManyReplayProcessor can so far ALWAYS buffer the element, no FAIL_ZERO_SUBSCRIBER here
 		b.add(t);
 		for (FluxReplay.ReplaySubscription<T> rs : subscribers) {
 			b.replay(rs);

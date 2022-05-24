@@ -35,7 +35,7 @@ import reactor.util.context.Context;
 
 /**
  * A {@link Sinks.Many} implementation that takes a custom queue and allows
- * only a single subscriber. UnicastProcessor allows multiplexing of the events which
+ * only a single subscriber. {@link SinkManyUnicast} allows multiplexing of the events which
  * means that it supports multiple producers and only one consumer.
  * However, it should be noticed that multi-producer case is only valid if appropriate
  * Queue is provided. Otherwise, it could break
@@ -419,8 +419,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 				drain(null);
 			}
 		} else {
-			Operators.error(actual, new IllegalStateException("UnicastProcessor " +
-					"allows only a single Subscriber"));
+			Operators.error(actual, new IllegalStateException("Sinks.many().unicast() sinks only allow a single Subscriber"));
 		}
 	}
 

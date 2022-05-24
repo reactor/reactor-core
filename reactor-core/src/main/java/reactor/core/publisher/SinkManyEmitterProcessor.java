@@ -40,7 +40,7 @@ import reactor.util.context.Context;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 
 /**
- * An implementation of a message-passing Processor implementing
+ * An implementation of a {@link Sinks.ManyWithUpstream} implementing
  * publish-subscribe with synchronous (thread-stealing and happen-before interactions)
  * drain loops.
  * <p>
