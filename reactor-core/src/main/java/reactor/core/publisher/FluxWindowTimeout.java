@@ -1215,7 +1215,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				return true;
 			}
 
-			if (received(state) == totalProduced && isTerminated(state)) {
+			if (value == null && received(state) <= totalProduced && isTerminated(state)) {
 				clearAndFinalize();
 
 				final Throwable e = this.error;
