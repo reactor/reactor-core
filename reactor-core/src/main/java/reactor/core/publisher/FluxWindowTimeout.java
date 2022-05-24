@@ -1175,6 +1175,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 					a.onNext(v);
 
+					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-snt-" + v);
+
 					e++;
 				}
 
@@ -1332,7 +1334,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		static final long RECEIVED_SHIFT_BITS      = 24;
 
 		static long s =
-				0b0100_0100_1000_0000_0000_0000_0000_0000_0000_0010_0000_0000_0000_0000_0000_0000L;
+				0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_0000_0000_0000_0000_0011L;
 
 		static <T> long markSent(InnerWindow<T> instance) {
 			for (; ; ) {
