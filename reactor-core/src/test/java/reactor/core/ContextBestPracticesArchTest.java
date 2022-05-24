@@ -24,10 +24,8 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-
 import org.junit.jupiter.api.Test;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.MonoSink;
 import reactor.core.publisher.SynchronousSink;
@@ -41,13 +39,6 @@ class ContextBestPracticesArchTest {
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
 			.importPackagesOf(CoreSubscriber.class);
-
-	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
-	@SuppressWarnings("deprecation")
-	static JavaClasses FLUXPROCESSOR_CLASSES = new ClassFileImporter()
-			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
-			.importPackagesOf(reactor.core.publisher.FluxProcessor.class);
 
 	@Test
 	void smokeTestWhereClassesLoaded() {
@@ -78,37 +69,6 @@ class ContextBestPracticesArchTest {
 					}
 				})
 				.check(CORE_SUBSCRIBER_CLASSES);
-	}
-
-	@Test
-	// This is ok as this class tests the deprecated FluxProcessor. Will be removed with it in 3.5.
-	@SuppressWarnings("deprecation")
-	void fluxProcessorsShouldNotUseDefaultCurrentContext() {
-		classes()
-				.that().areAssignableTo(reactor.core.publisher.FluxProcessor.class)
-				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
-				.should(new ArchCondition<JavaClass>("not use the default currentContext()") {
-					@Override
-					public void check(JavaClass item, ConditionEvents events) {
-						boolean overridesMethod = item
-								.getAllMethods()
-								.stream()
-								.filter(it -> "currentContext".equals(it.getName()))
-								.filter(it -> it.getRawParameterTypes().isEmpty())
-								//method declared in a class derived from FluxProcessor but NOT FluxProcessor itself !
-								.anyMatch(it -> it.getOwner().isAssignableTo(reactor.core.publisher.FluxProcessor.class)
-										&& !it.getOwner().isEquivalentTo(reactor.core.publisher.FluxProcessor.class));
-
-
-						if (!overridesMethod) {
-							events.add(SimpleConditionEvent.violated(
-									item,
-									item.getFullName() + item.getSourceCodeLocation() + ": FluxProcessor#currentContext() is not overridden"
-							));
-						}
-					}
-				})
-				.check(FLUXPROCESSOR_CLASSES);
 	}
 
 	@Test

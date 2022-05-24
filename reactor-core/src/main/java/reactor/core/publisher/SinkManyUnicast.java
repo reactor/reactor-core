@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,14 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
@@ -37,12 +34,11 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
- * A Processor implementation that takes a custom queue and allows
- * only a single subscriber. UnicastProcessor allows multiplexing of the events which
+ * A {@link Sinks.Many} implementation that takes a custom queue and allows
+ * only a single subscriber. {@link SinkManyUnicast} allows multiplexing of the events which
  * means that it supports multiple producers and only one consumer.
  * However, it should be noticed that multi-producer case is only valid if appropriate
- * Queue
- * is provided. Otherwise, it could break
+ * Queue is provided. Otherwise, it could break
  * <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a> if Publishers
  * publish on different threads.
  *
@@ -54,19 +50,19 @@ import reactor.util.context.Context;
  * </br>
  *
  * <p>
- *      <b>Note: </b> UnicastProcessor does not respect the actual subscriber's
+ *      <b>Note: </b> SinkManyUnicast does not respect the actual subscriber's
  *      demand as it is described in
  *      <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a>. However,
- *      UnicastProcessor embraces configurable Queue internally which allows enabling
+ *      SinkManyUnicast embraces configurable Queue internally which allows enabling
  *      backpressure support and preventing of consumer's overwhelming.
  *
- *      Hence, interaction model between producers and UnicastProcessor will be PUSH
- *      only. In opposite, interaction model between UnicastProcessor and consumer will be
+ *      Hence, interaction model between producers and SinkManyUnicast will be PUSH
+ *      only. In opposite, interaction model between SinkManyUnicast and consumer will be
  *      PUSH-PULL as defined in
  *      <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a>.
  *
  *      In the case when upstream's signals overflow the bound of internal Queue,
- *      UnicastProcessor will fail with signaling onError(
+ *      SinkManyUnicast will fail with signaling onError(
  *      {@literal reactor.core.Exceptions.OverflowException}).
  *
  *      <p>
@@ -87,88 +83,51 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
- * @deprecated to be removed in 3.5, prefer clear cut usage of {@link Sinks} through
- * variations under {@link reactor.core.publisher.Sinks.UnicastSpec Sinks.many().unicast()}.
  */
-@Deprecated
-public final class UnicastProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>,
-		           InternalManySink<T> {
+final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, Disposable, Fuseable.QueueSubscription<T>, Fuseable {
 
 	/**
-	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
+	 * Create a new {@link SinkManyUnicast} that will buffer on an internal queue in an
 	 * unbounded fashion.
 	 *
 	 * @param <E> the relayed type
-	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer() Sinks.many().unicast().onBackpressureBuffer()}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
+	 * @return a unicast {@link Sinks.Many}
 	 */
-	@Deprecated
-	public static <E> UnicastProcessor<E> create() {
-		return new UnicastProcessor<>(Queues.<E>unbounded().get());
+	static <E> SinkManyUnicast<E> create() {
+		return new SinkManyUnicast<>(Queues.<E>unbounded().get());
 	}
 
 	/**
-	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
+	 * Create a new {@link SinkManyUnicast} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
 	 * @param <E> the relayed type
-	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer(Queue) Sinks.many().unicast().onBackpressureBuffer(queue)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
+	 * @return a unicast {@link Sinks.Many}
 	 */
-	@Deprecated
-	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
-		return new UnicastProcessor<>(Hooks.wrapQueue(queue));
+	static <E> SinkManyUnicast<E> create(Queue<E> queue) {
+		return new SinkManyUnicast<>(Hooks.wrapQueue(queue));
 	}
 
 	/**
-	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
+	 * Create a new {@link SinkManyUnicast} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
 	 * @param endcallback called on any terminal signal
 	 * @param <E> the relayed type
-	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer(Queue, Disposable)  Sinks.many().unicast().onBackpressureBuffer(queue, endCallback)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
+	 * @return a unicast {@link Sinks.Many}
 	 */
-	@Deprecated
-	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
-		return new UnicastProcessor<>(Hooks.wrapQueue(queue), endcallback);
-	}
-
-	/**
-	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
-	 * unbounded fashion.
-	 *
-	 * @param queue the buffering queue
-	 * @param endcallback called on any terminal signal
-	 * @param onOverflow called when queue.offer return false and unicastProcessor is
-	 * about to emit onError.
-	 * @param <E> the relayed type
-	 *
-	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Sinks.UnicastSpec#onBackpressureBuffer(Queue, Disposable)  Sinks.many().unicast().onBackpressureBuffer(queue, endCallback)}
-	 * (or the unsafe variant if you're sure about external synchronization). The {@code onOverflow} callback is not
-	 * supported anymore. To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> UnicastProcessor<E> create(Queue<E> queue,
-			Consumer<? super E> onOverflow,
-			Disposable endcallback) {
-		return new UnicastProcessor<>(Hooks.wrapQueue(queue), onOverflow, endcallback);
+	static <E> SinkManyUnicast<E> create(Queue<E> queue, Disposable endcallback) {
+		return new SinkManyUnicast<>(Hooks.wrapQueue(queue), endcallback);
 	}
 
 	final Queue<T>            queue;
-	final Consumer<? super T> onOverflow;
 
-	volatile Disposable onTerminate;
+	volatile Disposable                                                   onTerminate;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<UnicastProcessor, Disposable> ON_TERMINATE =
-			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
+	static final AtomicReferenceFieldUpdater<SinkManyUnicast, Disposable> ON_TERMINATE =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyUnicast.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
 	Throwable error;
@@ -178,52 +137,36 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 
 	volatile boolean cancelled;
 
-	volatile int once;
+	volatile int                                            once;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<UnicastProcessor> ONCE =
-			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "once");
+	static final AtomicIntegerFieldUpdater<SinkManyUnicast> ONCE =
+			AtomicIntegerFieldUpdater.newUpdater(SinkManyUnicast.class, "once");
 
-	volatile int wip;
+	volatile int                                            wip;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<UnicastProcessor> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "wip");
+	static final AtomicIntegerFieldUpdater<SinkManyUnicast> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SinkManyUnicast.class, "wip");
 
-	volatile int discardGuard;
+	volatile int                                            discardGuard;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<UnicastProcessor> DISCARD_GUARD =
-			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "discardGuard");
+	static final AtomicIntegerFieldUpdater<SinkManyUnicast> DISCARD_GUARD =
+			AtomicIntegerFieldUpdater.newUpdater(SinkManyUnicast.class, "discardGuard");
 
-	volatile long requested;
+	volatile long                                        requested;
 	@SuppressWarnings("rawtypes")
-	static final AtomicLongFieldUpdater<UnicastProcessor> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(UnicastProcessor.class, "requested");
+	static final AtomicLongFieldUpdater<SinkManyUnicast> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(SinkManyUnicast.class, "requested");
 
 	boolean outputFused;
 
-	public UnicastProcessor(Queue<T> queue) {
+	SinkManyUnicast(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = null;
-		this.onOverflow = null;
 	}
 
-	public UnicastProcessor(Queue<T> queue, Disposable onTerminate) {
+	SinkManyUnicast(Queue<T> queue, Disposable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
-		this.onOverflow = null;
-	}
-
-	@Deprecated
-	public UnicastProcessor(Queue<T> queue,
-			Consumer<? super T> onOverflow,
-			Disposable onTerminate) {
-		this.queue = Objects.requireNonNull(queue, "queue");
-		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
-		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
-	}
-
-	@Override
-	public int getBufferSize() {
-		return Queues.capacity(this.queue);
 	}
 
 	@Override
@@ -233,19 +176,15 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (Attr.ACTUAL == key) return actual();
+		if (Attr.ACTUAL == key) return actual;
 		if (Attr.BUFFERED == key) return queue.size();
+		if (Attr.CAPACITY == key) return Queues.capacity(this.queue);
 		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
 		if (Attr.CANCELLED == key) return cancelled;
+		if (Attr.TERMINATED == key) return done;
+		if (Attr.ERROR == key) return error;
 
-		//TERMINATED and ERROR covered in super
-		return super.scanUnsafe(key);
-	}
-
-	@Override
-	public void onComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused") EmitResult emitResult = tryEmitComplete();
+		return null;
 	}
 
 	@Override
@@ -266,11 +205,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void onError(Throwable throwable) {
-		emitError(throwable, Sinks.EmitFailureHandler.FAIL_FAST);
-	}
-
-	@Override
 	public Sinks.EmitResult tryEmitError(Throwable t) {
 		if (done) {
 			return Sinks.EmitResult.FAIL_TERMINATED;
@@ -286,41 +220,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 
 		drain(null);
 		return EmitResult.OK;
-	}
-
-	@Override
-	public void onNext(T t) {
-		emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
-	}
-
-	@Override
-	public void emitNext(T value, Sinks.EmitFailureHandler failureHandler) {
-		if (onOverflow == null) {
-			InternalManySink.super.emitNext(value, failureHandler);
-			return;
-		}
-
-		// TODO consider deprecating onOverflow and suggesting using a strategy instead
-		InternalManySink.super.emitNext(
-				value, (signalType, emission) -> {
-					boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
-					if (!shouldRetry) {
-						switch (emission) {
-							case FAIL_ZERO_SUBSCRIBER:
-							case FAIL_OVERFLOW:
-								try {
-									onOverflow.accept(value);
-								}
-								catch (Throwable e) {
-									Exceptions.throwIfFatal(e);
-									emitError(e, Sinks.EmitFailureHandler.FAIL_FAST);
-								}
-								break;
-						}
-					}
-					return shouldRetry;
-				}
-		);
 	}
 
 	@Override
@@ -347,11 +246,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public Flux<T> asFlux() {
 		return this;
-	}
-
-	@Override
-	protected boolean isIdentityProcessor() {
-		return true;
 	}
 
 	void doTerminate() {
@@ -501,15 +395,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void onSubscribe(Subscription s) {
-		if (done || cancelled) {
-			s.cancel();
-		} else {
-			s.request(Long.MAX_VALUE);
-		}
-	}
-
-	@Override
 	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
@@ -534,8 +419,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 				drain(null);
 			}
 		} else {
-			Operators.error(actual, new IllegalStateException("UnicastProcessor " +
-					"allows only a single Subscriber"));
+			Operators.error(actual, new IllegalStateException("Sinks.many().unicast() sinks only allow a single Subscriber"));
 		}
 	}
 
@@ -619,34 +503,12 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public void dispose() {
+		emitError(new CancellationException("Disposed"), Sinks.EmitFailureHandler.FAIL_FAST);
+	}
+
+	@Override
 	public boolean isDisposed() {
 		return cancelled || done;
 	}
-
-	@Override
-	public boolean isTerminated() {
-		return done;
-	}
-
-	@Override
-	@Nullable
-	public Throwable getError() {
-		return error;
-	}
-
-	@Override
-	public CoreSubscriber<? super T> actual() {
-		return actual;
-	}
-
-	@Override
-	public long downstreamCount() {
-		return hasDownstreams() ? 1L : 0L;
-	}
-
-	@Override
-	public boolean hasDownstreams() {
-		return hasDownstream;
-	}
-
 }

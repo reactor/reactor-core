@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 final class SinkManyBestEffort<T> extends Flux<T>
-		implements InternalManySink<T>, Scannable,
-		           DirectInnerContainer<T> {
+		implements InternalManySink<T>, Scannable {
 
 	static final DirectInner[] EMPTY      = new DirectInner[0];
 	static final DirectInner[] TERMINATED = new DirectInner[0];
@@ -215,8 +214,14 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		}
 	}
 
-	@Override
-	public boolean add(DirectInner<T> s) {
+	/**
+	 * Add a new {@link SinkManyBestEffort.DirectInner} to this publisher.
+	 *
+	 * @param s the new {@link SinkManyBestEffort.DirectInner} to add
+	 *
+	 * @return {@code true} if the inner could be added, {@code false} if the publisher cannot accept new subscribers
+	 */
+	boolean add(DirectInner<T> s) {
 		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED) {
 			return false;
@@ -240,9 +245,14 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		}
 	}
 
+	/**
+	 * Remove an {@link SinkManyBestEffort.DirectInner} from this publisher. Does nothing if the inner is not currently managed
+	 * by the publisher.
+	 *
+	 * @param s the  {@link SinkManyBestEffort.DirectInner} to remove
+	 */
 	@SuppressWarnings("unchecked")
-	@Override
-	public void remove(DirectInner<T> s) {
+	void remove(DirectInner<T> s) {
 		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED || a == EMPTY) {
 			return;
@@ -285,14 +295,14 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	static class DirectInner<T> extends AtomicBoolean implements InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
-		final DirectInnerContainer<T>   parent;
+		final SinkManyBestEffort<T>   parent;
 
 		volatile     long                                requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<DirectInner> REQUESTED = AtomicLongFieldUpdater.newUpdater(
 				DirectInner.class, "requested");
 
-		DirectInner(CoreSubscriber<? super T> actual, DirectInnerContainer<T> parent) {
+		DirectInner(CoreSubscriber<? super T> actual, SinkManyBestEffort<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}

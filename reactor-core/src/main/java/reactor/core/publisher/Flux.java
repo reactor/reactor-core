@@ -1914,7 +1914,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 * @return a {@link SinkManyAbstractBase} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
 		return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
@@ -1935,7 +1935,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param prefetch the inner source request size
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 * @return a {@link SinkManyAbstractBase} accepting publishers and producing T
 	 *
 	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
 	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
@@ -8568,13 +8568,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link Subscriber} to this {@link Flux} and return said
-	 * {@link Subscriber} (eg. a {@link FluxProcessor}).
-	 *
-	 * <blockquote><pre>
-	 * {@code flux.subscribeWith(EmitterProcessor.create()).subscribe() }
-	 * </pre></blockquote>
-	 *
+	 * Subscribe a provided instance of a subclass of {@link Subscriber} to this {@link Flux}
+	 * and return said instance for further chaining calls. This is similar to {@link #as(Function)},
+	 * except a subscription is explicitly performed by this method.
+	 * <p>
 	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe with and return

@@ -623,7 +623,8 @@ class SinksTest {
 
 					assertThatCode(flux::subscribe).doesNotThrowAnyException();
 					StepVerifier.create(flux)
-								.verifyErrorSatisfies(e -> assertThat(e).hasMessageEndingWith("allows only a single Subscriber"));
+								.verifyErrorSatisfies(e -> assertThat(e)
+									.hasMessage("Sinks.many().unicast() sinks only allow a single Subscriber"));
 				}),
 
 				dynamicTest("honorsSubscriberBackpressure", () -> {

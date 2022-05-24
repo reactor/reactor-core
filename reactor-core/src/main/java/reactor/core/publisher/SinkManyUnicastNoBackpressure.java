@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements InternalManySink<T>, Subscription, ContextHolder {
+final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements InternalManySink<T>, Subscription, ContextHolder {
 
-	public static <E> UnicastManySinkNoBackpressure<E> create() {
-		return new UnicastManySinkNoBackpressure<>();
+	public static <E> SinkManyUnicastNoBackpressure<E> create() {
+		return new SinkManyUnicastNoBackpressure<>();
 	}
 
 	enum State {
@@ -45,20 +45,20 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 	volatile State state;
 
 	@SuppressWarnings("rawtypes")
-	private static final AtomicReferenceFieldUpdater<UnicastManySinkNoBackpressure, State> STATE = AtomicReferenceFieldUpdater.newUpdater(
-			UnicastManySinkNoBackpressure.class,
+	private static final AtomicReferenceFieldUpdater<SinkManyUnicastNoBackpressure, State> STATE = AtomicReferenceFieldUpdater.newUpdater(
+			SinkManyUnicastNoBackpressure.class,
 			State.class,
 			"state"
 	);
 
 	private volatile CoreSubscriber<? super T> actual = null;
 
-	volatile long requested;
+	volatile long                                                      requested;
 	@SuppressWarnings("rawtypes")
-	static final AtomicLongFieldUpdater<UnicastManySinkNoBackpressure> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(UnicastManySinkNoBackpressure.class, "requested");
+	static final AtomicLongFieldUpdater<SinkManyUnicastNoBackpressure> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(SinkManyUnicastNoBackpressure.class, "requested");
 
-	UnicastManySinkNoBackpressure() {
+	SinkManyUnicastNoBackpressure() {
 		STATE.lazySet(this, State.INITIAL);
 	}
 

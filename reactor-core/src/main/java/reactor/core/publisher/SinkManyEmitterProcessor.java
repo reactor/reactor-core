@@ -29,7 +29,6 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -41,7 +40,7 @@ import reactor.util.context.Context;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 
 /**
- * An implementation of a message-passing Processor implementing
+ * An implementation of a {@link Sinks.ManyWithUpstream} implementing
  * publish-subscribe with synchronous (thread-stealing and happen-before interactions)
  * drain loops.
  * <p>
@@ -56,119 +55,44 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks} through
- * variations of {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}.
- * If you really need the subscribe-to-upstream functionality of a {@link org.reactivestreams.Processor}, switch
- * to {@link Sinks.ManyWithUpstream} with {@link Sinks#unsafe()} variants of
- * {@link Sinks.MulticastUnsafeSpec#onBackpressureBuffer() Sinks.unsafe().many().multicast().onBackpressureBuffer()}.
- * <p/>This processor was blocking in {@link EmitterProcessor#onNext(Object)}. This behaviour can be implemented with the {@link Sinks} API by calling
- * {@link Sinks.Many#tryEmitNext(Object)} and retrying, e.g.:
- * <pre>{@code while (sink.tryEmitNext(v).hasFailed()) {
- *     LockSupport.parkNanos(10);
- * }
- * }</pre>
  */
-@Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T>,
-	Sinks.ManyWithUpstream<T> {
+final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
+	Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
-	 * backlog size and auto-cancel.
-	 *
-	 * @param <E> Type of processed signals
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create() {
-		return create(Queues.SMALL_BUFFER_SIZE, true);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
-	 * backlog size and the provided auto-cancel.
-	 *
-	 * @param <E> Type of processed signals
-	 * @param autoCancel automatically cancel
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, boolean)}
-	 * using the old default of {@link Queues#SMALL_BUFFER_SIZE} for the {@code bufferSize}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using the provided backlog size, with auto-cancel.
-	 *
-	 * @param <E> Type of processed signals
-	 * @param bufferSize the internal buffer size to hold signals
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int) Sinks.many().multicast().onBackpressureBuffer(bufferSize)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create(int bufferSize) {
-		return create(bufferSize, true);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using the provided backlog size and auto-cancellation.
-	 *
-	 * @param <E> Type of processed signals
-	 * @param bufferSize the internal buffer size to hold signals
-	 * @param autoCancel automatically cancel
-	 *
-	 * @return a fresh processor
-	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, autoCancel)}
-	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
-	 */
-	@Deprecated
-	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, bufferSize);
-	}
 
 	final int prefetch;
 
 	final boolean autoCancel;
 
-	volatile Subscription s;
+	volatile Subscription                                                            s;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Subscription.class,
 					"s");
 
 	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, FluxPublish.PubSubInner[]>
-			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, FluxPublish.PubSubInner[]>
+			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
 
 	volatile EmitterDisposable upstreamDisposable;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
 
 	@SuppressWarnings("unused")
 	volatile int wip;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<EmitterProcessor> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "wip");
+	static final AtomicIntegerFieldUpdater<SinkManyEmitterProcessor> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, "wip");
 
 	volatile Queue<T> queue;
 
@@ -179,12 +103,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Throwable> ERROR =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Throwable.class,
 					"error");
 
-	EmitterProcessor(boolean autoCancel, int prefetch) {
+	SinkManyEmitterProcessor(boolean autoCancel, int prefetch) {
 		if (prefetch < 1) {
 			throw new IllegalArgumentException("bufferSize must be strictly positive, " + "was: " + prefetch);
 		}
@@ -214,7 +138,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		if (Operators.terminate(S, this)) {
 			done = true;
 			CancellationException detachException = new CancellationException("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
-			if (ERROR.compareAndSet(EmitterProcessor.this, null, detachException)) {
+			if (ERROR.compareAndSet(this, null, detachException)) {
 				Queue<T> q = queue;
 				if (q != null) {
 					q.clear();
@@ -288,7 +212,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public EmitResult tryEmitError(Throwable t) {
-		Objects.requireNonNull(t, "onError");
+		Objects.requireNonNull(t, "tryEmitError must be invoked with a non-null Throwable");
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
@@ -317,7 +241,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
-		Objects.requireNonNull(t, "onNext");
+		Objects.requireNonNull(t, "tryEmitNext must be invoked with a non-null value");
 
 		Queue<T> q = queue;
 
@@ -356,19 +280,20 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		return this;
 	}
 
-	@Override
-	protected boolean isIdentityProcessor() {
-		return true;
-	}
-
 	/**
 	 * Return the number of parked elements in the emitter backlog.
 	 *
 	 * @return the number of parked elements in the emitter backlog.
 	 */
-	public int getPending() {
+	int getPending() {
 		Queue<T> q = queue;
 		return q != null ? q.size() : 0;
+	}
+
+	//TODO evaluate the use case for Disposable in the context of Sinks
+	@Override
+	public void dispose() {
+		onError(new CancellationException("Disposed"));
 	}
 
 	@Override
@@ -406,25 +331,28 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 	}
 
-	@Override
+	/**
+	 * Current error if any, default to null
+	 *
+	 * @return Current error if any, default to null
+	 */
 	@Nullable
-	public Throwable getError() {
+	Throwable getError() {
 		return error;
 	}
 
 	/**
 	 * @return true if all subscribers have actually been cancelled and the processor auto shut down
 	 */
-	public boolean isCancelled() {
+	boolean isCancelled() {
 		return Operators.cancelledSubscription() == s;
 	}
 
-	@Override
-	final public int getBufferSize() {
-		return prefetch;
-	}
-
-	@Override
+	/**
+	 * Has this upstream finished or "completed" / "failed" ?
+	 *
+	 * @return has this upstream finished or "completed" / "failed" ?
+	 */
 	public boolean isTerminated() {
 		return done && getPending() == 0;
 	}
@@ -442,7 +370,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		if (key == Attr.CANCELLED) return isCancelled();
 		if (key == Attr.PREFETCH) return getPrefetch();
 
-		return super.scanUnsafe(key);
+		if (key == Attr.TERMINATED) return isTerminated();
+		if (key == Attr.ERROR) return getError();
+		if (key == Attr.CAPACITY) return getPrefetch();
+
+		return null;
 	}
 
 	final void drain() {
@@ -669,16 +601,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 	}
 
-	@Override
-	public long downstreamCount() {
-		return subscribers.length;
-	}
-
 	static final class EmitterInner<T> extends FluxPublish.PubSubInner<T> {
 
-		final EmitterProcessor<T> parent;
+		final SinkManyEmitterProcessor<T> parent;
 
-		EmitterInner(CoreSubscriber<? super T> actual, EmitterProcessor<T> parent) {
+		EmitterInner(CoreSubscriber<? super T> actual, SinkManyEmitterProcessor<T> parent) {
 			super(actual);
 			this.parent = parent;
 		}
@@ -698,9 +625,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	static final class EmitterDisposable implements Disposable {
 
 		@Nullable
-		EmitterProcessor<?> target;
+		SinkManyEmitterProcessor<?> target;
 
-		public EmitterDisposable(EmitterProcessor<?> emitterProcessor) {
+		public EmitterDisposable(SinkManyEmitterProcessor<?> emitterProcessor) {
 			this.target = emitterProcessor;
 		}
 
@@ -711,7 +638,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 		@Override
 		public void dispose() {
-			EmitterProcessor<?> t = target;
+			SinkManyEmitterProcessor<?> t = target;
 			if (t == null) {
 				return;
 			}
