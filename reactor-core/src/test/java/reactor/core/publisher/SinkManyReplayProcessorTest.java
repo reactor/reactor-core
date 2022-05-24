@@ -18,20 +18,20 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.assertj.core.api.Assertions;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -617,11 +617,7 @@ public class SinkManyReplayProcessorTest {
 			assertThat(s.isCancelled()).isFalse();
 
 			assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
-			if (rp.getBufferSize() != Integer.MAX_VALUE) {
-				assertThat(rp.getBufferSize()).isEqualTo(1);
-			}
-			FluxSink<String> sink = rp.sink();
-			sink.next("test");
+			rp.tryEmitNext("test").orThrow();
 			rp.onComplete();
 
 			rp.onComplete();

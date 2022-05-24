@@ -24,7 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 
@@ -99,14 +98,14 @@ public class SinkManyUnicastTest {
 	@Test
 	public void createDefault() {
 		SinkManyUnicast<Integer> processor = SinkManyUnicast.create();
-		assertProcessor(processor, null, null, null);
+		assertProcessor(processor, null, null);
 	}
 
 	@Test
 	public void createOverrideQueue() {
 		Queue<Integer> queue = Queues.<Integer>get(10).get();
 		SinkManyUnicast<Integer> processor = SinkManyUnicast.create(queue);
-		assertProcessor(processor, queue, null, null);
+		assertProcessor(processor, queue, null);
 	}
 
 	@Test
@@ -114,19 +113,16 @@ public class SinkManyUnicastTest {
 		Disposable onTerminate = () -> {};
 		Queue<Integer> queue = Queues.<Integer>get(10).get();
 		SinkManyUnicast<Integer> processor = SinkManyUnicast.create(queue, onTerminate);
-		assertProcessor(processor, queue, null, onTerminate);
+		assertProcessor(processor, queue, onTerminate);
 	}
 
-	public void assertProcessor(SinkManyUnicast<Integer> processor,
+	void assertProcessor(SinkManyUnicast<Integer> processor,
 								@Nullable Queue<Integer> queue,
-								@Nullable Consumer<? super Integer> onOverflow,
 								@Nullable Disposable onTerminate) {
 		Queue<Integer> expectedQueue = queue != null ? queue : Queues.<Integer>unbounded().get();
 		Disposable expectedOnTerminate = onTerminate;
 		assertThat(processor.queue.getClass()).isEqualTo(expectedQueue.getClass());
 		assertThat(processor.onTerminate).isEqualTo(expectedOnTerminate);
-		if (onOverflow != null)
-			assertThat(processor.onOverflow).isEqualTo(onOverflow);
 	}
 
 	@Test

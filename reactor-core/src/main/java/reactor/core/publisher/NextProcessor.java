@@ -117,17 +117,17 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	}
 
 	/**
+	 * For testing purpose.
+	 * <p>
 	 * Returns the value that completed this {@link NextProcessor}. Returns {@code null} if the {@link NextProcessor} has not been completed. If the
 	 * {@link NextProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 	 *
 	 * @return the value that completed the {@link NextProcessor}, or {@code null} if it has not been completed
 	 *
 	 * @throws RuntimeException if the {@link NextProcessor} was completed with an error
-	 * @deprecated this method is discouraged, consider peeking into a {@link NextProcessor} by {@link Mono#toFuture() turning it into a CompletableFuture}
 	 */
-	@Deprecated
 	@Nullable
-	public O peek() {
+	O peek() {
 		if (!isTerminated()) {
 			return null;
 		}
