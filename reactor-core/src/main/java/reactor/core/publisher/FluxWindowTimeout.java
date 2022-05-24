@@ -1014,8 +1014,15 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return true;
 				}
 				else {
-					queue.poll();
-					return false;
+					if (queue.poll() != t) {
+						// doing extra request since the value is sent event though the
+						// index progress was not committed
+						this.parent.request(1);
+						return true;
+					}
+					else {
+						return false;
+					}
 				}
 			}
 
@@ -1208,6 +1215,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				@Nullable T value) {
 			final long state = this.state;
 			if (isCancelled(state)) {
+				this.parent.signals.offer(this + "-" + Thread.currentThread().getId()  + " discard " + value);
 				if (value != null) {
 					Operators.onDiscard(value, actual.currentContext());
 				}
