@@ -2,7 +2,7 @@ In Reactor a sink is a class that allows safe manual triggering of signals in a 
 
 Before `3.5.0`, there was also a set of `Processor` implementations which has been phased out.
 
-[[sinks]]
+[[sinks-intro]]
 = Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
 
 Default flavors of `Sinks` exposed by reactor-core ensure that multi-threaded usage is detected
@@ -82,7 +82,7 @@ The `Sinks` categories are:
 . `one()`: a sink that will play a single element to its subscribers
 . `empty()`: a sink that will play a terminal signal only to its subscribers (error or complete), but can still be viewed as a `Mono<T>` (notice the generic type `<T>`).
 
-[[processor-overview]]
+[[sinks-overview]]
 = Overview of Available Sinks
 
 == Sinks.many().unicast().onBackpressureBuffer(args?)
