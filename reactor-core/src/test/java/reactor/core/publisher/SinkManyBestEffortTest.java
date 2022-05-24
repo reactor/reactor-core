@@ -167,12 +167,11 @@ class SinkManyBestEffortTest {
 	void scanInner() {
 		@SuppressWarnings("unchecked")
 		InnerConsumer<? super String> actual = mock(InnerConsumer.class);
-		@SuppressWarnings("unchecked")
-		SinkManyBestEffort<String> parent = mock(SinkManyBestEffort.class);
+		SinkManyBestEffort<String> parent = new SinkManyBestEffort<>(false);
 
 		DirectInner<String> test = new SinkManyBestEffort.DirectInner<>(actual, parent);
 
-		assertThat(test.scanUnsafe(Scannable.Attr.PARENT)).isSameAs(parent); //the mock isn't scannable
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scanUnsafe(Scannable.Attr.ACTUAL)).isSameAs(actual); //the mock isn't scannable
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 

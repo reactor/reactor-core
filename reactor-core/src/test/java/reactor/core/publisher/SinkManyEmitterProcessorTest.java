@@ -409,26 +409,29 @@ class SinkManyEmitterProcessorTest {
 	@Test
 	void failZeroBufferSize() {
 		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new SinkManyEmitterProcessor<>(true, 0))
-			.withMessage("foo");
+			.withMessage("bufferSize must be strictly positive, was: 0");
 	}
 
 	@Test
 	void failNegativeBufferSize() {
-		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new SinkManyEmitterProcessor<>(true, -1));
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new SinkManyEmitterProcessor<>(true, -1))
+			.withMessage("bufferSize must be strictly positive, was: -1");
 	}
 
 	@Test
 	void failNullTryEmitNext() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
 			new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE).tryEmitNext(null);
-		});
+		})
+			.withMessage("tryEmitNext must be invoked with a non-null value");
 	}
 
 	@Test
 	void failNullTryEmitError() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
 			new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE).tryEmitError(null);
-		});
+		})
+			.withMessage("tryEmitError must be invoked with a non-null Throwable");
 	}
 
 	@Test

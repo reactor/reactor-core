@@ -366,6 +366,7 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 		boolean t = isTerminated();
 
 		if (key == Attr.TERMINATED) return t;
+		if (key == Attr.CANCELLED) return !t && subscription == Operators.cancelledSubscription();
 		if (key == Attr.ERROR) return getError();
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

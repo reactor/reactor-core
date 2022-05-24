@@ -212,7 +212,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	@Override
 	public EmitResult tryEmitError(Throwable t) {
-		Objects.requireNonNull(t, "onError");
+		Objects.requireNonNull(t, "tryEmitError must be invoked with a non-null Throwable");
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
@@ -241,7 +241,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
-		Objects.requireNonNull(t, "onNext");
+		Objects.requireNonNull(t, "tryEmitNext must be invoked with a non-null value");
 
 		Queue<T> q = queue;
 
