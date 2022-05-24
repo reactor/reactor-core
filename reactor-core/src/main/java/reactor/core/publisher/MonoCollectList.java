@@ -138,11 +138,11 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		public void cancel() {
 			int state;
 			List<T> l;
+			state = STATE.getAndSet(this, CANCELLED);
+			if (state != CANCELLED) {
+				s.cancel();
+			}
 			synchronized (this) {
-				state = STATE.getAndSet(this, CANCELLED);
-				if (state != CANCELLED) {
-					s.cancel();
-				}
 				if (state <= HAS_REQUEST_NO_VALUE) {
 					l = list;
 					this.value = null;
