@@ -16,8 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -100,6 +102,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		final int                             maxSize;
 		final Scheduler.Worker                worker;
 		final int                             limit;
+		final Queue<String> signals = new ArrayBlockingQueue<>(10000);
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -175,14 +178,18 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				return;
 			}
 
+			this.signals.add("value added " + t);
+
 			while(true) {
 				if (isCancelled(this.state)) {
+					this.signals.add("value discarded " + t);
 					Operators.onDiscard(t, this.actual.currentContext());
 					return;
 				}
 
 				final InnerWindow<T> window = this.window;
 				if (window.sendNext(t)) {
+					this.signals.add(window + " value sent " + t);
 					return;
 				}
 			}
@@ -198,6 +205,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = previousState | TERMINATED_FLAG;
 				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					instance.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-ter-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
 					return previousState;
 				}
 			}
@@ -307,11 +317,19 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long currentState = instance.state;
 
 				if (expectedState != currentState) {
+					instance.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) +
+							"ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-mwdf-" + InnerWindow.formatState(currentState)+"-" + InnerWindow.formatState(currentState));
 					return currentState;
 				}
 
 				final long nextState = currentState ^ HAS_WORK_IN_PROGRESS;
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					instance.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) +
+							"ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-mwd-" + InnerWindow.formatState(currentState)+"-" + InnerWindow.formatState(nextState));
 					return nextState;
 				}
 			}
@@ -325,6 +343,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long nextState = (clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0));
 
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					instance.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) +
+							"ParentWindow -" + Thread.currentThread().getId() +
+							"-cms-" + InnerWindow.formatState(currentState)+"-" + InnerWindow.formatState(nextState));
 					return currentState;
 				}
 			}
@@ -340,6 +361,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						(setUnsentFlag ? HAS_UNSENT_WINDOW : 0);
 
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					instance.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) +
+							"ParentWindow -" + Thread.currentThread().getId() +
+							"-cmt-" + InnerWindow.formatState(currentState)+"-" + InnerWindow.formatState(nextState));
 					return currentState;
 				}
 			}
@@ -365,6 +389,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				if (hasWorkInProgress(previousState)) {
 					long nextState = (previousState & ~REQUEST_INDEX_MASK) | incrementRequestIndex(previousState);
 					if (STATE.compareAndSet(this, previousState, nextState)) {
+						this.signals.offer("ParentWindow " +
+								"-" + Thread.currentThread().getId() +
+								"-reqw(" + previousRequested + "\\" + n + ")-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
 						return;
 					}
 
@@ -374,6 +401,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				hasUnsentWindow = hasUnsentWindow(previousState);
 
 				if (!hasUnsentWindow && (isTerminated(previousState) || activeWindowIndex(previousState) == nextWindowIndex(previousState))) {
+					this.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-reqa(" + previousRequested + "\\" + n + ")-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(previousState));
 					return;
 				}
 
@@ -381,6 +411,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						(previousState &~ HAS_UNSENT_WINDOW) |
 						HAS_WORK_IN_PROGRESS;
 				if (STATE.compareAndSet(this, previousState, expectedState)) {
+					this.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-reqd(" + previousRequested + "\\" + n + ")-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(expectedState));
 					break;
 				}
 			}
@@ -396,10 +429,16 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				previousState = this.state;
 
 				if (isCancelled(previousState)) {
+					this.signals.offer("ParentWindow21 " +
+							"-" + Thread.currentThread().getId() +
+							"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(previousState));
 					return;
 				}
 
 				if (nextWindowIndex(previousState) != windowIndex) {
+					this.signals.offer("ParentWindow1 " +
+							"-" + Thread.currentThread().getId() +
+							"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(previousState));
 					return;
 				}
 
@@ -410,6 +449,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				expectedState = (previousState &~ NEXT_WINDOW_INDEX_MASK) | incrementNextWindowIndex(previousState) | HAS_WORK_IN_PROGRESS;
 				if (STATE.compareAndSet(this, previousState, expectedState)) {
+					this.signals.offer("ParentWindow42 " +
+							"-" + Thread.currentThread().getId() +
+							"-tcw-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(expectedState));
 
 					if (hasWorkInProgress) {
 						return;
@@ -537,6 +579,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 							final long nextRequest = InnerWindow.received(previousInnerWindowState);
 							if (nextRequest > 0) {
+								this.signals.offer(nextWindow + " request" + nextRequest);
 								this.s.request(nextRequest);
 							}
 
@@ -565,6 +608,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							}
 
 							if (!hasWorkInProgress(expectedState)) {
+								this.signals.offer("ParentWindow -" + Thread.currentThread().getId() + " exit2 " + expectedState);
 								return;
 							}
 						}
@@ -618,6 +662,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							nextRequest = InnerWindow.received(previousActiveWindowState);
 						}
 						if (nextRequest > 0) {
+							this.signals.offer(nextWindow + " request" + nextRequest);
 							this.s.request(nextRequest);
 						}
 
@@ -657,10 +702,12 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					final long nextRequest = InnerWindow.received(previousActiveWindowState);
 
 					if (nextRequest > 0) {
+						this.signals.offer(nextWindow + " request " + nextRequest);
 						this.s.request(nextRequest);
 					}
 
 					if (!hasWorkInProgress(expectedState)) {
+						this.signals.offer("ParentWindow -" + Thread.currentThread().getId() + " exit " + expectedState);
 						return;
 					}
 				}
@@ -706,6 +753,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = previousState | CANCELLED_FLAG;
 				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					instance.signals.offer("ParentWindow " +
+							"-" + Thread.currentThread().getId() +
+							"-mcd-" + InnerWindow.formatState(previousState)+"-" + InnerWindow.formatState(nextState));
 					return previousState;
 				}
 			}
@@ -798,6 +848,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				STATE.lazySet(this, UNSENT_STATE);
 			}
 
+			parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) + this +
+					"-" + Thread.currentThread().getId() +
+				"-wct-" + formatState(state)+"-" + formatState(state));
+
 			this.createTime = parent.now();
 		}
 
@@ -885,6 +939,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						);
 
 				if (STATE.compareAndSet(this, state, nextState)) {
+					this.parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) + this +
+							"-" + Thread.currentThread().getId() + "-cfp-" + formatState(state)+"-" + formatState(nextState));
 
 					if (isFinalized(state)) {
 						return state;
@@ -928,6 +984,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			int received = this.received + 1 ;
 			this.received = received;
 
+			this.parent.signals.add(this + " " + this.queue.offer(t) +  " "  + t);
+
 			final long previousState;
 			final long nextState;
 			if (received == this.max) {
@@ -951,6 +1009,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			if (isFinalized(previousState)) {
 				if (isCancelledBySubscriberOrByParent(previousState)) {
+					this.parent.signals.add(this + "-" + Thread.currentThread().getId()  + " try clear " + t);
 					clearQueue();
 					return true;
 				}
@@ -1110,6 +1169,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				while (e < r) {
 					final T v = q.poll();
 
+					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-drn-" + v);
+
 					empty = v == null;
 					if (checkTerminated(this.produced + e, a, v)) {
 						return;
@@ -1120,6 +1181,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					}
 
 					a.onNext(v);
+
+					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-snt-" + v);
 
 					e++;
 				}
@@ -1152,6 +1215,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				@Nullable T value) {
 			final long state = this.state;
 			if (isCancelled(state)) {
+				this.parent.signals.offer(this + "-" + Thread.currentThread().getId()  + " discard " + value);
 				if (value != null) {
 					Operators.onDiscard(value, actual.currentContext());
 				}
@@ -1200,10 +1264,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public int requestFusion(int requestedMode) {
-//			if ((requestedMode & ASYNC) == ASYNC) {
-//				this.mode = ASYNC;
-//				return ASYNC;
-//			}
+			if ((requestedMode & ASYNC) == ASYNC) {
+				this.mode = ASYNC;
+				return ASYNC;
+			}
 			return Fuseable.NONE;
 		}
 
@@ -1234,17 +1298,21 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = ((state | FINALIZED_STATE) & ~WORK_IN_PROGRESS_MAX) ^ (hasValues(state) ? HAS_VALUES_STATE : 0);
 				if (STATE.compareAndSet(this, state, nextState)) {
+					this.parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()));
+					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-mfi-" + formatState(state)+"-" + formatState(nextState));
 					return;
 				}
 			}
 		}
 
 		void clearQueue() {
+			this.parent.signals.offer(this+ "-" + Thread.currentThread().getId()  + " clearQueue");
 			final Queue<T> q = this.queue;
 			final Context context = this.actual.currentContext();
 
 			T v;
 			while ((v = q.poll()) != null) {
+				this.parent.signals.offer(this + "-" + Thread.currentThread().getId()  + " discard " + v);
 				Operators.onDiscard(v, context);
 			}
 		}
@@ -1273,6 +1341,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111_1111L;
 		static final long RECEIVED_SHIFT_BITS      = 24;
 
+		static long s =
+				0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_0000_0000_0000_0000_0011L;
+
 		static <T> long markSent(InnerWindow<T> instance) {
 			for (; ; ) {
 				final long state = instance.state;
@@ -1293,6 +1364,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 									)
 								: 0);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mst-" + formatState(state)+"-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1312,6 +1384,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = state | TIMEOUT_STATE;
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mti-" + formatState(state)+"-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1333,6 +1406,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long nextState =
 						cleanState | CANCELLED_STATE | incrementWork(state & WORK_IN_PROGRESS_MAX);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()) + instance +
+							"-" + Thread.currentThread().getId() + "-mcd-" + formatState(state)+"-" + formatState(
+							nextState));
 					return state;
 				}
 			}
@@ -1355,6 +1431,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long state = instance.state;
 
 				if (isFinalized(state)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mhv-" + formatState(state) + "-" + formatState(state));
 					return state;
 				}
 
@@ -1380,6 +1457,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mhv-" + formatState(state) + "-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1390,6 +1468,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long state = instance.state;
 
 				if (isFinalized(state)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mhv1-" + formatState(state) + "-" + formatState(state));
 					return state;
 				}
 
@@ -1412,6 +1491,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mht-" + formatState(state)+"-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1443,6 +1523,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						);
 
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mhr-" + formatState(state)+"-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1468,6 +1549,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 												: 0
 								);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mte-" + formatState(state)+"-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1497,6 +1579,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = state | HAS_SUBSCRIBER_STATE;
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mso-" + formatState(state)+"-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1517,6 +1600,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long nextState =
 						(state | HAS_SUBSCRIBER_SET_STATE) + (isTerminated(state) && !hasValues(state) ? 1 : 0);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mss-" + formatState(state) + "-" + formatState(nextState));
 					return state;
 				}
 			}
@@ -1538,10 +1622,31 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			final long nextState =
 					(state ^ (hasValues ? 0 : HAS_VALUES_STATE)) &~ WORK_IN_PROGRESS_MAX;
 			if (STATE.compareAndSet(instance, state, nextState)) {
+				instance.parent.signals.offer(instance + "-" + Thread.currentThread().getId() + "-mwd-" + formatState(state)+"-" + formatState(nextState));
 				return nextState;
 			}
 
 			return instance.state;
+		}
+
+		static String formatState(long state) {
+			final String defaultFormat = Long.toBinaryString(state);
+			final StringBuilder formatted =
+					new StringBuilder();
+			final int toPrepend = 64 - defaultFormat.length();
+			for (int i = 0; i < 64; i++) {
+				if (i != 0 && i % 4 == 0) {
+					formatted.append("_");
+				}
+				if (i < toPrepend) {
+					formatted.append("0");
+				} else {
+					formatted.append(defaultFormat.charAt(i - toPrepend));
+				}
+			}
+
+			formatted.insert(0, "0b");
+			return formatted.toString();
 		}
 
 		static boolean hasWorkInProgress(long state) {

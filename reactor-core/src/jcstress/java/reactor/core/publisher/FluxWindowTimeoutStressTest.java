@@ -76,12 +76,22 @@ public class FluxWindowTimeoutStressTest {
 			windowTimeoutSubscriber.onNext(0L);
 			windowTimeoutSubscriber.onNext(1L);
 
-			windowTimeoutSubscriber.onComplete();
+			try {
+				windowTimeoutSubscriber.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Actor
 		public void request() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Arbiter
@@ -96,15 +106,18 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnNext);
 			}
-
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + " " + windowTimeoutSubscriber.signals);
+			}
+
+			if (result.toString().startsWith("1") || result.toString().startsWith("0") || result.toString().startsWith("2, 1, 2")) {
+				throw new IllegalStateException("boom " + result + " " + windowTimeoutSubscriber.signals.toString());
 			}
 		}
 	}
@@ -157,12 +170,22 @@ public class FluxWindowTimeoutStressTest {
 		public void next() {
 			windowTimeoutSubscriber.onNext(0L);
 			windowTimeoutSubscriber.onNext(1L);
-			windowTimeoutSubscriber.onComplete();
+			try {
+				windowTimeoutSubscriber.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Actor
 		public void request() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Arbiter
@@ -177,19 +200,19 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals, mainSubscriber.stacktraceOnNext);
 			}
 
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + " " + windowTimeoutSubscriber.signals);
 			}
 
 			if (result.toString().startsWith("2, 1, 2")) {
-				throw new IllegalStateException("boom " + result);
+				throw new IllegalStateException("boom " + result + " " + windowTimeoutSubscriber.signals.toString());
 			}
 		}
 	}
@@ -252,17 +275,32 @@ public class FluxWindowTimeoutStressTest {
 		public void next() {
 			windowTimeoutSubscriber.onNext(0L);
 			windowTimeoutSubscriber.onNext(1L);
-			windowTimeoutSubscriber.onComplete();
+			try {
+				windowTimeoutSubscriber.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Actor
 		public void advanceTime() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Actor
 		public void requestMain() {
-			mainSubscriber.request(1);
+			try {
+				mainSubscriber.request(1);
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Arbiter
@@ -278,15 +316,36 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnNext);
 			}
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() != 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + " " + windowTimeoutSubscriber.signals);
 			}
+
+			if (result.toString().equals("1, 2, 2, 1, 2")) {
+				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
+			}
+		}
+	}
+
+	public static void main(String[] args) {
+
+		for (int i = 0; i < 1000000; i++) {
+			FluxWindowTimoutStressTest1_3 test1_3 = new FluxWindowTimoutStressTest1_3();
+			if (i % 1000 == 0) {
+				System.out.println("---" + i + "---");
+			}
+			try {
+				RaceTestUtils.race(20, Schedulers.boundedElastic(), test1_3::next, test1_3::requestMain, test1_3::advanceTime);
+			} catch (Throwable t) {
+				throw new RuntimeException(test1_3.windowTimeoutSubscriber.signals.toString(), t);
+			}
+
+			test1_3.arbiter(new LLLLL_Result());
 		}
 	}
 
@@ -397,20 +456,35 @@ public class FluxWindowTimeoutStressTest {
 			proxy.onNext(5L);
 			proxy.onNext(6L);
 			proxy.onNext(7L);
-			proxy.onComplete();
+			try {
+				proxy.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Actor
 		public void advanceTime() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Actor
 		public void requestMain() {
-			mainSubscriber.request(1);
+			try {
+				mainSubscriber.request(1);
+			}
+			catch (Exception e) {
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString(), e);
+			}
 		}
 
 		@Arbiter
@@ -443,14 +517,18 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnNext);
 			}
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + " " + windowTimeoutSubscriber.signals);
+			}
+
+			if (result.toString().startsWith("6") || result.toString().startsWith("7") || result.toString().startsWith("8, 4, 5") || result.toString().startsWith("8, 5, 6")) {
+				throw new RuntimeException("boom " + result + " "+ mainSubscriber.receivedValues + " " + windowTimeoutSubscriber.signals);
 			}
 		}
 	}
@@ -520,17 +598,32 @@ public class FluxWindowTimeoutStressTest {
 		public void next() {
 			windowTimeoutSubscriber.onNext(0L);
 			windowTimeoutSubscriber.onNext(1L);
-			windowTimeoutSubscriber.onComplete();
+			try {
+				windowTimeoutSubscriber.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("next" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Actor
 		public void advanceTime() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("advanceTime" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Actor
 		public void cancel() {
-			subscriber1.cancel();
+			try {
+				subscriber1.cancel();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("cancel" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Arbiter
@@ -544,15 +637,18 @@ public class FluxWindowTimeoutStressTest {
 			result.r5 = subscription.requested;
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnNext);
 			}
-
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("Multiple completions");
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
+			}
+
+			if (result.toString().startsWith("2, 2, 3, 0, 3") || result.toString().startsWith("2, 2, 3, 0, 4")) {
+				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
 	}
@@ -613,17 +709,32 @@ public class FluxWindowTimeoutStressTest {
 		public void next() {
 			windowTimeoutSubscriber.onNext(0L);
 			windowTimeoutSubscriber.onNext(1L);
-			windowTimeoutSubscriber.onComplete();
+			try {
+				windowTimeoutSubscriber.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("next" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Actor
 		public void advanceTime() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("advanceTime" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Actor
 		public void cancel() {
-			subscriber2.cancel();
+			try {
+				subscriber2.cancel();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("cancel" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Arbiter
@@ -638,15 +749,18 @@ public class FluxWindowTimeoutStressTest {
 			result.r5 = subscription.requested;
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnNext);
 			}
-
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("Multiple completions");
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
+			}
+
+			if (result.toString().startsWith("2, 1, 3") || result.toString().startsWith("3, 2, 2")) {
+				throw new IllegalStateException("boom" + windowTimeoutSubscriber.signals.toString());
 			}
 		}
 	}
@@ -736,13 +850,23 @@ public class FluxWindowTimeoutStressTest {
 			windowTimeoutSubscriber.onNext(1L);
 			windowTimeoutSubscriber.onNext(2L);
 			windowTimeoutSubscriber.onNext(3L);
-			windowTimeoutSubscriber.onComplete();
+			try {
+				windowTimeoutSubscriber.onComplete();
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("next" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Actor
 		public void advanceTime() {
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
-			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			try {
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+				virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+			}
+			catch (Exception e) {
+				throw new IllegalStateException("advanceTime" + windowTimeoutSubscriber.signals, e);
+			}
 		}
 
 		@Actor
@@ -781,14 +905,24 @@ public class FluxWindowTimeoutStressTest {
 			result.r5 = subscription.requested;
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnNext);
 			}
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result  + windowTimeoutSubscriber.signals.toString(), mainSubscriber.stacktraceOnComplete);
+			}
+
+			if (result.toString().startsWith("3, ") || result.toString().startsWith("5," +
+					" ")  || result.toString().startsWith("2, ") ) {
+				throw new IllegalStateException("boom " + result + " "
+						+ subscriber1.receivedValues + " " +  subscriber1.discardedValues + " "
+						+ subscriber2.receivedValues + " " +  subscriber2.discardedValues + " "
+						+ subscriber3.receivedValues + " " +  subscriber3.discardedValues + " "
+						+ subscriber4.receivedValues + " " +  subscriber4.discardedValues + " "
+						+  windowTimeoutSubscriber.signals);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("Multiple completions");
+				throw new IllegalStateException(windowTimeoutSubscriber.signals.toString());
 			}
 		}
 	}
@@ -844,6 +978,10 @@ public class FluxWindowTimeoutStressTest {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscriber.onCompleteCalls.get() + subscriber.onErrorCalls.get() * 2L;
 
+			if (result.toString().equals("0, 1")) {
+				throw new IllegalStateException("boom " + parent.signals.toString());
+			}
+
 			if (subscriber.concurrentOnNext.get()) {
 				throw new RuntimeException("concurrentOnNext");
 			}
@@ -851,6 +989,7 @@ public class FluxWindowTimeoutStressTest {
 			if (subscriber.concurrentOnComplete.get()) {
 				throw new RuntimeException("concurrentOnComplete");
 			}
+
 		}
 
 	}
@@ -921,6 +1060,11 @@ public class FluxWindowTimeoutStressTest {
 			if (subscriber.concurrentOnComplete.get()) {
 				throw new RuntimeException("concurrentOnComplete");
 			}
+
+			if ( subscriber.onNextCalls.get() + subscriber.onNextDiscarded.get() != 5) {
+				throw new IllegalStateException(parent.signals.toString());
+			}
+
 		}
 	}
 
@@ -988,6 +1132,10 @@ public class FluxWindowTimeoutStressTest {
 
 			if (subscriber.concurrentOnComplete.get()) {
 				throw new RuntimeException("concurrentOnComplete");
+			}
+
+			if ( subscriber.onNextCalls.get() + subscriber.onNextDiscarded.get() != 5) {
+				throw new IllegalStateException(result.r1 + parent.signals.toString());
 			}
 		}
 	}
