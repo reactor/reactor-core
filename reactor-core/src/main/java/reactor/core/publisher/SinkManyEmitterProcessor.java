@@ -29,7 +29,6 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -57,7 +56,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  *
  * @author Stephane Maldini
  */
-final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
+final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 	Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder {
 
 	@SuppressWarnings("rawtypes")
@@ -67,18 +66,18 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 
 	final boolean autoCancel;
 
-	volatile Subscription s;
+	volatile Subscription                                                            s;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Subscription.class,
 					"s");
 
 	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, FluxPublish.PubSubInner[]>
-			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, FluxPublish.PubSubInner[]>
+			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
 
@@ -92,8 +91,8 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 	volatile int wip;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<EmitterProcessor> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "wip");
+	static final AtomicIntegerFieldUpdater<SinkManyEmitterProcessor> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, "wip");
 
 	volatile Queue<T> queue;
 
@@ -104,12 +103,12 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 	volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Throwable> ERROR =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Throwable.class,
 					"error");
 
-	EmitterProcessor(boolean autoCancel, int prefetch) {
+	SinkManyEmitterProcessor(boolean autoCancel, int prefetch) {
 		if (prefetch < 1) {
 			throw new IllegalArgumentException("bufferSize must be strictly positive, " + "was: " + prefetch);
 		}
@@ -282,24 +281,16 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 	}
 
 	/**
-		 * Return true if {@code FluxProcessor<T, T>}
-		 *
-		 * @return true if {@code FluxProcessor<T, T>}
-		 */
-	protected boolean isIdentityProcessor() {
-		return true;
-	}
-
-	/**
 	 * Return the number of parked elements in the emitter backlog.
 	 *
 	 * @return the number of parked elements in the emitter backlog.
 	 */
-	public int getPending() {
+	int getPending() {
 		Queue<T> q = queue;
 		return q != null ? q.size() : 0;
 	}
 
+	//TODO evaluate the use case for Disposable in the context of Sinks
 	@Override
 	public void dispose() {
 		onError(new CancellationException("Disposed"));
@@ -341,36 +332,27 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 	}
 
 	/**
-		 * Current error if any, default to null
-		 *
-		 * @return Current error if any, default to null
-		 */
+	 * Current error if any, default to null
+	 *
+	 * @return Current error if any, default to null
+	 */
 	@Nullable
-	public Throwable getError() {
+	Throwable getError() {
 		return error;
 	}
 
 	/**
 	 * @return true if all subscribers have actually been cancelled and the processor auto shut down
 	 */
-	public boolean isCancelled() {
+	boolean isCancelled() {
 		return Operators.cancelledSubscription() == s;
 	}
 
 	/**
-		 * Return the processor buffer capacity if any or {@link Integer#MAX_VALUE}
-		 *
-		 * @return processor buffer capacity if any or {@link Integer#MAX_VALUE}
-		 */
-	final public int getBufferSize() {
-		return prefetch;
-	}
-
-	/**
-		 * Has this upstream finished or "completed" / "failed" ?
-		 *
-		 * @return has this upstream finished or "completed" / "failed" ?
-		 */
+	 * Has this upstream finished or "completed" / "failed" ?
+	 *
+	 * @return has this upstream finished or "completed" / "failed" ?
+	 */
 	public boolean isTerminated() {
 		return done && getPending() == 0;
 	}
@@ -390,7 +372,7 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 
 		if (key == Attr.TERMINATED) return isTerminated();
 		if (key == Attr.ERROR) return getError();
-		if (key == Attr.CAPACITY) return getBufferSize();
+		if (key == Attr.CAPACITY) return getPrefetch();
 
 		return null;
 	}
@@ -619,20 +601,11 @@ final class EmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
 		}
 	}
 
-	/**
-		 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
-		 *
-		 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
-		 */
-	public long downstreamCount() {
-		return subscribers.length;
-	}
-
 	static final class EmitterInner<T> extends FluxPublish.PubSubInner<T> {
 
-		final EmitterProcessor<T> parent;
+		final SinkManyEmitterProcessor<T> parent;
 
-		EmitterInner(CoreSubscriber<? super T> actual, EmitterProcessor<T> parent) {
+		EmitterInner(CoreSubscriber<? super T> actual, SinkManyEmitterProcessor<T> parent) {
 			super(actual);
 			this.parent = parent;
 		}

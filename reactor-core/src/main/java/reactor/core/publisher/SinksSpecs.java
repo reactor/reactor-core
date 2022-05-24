@@ -224,17 +224,17 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer() {
-			return wrapMany(new EmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE));
+			return wrapMany(new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE));
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize) {
-			return wrapMany(new EmitterProcessor<>(true, bufferSize));
+			return wrapMany(new SinkManyEmitterProcessor<>(true, bufferSize));
 		}
 
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			return wrapMany(new EmitterProcessor<>(autoCancel, bufferSize));
+			return wrapMany(new SinkManyEmitterProcessor<>(autoCancel, bufferSize));
 		}
 
 		@Override
