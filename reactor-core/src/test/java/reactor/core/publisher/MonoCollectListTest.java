@@ -323,9 +323,9 @@ class MonoCollectListTest {
 	// https://github.com/reactor/reactor-core/issues/3052
 	@Test
 	@Tag("slow")
-	@Timeout(30)
+	@Timeout(100)
 	void deadlockCancelOnNext() throws InterruptedException {
-		for (int i = 0; i < 100_000; i++) {
+		for (int i = 0; i < 1_000; i++) {
 			CoreSubscriber<? super List<Integer>> testSubscriber = TestSubscriber.create();
 			MonoCollectList.MonoCollectListSubscriber<Integer> subscriber = new MonoCollectListSubscriber<>(testSubscriber);
 			CountDownLatch latch = new CountDownLatch(2);
