@@ -407,7 +407,7 @@ public class MonoCollectTest {
 	@Tag("slow")
 	@Timeout(30)
 	void deadlockCancelOnNext() throws InterruptedException {
-		for (int i = 0; i < 100_000; i++) {
+		for (int i = 0; i < 1_000; i++) {
 			CoreSubscriber<? super List<Integer>> testSubscriber = TestSubscriber.create();
 			MonoCollect.CollectSubscriber<Integer, ArrayList<Integer>> subscriber = new MonoCollect.CollectSubscriber<>(testSubscriber, ArrayList::add, new ArrayList<>());
 			CountDownLatch latch = new CountDownLatch(2);
