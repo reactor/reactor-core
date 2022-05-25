@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -322,6 +323,7 @@ class MonoCollectListTest {
 	// https://github.com/reactor/reactor-core/issues/3052
 	@Test
 	@Tag("slow")
+	@Timeout(30)
 	void deadlockCancelOnNext() throws InterruptedException {
 		for (int i = 0; i < 100_000; i++) {
 			CoreSubscriber<? super List<Integer>> testSubscriber = TestSubscriber.create();

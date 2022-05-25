@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -142,15 +143,15 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			if (state != CANCELLED) {
 				s.cancel();
 			}
-			synchronized (this) {
-				if (state <= HAS_REQUEST_NO_VALUE) {
+			if (state <= HAS_REQUEST_NO_VALUE) {
+				synchronized (this) {
 					l = list;
 					this.value = null;
 					list = null;
 				}
-				else {
-					l = null;
-				}
+			}
+			else {
+				l = null;
 			}
 			if (l != null) {
 				discard(l);
