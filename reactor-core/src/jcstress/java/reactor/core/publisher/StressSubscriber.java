@@ -71,7 +71,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	public final AtomicInteger onNextDiscarded = new AtomicInteger();
 
-	public final List<T> discardedValues = new ArrayList<>();
+	public final List<T> discardedValues = new CopyOnWriteArrayList<>();
 
 	public final AtomicInteger onErrorCalls = new AtomicInteger();
 

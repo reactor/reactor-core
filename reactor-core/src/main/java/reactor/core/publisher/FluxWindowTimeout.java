@@ -984,7 +984,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			int received = this.received + 1 ;
 			this.received = received;
 
-			this.parent.signals.add(this + " " + this.queue.offer(t) +  " "  + t);
+			this.queue.offer(t);
+//			this.parent.signals.add(this + " " +  +  " "  + t);
 
 			final long previousState;
 			final long nextState;
@@ -1014,7 +1015,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return true;
 				}
 				else {
-					if (queue.poll() != t) {
+					if (this.queue.poll() != t) {
 						// doing extra request since the value is sent event though the
 						// index progress was not committed
 						this.parent.request(1);
@@ -1024,6 +1025,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						return false;
 					}
 				}
+			}
+
+			if (isTimeout(previousState) && isTerminated(previousState)) {
+				// doing extra request since the value being sent is not replenished
+				this.parent.request(1);
 			}
 
 			if (hasSubscriberSet(previousState)) {
@@ -1164,15 +1170,16 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			for (; ; ) {
 				long r = this.requested;
+
 				int e = 0;
 				boolean empty = false;
 				while (e < r) {
 					final T v = q.poll();
 
-					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-drn-" + v);
+//					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-drn-" + v);
 
 					empty = v == null;
-					if (checkTerminated(this.produced + e, a, v)) {
+					if (checkTerminated((this.produced + e), a, v)) {
 						return;
 					}
 
@@ -1182,7 +1189,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 					a.onNext(v);
 
-					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-snt-" + v);
+//					this.parent.signals.offer(this + "-" + Thread.currentThread().getId() + "-snt-" + v);
 
 					e++;
 				}
@@ -1223,8 +1230,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				return true;
 			}
 
+
+			this.parent.signals.offer(this + "-" + Thread.currentThread().getId()  + " " +
+					"amf " + value + "-received:" + received(state) + "-produced:" + totalProduced);
+
 			if (value == null && received(state) <= totalProduced && isTerminated(state)) {
-				clearAndFinalize();
+				if (!markFinalized(state)) {
+					return false;
+				}
 
 				final Throwable e = this.error;
 				if (e != null) {
@@ -1303,6 +1316,20 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 			}
+		}
+
+		boolean markFinalized(long state) {
+			final long nextState = ((state | FINALIZED_STATE) & ~WORK_IN_PROGRESS_MAX) ^ (
+					hasValues(state) ? HAS_VALUES_STATE : 0);
+			if (STATE.compareAndSet(this, state, nextState)) {
+				this.parent.signals.offer(Arrays.toString(new RuntimeException().getStackTrace()));
+				this.parent.signals.offer(this + "-" + Thread.currentThread()
+				                                             .getId() + "-mfi-" + formatState(
+						state) + "-" + formatState(nextState));
+				return true;
+			}
+
+			return false;
 		}
 
 		void clearQueue() {
@@ -1533,7 +1560,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			for (; ; ) {
 				final long state = instance.state;
 
-				if (isCancelled(state)) {
+				if (isFinalized(state) || isTerminated(state)) {
 					return state;
 				}
 

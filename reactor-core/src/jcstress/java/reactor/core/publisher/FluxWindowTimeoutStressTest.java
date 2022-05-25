@@ -918,6 +918,7 @@ public class FluxWindowTimeoutStressTest {
 						+ subscriber2.receivedValues + " " +  subscriber2.discardedValues + " "
 						+ subscriber3.receivedValues + " " +  subscriber3.discardedValues + " "
 						+ subscriber4.receivedValues + " " +  subscriber4.discardedValues + " "
+						+ mainSubscriber.discardedValues
 						+  windowTimeoutSubscriber.signals);
 			}
 
@@ -1136,6 +1137,81 @@ public class FluxWindowTimeoutStressTest {
 
 			if ( subscriber.onNextCalls.get() + subscriber.onNextDiscarded.get() != 5) {
 				throw new IllegalStateException(result.r1 + parent.signals.toString());
+			}
+		}
+	}
+
+
+
+	@JCStressTest
+	@Outcome(id = {"5, 1"}, expect = ACCEPTABLE, desc = "")
+	@State
+	public static class FluxWindowTimoutInnerWindowStressTest3 {
+
+		final VirtualTimeScheduler                                            virtualTimeScheduler =
+				VirtualTimeScheduler.create();
+		final StressSubscriber<Flux<Long>>                                    downstream           =
+				new StressSubscriber<>(0);
+		final StressSubscriber<Long>                                          subscriber           =
+				new StressSubscriber<>(0);
+		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long> parent               =
+				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(downstream,
+						10,
+						10,
+						TimeUnit.SECONDS,
+						virtualTimeScheduler);
+		final StressSubscription<Long>                                        upstream             =
+				new StressSubscription<>(parent);
+		final FluxWindowTimeout.InnerWindow<Long>                             inner                =
+				new FluxWindowTimeout.InnerWindow<>(5, parent, 1, false);
+
+		{
+			parent.onSubscribe(upstream);
+			parent.window = inner;
+			inner.subscribe(subscriber);
+		}
+
+
+		int delivered;
+
+		@Actor
+		public void sendNext() {
+			delivered = inner.sendNext(1L) ? delivered : (delivered + 1) ;
+			delivered = inner.sendNext(2L) ? delivered : (delivered + 1) ;
+			delivered = inner.sendNext(3L) ? delivered : (delivered + 1) ;
+			delivered = inner.sendNext(4L) ? delivered : (delivered + 1) ;
+			delivered = inner.sendNext(5L) ? delivered : (delivered + 1) ;
+		}
+
+		@Actor
+		public void sendRequest() {
+			subscriber.request(1L);
+			subscriber.request(1L);
+			subscriber.request(1L);
+			subscriber.request(1L);
+			subscriber.request(1L);
+		}
+
+		@Actor
+		public void sendComplete() {
+			inner.run();
+		}
+
+		@Arbiter
+		public void arbiter(LL_Result result) {
+			result.r1 = subscriber.onNextCalls.get() + delivered;
+			result.r2 = subscriber.onCompleteCalls.get() + subscriber.onErrorCalls.get() * 2L;;
+
+			if (subscriber.concurrentOnNext.get()) {
+				throw new RuntimeException("concurrentOnNext");
+			}
+
+			if (subscriber.concurrentOnComplete.get()) {
+				throw new RuntimeException("concurrentOnComplete");
+			}
+
+			if (subscriber.onNextCalls.get() + delivered != 5 || subscriber.onCompleteCalls.get() == 0) {
+				throw new IllegalStateException(result + " " + parent.signals.toString());
 			}
 		}
 	}
