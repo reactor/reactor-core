@@ -30,14 +30,11 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
-
-import static reactor.core.Fuseable.ASYNC;
 
 /**
  * @author David Karnok
@@ -749,7 +746,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	static final class InnerWindow<T> extends Flux<T>
-			implements InnerProducer<T>, Fuseable.QueueSubscription<T>, Runnable {
+			implements InnerProducer<T>, Runnable {
 
 		static final Disposable DISPOSED = Disposables.disposed();
 
@@ -778,8 +775,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		CoreSubscriber<? super T> actual;
 
 		Throwable error;
-
-		int mode;
 
 		int received = 0;
 		int produced = 0;
@@ -819,13 +814,12 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (!hasValues(previousState) && isTerminated(previousState)) {
-				if (mode == ASYNC) {
-					this.actual.onComplete();
-					return;
+				final Throwable t = this.error;
+				if (t != null) {
+					actual.onError(t);
+				} else {
+					actual.onComplete();
 				}
-
-				clearAndFinalize();
-				actual.onComplete();
 			}
 		}
 
@@ -836,12 +830,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public void request(long n) {
-			if (this.mode == ASYNC) {
-				//noinspection ConstantConditions
-				this.actual.onNext(null);
-				return;
-			}
-
 			Operators.addCap(REQUESTED, this, n);
 			final long previousState = markHasRequest(this);
 
@@ -898,11 +886,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					}
 
 					if (hasSubscriberSet(state)) {
-						if (this.mode == ASYNC) {
-							this.actual.onComplete();
-							return state;
-						}
-
 						if (hasWorkInProgress(state)) {
 							return state;
 						}
@@ -975,11 +958,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (hasSubscriberSet(previousState)) {
-				if (this.mode == ASYNC) {
-					this.actual.onNext(t);
-					return true;
-				}
-
 				if (hasWorkInProgress(previousState)) {
 					return true;
 				}
@@ -1010,11 +988,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (hasSubscriberSet(previousState)) {
-				if (this.mode == ASYNC) {
-					this.actual.onComplete();
-					return previousState;
-				}
-
 				if (hasWorkInProgress(previousState)) {
 					return previousState;
 				}
@@ -1051,11 +1024,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (hasSubscriberSet(previousState)) {
-				if (this.mode == ASYNC) {
-					this.actual.onError(error);
-					return previousState;
-				}
-
 				if (hasWorkInProgress(previousState)) {
 					return previousState;
 				}
@@ -1082,11 +1050,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (hasSubscriberSet(previousState)) {
-				if (this.mode == ASYNC) {
-					this.actual.onComplete();
-					return previousState;
-				}
-
 				if (hasWorkInProgress(previousState)) {
 					return previousState;
 				}
@@ -1201,35 +1164,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			this.parent.tryCreateNextWindow(this.index);
-		}
-
-		@Override
-		public T poll() {
-			return queue.poll();
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			if ((requestedMode & ASYNC) == ASYNC) {
-				this.mode = ASYNC;
-				return ASYNC;
-			}
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public int size() {
-			return this.queue.size();
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return this.queue.isEmpty();
-		}
-
-		@Override
-		public void clear() {
-			clearAndFinalize();
 		}
 
 		void clearAndFinalize() {
@@ -1535,7 +1469,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				final long nextState =
-						(state | HAS_SUBSCRIBER_SET_STATE) + (isTerminated(state) && !hasValues(state) ? 1 : 0);
+						(state | HAS_SUBSCRIBER_SET_STATE) | (isTerminated(state) && !hasValues(state) ? FINALIZED_STATE : 0);
 				if (STATE.compareAndSet(instance, state, nextState)) {
 					return state;
 				}
