@@ -697,7 +697,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		static <T> long markCancelled(WindowTimeoutWithBackpressureSubscriber<T> instance) {
 			for (;;) {
 				final long previousState = instance.state;
-				if ((isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
+				if ((!hasWorkInProgress(previousState) && isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
 					return previousState;
 				}
 
