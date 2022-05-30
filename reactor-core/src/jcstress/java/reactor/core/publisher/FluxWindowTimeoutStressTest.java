@@ -215,6 +215,7 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"2, 2, 2, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 4, 4, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest1_2 {
 
@@ -487,6 +488,7 @@ public class FluxWindowTimeoutStressTest {
 	@Outcome(id = {"2, 3, 3, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 3, 3, 1, 4"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 3, 3, 0, 4"}, expect = ACCEPTABLE, desc = "")
 	@State
 	public static class FluxWindowTimoutStressTest2_0 {
 
