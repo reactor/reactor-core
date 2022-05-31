@@ -164,14 +164,7 @@ task japicmp(type: JapicmpTask) {
 		"reactor.core.publisher.FluxExtensionsKt",
 		"reactor.core.publisher.MonoExtensionsKt",
 		"reactor.core.publisher.MonoWhenFunctionsKt",
-		"reactor.util.function.TupleExtensionsKt",
-		"reactor.core.publisher.DirectProcessor",
-		"reactor.core.publisher.DirectInnerContainer",
-		"reactor.core.publisher.FluxProcessor",
-		"reactor.core.publisher.EmitterProcessor",
-		"reactor.core.publisher.MonoProcessor",
-		"reactor.core.publisher.ReplayProcessor",
-		"reactor.core.publisher.UnicastProcessor"
+		"reactor.util.function.TupleExtensionsKt"
 	]
 	methodExcludes = [
 		'reactor.core.publisher.Mono#doAfterSuccessOrError(java.util.function.BiConsumer)',
@@ -196,8 +189,7 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.publisher.MonoSink#contextView()',
 		'reactor.core.publisher.SynchronousSink#contextView()',
 		'reactor.core.publisher.Sinks#unsafe()',
-		'reactor.core.Scannable#tagsDeduplicated()',
-		"reactor.core.publisher.Mono#toProcessor()"
+		'reactor.core.Scannable#tagsDeduplicated()'
 	]
 }
 

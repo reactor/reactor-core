@@ -22,6 +22,7 @@ import java.util.Queue;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;

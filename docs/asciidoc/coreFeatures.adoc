@@ -1099,6 +1099,6 @@ converted.subscribe(
 ----
 ====
 
-[[sinks]]
-== Sinks
+[[processors]]
+== Processors and Sinks
 include::processors.adoc[leveloffset=3]

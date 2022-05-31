@@ -30,6 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,6 +84,16 @@ public class ReactorDebugAgentTest {
 
 		assertThat(Scannable.from(flux).stepName())
 				.startsWith("GroupedFlux.map ⇢ at reactor.tools.agent.ReactorDebugAgentTest.shouldWorkWithGroupedFlux(ReactorDebugAgentTest.java:" + (baseline + 1));
+	}
+
+	@Test
+	@Deprecated
+	void shouldIgnoreMonoProcessor() {
+		Mono<Integer> mono = Mono.just(1);
+		MonoProcessor<Integer> monoProcessor = mono.toProcessor();
+		assertThat(Scannable.from(monoProcessor).stepName())
+			.doesNotContain(" ⇢ at")
+			.isEqualTo("nextProcessor");
 	}
 
 	@Test
