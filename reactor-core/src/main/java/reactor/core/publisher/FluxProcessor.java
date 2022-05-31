@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import static reactor.core.publisher.Sinks.Many;
  * @param <IN> the input value type
  * @param <OUT> the output value type
  * @deprecated Processors will be removed in 3.5. Prefer using {@link Sinks.Many} instead,
- * or see https://github.com/reactor/reactor-core/issues/2431 for alternatives
+ *  * or see https://github.com/reactor/reactor-core/issues/2431 for alternatives
  */
 @Deprecated
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>

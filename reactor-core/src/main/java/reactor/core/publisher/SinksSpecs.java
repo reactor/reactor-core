@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,11 @@ import reactor.core.publisher.Sinks.Empty;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.publisher.Sinks.One;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.concurrent.Queues;
 
 final class SinksSpecs {
 
-	static final Sinks.UnsafeSpec  UNSAFE_ROOT_SPEC = new UnsafeSpecImpl();
-	static final DefaultSinksSpecs DEFAULT_SINKS    = new DefaultSinksSpecs();
+	static final Sinks.RootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
+	static final Sinks.RootSpec DEFAULT_ROOT_SPEC = new RootSpecImpl(true);
 
 	abstract static class AbstractSerializedSink {
 
@@ -62,148 +61,53 @@ final class SinksSpecs {
 		}
 	}
 
+	static final class RootSpecImpl implements Sinks.RootSpec,
+	                                     Sinks.ManySpec,
+	                                     Sinks.MulticastSpec,
+	                                     Sinks.MulticastReplaySpec {
 
-	static final class UnsafeSpecImpl
-		implements Sinks.UnsafeSpec, Sinks.ManyUnsafeSpec, Sinks.MulticastUnsafeSpec, Sinks.MulticastReplaySpec {
+		final boolean serialized;
+		final Sinks.UnicastSpec unicastSpec; //needed because UnicastSpec method names overlap with MulticastSpec
 
-		final Sinks.UnicastSpec unicastSpec;
+		RootSpecImpl(boolean serialized) {
+			this.serialized = serialized;
+			//there will only be as many instances of UnicastSpecImpl as there are RootSpecImpl instances (2)
+			this.unicastSpec = new UnicastSpecImpl(serialized);
+		}
 
-		UnsafeSpecImpl() {
-			this.unicastSpec = new UnicastSpecImpl(false);
+		<T, EMPTY extends Empty<T> & ContextHolder> Empty<T> wrapEmpty(EMPTY original) {
+			if (serialized) {
+				return new SinkEmptySerialized<>(original, original);
+			}
+			return original;
+		}
+
+		<T, ONE extends One<T> & ContextHolder> One<T> wrapOne(ONE original) {
+			if (serialized) {
+				return new SinkOneSerialized<>(original, original);
+			}
+			return original;
+		}
+
+		<T, MANY extends Many<T> & ContextHolder> Many<T> wrapMany(MANY original) {
+			if (serialized) {
+				return new SinkManySerialized<>(original, original);
+			}
+			return original;
+		}
+
+		@Override
+		public Sinks.ManySpec many() {
+			return this;
 		}
 
 		@Override
 		public <T> Empty<T> empty() {
-			return new SinkEmptyMulticast<>();
+			return wrapEmpty(new SinkEmptyMulticast<>());
 		}
 
 		@Override
 		public <T> One<T> one() {
-			return new SinkOneMulticast<>();
-		}
-
-		@Override
-		public Sinks.ManyUnsafeSpec many() {
-			return this;
-		}
-
-		@Override
-		public Sinks.UnicastSpec unicast() {
-			return this.unicastSpec;
-		}
-
-		@Override
-		public Sinks.MulticastReplaySpec replay() {
-			return this;
-		}
-
-		@Override
-		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer() {
-			return new EmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
-		}
-
-		@Override
-		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer(int bufferSize) {
-			return new EmitterProcessor<>(true, bufferSize);
-		}
-
-		@Override
-		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			return new EmitterProcessor<>(autoCancel, bufferSize);
-		}
-
-		@Override
-		public Sinks.MulticastUnsafeSpec multicast() {
-			return this;
-		}
-
-		@Override
-		public <T> Many<T> directAllOrNothing() {
-			return new SinkManyBestEffort<>(true);
-		}
-
-		@Override
-		public <T> Many<T> directBestEffort() {
-			return new SinkManyBestEffort<>(false);
-		}
-
-		@Override
-		public <T> Many<T> all() {
-			return ReplayProcessor.create();
-		}
-
-		@Override
-		public <T> Many<T> all(int batchSize) {
-			return ReplayProcessor.create(batchSize);
-		}
-
-		@Override
-		public <T> Many<T> latest() {
-			return ReplayProcessor.cacheLast();
-		}
-
-		@Override
-		public <T> Many<T> latestOrDefault(T value) {
-			return ReplayProcessor.cacheLastOrDefault(value);
-		}
-
-		@Override
-		public <T> Many<T> limit(int historySize) {
-			return ReplayProcessor.create(historySize);
-		}
-
-		@Override
-		public <T> Many<T> limit(Duration maxAge) {
-			return ReplayProcessor.createTimeout(maxAge);
-		}
-
-		@Override
-		public <T> Many<T> limit(Duration maxAge, Scheduler scheduler) {
-			return ReplayProcessor.createTimeout(maxAge, scheduler);
-		}
-
-		@Override
-		public <T> Many<T> limit(int historySize, Duration maxAge) {
-			return ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
-		}
-
-		@Override
-		public <T> Many<T> limit(int historySize, Duration maxAge, Scheduler scheduler) {
-			return ReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
-		}
-	}
-
-	//Note: RootSpec is now reserved for Sinks.unsafe()
-	static final class DefaultSinksSpecs implements Sinks.ManySpec, Sinks.MulticastSpec, Sinks.MulticastReplaySpec {
-
-		final Sinks.UnicastSpec unicastSpec; //needed because UnicastSpec method names overlap with MulticastSpec
-
-		DefaultSinksSpecs() {
-			//there will only one instance of serialized UnicastSpecImpl as there is only one instance of  SafeRootSpecImpl
-			this.unicastSpec = new UnicastSpecImpl(true);
-		}
-
-		<T, EMPTY extends Empty<T> & ContextHolder> Empty<T> wrapEmpty(EMPTY original) {
-			return new SinkEmptySerialized<>(original, original);
-		}
-
-		<T, ONE extends One<T> & ContextHolder> One<T> wrapOne(ONE original) {
-			return new SinkOneSerialized<>(original, original);
-		}
-
-		<T, MANY extends Many<T> & ContextHolder> Many<T> wrapMany(MANY original) {
-			return new SinkManySerialized<>(original, original);
-		}
-
-		Sinks.ManySpec many() {
-			return this;
-		}
-
-		<T> Empty<T> empty() {
-			return wrapEmpty(new SinkEmptyMulticast<>());
-		}
-
-		<T> One<T> one() {
 			return wrapOne(new SinkOneMulticast<>());
 		}
 
@@ -372,3 +276,4 @@ final class SinksSpecs {
 		}
 	}
 }
+
