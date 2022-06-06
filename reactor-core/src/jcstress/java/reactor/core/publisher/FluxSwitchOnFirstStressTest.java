@@ -30,11 +30,13 @@ import org.openjdk.jcstress.infra.results.LLLLL_Result;
 import org.openjdk.jcstress.infra.results.LLLL_Result;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.util.FastLogger;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
-import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE_INTERESTING;
 
 public abstract class FluxSwitchOnFirstStressTest {
+
+	final FastLogger fastLogger = new FastLogger(this.getClass().getName());
 
 	final StressSubscription<String> inboundSubscription = new StressSubscription<>();
 	final StressSubscriber<String>   inboundSubscriber   = new StressSubscriber<>(0);
@@ -45,7 +47,8 @@ public abstract class FluxSwitchOnFirstStressTest {
 	final FluxSwitchOnFirst.SwitchOnFirstMain<String, String> main =
 			new FluxSwitchOnFirst.SwitchOnFirstMain<String, String>(outboundSubscriber,
 					this::switchOnFirst,
-					false);
+					false,
+					new StateLogger(fastLogger));
 
 	{
 		inboundSubscription.subscribe(main);
