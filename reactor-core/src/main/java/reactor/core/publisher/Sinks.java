@@ -22,7 +22,6 @@ import java.util.Queue;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
-import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -95,16 +94,16 @@ public final class Sinks {
 	}
 
 	/**
-	 * Return a {@link UnsafeSpec root spec} for more advanced use cases such as building operators.
+	 * Return a {@link RootSpec root spec} for more advanced use cases such as building operators.
 	 * Unsafe {@link Sinks.Many}, {@link Sinks.One} and {@link Sinks.Empty} are not serialized nor thread safe,
 	 * which implies they MUST be externally synchronized so as to respect the Reactive Streams specification.
 	 * This can typically be the case when the sinks are being called from within a Reactive Streams-compliant context,
 	 * like a {@link Subscriber} or an operator. In turn, this allows the sinks to have less overhead, since they
 	 * don't care to detect concurrent access anymore.
 	 *
-	 * @return {@link UnsafeSpec}
+	 * @return {@link RootSpec}
 	 */
-	public static UnsafeSpec unsafe() {
+	public static RootSpec unsafe() {
 		return SinksSpecs.UNSAFE_ROOT_SPEC;
 	}
 
@@ -291,6 +290,7 @@ public final class Sinks {
 		boolean onEmitFailure(SignalType signalType, EmitResult emitResult);
 	}
 
+	//implementation note: this should now only be implemented by the Sinks.unsafe() path
 	/**
 	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
 	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many}.
@@ -328,41 +328,16 @@ public final class Sinks {
 		 * @return {@link ManySpec}
 		 */
 		ManySpec many();
-	}
-
-	/**
-	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
-	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many}, but without the
-	 * guards against concurrent access. These raw sinks need more advanced understanding
-	 * of the Reactive Streams specification in order to be correctly used.
-	 * <p>
-	 * Some flavors of {@link Sinks.Many} are {@link ManyWithUpstream} which additionally
-	 * support being subscribed to an upstream {@link Publisher}, at most once.
-	 * Please note that when this is done, one MUST stop using emit/tryEmit APIs, reserving signal
-	 * creation to be the sole responsibility of the upstream {@link Publisher}.
-	 * The list of such flavors is as follows:
-	 * <ul>
-	 *     <li>
-	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer() onBackpressureBuffer()}
-	 *     </li>
-	 *     <li>
-	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer(int) onBackpressureBuffer(int)}
-	 *     </li>
-	 *     <li>
-	 *         {@link #many()}.{@link ManyUnsafeSpec#multicast() multicast()}.{@link MulticastUnsafeSpec#onBackpressureBuffer(int, boolean) onBackpressureBuffer(int, boolean)}
-	 *     </li>
-	 * </ul>
-	 */
-	public interface UnsafeSpec extends RootSpec {
 
 		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * Some flavors return a {@link ManyWithUpstream}, supporting being subscribed to an upstream {@link Publisher}.
+		 * Help building {@link Sinks.ManyWithUpstream} sinks that can also be {@link ManyWithUpstream#subscribeTo(Publisher) subscribed to}
+		 * an upstream {@link Publisher}. This is an advanced use case, see {@link ManyWithUpstream#subscribeTo(Publisher)}.
+		 *
+		 * @return a {@link ManyWithUpstreamUnsafeSpec}
 		 */
-		@Override
-		ManyUnsafeSpec many();
+		ManyWithUpstreamUnsafeSpec manyWithUpstream();
 	}
+
 	/**
 	 * Provides {@link Sinks.Many} specs for sinks which can emit multiple elements
 	 */
@@ -391,31 +366,59 @@ public final class Sinks {
 	}
 
 	/**
-	 * Provides multicast : 1 sink, N {@link Subscriber}.
+	 * Instead of {@link Sinks#unsafe() unsafe} flavors of {@link Sinks.Many}, this spec provides {@link ManyWithUpstream}
+	 * implementations. These additionally support being subscribed to an upstream {@link Publisher}, at most once.
+	 * Please note that when this is done, one MUST stop using emit/tryEmit APIs, reserving signal creation to be the
+	 * sole responsibility of the upstream {@link Publisher}.
 	 * <p>
-	 * This {@link MulticastSpec} provides {@link Sinks#unsafe() unsafe} flavors, including some {@link ManyWithUpstream} implementations.
+	 * As the number of such implementations is deliberately kept low, this spec doesn't further distinguish between
+	 * multicast/unicast/replay categories other than in method naming.
 	 */
-	public interface MulticastUnsafeSpec extends  MulticastSpec {
+	public interface ManyWithUpstreamUnsafeSpec {
+		/**
+		 * A {@link Sinks.ManyWithUpstream} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
+		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
+		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is greater than {@link Queues#SMALL_BUFFER_SIZE}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
+		 * 	        <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 * 	   </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
+		 * </ul>
+		 * <p>
+		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
+		 */
+		<T> ManyWithUpstream<T> multicastOnBackpressureBuffer();
 
-		@Override
-		<T> ManyWithUpstream<T> onBackpressureBuffer();
-
-		@Override
-		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize);
-
-		@Override
-		<T> ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
-	}
-
-	/**
-	 *  Provides {@link Sinks.Many} specs for sinks which can emit multiple elements.
-	 *  <p>
-	 *  This {@link ManySpec} provides {@link Sinks#unsafe() unsafe} flavors, including some {@link ManyWithUpstream} implementations.
-	 */
-	public interface ManyUnsafeSpec extends ManySpec {
-
-		@Override
-		MulticastUnsafeSpec multicast();
+		/**
+		 * A {@link Sinks.ManyWithUpstream} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
+		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
+		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
+		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 *     </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
+		 * </ul>
+		 * <p>
+		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
+		 *
+		 * @param bufferSize the maximum queue size
+		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
+		 */
+		<T> ManyWithUpstream<T> multicastOnBackpressureBuffer(int bufferSize, boolean autoCancel);
 	}
 
 	/**

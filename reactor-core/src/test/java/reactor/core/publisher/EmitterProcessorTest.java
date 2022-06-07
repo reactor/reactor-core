@@ -23,12 +23,10 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.assertj.core.data.Percentage;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -48,7 +46,6 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.subscriber.TestSubscriber;
-import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -70,8 +67,8 @@ public class EmitterProcessorTest {
 	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
-	void smokeTestManySubscriber() {
-		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+	void smokeTestManyWithUpstream() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().manyWithUpstream().multicastOnBackpressureBuffer();
 		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
 		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
 		final Flux<Integer> upstream = Flux.range(1, 10);
@@ -102,7 +99,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	void smokeTestSubscribeAndDispose() {
-		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().manyWithUpstream().multicastOnBackpressureBuffer();
 		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
 		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
 		final Flux<Integer> upstream = Flux.never();
@@ -130,7 +127,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	void subscribeToUpstreamTwiceSkipsSecondSubscription() {
-		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().manyWithUpstream().multicastOnBackpressureBuffer(123, true);
 		final TestPublisher<Integer> upstream1 = TestPublisher.create();
 		final TestPublisher<Integer> upstream2 = TestPublisher.create();
 
