@@ -81,9 +81,9 @@ class QueueSubscriptionTest {
 				})
 		.withMessage("\n" +
 			"Expecting actual:\n" +
-			"  \"foo\"\n" +
-			"and actual:\n" +
 			"  ThisIsNotAQueue\n" +
+			"and:\n" +
+			"  \"foo\"\n" +
 			"to refer to the same object");
 	}
 
