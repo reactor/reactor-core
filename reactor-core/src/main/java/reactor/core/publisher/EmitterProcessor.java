@@ -29,7 +29,6 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -59,8 +58,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks} through
  * variations of {@link Sinks.MulticastSpec#onBackpressureBuffer() Sinks.many().multicast().onBackpressureBuffer()}.
  * If you really need the subscribe-to-upstream functionality of a {@link org.reactivestreams.Processor}, switch
- * to {@link Sinks.ManyWithUpstream} with {@link Sinks#unsafe()} variants of
- * {@link Sinks.MulticastUnsafeSpec#onBackpressureBuffer() Sinks.unsafe().many().multicast().onBackpressureBuffer()}.
+ * to {@link Sinks.ManyWithUpstream} with {@link Sinks#unsafe()} variants of {@link Sinks.RootSpec#manyWithUpstream() Sinks.unsafe().manyWithUpstream()}.
  * <p/>This processor was blocking in {@link EmitterProcessor#onNext(Object)}. This behaviour can be implemented with the {@link Sinks} API by calling
  * {@link Sinks.Many#tryEmitNext(Object)} and retrying, e.g.:
  * <pre>{@code while (sink.tryEmitNext(v).hasFailed()) {
