@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2573,9 +2573,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoDoFinallyFuseable<>(this, onFinally));
-		}
 		return onAssembly(new MonoDoFinally<>(this, onFinally));
 	}
 

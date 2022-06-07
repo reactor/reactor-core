@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,17 +45,7 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 	final Consumer<SignalType> onFinally;
 
 	@SuppressWarnings("unchecked")
-	static <T> CoreSubscriber<T> createSubscriber(
-			CoreSubscriber<? super T> s, Consumer<SignalType> onFinally,
-			boolean fuseable) {
-
-		if (fuseable) {
-			if(s instanceof ConditionalSubscriber) {
-				return new DoFinallyFuseableConditionalSubscriber<>(
-						(ConditionalSubscriber<?	super T>) s, onFinally);
-			}
-			return new DoFinallyFuseableSubscriber<>(s, onFinally);
-		}
+	static <T> CoreSubscriber<T> createSubscriber(CoreSubscriber<? super T> s, Consumer<SignalType> onFinally) {
 
 		if (s instanceof ConditionalSubscriber) {
 			return new DoFinallyConditionalSubscriber<>((ConditionalSubscriber<? super T>) s, onFinally);
@@ -70,7 +60,7 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return createSubscriber(actual, onFinally, false);
+		return createSubscriber(actual, onFinally);
 	}
 
 	@Override
@@ -87,14 +77,11 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 
 		volatile int once;
 
+		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<DoFinallySubscriber> ONCE =
 			AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "once");
 
-		QueueSubscription<T> qs;
-
 		Subscription s;
-
-		boolean syncFused;
 
 		DoFinallySubscriber(CoreSubscriber<? super T> actual, Consumer<SignalType> onFinally) {
 			this.actual = actual;
@@ -112,14 +99,10 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				if (s instanceof QueueSubscription) {
-					this.qs = (QueueSubscription<T>)s;
-				}
 
 				actual.onSubscribe(this);
 			}
@@ -175,76 +158,10 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 
 	}
 
-	static class DoFinallyFuseableSubscriber<T> extends DoFinallySubscriber<T>
-		implements Fuseable, QueueSubscription<T> {
-
-		DoFinallyFuseableSubscriber(CoreSubscriber<? super T> actual, Consumer<SignalType> onFinally) {
-			super(actual, onFinally);
-		}
-
-		@Override
-		public int requestFusion(int mode) {
-			QueueSubscription<T> qs = this.qs;
-			if (qs != null && (mode & Fuseable.THREAD_BARRIER) == 0) {
-				int m = qs.requestFusion(mode);
-				if (m != Fuseable.NONE) {
-					syncFused = m == Fuseable.SYNC;
-				}
-				return m;
-			}
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public void clear() {
-			if (qs != null) {
-				qs.clear();
-			}
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return qs == null || qs.isEmpty();
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			if (qs == null) {
-				return null;
-			}
-			T v = qs.poll();
-			if (v == null && syncFused) {
-				runFinally(SignalType.ON_COMPLETE);
-			}
-			return v;
-		}
-
-		@Override
-		public int size() {
-			return qs == null ? 0 : qs.size();
-		}
-	}
-
 	static final class DoFinallyConditionalSubscriber<T> extends DoFinallySubscriber<T>
 			implements ConditionalSubscriber<T> {
 
 		DoFinallyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Consumer<SignalType> onFinally) {
-			super(actual, onFinally);
-		}
-
-		@Override
-		@SuppressWarnings("unchecked")
-		public boolean tryOnNext(T t) {
-			return ((ConditionalSubscriber<? super T>)actual).tryOnNext(t);
-		}
-	}
-
-	static final class DoFinallyFuseableConditionalSubscriber<T> extends DoFinallyFuseableSubscriber<T>
-		implements ConditionalSubscriber<T> {
-
-		DoFinallyFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				Consumer<SignalType> onFinally) {
 			super(actual, onFinally);
 		}
