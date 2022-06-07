@@ -64,8 +64,8 @@ class SinkManyEmitterProcessorTest {
 	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	@Test
-	void smokeTestManySubscriber() {
-		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+	void smokeTestManyWithUpstream() {
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().manyWithUpstream().multicastOnBackpressureBuffer();
 		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
 		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
 		final Flux<Integer> upstream = Flux.range(1, 10);
@@ -96,7 +96,7 @@ class SinkManyEmitterProcessorTest {
 
 	@Test
 	void smokeTestSubscribeAndDispose() {
-		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer();
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().manyWithUpstream().multicastOnBackpressureBuffer();
 		final TestSubscriber<Integer> testSubscriber1 = TestSubscriber.create();
 		final TestSubscriber<Integer> testSubscriber2 = TestSubscriber.create();
 		final Flux<Integer> upstream = Flux.never();
@@ -124,7 +124,7 @@ class SinkManyEmitterProcessorTest {
 
 	@Test
 	void subscribeToUpstreamTwiceSkipsSecondSubscription() {
-		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().many().multicast().onBackpressureBuffer(123);
+		final Sinks.ManyWithUpstream<Integer> adapter = Sinks.unsafe().manyWithUpstream().multicastOnBackpressureBuffer(123, true);
 		final TestPublisher<Integer> upstream1 = TestPublisher.create();
 		final TestPublisher<Integer> upstream2 = TestPublisher.create();
 

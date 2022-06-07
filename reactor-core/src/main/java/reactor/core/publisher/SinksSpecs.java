@@ -30,7 +30,7 @@ import reactor.util.concurrent.Queues;
 
 final class SinksSpecs {
 
-	static final Sinks.UnsafeSpec  UNSAFE_ROOT_SPEC = new UnsafeSpecImpl();
+	static final Sinks.RootSpec  UNSAFE_ROOT_SPEC = new UnsafeSpecImpl();
 	static final DefaultSinksSpecs DEFAULT_SINKS    = new DefaultSinksSpecs();
 
 	abstract static class AbstractSerializedSink {
@@ -64,7 +64,7 @@ final class SinksSpecs {
 
 
 	static final class UnsafeSpecImpl
-		implements Sinks.UnsafeSpec, Sinks.ManyUnsafeSpec, Sinks.MulticastUnsafeSpec, Sinks.MulticastReplaySpec {
+		implements Sinks.RootSpec, Sinks.ManySpec, Sinks.ManyWithUpstreamUnsafeSpec, Sinks.MulticastSpec, Sinks.MulticastReplaySpec {
 
 		final Sinks.UnicastSpec unicastSpec;
 
@@ -83,7 +83,7 @@ final class SinksSpecs {
 		}
 
 		@Override
-		public Sinks.ManyUnsafeSpec many() {
+		public Sinks.ManySpec many() {
 			return this;
 		}
 
@@ -93,28 +93,33 @@ final class SinksSpecs {
 		}
 
 		@Override
+		public Sinks.MulticastSpec multicast() {
+			return this;
+		}
+
+		@Override
 		public Sinks.MulticastReplaySpec replay() {
 			return this;
 		}
 
 		@Override
-		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer() {
+		public Sinks.ManyWithUpstreamUnsafeSpec manyWithUpstream() {
+			return this;
+		}
+
+		@Override
+		public <T> Sinks.Many<T> onBackpressureBuffer() {
 			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
 		}
 
 		@Override
-		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer(int bufferSize) {
+		public <T> Sinks.Many<T> onBackpressureBuffer(int bufferSize) {
 			return new SinkManyEmitterProcessor<>(true, bufferSize);
 		}
 
 		@Override
-		public <T> Sinks.ManyWithUpstream<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
+		public <T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
 			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize);
-		}
-
-		@Override
-		public Sinks.MulticastUnsafeSpec multicast() {
-			return this;
 		}
 
 		@Override
@@ -170,6 +175,16 @@ final class SinksSpecs {
 		@Override
 		public <T> Many<T> limit(int historySize, Duration maxAge, Scheduler scheduler) {
 			return SinkManyReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
+		}
+
+		@Override
+		public <T> Sinks.ManyWithUpstream<T> multicastOnBackpressureBuffer() {
+			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
+		}
+
+		@Override
+		public <T> Sinks.ManyWithUpstream<T> multicastOnBackpressureBuffer(int bufferSize, boolean autoCancel) {
+			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize);
 		}
 	}
 
