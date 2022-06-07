@@ -14,7 +14,7 @@ reactiveStreams = "1.0.3"
 
 [libraries]
 archUnit = "com.tngtech.archunit:archunit:0.23.1"
-assertj = "org.assertj:assertj-core:3.22.0"
+assertj = "org.assertj:assertj-core:3.23.1"
 awaitility = "org.awaitility:awaitility:4.2.0"
 blockhound = "io.projectreactor.tools:blockhound:1.0.6.RELEASE"
 byteBuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
@@ -29,7 +29,7 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer = "io.micrometer:micrometer-core:1.3.0"
-mockito = "org.mockito:mockito-core:4.5.1"
+mockito = "org.mockito:mockito-core:4.6.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
@@ -39,15 +39,15 @@ testNg = "org.testng:testng:7.5"
 throwingFunction = "com.pivovarit:throwing-function:1.5.1"
 
 [plugins]
-artifactory = { id = "com.jfrog.artifactory", version = "4.28.2" }
+artifactory = { id = "com.jfrog.artifactory", version = "4.28.3" }
 asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" }
 asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
-bnd = { id = "biz.aQute.bnd.builder", version = "6.2.0" }
+bnd = { id = "biz.aQute.bnd.builder", version = "6.3.0" }
 download = { id = "de.undercouch.download", version = "5.1.0" }
 japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.0" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.13" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.10" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
-spotless = { id = "com.diffplug.spotless", version = "6.5.2" }
+spotless = { id = "com.diffplug.spotless", version = "6.7.0" }
 testsets = { id = "org.unbroken-dome.test-sets", version = "4.0.0" }
