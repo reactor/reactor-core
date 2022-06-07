@@ -10,7 +10,7 @@ bytebuddy = "1.12.10"
 jmh = "1.35"
 junit = "5.8.2"
 micrometer = "1.10.0-M1"
-reactiveStreams = "1.0.3"
+reactiveStreams = "1.0.4"
 
 [libraries]
 archUnit = "com.tngtech.archunit:archunit:0.23.1"
