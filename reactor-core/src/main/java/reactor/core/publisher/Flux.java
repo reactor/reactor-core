@@ -4798,9 +4798,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxDoFinallyFuseable<>(this, onFinally));
-		}
 		return onAssembly(new FluxDoFinally<>(this, onFinally));
 	}
 

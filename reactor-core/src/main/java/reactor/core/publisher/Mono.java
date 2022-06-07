@@ -2517,9 +2517,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoDoFinallyFuseable<>(this, onFinally));
-		}
 		return onAssembly(new MonoDoFinally<>(this, onFinally));
 	}
 

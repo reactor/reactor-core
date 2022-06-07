@@ -30,12 +30,12 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static reactor.core.Fuseable.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
@@ -108,70 +108,6 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		                        .hide()
 		                        .doFinally(this))
 		            .expectNoFusionSupport()
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void syncFused() {
-		StepVerifier.create(Flux.range(1, 5).doFinally(this))
-		            .expectFusion(SYNC)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void syncFusedThreadBarrier() {
-		StepVerifier.create(Flux.range(1, 5).doFinally(this))
-		            .expectFusion(SYNC | THREAD_BARRIER , NONE)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void asyncFused() {
-		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1, FAIL_FAST);
-		up.emitNext(2, FAIL_FAST);
-		up.emitNext(3, FAIL_FAST);
-		up.emitNext(4, FAIL_FAST);
-		up.emitNext(5, FAIL_FAST);
-		up.emitComplete(FAIL_FAST);
-
-		StepVerifier.create(up.asFlux().doFinally(this))
-		            .expectFusion(ASYNC)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void asyncFusedThreadBarrier() {
-		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1, FAIL_FAST);
-		up.emitNext(2, FAIL_FAST);
-		up.emitNext(3, FAIL_FAST);
-		up.emitNext(4, FAIL_FAST);
-		up.emitNext(5, FAIL_FAST);
-		up.emitComplete(FAIL_FAST);
-
-		StepVerifier.create(up.asFlux().doFinally(this))
-		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
 		            .verify();
@@ -255,76 +191,6 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	}
 
 	@Test
-	public void syncFusedConditional() {
-		StepVerifier.create(Flux.range(1, 5)
-		                        .doFinally(this)
-		                        .filter(i -> true))
-		            .expectFusion(SYNC)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void syncFusedThreadBarrierConditional() {
-		StepVerifier.create(Flux.range(1, 5)
-		                        .doFinally(this)
-		                        .filter(i -> true))
-		            .expectFusion(SYNC | THREAD_BARRIER, NONE)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void asyncFusedConditional() {
-		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1, FAIL_FAST);
-		up.emitNext(2, FAIL_FAST);
-		up.emitNext(3, FAIL_FAST);
-		up.emitNext(4, FAIL_FAST);
-		up.emitNext(5, FAIL_FAST);
-		up.emitComplete(FAIL_FAST);
-
-		StepVerifier.create(up.asFlux().doFinally(this)
-		                      .filter(i -> true))
-		            .expectFusion(ASYNC)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
-	public void asyncFusedThreadBarrierConditional() {
-		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1, FAIL_FAST);
-		up.emitNext(2, FAIL_FAST);
-		up.emitNext(3, FAIL_FAST);
-		up.emitNext(4, FAIL_FAST);
-		up.emitNext(5, FAIL_FAST);
-		up.emitComplete(FAIL_FAST);
-
-		StepVerifier.create(up.asFlux().doFinally(this)
-		                      .filter(i -> true))
-		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(calls).isEqualTo(1);
-		assertThat(signalType).isEqualTo(SignalType.ON_COMPLETE);
-	}
-
-	@Test
 	public void nullCallback() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
 			Flux.just(1).doFinally(null);
@@ -385,16 +251,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxDoFinally test = new FluxDoFinally<>(parent, v -> {});
-
-		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-	}
-
-	@Test
-	public void scanFuseableOperator(){
-		Flux<Integer> parent = Flux.just(1);
-		FluxDoFinallyFuseable<Integer> test = new FluxDoFinallyFuseable<>(parent, s -> {});
+		FluxDoFinally<Integer> test = new FluxDoFinally<>(parent, v -> {});
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -522,5 +379,24 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	private Boolean throwError(Boolean x) {
 		throw new IllegalStateException("boom");
+	}
+
+
+	// loosely related to https://github.com/reactor/reactor-core/issues/3044
+	@Test
+	void noFusionAndCorrectOrderOfOnErrorThenFinallySignals() {
+		List<String> signals = new ArrayList<>();
+		StepVerifier.create(Flux.just("a", "b", "c")
+				.collectList()
+				.map(l -> 100 / (l.size() - 3))
+				.doFinally(sig -> signals.add("doFinally(" + sig.toString() + ")"))
+				.doOnError(e -> signals.add("doOnError")) //ensuring that the finally is invoked after propagation of onError
+			)
+			.expectNoFusionSupport()
+			.expectErrorSatisfies(e -> assertThat(e).isInstanceOf(ArithmeticException.class)
+				.hasMessage("/ by zero"))
+			.verify();
+
+		assertThat(signals).containsExactly("doOnError", "doFinally(onError)");
 	}
 }
