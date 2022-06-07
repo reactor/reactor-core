@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -27,6 +29,7 @@ import java.util.function.Function;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -36,6 +39,7 @@ import reactor.core.publisher.MonoCollectList.MonoCollectListSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -314,6 +318,52 @@ class MonoCollectListTest {
 			softly.assertThat(cancel1).as("cancel1").isTrue();
 			softly.assertThat(cancel2).as("cancel2").isTrue();
 		});
+	}
+
+	// https://github.com/reactor/reactor-core/issues/3052
+	@Test
+	@Tag("slow")
+	@Timeout(30)
+	void deadlockCancelOnNext() throws InterruptedException {
+		for (int i = 0; i < 1_000; i++) {
+			CoreSubscriber<? super List<Integer>> testSubscriber = TestSubscriber.create();
+			MonoCollectList.MonoCollectListSubscriber<Integer> subscriber = new MonoCollectListSubscriber<>(testSubscriber);
+			CountDownLatch latch = new CountDownLatch(2);
+			Subscription synchronizedSubscription = new Subscription() {
+
+				boolean cancelled;
+
+				public void request(long n) {
+					if (n != 123) return; //hack to only consider the request from RaceTestUtils
+					synchronized (this) {
+						if (cancelled) {
+							return;
+						}
+						subscriber.onNext(1);
+					}
+				}
+
+				@Override
+				public void cancel() {
+					synchronized (this) {
+						this.cancelled = true;
+					}
+				}
+			};
+			subscriber.onSubscribe(synchronizedSubscription);
+
+			RaceTestUtils.race(
+				() -> {
+					synchronizedSubscription.request(123);
+					latch.countDown();
+				},
+				() -> {
+					subscriber.cancel();
+					latch.countDown();
+				}
+			);
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).as("latch").isTrue();
+		}
 	}
 
 }

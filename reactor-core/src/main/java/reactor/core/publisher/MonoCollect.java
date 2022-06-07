@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -175,19 +176,19 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		public void cancel() {
 			int state;
 			R c;
-			synchronized (this) {
-				state = STATE.getAndSet(this, CANCELLED);
-				if (state != CANCELLED) {
-					s.cancel();
-				}
-				if (state <= HAS_REQUEST_NO_VALUE) {
+			state = STATE.getAndSet(this, CANCELLED);
+			if (state != CANCELLED) {
+				s.cancel();
+			}
+			if (state <= HAS_REQUEST_NO_VALUE) {
+				synchronized (this) {
 					c = container;
 					this.value = null;
 					container = null;
 				}
-				else {
-					c = null;
-				}
+			}
+			else {
+				c = null;
 			}
 			if (c != null) {
 				discard(c);
