@@ -774,6 +774,7 @@ public class FluxWindowTimeoutStressTest {
 		public void arbiter(LLLLL_Result result) {
 			long extraDiscarded = 0;
 			for (Object discarded : mainSubscriber.discardedValues) {
+				// TODO: never discard flux; discard queue
 				if (discarded instanceof Flux) {
 					final StressSubscriber<Long> subscriber = new StressSubscriber<>(0);
 					((Flux<Long>) discarded).subscribe(subscriber);
@@ -867,7 +868,6 @@ public class FluxWindowTimeoutStressTest {
 				throw new RuntimeException("concurrentOnComplete");
 			}
 		}
-
 	}
 
 	@JCStressTest

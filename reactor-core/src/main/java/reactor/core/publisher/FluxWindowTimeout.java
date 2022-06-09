@@ -427,6 +427,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final int activeWindowIndex = activeWindowIndex(expectedState);
 				final int nextWindowIndex = nextWindowIndex(expectedState);
+				// short path to exit from loop if there is active window which was not
+				// terminated yet and this window is delivered so we dont have to
+				// perform any work (we just need to remove lock and exit)
 				if (activeWindowIndex == nextWindowIndex && !hasUnsentWindow) {
 					expectedState = markWorkDone(this, expectedState);
 					previousState = expectedState | HAS_WORK_IN_PROGRESS;
@@ -455,6 +458,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (n > 0) {
+					// here we are if we entered from the request() method
 					if (hasUnsentWindow) {
 						final InnerWindow<T> currentUnsentWindow = this.window;
 
@@ -486,6 +490,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							return;
 						}
 
+						// we should create next window if we see that
+						// currentUnsentWindow is terminated and nextWindowIndex is
+						// greater than currentWindowIndex
 						if (nextWindowIndex > activeWindowIndex && (InnerWindow.isTimeout(previousInnerWindowState) || InnerWindow.isTerminated(previousInnerWindowState))) {
 							final boolean shouldBeUnsent = n == 0;
 							final InnerWindow<T> nextWindow =
@@ -507,6 +514,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 									(((previousState &~ACTIVE_WINDOW_INDEX_MASK) &~ HAS_UNSENT_WINDOW) ^ (expectedState == previousState ? HAS_WORK_IN_PROGRESS : 0)) |
 									incrementActiveWindowIndex(previousState) |
 									(shouldBeUnsent ? HAS_UNSENT_WINDOW : 0);
+							// we need to put unsent flag here because we check at the
+							// beginning of the loop the presence for unsent flag from
+							// the previousState
 							previousState = (previousState &~ HAS_UNSENT_WINDOW) | (shouldBeUnsent ? HAS_UNSENT_WINDOW : 0);
 
 							if (isCancelled(expectedState)) {
@@ -530,7 +540,19 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 								return;
 							}
 
-							nextWindow.scheduleTimeout(); // TODO: try-catch
+							try {
+								nextWindow.scheduleTimeout();
+							}
+							catch (Exception e) {
+								if (hasWorkInProgress(expectedState)) {
+									this.actual.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
+								}
+								else {
+									this.onError(e);
+								}
+
+								return;
+							}
 
 							final long nextRequest = InnerWindow.received(previousInnerWindowState);
 							if (nextRequest > 0) {
@@ -605,15 +627,30 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							return;
 						}
 
-						nextWindow.scheduleTimeout(); // TODO: try-catch
+						try {
+							nextWindow.scheduleTimeout();
+						}
+						catch (Exception e) {
+							if (hasWorkInProgress(expectedState)) {
+								this.actual.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
+							}
+							else {
+								this.onError(e);
+							}
+
+							return;
+						}
+
 						final long nextRequest;
 						if (previousWindow == null) {
+							// possible at the very beginning
 							nextRequest = this.maxSize;
 						}
 						else {
 							long previousActiveWindowState = previousWindow.sendComplete();
 							nextRequest = InnerWindow.received(previousActiveWindowState);
 						}
+
 						if (nextRequest > 0) {
 							this.s.request(nextRequest);
 						}
@@ -649,7 +686,20 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					// window is deliberately unsent, we can not deliver it since no
 					// demand even if it is terminated
 
-					nextWindow.scheduleTimeout(); // TODO: try-catch
+					try {
+						nextWindow.scheduleTimeout();
+					}
+					catch (Exception e) {
+						if (hasWorkInProgress(expectedState)) {
+							this.actual.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
+						}
+						else {
+							this.onError(e);
+						}
+
+						return;
+					}
+
 					long previousActiveWindowState = previousWindow.sendComplete();
 					final long nextRequest = InnerWindow.received(previousActiveWindowState);
 
@@ -852,6 +902,12 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			clearAndFinalize();
 		}
 
+		/**
+		 * This method is called from the parent when the parent is cancelled. We dont
+		 * send any exceptions to the subscriber here but we deliver complete window
+		 * and discard all further values delivered through the {@link #sendNext} method
+		 * @return
+		 */
 		long sendCancel() {
 			for (;;) {
 				final long state = this.state;
@@ -937,6 +993,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (isFinalized(previousState)) {
 				if (isCancelledBySubscriberOrByParent(previousState)) {
 					clearQueue();
+					// doing extra request since index progress was not committed but
+					// value is discarded
+					this.parent.request(1);
 					return true;
 				}
 				else {
@@ -1314,9 +1373,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState;
 				if (hasSubscriberSet(state)) {
-//					if (instance.mode == ASYNC) {
-//						return state;
-//					}
 					final long cleanState =
 							(state & ~WORK_IN_PROGRESS_MAX) & ~RECEIVED_MASK;
 					nextState = cleanState |
