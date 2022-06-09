@@ -185,21 +185,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		static <T> long markTerminated(WindowTimeoutWithBackpressureSubscriber<T> instance) {
-			for(;;) {
-				final long previousState = instance.state;
-
-				if (isTerminated(previousState) || isCancelled(previousState)) {
-					return previousState;
-				}
-
-				final long nextState = previousState | TERMINATED_FLAG;
-				if (STATE.compareAndSet(instance, previousState, nextState)) {
-					return previousState;
-				}
-			}
-		}
-
 		@Override
 		public void onError(Throwable t) {
 			if (this.done) {
@@ -261,85 +246,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			this.actual.onComplete();
-		}
-
-		static boolean hasUnsentWindow(long state) {
-			return (state & HAS_UNSENT_WINDOW) == HAS_UNSENT_WINDOW;
-		}
-
-		static boolean isCancelled(long state) {
-			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
-		}
-
-		static boolean isTerminated(long state) {
-			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
-		}
-
-		static boolean hasWorkInProgress(long state) {
-			return (state & HAS_WORK_IN_PROGRESS) == HAS_WORK_IN_PROGRESS;
-		}
-
-		static long incrementRequestIndex(long state) {
-			return ((((state & REQUEST_INDEX_MASK) >> REQUEST_INDEX_SHIFT) + 1) << REQUEST_INDEX_SHIFT) & REQUEST_INDEX_MASK;
-		}
-
-		static long incrementActiveWindowIndex(long state) {
-			return ((((state & ACTIVE_WINDOW_INDEX_MASK) >> ACTIVE_WINDOW_INDEX_SHIFT) + 1) << ACTIVE_WINDOW_INDEX_SHIFT) & ACTIVE_WINDOW_INDEX_MASK;
-		}
-
-		static int activeWindowIndex(long state) {
-			return (int) ((state & ACTIVE_WINDOW_INDEX_MASK) >> ACTIVE_WINDOW_INDEX_SHIFT);
-		}
-
-		static long incrementNextWindowIndex(long state) {
-			return ((state & NEXT_WINDOW_INDEX_MASK) + 1) & NEXT_WINDOW_INDEX_MASK;
-		}
-
-		static int nextWindowIndex(long state) {
-			return (int) (state & NEXT_WINDOW_INDEX_MASK);
-		}
-
-		static <T> long markWorkDone(WindowTimeoutWithBackpressureSubscriber<T> instance, long expectedState) {
-			for (;;) {
-				final long currentState = instance.state;
-
-				if (expectedState != currentState) {
-					return currentState;
-				}
-
-				final long nextState = currentState ^ HAS_WORK_IN_PROGRESS;
-				if (STATE.compareAndSet(instance, currentState, nextState)) {
-					return nextState;
-				}
-			}
-		}
-
-		static <T> long commitSent(WindowTimeoutWithBackpressureSubscriber<T> instance, long expectedState) {
-			for (;;) {
-				final long currentState = instance.state;
-
-				final long clearState = (currentState &~ HAS_UNSENT_WINDOW);
-				final long nextState = (clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0));
-
-				if (STATE.compareAndSet(instance, currentState, nextState)) {
-					return currentState;
-				}
-			}
-		}
-
-		static <T> long commitWork(WindowTimeoutWithBackpressureSubscriber<T> instance, long expectedState, boolean setUnsentFlag) {
-			for (;;) {
-				final long currentState = instance.state;
-
-				final long clearState = ((currentState &~ACTIVE_WINDOW_INDEX_MASK) &~ HAS_UNSENT_WINDOW);
-				final long nextState = (clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0)) |
-						incrementActiveWindowIndex(currentState) |
-						(setUnsentFlag ? HAS_UNSENT_WINDOW : 0);
-
-				if (STATE.compareAndSet(instance, currentState, nextState)) {
-					return currentState;
-				}
-			}
 		}
 
 		@Override
@@ -548,7 +454,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 									this.actual.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
 								}
 								else {
-									this.onError(e);
+									this.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
 								}
 
 								return;
@@ -635,7 +541,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 								this.actual.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
 							}
 							else {
-								this.onError(e);
+								this.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
 							}
 
 							return;
@@ -694,7 +600,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							this.actual.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
 						}
 						else {
-							this.onError(e);
+							this.onError(Operators.onOperatorError(this.s, e, this.actual.currentContext()));
 						}
 
 						return;
@@ -738,22 +644,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (!hasWorkInProgress(expectedState)) {
 						return;
 					}
-
-					// TODO: ???
-				}
-			}
-		}
-
-		static <T> long markCancelled(WindowTimeoutWithBackpressureSubscriber<T> instance) {
-			for (;;) {
-				final long previousState = instance.state;
-				if ((!hasWorkInProgress(previousState) && isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
-					return previousState;
-				}
-
-				final long nextState = previousState | CANCELLED_FLAG;
-				if (STATE.compareAndSet(instance, previousState, nextState)) {
-					return previousState;
 				}
 			}
 		}
@@ -792,6 +682,159 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		long now() {
 			return scheduler.now(TimeUnit.NANOSECONDS);
+		}
+
+		static boolean hasUnsentWindow(long state) {
+			return (state & HAS_UNSENT_WINDOW) == HAS_UNSENT_WINDOW;
+		}
+
+		static boolean isCancelled(long state) {
+			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
+		}
+
+		static boolean isTerminated(long state) {
+			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
+		}
+
+		static boolean hasWorkInProgress(long state) {
+			return (state & HAS_WORK_IN_PROGRESS) == HAS_WORK_IN_PROGRESS;
+		}
+
+		static long incrementRequestIndex(long state) {
+			return ((((state & REQUEST_INDEX_MASK) >> REQUEST_INDEX_SHIFT) + 1) << REQUEST_INDEX_SHIFT) & REQUEST_INDEX_MASK;
+		}
+
+		static long incrementActiveWindowIndex(long state) {
+			return ((((state & ACTIVE_WINDOW_INDEX_MASK) >> ACTIVE_WINDOW_INDEX_SHIFT) + 1) << ACTIVE_WINDOW_INDEX_SHIFT) & ACTIVE_WINDOW_INDEX_MASK;
+		}
+
+		static int activeWindowIndex(long state) {
+			return (int) ((state & ACTIVE_WINDOW_INDEX_MASK) >> ACTIVE_WINDOW_INDEX_SHIFT);
+		}
+
+		static long incrementNextWindowIndex(long state) {
+			return ((state & NEXT_WINDOW_INDEX_MASK) + 1) & NEXT_WINDOW_INDEX_MASK;
+		}
+
+		static int nextWindowIndex(long state) {
+			return (int) (state & NEXT_WINDOW_INDEX_MASK);
+		}
+
+
+
+		/**
+		 * Adds {@link #TERMINATED_FLAG} to indicate cancellation fact. Operation fails
+		 * if current state is already terminated or cancelled
+		 *
+		 * @param instance from which to read state
+		 *
+		 * @return previous state
+		 */
+		static <T> long markTerminated(WindowTimeoutWithBackpressureSubscriber<T> instance) {
+			for(;;) {
+				final long previousState = instance.state;
+
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return previousState;
+				}
+
+				final long nextState = previousState | TERMINATED_FLAG;
+				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					return previousState;
+				}
+			}
+		}
+
+		/**
+		 * Adds {@link #CANCELLED_FLAG} to indicate cancellation fact. Operation fails
+		 * if current state is already cancelled, or it has no work-in-progress and
+		 * is-terminated and has no unsent window
+		 *
+		 * @param instance from which to read state
+		 *
+		 * @return previous state
+		 */
+		static <T> long markCancelled(WindowTimeoutWithBackpressureSubscriber<T> instance) {
+			for (;;) {
+				final long previousState = instance.state;
+				if ((!hasWorkInProgress(previousState) && isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
+					return previousState;
+				}
+
+				final long nextState = previousState | CANCELLED_FLAG;
+				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					return previousState;
+				}
+			}
+		}
+
+		/**
+		 * Removes {@link #HAS_WORK_IN_PROGRESS} to indicate no work-in-progress.
+		 * Operation fails if current state does not equeal to the expected one
+		 *
+		 * @param instance from which to read state
+		 *
+		 * @return current state if fail or next state if successfully applied
+		 */
+		static <T> long markWorkDone(WindowTimeoutWithBackpressureSubscriber<T> instance, long expectedState) {
+			for (;;) {
+				final long currentState = instance.state;
+
+				if (expectedState != currentState) {
+					return currentState;
+				}
+
+				final long nextState = currentState ^ HAS_WORK_IN_PROGRESS;
+				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					return nextState;
+				}
+			}
+		}
+
+		/**
+		 * Commits fact that an unsent window is delivered. This
+		 * operation tries to remove {@link #HAS_WORK_IN_PROGRESS} flag if current state
+		 * is equal to the expected one.
+		 *
+		 * @param instance from which to read state
+		 *
+		 * @return previous state
+		 */
+		static <T> long commitSent(WindowTimeoutWithBackpressureSubscriber<T> instance, long expectedState) {
+			for (;;) {
+				final long currentState = instance.state;
+
+				final long clearState = (currentState &~ HAS_UNSENT_WINDOW);
+				final long nextState = (clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0));
+
+				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					return currentState;
+				}
+			}
+		}
+
+		/**
+		 * Commits new active window index and removes {@link #HAS_UNSENT_WINDOW} if
+		 * specified. This operation tries to remove {@link #HAS_WORK_IN_PROGRESS} flag
+		 * if current state is equal to the expected one.
+		 *
+		 * @param instance from which to read state
+		 *
+		 * @return previous state
+		 */
+		static <T> long commitWork(WindowTimeoutWithBackpressureSubscriber<T> instance, long expectedState, boolean setUnsentFlag) {
+			for (;;) {
+				final long currentState = instance.state;
+
+				final long clearState = ((currentState &~ACTIVE_WINDOW_INDEX_MASK) &~ HAS_UNSENT_WINDOW);
+				final long nextState = (clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0)) |
+						incrementActiveWindowIndex(currentState) |
+						(setUnsentFlag ? HAS_UNSENT_WINDOW : 0);
+
+				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					return currentState;
+				}
+			}
 		}
 	}
 
@@ -903,10 +946,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		/**
-		 * This method is called from the parent when the parent is cancelled. We dont
+		 * This method is called from the parent when the parent is cancelled. We don't
 		 * send any exceptions to the subscriber here but we deliver complete window
 		 * and discard all further values delivered through the {@link #sendNext} method
-		 * @return
+		 *
+		 * @return previous state
 		 */
 		long sendCancel() {
 			for (;;) {
