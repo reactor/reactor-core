@@ -9789,6 +9789,33 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return windowTimeout(maxSize, maxTime , Schedulers.parallel());
 	}
 
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
+	 * OR it has been open for the given {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
+	 * Scheduler).
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/windowTimeout.svg" alt="">
+	 *
+	 * <p>
+	 * Note that windows are a live view of part of the underlying source publisher,
+	 * and as such their lifecycle is tied to that source. As a result, it is not possible
+	 * to subscribe to a window more than once: they are unicast.
+	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
+	 * as these operators are based on re-subscription.
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param maxTime the maximum {@link Duration} since the window was opened before closing it
+	 * @param fairBackpressure define whether operator request unbounded demand or
+	 *                            prefetch by maxSize
+	 *
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
+	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, boolean fairBackpressure) {
 		return windowTimeout(maxSize, maxTime , Schedulers.parallel(), fairBackpressure);
 	}
