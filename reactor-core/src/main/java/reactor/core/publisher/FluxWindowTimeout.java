@@ -428,7 +428,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							if (isCancelled(expectedState)) {
 								nextWindow.sendCancel();
 								if (shouldBeUnsent) {
-									nextWindow.clearAndFinalizeFromParent();
+									nextWindow.cancel();
 								}
 								return;
 							}
@@ -585,7 +585,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (isCancelled(expectedState)) {
 						previousWindow.sendCancel();
 						nextWindow.sendCancel();
-						nextWindow.clearAndFinalizeFromParent();
+						nextWindow.cancel();
 						return;
 					}
 
@@ -625,7 +625,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						final InnerWindow<T> currentWindow = this.window;
 						final long previousWindowState = currentWindow.sendCancel();
 						if (!InnerWindow.isSent(previousWindowState)) {
-							currentWindow.clearAndFinalizeFromParent();
+							currentWindow.cancel();
 						}
 						return;
 					}
@@ -651,7 +651,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		@Override
 		public void cancel() {
 			final long previousState = markCancelled(this);
-			if ((isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
+			if ((!hasWorkInProgress(previousState) && isTerminated(previousState) && !hasUnsentWindow(previousState)) || isCancelled(previousState)) {
 				return;
 			}
 
@@ -661,7 +661,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (currentActiveWindow != null) {
 				if (!InnerWindow.isSent(currentActiveWindow.sendCancel())) {
 					if (!hasWorkInProgress(previousState)) {
-						currentActiveWindow.clearAndFinalizeFromParent();
+						currentActiveWindow.cancel();
 					}
 				}
 			}
@@ -1290,27 +1290,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		void clearAndFinalizeFromParent() {
-			long state = markCancelled(this);
-
-			final Queue<T> q = this.queue;
-			final Context context = this.parent.currentContext();
-
-			for (; ; ) {
-				T v;
-				while ((v = q.poll()) != null) {
-					Operators.onDiscard(v, context);
-				}
-
-				final long nextState = ((state | FINALIZED_STATE) & ~WORK_IN_PROGRESS_MAX) ^ (hasValues(state) ? HAS_VALUES_STATE : 0);
-				if (STATE.compareAndSet(this, state, nextState)) {
-					return;
-				}
-
-				state = this.state;
-			}
-		}
-
 		boolean markFinalized(long state) {
 			final long nextState = ((state | FINALIZED_STATE) & ~WORK_IN_PROGRESS_MAX) ^ (
 					hasValues(state) ? HAS_VALUES_STATE : 0);
@@ -1323,7 +1302,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		void clearQueue() {
 			final Queue<T> q = this.queue;
-			final Context context = this.actual.currentContext();
+			final Context context = this.actual != null ? this.actual.currentContext() : this.parent.currentContext();
 
 			T v;
 			while ((v = q.poll()) != null) {

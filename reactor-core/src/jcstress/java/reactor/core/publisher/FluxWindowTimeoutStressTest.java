@@ -774,15 +774,7 @@ public class FluxWindowTimeoutStressTest {
 		public void arbiter(LLLLL_Result result) {
 			long extraDiscarded = 0;
 			for (Object discarded : mainSubscriber.discardedValues) {
-				// TODO: never discard flux; discard queue
-				if (discarded instanceof Flux) {
-					final StressSubscriber<Long> subscriber = new StressSubscriber<>(0);
-					((Flux<Long>) discarded).subscribe(subscriber);
-					subscriber.cancel();
-					extraDiscarded += subscriber.onNextDiscarded.get();
-				} else {
-					extraDiscarded++;
-				}
+				extraDiscarded++;
 			}
 			result.r1 =
 					subscriber1.onNextCalls.get() + subscriber1.onNextDiscarded.get()
