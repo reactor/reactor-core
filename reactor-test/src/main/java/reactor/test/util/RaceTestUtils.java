@@ -17,7 +17,6 @@
 package reactor.test.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
@@ -179,12 +177,7 @@ public class RaceTestUtils {
 
 		try {
 			if (!cdl.await(timeoutSeconds, TimeUnit.SECONDS)) {
-				throw new AssertionError("RaceTestUtils.race wait timed out after " + timeoutSeconds + "s" + Thread.getAllStackTraces()
-				                                                                                                   .entrySet()
-				                                                                                                   .stream()
-						.map(e -> e.getKey().toString() + "-" + e.getKey().getClass() +
-								"-" + Arrays.toString(e.getValue()))
-						.collect(Collectors.joining(",\n")));
+				throw new AssertionError("RaceTestUtils.race wait timed out after " + timeoutSeconds + "s");
 			}
 		} catch (InterruptedException ex) {
 			throw new RuntimeException(ex);
