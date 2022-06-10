@@ -471,6 +471,7 @@ public class FluxWindowTimeoutStressTest {
 
 	@JCStressTest
 	@Outcome(id = {"2, 0, 1, 1, 2"}, expect = ACCEPTABLE, desc = "")
+	@Outcome(id = {"2, 0, 1, 1, 3"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 1, 1, 1, 2"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 1, 1, 1, 4"}, expect = ACCEPTABLE, desc = "")
 	@Outcome(id = {"2, 1, 2, 1, 2"}, expect = ACCEPTABLE, desc = "")
