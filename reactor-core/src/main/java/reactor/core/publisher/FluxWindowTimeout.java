@@ -428,7 +428,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							if (isCancelled(expectedState)) {
 								nextWindow.sendCancel();
 								if (shouldBeUnsent) {
-									Operators.onDiscard(nextWindow, this.actual.currentContext());
+									nextWindow.clearAndFinalizeFromParent();
 								}
 								return;
 							}
@@ -585,7 +585,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (isCancelled(expectedState)) {
 						previousWindow.sendCancel();
 						nextWindow.sendCancel();
-						Operators.onDiscard(nextWindow, this.actual.currentContext());
+						nextWindow.clearAndFinalizeFromParent();
 						return;
 					}
 
@@ -625,7 +625,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						final InnerWindow<T> currentWindow = this.window;
 						final long previousWindowState = currentWindow.sendCancel();
 						if (!InnerWindow.isSent(previousWindowState)) {
-							Operators.onDiscard(currentWindow, this.actual.currentContext());
+							currentWindow.clearAndFinalizeFromParent();
 						}
 						return;
 					}
@@ -661,7 +661,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (currentActiveWindow != null) {
 				if (!InnerWindow.isSent(currentActiveWindow.sendCancel())) {
 					if (!hasWorkInProgress(previousState)) {
-						Operators.onDiscard(currentActiveWindow, this.actual.currentContext());
+						currentActiveWindow.clearAndFinalizeFromParent();
 					}
 				}
 			}
@@ -1035,18 +1035,22 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (isFinalized(previousState)) {
-				if (isCancelledBySubscriberOrByParent(previousState)) {
+				if (isCancelledByParent(previousState)) {
+					clearQueue();
+					return true;
+				}
+				else if (isCancelled(previousState)) {
 					clearQueue();
 					// doing extra request since index progress was not committed but
 					// value is discarded
-					this.parent.request(1);
+					this.parent.s.request(1);
 					return true;
 				}
 				else {
 					if (this.queue.poll() != t) {
 						// doing extra request since the value is sent event though the
 						// index progress was not committed
-						this.parent.request(1);
+						this.parent.s.request(1);
 						return true;
 					}
 					else {
@@ -1057,7 +1061,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			if (isTimeout(previousState) && isTerminated(previousState)) {
 				// doing extra request since the value being sent is not replenished
-				this.parent.request(1);
+				this.parent.s.request(1);
 			}
 
 			if (hasSubscriberSet(previousState)) {
@@ -1286,6 +1290,27 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
+		void clearAndFinalizeFromParent() {
+			long state = markCancelled(this);
+
+			final Queue<T> q = this.queue;
+			final Context context = this.parent.currentContext();
+
+			for (; ; ) {
+				T v;
+				while ((v = q.poll()) != null) {
+					Operators.onDiscard(v, context);
+				}
+
+				final long nextState = ((state | FINALIZED_STATE) & ~WORK_IN_PROGRESS_MAX) ^ (hasValues(state) ? HAS_VALUES_STATE : 0);
+				if (STATE.compareAndSet(this, state, nextState)) {
+					return;
+				}
+
+				state = this.state;
+			}
+		}
+
 		boolean markFinalized(long state) {
 			final long nextState = ((state | FINALIZED_STATE) & ~WORK_IN_PROGRESS_MAX) ^ (
 					hasValues(state) ? HAS_VALUES_STATE : 0);
@@ -1388,7 +1413,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long cleanState = state & ~WORK_IN_PROGRESS_MAX;
 				final long nextState =
-						cleanState | CANCELLED_STATE | incrementWork(state & WORK_IN_PROGRESS_MAX);
+						cleanState | CANCELLED_STATE | HAS_SUBSCRIBER_SET_STATE | incrementWork(state & WORK_IN_PROGRESS_MAX);
 				if (STATE.compareAndSet(instance, state, nextState)) {
 					return state;
 				}
