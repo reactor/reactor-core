@@ -331,7 +331,7 @@ public class FluxWindowTimeoutStressTest {
 
 
 
-		final UnicastProcessor<Long> proxy = new UnicastProcessor<>(Queues.<Long>get(8).get());
+		final Sinks.Many<Long> proxy = Sinks.many().unicast().onBackpressureBuffer(Queues.<Long>get(8).get());
 		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
 		StressSubscriber<Long> subscriber1 = new StressSubscriber<>();
 		StressSubscriber<Long> subscriber2 = new StressSubscriber<>();
@@ -397,21 +397,22 @@ public class FluxWindowTimeoutStressTest {
 		final AtomicLong requested = new AtomicLong();
 
 		{
-			proxy.doOnRequest(requested::addAndGet)
+			proxy.asFlux()
+			     .doOnRequest(requested::addAndGet)
 			     .subscribe(windowTimeoutSubscriber);
 		}
 
 		@Actor
 		public void next() {
-			proxy.onNext(0L);
-			proxy.onNext(1L);
-			proxy.onNext(2L);
-			proxy.onNext(3L);
-			proxy.onNext(4L);
-			proxy.onNext(5L);
-			proxy.onNext(6L);
-			proxy.onNext(7L);
-			proxy.onComplete();
+			proxy.emitNext(0L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(1L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(2L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(3L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(4L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(5L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(6L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitNext(7L, Sinks.EmitFailureHandler.FAIL_FAST);
+			proxy.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 		}
 
 		@Actor

@@ -248,7 +248,6 @@ public class FluxWindowTimeoutTest {
 		                        .concatMap(Flux::collectList))
 		            .assertNext(l -> assertThat(l).containsExactly(1, 2, 3, 4, 5))
 		            .assertNext(l -> assertThat(l).containsExactly(6, 7, 8, 9, 10))
-		            .assertNext(l -> assertThat(l).isEmpty())
 		            .verifyComplete();
 	}
 
