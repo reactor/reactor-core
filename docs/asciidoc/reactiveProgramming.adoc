@@ -373,7 +373,7 @@ behavior to a `Publisher` and wraps the previous step's `Publisher` into a new i
 The whole chain is thus linked, such that data originates from the first `Publisher` and
 moves down the chain, transformed by each link. Eventually, a `Subscriber` finishes the
 process. Remember that nothing happens until a `Subscriber` subscribes to a `Publisher`,
-as we see shortly.
+as we will see shortly.
 
 TIP: Understanding that operators create new instances can help you avoid a common
 mistake that would lead you to believe that an operator you used in your chain is not
