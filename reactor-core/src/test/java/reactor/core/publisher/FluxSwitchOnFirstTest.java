@@ -1399,7 +1399,7 @@ public class FluxSwitchOnFirstTest {
     public void scanMain(){
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSwitchOnFirst.SwitchOnFirstMain<Integer, Integer> test =
-                new FluxSwitchOnFirst.SwitchOnFirstMain<>(actual, (s, f) -> Flux.empty(), false);
+                new FluxSwitchOnFirst.SwitchOnFirstMain<>(actual, (s, f) -> Flux.empty(), false, null);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -1416,7 +1416,7 @@ public class FluxSwitchOnFirstTest {
         @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String> test =
-                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(actual, (s, f) -> Flux.empty(), false);
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(actual, (s, f) -> Flux.empty(), false, null);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -1433,7 +1433,7 @@ public class FluxSwitchOnFirstTest {
         @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> delegate = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String> parent =
-                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(delegate, (s, f) -> Flux.empty(), false);
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(delegate, (s, f) -> Flux.empty(), false, null);
         FluxSwitchOnFirst.SwitchOnFirstControlSubscriber<String> test = new FluxSwitchOnFirst.SwitchOnFirstControlSubscriber<>(parent, delegate, false);
 
         Subscription sub = Operators.emptySubscription();
@@ -1449,7 +1449,7 @@ public class FluxSwitchOnFirstTest {
         @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> delegate = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String> main =
-                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(delegate, (s, f) -> Flux.empty(), false);
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(delegate, (s, f) -> Flux.empty(), false, null);
         FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber<String> test = new FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber<>(main, delegate, false);
 
         Subscription parent = Operators.emptySubscription();

@@ -2,9 +2,12 @@ package reactor.core.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import reactor.util.Logger;
@@ -30,6 +33,12 @@ public class FastLogger implements Logger {
 		return queues.values()
 		             .stream()
 		             .flatMap(List::stream)
+					 .sorted(Comparator.comparingLong(s -> {
+						 Pattern pattern = Pattern.compile("\\[(.*?)]");
+						 Matcher matcher = pattern.matcher(s);
+						 matcher.find();
+						 return Long.parseLong(matcher.group(1));
+					 }))
 		             .collect(Collectors.joining("\n"));
 	}
 

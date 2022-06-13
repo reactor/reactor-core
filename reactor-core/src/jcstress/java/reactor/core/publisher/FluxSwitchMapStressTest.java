@@ -32,17 +32,21 @@ import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxSwitchMapNoPrefetch.SwitchMapMain;
+import reactor.core.util.FastLogger;
 import reactor.test.publisher.TestPublisher;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
 public abstract class FluxSwitchMapStressTest {
 
+	final FastLogger fastLogger = new FastLogger(this.getClass().getSimpleName());
+	final StateLogger logger = new StateLogger(fastLogger);
+
 	final StressSubscriber<Object> stressSubscriber = new StressSubscriber<>(0);
 	final StressSubscription stressSubscription = new StressSubscription(null);
 
 	final SwitchMapMain<Object, Object> switchMapMain =
-			new SwitchMapMain<>(stressSubscriber, this::handle);
+			new SwitchMapMain<>(stressSubscriber, this::handle, logger);
 
 
 	abstract Publisher<Object> handle(Object value);
@@ -311,6 +315,10 @@ public abstract class FluxSwitchMapStressTest {
 			r.r1 = stressSubscriber.onNextCalls.get();
 			r.r2 = stressSubscriber.onCompleteCalls.get();
 			r.r3 = switchMapMain.requested;
+
+			if (r.r1 < 200) {
+				throw new IllegalStateException(r.toString() + " " + fastLogger);
+			}
 		}
 	}
 
