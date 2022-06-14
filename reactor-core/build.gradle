@@ -176,7 +176,6 @@ task japicmp(type: JapicmpTask) {
 	methodExcludes = [
 		'reactor.core.publisher.Mono#doAfterSuccessOrError(java.util.function.BiConsumer)',
 		'reactor.core.publisher.Mono#doOnSuccessOrError(java.util.function.BiConsumer)',
-		'reactor.core.publisher.Sinks$EmitFailureHandler#busyLooping(java.time.Duration)',
 		'reactor.core.publisher.Flux#deferWithContext(java.util.function.Function)',
 		'reactor.core.publisher.Flux#subscriberContext(reactor.util.context.Context)',
 		'reactor.core.publisher.Flux#subscriberContext(java.util.function.Function)',
@@ -192,9 +191,6 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int, boolean)',
 		'reactor.core.scheduler.Schedulers#newElastic(int, java.util.concurrent.ThreadFactory)',
 		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)',
-		'reactor.core.publisher.FluxSink#contextView()',
-		'reactor.core.publisher.MonoSink#contextView()',
-		'reactor.core.publisher.SynchronousSink#contextView()',
 		'reactor.core.Scannable#tagsDeduplicated()',
 		"reactor.core.publisher.Mono#toProcessor()"
 	]
