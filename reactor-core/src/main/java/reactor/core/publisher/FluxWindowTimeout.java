@@ -1008,7 +1008,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		boolean sendNext(T t) {
-			int received = this.received + 1 ;
+			final int received = this.received + 1 ;
+			if (received > this.max) {
+				return false;
+			}
 			this.received = received;
 
 			this.queue.offer(t);
@@ -1397,10 +1400,6 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return state;
 				}
 			}
-		}
-
-		static boolean isCancelledBySubscriberOrByParent(long state) {
-			return (state & CANCELLED_STATE) == CANCELLED_STATE  || (state & PARENT_CANCELLED_STATE) == PARENT_CANCELLED_STATE;
 		}
 
 		static boolean isCancelled(long state) {
