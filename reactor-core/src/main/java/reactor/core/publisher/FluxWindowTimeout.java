@@ -70,7 +70,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		if (fairBackpressure) {
-			return new WindowTimeoutWithBackpressureSubscriber<>(actual, maxSize, timespan, unit, timer);
+			return new WindowTimeoutWithBackpressureSubscriber<>(actual, maxSize, timespan, unit, timer, null);
 		}
 		return new WindowTimeoutSubscriber<>(actual, maxSize, timespan, unit, timer);
 	}
@@ -89,6 +89,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	static final class WindowTimeoutWithBackpressureSubscriber<T>
 			implements InnerOperator<T, Flux<T>> {
+
+		@Nullable
+		final StateLogger                     logger;
 
 		final CoreSubscriber<? super Flux<T>> actual;
 		final long                            timespan;
@@ -138,7 +141,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				int maxSize,
 				long timespan,
 				TimeUnit unit,
-				Scheduler scheduler) {
+				Scheduler scheduler,
+				@Nullable StateLogger logger) {
 			this.actual = actual;
 			this.timespan = timespan;
 			this.unit = unit;
@@ -146,7 +150,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			this.maxSize = maxSize;
 			this.limit = Operators.unboundedOrLimit(maxSize);
 			this.worker = scheduler.createWorker();
-
+			this.logger = logger;
 
 			STATE.lazySet(this, 1);
 		}
@@ -268,6 +272,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				if (hasWorkInProgress(previousState)) {
 					long nextState = (previousState & ~REQUEST_INDEX_MASK) | incrementRequestIndex(previousState);
 					if (STATE.compareAndSet(this, previousState, nextState)) {
+						if (this.logger != null) {
+							this.logger.log(this.toString(), "mre", previousState, nextState);
+						}
 						return;
 					}
 
@@ -284,6 +291,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						(previousState &~ HAS_UNSENT_WINDOW) |
 						HAS_WORK_IN_PROGRESS;
 				if (STATE.compareAndSet(this, previousState, expectedState)) {
+					if (this.logger != null) {
+						this.logger.log(this.toString(), "mre", previousState, expectedState);
+					}
 					break;
 				}
 			}
@@ -328,6 +338,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		void drain(long previousState, long expectedState) {
 			for (;;) {
 				long n = this.requested;
+				if (this.logger != null) {
+					this.logger.log(this.toString(), "dr"+n, previousState,
+							expectedState);
+				}
 
 				final boolean hasUnsentWindow = hasUnsentWindow(previousState);
 
@@ -373,6 +387,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 						if (n != Long.MAX_VALUE) {
 							n = REQUESTED.decrementAndGet(this);
+							if (this.logger != null) {
+								this.logger.log(this.toString(), "dec", n, n);
+							}
 						}
 
 						// Marks as sent current unsent window. Also, delivers
@@ -403,7 +420,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							final boolean shouldBeUnsent = n == 0;
 							final InnerWindow<T> nextWindow =
 									new InnerWindow<>(this.maxSize, this,
-											nextWindowIndex, shouldBeUnsent);
+											nextWindowIndex, shouldBeUnsent, logger);
 
 							this.window = nextWindow;
 
@@ -495,7 +512,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						}
 					} else {
 						final InnerWindow<T> nextWindow =
-								new InnerWindow<>(this.maxSize, this, nextWindowIndex, false);
+								new InnerWindow<>(this.maxSize, this, nextWindowIndex,
+										false, logger);
 
 						final InnerWindow<T> previousWindow = this.window;
 
@@ -568,7 +586,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 				else if (n == 0 && !hasUnsentWindow) {
 					final InnerWindow<T> nextWindow =
-							new InnerWindow<>(this.maxSize, this, nextWindowIndex, true);
+							new InnerWindow<>(this.maxSize, this, nextWindowIndex, true, logger);
 
 					final InnerWindow<T> previousWindow = this.window;
 					this.window = nextWindow;
@@ -740,6 +758,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = previousState | TERMINATED_FLAG;
 				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mtd", previousState, nextState);
+					}
 					return previousState;
 				}
 			}
@@ -781,11 +802,17 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long currentState = instance.state;
 
 				if (expectedState != currentState) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "fwd", currentState, currentState);
+					}
 					return currentState;
 				}
 
 				final long nextState = currentState ^ HAS_WORK_IN_PROGRESS;
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mwd", currentState, nextState);
+					}
 					return nextState;
 				}
 			}
@@ -808,6 +835,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long nextState = (clearState ^ (expectedState == currentState ? HAS_WORK_IN_PROGRESS : 0));
 
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "cts", currentState, nextState);
+					}
 					return currentState;
 				}
 			}
@@ -832,6 +862,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						(setUnsentFlag ? HAS_UNSENT_WINDOW : 0);
 
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "ctw", currentState, nextState);
+					}
 					return currentState;
 				}
 			}
@@ -842,6 +875,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			implements InnerProducer<T>, Runnable {
 
 		static final Disposable DISPOSED = Disposables.disposed();
+
+
+		@Nullable
+		final StateLogger                                logger;
 
 		final WindowTimeoutWithBackpressureSubscriber<T> parent;
 		final int                                        max;
@@ -876,14 +913,23 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				int max,
 				WindowTimeoutWithBackpressureSubscriber<T> parent,
 				int index,
-				boolean markUnsent) {
+				boolean markUnsent,
+				@Nullable StateLogger logger) {
 			this.max = max;
 			this.parent = parent;
 			this.queue = Queues.<T>get(max).get();
 			this.index = index;
+			this.logger = logger;
 
-			if (markUnsent) {
+			 if (markUnsent) {
 				STATE.lazySet(this, UNSENT_STATE);
+				if (this.logger != null) {
+					this.logger.log(this.toString(), "mct", 0, UNSENT_STATE);
+				}
+			} else {
+				if (this.logger != null) {
+					this.logger.log(this.toString(), "mct", 0, 0);
+				}
 			}
 
 			this.createTime = parent.now();
@@ -1354,6 +1400,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 									)
 								: 0);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mst", state,
+								nextState);
+					}
 					return state;
 				}
 			}
@@ -1373,6 +1423,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = state | TIMEOUT_STATE;
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mtt", state, nextState);
+					}
 					return state;
 				}
 			}
@@ -1394,6 +1447,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long nextState =
 						cleanState | CANCELLED_STATE | HAS_SUBSCRIBER_SET_STATE | incrementWork(state & WORK_IN_PROGRESS_MAX);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mcd", state,
+								nextState);
+					}
 					return state;
 				}
 			}
@@ -1416,6 +1473,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long state = instance.state;
 
 				if (isFinalized(state)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "fhv", state, state);
+					}
 					return state;
 				}
 
@@ -1438,6 +1498,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mhv", state,
+								nextState);
+					}
 					return state;
 				}
 			}
@@ -1448,6 +1512,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long state = instance.state;
 
 				if (isFinalized(state)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "fht", state, state);
+					}
 					return state;
 				}
 
@@ -1470,6 +1537,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "hvt", state,
+								nextState);
+					}
 					return state;
 				}
 			}
@@ -1501,6 +1572,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						);
 
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mhr", state, nextState);
+					}
 					return state;
 				}
 			}
@@ -1526,6 +1600,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 												: 0
 								);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mtd", state, nextState);
+					}
 					return state;
 				}
 			}
@@ -1555,6 +1632,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				final long nextState = state | HAS_SUBSCRIBER_STATE;
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mso", state, nextState);
+					}
 					return state;
 				}
 			}
@@ -1575,6 +1655,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				final long nextState =
 						(state | HAS_SUBSCRIBER_SET_STATE) | (isTerminated(state) && !hasValues(state) ? FINALIZED_STATE : 0);
 				if (STATE.compareAndSet(instance, state, nextState)) {
+					if (instance.logger != null) {
+						instance.logger.log(instance.toString(), "mss", state, nextState);
+					}
 					return state;
 				}
 			}
@@ -1596,6 +1679,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			final long nextState =
 					(state ^ (hasValues ? 0 : HAS_VALUES_STATE)) &~ WORK_IN_PROGRESS_MAX;
 			if (STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "mwd", state, nextState);
+				}
 				return nextState;
 			}
 
