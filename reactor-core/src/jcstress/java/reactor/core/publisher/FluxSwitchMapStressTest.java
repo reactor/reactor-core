@@ -271,7 +271,7 @@ public abstract class FluxSwitchMapStressTest {
 	}
 
 	@JCStressTest
-	@Outcome(id = {"200, 0, 0", "200, 1, 0"}, expect = ACCEPTABLE, desc = "Should produced exactly what was requested")
+	@Outcome(id = {"200, 0", "200, 1"}, expect = ACCEPTABLE, desc = "Should produced exactly what was requested")
 	@State
 	public static class RequestAndProduceStressTest2 extends FluxSwitchMapStressTest {
 
@@ -311,13 +311,12 @@ public abstract class FluxSwitchMapStressTest {
 		}
 
 		@Arbiter
-		public void arbiter(IIL_Result r) {
-			r.r1 = stressSubscriber.onNextCalls.get();
+		public void arbiter(II_Result r) {
+			r.r1 = (int) (stressSubscriber.onNextCalls.get() + switchMapMain.requested);
 			r.r2 = stressSubscriber.onCompleteCalls.get();
-			r.r3 = switchMapMain.requested;
 
-			if (r.r1 < 200) {
-				throw new IllegalStateException(r.toString() + " " + fastLogger);
+			if (stressSubscriber.onNextCalls.get() < 200 && stressSubscriber.onNextDiscarded.get() < switchMapMain.requested) {
+				throw new IllegalStateException(r + " " + fastLogger);
 			}
 		}
 	}
@@ -356,6 +355,10 @@ public abstract class FluxSwitchMapStressTest {
 		public void arbiter(JI_Result r) {
 			r.r1 = stressSubscriber.onNextCalls.get() + switchMapMain.requested;
 			r.r2 = stressSubscriber.onCompleteCalls.get();
+
+			if (r.r1 < 200 || r.r2 == 0) {
+				throw new IllegalStateException(r + " " + fastLogger);
+			}
 		}
 	}
 
