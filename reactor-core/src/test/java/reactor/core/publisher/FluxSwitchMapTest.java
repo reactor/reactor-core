@@ -380,7 +380,7 @@ public class FluxSwitchMapTest {
 	void scanMain() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> test =
-			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i), null);
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -404,7 +404,7 @@ public class FluxSwitchMapTest {
 	void scanMainCancelled() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> test =
-			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i), null);
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -417,7 +417,7 @@ public class FluxSwitchMapTest {
 	void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> main =
-			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i), null);
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
 		FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer> test = new FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer>(main, actual, 0, null);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -432,7 +432,7 @@ public class FluxSwitchMapTest {
 	void scanInnerDetectsCancelledByParent() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> main =
-			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i), null);
+			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
 		main.onNext(1); //this creates first inner, under test
 
 		FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer> test = main.inner;

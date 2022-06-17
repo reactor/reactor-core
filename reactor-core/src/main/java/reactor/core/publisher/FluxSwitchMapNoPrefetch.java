@@ -62,7 +62,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			return null;
 		}
 
-		return new SwitchMapMain<T, R>(actual, mapper, null);
+		return new SwitchMapMain<T, R>(actual, mapper);
 	}
 
 	@Override
@@ -99,6 +99,11 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<SwitchMapMain> STATE =
 				AtomicLongFieldUpdater.newUpdater(SwitchMapMain.class, "state");
+
+		SwitchMapMain(CoreSubscriber<? super R> actual,
+				Function<? super T, ? extends Publisher<? extends R>> mapper) {
+			this(actual, mapper, null);
+		}
 
 		SwitchMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,

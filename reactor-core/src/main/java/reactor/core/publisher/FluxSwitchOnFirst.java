@@ -60,7 +60,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					cancelSourceOnComplete,
 					null);
 		}
-		return new SwitchOnFirstMain<>(actual, transformer, cancelSourceOnComplete, null);
+		return new SwitchOnFirstMain<>(actual, transformer, cancelSourceOnComplete);
 	}
 
 	@Override
@@ -777,6 +777,13 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchOnFirstMain<T, R> extends AbstractSwitchOnFirstMain<T, R> {
 
+
+		SwitchOnFirstMain(CoreSubscriber<? super R> outer,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete) {
+			super(outer, transformer, cancelSourceOnComplete, null);
+		}
+
 		SwitchOnFirstMain(CoreSubscriber<? super R> outer,
 				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
 				boolean cancelSourceOnComplete,
@@ -799,6 +806,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static final class SwitchOnFirstConditionalMain<T, R>
 			extends AbstractSwitchOnFirstMain<T, R>
 			implements Fuseable.ConditionalSubscriber<T> {
+
+		SwitchOnFirstConditionalMain(Fuseable.ConditionalSubscriber<? super R> outer,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete) {
+			super(outer, transformer, cancelSourceOnComplete, null);
+		}
 
 		SwitchOnFirstConditionalMain(Fuseable.ConditionalSubscriber<? super R> outer,
 				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
