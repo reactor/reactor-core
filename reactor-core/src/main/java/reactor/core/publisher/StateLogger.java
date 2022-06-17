@@ -18,6 +18,9 @@ package reactor.core.publisher;
 
 import reactor.util.Logger;
 
+/**
+ * Implementation of the well formatted states migration logger.
+ */
 class StateLogger {
 
 	final Logger logger;

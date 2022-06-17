@@ -28,6 +28,17 @@ import java.util.stream.Collectors;
 
 import reactor.util.Logger;
 
+/**
+ * Implementation of {@link Logger} which is based on the {@link ThreadLocal} based
+ * queue which collects all the events on the per-thread basis.
+ * </br>
+ * Such logger is designed to have all events stored during the stress-test run and
+ * then sorted and printed out once all the Threads completed execution (inside the
+ * {@link org.openjdk.jcstress.annotations.Arbiter} annotated method.
+ * </br>
+ * Note, this implementation only supports trace-level logs and ignores all others, it
+ * is intended to be used by {@link reactor.core.publisher.StateLogger}.
+ */
 public class FastLogger implements Logger {
 
 	final Map<Thread, List<String>> queues = new ConcurrentHashMap<>();
