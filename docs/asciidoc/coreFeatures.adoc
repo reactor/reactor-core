@@ -955,19 +955,20 @@ This can be especially useful for long-lived sources that see sporadic bursts of
 ----
 AtomicInteger errorCount = new AtomicInteger(); // <1>
 AtomicInteger transientHelper = new AtomicInteger();
-Flux<Integer> transientFlux = Flux.<Integer>generate(sink -> {
-	int i = transientHelper.getAndIncrement();
-	if (i == 10) { // <2>
-		sink.next(i);
-		sink.complete();
-	}
-	else if (i % 3 == 0) { // <3>
-		sink.next(i);
-	}
-	else {
-		sink.error(new IllegalStateException("Transient error at " + i)); // <4>
-	}
-})
+Consumer<SynchronousSink<Integer>> mySink = sink -> {
+    int i = transientHelper.getAndIncrement();
+    if (i == 10) { // <2>
+	sink.next(i);
+	sink.complete();
+    }
+    else if (i % 3 == 0) { // <3>
+	sink.next(i);
+    }
+    else {
+	sink.error(new IllegalStateException("Transient error at " + i)); // <4>
+    }
+};
+Flux<Integer> transientFlux = Flux.<Integer>generate(mySink)
 		.doOnError(e -> errorCount.incrementAndGet());
 
 transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <5>
@@ -977,7 +978,7 @@ assertThat(errorCount).hasValue(6); // <6>
 <1> We will count the number of errors in the retried sequence.
 <2> We `generate` a source that has bursts of errors. It will successfully complete when the counter reaches 10.
 <3> If the `transientHelper` atomic is at a multiple of `3`, we emit `onNext` and thus end the current burst.
-<4> In other cases we emit an `onError`. That's 2 out of 3 times, so bursts of 2 `onError` interrupted by 1 `onNext`.
+<4> In other cases we emit an `onError`. That's 2 out of 3 times, so the flux bursts 2 `onError` interrupted by 1 `onNext`.
 <5> We use `retryWhen` on that source, configured for at most 2 retry attempts, but in `transientErrors` mode.
 <6> At the end, the sequence reaches `onNext(10)` and completes, after `6` errors have been registered in `errorCount`.
 ====
@@ -1034,11 +1035,10 @@ options, though:
 
 . Catch the exception and recover from it. The sequence continues normally.
 . Catch the exception, wrap it into an _unchecked_ exception, and then throw it
-(interrupting the sequence). The `Exceptions` utility class can help you with that (we
-get to that next).
+(interrupting the sequence). The `Exceptions` utility class can help you with that.
 . If you need to return a `Flux` (for example, you are in a `flatMap`), wrap the
-exception in an error-producing `Flux`, as follows: `return Flux.error(checkedException)`. (The
-sequence also terminates.)
+exception in an error-producing `Flux`, as follows: `return Flux.error(checkedException)` (The
+sequence also terminates.
 
 Reactor has an `Exceptions` utility class that you can use to ensure that exceptions are
 wrapped only if they are checked exceptions:
@@ -1073,8 +1073,11 @@ map's `onError` method as a `RuntimeException`, as follows:
 Flux<String> converted = Flux
     .range(1, 10)
     .map(i -> {
-        try { return convert(i); }
-        catch (IOException e) { throw Exceptions.propagate(e); }
+	try {
+            return convert(i);
+        } catch (IOException e) {
+            throw Exceptions.propagate(e);
+        }
     });
 ----
 ====
