@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -72,6 +73,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchMapMain<T, R> implements InnerOperator<T, R> {
 
+		@Nullable
+		final StateLogger logger;
+
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 		final CoreSubscriber<? super R> actual;
 
@@ -98,8 +102,15 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		SwitchMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper) {
+			this(actual, mapper, null);
+		}
+
+		SwitchMapMain(CoreSubscriber<? super R> actual,
+				Function<? super T, ? extends Publisher<? extends R>> mapper,
+				@Nullable StateLogger logger) {
 			this.actual = actual;
 			this.mapper = mapper;
+			this.logger = logger;
 		}
 
 		@Override
@@ -148,14 +159,14 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			final boolean hasInner = si != null;
 
 			if (!hasInner) {
-				final SwitchMapInner<T, R> nsi = new SwitchMapInner<>(this, this.actual, 0);
+				final SwitchMapInner<T, R> nsi = new SwitchMapInner<>(this, this.actual, 0, this.logger);
 				this.inner = nsi;
 				subscribeInner(t, nsi, 0);
 				return;
 			}
 
 			final int nextIndex = si.index + 1;
-			final SwitchMapInner<T, R> nsi = new SwitchMapInner<>(this, this.actual, nextIndex);
+			final SwitchMapInner<T, R> nsi = new SwitchMapInner<>(this, this.actual, nextIndex, this.logger);
 
 			this.inner = nsi;
 			si.nextInner = nsi;
@@ -299,6 +310,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchMapInner<T, R> implements InnerConsumer<R> {
 
+		@Nullable
+		final StateLogger logger;
+
 		final SwitchMapMain<T, R> parent;
 		final CoreSubscriber<? super R> actual;
 
@@ -312,10 +326,11 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		T nextElement;
 		SwitchMapInner<T, R> nextInner;
 
-		SwitchMapInner(SwitchMapMain<T, R> parent, CoreSubscriber<? super R> actual, int index) {
+		SwitchMapInner(SwitchMapMain<T, R> parent, CoreSubscriber<? super R> actual, int index, @Nullable StateLogger logger) {
 			this.parent = parent;
 			this.actual = actual;
 			this.index = index;
+			this.logger = logger;
 		}
 
 		@Override
@@ -562,6 +577,14 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		void cancelFromParent() {
 			this.s.cancel();
 		}
+
+		@Override
+		public String toString() {
+			return new StringJoiner(", ",
+					SwitchMapInner.class.getSimpleName() + "[",
+					"]").add("index=" + index)
+			            .toString();
+		}
 	}
 
 	static int  INDEX_OFFSET          = 32;
@@ -595,6 +618,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (SwitchMapMain.STATE.compareAndSet(instance, state, TERMINATED)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "std", state, TERMINATED);
+				}
 				return state;
 			}
 		}
@@ -620,7 +646,11 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (SwitchMapMain.STATE.compareAndSet(instance, state, state | COMPLETED_MASK)) {
+			final long nextState = state | COMPLETED_MASK;
+			if (SwitchMapMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "smc", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -671,6 +701,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 					hasMainCompleted(state), // keep main completed flag as is
 					hasInnerCompleted(state)); // keep inner completed flag as is
 			if (SwitchMapMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "adr", state, nextState);
+				}
 				return nextState;
 			}
 		}
@@ -696,14 +729,16 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		int nextIndex = nextIndex(state);
 
 		for (; ; ) {
-			if (SwitchMapMain.STATE.compareAndSet(instance,
-					state,
-					state(nextIndex, // set actual index to the next index
-							isWip(state), // keep WIP flag unchanged
-							hasRequest(state), // keep requested as is
-							false, // unset inner subscribed flag
-							false, // main completed flag can not be set at this stage
-							false))) { // set inner completed to false since another inner comes in
+			final long nextState = state(nextIndex, // set actual index to the next index
+					isWip(state), // keep WIP flag unchanged
+					hasRequest(state), // keep requested as is
+					false, // unset inner subscribed flag
+					false, // main completed flag can not be set at this stage
+					false);// set inner completed to false since another inner comes in
+			if (SwitchMapMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "ini", state, nextState);
+				}
 				return state;
 			}
 
@@ -740,14 +775,19 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
+			final long nextState = state(expectedIndex, // keep expected index
+					false, // wip assumed to be false
+					hasRequest(state), // keep existing request state
+					true, // set inner subscribed bit
+					hasMainCompleted(state), // keep main completed flag as is
+					false);// inner can not be completed at this phase
 			if (SwitchMapMain.STATE.compareAndSet(instance,
-					state,
-					state(expectedIndex, // keep expected index
-							false, // wip assumed to be false
-							hasRequest(state), // keep existing request state
-							true, // set inner subscribed bit
-							hasMainCompleted(state), // keep main completed flag as is
-							false))) { // inner can not be completed at this phase
+					state, nextState)) {
+
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "sns", state, nextState);
+				}
+
 				return state;
 			}
 		}
@@ -777,14 +817,16 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (SwitchMapMain.STATE.compareAndSet(instance,
-					state,
-					state(expectedIndex, // keep expected index
-							true, // set wip bit
-							hasRequest(state), // keep request as is
-							true, // assumed inner subscribed if index has not changed
-							hasMainCompleted(state), // keep main completed flag as is
-							false))) { // inner can not be completed at this phase
+			final long nextState = state(expectedIndex, // keep expected index
+					true, // set wip bit
+					hasRequest(state), // keep request as is
+					true, // assumed inner subscribed if index has not changed
+					hasMainCompleted(state), // keep main completed flag as is
+					false);// inner can not be completed at this phase
+			if (SwitchMapMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "swp", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -822,14 +864,17 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (SwitchMapMain.STATE.compareAndSet(instance,
-					state,
-					state(actualIndex, // set actual index; assumed index may change and if we have done with the work we have to unset WIP flag
-							false, // unset wip flag
-							isDemandFulfilled && expectedRequest == actualRequest ? 0 : actualRequest, // set hasRequest to 0 if we know that demand was fulfilled an expectedRequest is equal to the actual one (so it has not changed)
-							isInnerSubscribed(state), // keep inner state unchanged; if index has changed the flag is unset, otherwise it is set
-							hasMainCompleted(state), // keep main completed flag as it is
-							false))) { // this flag is always unset in this method since we do call from Inner#OnNext
+			final long nextState = state(
+					actualIndex,// set actual index; assumed index may change and if we have done with the work we have to unset WIP flag
+					false,// unset wip flag
+					isDemandFulfilled && expectedRequest == actualRequest ? 0 : actualRequest,// set hasRequest to 0 if we know that demand was fulfilled an expectedRequest is equal to the actual one (so it has not changed)
+					isInnerSubscribed(state),// keep inner state unchanged; if index has changed the flag is unset, otherwise it is set
+					hasMainCompleted(state),// keep main completed flag as it is
+					false); // this flag is always unset in this method  since we do call from Inner#OnNext
+			if (SwitchMapMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "uwp", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -852,14 +897,16 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			final boolean isInnerSubscribed = isInnerSubscribed(state);
-			if (SwitchMapMain.STATE.compareAndSet(instance,
-					state,
-					state(index(state), // keep the index unchanged
-							false, // unset WIP flag
-							hasRequest(state), // keep hasRequest flag as is
-							isInnerSubscribed, // keep inner subscribed flag as is
-							hasMainCompleted(state), // keep main completed flag as is
-							isInnerSubscribed))) { // if index has changed then inner subscribed remains set, thus we are safe to set inner completed flag
+			final long nextState = state(index(state), // keep the index unchanged
+					false, // unset WIP flag
+					hasRequest(state), // keep hasRequest flag as is
+					isInnerSubscribed, // keep inner subscribed flag as is
+					hasMainCompleted(state), // keep main completed flag as is
+					isInnerSubscribed);  // if index has changed then inner subscribed remains set, thus we are safe to set inner completed flag
+			if (SwitchMapMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "sic", state, nextState);
+				}
 				return state;
 			}
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,13 @@ import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.LLLLL_Result;
 import org.openjdk.jcstress.infra.results.LLLL_Result;
 import reactor.core.CoreSubscriber;
+import reactor.core.util.FastLogger;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
 public abstract class FluxSwitchOnFirstConditionalStressTest {
+
+	final FastLogger fastLogger = new FastLogger(this.getClass().getName());
 
 	final FluxSwitchOnFirstStressTest.StressSubscription<String> inboundSubscription =
 			new FluxSwitchOnFirstStressTest.StressSubscription<>();
@@ -43,7 +46,8 @@ public abstract class FluxSwitchOnFirstConditionalStressTest {
 			new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String>(
 					outboundSubscriber,
 					this::switchOnFirst,
-					false);
+					false,
+					new StateLogger(fastLogger));
 
 	{
 		inboundSubscription.subscribe(main);
