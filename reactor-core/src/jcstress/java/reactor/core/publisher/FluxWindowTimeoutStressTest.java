@@ -28,6 +28,7 @@ import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.LLLLL_Result;
 import org.openjdk.jcstress.infra.results.LLL_Result;
 import org.openjdk.jcstress.infra.results.LL_Result;
+import reactor.core.util.FastLogger;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.concurrent.Queues;
 
@@ -69,6 +70,8 @@ public class FluxWindowTimeoutStressTest {
 						}
 					}
 				};
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest1_0");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long>
 		                                   windowTimeoutSubscriber =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(
@@ -76,7 +79,8 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long> subscription            =
 				new StressSubscription<>(windowTimeoutSubscriber);
 
@@ -109,15 +113,15 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
 
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + "\n" + fastLogger);
 			}
 		}
 	}
@@ -136,6 +140,9 @@ public class FluxWindowTimeoutStressTest {
 		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
 		StressSubscriber<Long> subscriber1 = new StressSubscriber<>();
 		StressSubscriber<Long> subscriber2 = new StressSubscriber<>();
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest1_1");
 		final StressSubscriber<Flux<Long>> mainSubscriber          =
 				new StressSubscriber<Flux<Long>>(2) {
 					int index = 0;
@@ -158,7 +165,9 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger)
+						);
 		final StressSubscription<Long> subscription            =
 				new StressSubscription<>(windowTimeoutSubscriber);
 
@@ -190,19 +199,19 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
 
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + "\n" + fastLogger);
 			}
 
 			if (result.toString().startsWith("2, 1, 2")) {
-				throw new IllegalStateException("boom " + result);
+				throw new IllegalStateException("boom " + result + "\n" + fastLogger);
 			}
 		}
 	}
@@ -247,6 +256,8 @@ public class FluxWindowTimeoutStressTest {
 						}
 					}
 				};
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest1_2");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long>
 		                                   windowTimeoutSubscriber =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(
@@ -254,7 +265,8 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long> subscription            =
 				new StressSubscription<>(windowTimeoutSubscriber);
 
@@ -292,14 +304,14 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() != 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + "\n" + fastLogger);
 			}
 		}
 	}
@@ -329,8 +341,6 @@ public class FluxWindowTimeoutStressTest {
 	@State
 	public static class FluxWindowTimoutStressTest1_3 {
 
-
-
 		final Sinks.Many<Long> proxy = Sinks.many().unicast().onBackpressureBuffer(Queues.<Long>get(8).get());
 		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
 		StressSubscriber<Long> subscriber1 = new StressSubscriber<>();
@@ -342,6 +352,8 @@ public class FluxWindowTimeoutStressTest {
 		StressSubscriber<Long> subscriber7 = new StressSubscriber<>();
 		StressSubscriber<Long> subscriber8 = new StressSubscriber<>();
 		StressSubscriber<Long> subscriber9 = new StressSubscriber<>();
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest1_3");
 		final StressSubscriber<Flux<Long>> mainSubscriber          =
 				new StressSubscriber<Flux<Long>>(1) {
 					int index = 0;
@@ -393,7 +405,8 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final AtomicLong requested = new AtomicLong();
 
 		{
@@ -458,14 +471,14 @@ public class FluxWindowTimeoutStressTest {
 
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get());
+				throw new IllegalStateException("unexpected completion " + mainSubscriber.onCompleteCalls.get() + "\n" + fastLogger);
 			}
 		}
 	}
@@ -519,6 +532,9 @@ public class FluxWindowTimeoutStressTest {
 						}
 					}
 				};
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest2_0");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long>
 		                                   windowTimeoutSubscriber =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(
@@ -526,7 +542,8 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long> subscription            =
 				new StressSubscription<>(windowTimeoutSubscriber);
 
@@ -562,15 +579,15 @@ public class FluxWindowTimeoutStressTest {
 			result.r5 = subscription.requested;
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
 
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("Multiple completions");
+				throw new IllegalStateException("Multiple completions" + "\n" + fastLogger);
 			}
 		}
 	}
@@ -612,6 +629,9 @@ public class FluxWindowTimeoutStressTest {
 						}
 					}
 				};
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest2_1");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long>
 		                                   windowTimeoutSubscriber =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(
@@ -619,7 +639,8 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long> subscription            =
 				new StressSubscription<>(windowTimeoutSubscriber);
 
@@ -656,11 +677,11 @@ public class FluxWindowTimeoutStressTest {
 			result.r5 = subscription.requested;
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
 
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
@@ -733,6 +754,9 @@ public class FluxWindowTimeoutStressTest {
 						}
 					}
 				};
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutStressTest2_2");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long>
 		                                   windowTimeoutSubscriber =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(
@@ -740,7 +764,8 @@ public class FluxWindowTimeoutStressTest {
 						2,
 						1,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long> subscription            =
 				new StressSubscription<>(windowTimeoutSubscriber);
 
@@ -792,14 +817,15 @@ public class FluxWindowTimeoutStressTest {
 			result.r5 = subscription.requested;
 
 			if (mainSubscriber.concurrentOnNext.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result, mainSubscriber.stacktraceOnNext);
+				throw new IllegalStateException("mainSubscriber Concurrent OnNext " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnNext);
 			}
+
 			if (mainSubscriber.concurrentOnComplete.get()) {
-				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result, mainSubscriber.stacktraceOnComplete);
+				throw new IllegalStateException("mainSubscriber Concurrent OnComplete " + result + "\n" + fastLogger, mainSubscriber.stacktraceOnComplete);
 			}
 
 			if (mainSubscriber.onCompleteCalls.get() > 1) {
-				throw new IllegalStateException("Multiple completions");
+				throw new IllegalStateException("Multiple completions" + "\n" + fastLogger);
 			}
 		}
 	}
@@ -815,16 +841,20 @@ public class FluxWindowTimeoutStressTest {
 				new StressSubscriber<>(0);
 		final StressSubscriber<Long>                                          subscriber           =
 				new StressSubscriber<>(0);
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutInnerWindowStressTest");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long> parent               =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(downstream,
 						10,
 						10,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long>                                        upstream             =
 				new StressSubscription<>(parent);
 		final FluxWindowTimeout.InnerWindow<Long>                             inner                =
-				new FluxWindowTimeout.InnerWindow<>(10, parent, 1, false);
+				new FluxWindowTimeout.InnerWindow<>(10, parent, 1, false, parent.logger);
 
 		{
 			parent.onSubscribe(upstream);
@@ -856,11 +886,11 @@ public class FluxWindowTimeoutStressTest {
 			result.r2 = subscriber.onCompleteCalls.get() + subscriber.onErrorCalls.get() * 2L;
 
 			if (subscriber.concurrentOnNext.get()) {
-				throw new RuntimeException("concurrentOnNext");
+				throw new RuntimeException("concurrentOnNext" + "\n" + fastLogger);
 			}
 
 			if (subscriber.concurrentOnComplete.get()) {
-				throw new RuntimeException("concurrentOnComplete");
+				throw new RuntimeException("concurrentOnComplete" + "\n" + fastLogger);
 			}
 		}
 	}
@@ -878,16 +908,20 @@ public class FluxWindowTimeoutStressTest {
 				new StressSubscriber<>(0);
 		final StressSubscriber<Long>                                          subscriber           =
 				new StressSubscriber<>(0);
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutInnerWindowStressTest1");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long> parent               =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(downstream,
 						10,
 						10,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long>                                        upstream             =
 				new StressSubscription<>(parent);
 		final FluxWindowTimeout.InnerWindow<Long>                             inner                =
-				new FluxWindowTimeout.InnerWindow<>(10, parent, 1, false);
+				new FluxWindowTimeout.InnerWindow<>(10, parent, 1, false, parent.logger);
 
 		{
 			parent.onSubscribe(upstream);
@@ -925,11 +959,11 @@ public class FluxWindowTimeoutStressTest {
 			result.r3 = FluxWindowTimeout.InnerWindow.isCancelled(inner.state);
 
 			if (subscriber.concurrentOnNext.get()) {
-				throw new RuntimeException("concurrentOnNext");
+				throw new RuntimeException("concurrentOnNext" + "\n" + fastLogger);
 			}
 
 			if (subscriber.concurrentOnComplete.get()) {
-				throw new RuntimeException("concurrentOnComplete");
+				throw new RuntimeException("concurrentOnComplete" + "\n" + fastLogger);
 			}
 		}
 	}
@@ -946,16 +980,20 @@ public class FluxWindowTimeoutStressTest {
 				new StressSubscriber<>(0);
 		final StressSubscriber<Long>                                          subscriber           =
 				new StressSubscriber<>(0);
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutInnerWindowStressTest2");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long> parent               =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(downstream,
 						10,
 						10,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long>                                        upstream             =
 				new StressSubscription<>(parent);
 		final FluxWindowTimeout.InnerWindow<Long>                             inner                =
-				new FluxWindowTimeout.InnerWindow<>(10, parent, 1, false);
+				new FluxWindowTimeout.InnerWindow<>(10, parent, 1, false, parent.logger);
 
 		{
 			parent.onSubscribe(upstream);
@@ -993,11 +1031,11 @@ public class FluxWindowTimeoutStressTest {
 			result.r3 = FluxWindowTimeout.InnerWindow.isCancelled(inner.state);
 
 			if (subscriber.concurrentOnNext.get()) {
-				throw new RuntimeException("concurrentOnNext");
+				throw new RuntimeException("concurrentOnNext" + "\n" + fastLogger);
 			}
 
 			if (subscriber.concurrentOnComplete.get()) {
-				throw new RuntimeException("concurrentOnComplete");
+				throw new RuntimeException("concurrentOnComplete" + "\n" + fastLogger);
 			}
 		}
 	}
@@ -1015,16 +1053,20 @@ public class FluxWindowTimeoutStressTest {
 				new StressSubscriber<>(0);
 		final StressSubscriber<Long>                                          subscriber           =
 				new StressSubscriber<>(0);
+
+		final FastLogger           fastLogger              =
+				new FastLogger("FluxWindowTimoutInnerWindowStressTest3");
 		final FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Long> parent               =
 				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(downstream,
 						10,
 						10,
 						TimeUnit.SECONDS,
-						virtualTimeScheduler);
+						virtualTimeScheduler,
+						new StateLogger(fastLogger));
 		final StressSubscription<Long>                                        upstream             =
 				new StressSubscription<>(parent);
 		final FluxWindowTimeout.InnerWindow<Long>                             inner                =
-				new FluxWindowTimeout.InnerWindow<>(5, parent, 1, false);
+				new FluxWindowTimeout.InnerWindow<>(5, parent, 1, false, parent.logger);
 
 		{
 			parent.onSubscribe(upstream);
@@ -1064,11 +1106,11 @@ public class FluxWindowTimeoutStressTest {
 			result.r2 = subscriber.onCompleteCalls.get() + subscriber.onErrorCalls.get() * 2L;;
 
 			if (subscriber.concurrentOnNext.get()) {
-				throw new RuntimeException("concurrentOnNext");
+				throw new RuntimeException("concurrentOnNext" + "\n" + fastLogger);
 			}
 
 			if (subscriber.concurrentOnComplete.get()) {
-				throw new RuntimeException("concurrentOnComplete");
+				throw new RuntimeException("concurrentOnComplete" + "\n" + fastLogger);
 			}
 		}
 	}

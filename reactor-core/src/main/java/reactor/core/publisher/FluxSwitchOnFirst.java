@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			return new SwitchOnFirstConditionalMain<>((Fuseable.ConditionalSubscriber<? super R>) actual,
 					transformer,
-					cancelSourceOnComplete);
+					cancelSourceOnComplete,
+					null);
 		}
 		return new SwitchOnFirstMain<>(actual, transformer, cancelSourceOnComplete);
 	}
@@ -108,7 +109,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_FIRST_VALUE_RECEIVED_FLAG)) {
+			final int nextState = state | HAS_FIRST_VALUE_RECEIVED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "mfvr", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -128,7 +133,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_SUBSCRIBED_ONCE_FLAG)) {
+			final int nextState = state | HAS_INBOUND_SUBSCRIBED_ONCE_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "miso", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -148,7 +157,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_SUBSCRIBER_SET_FLAG)) {
+			final int nextState = state | HAS_INBOUND_SUBSCRIBER_SET_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "miss", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -168,7 +181,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_REQUESTED_ONCE_FLAG)) {
+			int nextState = state | HAS_INBOUND_REQUESTED_ONCE_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "miro", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -188,7 +205,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_FIRST_VALUE_SENT_FLAG)) {
+			final int nextState = state | HAS_FIRST_VALUE_SENT_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "mfvs", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -208,7 +229,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_TERMINATED_FLAG)) {
+			final int nextState = state | HAS_INBOUND_TERMINATED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "mitd", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -228,7 +253,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG)) {
+			final int nextState = state | HAS_INBOUND_CANCELLED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "micd", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -248,7 +277,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CLOSED_PREMATURELY_FLAG)) {
+			final int nextState = state | HAS_INBOUND_CLOSED_PREMATURELY_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "micp", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -273,7 +306,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_INBOUND_CANCELLED_FLAG | HAS_OUTBOUND_TERMINATED_FLAG)) {
+			final int nextState =
+					state | HAS_INBOUND_CANCELLED_FLAG | HAS_OUTBOUND_TERMINATED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "icot", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -293,7 +331,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_OUTBOUND_SUBSCRIBED_FLAG)) {
+			final int nextState = state | HAS_OUTBOUND_SUBSCRIBED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "mosd", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -314,7 +356,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_OUTBOUND_TERMINATED_FLAG)) {
+			final int nextState = state | HAS_OUTBOUND_TERMINATED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "motd", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -334,7 +380,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return state;
 			}
 
-			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, state | HAS_OUTBOUND_CANCELLED_FLAG)) {
+			final int nextState = state | HAS_OUTBOUND_CANCELLED_FLAG;
+			if (AbstractSwitchOnFirstMain.STATE.compareAndSet(instance, state, nextState)) {
+				if (instance.logger != null) {
+					instance.logger.log(instance.toString(), "mocd", state, nextState);
+				}
 				return state;
 			}
 		}
@@ -387,7 +437,11 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
 			implements InnerOperator<T, R> {
 
-		final SwitchOnFirstControlSubscriber<? super R>                        outboundSubscriber;
+		@Nullable
+		final StateLogger                                                      logger;
+
+		final SwitchOnFirstControlSubscriber<? super R>
+		                                                                       outboundSubscriber;
 		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
 		Subscription s;
@@ -409,7 +463,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		@SuppressWarnings("unchecked")
 		AbstractSwitchOnFirstMain(CoreSubscriber<? super R> outboundSubscriber,
 				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
-				boolean cancelSourceOnComplete) {
+				boolean cancelSourceOnComplete,
+				@Nullable StateLogger logger) {
 			this.outboundSubscriber = outboundSubscriber instanceof Fuseable.ConditionalSubscriber ?
 					new SwitchOnFirstConditionalControlSubscriber<>(this,
 							(Fuseable.ConditionalSubscriber<R>) outboundSubscriber,
@@ -417,6 +472,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					new SwitchOnFirstControlSubscriber<>(this, outboundSubscriber,
 							cancelSourceOnComplete);
 			this.transformer = transformer;
+			this.logger = logger;
 		}
 
 		@Override
@@ -721,10 +777,18 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchOnFirstMain<T, R> extends AbstractSwitchOnFirstMain<T, R> {
 
+
 		SwitchOnFirstMain(CoreSubscriber<? super R> outer,
 				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
 				boolean cancelSourceOnComplete) {
-			super(outer, transformer, cancelSourceOnComplete);
+			super(outer, transformer, cancelSourceOnComplete, null);
+		}
+
+		SwitchOnFirstMain(CoreSubscriber<? super R> outer,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete,
+				@Nullable StateLogger logger) {
+			super(outer, transformer, cancelSourceOnComplete, logger);
 		}
 
 		@Override
@@ -746,7 +810,14 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		SwitchOnFirstConditionalMain(Fuseable.ConditionalSubscriber<? super R> outer,
 				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
 				boolean cancelSourceOnComplete) {
-			super(outer, transformer, cancelSourceOnComplete);
+			super(outer, transformer, cancelSourceOnComplete, null);
+		}
+
+		SwitchOnFirstConditionalMain(Fuseable.ConditionalSubscriber<? super R> outer,
+				BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer,
+				boolean cancelSourceOnComplete,
+				@Nullable StateLogger logger) {
+			super(outer, transformer, cancelSourceOnComplete, logger);
 		}
 
 		@Override

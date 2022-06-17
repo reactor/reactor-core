@@ -410,7 +410,7 @@ public class FluxSwitchMapTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxSwitchMapNoPrefetch.SwitchMapMain<Integer, Integer> main =
 			new FluxSwitchMapNoPrefetch.SwitchMapMain<>(actual, i -> Mono.just(i));
-		FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer> test = new FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer>(main, actual, 0);
+		FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer> test = new FluxSwitchMapNoPrefetch.SwitchMapInner<Integer, Integer>(main, actual, 0, null);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
