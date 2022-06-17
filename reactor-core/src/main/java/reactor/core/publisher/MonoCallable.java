@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -44,28 +45,7 @@ final class MonoCallable<T> extends Mono<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Operators.MonoSubscriber<T, T>
-				sds = new Operators.MonoSubscriber<>(actual);
-
-		actual.onSubscribe(sds);
-
-		if (sds.isCancelled()) {
-			return;
-		}
-
-		try {
-			T t = callable.call();
-			if (t == null) {
-				sds.onComplete();
-			}
-			else {
-				sds.complete(t);
-			}
-		}
-		catch (Throwable e) {
-			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-		}
-
+		actual.onSubscribe(new MonoCallableSubscription<>(actual, this.callable));
 	}
 
 	@Override
@@ -96,5 +76,171 @@ final class MonoCallable<T> extends Mono<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
+	}
+
+	static class MonoCallableSubscription<T>
+			implements InnerProducer<T>, Fuseable, QueueSubscription<T> {
+
+		final CoreSubscriber<? super T> actual;
+		final Callable<? extends T>     callable;
+
+		boolean done;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<MonoCallableSubscription> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(MonoCallableSubscription.class,
+						"state");
+
+		static final int CANCELLED_FLAG      = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+		static final int REQUESTED_ONCE_FLAG = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+		static final int TERMINATED_FLAG     = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+
+		MonoCallableSubscription(CoreSubscriber<? super T> actual, Callable<? extends T> callable) {
+			this.actual = actual;
+			this.callable = callable;
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return this.actual;
+		}
+
+		@Override
+		public T poll() {
+			if (this.done) {
+				return null;
+			}
+
+			this.done = true;
+
+			try {
+				return this.callable.call();
+			}
+			catch (Throwable e) {
+				throw Exceptions.propagate(e);
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			int previousState = makeRequestedOnce(this);
+
+			if (isCancelled(previousState) || isRequestedOnce(previousState)) {
+				return;
+			}
+
+			final CoreSubscriber<? super T> s = this.actual;
+
+			final T value;
+			try {
+				value = this.callable.call();
+			}
+			catch (Exception e) {
+				previousState = makeTerminated(this);
+
+				if (isCancelled(previousState)) {
+					Operators.onErrorDropped(e, s.currentContext());
+					return;
+				}
+
+				s.onError(e);
+				return;
+			}
+
+			previousState = makeTerminated(this);
+			if (isCancelled(previousState)) {
+				Operators.onDiscard(value, s.currentContext());
+				return;
+			}
+
+			if (value != null) {
+				s.onNext(value);
+			}
+
+			s.onComplete();
+		}
+
+		@Override
+		public void cancel() {
+			makeCancelled(this);
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return requestedMode & SYNC;
+		}
+
+		@Override
+		public int size() {
+			return this.done ? 0 : 1;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return this.done;
+		}
+
+		@Override
+		public void clear() {
+			this.done = true;
+		}
+
+		static <T> int makeRequestedOnce(MonoCallableSubscription<T> instance) {
+			for (;;) {
+				final int state = instance.state;
+
+				if (isCancelled(state) || isRequestedOnce(state)) {
+					return state;
+				}
+
+				final int nextState = state | REQUESTED_ONCE_FLAG;
+				if (STATE.compareAndSet(instance, state, nextState)) {
+					return state;
+				}
+			}
+		}
+
+		static <T> int makeTerminated(MonoCallableSubscription<T> instance) {
+			for (;;) {
+				final int state = instance.state;
+
+				if (isCancelled(state)) {
+					return state;
+				}
+
+				final int nextState = state | TERMINATED_FLAG;
+				if (STATE.compareAndSet(instance, state, nextState)) {
+					return state;
+				}
+			}
+		}
+
+		static <T> int makeCancelled(MonoCallableSubscription<T> instance) {
+			for (;;) {
+				final int state = instance.state;
+
+				if (isCancelled(state) || isTerminated(state)) {
+					return state;
+				}
+
+				final int nextState = state | CANCELLED_FLAG;
+				if (STATE.compareAndSet(instance, state, nextState)) {
+					return state;
+				}
+			}
+		}
+
+		static boolean isCancelled(int state) {
+			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
+		}
+
+		static boolean isRequestedOnce(int state) {
+			return (state & REQUESTED_ONCE_FLAG) == REQUESTED_ONCE_FLAG;
+		}
+
+		static boolean isTerminated(int state) {
+			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
+		}
 	}
 }
