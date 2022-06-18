@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,16 +55,29 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 		return super.scanUnsafe(key);
 	}
 
-	static final class AllSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
+	static final class AllSubscriber<T> implements InnerOperator<T, Boolean>,
+	                                               Fuseable, //for constants only
+	                                               QueueSubscription<Boolean> {
 		final Predicate<? super T> predicate;
+		final CoreSubscriber<? super Boolean> actual;
 
 		Subscription s;
 
 		boolean done;
 
 		AllSubscriber(CoreSubscriber<? super Boolean> actual, Predicate<? super T> predicate) {
-			super(actual);
+			this.actual = actual;
 			this.predicate = predicate;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public CoreSubscriber<? super Boolean> actual() {
+			return this.actual;
 		}
 
 		@Override
@@ -73,14 +86,19 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(Long.MAX_VALUE);
 		}
 
 		@Override
 		public void cancel() {
 			s.cancel();
-			super.cancel();
 		}
 
 		@Override
@@ -88,8 +106,6 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -113,7 +129,8 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 				done = true;
 				s.cancel();
 
-				complete(false);
+				this.actual.onNext(false);
+				this.actual.onComplete();
 			}
 		}
 
@@ -134,8 +151,28 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 				return;
 			}
 			done = true;
-			complete(true);
+			actual.onNext(true);
+			actual.onComplete();
 		}
 
+		@Override
+		public Boolean poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+
+		}
 	}
 }
