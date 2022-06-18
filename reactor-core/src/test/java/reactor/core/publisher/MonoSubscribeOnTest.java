@@ -174,9 +174,9 @@ public class MonoSubscribeOnTest {
 					}
 					return 0;
 				})
+			    .subscribeOn(timeoutScheduler)
 				.timeout(Duration.ofMillis(100L))
-				.onErrorResume(t -> Mono.fromCallable(() -> 1))
-				.subscribeOn(timeoutScheduler),
+				.onErrorResume(t -> Mono.fromCallable(() -> 1)),
 			0)
 			.expectSubscription()
 			.thenRequest(1)

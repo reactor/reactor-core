@@ -93,8 +93,8 @@ final class MonoCallable<T> extends Mono<T>
 						"state");
 
 		static final int CANCELLED_FLAG      = 0b1000_0000_0000_0000_0000_0000_0000_0000;
-		static final int REQUESTED_ONCE_FLAG = 0b1000_0000_0000_0000_0000_0000_0000_0000;
-		static final int TERMINATED_FLAG     = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+		static final int TERMINATED_FLAG     = 0b0100_0000_0000_0000_0000_0000_0000_0000;
+		static final int REQUESTED_ONCE_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
 
 		MonoCallableSubscription(CoreSubscriber<? super T> actual, Callable<? extends T> callable) {
 			this.actual = actual;

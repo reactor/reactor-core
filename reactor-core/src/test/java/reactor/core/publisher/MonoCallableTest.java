@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -54,14 +55,26 @@ public class MonoCallableTest {
 	}
 
 	@Test
-	public void callableReturnsNullShortcircuitsBackpressure() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+	public void callableReturnsNullBackpressure() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(1);
 
 		Mono.<Integer>fromCallable(() -> null).subscribe(ts);
 
 		ts.assertNoValues()
 				.assertNoError()
 				.assertComplete();
+	}
+
+	@Test
+	public void callableReturnsNullShortcircuitsBackpressureSyncFusion() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.<Integer>create(0)
+		                                               .requestedFusionMode(Fuseable.SYNC);
+
+		Mono.<Integer>fromCallable(() -> null).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
