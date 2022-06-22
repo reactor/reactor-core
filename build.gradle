@@ -170,6 +170,14 @@ tasks.named("dependencyUpdates").configure {
 			writer.write ':white_check_mark: All dependencies up to date'
 		}
 		println writer.toString()
+
+		//detect GitHub Actions workflow summary file and append our markdown summary to it
+		def summaryFile = "$System.env.GITHUB_STEP_SUMMARY"
+		def file = new File(summaryFile)
+		if (!updatable.isEmpty() && !summaryFile.isEmpty() && file.exists() && file.canWrite()) {
+			println "GitHub Action workflow summary detected, adding to summary"
+			file.withWriter('utf-8') { wrt -> wrt.write(writer.toString()) }
+		}
 	}
 }
 
