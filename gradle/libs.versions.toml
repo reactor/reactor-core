@@ -51,3 +51,4 @@ nohttp = { id = "io.spring.nohttp", version = "0.0.10" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
 spotless = { id = "com.diffplug.spotless", version = "6.7.0" }
 testsets = { id = "org.unbroken-dome.test-sets", version = "4.0.0" }
+versions = "com.github.ben-manes.versions:0.42.0"

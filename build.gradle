@@ -40,6 +40,8 @@ plugins {
 	alias(libs.plugins.nohttp)
 	alias(libs.plugins.jcstress) apply false
 	alias(libs.plugins.spotless)
+	// for discovery of new versions
+	alias(libs.plugins.versions)
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -129,6 +131,45 @@ spotless {
 			'reactor-core/src/main/java/reactor/util/annotation/NonNullApi.java',
 			'reactor-core/src/main/java/reactor/util/annotation/Nullable.java'
 		licenseHeaderFile('codequality/spotless/licenseSlashstarStyle.txt')
+	}
+}
+
+// https://github.com/ben-manes/gradle-versions-plugin
+def isNonStable = { String version ->
+	def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+	def regex = /^[0-9,.v-]+(-r)?$/
+	return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+	rejectVersionIf {
+		def artifact = "" + it.candidate
+		def isMicrometer = artifact.startsWith("io.micrometer")
+		def isJsr166 = artifact.startsWith("io.projectreactor:jsr166")
+		def isJsr305 = artifact.startsWith("com.google.code.findbugs:jsr305")
+
+		return isNonStable(it.candidate.version)
+			|| isMicrometer //TODO allow upgrades in the future on main ?
+			|| isJsr166
+			|| (isJsr305 && !artifact.endsWith("3.0.1"))
+	}
+
+	outputFormatter = { result ->
+		def updatable = result.outdated.dependencies
+		//go with console summary by default
+		def writer = new StringWriter()
+		if (!updatable.isEmpty()) {
+			writer.write '## Summary of available dependencies\n'
+			updatable
+				.sort { it.name }
+				.each { dependency ->
+				def newVersion = dependency.available.release ?: dependency.available.milestone
+				writer.write " - **$dependency.name** `$newVersion` (from v$dependency.version => `$dependency.group:$dependency.name:$newVersion`)\n"
+			}
+		}
+		else {
+			writer.write ':white_check_mark: All dependencies up to date'
+		}
+		println writer.toString()
 	}
 }
 
