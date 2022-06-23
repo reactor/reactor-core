@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,7 +34,7 @@ import reactor.core.Exceptions;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-public interface Scheduler extends Disposable {
+public interface Scheduler extends Disposable.Graceful {
 
 	/**
 	 * Schedules the non-delayed execution of the given task on this scheduler.

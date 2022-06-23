@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -32,6 +33,8 @@ import java.util.function.Supplier;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
@@ -47,6 +50,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	final String executorName;
 	final ScheduledExecutorService original;
+	final Sinks.Empty<Void> disposedNotifier;
 
 	@Nullable
 	volatile ScheduledExecutorService executor;
@@ -57,6 +61,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 			this.executorName = executorName;
 			this.original = convert(executorService);
 			this.executor = null; //to be initialized in start()
+			this.disposedNotifier = Sinks.empty();
 	}
 
 	ScheduledExecutorService getOrCreate() {
@@ -115,6 +120,15 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 		if (e != null) {
 			e.shutdownNow();
 		}
+	}
+
+	@Override
+	public Mono<Void> disposeGracefully(Duration gracefulTimeout) {
+		ScheduledExecutorService e = executor;
+		if (e != null) {
+			Schedulers.shutdownAndAwait(e, gracefulTimeout, disposedNotifier);
+		}
+		return disposedNotifier.asMono();
 	}
 
 	@SuppressWarnings("unchecked")

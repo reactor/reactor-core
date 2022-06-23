@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -358,6 +358,12 @@ public class RejectedExecutionTest {
 		@Override
 		public void dispose() {
 			actual.dispose();
+		}
+
+		// TODO(dj): implement tests for this case
+		@Override
+		public Mono<Void> disposeGracefully(Duration gracePeriod) {
+			return actual.disposeGracefully(gracePeriod);
 		}
 
 		@Override

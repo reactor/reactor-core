@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -28,6 +29,8 @@ import java.util.stream.Stream;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
@@ -44,7 +47,8 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     final int n;
     
-    final ThreadFactory factory;
+    final ThreadFactory     factory;
+    final Sinks.Empty<Void> disposedNotifier;
 
     volatile ScheduledExecutorService[] executors;
     static final AtomicReferenceFieldUpdater<ParallelScheduler, ScheduledExecutorService[]> EXECUTORS =
@@ -66,6 +70,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         }
         this.n = n;
         this.factory = factory;
+        this.disposedNotifier = Sinks.empty();
     }
 
     /**
@@ -124,7 +129,19 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             }
         }
     }
-    
+
+    @Override
+    public Mono<Void> disposeGracefully(Duration gracePeriod) {
+        ScheduledExecutorService[] a = executors;
+        if (a != SHUTDOWN) {
+            a = EXECUTORS.getAndSet(this, SHUTDOWN);
+            if (a != SHUTDOWN && a != null) {
+                Schedulers.shutdownAndAwait(a, gracePeriod, disposedNotifier);
+            }
+        }
+        return this.disposedNotifier.asMono();
+    }
+
     ScheduledExecutorService pick() {
         ScheduledExecutorService[] a = executors;
         if (a == null) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -27,6 +28,8 @@ import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
@@ -39,6 +42,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	static final AtomicLong COUNTER       = new AtomicLong();
 
 	final ThreadFactory factory;
+	final Sinks.Empty<Void> disposedNotifier;
 
 	volatile ScheduledExecutorService executor;
 	static final AtomicReferenceFieldUpdater<SingleScheduler, ScheduledExecutorService> EXECUTORS =
@@ -55,6 +59,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	SingleScheduler(ThreadFactory factory) {
 		this.factory = factory;
+		this.disposedNotifier = Sinks.empty();
 	}
 
 	/**
@@ -106,6 +111,18 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				a.shutdownNow();
 			}
 		}
+	}
+
+	@Override
+	public Mono<Void> disposeGracefully(Duration gracePeriod) {
+		ScheduledExecutorService a = executor;
+		if (a != TERMINATED) {
+			a = EXECUTORS.getAndSet(this, TERMINATED);
+			if (a != TERMINATED && a != null) {
+				Schedulers.shutdownAndAwait(a, gracePeriod, this.disposedNotifier);
+			}
+		}
+		return this.disposedNotifier.asMono();
 	}
 
 	@Override
