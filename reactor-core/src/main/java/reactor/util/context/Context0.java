@@ -19,6 +19,7 @@ package reactor.util.context;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class Context0 implements CoreContext {
@@ -65,6 +66,10 @@ final class Context0 implements CoreContext {
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.empty();
+	}
+
+	@Override
+	public void forEach(BiConsumer<Object, Object> consumer) {
 	}
 
 	@Override

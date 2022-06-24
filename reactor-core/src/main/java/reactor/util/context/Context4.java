@@ -20,6 +20,7 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class Context4 implements CoreContext {
@@ -159,6 +160,14 @@ final class Context4 implements CoreContext {
 				new AbstractMap.SimpleImmutableEntry<>(key2, value2),
 				new AbstractMap.SimpleImmutableEntry<>(key3, value3),
 				new AbstractMap.SimpleImmutableEntry<>(key4, value4));
+	}
+
+	@Override
+	public void forEach(BiConsumer<Object, Object> consumer) {
+		consumer.accept(key1, value1);
+		consumer.accept(key2, value2);
+		consumer.accept(key3, value3);
+		consumer.accept(key4, value4);
 	}
 
 	@Override

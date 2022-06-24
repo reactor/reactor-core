@@ -19,6 +19,7 @@ package reactor.util.context;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -134,4 +135,6 @@ public interface ContextView {
 	 * @return a {@link Stream} of key/value pairs held by this context
 	 */
 	Stream<Map.Entry<Object, Object>> stream();
+
+	void forEach(BiConsumer<Object, Object> consumer);
 }
