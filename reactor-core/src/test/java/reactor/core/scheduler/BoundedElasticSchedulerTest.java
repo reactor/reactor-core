@@ -51,8 +51,10 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
@@ -407,10 +409,15 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		assertThat(s.boundedServices).isSameAs(servicesBefore);
 	}
 
-	@Test
-	public void restartSupported() {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void restartSupported(boolean disposeGracefully) {
 		BoundedElasticScheduler s = scheduler();
-		s.dispose();
+		if (disposeGracefully) {
+			s.disposeGracefully(Duration.ofSeconds(1)).subscribe();
+		} else {
+			s.dispose();
+		}
 		BoundedServices servicesBefore = s.boundedServices;
 
 		assertThat(servicesBefore).as("SHUTDOWN").isSameAs(BoundedElasticScheduler.SHUTDOWN);
@@ -578,8 +585,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			System.out.println(Arrays.toString(Arrays.copyOf(threadCountTrend, threadCountChange)));
 		}
 		finally {
-			scheduler.dispose();
-			Thread.sleep(100);
+			scheduler.disposeGracefully(Duration.ofMillis(100)).block();
 			final long postShutdown = dumpThreadNames().filter(name -> name.contains("dequeueEviction")).count();
 			LOGGER.info("{} worker threads active post shutdown", postShutdown);
 			assertThat(postShutdown)
@@ -592,8 +598,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 	}
 
-	@Test
-	public void userWorkerShutdownBySchedulerDisposal() throws InterruptedException {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void userWorkerShutdownBySchedulerDisposal(boolean disposeGracefully) throws InterruptedException {
 		Scheduler s = afterTest.autoDispose(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticUserThread", 10, false));
 		Worker w = afterTest.autoDispose(s.createWorker());
 
@@ -607,11 +614,19 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
 
-		s.dispose();
+		if (disposeGracefully) {
+			s.disposeGracefully(Duration.ofMillis(100)).block();
+			assertThat(dumpThreadNames()).doesNotContain(threadName.get());
+		} else {
+			s.dispose();
 
-		Awaitility.with().pollInterval(100, TimeUnit.MILLISECONDS)
-		          .await().atMost(500, TimeUnit.MILLISECONDS)
-		          .untilAsserted(() -> assertThat(dumpThreadNames()).doesNotContain(threadName.get()));
+			Awaitility.with()
+			          .pollInterval(100, TimeUnit.MILLISECONDS)
+			          .await()
+			          .atMost(500, TimeUnit.MILLISECONDS)
+			          .untilAsserted(() -> assertThat(dumpThreadNames()).doesNotContain(
+					          threadName.get()));
+		}
 	}
 
 	@Test

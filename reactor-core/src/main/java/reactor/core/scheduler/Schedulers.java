@@ -1560,7 +1560,7 @@ public abstract class Schedulers {
 	static final void shutdownAndAwait(ExecutorService executor, Duration duration,
 			Sinks.Empty<Void> disposedNotifier) {
 		executor.shutdown();
-		Schedulers.parallel().schedule(() -> {
+		Schedulers.boundedElastic().schedule(() -> {
 			try {
 				boolean terminated = executor.awaitTermination(duration.toMillis(),
 						TimeUnit.MILLISECONDS);
@@ -1582,7 +1582,7 @@ public abstract class Schedulers {
 		Flux.fromArray(executors).flatMapDelayError(executor -> {
 			executor.shutdown();
 			Sinks.Empty<Void> done = Sinks.empty();
-			Schedulers.parallel()
+			Schedulers.boundedElastic()
 			          .schedule(() -> {
 				          try {
 					          boolean terminated = executor.awaitTermination(duration.toMillis(),
