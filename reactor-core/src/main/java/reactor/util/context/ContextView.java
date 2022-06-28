@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -136,5 +137,13 @@ public interface ContextView {
 	 */
 	Stream<Map.Entry<Object, Object>> stream();
 
-	void forEach(BiConsumer<Object, Object> consumer);
+	/**
+	 * Perform the given action for each entry in this map. If the action throws an
+	 * exception, it is immediately propagated to the caller and the remaining items
+	 * will not be processed.
+	 *
+	 * @param action The action to be performed for each entry
+	 * @throws NullPointerException if the specified action is null
+	 */
+	void forEach(BiConsumer<Object, Object> action);
 }

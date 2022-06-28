@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,10 +122,10 @@ final class Context3 implements CoreContext {
 	}
 
 	@Override
-	public void forEach(BiConsumer<Object, Object> consumer) {
-		consumer.accept(key1, value1);
-		consumer.accept(key2, value2);
-		consumer.accept(key3, value3);
+	public void forEach(BiConsumer<Object, Object> action) {
+		action.accept(key1, value1);
+		action.accept(key2, value2);
+		action.accept(key3, value3);
 	}
 
 	@Override
