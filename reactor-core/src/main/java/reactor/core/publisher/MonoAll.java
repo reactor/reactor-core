@@ -111,8 +111,8 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 
 		@Override
 		public void onNext(T t) {
-
 			if (done) {
+				Operators.onDiscard(t, this.actual.currentContext());
 				return;
 			}
 
