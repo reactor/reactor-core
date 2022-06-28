@@ -16,7 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
