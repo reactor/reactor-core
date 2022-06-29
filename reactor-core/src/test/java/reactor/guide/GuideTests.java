@@ -736,30 +736,30 @@ public class GuideTests {
 
 	@Test
 	public void errorHandlingRetryWhenTransient() {
-final AtomicInteger transientHelper = new AtomicInteger();
-Supplier<Flux<Integer>> httpRequest = () ->
-    Flux.generate(sink -> { // <1>
-        int i = transientHelper.getAndIncrement();
-        if (i == 10) { // <2>
-            sink.next(i);
-            sink.complete();
-        }
-        else if (i % 3 == 0) { // <3>
-            sink.next(i);
-        }
-        else {
-            sink.error(new IllegalStateException("Transient error at " + i)); // <4>
-        }
-    });
-//== NB: in the guide, the executable transientFlux above is shown second, separately from the simplified snippet below
+		final AtomicInteger transientHelper = new AtomicInteger();
+		Supplier<Flux<Integer>> httpRequest = () ->
+			Flux.generate(sink -> { // <1>
+				int i = transientHelper.getAndIncrement();
+				if (i == 10) { // <2>
+					sink.next(i);
+					sink.complete();
+				}
+				else if (i % 3 == 0) { // <3>
+					sink.next(i);
+				}
+				else {
+					sink.error(new IllegalStateException("Transient error at " + i)); // <4>
+				}
+			});
+		// NB: in the guide, the executable transientFlux above is shown second, separately from the simplified snippet below
 
-AtomicInteger errorCount = new AtomicInteger(); // <1>
-Flux<Integer> transientFlux = httpRequest.get() // <2>
-        .doOnError(e -> errorCount.incrementAndGet());
+		AtomicInteger errorCount = new AtomicInteger(); // <1>
+		Flux<Integer> transientFlux = httpRequest.get() // <2>
+			.doOnError(e -> errorCount.incrementAndGet());
 
-transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <3>
-             .blockLast();
-assertThat(errorCount).hasValue(6); // <4>
+		transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <3>
+			.blockLast();
+		assertThat(errorCount).hasValue(6); // <4>
 
 		transientHelper.set(0);
 		transientFlux.retryWhen(Retry.max(2).transientErrors(true))

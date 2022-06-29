@@ -972,8 +972,8 @@ assertThat(errorCount).hasValue(6); // <4>
 ----
 <1> We will count the number of errors in the retried sequence for illustration.
 <2> We assume a http request source, eg. a streaming endpoint that will sometimes fail two times in a row, then recover.
-<5> We use `retryWhen` on that source, configured for at most 2 retry attempts, but in `transientErrors` mode.
-<6> At the end, a valid response is achieved and the `transientFlux` successfully completes after `6` attempts have been registered in `errorCount`.
+<3> We use `retryWhen` on that source, configured for at most 2 retry attempts, but in `transientErrors` mode.
+<4> At the end, a valid response is achieved and the `transientFlux` successfully completes after `6` attempts have been registered in `errorCount`.
 ====
 
 Without the `transientErrors(true)`, the configured maximum attempt of `2` would be exceeded by the second burst and the whole sequence would have ultimately failed.
