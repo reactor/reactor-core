@@ -26,7 +26,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
-/**
+ /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
  * <p>
  *  Preferred to {@link java.util.function.Supplier} because the Callable may throw.
@@ -86,15 +86,13 @@ final class MonoCallable<T> extends Mono<T>
 
 		boolean done;
 
-		volatile int state;
+		volatile int requestedOnce;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MonoCallableSubscription> STATE =
+		static final AtomicIntegerFieldUpdater<MonoCallableSubscription> REQUESTED_ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(MonoCallableSubscription.class,
-						"state");
+						"requestedOnce");
 
-		static final int CANCELLED_FLAG      = 0b1000_0000_0000_0000_0000_0000_0000_0000;
-		static final int TERMINATED_FLAG     = 0b0100_0000_0000_0000_0000_0000_0000_0000;
-		static final int REQUESTED_ONCE_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
+		volatile boolean cancelled;
 
 		MonoCallableSubscription(CoreSubscriber<? super T> actual, Callable<? extends T> callable) {
 			this.actual = actual;
@@ -124,9 +122,7 @@ final class MonoCallable<T> extends Mono<T>
 
 		@Override
 		public void request(long n) {
-			int previousState = makeRequestedOnce(this);
-
-			if (isCancelled(previousState) || isRequestedOnce(previousState)) {
+			if (this.requestedOnce == 1 || !REQUESTED_ONCE.compareAndSet(this, 0 , 1)) {
 				return;
 			}
 
@@ -137,9 +133,7 @@ final class MonoCallable<T> extends Mono<T>
 				value = this.callable.call();
 			}
 			catch (Exception e) {
-				previousState = makeTerminated(this);
-
-				if (isCancelled(previousState)) {
+				if (this.cancelled) {
 					Operators.onErrorDropped(e, s.currentContext());
 					return;
 				}
@@ -148,8 +142,8 @@ final class MonoCallable<T> extends Mono<T>
 				return;
 			}
 
-			previousState = makeTerminated(this);
-			if (isCancelled(previousState)) {
+
+			if (this.cancelled) {
 				Operators.onDiscard(value, s.currentContext());
 				return;
 			}
@@ -163,7 +157,7 @@ final class MonoCallable<T> extends Mono<T>
 
 		@Override
 		public void cancel() {
-			makeCancelled(this);
+			this.cancelled = true;
 		}
 
 		@Override
@@ -184,63 +178,6 @@ final class MonoCallable<T> extends Mono<T>
 		@Override
 		public void clear() {
 			this.done = true;
-		}
-
-		static <T> int makeRequestedOnce(MonoCallableSubscription<T> instance) {
-			for (;;) {
-				final int state = instance.state;
-
-				if (isCancelled(state) || isRequestedOnce(state)) {
-					return state;
-				}
-
-				final int nextState = state | REQUESTED_ONCE_FLAG;
-				if (STATE.compareAndSet(instance, state, nextState)) {
-					return state;
-				}
-			}
-		}
-
-		static <T> int makeTerminated(MonoCallableSubscription<T> instance) {
-			for (;;) {
-				final int state = instance.state;
-
-				if (isCancelled(state)) {
-					return state;
-				}
-
-				final int nextState = state | TERMINATED_FLAG;
-				if (STATE.compareAndSet(instance, state, nextState)) {
-					return state;
-				}
-			}
-		}
-
-		static <T> int makeCancelled(MonoCallableSubscription<T> instance) {
-			for (;;) {
-				final int state = instance.state;
-
-				if (isCancelled(state) || isTerminated(state)) {
-					return state;
-				}
-
-				final int nextState = state | CANCELLED_FLAG;
-				if (STATE.compareAndSet(instance, state, nextState)) {
-					return state;
-				}
-			}
-		}
-
-		static boolean isCancelled(int state) {
-			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
-		}
-
-		static boolean isRequestedOnce(int state) {
-			return (state & REQUESTED_ONCE_FLAG) == REQUESTED_ONCE_FLAG;
-		}
-
-		static boolean isTerminated(int state) {
-			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
 		}
 	}
 }
