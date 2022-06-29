@@ -146,11 +146,13 @@ tasks.named("dependencyUpdates").configure {
 		def isMicrometer = artifact.startsWith("io.micrometer")
 		def isJsr166 = artifact.startsWith("io.projectreactor:jsr166")
 		def isJsr305 = artifact.startsWith("com.google.code.findbugs:jsr305")
+		def isKotlin = artifact.startsWith("org.jetbrains.kotlin")
 
 		return isNonStable(it.candidate.version)
 			|| isMicrometer //TODO allow upgrades in the future on main ?
 			|| isJsr166
 			|| (isJsr305 && !artifact.endsWith("3.0.1"))
+			|| (isKotlin && !artifact.contains(":1.5."))
 	}
 
 	outputFormatter = { result ->
