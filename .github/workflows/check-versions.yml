@@ -1,0 +1,25 @@
+name: check-versions
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 15 * * 4
+permissions: read-all
+jobs:
+  checkVersion:
+    name: Check dependency upgrades
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        targetBranch: [ "3.4.x", "main"]
+    steps:
+      - uses: actions/checkout@7884fcad6b5d53d10323aee724dc68d8b9096a2e # tag=v2
+        with:
+          ref: ${{ matrix.targetBranch }}
+      - name: setup java
+        uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf # renovate: tag=v2
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - name: dependency updates for ${{ matrix.targetBranch }}
+        id: dependencyUpdate
+        run: ./gradlew dependencyUpdates # this should detect GHA and add to summary
