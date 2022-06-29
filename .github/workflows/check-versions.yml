@@ -1,5 +1,8 @@
 name: check-versions
 on:
+  push:
+    branches:
+      - refreshVersionCatalog
   workflow_dispatch:
   schedule:
     - cron: 0 15 * * 4
