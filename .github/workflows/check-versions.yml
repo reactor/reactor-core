@@ -1,8 +1,5 @@
 name: check-versions
 on:
-  push:
-    branches:
-      - refreshVersionCatalog
   workflow_dispatch:
   schedule:
     - cron: 0 15 * * 4
@@ -13,7 +10,9 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        targetBranch: [ "3.4.x", "main"]
+        # TODO: uncomment the below line once the gradle plugin is added to the build on each of these branches
+        # targetBranch: [ "3.4.x", "main"]
+        targetBranch: [ "refreshVersionCatalog" ]
     steps:
       - uses: actions/checkout@7884fcad6b5d53d10323aee724dc68d8b9096a2e # tag=v2
         with:
