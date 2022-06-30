@@ -122,6 +122,10 @@ final class MonoCallable<T> extends Mono<T>
 
 		@Override
 		public void request(long n) {
+			if (this.cancelled) {
+				return;
+			}
+
 			if (this.requestedOnce == 1 || !REQUESTED_ONCE.compareAndSet(this, 0 , 1)) {
 				return;
 			}
