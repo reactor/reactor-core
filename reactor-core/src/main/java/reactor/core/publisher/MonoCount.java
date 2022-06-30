@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,14 +46,28 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		return super.scanUnsafe(key);
 	}
 
-	static final class CountSubscriber<T> extends Operators.MonoSubscriber<T, Long>  {
+	static final class CountSubscriber<T> implements InnerOperator<T, Long>,
+	                                                 Fuseable, //for constants only
+	                                                 QueueSubscription<Long> {
+
+		final CoreSubscriber<? super Long> actual;
 
 		long counter;
 
 		Subscription s;
 
 		CountSubscriber(CoreSubscriber<? super Long> actual) {
-			super(actual);
+			this.actual = actual;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public CoreSubscriber<? super Long> actual() {
+			return this.actual;
 		}
 
 		@Override
@@ -61,14 +75,19 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.PREFETCH) return 0;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(Long.MAX_VALUE);
 		}
 
 		@Override
@@ -88,9 +107,34 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		}
 
 		@Override
-		public void onComplete() {
-			complete(counter);
+		public void onError(Throwable t) {
+			this.actual.onError(t);
 		}
 
+		@Override
+		public void onComplete() {
+			this.actual.onNext(counter);
+			this.actual.onComplete();
+		}
+
+		@Override
+		public Long poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public void clear() {
+
+		}
 	}
 }
