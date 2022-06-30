@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
@@ -399,8 +400,12 @@ public class VirtualTimeScheduler implements Scheduler {
 					queue.poll();
 
 					// Only execute if not unsubscribed
-					if (!current.scheduler.shutdown) {
-						current.run.run();
+					if (!current.worker.shutdown) {
+                        try {
+                            current.run.run();
+                        } finally {
+                            current.set(true);
+                        }
 					}
 				}
 				nanoTime = targetNanoTime;
@@ -413,30 +418,45 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static final class TimedRunnable implements Comparable<TimedRunnable> {
+	static final class TimedRunnable extends AtomicBoolean
+			implements Comparable<TimedRunnable>, Disposable {
 
-		final long              time;
-		final Runnable          run;
-		final VirtualTimeWorker scheduler;
-		final long              count; // for differentiating tasks at same time
+		final VirtualTimeScheduler scheduler;
+		final VirtualTimeWorker    worker;
+		final long                 time;
+		final Runnable             run;
+		final long                 count; // for differentiating tasks at same time
 
-		TimedRunnable(VirtualTimeWorker scheduler, long time, Runnable run, long count) {
+		TimedRunnable(VirtualTimeScheduler scheduler,
+				VirtualTimeWorker worker,
+				long time,
+				Runnable run,
+				long count) {
+			this.scheduler = scheduler;
+			this.worker = worker;
 			this.time = time;
 			this.run = run;
-			this.scheduler = scheduler;
 			this.count = count;
 		}
 
 		@Override
 		public int compareTo(TimedRunnable o) {
 			if (time == o.time) {
-				return compare(count, o.count);
+				return Long.compare(count, o.count);
 			}
-			return compare(time, o.time);
+			return Long.compare(time, o.time);
 		}
 
-		static int compare(long a, long b){
-			return a < b ? -1 : (a > b ? 1 : 0);
+		@Override
+		public boolean isDisposed() {
+			return super.get();
+		}
+
+		@Override
+		public void dispose() {
+			scheduler.queue.remove(this);
+			scheduler.drain();
+			set(true);
 		}
 	}
 
@@ -478,36 +498,26 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		@Override
 		public Disposable schedule(Runnable run) {
-			if (shutdown) {
-				throw Exceptions.failWithRejected();
-			}
-			final TimedRunnable timedTask = new TimedRunnable(this,
-					0,
-					run,
-					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
-			queue.add(timedTask);
-			drain();
-			return () -> {
-				queue.remove(timedTask);
-				drain();
-			};
+			return doScheduleAtTime(run,0);
 		}
 
 		@Override
 		public Disposable schedule(Runnable run, long delayTime, TimeUnit unit) {
+			return doScheduleAtTime(run,nanoTime + unit.toNanos(delayTime));
+		}
+
+		private Disposable doScheduleAtTime(Runnable run, long time) {
 			if (shutdown) {
 				throw Exceptions.failWithRejected();
 			}
-			final TimedRunnable timedTask = new TimedRunnable(this,
-					nanoTime + unit.toNanos(delayTime),
+			TimedRunnable timedTask = new TimedRunnable(VirtualTimeScheduler.this,
+					this,
+					time,
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
 			drain();
-			return () -> {
-				queue.remove(timedTask);
-				drain();
-			};
+			return timedTask;
 		}
 
 		@Override
