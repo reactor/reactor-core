@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class Context2 implements CoreContext {
@@ -97,6 +98,12 @@ final class Context2 implements CoreContext {
 		return Stream.of(
 				new AbstractMap.SimpleImmutableEntry<>(key1, value1),
 				new AbstractMap.SimpleImmutableEntry<>(key2, value2));
+	}
+
+	@Override
+	public void forEach(BiConsumer<Object, Object> action) {
+		action.accept(key1, value1);
+		action.accept(key2, value2);
 	}
 
 	@Override

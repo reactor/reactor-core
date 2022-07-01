@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -628,6 +629,11 @@ class ContextTest {
 
 		public Stream<Map.Entry<Object, Object>> stream() {
 			return delegate.entrySet().stream();
+		}
+
+		@Override
+		public void forEach(BiConsumer<Object, Object> action) {
+			delegate.forEach(action);
 		}
 
 		@Override
