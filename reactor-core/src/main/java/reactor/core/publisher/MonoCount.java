@@ -96,8 +96,6 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 				this.s = s;
 
 				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
