@@ -22,8 +22,11 @@ import java.util.function.Predicate;
 import io.micrometer.context.ContextAccessor;
 
 /**
- * {@code ContextAccessor} to enable reading values from a Reactor
+ * A {@code ContextAccessor} to enable reading values from a Reactor
  * {@link ContextView} and writing values to {@link Context}.
+ * <p>
+ * Please note that this public class implements the {@code libs.micrometer.contextPropagationApi}
+ * SPI library, which is an optional dependency.
  *
  * @author Rossen Stoyanchev
  * @since 3.5.0

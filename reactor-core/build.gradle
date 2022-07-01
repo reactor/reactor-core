@@ -74,9 +74,6 @@ dependencies {
 	}
 	tckTestImplementation libs.testNg
 
-	// context-propagation-api
-	implementation libs.micrometer.contextPropagationApi
-
 	// JSR-305 annotations
 	compileOnly libs.jsr305
 	testCompileOnly libs.jsr305
@@ -89,6 +86,9 @@ dependencies {
 	compileOnly platform(libs.micrometer.bom)
 	compileOnly libs.micrometer.commons
 	compileOnly libs.micrometer.core
+
+	// Optional context-propagation-api
+	compileOnly libs.micrometer.contextPropagationApi
 
 	// Optional BlockHound support
 	compileOnly libs.blockhound
