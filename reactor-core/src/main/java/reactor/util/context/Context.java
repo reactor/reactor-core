@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@
 
 package reactor.util.context;
 
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import reactor.util.annotation.Nullable;
 
@@ -281,6 +278,20 @@ public interface Context extends ContextView {
 			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
+	}
+
+	default Context putAllMap(Map<?, ?> from) {
+		if (from.isEmpty()) {
+			return this;
+		}
+
+		ContextN combined = new ContextN(this.size() + from.size());
+		this.forEach(combined);
+		from.forEach(combined);
+		if (combined.size() <= 5) {
+			return Context.of((Map<?, ?>) combined);
+		}
+		return combined;
 	}
 
 	/**

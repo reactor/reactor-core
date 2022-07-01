@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,6 +181,17 @@ final class ContextN extends LinkedHashMap<Object, Object>
 			other.stream().sequential().forEach(newContext);
 		}
 
+		return newContext;
+	}
+
+	@Override
+	public Context putAllMap(Map<?, ?> from) {
+		if (from.isEmpty()) {
+			return this;
+		}
+
+		ContextN newContext = new ContextN(this);
+		from.forEach(newContext);
 		return newContext;
 	}
 
