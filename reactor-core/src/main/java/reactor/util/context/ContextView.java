@@ -144,5 +144,7 @@ public interface ContextView {
 	 * @param action The action to be performed for each entry
 	 * @throws NullPointerException if the specified action is null
 	 */
-	void forEach(BiConsumer<Object, Object> action);
+	default void forEach(BiConsumer<Object, Object> action) {
+		stream().forEach(entry -> action.accept(entry.getKey(), entry.getValue()));
+	}
 }
