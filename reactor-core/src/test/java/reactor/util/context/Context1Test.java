@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package reactor.util.context;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -102,6 +104,36 @@ public class Context1Test {
 				.hasSize(1)
 				.containsOnlyKeys(1)
 				.containsValues("A");
+	}
+
+	@Test
+	void forEach() {
+		Map<Object, Object> items = new HashMap<>();
+
+		c.forEach(items::put);
+
+		assertThat(items)
+				.hasSize(1)
+				.containsOnlyKeys(1)
+				.containsValues("A");
+	}
+
+	@Test
+	void forEachThrows() {
+		Map<Object, Object> items = new HashMap<>();
+
+		BiConsumer<Object, Object> action = (key, value) -> {
+			if (key.equals(1)) {
+				throw new RuntimeException("Boom!");
+			}
+			items.put(key, value);
+		};
+
+		assertThatExceptionOfType(RuntimeException.class)
+				.isThrownBy(() -> c.forEach(action))
+				.withMessage("Boom!");
+
+		assertThat(items).isEmpty();
 	}
 
 	@Test

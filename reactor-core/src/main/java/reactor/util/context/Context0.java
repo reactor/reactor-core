@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.util.context;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class Context0 implements CoreContext {
@@ -65,6 +66,10 @@ final class Context0 implements CoreContext {
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.empty();
+	}
+
+	@Override
+	public void forEach(BiConsumer<Object, Object> action) {
 	}
 
 	@Override
