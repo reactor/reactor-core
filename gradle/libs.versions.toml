@@ -9,7 +9,8 @@ asciidoctor = "3.3.2"
 bytebuddy = "1.12.10"
 jmh = "1.35"
 junit = "5.8.2"
-micrometer = "1.10.0-M1"
+#note that context-propagation-api has a different version directly set in libraries
+micrometer = "1.10.0-SNAPSHOT"
 reactiveStreams = "1.0.4"
 
 [libraries]
@@ -30,6 +31,7 @@ logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
+micrometer-contextPropagationApi = "io.micrometer:context-propagation-api:1.0.0-SNAPSHOT"
 mockito = "org.mockito:mockito-core:4.6.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
