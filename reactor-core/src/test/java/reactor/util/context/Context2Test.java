@@ -135,8 +135,8 @@ public class Context2Test {
 
 		assertThat(items)
 				.hasSize(2)
-				.containsOnlyKeys(1, 2)
-				.containsValues("A", "B");
+				.containsEntry(1, "A")
+				.containsEntry(2, "B");
 	}
 
 	@Test

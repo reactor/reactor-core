@@ -185,8 +185,10 @@ public class Context4Test {
 
 		assertThat(items)
 				.hasSize(4)
-				.containsOnlyKeys(1, 2, 3, 4)
-				.containsValues("A", "B", "C", "D");
+				.containsEntry(1, "A")
+				.containsEntry(2, "B")
+				.containsEntry(3, "C")
+				.containsEntry(4, "D");
 	}
 
 	@Test

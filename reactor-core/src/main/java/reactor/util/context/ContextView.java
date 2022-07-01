@@ -137,7 +137,7 @@ public interface ContextView {
 	Stream<Map.Entry<Object, Object>> stream();
 
 	/**
-	 * Perform the given action for each entry in this map. If the action throws an
+	 * Perform the given action for each entry in this {@link ContextView}. If the action throws an
 	 * exception, it is immediately propagated to the caller and the remaining items
 	 * will not be processed.
 	 *

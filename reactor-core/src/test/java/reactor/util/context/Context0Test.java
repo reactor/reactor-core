@@ -94,10 +94,7 @@ public class Context0Test {
 		Map<Object, Object> items = new HashMap<>();
 
 		BiConsumer<Object, Object> action = (key, value) -> {
-			if (key.equals(2)) {
-				throw new RuntimeException("Boom!");
-			}
-			items.put(key, value);
+			throw new RuntimeException("Boom!");
 		};
 
 		assertThatNoException().isThrownBy(() -> c.forEach(action));

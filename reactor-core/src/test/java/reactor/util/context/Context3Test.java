@@ -159,8 +159,9 @@ public class Context3Test {
 
 		assertThat(items)
 				.hasSize(3)
-				.containsOnlyKeys(1, 2, 3)
-				.containsValues("A", "B", "C");
+				.containsEntry(1, "A")
+				.containsEntry(2, "B")
+				.containsEntry(3, "C");
 	}
 
 	@Test

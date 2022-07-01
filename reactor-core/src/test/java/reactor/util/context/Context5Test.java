@@ -215,8 +215,11 @@ public class Context5Test {
 
 		assertThat(items)
 				.hasSize(5)
-				.containsOnlyKeys(1, 2, 3, 4, 5)
-				.containsValues("A", "B", "C", "D", "E");
+				.containsEntry(1, "A")
+				.containsEntry(2, "B")
+				.containsEntry(3, "C")
+				.containsEntry(4, "D")
+				.containsEntry(5, "E");
 	}
 
 	@Test
