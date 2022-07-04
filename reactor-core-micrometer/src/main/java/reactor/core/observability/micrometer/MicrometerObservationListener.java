@@ -151,6 +151,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	public void doOnSubscription() {
 		this.subscribeToTerminalObservation.start();
 		if (this.signalIntervalObservation != null) {
+			this.signalIntervalObservation.start();
 			this.onNextScope = this.signalIntervalObservation.openScope();
 		}
 	}
