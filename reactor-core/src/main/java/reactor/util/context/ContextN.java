@@ -165,6 +165,16 @@ final class ContextN extends LinkedHashMap<Object, Object>
 		other.putAll((Map<Object, Object>) this);
 	}
 
+	/**
+	 * Creates a new {@link ContextN} with values from the provided {@link Map}
+	 *
+	 * @param m a {@link Map} to populate entries from. MUST NOT contain null keys/values
+	 */
+	@Override
+	public void putAll(Map<?, ?> m) {
+		super.putAll(m);
+	}
+
 	@Override
 	public Context putAll(ContextView other) {
 		if (other.isEmpty()) return this;
