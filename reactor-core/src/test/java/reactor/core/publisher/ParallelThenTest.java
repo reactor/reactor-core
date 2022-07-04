@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,20 +85,32 @@ public class ParallelThenTest {
 	public void scanMainSubscriber() {
 		CoreSubscriber<? super Void> subscriber = new LambdaSubscriber<>(null, e -> { }, null,
 				sub -> sub.request(2));
-		ParallelThen.ThenMain test = new ParallelThen.ThenMain(subscriber, 2);
+		ParallelThen.ThenMain test = new ParallelThen.ThenMain(subscriber, new ParallelFlux<Object>() {
+			@Override
+			public int parallelism() {
+				return 2;
+			}
+
+			@Override
+			public void subscribe(CoreSubscriber<? super Object>[] subscribers) {
+
+			}
+		});
 
 		subscriber.onSubscribe(test);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 
 		test.innerComplete();
 		test.innerComplete();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		// clear state
+		test.state = 0;
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
@@ -106,22 +118,19 @@ public class ParallelThenTest {
 	}
 
 	@Test
-	public void scanMainSubscriberError() {
-		CoreSubscriber<? super Void> subscriber = new LambdaSubscriber<>(null, e -> { }, null,
-				sub -> sub.request(2));
-		ParallelThen.ThenMain test = new ParallelThen.ThenMain(subscriber, 2);
-
-		subscriber.onSubscribe(test);
-
-		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
-		test.innerError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
-	}
-
-	@Test
 	public void scanInnerSubscriber() {
 		CoreSubscriber<? super Void> subscriber = new LambdaSubscriber<>(null, e -> { }, null, null);
-		ParallelThen.ThenMain main = new ParallelThen.ThenMain(subscriber, 2);
+		ParallelThen.ThenMain main = new ParallelThen.ThenMain(subscriber, new ParallelFlux<Object>() {
+			@Override
+			public int parallelism() {
+				return 2;
+			}
+
+			@Override
+			public void subscribe(CoreSubscriber<? super Object>[] subscribers) {
+
+			}
+		});
 		ParallelThen.ThenInner test = new ParallelThen.ThenInner(main);
 
 		Subscription s = Operators.emptySubscription();
