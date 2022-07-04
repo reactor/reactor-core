@@ -280,6 +280,14 @@ public interface Context extends ContextView {
 		return newContext;
 	}
 
+	/**
+	 * Create a new {@link Context} by merging the content of this context and a given
+	 * {@link Map}. If the {@link Map} is empty, the same {@link Context} instance
+	 * is returned.
+	 *
+	 * @param from the {@link Map} from which to include entries in the resulting {@link Context}.
+	 * @return a new {@link Context} with a merge of the entries from this context and the given {@link Map}.
+	 */
 	default Context putAllMap(Map<?, ?> from) {
 		if (from.isEmpty()) {
 			return this;
