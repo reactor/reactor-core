@@ -215,10 +215,16 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	static final Tags   DEFAULT_TAGS_MONO = Tags.of("type", "Mono");
 
 	// === Operator ===
-	static final Tag  TAG_ON_ERROR    = Tag.of("status", "error");
-	static final Tags TAG_ON_COMPLETE = Tags.of("status", "completed", TAG_KEY_EXCEPTION, "");
-	static final Tags TAG_ON_COMPLETE_EMPTY = Tags.of("status", "completedEmpty", TAG_KEY_EXCEPTION, "");
-	static final Tags TAG_CANCEL            = Tags.of("status", "cancelled", TAG_KEY_EXCEPTION, "");
+	static final String TAG_KEY_STATUS = "status";
+	static final String TAG_STATUS_CANCELLED = "cancelled";
+	static final String TAG_STATUS_COMPLETED = "completed";
+	static final String TAG_STATUS_COMPLETED_EMPTY = "completedEmpty";
+	static final String TAG_STATUS_ERROR = "error";
+
+	static final Tag  TAG_ON_ERROR    = Tag.of(TAG_KEY_STATUS, TAG_STATUS_ERROR);
+	static final Tags TAG_ON_COMPLETE = Tags.of(TAG_KEY_STATUS, TAG_STATUS_COMPLETED, TAG_KEY_EXCEPTION, "");
+	static final Tags TAG_ON_COMPLETE_EMPTY = Tags.of(TAG_KEY_STATUS, TAG_STATUS_COMPLETED_EMPTY, TAG_KEY_EXCEPTION, "");
+	static final Tags TAG_CANCEL            = Tags.of(TAG_KEY_STATUS, TAG_STATUS_CANCELLED, TAG_KEY_EXCEPTION, "");
 
 	/*
 	 * This method calls the registry, which can be costly. However the cancel signal is only expected

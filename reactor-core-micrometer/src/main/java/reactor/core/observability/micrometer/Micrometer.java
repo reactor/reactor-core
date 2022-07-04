@@ -19,9 +19,13 @@ package reactor.core.observability.micrometer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.Observation.Scope;
+import io.micrometer.observation.ObservationRegistry;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.scheduler.Scheduler;
@@ -34,7 +38,7 @@ public final class Micrometer {
 	private static MeterRegistry registry = Metrics.globalRegistry;
 
 	/**
-	 * The default "name" to use as a prefix for meter IDs if the instrumented sequence doesn't
+	 * The default "name" to use as a prefix for meter or observation IDs if the instrumented sequence doesn't
 	 * define a {@link reactor.core.publisher.Flux#name(String) name}.
 	 */
 	public static final String DEFAULT_METER_PREFIX = "reactor";
@@ -106,6 +110,44 @@ public final class Micrometer {
 				return registry;
 			}
 		};
+	}
+
+	/**
+	 * A {@link SignalListener} factory that will ultimately produce Micrometer {@link Observation}s
+	 * to the provided {@link ObservationRegistry}.
+	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
+	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
+	 * <p>
+	 * Two Observations are made by this operator:
+	 * <ul>
+	 *     <li>
+	 *         {@code NAME.observation.flow}: one {@link Observation} for the entire length of the sequence, from subscription to termination.
+	 *         Termination can be a cancellation, a completion with or without values or an error, which is denoted by the
+	 *         {@code status} tag.
+	 *     </li>
+	 *     <li>
+	 *         {@code NAME.observation.values}: one {@link Scope} per each onNext event.
+	 *         First scope is opened at subscription, last scope is closed by whichever event terminates the sequence
+	 *         (which might skew the count off by one if the sequence is empty, as we need to close that initial subscription
+	 *         scope).
+	 *     </li>
+	 * </ul>
+	 * <p>
+	 * Common {@link KeyValues} include the low-cardinality {@code type} (are we observing a "Flux" or a "Mono"?)
+	 * and {@code status} (what type of even terminated the sequence). It also includes the high cardinality
+	 * {@code exception} which contains the name of the exception that terminated the flow in case of an onError.
+	 * <p>
+	 * Observation names are prefixed by the {@link reactor.core.publisher.Flux#name(String)} defined upstream
+	 * of the tap if applicable or by the default prefix {@link #DEFAULT_METER_PREFIX}.
+	 * Similarly, Reactor tags defined upstream via eg. {@link reactor.core.publisher.Flux#tag(String, String)})
+	 * are gathered and added to the default set of {@link io.micrometer.common.KeyValues} used by the Observation
+	 * as {@link Observation#lowCardinalityKeyValues(KeyValues) low cardinality keyValues}.
+	 *
+	 *  @param <T> the type of onNext in the target publisher
+	 * @return a {@link SignalListenerFactory} to record observations
+	 */
+	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
+		return new MicrometerObservationListenerFactory<>(registry);
 	}
 
 	/**
