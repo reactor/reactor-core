@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Simon Baslé
  */
-class MicrometerListenerConfigurationTest {
+class MicrometerMeterListenerConfigurationTest {
 
 	@ParameterizedTestWithName
 	@CsvSource(value = {
@@ -58,7 +58,7 @@ class MicrometerListenerConfigurationTest {
 			flux = flux.tag("tag", tag);
 		}
 
-	MicrometerListenerConfiguration configuration = MicrometerListenerConfiguration.fromFlux(flux, expectedRegistry, expectedClock);
+	MicrometerMeterListenerConfiguration configuration = MicrometerMeterListenerConfiguration.fromFlux(flux, expectedRegistry, expectedClock);
 
 		assertThat(configuration.clock).as("clock").isSameAs(expectedClock);
 		assertThat(configuration.registry).as("registry").isSameAs(expectedRegistry);
@@ -100,7 +100,7 @@ class MicrometerListenerConfigurationTest {
 			mono = mono.tag("tag", tag);
 		}
 
-		MicrometerListenerConfiguration configuration = MicrometerListenerConfiguration.fromMono(mono, expectedRegistry, expectedClock);
+		MicrometerMeterListenerConfiguration configuration = MicrometerMeterListenerConfiguration.fromMono(mono, expectedRegistry, expectedClock);
 
 		assertThat(configuration.clock).as("clock").isSameAs(expectedClock);
 		assertThat(configuration.registry).as("registry").isSameAs(expectedRegistry);
@@ -127,7 +127,7 @@ class MicrometerListenerConfigurationTest {
 		TestLogger logger = new TestLogger(false);
 		Flux<Integer> flux = Flux.just(1);
 
-		String resolvedName = MicrometerListenerConfiguration.resolveName(flux, logger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger);
 
 		assertThat(resolvedName).isEqualTo(Micrometer.DEFAULT_METER_PREFIX);
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
@@ -138,7 +138,7 @@ class MicrometerListenerConfigurationTest {
 		TestLogger logger = new TestLogger(false);
 		Flux<Integer> flux = Flux.just(1).name("someName");
 
-		String resolvedName = MicrometerListenerConfiguration.resolveName(flux, logger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger);
 
 		assertThat(resolvedName).isEqualTo("someName");
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
@@ -149,7 +149,7 @@ class MicrometerListenerConfigurationTest {
 		TestLogger logger = new TestLogger(false);
 		Flux<Integer> flux = Flux.just(1).name("someName").filter(i -> i % 2 == 0).map(i -> i + 10);
 
-		String resolvedName = MicrometerListenerConfiguration.resolveName(flux, logger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger);
 
 		assertThat(resolvedName).isEqualTo("someName");
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
@@ -160,7 +160,7 @@ class MicrometerListenerConfigurationTest {
 		TestLogger testLogger = new TestLogger(false);
 		Publisher<Object> publisher = Operators::complete;
 
-		String resolvedName = MicrometerListenerConfiguration.resolveName(publisher, testLogger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(publisher, testLogger);
 
 		assertThat(resolvedName).as("resolved name").isEqualTo(Micrometer.DEFAULT_METER_PREFIX);
 		assertThat(testLogger.getErrContent()).contains("Attempting to activate metrics but the upstream is not Scannable. You might want to use `name()` (and optionally `tags()`) right before this listener");
@@ -171,7 +171,7 @@ class MicrometerListenerConfigurationTest {
 		Tags defaultTags = Tags.of("common1", "commonValue1");
 		Flux<Integer> flux = Flux.just(1);
 
-		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(flux, defaultTags);
+		Tags resolvedTags = MicrometerMeterListenerConfiguration.resolveTags(flux, defaultTags);
 
 		assertThat(resolvedTags.stream().map(Object::toString))
 			.containsExactly("tag(common1=commonValue1)");
@@ -184,7 +184,7 @@ class MicrometerListenerConfigurationTest {
 			.just(1)
 			.tag("k1", "v1");
 
-		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(flux, defaultTags);
+		Tags resolvedTags = MicrometerMeterListenerConfiguration.resolveTags(flux, defaultTags);
 
 		assertThat(resolvedTags.stream().map(Object::toString)).containsExactlyInAnyOrder(
 			"tag(common1=commonValue1)",
@@ -201,7 +201,7 @@ class MicrometerListenerConfigurationTest {
 			.filter(i -> i % 2 == 0)
 			.map(i -> i + 10);
 
-		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(flux, defaultTags);
+		Tags resolvedTags = MicrometerMeterListenerConfiguration.resolveTags(flux, defaultTags);
 
 		assertThat(resolvedTags.stream().map(Object::toString)).containsExactlyInAnyOrder(
 			"tag(common1=commonValue1)",
@@ -218,7 +218,7 @@ class MicrometerListenerConfigurationTest {
 			.tag("k2", "v2")
 			.map(i -> i + 10);
 
-		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(flux, defaultTags);
+		Tags resolvedTags = MicrometerMeterListenerConfiguration.resolveTags(flux, defaultTags);
 
 		assertThat(resolvedTags.stream().map(Object::toString)).containsExactlyInAnyOrder(
 			"tag(common1=commonValue1)",
@@ -237,7 +237,7 @@ class MicrometerListenerConfigurationTest {
 			.tag("k2", "v2")
 			.map(i -> i + 10);
 
-		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(flux, defaultTags);
+		Tags resolvedTags = MicrometerMeterListenerConfiguration.resolveTags(flux, defaultTags);
 
 		assertThat(resolvedTags.stream().map(Object::toString)).containsExactly(
 			"tag(common1=commonValue1)",
@@ -251,7 +251,7 @@ class MicrometerListenerConfigurationTest {
 		Tags defaultTags = Tags.of("common1", "commonValue1");
 		Publisher<Object> publisher = Operators::complete;
 
-		Tags resolvedTags = MicrometerListenerConfiguration.resolveTags(publisher, defaultTags);
+		Tags resolvedTags = MicrometerMeterListenerConfiguration.resolveTags(publisher, defaultTags);
 
 		assertThat(resolvedTags.stream().map(Object::toString)).containsExactly("tag(common1=commonValue1)");
 	}

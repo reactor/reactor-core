@@ -43,7 +43,7 @@ public final class Micrometer {
 	 * Set the registry to use in reactor for metrics related purposes.
 	 * @return the previously configured registry.
 	 */
-	public static MeterRegistry useRegistry(MeterRegistry newRegistry) {
+	public static MeterRegistry useMeterRegistry(MeterRegistry newRegistry) {
 		MeterRegistry previous = registry;
 		registry = newRegistry;
 		return previous;
@@ -52,13 +52,13 @@ public final class Micrometer {
 	/**
 	 * Get the registry used in reactor for metrics related purposes.
 	 */
-	public static MeterRegistry getRegistry() {
+	public static MeterRegistry getMeterRegistry() {
 		return registry;
 	}
 
 	/**
 	 * A {@link SignalListener} factory that will ultimately produce Micrometer metrics
-	 * to the configured default {@link #getRegistry() registry}.
+	 * to the configured default {@link #getMeterRegistry() registry}.
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 * <p>
@@ -74,7 +74,7 @@ public final class Micrometer {
 	 * @return a {@link SignalListenerFactory} to record metrics
 	 */
 	public static <T> SignalListenerFactory<T, ?> metrics() {
-		return new MicrometerListenerFactory<>();
+		return new MicrometerMeterListenerFactory<>();
 	}
 
 	/**
@@ -95,7 +95,7 @@ public final class Micrometer {
 	 * @return a {@link SignalListenerFactory} to record metrics
 	 */
 	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry registry, Clock clock) {
-		return new MicrometerListenerFactory<T>() {
+		return new MicrometerMeterListenerFactory<T>() {
 			@Override
 			protected Clock useClock() {
 				return clock;
@@ -112,7 +112,7 @@ public final class Micrometer {
 	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}
 	 * (or scheduler implementations which use {@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}).
 	 * <p>
-	 * The {@link MeterRegistry} to use can be configured via {@link #useRegistry(MeterRegistry)}
+	 * The {@link MeterRegistry} to use can be configured via {@link #useMeterRegistry(MeterRegistry)}
 	 * prior to using this method, the default being {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 *
 	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers,
@@ -120,7 +120,7 @@ public final class Micrometer {
 	 */
 	public static void enableSchedulersMetricsDecorator() {
 		Schedulers.addExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY,
-			new MicrometerSchedulerMetricsDecorator(getRegistry()));
+			new MicrometerSchedulerMetricsDecorator(getMeterRegistry()));
 	}
 
 	/**

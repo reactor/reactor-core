@@ -27,36 +27,36 @@ import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 
 /**
- * A {@link SignalListenerFactory} for {@link MicrometerListener}.
+ * A {@link SignalListenerFactory} for {@link MicrometerMeterListener}.
  *
  * @author Simon Baslé
  */
-class MicrometerListenerFactory<T> implements SignalListenerFactory<T, MicrometerListenerConfiguration> {
+class MicrometerMeterListenerFactory<T> implements SignalListenerFactory<T, MicrometerMeterListenerConfiguration> {
 
 	protected Clock useClock() {
 		return Clock.SYSTEM;
 	}
 
 	protected MeterRegistry useRegistry() {
-		return Micrometer.getRegistry();
+		return Micrometer.getMeterRegistry();
 	}
 
 	@Override
-	public MicrometerListenerConfiguration initializePublisherState(Publisher<? extends T> source) {
+	public MicrometerMeterListenerConfiguration initializePublisherState(Publisher<? extends T> source) {
 		if (source instanceof Mono) {
-			return MicrometerListenerConfiguration.fromMono((Mono<?>) source, useRegistry(), useClock());
+			return MicrometerMeterListenerConfiguration.fromMono((Mono<?>) source, useRegistry(), useClock());
 		}
 		else if (source instanceof Flux) {
-			return MicrometerListenerConfiguration.fromFlux((Flux<?>) source, useRegistry(), useClock());
+			return MicrometerMeterListenerConfiguration.fromFlux((Flux<?>) source, useRegistry(), useClock());
 		}
 		else {
-			throw new IllegalArgumentException("MicrometerListenerFactory must only be used via the tap operator / with a Flux or Mono");
+			throw new IllegalArgumentException("MicrometerMeterListenerFactory must only be used via the tap operator / with a Flux or Mono");
 		}
 	}
 
 	@Override
 	public SignalListener<T> createListener(Publisher<? extends T> source, ContextView listenerContext,
-											MicrometerListenerConfiguration publisherContext) {
-		return new MicrometerListener<>(publisherContext);
+											MicrometerMeterListenerConfiguration publisherContext) {
+		return new MicrometerMeterListener<>(publisherContext);
 	}
 }

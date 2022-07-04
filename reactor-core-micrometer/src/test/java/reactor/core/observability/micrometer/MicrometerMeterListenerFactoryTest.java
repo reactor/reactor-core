@@ -34,11 +34,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 /**
  * @author Simon Baslé
  */
-class MicrometerListenerFactoryTest {
+class MicrometerMeterListenerFactoryTest {
 
 	@Test
 	void useClockDefaultsToSystemClock() {
-		MicrometerListenerFactory<?> factory = new MicrometerListenerFactory<>();
+		MicrometerMeterListenerFactory<?> factory = new MicrometerMeterListenerFactory<>();
 
 		assertThat(factory.useClock()).isSameAs(Clock.SYSTEM);
 	}
@@ -48,7 +48,7 @@ class MicrometerListenerFactoryTest {
 		SimpleMeterRegistry commonRegistry = new SimpleMeterRegistry();
 		MeterRegistry defaultCommon = Micrometer.useRegistry(commonRegistry);
 		try {
-			MicrometerListenerFactory<?> factory = new MicrometerListenerFactory<>();
+			MicrometerMeterListenerFactory<?> factory = new MicrometerMeterListenerFactory<>();
 
 			assertThat(factory.useRegistry()).isSameAs(Micrometer.getRegistry())
 				.isSameAs(commonRegistry);
@@ -60,7 +60,7 @@ class MicrometerListenerFactoryTest {
 
 	@Test
 	void configurationFromMono() {
-		MicrometerListenerConfiguration configuration = CUSTOM_FACTORY.initializePublisherState(Mono.just(1));
+		MicrometerMeterListenerConfiguration configuration = CUSTOM_FACTORY.initializePublisherState(Mono.just(1));
 
 		assertThat(configuration.registry).as("registry").isSameAs(CUSTOM_REGISTRY);
 		assertThat(configuration.clock).as("clock").isSameAs(CUSTOM_CLOCK);
@@ -70,7 +70,7 @@ class MicrometerListenerFactoryTest {
 
 	@Test
 	void configurationFromFlux() {
-		MicrometerListenerConfiguration configuration = CUSTOM_FACTORY.initializePublisherState(Flux.just(1, 2));
+		MicrometerMeterListenerConfiguration configuration = CUSTOM_FACTORY.initializePublisherState(Flux.just(1, 2));
 
 		assertThat(configuration.registry).as("registry").isSameAs(CUSTOM_REGISTRY);
 		assertThat(configuration.clock).as("clock").isSameAs(CUSTOM_CLOCK);
@@ -82,17 +82,17 @@ class MicrometerListenerFactoryTest {
 	void configurationFromGenericPublisherIsRejected() {
 		assertThatIllegalArgumentException()
 			.isThrownBy(() -> CUSTOM_FACTORY.initializePublisherState(Operators::complete))
-			.withMessage("MicrometerListenerFactory must only be used via the tap operator / with a Flux or Mono");
+			.withMessage("MicrometerMeterListenerFactory must only be used via the tap operator / with a Flux or Mono");
 	}
 
 	@Test
 	void createListenerOfTypeMicrometer() {
 		Publisher<Integer> source = Mono.just(1);
-		MicrometerListenerConfiguration conf = CUSTOM_FACTORY.initializePublisherState(source);
+		MicrometerMeterListenerConfiguration conf = CUSTOM_FACTORY.initializePublisherState(source);
 		SignalListener<?> signalListener = CUSTOM_FACTORY.createListener(source, Context.empty(), conf);
 
-		assertThat(signalListener).isInstanceOf(MicrometerListener.class);
-		assertThat(((MicrometerListener<?>) signalListener).configuration).as("configuration").isSameAs(conf);
+		assertThat(signalListener).isInstanceOf(MicrometerMeterListener.class);
+		assertThat(((MicrometerMeterListener<?>) signalListener).configuration).as("configuration").isSameAs(conf);
 	}
 
 	protected static final Clock CUSTOM_CLOCK = new Clock() {
@@ -106,8 +106,9 @@ class MicrometerListenerFactoryTest {
 			return 0;
 		}
 	};
-	protected static final SimpleMeterRegistry CUSTOM_REGISTRY = new SimpleMeterRegistry();
-	protected static final MicrometerListenerFactory<Object> CUSTOM_FACTORY = new MicrometerListenerFactory<Object>() {
+	protected static final SimpleMeterRegistry                    CUSTOM_REGISTRY = new SimpleMeterRegistry();
+	protected static final MicrometerMeterListenerFactory<Object>
+																  CUSTOM_FACTORY  = new MicrometerMeterListenerFactory<Object>() {
 		@Override
 		protected Clock useClock() {
 			return CUSTOM_CLOCK;

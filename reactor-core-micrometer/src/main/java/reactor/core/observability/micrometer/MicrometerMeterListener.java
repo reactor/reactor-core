@@ -35,11 +35,11 @@ import reactor.core.observability.SignalListener;
  *
  * @author Simon Baslé
  */
-final class MicrometerListener<T> implements SignalListener<T> {
+final class MicrometerMeterListener<T> implements SignalListener<T> {
 
-	final MicrometerListenerConfiguration configuration;
+	final MicrometerMeterListenerConfiguration configuration;
 	@Nullable
-	final DistributionSummary             requestedCounter;
+	final DistributionSummary                  requestedCounter;
 	@Nullable
 	final Timer                           onNextIntervalTimer;
 
@@ -47,7 +47,7 @@ final class MicrometerListener<T> implements SignalListener<T> {
 	long         lastNextEventNanos = -1L;
 	boolean      valued;
 
-	MicrometerListener(MicrometerListenerConfiguration configuration) {
+	MicrometerMeterListener(MicrometerMeterListenerConfiguration configuration) {
 		this.configuration = configuration;
 
 		this.valued = false;
