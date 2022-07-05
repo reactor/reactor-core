@@ -170,6 +170,8 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	 * implementation detail, no validation of the {@link Map} keys or values is
 	 * performed. I.e. the caller must ensure they are not null, otherwise this
 	 * {@link Context} will have disallowed mappings.
+	 * Despite being public, this API is not exposed to end users and can be used
+	 * internally for means of populating the inner contents of {@link ContextN}.
 	 * 
 	 * @param m mappings to be stored in this map
 	 */
