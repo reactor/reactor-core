@@ -25,13 +25,12 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.Observation.Scope;
 import io.micrometer.observation.ObservationRegistry;
 
 import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.observability.SignalListenerFactory;
 
 public final class Micrometer {
 

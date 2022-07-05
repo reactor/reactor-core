@@ -25,10 +25,10 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 
+import reactor.core.observability.SignalListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 import reactor.util.annotation.Nullable;
-import reactor.core.observability.SignalListener;
 
 /**
  * A {@link SignalListener} that activates metrics gathering using Micrometer 1.x.

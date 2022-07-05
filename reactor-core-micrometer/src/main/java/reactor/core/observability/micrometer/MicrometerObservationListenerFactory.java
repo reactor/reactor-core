@@ -16,8 +16,6 @@
 
 package reactor.core.observability.micrometer;
 
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import org.reactivestreams.Publisher;
 
