@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,6 +163,20 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	@Override
 	public void unsafePutAllInto(ContextN other) {
 		other.putAll((Map<Object, Object>) this);
+	}
+
+	/**
+	 * This method is part of the {@link Map} API. As this is an internal
+	 * implementation detail, no validation of the {@link Map} keys or values is
+	 * performed. I.e. the caller must ensure they are not null, otherwise this
+	 * {@link Context} will have disallowed mappings.
+	 * Despite being public, this API is not exposed to end users and can be used
+	 * internally for means of populating the inner contents of {@link ContextN}.
+	 * 
+	 * @param m mappings to be stored in this map
+	 */
+	public void putAll(Map<?, ?> m) {
+		super.putAll(m);
 	}
 
 	@Override
