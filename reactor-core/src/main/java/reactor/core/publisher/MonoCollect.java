@@ -67,9 +67,13 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
+	static final class CollectSubscriber<T, R> implements InnerOperator<T, R>,
+	                                                      Fuseable, //for constants only
+	                                                      QueueSubscription<R> {
 
 		final BiConsumer<? super R, ? super T> action;
+
+		final CoreSubscriber<? super R> actual;
 
 		R container;
 
@@ -80,9 +84,14 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		CollectSubscriber(CoreSubscriber<? super R> actual,
 				BiConsumer<? super R, ? super T> action,
 				R container) {
-			super(actual);
+			this.actual = actual;
 			this.action = action;
 			this.container = container;
+		}
+
+		@Override
+		public CoreSubscriber<? super R> actual() {
+			return this.actual;
 		}
 
 		@Override
@@ -90,8 +99,10 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-			return super.scanUnsafe(key);
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -100,8 +111,6 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				this.s = s;
 
 				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -157,41 +166,61 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				container = null;
 			}
 			if (c != null) {
-				complete(c);
+				this.actual.onNext(c);
+				this.actual.onComplete();
 			}
 		}
 
 		@Override
-		protected void discard(R v) {
+		public void request(long n) {
+			s.request(Long.MAX_VALUE);
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+			final R c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+			if (c != null) {
+				discard(c);
+			}
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return 0;
+		}
+
+		@Override
+		public R poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+
+		}
+
+		void discard(R v) {
 			if (v instanceof Collection) {
 				Collection<?> c = (Collection<?>) v;
 				Operators.onDiscardMultiple(c, actual.currentContext());
 			}
 			else {
-				super.discard(v);
-			}
-		}
-
-		@Override
-		public void cancel() {
-			int state;
-			R c;
-			state = STATE.getAndSet(this, CANCELLED);
-			if (state != CANCELLED) {
-				s.cancel();
-			}
-			if (state <= HAS_REQUEST_NO_VALUE) {
-				synchronized (this) {
-					c = container;
-					this.value = null;
-					container = null;
-				}
-			}
-			else {
-				c = null;
-			}
-			if (c != null) {
-				discard(c);
+				Operators.onDiscard(v, actual.currentContext());
 			}
 		}
 	}

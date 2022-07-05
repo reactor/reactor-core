@@ -180,7 +180,7 @@ public class MonoCollectTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -189,10 +189,6 @@ public class MonoCollectTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -216,23 +212,6 @@ public class MonoCollectTest {
 			    l.add(t);
 		    })
 		    .as(StepVerifier::create)
-		    .expectErrorMessage("accumulator: boom")
-		    .verifyThenAssertThat()
-		    .hasDiscardedExactly(1, 2, 3);
-	}
-
-	@Test
-	public void discardElementAndBufferOnAccumulatorLateFailure_fused() {
-		Flux.just(1, 2, 3, 4)
-		    .collect(ArrayList::new, (l, t) -> {
-			    if (t == 3) {
-				    throw new IllegalStateException("accumulator: boom");
-			    }
-			    l.add(t);
-		    })
-		    .as(StepVerifier::create)
-		    //WARNING: we need to request fusion so this expectFusion is important
-		    .expectFusion(Fuseable.ASYNC)
 		    .expectErrorMessage("accumulator: boom")
 		    .verifyThenAssertThat()
 		    .hasDiscardedExactly(1, 2, 3);
