@@ -166,11 +166,13 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	}
 
 	/**
-	 * Creates a new {@link ContextN} with values from the provided {@link Map}
-	 *
-	 * @param m a {@link Map} to populate entries from. MUST NOT contain null keys/values
+	 * This method is part of the {@link Map} API. As this is an internal
+	 * implementation detail, no validation of the {@link Map} keys or values is
+	 * performed. I.e. the caller must ensure they are not null, otherwise this
+	 * {@link Context} will have disallowed mappings.
+	 * 
+	 * @param m mappings to be stored in this map
 	 */
-	@Override
 	public void putAll(Map<?, ?> m) {
 		super.putAll(m);
 	}
