@@ -199,6 +199,17 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	}
 
 	@Override
+	public Context putAllMap(Map<?, ?> from) {
+		if (from.isEmpty()) {
+			return this;
+		}
+
+		ContextN newContext = new ContextN(this);
+		from.forEach(newContext);
+		return newContext;
+	}
+
+	@Override
 	public String toString() {
 		return "ContextN" + super.toString();
 	}

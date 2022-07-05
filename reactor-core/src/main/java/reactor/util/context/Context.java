@@ -16,10 +16,7 @@
 
 package reactor.util.context;
 
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import reactor.util.annotation.Nullable;
 
@@ -281,5 +278,41 @@ public interface Context extends ContextView {
 			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
+	}
+
+	/**
+	 * Create a new {@link Context} by merging the content of this context and a given
+	 * {@link Map}. If the {@link Map} is empty, the same {@link Context} instance
+	 * is returned.
+	 *
+	 * @param from the {@link Map} from which to include entries in the resulting {@link Context}.
+	 * @return a new {@link Context} with a merge of the entries from this context and the given {@link Map}.
+	 */
+	default Context putAllMap(Map<?, ?> from) {
+		if (from.isEmpty()) {
+			return this;
+		}
+
+		ContextN combined = new ContextN(this.size() + from.size());
+		this.forEach(combined);
+		from.forEach(combined);
+		if (combined.size() <= 5) {
+			return Context.of((Map<?, ?>) combined);
+		}
+		return combined;
+	}
+
+	/**
+	 * See {@link #putAll(ContextView)}.
+	 *
+	 * @deprecated will be removed in 3.5, kept for backward compatibility with 3.3. Until
+	 * then if you need to work around the deprecation, use {@link #putAll(ContextView)}
+	 * combined with {@link #readOnly()}
+	 * @param context the {@link Context} from which to copy entries
+	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
+	 */
+	@Deprecated
+	default Context putAll(Context context) {
+		return this.putAll(context.readOnly());
 	}
 }
