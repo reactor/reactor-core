@@ -56,6 +56,6 @@ class MicrometerObservationListenerFactory<T> implements SignalListenerFactory<T
 	@Override
 	public SignalListener<T> createListener(Publisher<? extends T> source, ContextView listenerContext,
 											MicrometerObservationListenerConfiguration publisherContext) {
-		return new MicrometerObservationListener<>(publisherContext);
+		return new MicrometerObservationListener<>(listenerContext, publisherContext);
 	}
 }

@@ -19,6 +19,7 @@ package reactor.core.observability.micrometer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -113,29 +114,20 @@ public final class Micrometer {
 	}
 
 	/**
-	 * A {@link SignalListener} factory that will ultimately produce Micrometer {@link Observation}s
-	 * to the provided {@link ObservationRegistry}.
+	 * A {@link SignalListener} factory that will ultimately produce a Micrometer {@link Observation}
+	 * representing the runtime of the publisher to the provided {@link ObservationRegistry}.
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 * <p>
-	 * Two Observations are made by this operator:
-	 * <ul>
-	 *     <li>
-	 *         {@code NAME.observation.flow}: one {@link Observation} for the entire length of the sequence, from subscription to termination.
-	 *         Termination can be a cancellation, a completion with or without values or an error, which is denoted by the
-	 *         {@code status} tag.
-	 *     </li>
-	 *     <li>
-	 *         {@code NAME.observation.values}: one {@link Scope} per each onNext event.
-	 *         First scope is opened at subscription, last scope is closed by whichever event terminates the sequence
-	 *         (which might skew the count off by one if the sequence is empty, as we need to close that initial subscription
-	 *         scope).
-	 *     </li>
-	 * </ul>
+	 * The {@code NAME.observation.flow} {@link Observation} covers the entire length of the sequence,
+	 * from subscription to termination. Said termination can be a cancellation, a completion with or without values
+	 * or an error. This is denoted by the low cardinality {@code status} {@link KeyValue}.
+	 * In case of an exception, a high cardinality {@code exception} KeyValue with the exception class name is also added.
+	 * Finally, the low cardinality {@code type} KeyValue informs whether we're observing a {@code Flux}
+	 * or a {@code Mono}.
 	 * <p>
-	 * Common {@link KeyValues} include the low-cardinality {@code type} (are we observing a "Flux" or a "Mono"?)
-	 * and {@code status} (what type of even terminated the sequence). It also includes the high cardinality
-	 * {@code exception} which contains the name of the exception that terminated the flow in case of an onError.
+	 * Note that the Micrometer {@code context-propagation-api} is used to populate thread locals
+	 * around the opening of the observation (upon {@code onSubscribe(Subscription)}).
 	 * <p>
 	 * Observation names are prefixed by the {@link reactor.core.publisher.Flux#name(String)} defined upstream
 	 * of the tap if applicable or by the default prefix {@link #DEFAULT_METER_PREFIX}.
@@ -149,6 +141,8 @@ public final class Micrometer {
 	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
 		return new MicrometerObservationListenerFactory<>(registry);
 	}
+
+	//FIXME: remove these and replace with an option to decorate an arbitrary Scheduler
 
 	/**
 	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}

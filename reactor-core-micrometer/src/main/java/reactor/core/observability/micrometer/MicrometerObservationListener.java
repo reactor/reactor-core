@@ -16,56 +16,48 @@
 
 package reactor.core.observability.micrometer;
 
+import io.micrometer.context.ContextSnapshot;
 import io.micrometer.observation.Observation;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
-import reactor.util.annotation.Nullable;
+import reactor.util.context.ContextView;
 
 /**
  * A {@link SignalListener} that makes timings using the {@link io.micrometer.observation.Observation} API from Micrometer 1.10.
  * <p>
- * This is a transposition of {@link MicrometerMeterListener}, but only retains the timers.
+ * This is a bare-bone version compared to {@link MicrometerMeterListener}, as it only opens a single Observation for the
+ * duration of the Flux/Mono.
  *
  * @author Simon Baslé
  */
 final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	static final String OBSERVATION_FLOW = ".observation.flow";
-	static final String OBSERVATION_VALUES = ".observation.values";
-
-
-	final MicrometerObservationListenerConfiguration configuration;
-	@Nullable
-	final Observation                                signalIntervalObservation;
-	final Observation                                subscribeToTerminalObservation;
 
 	/**
-	 * Scope is first opened in onSubscribe.
-	 * It is then closed and opened in each onNext.
-	 * Finally, last Scope is closed in either of the terminal states (cancelled, completed, error).
+	 * A value for the status tag, to be used when a Mono completes from onNext.
+	 * In production, this is set to {@link MicrometerMeterListener#TAG_STATUS_COMPLETED}.
+	 * In some tests, this can be overridden as a way to assert {@link #doOnComplete()} is no-op.
 	 */
-	@Nullable
-	Observation.Scope onNextScope;
+	final String                                     completedOnNextStatus;
+	final MicrometerObservationListenerConfiguration configuration;
+	final ContextView                                context;
+	final Observation                                subscribeToTerminalObservation;
 
 	boolean valued;
 
-	MicrometerObservationListener(MicrometerObservationListenerConfiguration configuration) {
+	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration) {
+		this(subscriberContext, configuration, MicrometerMeterListener.TAG_STATUS_COMPLETED);
+	}
+
+	//for test purposes, we can pass in a value for the status tag, to be used when a Mono completes from onNext
+	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration, String completedOnNextStatus) {
 		this.configuration = configuration;
+		this.context = subscriberContext;
+		this.completedOnNextStatus = completedOnNextStatus;
 
 		this.valued = false;
-		if (configuration.isMono) {
-			//for Mono we don't record signalInterval (since there is at most 1 onNext, it's the same as subscribeToTerminalObservation).
-			//Note that we still need a mean to distinguish between empty Mono and valued Mono for recordOnCompleteEmpty
-			signalIntervalObservation = null;
-			onNextScope = Observation.Scope.NOOP;
-		}
-		else {
-			this.signalIntervalObservation = Observation.createNotStarted(
-				configuration.sequenceName + OBSERVATION_VALUES,
-				configuration.registry
-			).lowCardinalityKeyValues(configuration.commonKeyValues);
-		}
 
 		subscribeToTerminalObservation = Observation.createNotStarted(
 			configuration.sequenceName + OBSERVATION_FLOW,
@@ -75,27 +67,14 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doOnCancel() {
-		//Due to dealing with scopes, we have to stop the current scope.
-		//Note this could skew the onNext counter off by one if the Observation is a facade over metrics.
-		if (this.onNextScope != null) {
-			this.onNextScope.close();
-		}
-
 		Observation observation = subscribeToTerminalObservation
-			.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_CANCELLED)
-			.highCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_EXCEPTION, "");
+			.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_CANCELLED);
 
 		observation.stop();
 	}
 
 	@Override
 	public void doOnComplete() {
-		//Due to dealing with scopes, we have to stop the current scope.
-		//Note this could skew the onNext counter off by one if the Observation is a facade over metrics.
-		if (this.onNextScope != null) {
-			this.onNextScope.close();
-		}
-
 		// We differentiate between empty completion and value completion via tags.
 		String status = null;
 		if (!valued) {
@@ -108,8 +87,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		// if status == null, recording with OnComplete tag is done directly in onNext for the Mono(valued) case
 		if (status != null) {
 			Observation completeObservation = subscribeToTerminalObservation
-				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, status)
-				.highCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_EXCEPTION, "");
+				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, status);
 
 			completeObservation.stop();
 		}
@@ -117,15 +95,9 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doOnError(Throwable e) {
-		//Due to dealing with scopes, we have to stop the current scope.
-		//Note this could skew the onNext counter off by one if the Observation is a facade over metrics.
-		if (this.onNextScope != null) {
-			this.onNextScope.close();
-		}
-
 		Observation errorObservation = subscribeToTerminalObservation
 			.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_ERROR)
-			.highCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_EXCEPTION, e.getClass().getName());
+			.error(e);
 
 		errorObservation.stop();
 	}
@@ -133,26 +105,20 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	@Override
 	public void doOnNext(T t) {
 		valued = true;
-		if (signalIntervalObservation == null || onNextScope == null) { //NB: interval observation is only null if isMono
+		if (configuration.isMono) {
 			//record valued completion directly
 			Observation completeObservation = subscribeToTerminalObservation
-				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_COMPLETED)
-				.highCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_EXCEPTION, "");
+				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, completedOnNextStatus);
 
 			completeObservation.stop();
-			return;
 		}
-		//record the delay since previous onNext/onSubscribe. This also records the count.
-		this.onNextScope.close();
-		this.onNextScope = this.signalIntervalObservation.openScope();
 	}
 
 	@Override
 	public void doOnSubscription() {
-		this.subscribeToTerminalObservation.start();
-		if (this.signalIntervalObservation != null) {
-			this.signalIntervalObservation.start();
-			this.onNextScope = this.signalIntervalObservation.openScope();
+		ContextSnapshot contextSnapshot = ContextSnapshot.forContextAndThreadLocalValues(this.context);
+		try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues()) {
+			this.subscribeToTerminalObservation.start();
 		}
 	}
 
