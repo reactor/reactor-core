@@ -47,7 +47,11 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		return super.scanUnsafe(key);
 	}
 
-	static final class MonoCollectListSubscriber<T> extends Operators.MonoSubscriber<T, List<T>> {
+	static final class MonoCollectListSubscriber<T> implements InnerOperator<T, List<T>>,
+	                                                           Fuseable, //for constants only
+	                                                           QueueSubscription<List<T>> {
+
+		final CoreSubscriber<? super List<T>> actual;
 
 		List<T> list;
 
@@ -56,18 +60,24 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		boolean done;
 
 		MonoCollectListSubscriber(CoreSubscriber<? super List<T>> actual) {
-			super(actual);
+			this.actual = actual;
 			//not this is not thread safe so concurrent discarding multiple + add might fail with ConcurrentModificationException
 			this.list = new ArrayList<>();
+		}
+
+		@Override
+		public CoreSubscriber<? super List<T>> actual() {
+			return this.actual;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -76,8 +86,6 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				this.s = s;
 
 				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -87,7 +95,8 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			List<T> l;
+
+			final List<T> l;
 			synchronized (this) {
 				l = list;
 				if (l != null) {
@@ -95,6 +104,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 					return;
 				}
 			}
+
 			Operators.onDiscard(t, actual.currentContext());
 		}
 
@@ -105,12 +115,14 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				return;
 			}
 			done = true;
-			List<T> l;
+
+			final List<T> l;
 			synchronized (this) {
 				l = list;
 				list = null;
 			}
-			discard(l);
+			Operators.onDiscardMultiple(l, actual.currentContext());
+
 			actual.onError(t);
 		}
 
@@ -120,42 +132,62 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				return;
 			}
 			done = true;
-			List<T> l;
+
+			final List<T> l;
 			synchronized (this) {
 				l = list;
 				list = null;
 			}
-			if (l != null) {
-				complete(l);
-			}
-		}
 
-		@Override
-		protected void discard(List<T> v) {
-			Operators.onDiscardMultiple(v, actual.currentContext());
+			if (l != null) {
+				actual.onNext(l);
+				actual.onComplete();
+			}
 		}
 
 		@Override
 		public void cancel() {
-			int state;
-			List<T> l;
-			state = STATE.getAndSet(this, CANCELLED);
-			if (state != CANCELLED) {
-				s.cancel();
-			}
+			s.cancel();
+
+			final List<?> l;
 			synchronized (this) {
-				if (state <= HAS_REQUEST_NO_VALUE) {
-					l = list;
-					this.value = null;
-					list = null;
-				}
-				else {
-					l = null;
-				}
+				l = list;
+				list = null;
 			}
+
 			if (l != null) {
-				discard(l);
+				Operators.onDiscardMultiple(l, actual.currentContext());
 			}
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(Long.MAX_VALUE);
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public List<T> poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 }
