@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Test;
+
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -206,6 +204,42 @@ public class Context5Test {
 	}
 
 	@Test
+	void forEach() {
+		Map<Object, Object> items = new HashMap<>();
+
+		c.forEach(items::put);
+
+		assertThat(items)
+				.hasSize(5)
+				.containsEntry(1, "A")
+				.containsEntry(2, "B")
+				.containsEntry(3, "C")
+				.containsEntry(4, "D")
+				.containsEntry(5, "E");
+	}
+
+	@Test
+	void forEachThrows() {
+		Map<Object, Object> items = new HashMap<>();
+
+		BiConsumer<Object, Object> action = (key, value) -> {
+			if (key.equals(2)) {
+				throw new RuntimeException("Boom!");
+			}
+			items.put(key, value);
+		};
+
+		assertThatExceptionOfType(RuntimeException.class)
+				.isThrownBy(() -> c.forEach(action))
+				.withMessage("Boom!");
+
+		assertThat(items)
+				.hasSize(1)
+				.containsOnlyKeys(1)
+				.containsValues("A");
+	}
+
+	@Test
 	public void string() throws Exception {
 		assertThat(c.toString()).isEqualTo("Context5{1=A, 2=B, 3=C, 4=D, 5=E}");
 	}
@@ -313,5 +347,46 @@ public class Context5Test {
 				.containsEntry(5, "REPLACED5")
 				.containsEntry("extra", "value")
 				.hasSize(6);
+	}
+
+	@Test
+	void putAllMap() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put("A", 1);
+		map.put("B", 2);
+		map.put("C", 3);
+		Context put = c.putAllMap(map);
+
+		assertThat(put).isInstanceOf(ContextN.class)
+				.hasToString("ContextN{1=A, 2=B, 3=C, 4=D, 5=E, A=1, B=2, C=3}");
+	}
+
+	@Test
+	void putAllMapEmpty() {
+		Context put = c.putAllMap(Collections.emptyMap());
+		assertThat(put).isSameAs(c);
+	}
+
+	@Test
+	void putAllMapNullKey() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> c.putAllMap(Collections.singletonMap(null, "oops")));
+	}
+
+	@Test
+	void putAllMapNullValue() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> c.putAllMap(Collections.singletonMap("A", null)));
+	}
+
+	@Test
+	void putAllMapReplaces() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put(c.key1, "replaced");
+		map.put("A", 1);
+		Context put = c.putAllMap(map);
+
+		assertThat(put).isInstanceOf(ContextN.class)
+				.hasToString("ContextN{1=replaced, 2=B, 3=C, 4=D, 5=E, A=1}");
 	}
 }

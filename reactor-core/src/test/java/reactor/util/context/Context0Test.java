@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
+
+import static org.assertj.core.api.Assertions.*;
 
 public class Context0Test {
 
@@ -77,6 +78,27 @@ public class Context0Test {
 	@Test
 	public void stream() throws Exception {
 		assertThat(c.stream()).isEmpty();
+	}
+
+	@Test
+	void forEach() {
+		Map<Object, Object> items = new HashMap<>();
+
+		c.forEach(items::put);
+
+		assertThat(items).isEmpty();
+	}
+
+	@Test
+	void forEachDoesNotThrow() {
+		Map<Object, Object> items = new HashMap<>();
+
+		BiConsumer<Object, Object> action = (key, value) -> {
+			throw new RuntimeException("Boom!");
+		};
+
+		assertThatNoException().isThrownBy(() -> c.forEach(action));
+		assertThat(items).isEmpty();
 	}
 
 	@Test
@@ -157,5 +179,35 @@ public class Context0Test {
 		assertThat(ctx)
 				.containsEntry(1, "SHOULD NOT BE REPLACED")
 				.hasSize(1);
+	}
+
+	@Test
+	void putAllMap() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put("A", 1);
+		map.put("B", 2);
+		map.put("C", 3);
+		Context put = c.putAllMap(map);
+
+		assertThat(put).isInstanceOf(Context3.class)
+				.hasToString("Context3{A=1, B=2, C=3}");
+	}
+
+	@Test
+	void putAllMapEmpty() {
+		Context put = c.putAllMap(Collections.emptyMap());
+		assertThat(put).isSameAs(c);
+	}
+
+	@Test
+	void putAllMapNullKey() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> c.putAllMap(Collections.singletonMap(null, "oops")));
+	}
+
+	@Test
+	void putAllMapNullValue() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> c.putAllMap(Collections.singletonMap("A", null)));
 	}
 }

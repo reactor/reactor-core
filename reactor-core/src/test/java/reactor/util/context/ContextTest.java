@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 
 package reactor.util.context;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
+
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -431,6 +429,42 @@ class ContextTest {
 	}
 
 	@Test
+	void defaultPutAllMap() {
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(1, "A");
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+
+		ForeignContext left = new ForeignContext(leftMap);
+		Context combined = left.putAllMap(rightMap);
+		assertThat(left.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+				.containsExactlyInAnyOrderEntriesOf(leftMap);
+
+		assertThat(combined).isNotSameAs(left);
+		Map<Object, Object> combinedMap = combined.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		assertThat(combinedMap)
+				.containsEntry(1, "A")
+				.containsEntry(2, "B")
+				.containsEntry(3, "C")
+				.containsEntry(4, "D")
+				.containsEntry(5, "E")
+				.containsEntry(10, "A10")
+				.containsEntry(11, "A11")
+				.containsEntry(12, "A12")
+				.containsEntry(13, "A13");
+	}
+
+	@Test
 	void defaultPutAllOtherIsAbstractContext() {
 		Map<Object, Object> leftMap = new HashMap<>();
 		leftMap.put(1, "A");
@@ -511,6 +545,22 @@ class ContextTest {
 	}
 
 	@Test
+	void defaultPutAllMapForeignSmallSize() {
+		Context initial = new ForeignContext(1, "A");
+		Map<?, ?> other = Collections.singletonMap(2, "B");
+
+		Context result = initial.putAllMap(other);
+
+		assertThat(result).isInstanceOf(Context2.class);
+		Context2 context2 = (Context2) result;
+
+		assertThat(context2.key1).as("key1").isEqualTo(1);
+		assertThat(context2.value1).as("value1").isEqualTo("A");
+		assertThat(context2.key2).as("key2").isEqualTo(2);
+		assertThat(context2.value2).as("value2").isEqualTo("B");
+	}
+
+	@Test
 	void putAllForeignMiddleSize() {
 		ForeignContext initial = new ForeignContext(1, "value1")
 				.directPut(2, "value2")
@@ -527,6 +577,30 @@ class ContextTest {
 		assertThat(resultN)
 				.containsKeys(1, 2, 3, 4, 5)
 				.containsValues("replaced", "value2", "value3", "value4", "value5");
+	}
+
+	@Test
+	void putAllMapForeignMediumSize() {
+		ForeignContext initial = new ForeignContext(1, "value1")
+				.directPut(2, "value2")
+				.directPut(3, "value3")
+				.directPut(4, "value4");
+		Map<Object, Object> other = new HashMap<>();
+		other.put(1, "replaced");
+		other.put(5, "value5");
+		other.put(6, "value6");
+
+		Context result = initial.putAllMap(other);
+
+		assertThat(result).isInstanceOf(ContextN.class);
+		ContextN contextN = (ContextN) result;
+
+		assertThat(contextN).containsEntry(1, "replaced");
+		assertThat(contextN).containsEntry(2, "value2");
+		assertThat(contextN).containsEntry(3, "value3");
+		assertThat(contextN).containsEntry(4, "value4");
+		assertThat(contextN).containsEntry(5, "value5");
+		assertThat(contextN).containsEntry(6, "value6");
 	}
 
 	@Test
@@ -628,6 +702,11 @@ class ContextTest {
 
 		public Stream<Map.Entry<Object, Object>> stream() {
 			return delegate.entrySet().stream();
+		}
+
+		@Override
+		public void forEach(BiConsumer<Object, Object> action) {
+			delegate.forEach(action);
 		}
 
 		@Override

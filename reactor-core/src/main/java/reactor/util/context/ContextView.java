@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.util.context;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -134,4 +135,16 @@ public interface ContextView {
 	 * @return a {@link Stream} of key/value pairs held by this context
 	 */
 	Stream<Map.Entry<Object, Object>> stream();
+
+	/**
+	 * Perform the given action for each entry in this {@link ContextView}. If the action throws an
+	 * exception, it is immediately propagated to the caller and the remaining items
+	 * will not be processed.
+	 *
+	 * @param action The action to be performed for each entry
+	 * @throws NullPointerException if the specified action is null
+	 */
+	default void forEach(BiConsumer<Object, Object> action) {
+		stream().forEach(entry -> action.accept(entry.getKey(), entry.getValue()));
+	}
 }

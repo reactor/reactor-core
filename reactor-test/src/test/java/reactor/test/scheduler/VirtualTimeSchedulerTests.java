@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -422,6 +424,41 @@ public class VirtualTimeSchedulerTests {
 		assertThat(singleCreated).as("total custom created").hasValue(2);
 		assertThat(postResetSharedScheduler).as("shared restored").isSameAs(originalScheduler);
 		assertThat(postResetNewScheduler).as("new from restoredgt").isNotInstanceOf(VirtualTimeScheduler.class);
+	}
+
+	@Test
+	void scheduledTaskShouldBeDisposedAfterExecution() {
+		VirtualTimeScheduler vtScheduler = VirtualTimeScheduler.create();
+
+		Disposable immediateDisposable = vtScheduler.schedule(() -> {
+		});
+		assertThat(immediateDisposable.isDisposed()).isTrue();
+
+		Duration scheduleDelayDuration = Duration.ofSeconds(10);
+		Disposable scheduledDisposable = vtScheduler.schedule(() -> {
+		}, scheduleDelayDuration.getSeconds(), TimeUnit.SECONDS);
+		assertThat(scheduledDisposable.isDisposed()).isFalse();
+
+		vtScheduler.advanceTimeBy(scheduleDelayDuration);
+		assertThat(scheduledDisposable.isDisposed()).isTrue();
+	}
+
+	@Test
+	void scheduledTaskShouldNotBeExecutedIfDisposed() {
+		VirtualTimeScheduler vtScheduler = VirtualTimeScheduler.create();
+
+		Duration scheduleDelayDuration = Duration.ofSeconds(10);
+		Disposable scheduledDisposable = vtScheduler.schedule(() -> Assertions.fail(
+						"This task should not be executed, because it was disposed of"
+								+ " beforehand."),
+				scheduleDelayDuration.getSeconds(),
+				TimeUnit.SECONDS);
+
+		scheduledDisposable.dispose();
+		assertThat(scheduledDisposable.isDisposed()).isTrue();
+
+		vtScheduler.advanceTimeBy(scheduleDelayDuration);
+		assertThat(scheduledDisposable.isDisposed()).isTrue();
 	}
 
 	@SuppressWarnings("unchecked")
