@@ -16,13 +16,13 @@
 
 package reactor.util.context;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
-
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -179,5 +179,35 @@ public class Context0Test {
 		assertThat(ctx)
 				.containsEntry(1, "SHOULD NOT BE REPLACED")
 				.hasSize(1);
+	}
+
+	@Test
+	void putAllMap() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put("A", 1);
+		map.put("B", 2);
+		map.put("C", 3);
+		Context put = c.putAllMap(map);
+
+		assertThat(put).isInstanceOf(Context3.class)
+				.hasToString("Context3{A=1, B=2, C=3}");
+	}
+
+	@Test
+	void putAllMapEmpty() {
+		Context put = c.putAllMap(Collections.emptyMap());
+		assertThat(put).isSameAs(c);
+	}
+
+	@Test
+	void putAllMapNullKey() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> c.putAllMap(Collections.singletonMap(null, "oops")));
+	}
+
+	@Test
+	void putAllMapNullValue() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> c.putAllMap(Collections.singletonMap("A", null)));
 	}
 }
