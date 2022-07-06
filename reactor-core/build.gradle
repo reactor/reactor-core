@@ -89,6 +89,7 @@ dependencies {
 
 	// Optional context-propagation-api
 	compileOnly libs.micrometer.contextPropagationApi
+	testImplementation libs.micrometer.contextPropagationApi
 
 	// Optional BlockHound support
 	compileOnly libs.blockhound

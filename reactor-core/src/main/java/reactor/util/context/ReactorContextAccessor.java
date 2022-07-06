@@ -29,6 +29,7 @@ import io.micrometer.context.ContextAccessor;
  * SPI library, which is an optional dependency.
  *
  * @author Rossen Stoyanchev
+ * @author Simon Baslé
  * @since 3.5.0
  */
 public final class ReactorContextAccessor implements ContextAccessor<ContextView, Context> {
@@ -40,9 +41,11 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 
 	@Override
 	public void readValues(ContextView source, Predicate<Object> keyPredicate, Map<Object, Object> target) {
-		source.stream()
-			.filter(entry -> keyPredicate.test(entry.getKey()))
-			.forEach(entry -> target.put(entry.getKey(), entry.getValue()));
+		source.forEach((k, v) -> {
+			if (keyPredicate.test(k)) {
+				target.put(k, v);
+			}
+		});
 	}
 
 	@Override
@@ -52,7 +55,6 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 
 	@Override
 	public Context writeValues(Map<Object, Object> source, Context target) {
-		return target.putAll(Context.of(source).readOnly());
+		return target.putAllMap(source);
 	}
-
 }
