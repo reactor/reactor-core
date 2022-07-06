@@ -175,8 +175,7 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
 			.hasLowCardinalityKeyValue("type", "Flux")
 			.hasLowCardinalityKeyValue("status", "completed")
-			.doesNotHaveHighCardinalityKeyValueWithKey(MicrometerMeterListener.TAG_KEY_EXCEPTION)
-			.doesNotHaveLowCardinalityKeyValueWithKey(MicrometerMeterListener.TAG_KEY_EXCEPTION);
+			.hasKeyValuesCount(4);
 	}
 
 	@Test
@@ -201,8 +200,7 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
 			.hasLowCardinalityKeyValue("type", "Mono")
 			.hasLowCardinalityKeyValue("status", "completed")
-			.doesNotHaveHighCardinalityKeyValueWithKey(MicrometerMeterListener.TAG_KEY_EXCEPTION)
-			.doesNotHaveLowCardinalityKeyValueWithKey(MicrometerMeterListener.TAG_KEY_EXCEPTION);
+			.hasKeyValuesCount(4);
 	}
 
 	@Test
@@ -224,9 +222,9 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.doesNotHaveLowCardinalityKeyValueWithKey("exception")
-			.doesNotHaveHighCardinalityKeyValueWithKey("exception")
-			.hasLowCardinalityKeyValue("status", "cancelled");
+			.hasLowCardinalityKeyValue("status", "cancelled")
+			.hasKeyValuesCount(2)
+			.doesNotHaveError();
 	}
 
 	@Test
@@ -248,9 +246,9 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.doesNotHaveLowCardinalityKeyValueWithKey("exception")
-			.doesNotHaveHighCardinalityKeyValueWithKey("exception")
-			.hasLowCardinalityKeyValue("status", "completedEmpty");
+			.hasLowCardinalityKeyValue("status", "completedEmpty")
+			.hasKeyValuesCount(2)
+			.doesNotHaveError();
 	}
 
 	@Test
@@ -273,9 +271,9 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.doesNotHaveLowCardinalityKeyValueWithKey("exception")
-			.doesNotHaveHighCardinalityKeyValueWithKey("exception")
-			.hasLowCardinalityKeyValue("status", "completed");
+			.hasLowCardinalityKeyValue("status", "completed")
+			.hasKeyValuesCount(2)
+			.doesNotHaveError();
 	}
 
 	@Test
@@ -300,7 +298,8 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
-			.hasLowCardinalityKeyValue("status", expectedStatus);
+			.hasLowCardinalityKeyValue("status", expectedStatus)
+			.doesNotHaveError();
 
 		listener.doOnComplete();
 
@@ -330,7 +329,8 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
-			.hasLowCardinalityKeyValue("status", "completedEmpty");
+			.hasLowCardinalityKeyValue("status", "completedEmpty")
+			.doesNotHaveError();
 	}
 
 	@Test
@@ -352,12 +352,9 @@ class MicrometerObservationListenerTest {
 			.hasNameEqualTo("errorFlux.observation.flow")
 			.hasBeenStarted()
 			.hasBeenStopped()
-			//TODO integrated assertion to assert the error content?
-			.satisfies(ctx -> assertThat(ctx.getError()).as("Observation#error()").hasValue(exception))
+			.hasOnlyKeys("forcedType", "status")
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			//TODO better way to assert the keyspace is limited to a list?
-			.doesNotHaveLowCardinalityKeyValueWithKey("exception")
-			.doesNotHaveHighCardinalityKeyValueWithKey("exception")
-			.hasLowCardinalityKeyValue("status", "error");
+			.hasLowCardinalityKeyValue("status", "error")
+			.hasError(exception);
 	}
 }
