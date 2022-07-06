@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -733,26 +735,30 @@ public class GuideTests {
 
 	@Test
 	public void errorHandlingRetryWhenTransient() {
-		AtomicInteger errorCount = new AtomicInteger(); // <1>
-		AtomicInteger transientHelper = new AtomicInteger();
-		Flux<Integer> transientFlux = Flux.<Integer>generate(sink -> {
-			int i = transientHelper.getAndIncrement();
-			if (i == 10) { // <2>
-				sink.next(i);
-				sink.complete();
-			}
-			else if (i % 3 == 0) { // <3>
-				sink.next(i);
-			}
-			else {
-				sink.error(new IllegalStateException("Transient error at " + i)); // <4>
-			}
-		})
-				.doOnError(e -> errorCount.incrementAndGet());
+		final AtomicInteger transientHelper = new AtomicInteger();
+		Supplier<Flux<Integer>> httpRequest = () ->
+			Flux.generate(sink -> { // <1>
+				int i = transientHelper.getAndIncrement();
+				if (i == 10) { // <2>
+					sink.next(i);
+					sink.complete();
+				}
+				else if (i % 3 == 0) { // <3>
+					sink.next(i);
+				}
+				else {
+					sink.error(new IllegalStateException("Transient error at " + i)); // <4>
+				}
+			});
+		// NB: in the guide, the executable transientFlux above is shown second, separately from the simplified snippet below
 
-transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <5>
-             .blockLast();
-assertThat(errorCount).hasValue(6); // <6>
+		AtomicInteger errorCount = new AtomicInteger(); // <1>
+		Flux<Integer> transientFlux = httpRequest.get() // <2>
+			.doOnError(e -> errorCount.incrementAndGet());
+
+		transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <3>
+			.blockLast();
+		assertThat(errorCount).hasValue(6); // <4>
 
 		transientHelper.set(0);
 		transientFlux.retryWhen(Retry.max(2).transientErrors(true))
