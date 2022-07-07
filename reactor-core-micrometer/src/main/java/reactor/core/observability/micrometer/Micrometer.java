@@ -19,14 +19,18 @@ package reactor.core.observability.micrometer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import io.micrometer.common.KeyValue;
+import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.observability.SignalListenerFactory;
 
 public final class Micrometer {
 
@@ -34,15 +38,18 @@ public final class Micrometer {
 	private static MeterRegistry registry = Metrics.globalRegistry;
 
 	/**
-	 * The default "name" to use as a prefix for meter IDs if the instrumented sequence doesn't
+	 * The default "name" to use as a prefix for meter or observation IDs if the instrumented sequence doesn't
 	 * define a {@link reactor.core.publisher.Flux#name(String) name}.
 	 */
 	public static final String DEFAULT_METER_PREFIX = "reactor";
 
 	/**
-	 * Set the registry to use in reactor for metrics related purposes.
+	 * Set the registry to use in reactor-core-micrometer for metrics related purposes.
 	 * @return the previously configured registry.
+	 * @deprecated in M4, will be removed in M5 / RC1. prefer your own singleton and explicitly
+	 * passing the registry to {@link #metrics(MeterRegistry, Clock)}
 	 */
+	@Deprecated
 	public static MeterRegistry useRegistry(MeterRegistry newRegistry) {
 		MeterRegistry previous = registry;
 		registry = newRegistry;
@@ -50,8 +57,12 @@ public final class Micrometer {
 	}
 
 	/**
-	 * Get the registry used in reactor for metrics related purposes.
+	 * Get the registry used in reactor-core-micrometer for metrics related purposes.
+	 *
+	 * @deprecated in M4, will be removed in M5 / RC1. prefer your own singleton and explicitly
+	 * passing the registry to {@link #metrics(MeterRegistry, Clock)}
 	 */
+	@Deprecated
 	public static MeterRegistry getRegistry() {
 		return registry;
 	}
@@ -72,9 +83,11 @@ public final class Micrometer {
 	 *
 	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link SignalListenerFactory} to record metrics
+	 * @deprecated in M4, will be removed in M5 / RC1. prefer explicitly passing a registry via {@link #metrics(MeterRegistry, Clock)}
 	 */
+	@Deprecated
 	public static <T> SignalListenerFactory<T, ?> metrics() {
-		return new MicrometerListenerFactory<>();
+		return new MicrometerMeterListenerFactory<>();
 	}
 
 	/**
@@ -95,7 +108,7 @@ public final class Micrometer {
 	 * @return a {@link SignalListenerFactory} to record metrics
 	 */
 	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry registry, Clock clock) {
-		return new MicrometerListenerFactory<T>() {
+		return new MicrometerMeterListenerFactory<T>() {
 			@Override
 			protected Clock useClock() {
 				return clock;
@@ -107,6 +120,37 @@ public final class Micrometer {
 			}
 		};
 	}
+
+	/**
+	 * A {@link SignalListener} factory that will ultimately produce a Micrometer {@link Observation}
+	 * representing the runtime of the publisher to the provided {@link ObservationRegistry}.
+	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
+	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
+	 * <p>
+	 * The {@code NAME.observation.flow} {@link Observation} covers the entire length of the sequence,
+	 * from subscription to termination. Said termination can be a cancellation, a completion with or without values
+	 * or an error. This is denoted by the low cardinality {@code status} {@link KeyValue}.
+	 * In case of an exception, a high cardinality {@code exception} KeyValue with the exception class name is also added.
+	 * Finally, the low cardinality {@code type} KeyValue informs whether we're observing a {@code Flux}
+	 * or a {@code Mono}.
+	 * <p>
+	 * Note that the Micrometer {@code context-propagation-api} is used to populate thread locals
+	 * around the opening of the observation (upon {@code onSubscribe(Subscription)}).
+	 * <p>
+	 * Observation names are prefixed by the {@link reactor.core.publisher.Flux#name(String)} defined upstream
+	 * of the tap if applicable or by the default prefix {@link #DEFAULT_METER_PREFIX}.
+	 * Similarly, Reactor tags defined upstream via eg. {@link reactor.core.publisher.Flux#tag(String, String)})
+	 * are gathered and added to the default set of {@link io.micrometer.common.KeyValues} used by the Observation
+	 * as {@link Observation#lowCardinalityKeyValues(KeyValues) low cardinality keyValues}.
+	 *
+	 *  @param <T> the type of onNext in the target publisher
+	 * @return a {@link SignalListenerFactory} to record observations
+	 */
+	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
+		return new MicrometerObservationListenerFactory<>(registry);
+	}
+
+	//FIXME: remove these and replace with an option to decorate an arbitrary Scheduler
 
 	/**
 	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}

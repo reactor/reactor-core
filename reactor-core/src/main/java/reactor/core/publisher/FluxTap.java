@@ -21,9 +21,10 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A generic per-Subscription side effect {@link Flux} that notifies a {@link SignalListener} of most events.
@@ -84,6 +85,7 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 	static class TapSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context                   context;
 		final SignalListener<T>         listener;
 
 		boolean done;
@@ -92,11 +94,26 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		TapSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
 			this.actual = actual;
 			this.listener = signalListener;
+			//note that since we're in the subscriber, this is technically invoked AFTER doFirst
+			Context ctx;
+			try {
+				ctx = signalListener.addToContext(actual.currentContext());
+			}
+			catch (Throwable e) {
+				signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
+				ctx = actual.currentContext();
+			}
+			this.context = ctx;
 		}
 
 		@Override
 		public CoreSubscriber<? super T> actual() {
 			return this.actual;
+		}
+
+		@Override
+		public Context currentContext() {
+			return this.context;
 		}
 
 		@Override

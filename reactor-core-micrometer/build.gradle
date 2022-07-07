@@ -46,6 +46,7 @@ dependencies {
 
 	implementation platform(libs.micrometer.bom)
 	api libs.micrometer.core
+	implementation libs.micrometer.contextPropagationApi
 
 	testImplementation platform(libs.junit.bom)
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -55,6 +56,9 @@ dependencies {
 
 	testImplementation platform(libs.micrometer.bom)
 	testImplementation libs.micrometer.core
+	testImplementation libs.micrometer.test
+	testImplementation libs.micrometer.observation.test
+	testImplementation libs.micrometer.tracing.test
 
 	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'

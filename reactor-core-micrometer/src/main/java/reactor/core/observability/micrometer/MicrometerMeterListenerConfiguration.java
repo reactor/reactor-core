@@ -16,10 +16,7 @@
 
 package reactor.core.observability.micrometer;
 
-import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Clock;
@@ -33,32 +30,31 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.function.Tuple2;
 
 /**
- * A companion configuration object for {@link MicrometerListener} that serves as the state created by
- * {@link MicrometerListenerFactory}.
+ * A companion configuration object for {@link MicrometerMeterListener} that serves as the state created by
+ * {@link MicrometerMeterListenerFactory}.
  *
  * @author Simon Baslé
  */
-final class MicrometerListenerConfiguration {
+final class MicrometerMeterListenerConfiguration {
 
-	private static final Logger LOGGER = Loggers.getLogger(MicrometerListenerConfiguration.class);
+	private static final Logger LOGGER = Loggers.getLogger(MicrometerMeterListenerConfiguration.class);
 
-	static MicrometerListenerConfiguration fromFlux(Flux<?> source, MeterRegistry meterRegistry, Clock clock) {
-		Tags defaultTags = MicrometerListener.DEFAULT_TAGS_FLUX;
+	static MicrometerMeterListenerConfiguration fromFlux(Flux<?> source, MeterRegistry meterRegistry, Clock clock) {
+		Tags defaultTags = MicrometerMeterListener.DEFAULT_TAGS_FLUX;
 		final String name = resolveName(source, LOGGER);
 		final Tags tags = resolveTags(source, defaultTags);
 
-		return new MicrometerListenerConfiguration(name, tags, meterRegistry, clock, false);
+		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, clock, false);
 	}
 
-	static MicrometerListenerConfiguration fromMono(Mono<?> source, MeterRegistry meterRegistry, Clock clock) {
-		Tags defaultTags = MicrometerListener.DEFAULT_TAGS_MONO;
+	static MicrometerMeterListenerConfiguration fromMono(Mono<?> source, MeterRegistry meterRegistry, Clock clock) {
+		Tags defaultTags = MicrometerMeterListener.DEFAULT_TAGS_MONO;
 		final String name = resolveName(source, LOGGER);
 		final Tags tags = resolveTags(source, defaultTags);
 
-		return new MicrometerListenerConfiguration(name, tags, meterRegistry, clock, true);
+		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, clock, true);
 	}
 
 	/**
@@ -116,8 +112,8 @@ final class MicrometerListenerConfiguration {
 	// separator is the dot, not camelCase...
 	final MeterRegistry registry;
 
-	MicrometerListenerConfiguration(String sequenceName, Tags tags, MeterRegistry registryCandidate, Clock clock,
-									boolean isMono) {
+	MicrometerMeterListenerConfiguration(String sequenceName, Tags tags, MeterRegistry registryCandidate, Clock clock,
+										 boolean isMono) {
 		this.clock = clock;
 		this.commonTags = tags;
 		this.isMono = isMono;

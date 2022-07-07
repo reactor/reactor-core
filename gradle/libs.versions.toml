@@ -32,6 +32,9 @@ micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micro
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-contextPropagationApi = "io.micrometer:context-propagation-api:1.0.0-SNAPSHOT"
+micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
+micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-SNAPSHOT"
+micrometer-test = { module = "io.micrometer:micrometer-test" }
 mockito = "org.mockito:mockito-core:4.6.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
