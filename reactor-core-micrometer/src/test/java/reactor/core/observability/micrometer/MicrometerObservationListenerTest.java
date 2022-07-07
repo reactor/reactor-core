@@ -83,7 +83,7 @@ class MicrometerObservationListenerTest {
 			.isNotNull();
 		assertThat(registry).as("before start").doesNotHaveAnyObservation();
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 
 		assertThat(registry)
 			.hasSingleObservationThat()
@@ -112,7 +112,7 @@ class MicrometerObservationListenerTest {
 			.isNotNull();
 		assertThat(registry).as("no observation started").doesNotHaveAnyObservation();
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 
 		assertThat(registry)
 			.hasSingleObservationThat()
@@ -141,7 +141,7 @@ class MicrometerObservationListenerTest {
 			.isNotNull();
 		assertThat(registry).as("no observation started").doesNotHaveAnyObservation();
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 
 		assertThat(registry)
 			.hasSingleObservationThat()
@@ -213,7 +213,7 @@ class MicrometerObservationListenerTest {
 
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 		listener.doOnCancel(); // stops via cancellation
 
 		assertThat(registry)
@@ -237,7 +237,7 @@ class MicrometerObservationListenerTest {
 
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 		listener.doOnComplete(); // stops via completion (empty)
 
 		assertThat(registry)
@@ -261,7 +261,7 @@ class MicrometerObservationListenerTest {
 
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 		listener.doOnNext(1);
 		listener.doOnComplete(); // stops via completion
 
@@ -289,7 +289,7 @@ class MicrometerObservationListenerTest {
 		//we use a test-oriented constructor to force the onNext completion case to have a different tag value
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, expectedStatus);
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 		listener.doOnNext(1); // emulates onNext, should stop observation
 
 		assertThat(registry)
@@ -320,7 +320,7 @@ class MicrometerObservationListenerTest {
 
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 		listener.doOnComplete(); // stops via completion (empty)
 
 		assertThat(registry)
@@ -344,7 +344,7 @@ class MicrometerObservationListenerTest {
 
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
-		listener.doOnSubscription(); // forces observation start
+		listener.doFirst(); // forces observation start
 		listener.doOnError(exception); // stops via onError
 
 		assertThat(registry)
