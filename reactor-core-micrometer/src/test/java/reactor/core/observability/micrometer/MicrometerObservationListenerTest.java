@@ -173,8 +173,8 @@ class MicrometerObservationListenerTest {
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
-			.hasLowCardinalityKeyValue("type", "Flux")
-			.hasLowCardinalityKeyValue("status", "completed")
+			.hasLowCardinalityKeyValue("reactor.type", "Flux")
+			.hasLowCardinalityKeyValue("reactor.status",  "completed")
 			.hasKeyValuesCount(4);
 	}
 
@@ -198,8 +198,8 @@ class MicrometerObservationListenerTest {
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
-			.hasLowCardinalityKeyValue("type", "Mono")
-			.hasLowCardinalityKeyValue("status", "completed")
+			.hasLowCardinalityKeyValue("reactor.type", "Mono")
+			.hasLowCardinalityKeyValue("reactor.status",  "completed")
 			.hasKeyValuesCount(4);
 	}
 
@@ -222,7 +222,7 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.hasLowCardinalityKeyValue("status", "cancelled")
+			.hasLowCardinalityKeyValue("reactor.status",  "cancelled")
 			.hasKeyValuesCount(2)
 			.doesNotHaveError();
 	}
@@ -246,7 +246,7 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.hasLowCardinalityKeyValue("status", "completedEmpty")
+			.hasLowCardinalityKeyValue("reactor.status",  "completedEmpty")
 			.hasKeyValuesCount(2)
 			.doesNotHaveError();
 	}
@@ -271,7 +271,7 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.hasLowCardinalityKeyValue("status", "completed")
+			.hasLowCardinalityKeyValue("reactor.status",  "completed")
 			.hasKeyValuesCount(2)
 			.doesNotHaveError();
 	}
@@ -298,7 +298,7 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
-			.hasLowCardinalityKeyValue("status", expectedStatus)
+			.hasLowCardinalityKeyValue("reactor.status", expectedStatus)
 			.doesNotHaveError();
 
 		listener.doOnComplete();
@@ -307,7 +307,7 @@ class MicrometerObservationListenerTest {
 		assertThat(registry)
 			.hasSingleObservationThat()
 			.as("post-doOnComplete")
-			.hasLowCardinalityKeyValue("status", expectedStatus);
+			.hasLowCardinalityKeyValue("reactor.status",  expectedStatus);
 	}
 
 	@Test
@@ -329,7 +329,7 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
-			.hasLowCardinalityKeyValue("status", "completedEmpty")
+			.hasLowCardinalityKeyValue("reactor.status",  "completedEmpty")
 			.doesNotHaveError();
 	}
 
@@ -352,9 +352,9 @@ class MicrometerObservationListenerTest {
 			.hasNameEqualTo("errorFlux.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
-			.hasOnlyKeys("forcedType", "status")
+			.hasOnlyKeys("forcedType", "reactor.status")
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
-			.hasLowCardinalityKeyValue("status", "error")
+			.hasLowCardinalityKeyValue("reactor.status",  "error")
 			.hasError(exception);
 	}
 }

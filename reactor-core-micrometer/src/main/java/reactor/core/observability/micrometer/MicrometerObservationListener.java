@@ -40,10 +40,16 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerObservationListener.class);
 
 	static final String OBSERVATION_SUFFIX_FOR_METRICS = ".observation";
+	static final String KEY_STATUS = "reactor.status";
+	static final String KEY_TYPE = "reactor.type";
+	static final String STATUS_CANCELLED = MicrometerMeterListener.TAG_STATUS_CANCELLED;
+	static final String STATUS_COMPLETED = MicrometerMeterListener.TAG_STATUS_COMPLETED;
+	static final String STATUS_COMPLETED_EMPTY = MicrometerMeterListener.TAG_STATUS_COMPLETED_EMPTY;
+	static final String STATUS_ERROR = MicrometerMeterListener.TAG_STATUS_ERROR;
 
 	/**
 	 * A value for the status tag, to be used when a Mono completes from onNext.
-	 * In production, this is set to {@link MicrometerMeterListener#TAG_STATUS_COMPLETED}.
+	 * In production, this is set to {@link #STATUS_COMPLETED}.
 	 * In some tests, this can be overridden as a way to assert {@link #doOnComplete()} is no-op.
 	 */
 	final String                                     completedOnNextStatus;
@@ -59,7 +65,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	boolean valued;
 
 	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration) {
-		this(subscriberContext, configuration, MicrometerMeterListener.TAG_STATUS_COMPLETED);
+		this(subscriberContext, configuration, STATUS_COMPLETED);
 	}
 
 	//for test purposes, we can pass in a value for the status tag, to be used when a Mono completes from onNext
@@ -117,7 +123,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	@Override
 	public void doOnCancel() {
 		Observation observation = subscribeToTerminalObservation
-			.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_CANCELLED);
+			.lowCardinalityKeyValue(KEY_STATUS, STATUS_CANCELLED);
 
 		observation.stop();
 		if (scope != null) {
@@ -130,16 +136,16 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		// We differentiate between empty completion and value completion via tags.
 		String status = null;
 		if (!valued) {
-			status = MicrometerMeterListener.TAG_STATUS_COMPLETED_EMPTY;
+			status = STATUS_COMPLETED_EMPTY;
 		}
 		else if (!configuration.isMono) {
-			status = MicrometerMeterListener.TAG_STATUS_COMPLETED;
+			status = STATUS_COMPLETED;
 		}
 
 		// if status == null, recording with OnComplete tag is done directly in onNext for the Mono(valued) case
 		if (status != null) {
 			Observation completeObservation = subscribeToTerminalObservation
-				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, status);
+				.lowCardinalityKeyValue(KEY_STATUS, status);
 
 			completeObservation.stop();
 			if (scope != null) {
@@ -151,7 +157,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	@Override
 	public void doOnError(Throwable e) {
 		Observation errorObservation = subscribeToTerminalObservation
-			.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_ERROR)
+			.lowCardinalityKeyValue(KEY_STATUS, STATUS_ERROR)
 			.error(e);
 
 		errorObservation.stop();
@@ -166,7 +172,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		if (configuration.isMono) {
 			//record valued completion directly
 			Observation completeObservation = subscribeToTerminalObservation
-				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, completedOnNextStatus);
+				.lowCardinalityKeyValue(KEY_STATUS, completedOnNextStatus);
 
 			completeObservation.stop();
 			if (scope != null) {

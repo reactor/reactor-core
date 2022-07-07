@@ -66,12 +66,12 @@ class MicrometerObservationListenerConfigurationTest {
 		if (tag == null) {
 			assertThat(configuration.commonKeyValues.stream().map(t -> t.getKey() + "=" + t.getValue()))
 				.as("commonKeyValues without additional KeyValue")
-				.containsExactly("type=Flux");
+				.containsExactly("reactor.type" + "=Flux");
 		}
 		else {
 			assertThat(configuration.commonKeyValues.stream().map(t -> t.getKey() + "=" + t.getValue()))
 				.as("commonKeyValues")
-				.containsExactlyInAnyOrder("type=Flux", "tag="+tag);
+				.containsExactlyInAnyOrder("reactor.type" + "=Flux", "tag="+tag);
 		}
 	}
 
@@ -106,12 +106,12 @@ class MicrometerObservationListenerConfigurationTest {
 		if (tag == null) {
 			assertThat(configuration.commonKeyValues.stream().map(t -> t.getKey() + "=" + t.getValue()))
 				.as("commonKeyValues without additional KeyValue")
-				.containsExactly("type=Mono");
+				.containsExactly("reactor.type" + "=Mono");
 		}
 		else {
 			assertThat(configuration.commonKeyValues.stream().map(t -> t.getKey() + "=" + t.getValue()))
 				.as("commonKeyValues")
-				.containsExactlyInAnyOrder("type=Mono", "tag="+tag);
+				.containsExactlyInAnyOrder("reactor.type" + "=Mono", "tag="+tag);
 		}
 	}
 

@@ -38,8 +38,8 @@ import reactor.util.Loggers;
  */
 final class MicrometerObservationListenerConfiguration {
 
-	static final KeyValues DEFAULT_KV_FLUX = KeyValues.of("type", "Flux");
-	static final KeyValues DEFAULT_KV_MONO = KeyValues.of("type", "Mono");
+	static final KeyValues DEFAULT_KV_FLUX = KeyValues.of(MicrometerObservationListener.KEY_TYPE, "Flux");
+	static final KeyValues DEFAULT_KV_MONO = KeyValues.of(MicrometerObservationListener.KEY_TYPE, "Mono");
 
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerObservationListenerConfiguration.class);
 
