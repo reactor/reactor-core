@@ -51,9 +51,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
 import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -409,7 +407,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		assertThat(s.boundedServices).isSameAs(servicesBefore);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(booleans = {true, false})
 	void restartSupported(boolean disposeGracefully) {
 		BoundedElasticScheduler s = scheduler();
@@ -598,7 +596,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTestWithName
 	@ValueSource(booleans = {true, false})
 	public void userWorkerShutdownBySchedulerDisposal(boolean disposeGracefully) throws InterruptedException {
 		Scheduler s = afterTest.autoDispose(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticUserThread", 10, false));

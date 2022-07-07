@@ -28,8 +28,8 @@ import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
@@ -42,24 +42,15 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	static final AtomicLong COUNTER       = new AtomicLong();
 
 	final ThreadFactory factory;
-	final Sinks.Empty<Void> disposedNotifier;
 
-	volatile ScheduledExecutorService executor;
-	static final AtomicReferenceFieldUpdater<SingleScheduler, ScheduledExecutorService> EXECUTORS =
-			AtomicReferenceFieldUpdater.newUpdater(SingleScheduler.class,
-					ScheduledExecutorService.class,
-					"executor");
-
-	static final ScheduledExecutorService TERMINATED;
-
-	static {
-		TERMINATED = Executors.newSingleThreadScheduledExecutor();
-		TERMINATED.shutdownNow();
-	}
+	volatile SchedulerState state;
+	private static final AtomicReferenceFieldUpdater<SingleScheduler, SchedulerState> STATE =
+			AtomicReferenceFieldUpdater.newUpdater(
+					SingleScheduler.class, SchedulerState.class, "state"
+			);
 
 	SingleScheduler(ThreadFactory factory) {
 		this.factory = factory;
-		this.disposedNotifier = Sinks.empty();
 	}
 
 	/**
@@ -76,27 +67,33 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public boolean isDisposed() {
-		return executor == TERMINATED;
+		// we only consider disposed as actually shutdown
+		SchedulerState current = STATE.get(this);
+		return current != null && current.executor == SchedulerState.TERMINATED;
 	}
 
 	@Override
 	public void start() {
 		//TODO SingleTimedScheduler didn't implement start, check if any particular reason?
-		ScheduledExecutorService b = null;
+		SchedulerState b = null;
 		for (; ; ) {
-			ScheduledExecutorService a = executor;
-			if (a != TERMINATED && a != null) {
-				if (b != null) {
-					b.shutdownNow();
+			SchedulerState a = STATE.get(this);
+			if (a != null) {
+				if (a.executor != SchedulerState.TERMINATED) {
+					if (b != null) {
+						b.executor.shutdownNow();
+					}
+					return;
 				}
-				return;
 			}
 
 			if (b == null) {
-				b = Schedulers.decorateExecutorService(this, this.get());
+				b = SchedulerState.fresh(
+						Schedulers.decorateExecutorService(this, this.get())
+				);
 			}
 
-			if (EXECUTORS.compareAndSet(this, a, b)) {
+			if (STATE.compareAndSet(this, a, b)) {
 				return;
 			}
 		}
@@ -104,35 +101,43 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public void dispose() {
-		ScheduledExecutorService a = executor;
-		if (a != TERMINATED) {
-			a = EXECUTORS.getAndSet(this, TERMINATED);
-			if (a != TERMINATED && a != null) {
-				a.shutdownNow();
+		SchedulerState a = STATE.get(this);
+		if (a != null && a.executor != SchedulerState.TERMINATED) {
+			a = STATE.getAndUpdate(this, SchedulerState::terminated);
+			if (a != null && a.executor != SchedulerState.TERMINATED) {
+				a.executor.shutdownNow();
 			}
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
-		ScheduledExecutorService a = executor;
-		if (a != TERMINATED) {
-			a = EXECUTORS.getAndSet(this, TERMINATED);
-			if (a != TERMINATED && a != null) {
-				Schedulers.shutdownAndAwait(a, gracePeriod, this.disposedNotifier);
+		return Mono.defer(() -> {
+			SchedulerState current = STATE.getAndUpdate(this, previous -> {
+				if (previous.executor != SchedulerState.TERMINATED) {
+					return SchedulerState.terminated(previous);
+				}
+				return previous;
+			});
+			if (current == null) {
+				return Mono.empty();
+			} else if (current.executor == SchedulerState.TERMINATED) {
+				return current.onDispose;
 			}
-		}
-		return this.disposedNotifier.asMono();
+			current.executor.shutdown();
+			return current.onDispose;
+		}).timeout(gracePeriod);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.directSchedule(executor, task, null, 0L, TimeUnit.MILLISECONDS);
+		return Schedulers.directSchedule(STATE.get(this).executor, task, null, 0L,
+				TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.directSchedule(executor, task, null, delay, unit);
+		return Schedulers.directSchedule(STATE.get(this).executor, task, null, delay, unit);
 	}
 
 	@Override
@@ -140,7 +145,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		return Schedulers.directSchedulePeriodically(executor,
+		return Schedulers.directSchedulePeriodically(STATE.get(this).executor,
 				task,
 				initialDelay,
 				period,
@@ -163,12 +168,56 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (key == Attr.NAME) return this.toString();
 		if (key == Attr.CAPACITY || key == Attr.BUFFERED) return 1; //BUFFERED: number of workers doesn't vary
 
-		return Schedulers.scanExecutor(executor, key);
+		return Schedulers.scanExecutor(STATE.get(this).executor, key);
 	}
 
 	@Override
 	public Worker createWorker() {
-		return new ExecutorServiceWorker(executor);
+		return new ExecutorServiceWorker(STATE.get(this).executor);
 	}
 
+	static final class SchedulerState {
+
+		static final ScheduledExecutorService TERMINATED;
+
+		static {
+			TERMINATED = Executors.newSingleThreadScheduledExecutor();
+			TERMINATED.shutdownNow();
+		}
+
+		final ScheduledExecutorService executor;
+		final Mono<Void>               onDispose;
+
+		private SchedulerState(ScheduledExecutorService executor, Mono<Void> onDispose) {
+			this.executor = executor;
+			this.onDispose = onDispose;
+		}
+
+		static SchedulerState fresh(final ScheduledExecutorService executor) {
+			return new SchedulerState(
+					executor,
+					Flux.<Void>create(sink -> {
+						Thread backgroundThread = new Thread(() -> {
+							while (!Thread.currentThread().isInterrupted()) {
+								try {
+									if (executor.awaitTermination(1, TimeUnit.SECONDS)) {
+										sink.complete();
+										return;
+									}
+								} catch (InterruptedException e) {
+									Thread.currentThread().interrupt();
+									return;
+								}
+							}
+						});
+						sink.onCancel(backgroundThread::interrupt);
+						backgroundThread.start();
+					}).publish().refCount().next()
+			);
+		}
+
+		static SchedulerState terminated(SchedulerState base) {
+			return new SchedulerState(TERMINATED, base.onDispose);
+		}
+	}
 }

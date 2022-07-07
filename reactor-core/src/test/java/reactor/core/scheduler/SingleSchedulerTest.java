@@ -16,19 +16,23 @@
 
 package reactor.core.scheduler;
 
-import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Scannable;
-import reactor.core.publisher.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -183,5 +187,25 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			scheduler.dispose();
 		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void restartSupported(boolean disposeGracefully) {
+		Scheduler s = Schedulers.newSingle("restartSupported");
+		if (disposeGracefully) {
+			s.disposeGracefully(Duration.ofSeconds(1)).subscribe();
+		} else {
+			s.dispose();
+		}
+		SingleScheduler.SchedulerState stateBefore = ((SingleScheduler) s).state;
+		assertThat(stateBefore.executor).as("SHUTDOWN").isSameAs(SingleScheduler.SchedulerState.TERMINATED);
+
+		s.start();
+
+		assertThat(((SingleScheduler) s).state.executor)
+				.isNotSameAs(stateBefore.executor)
+				.isInstanceOfSatisfying(ScheduledExecutorService.class,
+						executor -> assertThat(executor.isShutdown()).isFalse());
 	}
 }
