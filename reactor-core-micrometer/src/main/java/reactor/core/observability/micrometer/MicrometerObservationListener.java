@@ -39,7 +39,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerObservationListener.class);
 
-	static final String OBSERVATION_FLOW = ".observation.flow";
+	static final String OBSERVATION_SUFFIX_FOR_METRICS = ".observation";
 
 	/**
 	 * A value for the status tag, to be used when a Mono completes from onNext.
@@ -73,7 +73,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		//creation of the listener matches subscription (Publisher.subscribe(Subscriber) / doFirst)
 		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
 		subscribeToTerminalObservation = Observation.createNotStarted(
-			configuration.sequenceName + OBSERVATION_FLOW,
+			configuration.sequenceName + OBSERVATION_SUFFIX_FOR_METRICS,
 			configuration.registry
 		)
 			.contextualName(configuration.sequenceName)

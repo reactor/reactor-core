@@ -87,7 +87,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("reactor.observation.flow")
+			.hasNameEqualTo("reactor.observation")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.isNotStopped()
@@ -116,7 +116,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("testName.observation.flow")
+			.hasNameEqualTo("testName.observation")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.isNotStopped()
@@ -145,7 +145,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("reactor.observation.flow")
+			.hasNameEqualTo("reactor.observation")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.isNotStopped()
@@ -167,7 +167,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("testFlux.observation.flow")
+			.hasNameEqualTo("testFlux.observation")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.hasBeenStopped()
@@ -192,7 +192,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("testMono.observation.flow")
+			.hasNameEqualTo("testMono.observation")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.hasBeenStopped()
@@ -218,7 +218,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("flux.observation.flow")
+			.hasNameEqualTo("flux.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
@@ -242,7 +242,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("emptyFlux.observation.flow")
+			.hasNameEqualTo("emptyFlux.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
@@ -267,7 +267,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("flux.observation.flow")
+			.hasNameEqualTo("flux.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
@@ -294,7 +294,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("valuedMono.observation.flow")
+			.hasNameEqualTo("valuedMono.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
@@ -325,7 +325,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("emptyMono.observation.flow")
+			.hasNameEqualTo("emptyMono.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
@@ -349,7 +349,7 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("errorFlux.observation.flow")
+			.hasNameEqualTo("errorFlux.observation")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasOnlyKeys("forcedType", "status")

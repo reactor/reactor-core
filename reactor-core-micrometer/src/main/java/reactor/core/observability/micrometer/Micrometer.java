@@ -127,7 +127,7 @@ public final class Micrometer {
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 * <p>
-	 * The {@code NAME.observation.flow} {@link Observation} covers the entire length of the sequence,
+	 * The {@code NAME.observation} {@link Observation} covers the entire length of the sequence,
 	 * from subscription to termination. Said termination can be a cancellation, a completion with or without values
 	 * or an error. This is denoted by the low cardinality {@code status} {@link KeyValue}.
 	 * In case of an exception, a high cardinality {@code exception} KeyValue with the exception class name is also added.
