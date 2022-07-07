@@ -43,6 +43,7 @@ import reactor.core.scheduler.Scheduler;
 /**
  * @author Simon Baslé
  */
+@Deprecated
 final class MicrometerSchedulerMetricsDecorator implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
 	Disposable {
 

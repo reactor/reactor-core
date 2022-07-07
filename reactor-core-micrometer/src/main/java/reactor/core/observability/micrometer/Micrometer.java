@@ -117,7 +117,11 @@ public final class Micrometer {
 	 *
 	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers,
 	 * which doesn't change the Factory.
+	 *
+	 * @deprecated in M4, to be removed in M5. Replace with {@link TimedScheduler#of(Scheduler, String, MeterRegistry, String, Iterable)}
+	 * for individual schedulers that you would like to instrument.
 	 */
+	@Deprecated
 	public static void enableSchedulersMetricsDecorator() {
 		Schedulers.addExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY,
 			new MicrometerSchedulerMetricsDecorator(getRegistry()));
@@ -126,7 +130,10 @@ public final class Micrometer {
 	/**
 	 * If {@link #enableSchedulersMetricsDecorator()} has been previously called, removes the decorator.
 	 * No-op if {@link #enableSchedulersMetricsDecorator()} hasn't been called.
+	 *
+	 * @deprecated in M4, to be removed in M5. Replaced by {@link TimedScheduler}, which doesn't need global disabling.
 	 */
+	@Deprecated
 	public static void disableSchedulersMetricsDecorator() {
 		Schedulers.removeExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY);
 	}
