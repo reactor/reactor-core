@@ -45,6 +45,7 @@ ext {
 
 testSets {
 	blockHoundTest
+	//TODO once can probably be removed in 3.6.0, but MUST keep the ReactorContextAccessorTest in that case
 	withMicrometerTest
 	tckTest
 }
@@ -120,6 +121,7 @@ dependencies {
 	withMicrometerTestImplementation platform(libs.micrometer.bom)
 	withMicrometerTestImplementation libs.micrometer.commons
 	withMicrometerTestImplementation libs.micrometer.core
+	withMicrometerTestImplementation libs.micrometer.contextPropagationApi
 	withMicrometerTestImplementation sourceSets.test.output
 
 	jcstressImplementation(project(":reactor-test")) {
