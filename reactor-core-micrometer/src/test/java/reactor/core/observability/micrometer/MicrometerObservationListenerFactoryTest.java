@@ -76,7 +76,7 @@ class MicrometerObservationListenerFactoryTest {
 		MicrometerObservationListener<?> observationListener = (MicrometerObservationListener<?>) signalListener;
 
 		assertThat(observationListener.configuration).as("configuration").isSameAs(conf);
-		assertThat(observationListener.context).as("context").isSameAs(expectedContext);
+		assertThat(observationListener.originalContext).as("context").isSameAs(expectedContext);
 	}
 
 }

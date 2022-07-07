@@ -21,6 +21,10 @@ import io.micrometer.observation.Observation;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
@@ -33,6 +37,8 @@ import reactor.util.context.ContextView;
  */
 final class MicrometerObservationListener<T> implements SignalListener<T> {
 
+	private static final Logger LOGGER = Loggers.getLogger(MicrometerObservationListener.class);
+
 	static final String OBSERVATION_FLOW = ".observation.flow";
 
 	/**
@@ -42,8 +48,13 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	 */
 	final String                                     completedOnNextStatus;
 	final MicrometerObservationListenerConfiguration configuration;
-	final ContextView                                context;
+	final ContextView                                originalContext;
 	final Observation                                subscribeToTerminalObservation;
+
+	@Nullable
+	Context contextWithScope;
+	@Nullable
+	Observation.Scope scope = null;
 
 	boolean valued;
 
@@ -54,15 +65,53 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	//for test purposes, we can pass in a value for the status tag, to be used when a Mono completes from onNext
 	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration, String completedOnNextStatus) {
 		this.configuration = configuration;
-		this.context = subscriberContext;
+		this.originalContext = subscriberContext;
 		this.completedOnNextStatus = completedOnNextStatus;
 
 		this.valued = false;
 
+		//creation of the listener matches subscription (Publisher.subscribe(Subscriber) / doFirst)
+		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
 		subscribeToTerminalObservation = Observation.createNotStarted(
 			configuration.sequenceName + OBSERVATION_FLOW,
 			configuration.registry
-		).lowCardinalityKeyValues(configuration.commonKeyValues);
+		)
+			.contextualName(configuration.sequenceName)
+			.lowCardinalityKeyValues(configuration.commonKeyValues);
+	}
+
+	@Override
+	public void doFirst() {
+		ContextSnapshot contextSnapshot = ContextSnapshot.forContextAndThreadLocalValues(this.originalContext);
+
+		try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues()) {
+			this.scope = this.subscribeToTerminalObservation
+				.start()
+				.openScope();
+			//reacquire the scope from ThreadLocal
+			//tap context hasn't been initialized yet, so addToContext can now use the Scope
+			ContextSnapshot contextSnapshot2 = ContextSnapshot.forContextAndThreadLocalValues(this.originalContext);
+			this.contextWithScope = contextSnapshot2.updateContext(Context.of(this.originalContext));
+		}
+	}
+
+	@Override
+	public Context addToContext(Context originalContext) {
+		if (this.originalContext != originalContext) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("addToContext call on Observation {} with unexpected originalContext {}",
+					this.subscribeToTerminalObservation, originalContext);
+			}
+			return originalContext;
+		}
+		if (this.contextWithScope == null) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("addToContext call on Observation {} before contextWithScope is set",
+				this.subscribeToTerminalObservation);
+			}
+			return originalContext;
+		}
+		return contextWithScope;
 	}
 
 	@Override
@@ -71,6 +120,9 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 			.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, MicrometerMeterListener.TAG_STATUS_CANCELLED);
 
 		observation.stop();
+		if (scope != null) {
+			scope.close();
+		}
 	}
 
 	@Override
@@ -90,6 +142,9 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, status);
 
 			completeObservation.stop();
+			if (scope != null) {
+				scope.close();
+			}
 		}
 	}
 
@@ -100,6 +155,9 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 			.error(e);
 
 		errorObservation.stop();
+		if (scope != null) {
+			scope.close();
+		}
 	}
 
 	@Override
@@ -111,18 +169,24 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 				.lowCardinalityKeyValue(MicrometerMeterListener.TAG_KEY_STATUS, completedOnNextStatus);
 
 			completeObservation.stop();
+			if (scope != null) {
+				scope.close();
+			}
 		}
 	}
 
 	@Override
-	public void doOnSubscription() {
-		ContextSnapshot contextSnapshot = ContextSnapshot.forContextAndThreadLocalValues(this.context);
-		try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues()) {
-			this.subscribeToTerminalObservation.start();
-		}
+	public void handleListenerError(Throwable listenerError) {
+		LOGGER.error("unhandled listener error", listenerError);
 	}
 
 	//unused hooks
+
+	@Override
+	public void doOnSubscription() {
+		// NO-OP. We rather initialize everything in `doFirst`, as it is closer to actual Publisher.subscriber call
+		// and gives us a chance to store the Scope in the SignalListener's context.
+	}
 
 	@Override
 	public void doOnMalformedOnComplete() {
@@ -145,11 +209,6 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	}
 
 	@Override
-	public void doFirst() {
-		// NO-OP
-	}
-
-	@Override
 	public void doOnFusion(int negotiatedFusion) {
 		// NO-OP
 	}
@@ -168,10 +227,4 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	public void doAfterError(Throwable error) {
 		// NO-OP
 	}
-
-	@Override
-	public void handleListenerError(Throwable listenerError) {
-		// NO-OP
-	}
-
 }
