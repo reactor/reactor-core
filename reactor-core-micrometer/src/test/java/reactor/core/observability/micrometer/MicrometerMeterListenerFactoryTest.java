@@ -46,15 +46,15 @@ class MicrometerMeterListenerFactoryTest {
 	@Test
 	void useRegistryDefaultsToCommonRegistry() {
 		SimpleMeterRegistry commonRegistry = new SimpleMeterRegistry();
-		MeterRegistry defaultCommon = Micrometer.useMeterRegistry(commonRegistry);
+		MeterRegistry defaultCommon = Micrometer.useRegistry(commonRegistry);
 		try {
 			MicrometerMeterListenerFactory<?> factory = new MicrometerMeterListenerFactory<>();
 
-			assertThat(factory.useRegistry()).isSameAs(Micrometer.getMeterRegistry())
+			assertThat(factory.useRegistry()).isSameAs(Micrometer.getRegistry())
 				.isSameAs(commonRegistry);
 		}
 		finally {
-			Micrometer.useMeterRegistry(defaultCommon);
+			Micrometer.useRegistry(defaultCommon);
 		}
 	}
 

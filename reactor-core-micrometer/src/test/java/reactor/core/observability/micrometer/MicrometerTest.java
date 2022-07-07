@@ -35,35 +35,35 @@ class MicrometerTest {
 
 	@BeforeEach
 	void init() {
-		defaultRegistry = Micrometer.getMeterRegistry();
+		defaultRegistry = Micrometer.getRegistry();
 	}
 
 	@AfterEach
 	void restore() {
-		Micrometer.useMeterRegistry(defaultRegistry);
+		Micrometer.useRegistry(defaultRegistry);
 	}
 
 	@Test
 	void defaultRegistryCanBeChanged() {
-		MeterRegistry registry = Micrometer.getMeterRegistry();
+		MeterRegistry registry = Micrometer.getRegistry();
 		try {
 			assertThat(registry).as("default common registry").isEqualTo(Metrics.globalRegistry);
 
 			MeterRegistry replacement = new SimpleMeterRegistry();
-			MeterRegistry old = Micrometer.useMeterRegistry(replacement);
+			MeterRegistry old = Micrometer.useRegistry(replacement);
 
 			assertThat(old).as("useRegistry return value").isSameAs(registry);
-			assertThat(Micrometer.getMeterRegistry()).as("getRegistry post useRegistry").isSameAs(replacement);
+			assertThat(Micrometer.getRegistry()).as("getRegistry post useRegistry").isSameAs(replacement);
 		}
 		finally {
-			Micrometer.useMeterRegistry(registry);
+			Micrometer.useRegistry(registry);
 		}
 	}
 
 	@Test
 	void metricsUsesCommonRegistry() {
 		SimpleMeterRegistry customCommonRegistry = new SimpleMeterRegistry();
-		Micrometer.useMeterRegistry(customCommonRegistry);
+		Micrometer.useRegistry(customCommonRegistry);
 		MicrometerMeterListenerFactory<?> factory = (MicrometerMeterListenerFactory<?>) Micrometer.metrics();
 
 		assertThat(factory.useClock()).as("clock").isSameAs(Clock.SYSTEM);
@@ -73,7 +73,7 @@ class MicrometerTest {
 	@Test
 	void metricsUsesSpecifiedClockAndRegistry() {
 		SimpleMeterRegistry customCommonRegistry = new SimpleMeterRegistry();
-		Micrometer.useMeterRegistry(customCommonRegistry);
+		Micrometer.useRegistry(customCommonRegistry);
 		SimpleMeterRegistry customLocalRegistry = new SimpleMeterRegistry();
 		Clock customLocalClock = new Clock() {
 			@Override

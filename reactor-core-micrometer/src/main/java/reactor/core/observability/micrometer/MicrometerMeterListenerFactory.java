@@ -38,7 +38,7 @@ class MicrometerMeterListenerFactory<T> implements SignalListenerFactory<T, Micr
 	}
 
 	protected MeterRegistry useRegistry() {
-		return Micrometer.getMeterRegistry();
+		return Micrometer.getRegistry();
 	}
 
 	@Override
