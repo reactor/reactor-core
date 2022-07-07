@@ -83,7 +83,9 @@ public final class Micrometer {
 	 *
 	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link SignalListenerFactory} to record metrics
+	 * @deprecated in M4, will be removed in M5 / RC1. prefer explicitly passing a registry via {@link #metrics(MeterRegistry, Clock)}
 	 */
+	@Deprecated
 	public static <T> SignalListenerFactory<T, ?> metrics() {
 		return new MicrometerMeterListenerFactory<>();
 	}
