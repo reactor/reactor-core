@@ -37,6 +37,7 @@ class MicrometerMeterListenerFactory<T> implements SignalListenerFactory<T, Micr
 		return Clock.SYSTEM;
 	}
 
+	@SuppressWarnings("deprecation")
 	protected MeterRegistry useRegistry() {
 		return Micrometer.getRegistry();
 	}

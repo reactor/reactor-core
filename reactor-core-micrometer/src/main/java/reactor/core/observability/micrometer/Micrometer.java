@@ -38,8 +38,7 @@ public final class Micrometer {
 	private static MeterRegistry registry = Metrics.globalRegistry;
 
 	/**
-	 * The default "name" to use as a prefix for meter or observation IDs if the instrumented sequence doesn't
-	 * define a {@link reactor.core.publisher.Flux#name(String) name}.
+	 * The default "name" to use as a prefix for meter if the instrumented sequence doesn't define a {@link reactor.core.publisher.Flux#name(String) name}.
 	 */
 	public static final String DEFAULT_METER_PREFIX = "reactor";
 
@@ -127,9 +126,9 @@ public final class Micrometer {
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 * <p>
-	 * The {@code NAME.observation} {@link Observation} covers the entire length of the sequence,
-	 * from subscription to termination. Said termination can be a cancellation, a completion with or without values
-	 * or an error. This is denoted by the low cardinality {@code status} {@link KeyValue}.
+	 * The {@link Observation} covers the entire length of the sequence, from subscription to termination.
+	 * Said termination can be a cancellation, a completion with or without values or an error.
+	 * This is denoted by the low cardinality {@code status} {@link KeyValue}.
 	 * In case of an exception, a high cardinality {@code exception} KeyValue with the exception class name is also added.
 	 * Finally, the low cardinality {@code type} KeyValue informs whether we're observing a {@code Flux}
 	 * or a {@code Mono}.
@@ -137,8 +136,9 @@ public final class Micrometer {
 	 * Note that the Micrometer {@code context-propagation-api} is used to populate thread locals
 	 * around the opening of the observation (upon {@code onSubscribe(Subscription)}).
 	 * <p>
-	 * Observation names are prefixed by the {@link reactor.core.publisher.Flux#name(String)} defined upstream
-	 * of the tap if applicable or by the default prefix {@link #DEFAULT_METER_PREFIX}.
+	 * The observation is named after the {@link reactor.core.publisher.Flux#name(String)} defined upstream
+	 * of the tap if applicable or use {@code "reactor.observation"} otherwise (although it is strongly recommended
+	 * to provide a meaningful name).
 	 * Similarly, Reactor tags defined upstream via eg. {@link reactor.core.publisher.Flux#tag(String, String)})
 	 * are gathered and added to the default set of {@link io.micrometer.common.KeyValues} used by the Observation
 	 * as {@link Observation#lowCardinalityKeyValues(KeyValues) low cardinality keyValues}.
