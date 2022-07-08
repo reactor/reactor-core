@@ -25,7 +25,7 @@ import io.micrometer.context.ContextAccessor;
  * A {@code ContextAccessor} to enable reading values from a Reactor
  * {@link ContextView} and writing values to {@link Context}.
  * <p>
- * Please note that this public class implements the {@code libs.micrometer.contextPropagationApi}
+ * Please note that this public class implements the {@code libs.micrometer.contextPropagation}
  * SPI library, which is an optional dependency.
  *
  * @author Rossen Stoyanchev

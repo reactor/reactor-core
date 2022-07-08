@@ -843,12 +843,12 @@ In case one needs to use one of the remaining APIs that still require a `Context
 
 [[context.propagation]]
 === Micrometer Context-Propagation Support
-Since 3.5.0, Reactor-Core embeds basic support for the `io.micrometer:context-propagation-api` SPI.
+Since 3.5.0, Reactor-Core embeds basic support for the `io.micrometer:context-propagation` SPI.
 This library is intended as a mean to easily adapt between various implementations of the concept of a Context, of which
 `ContextView`/`Context` is an example, and between `ThreadLocal` variables as well.
 
 `ReactorContextAccessor` is one implementation of this SPI that is loaded via `ServiceLoader`. No user action is required,
-other than depending on reactor-core and `context-propagation-api` (the class is public but shouldn't generally be accessed by user code).
+other than depending on reactor-core and `context-propagation` (the class is public but shouldn't generally be accessed by user code).
 
 === Simple `Context` Examples
 
