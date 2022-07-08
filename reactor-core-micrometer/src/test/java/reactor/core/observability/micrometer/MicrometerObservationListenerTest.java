@@ -69,7 +69,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void whenStartedFluxWithDefaultName() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			Micrometer.DEFAULT_METER_PREFIX,
+			MicrometerObservationListener.ANONYMOUS_OBSERVATION,
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -116,7 +116,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("testName.observation")
+			.hasNameEqualTo("testName")
+			.hasContextualNameEqualTo("testName")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.isNotStopped()
@@ -127,7 +128,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void whenStartedMono() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			Micrometer.DEFAULT_METER_PREFIX,
+			MicrometerObservationListener.ANONYMOUS_OBSERVATION,
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromMono (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -146,6 +147,7 @@ class MicrometerObservationListenerTest {
 		assertThat(registry)
 			.hasSingleObservationThat()
 			.hasNameEqualTo("reactor.observation")
+			.hasContextualNameEqualTo("reactor.observation")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.isNotStopped()
@@ -167,7 +169,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("testFlux.observation")
+			.hasNameEqualTo("testFlux")
+			.hasContextualNameEqualTo("testFlux")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.hasBeenStopped()
@@ -192,7 +195,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("testMono.observation")
+			.hasNameEqualTo("testMono")
+			.hasContextualNameEqualTo("testMono")
 			.as("subscribeToTerminalObservation")
 			.hasBeenStarted()
 			.hasBeenStopped()
@@ -218,7 +222,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("flux.observation")
+			.hasNameEqualTo("flux")
+			.hasContextualNameEqualTo("flux")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
@@ -242,7 +247,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("emptyFlux.observation")
+			.hasNameEqualTo("emptyFlux")
+			.hasContextualNameEqualTo("emptyFlux")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
@@ -267,7 +273,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("flux.observation")
+			.hasNameEqualTo("flux")
+			.hasContextualNameEqualTo("flux")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Flux")
@@ -294,7 +301,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("valuedMono.observation")
+			.hasNameEqualTo("valuedMono")
+			.hasContextualNameEqualTo("valuedMono")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
@@ -325,7 +333,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("emptyMono.observation")
+			.hasNameEqualTo("emptyMono")
+			.hasContextualNameEqualTo("emptyMono")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
@@ -349,7 +358,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry)
 			.hasSingleObservationThat()
-			.hasNameEqualTo("errorFlux.observation")
+			.hasNameEqualTo("errorFlux")
+			.hasContextualNameEqualTo("errorFlux")
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasOnlyKeys("forcedType", "reactor.status")

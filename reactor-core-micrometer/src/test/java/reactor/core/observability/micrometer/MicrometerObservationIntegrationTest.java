@@ -58,8 +58,6 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 					.doOnNext(v -> {
 						if (id == 2L) throw EXCEPTION;
 					})
-					//FIXME enforce providing a name via String or ObservationConvention
-					//FIXME Micrometer taps should ignore name()
 					.name("query" + id)
 					.tap(Micrometer.observation(getObservationRegistry()));
 

@@ -39,8 +39,8 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerObservationListener.class);
 
-	static final String OBSERVATION_SUFFIX_FOR_METRICS = ".observation";
-	static final String KEY_STATUS = "reactor.status";
+	static final String ANONYMOUS_OBSERVATION = "reactor.observation";
+	static final String KEY_STATUS            = "reactor.status";
 	static final String KEY_TYPE = "reactor.type";
 	static final String STATUS_CANCELLED = MicrometerMeterListener.TAG_STATUS_CANCELLED;
 	static final String STATUS_COMPLETED = MicrometerMeterListener.TAG_STATUS_COMPLETED;
@@ -79,7 +79,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		//creation of the listener matches subscription (Publisher.subscribe(Subscriber) / doFirst)
 		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
 		subscribeToTerminalObservation = Observation.createNotStarted(
-			configuration.sequenceName + OBSERVATION_SUFFIX_FOR_METRICS,
+			configuration.sequenceName,
 			configuration.registry
 		)
 			.contextualName(configuration.sequenceName)

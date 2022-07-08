@@ -43,7 +43,7 @@ final class MicrometerMeterListenerConfiguration {
 
 	static MicrometerMeterListenerConfiguration fromFlux(Flux<?> source, MeterRegistry meterRegistry, Clock clock) {
 		Tags defaultTags = MicrometerMeterListener.DEFAULT_TAGS_FLUX;
-		final String name = resolveName(source, LOGGER);
+		final String name = resolveName(source, LOGGER, Micrometer.DEFAULT_METER_PREFIX);
 		final Tags tags = resolveTags(source, defaultTags);
 
 		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, clock, false);
@@ -51,7 +51,7 @@ final class MicrometerMeterListenerConfiguration {
 
 	static MicrometerMeterListenerConfiguration fromMono(Mono<?> source, MeterRegistry meterRegistry, Clock clock) {
 		Tags defaultTags = MicrometerMeterListener.DEFAULT_TAGS_MONO;
-		final String name = resolveName(source, LOGGER);
+		final String name = resolveName(source, LOGGER, Micrometer.DEFAULT_METER_PREFIX);
 		final Tags tags = resolveTags(source, defaultTags);
 
 		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, clock, true);
@@ -65,17 +65,17 @@ final class MicrometerMeterListenerConfiguration {
 	 *
 	 * @return a name
 	 */
-	static String resolveName(Publisher<?> source, Logger logger) {
+	static String resolveName(Publisher<?> source, Logger logger, String defaultName) {
 		Scannable scannable = Scannable.from(source);
 		if (!scannable.isScanAvailable()) {
 			logger.warn("Attempting to activate metrics but the upstream is not Scannable. You might want to use `name()` (and optionally `tags()`) right before this listener");
-			return Micrometer.DEFAULT_METER_PREFIX;
+			return defaultName;
 		}
 
 		String nameOrDefault = scannable.name();
 		if (scannable.stepName()
 			.equals(nameOrDefault)) {
-			return Micrometer.DEFAULT_METER_PREFIX;
+			return defaultName;
 		}
 		else {
 			return nameOrDefault;

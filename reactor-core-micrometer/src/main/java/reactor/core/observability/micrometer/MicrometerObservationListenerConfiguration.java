@@ -45,7 +45,7 @@ final class MicrometerObservationListenerConfiguration {
 
 	static MicrometerObservationListenerConfiguration fromFlux(Flux<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_FLUX;
-		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER);
+		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, MicrometerObservationListener.ANONYMOUS_OBSERVATION);
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
 		return new MicrometerObservationListenerConfiguration(name, keyValues, observationRegistry, false);
@@ -53,7 +53,7 @@ final class MicrometerObservationListenerConfiguration {
 
 	static MicrometerObservationListenerConfiguration fromMono(Mono<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_MONO;
-		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER);
+		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, MicrometerObservationListener.ANONYMOUS_OBSERVATION);
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
 		return new MicrometerObservationListenerConfiguration(name, keyValues, observationRegistry, true);
