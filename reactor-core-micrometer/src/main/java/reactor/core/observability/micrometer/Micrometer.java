@@ -134,7 +134,7 @@ public final class Micrometer {
 	 * Finally, the low cardinality {@code type} KeyValue informs whether we're observing a {@code Flux}
 	 * or a {@code Mono}.
 	 * <p>
-	 * Note that the Micrometer {@code context-propagation-api} is used to populate thread locals
+	 * Note that the Micrometer {@code context-propagation} is used to populate thread locals
 	 * around the opening of the observation (upon {@code onSubscribe(Subscription)}).
 	 * <p>
 	 * Observation names are prefixed by the {@link reactor.core.publisher.Flux#name(String)} defined upstream

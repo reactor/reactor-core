@@ -82,7 +82,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doFirst() {
-		ContextSnapshot contextSnapshot = ContextSnapshot.forContextAndThreadLocalValues(this.originalContext);
+		ContextSnapshot contextSnapshot = ContextSnapshot.capture(this.originalContext);
 
 		try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues()) {
 			this.scope = this.subscribeToTerminalObservation
@@ -90,7 +90,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 				.openScope();
 			//reacquire the scope from ThreadLocal
 			//tap context hasn't been initialized yet, so addToContext can now use the Scope
-			ContextSnapshot contextSnapshot2 = ContextSnapshot.forContextAndThreadLocalValues(this.originalContext);
+			ContextSnapshot contextSnapshot2 = ContextSnapshot.capture(this.originalContext);
 			this.contextWithScope = contextSnapshot2.updateContext(Context.of(this.originalContext));
 		}
 	}
