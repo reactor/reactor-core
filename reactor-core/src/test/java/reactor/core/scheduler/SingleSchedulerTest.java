@@ -18,9 +18,7 @@ package reactor.core.scheduler;
 
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
@@ -32,7 +30,7 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -206,6 +204,78 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		assertThat(((SingleScheduler) s).state.executor)
 				.isNotSameAs(stateBefore.executor)
 				.isInstanceOfSatisfying(ScheduledExecutorService.class,
-						executor -> assertThat(executor.isShutdown()).isFalse());
+						executor -> {
+							assertThat(executor.isShutdown()).isFalse();
+							assertThat(executor.isTerminated()).isFalse();
+						});
+	}
+
+	@Test
+	void multipleRestarts() {
+		Scheduler s = Schedulers.newSingle("multipleRestarts");
+
+		s.dispose();
+		assertThat(s.isDisposed()).isTrue();
+
+		s.start();
+		assertThat(s.isDisposed()).isFalse();
+
+		s.disposeGracefully(Duration.ofMillis(20)).block();
+		assertThat(s.isDisposed()).isTrue();
+
+		s.start();
+		assertThat(s.isDisposed()).isFalse();
+
+		s.dispose();
+		assertThat(s.isDisposed()).isTrue();
+
+		s.start();
+		assertThat(s.isDisposed()).isFalse();
+	}
+
+	@Test
+	void multipleDisposeGracefully() throws Exception {
+		Scheduler s = Schedulers.newSingle("multipleDisposeGracefully");
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+
+		CountDownLatch finishShutdownLatch = new CountDownLatch(1);
+		s.schedule(() -> {
+			while (true) {
+				try {
+					// ignore cancellation, hold graceful shutdown
+					if (finishShutdownLatch.await(100, TimeUnit.MILLISECONDS)) {
+						return;
+					}
+				} catch (InterruptedException ignored) {
+				}
+			}
+		});
+
+		CountDownLatch tasksLatch = new CountDownLatch(10);
+		for (int i = 0; i < 10; i++) {
+			executor.submit(() -> {
+				assertThatException()
+						.isThrownBy(() -> s.disposeGracefully(Duration.ofMillis(40)).block())
+						.withCauseExactlyInstanceOf(TimeoutException.class);
+				tasksLatch.countDown();
+			});
+		}
+
+		tasksLatch.await(100, TimeUnit.MILLISECONDS);
+
+		assertThatException()
+				.isThrownBy(() -> s.disposeGracefully(Duration.ofMillis(40)).block())
+				.withCauseExactlyInstanceOf(TimeoutException.class);
+
+		finishShutdownLatch.countDown();
+
+		assertThatNoException().isThrownBy(
+				() -> s.disposeGracefully(Duration.ofMillis(100)).block()
+		);
+		assertThatNoException().isThrownBy(
+				() -> s.disposeGracefully(Duration.ofMillis(20)).block()
+		);
+
+		assertThat(s.isDisposed()).isTrue();
 	}
 }

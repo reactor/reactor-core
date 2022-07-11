@@ -121,17 +121,17 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			});
 			if (current == null) {
 				return Mono.empty();
-			} else if (current.executor == SchedulerState.TERMINATED) {
-				return current.onDispose;
+			} else if (current.executor != SchedulerState.TERMINATED) {
+				current.executor.shutdown();
 			}
-			current.executor.shutdown();
 			return current.onDispose;
 		}).timeout(gracePeriod);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.directSchedule(STATE.get(this).executor, task, null, 0L,
+		ScheduledExecutorService executor = STATE.get(this).executor;
+		return Schedulers.directSchedule(executor, task, null, 0L,
 				TimeUnit.MILLISECONDS);
 	}
 
@@ -197,6 +197,8 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			return new SchedulerState(
 					executor,
 					Flux.<Void>create(sink -> {
+						// TODO(dj): consider a shared pool for all disposeGracefully background tasks
+						// as part of Schedulers internal API
 						Thread backgroundThread = new Thread(() -> {
 							while (!Thread.currentThread().isInterrupted()) {
 								try {
@@ -212,7 +214,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 						});
 						sink.onCancel(backgroundThread::interrupt);
 						backgroundThread.start();
-					}).publish().refCount().next()
+					}).replay().refCount().next()
 			);
 		}
 
