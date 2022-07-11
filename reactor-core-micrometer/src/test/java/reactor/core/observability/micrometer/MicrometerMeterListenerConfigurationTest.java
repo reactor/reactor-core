@@ -124,12 +124,13 @@ class MicrometerMeterListenerConfigurationTest {
 
 	@Test
 	void resolveName_notSet() {
+		String defaultName = "ANONYMOUS";
 		TestLogger logger = new TestLogger(false);
 		Flux<Integer> flux = Flux.just(1);
 
-		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger, defaultName);
 
-		assertThat(resolvedName).isEqualTo(Micrometer.DEFAULT_METER_PREFIX);
+		assertThat(resolvedName).isEqualTo(defaultName);
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
 	}
 
@@ -138,7 +139,7 @@ class MicrometerMeterListenerConfigurationTest {
 		TestLogger logger = new TestLogger(false);
 		Flux<Integer> flux = Flux.just(1).name("someName");
 
-		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger, "UNEXPECTED");
 
 		assertThat(resolvedName).isEqualTo("someName");
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
@@ -149,7 +150,7 @@ class MicrometerMeterListenerConfigurationTest {
 		TestLogger logger = new TestLogger(false);
 		Flux<Integer> flux = Flux.just(1).name("someName").filter(i -> i % 2 == 0).map(i -> i + 10);
 
-		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(flux, logger, "UNEXPECTED");
 
 		assertThat(resolvedName).isEqualTo("someName");
 		assertThat(logger.getOutContent() + logger.getErrContent()).as("logs").isEmpty();
@@ -157,12 +158,13 @@ class MicrometerMeterListenerConfigurationTest {
 
 	@Test
 	void resolveName_notScannable() {
+		String defaultName = "ANONYMOUS";
 		TestLogger testLogger = new TestLogger(false);
 		Publisher<Object> publisher = Operators::complete;
 
-		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(publisher, testLogger);
+		String resolvedName = MicrometerMeterListenerConfiguration.resolveName(publisher, testLogger, defaultName);
 
-		assertThat(resolvedName).as("resolved name").isEqualTo(Micrometer.DEFAULT_METER_PREFIX);
+		assertThat(resolvedName).as("resolved name").isEqualTo(defaultName);
 		assertThat(testLogger.getErrContent()).contains("Attempting to activate metrics but the upstream is not Scannable. You might want to use `name()` (and optionally `tags()`) right before this listener");
 	}
 

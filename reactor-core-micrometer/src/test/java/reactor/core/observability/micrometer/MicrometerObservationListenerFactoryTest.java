@@ -46,7 +46,7 @@ class MicrometerObservationListenerFactoryTest {
 
 		assertThat(configuration.registry).as("registry").isSameAs(CUSTOM_REGISTRY);
 		assertThat(configuration.isMono).as("isMono").isTrue();
-		assertThat(configuration.commonKeyValues).map(Object::toString).containsExactly("tag(type=Mono)");
+		assertThat(configuration.commonKeyValues).map(Object::toString).containsExactly("tag(" + "reactor.type" + "=Mono)");
 	}
 
 	@Test
@@ -55,7 +55,7 @@ class MicrometerObservationListenerFactoryTest {
 
 		assertThat(configuration.registry).as("registry").isSameAs(CUSTOM_REGISTRY);
 		assertThat(configuration.isMono).as("isMono").isFalse();
-		assertThat(configuration.commonKeyValues).map(Object::toString).containsExactly("tag(type=Flux)");
+		assertThat(configuration.commonKeyValues).map(Object::toString).containsExactly("tag(" + "reactor.type" + "=Flux)");
 	}
 
 	@Test

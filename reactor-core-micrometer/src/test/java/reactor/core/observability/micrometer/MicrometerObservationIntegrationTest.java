@@ -32,8 +32,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.core.observability.micrometer.MicrometerMeterListener.TAG_KEY_STATUS;
-import static reactor.core.observability.micrometer.MicrometerMeterListener.TAG_STATUS_ERROR;
 
 /**
  * @author Simon Baslé
@@ -60,8 +58,6 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 					.doOnNext(v -> {
 						if (id == 2L) throw EXCEPTION;
 					})
-					//FIXME enforce providing a name via String or ObservationConvention
-					//FIXME Micrometer taps should ignore name()
 					.name("query" + id)
 					.tap(Micrometer.observation(getObservationRegistry()));
 
@@ -82,10 +78,9 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 			spansAssert.hasSize(4);
 
 			assertThatMain
-				//FIXME reactor-defined tags should have a reactor. prefix
 				//FIXME reactor-defined Tags and KeyValues should be Documented
-				.hasTag(TAG_KEY_STATUS, TAG_STATUS_ERROR)
-				.hasTag("type", "Flux")
+				.hasTag("reactor.status", "error")
+				.hasTag("reactor.type", "Flux")
 				.hasTag("interval", "500ms")
 				.hasTag("size", "3")
 				//TODO propose new duration assertion? span's timestamps should return Instant, not long. OTel is using nanos, Brave is storing long microsecond
