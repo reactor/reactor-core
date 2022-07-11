@@ -6,7 +6,7 @@ baselinePerfExtra = "3.4.8"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.10"
+bytebuddy = "1.12.12"
 jmh = "1.35"
 junit = "5.8.2"
 #note that context-propagation has a different version directly set in libraries
@@ -45,7 +45,7 @@ testNg = "org.testng:testng:7.5"
 throwingFunction = "com.pivovarit:throwing-function:1.5.1"
 
 [plugins]
-artifactory = { id = "com.jfrog.artifactory", version = "4.28.3" }
+artifactory = { id = "com.jfrog.artifactory", version = "4.28.4" }
 asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" }
 asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.3.1" }
@@ -54,5 +54,5 @@ japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.0" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.13" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.10" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
-spotless = { id = "com.diffplug.spotless", version = "6.7.0" }
+spotless = { id = "com.diffplug.spotless", version = "6.8.0" }
 testsets = { id = "org.unbroken-dome.test-sets", version = "4.0.0" }
