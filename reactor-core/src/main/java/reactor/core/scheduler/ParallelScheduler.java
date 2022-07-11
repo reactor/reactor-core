@@ -29,8 +29,9 @@ import java.util.stream.Stream;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
+import reactor.util.annotation.Nullable;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
@@ -46,21 +47,14 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     static final AtomicLong COUNTER = new AtomicLong();
 
     final int n;
-    
+
     final ThreadFactory     factory;
-    final Sinks.Empty<Void> disposedNotifier;
 
-    volatile ScheduledExecutorService[] executors;
-    static final AtomicReferenceFieldUpdater<ParallelScheduler, ScheduledExecutorService[]> EXECUTORS =
-            AtomicReferenceFieldUpdater.newUpdater(ParallelScheduler.class, ScheduledExecutorService[].class, "executors");
-
-    static final ScheduledExecutorService[] SHUTDOWN = new ScheduledExecutorService[0];
-    
-    static final ScheduledExecutorService TERMINATED;
-    static {
-        TERMINATED = Executors.newSingleThreadScheduledExecutor();
-        TERMINATED.shutdownNow();
-    }
+    volatile SchedulerState state;
+    private static final AtomicReferenceFieldUpdater<ParallelScheduler, SchedulerState> STATE =
+            AtomicReferenceFieldUpdater.newUpdater(
+                    ParallelScheduler.class, SchedulerState.class, "state"
+            );
 
     int roundRobin;
 
@@ -70,7 +64,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         }
         this.n = n;
         this.factory = factory;
-        this.disposedNotifier = Sinks.empty();
     }
 
     /**
@@ -84,86 +77,100 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         poolExecutor.setRemoveOnCancelPolicy(true);
         return poolExecutor;
     }
-    
+
 	@Override
 	public boolean isDisposed() {
-		return executors == SHUTDOWN;
+		SchedulerState current = STATE.get(this);
+		return current.executors == SchedulerState.SHUTDOWN;
 	}
 
 	@Override
-    public void start() {
-        ScheduledExecutorService[] b = null;
-        for (;;) {
-            ScheduledExecutorService[] a = executors;
-            if (a != SHUTDOWN && a != null) {
-                if (b != null) {
-                    for (ScheduledExecutorService exec : b) {
-                        exec.shutdownNow();
-                    }
-                }
-                return;
-            }
+	public void start() {
+		SchedulerState b = null;
+		for (; ; ) {
+			SchedulerState a = STATE.get(this);
+			if (a != null) {
+				if (a.executors != SchedulerState.SHUTDOWN) {
+					if (b != null) {
+						for (ScheduledExecutorService exec : b.executors) {
+							exec.shutdownNow();
+						}
+					}
+					return;
+				}
+			}
 
-            if (b == null) {
-                b = new ScheduledExecutorService[n];
-                for (int i = 0; i < n; i++) {
-                    b[i] = Schedulers.decorateExecutorService(this, this.get());
-                }
-            }
-            
-            if (EXECUTORS.compareAndSet(this, a, b)) {
-                return;
-            }
-        }
-    }
+			if (b == null) {
+				b = SchedulerState.fresh(new ScheduledExecutorService[n]);
+				for (int i = 0; i < n; i++) {
+					b.executors[i] = Schedulers.decorateExecutorService(this, this.get());
+				}
+			}
 
-    @Override
-    public void dispose() {
-        ScheduledExecutorService[] a = executors;
-        if (a != SHUTDOWN) {
-            a = EXECUTORS.getAndSet(this, SHUTDOWN);
-            if (a != SHUTDOWN && a != null) {
-                for (ScheduledExecutorService exec : a) {
-                    exec.shutdownNow();
-                }
-            }
-        }
-    }
+			if (STATE.compareAndSet(this, a, b)) {
+				return;
+			}
+		}
+	}
 
-    @Override
-    public Mono<Void> disposeGracefully(Duration gracePeriod) {
-        ScheduledExecutorService[] a = executors;
-        if (a != SHUTDOWN) {
-            a = EXECUTORS.getAndSet(this, SHUTDOWN);
-            if (a != SHUTDOWN && a != null) {
-                Schedulers.shutdownAndAwait(a, gracePeriod, disposedNotifier);
-            }
-        }
-        return this.disposedNotifier.asMono();
-    }
+	@Override
+	public void dispose() {
+		SchedulerState s = STATE.getAndUpdate(this, old -> {
+			if (old == null || old.executors != SchedulerState.SHUTDOWN) {
+				return SchedulerState.terminated(old);
+			}
+			return old;
+		});
+		if (s != null && s.executors != SchedulerState.SHUTDOWN) {
+			for (ScheduledExecutorService exec : s.executors) {
+				exec.shutdownNow();
+			}
+		}
+	}
 
-    ScheduledExecutorService pick() {
-        ScheduledExecutorService[] a = executors;
-        if (a == null) {
-            start();
-            a = executors;
-            if (a == null) {
-                throw new IllegalStateException("executors uninitialized after implicit start()");
-            }
-        }
-        if (a != SHUTDOWN) {
-            // ignoring the race condition here, its already random who gets which executor
-            int idx = roundRobin;
-            if (idx == n) {
-                idx = 0;
-                roundRobin = 1;
-            } else {
-                roundRobin = idx + 1;
-            }
-            return a[idx];
-        }
-        return TERMINATED;
-    }
+	@Override
+	public Mono<Void> disposeGracefully(Duration gracePeriod) {
+		return Mono.defer(() -> {
+			SchedulerState previous = STATE.getAndUpdate(this, old -> {
+				if (old == null || old.executors != SchedulerState.SHUTDOWN) {
+					return SchedulerState.terminated(old);
+				}
+				return old;
+			});
+			if (previous == null) {
+				return Mono.empty();
+			} else if (previous.executors != SchedulerState.SHUTDOWN) {
+				for (ScheduledExecutorService executor : previous.executors) {
+					executor.shutdown();
+				}
+			}
+			return previous.onDispose;
+		}).timeout(gracePeriod);
+	}
+
+	ScheduledExecutorService pick() {
+		SchedulerState a = STATE.get(this);
+		if (a == null) {
+			start();
+			a = STATE.get(this);
+			if (a == null) {
+				throw new IllegalStateException("executors uninitialized after implicit start()");
+			}
+		}
+		if (a.executors != SchedulerState.SHUTDOWN) {
+			// ignoring the race condition here, its already random who gets which executor
+			int idx = roundRobin;
+			if (idx == n) {
+				idx = 0;
+				roundRobin = 1;
+			}
+			else {
+				roundRobin = idx + 1;
+			}
+			return a.executors[idx];
+		}
+		return SchedulerState.TERMINATED;
+	}
 
     @Override
     public Disposable schedule(Runnable task) {
@@ -209,12 +216,76 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     @Override
     public Stream<? extends Scannable> inners() {
-        return Stream.of(executors)
+        return Stream.of(STATE.get(this).executors)
                 .map(exec -> key -> Schedulers.scanExecutor(exec, key));
     }
 
     @Override
     public Worker createWorker() {
         return new ExecutorServiceWorker(pick());
+    }
+
+    private static final class SchedulerState {
+
+        static final ScheduledExecutorService TERMINATED;
+        static final ScheduledExecutorService[] SHUTDOWN = new ScheduledExecutorService[0];
+
+
+        static {
+            TERMINATED = Executors.newSingleThreadScheduledExecutor();
+            TERMINATED.shutdownNow();
+        }
+
+        final ScheduledExecutorService[] executors;
+        final Mono<Void>               onDispose;
+
+        private SchedulerState(ScheduledExecutorService[] executors,
+                Mono<Void> onDispose) {
+            this.executors = executors;
+            this.onDispose = onDispose;
+        }
+
+        static SchedulerState fresh(final ScheduledExecutorService[] executors) {
+            return new SchedulerState(
+                    executors,
+                    Flux.<Void>create(sink -> {
+                            // TODO(dj): consider a shared pool for all disposeGracefully background tasks
+                            // as part of Schedulers internal API
+                            Thread backgroundThread = new Thread(() -> {
+                                while (!Thread.currentThread()
+                                              .isInterrupted()) {
+                                    boolean allDone = true;
+                                    for (ScheduledExecutorService executor : executors) {
+                                        try {
+                                            if (!executor.awaitTermination(1,
+                                                    TimeUnit.SECONDS)) {
+                                                allDone = false;
+                                            }
+                                        }
+                                        catch (InterruptedException e) {
+                                            Thread.currentThread()
+                                                  .interrupt();
+                                            return;
+                                        }
+                                    }
+                                    if (allDone) {
+                                        sink.complete();
+                                        return;
+                                    }
+                                }
+                            });
+                            sink.onCancel(backgroundThread::interrupt);
+                            backgroundThread.start();
+                        })
+                        .replay()
+                        .refCount()
+                        .next()
+            );
+        }
+
+        static SchedulerState terminated(@Nullable SchedulerState base) {
+            return new SchedulerState(SHUTDOWN,
+                    base == null ? Mono.empty() : base.onDispose);
+        }
     }
 }

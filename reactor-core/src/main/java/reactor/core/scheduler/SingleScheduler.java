@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -101,30 +100,32 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public void dispose() {
-		SchedulerState a = STATE.get(this);
-		if (a != null && a.executor != SchedulerState.TERMINATED) {
-			a = STATE.getAndUpdate(this, SchedulerState::terminated);
-			if (a != null && a.executor != SchedulerState.TERMINATED) {
-				a.executor.shutdownNow();
+		SchedulerState a = STATE.getAndUpdate(this, old -> {
+			if (old == null || old.executor != SchedulerState.TERMINATED) {
+				return SchedulerState.terminated(old);
 			}
+			return old;
+		});
+		if (a != null && a.executor != SchedulerState.TERMINATED) {
+			a.executor.shutdownNow();
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			SchedulerState current = STATE.getAndUpdate(this, previous -> {
-				if (previous.executor != SchedulerState.TERMINATED) {
-					return SchedulerState.terminated(previous);
+			SchedulerState previous = STATE.getAndUpdate(this, old -> {
+				if (old == null || old.executor != SchedulerState.TERMINATED) {
+					return SchedulerState.terminated(old);
 				}
-				return previous;
+				return old;
 			});
-			if (current == null) {
+			if (previous == null) {
 				return Mono.empty();
-			} else if (current.executor != SchedulerState.TERMINATED) {
-				current.executor.shutdown();
+			} else if (previous.executor != SchedulerState.TERMINATED) {
+				previous.executor.shutdown();
 			}
-			return current.onDispose;
+			return previous.onDispose;
 		}).timeout(gracePeriod);
 	}
 
@@ -174,52 +175,5 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	@Override
 	public Worker createWorker() {
 		return new ExecutorServiceWorker(STATE.get(this).executor);
-	}
-
-	static final class SchedulerState {
-
-		static final ScheduledExecutorService TERMINATED;
-
-		static {
-			TERMINATED = Executors.newSingleThreadScheduledExecutor();
-			TERMINATED.shutdownNow();
-		}
-
-		final ScheduledExecutorService executor;
-		final Mono<Void>               onDispose;
-
-		private SchedulerState(ScheduledExecutorService executor, Mono<Void> onDispose) {
-			this.executor = executor;
-			this.onDispose = onDispose;
-		}
-
-		static SchedulerState fresh(final ScheduledExecutorService executor) {
-			return new SchedulerState(
-					executor,
-					Flux.<Void>create(sink -> {
-						// TODO(dj): consider a shared pool for all disposeGracefully background tasks
-						// as part of Schedulers internal API
-						Thread backgroundThread = new Thread(() -> {
-							while (!Thread.currentThread().isInterrupted()) {
-								try {
-									if (executor.awaitTermination(1, TimeUnit.SECONDS)) {
-										sink.complete();
-										return;
-									}
-								} catch (InterruptedException e) {
-									Thread.currentThread().interrupt();
-									return;
-								}
-							}
-						});
-						sink.onCancel(backgroundThread::interrupt);
-						backgroundThread.start();
-					}).replay().refCount().next()
-			);
-		}
-
-		static SchedulerState terminated(SchedulerState base) {
-			return new SchedulerState(TERMINATED, base.onDispose);
-		}
 	}
 }

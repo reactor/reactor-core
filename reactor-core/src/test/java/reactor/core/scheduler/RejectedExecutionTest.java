@@ -360,7 +360,6 @@ public class RejectedExecutionTest {
 			actual.dispose();
 		}
 
-		// TODO(dj): implement tests for this case
 		@Override
 		public Mono<Void> disposeGracefully(Duration gracePeriod) {
 			return actual.disposeGracefully(gracePeriod);
