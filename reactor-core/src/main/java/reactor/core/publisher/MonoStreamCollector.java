@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -67,27 +68,42 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class StreamCollectorSubscriber<T, A, R>
-			extends Operators.MonoSubscriber<T, R> {
+	static final class StreamCollectorSubscriber<T, A, R> implements InnerOperator<T, R>,
+	                                                                 Fuseable, //for constants only
+															         QueueSubscription<R> {
 
 		final BiConsumer<? super A, ? super T> accumulator;
 
 		final Function<? super A, ? extends R> finisher;
 
+		final CoreSubscriber<? super R> actual;
+
 		A container; //not final to be able to null it out on termination
 
 		Subscription s;
 
+		boolean hasRequest;
+
 		boolean done;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<StreamCollectorSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(StreamCollectorSubscriber.class, "state");
 
 		StreamCollectorSubscriber(CoreSubscriber<? super R> actual,
 				A container,
 				BiConsumer<? super A, ? super T> accumulator,
 				Function<? super A, ? extends R> finisher) {
-			super(actual);
+			this.actual = actual;
 			this.container = container;
 			this.accumulator = accumulator;
 			this.finisher = finisher;
+		}
+
+		@Override
+		public CoreSubscriber<? super R> actual() {
+			return this.actual;
 		}
 
 		@Override
@@ -95,12 +111,13 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		protected void discardIntermediateContainer(A a) {
+		void discardIntermediateContainer(A a) {
 			Context ctx = actual.currentContext();
 			if (a instanceof Collection) {
 				Operators.onDiscardMultiple((Collection<?>) a, ctx);
@@ -129,7 +146,9 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			try {
-				accumulator.accept(container, t);
+				synchronized (this) {
+					accumulator.accept(container, t);
+				}
 			}
 			catch (Throwable ex) {
 				Context ctx = actual.currentContext();
@@ -145,9 +164,16 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			discardIntermediateContainer(container);
-			container = null;
-			actual.onError(t);
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+
+			if (c != null) {
+				discardIntermediateContainer(c);
+				actual.onError(t);
+			}
 		}
 
 		@Override
@@ -157,33 +183,158 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			A a = container;
-			container = null;
+			if (hasRequest) {
+				final A c;
+				synchronized (this) {
+					c = container;
+					container = null;
+				}
+
+				if (c == null) {
+					return;
+				}
+
+				R r;
+				try {
+					r = finisher.apply(c);
+				}
+				catch (Throwable ex) {
+					discardIntermediateContainer(c);
+					actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
+					return;
+				}
+
+				if (r == null) {
+					actual.onError(Operators.onOperatorError(new NullPointerException(
+							"Collector returned null"), actual.currentContext()));
+					return;
+				}
+
+				actual.onNext(r);
+				actual.onComplete();
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
+
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+
+			if (c == null) {
+				return;
+			}
 
 			R r;
-
 			try {
-				r = finisher.apply(a);
+				r = finisher.apply(c);
 			}
 			catch (Throwable ex) {
-				discardIntermediateContainer(a);
+				discardIntermediateContainer(c);
 				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
 				return;
 			}
 
 			if (r == null) {
-				actual.onError(Operators.onOperatorError(new NullPointerException("Collector returned null"), actual.currentContext()));
+				actual.onError(Operators.onOperatorError(new NullPointerException(
+						"Collector returned null"), actual.currentContext()));
 				return;
 			}
-			complete(r);
+
+			actual.onNext(r);
+			actual.onComplete();
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
-			discardIntermediateContainer(container);
-			container = null;
+
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+			if (c != null) {
+				discardIntermediateContainer(c);
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						final A c;
+						synchronized (this) {
+							c = container;
+							container = null;
+						}
+
+						if (c == null) {
+							return;
+						}
+
+						R r;
+						try {
+							r = finisher.apply(c);
+						}
+						catch (Throwable ex) {
+							discardIntermediateContainer(c);
+							actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
+							return;
+						}
+
+						if (r == null) {
+							actual.onError(Operators.onOperatorError(new NullPointerException(
+									"Collector returned null"), actual.currentContext()));
+							return;
+						}
+
+						actual.onNext(r);
+						actual.onComplete();
+					}
+				}
+			}
+		}
+
+		@Override
+		public int requestFusion(int mode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public R poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 }
