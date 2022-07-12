@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -50,37 +52,80 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 	}
 
 	static final class DefaultIfEmptySubscriber<T>
-			extends Operators.MonoSubscriber<T, T> {
+			implements InnerOperator<T, T>,
+			           Fuseable, //for constants only
+			           Fuseable.QueueSubscription<T> {
+
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 
+		boolean hasRequest;
+
 		boolean hasValue;
 
-		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T value) {
-			super(actual);
-			//noinspection deprecation
-			this.value = value; //we write once, setValue() is NO-OP
+		volatile T fallbackValue;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<DefaultIfEmptySubscriber, Object> FALLBACK_VALUE =
+				AtomicReferenceFieldUpdater.newUpdater(DefaultIfEmptySubscriber.class, Object.class, "fallbackValue");
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<DefaultIfEmptySubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(DefaultIfEmptySubscriber.class, "state");
+
+		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T fallbackValue) {
+			this.actual = actual;
+			FALLBACK_VALUE.lazySet(this, fallbackValue);
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return this.actual;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
 		public void request(long n) {
-			super.request(n);
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+
+				if (state != 1 && STATE.compareAndSet(this, state, state | 1)) {
+					if (state > 1) {
+						final T fallbackValue = this.fallbackValue;
+						if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this,
+								fallbackValue,
+								null)) {
+							// completed before request means source was empty
+							actual.onNext(fallbackValue);
+							actual.onComplete();
+ 						}
+						return;
+					}
+				}
+			}
+
 			s.request(n);
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
+			final T fallbackValue = this.fallbackValue;
+			if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
+				Operators.onDiscard(fallbackValue, actual.currentContext());
+			}
 		}
 
 		@Override
@@ -96,6 +141,11 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 		public void onNext(T t) {
 			if (!hasValue) {
 				hasValue = true;
+
+				final T fallbackValue = this.fallbackValue;
+				if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
+					Operators.onDiscard(fallbackValue, actual.currentContext());
+				}
 			}
 
 			actual.onNext(t);
@@ -103,22 +153,72 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onComplete() {
-			if (hasValue) {
-				actual.onComplete();
-			} else {
-				complete(this.value);
+			if (!hasValue) {
+				if (hasRequest) {
+					final T fallbackValue = this.fallbackValue;
+					if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this,
+							fallbackValue,
+							null)) {
+						actual.onNext(fallbackValue);
+						actual.onComplete();
+					}
+					return;
+				}
+
+				final int state = this.state;
+				if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+					return;
+				}
+
+				final T fallbackValue = this.fallbackValue;
+				if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this,
+						fallbackValue,
+						null)) {
+					actual.onNext(fallbackValue);
+					actual.onComplete();
+				}
+
+				return;
 			}
+
+			actual.onComplete();
 		}
 
 		@Override
-		public void setValue(T value) {
-			// value is constant. writes from the base class are redundant, and the constant
-			// would always be visible in cancel(), so it will safely be discarded.
+		public void onError(Throwable t) {
+			if (!hasValue) {
+				final T fallbackValue = this.fallbackValue;
+				if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
+					Operators.onDiscard(t, actual.currentContext());
+				}
+			}
+
+			actual.onError(t);
 		}
 
 		@Override
 		public int requestFusion(int requestedMode) {
 			return Fuseable.NONE; // prevent fusion because of the upstream
+		}
+
+		@Override
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 }

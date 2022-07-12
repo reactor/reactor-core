@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -59,6 +59,13 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 
 		boolean done;
 
+		boolean hasRequest;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<MonoCollectListSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(MonoCollectListSubscriber.class, "state");
+
 		MonoCollectListSubscriber(CoreSubscriber<? super List<T>> actual) {
 			this.actual = actual;
 			//not this is not thread safe so concurrent discarding multiple + add might fail with ConcurrentModificationException
@@ -77,6 +84,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
@@ -128,10 +136,29 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 
 		@Override
 		public void onComplete() {
-			if(done) {
+			if (done) {
 				return;
 			}
 			done = true;
+
+			if (hasRequest) {
+				final List<T> l;
+				synchronized (this) {
+					l = list;
+					list = null;
+				}
+
+				if (l != null) {
+					this.actual.onNext(l);
+					this.actual.onComplete();
+				}
+				return;
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
 
 			final List<T> l;
 			synchronized (this) {
@@ -140,8 +167,39 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			}
 
 			if (l != null) {
-				actual.onNext(l);
-				actual.onComplete();
+				this.actual.onNext(l);
+				this.actual.onComplete();
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						final List<T> l;
+						synchronized (this) {
+							l = list;
+							list = null;
+						}
+
+						if (l != null) {
+							this.actual.onNext(l);
+							this.actual.onComplete();
+						}
+					}
+				}
 			}
 		}
 
@@ -158,11 +216,6 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			if (l != null) {
 				Operators.onDiscardMultiple(l, actual.currentContext());
 			}
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(Long.MAX_VALUE);
 		}
 
 		@Override

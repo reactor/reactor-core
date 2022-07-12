@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -56,18 +58,15 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 
 		Subscription s;
 
+		boolean hasRequest;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<CountSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(CountSubscriber.class, "state");
+
 		CountSubscriber(CoreSubscriber<? super Long> actual) {
 			this.actual = actual;
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public CoreSubscriber<? super Long> actual() {
-			return this.actual;
 		}
 
 		@Override
@@ -81,13 +80,8 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		}
 
 		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(Long.MAX_VALUE);
+		public CoreSubscriber<? super Long> actual() {
+			return this.actual;
 		}
 
 		@Override
@@ -111,8 +105,52 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 
 		@Override
 		public void onComplete() {
-			this.actual.onNext(counter);
+			if (hasRequest) {
+				this.actual.onNext(counter);
+				this.actual.onComplete();
+				return;
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
+
+			this.actual.onNext(0L);
 			this.actual.onComplete();
+		}
+
+		@Override
+		public void request(long n) {
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						this.actual.onNext(0L);
+						this.actual.onComplete();
+					}
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
 		}
 
 		@Override

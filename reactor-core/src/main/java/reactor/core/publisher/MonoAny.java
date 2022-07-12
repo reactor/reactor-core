@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Subscription;
@@ -66,6 +67,13 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 
 		boolean done;
 
+		boolean hasRequest;
+
+		volatile     int                                              state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<AnySubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(AnySubscriber.class, "state");
+
 		AnySubscriber(CoreSubscriber<? super Boolean> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
@@ -94,7 +102,25 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 
 		@Override
 		public void request(long n) {
-			s.request(Long.MAX_VALUE);
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						actual.onNext(false);
+						actual.onComplete();
+					}
+				}
+			}
 		}
 
 		@Override
@@ -122,6 +148,7 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
+
 			if (b) {
 				done = true;
 				s.cancel();
@@ -148,8 +175,20 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 				return;
 			}
 			done = true;
-			this.actual.onNext(false);
-			this.actual.onComplete();
+
+			if (hasRequest) {
+				this.actual.onNext(false);
+				this.actual.onComplete();
+				return;
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
+
+			actual.onNext(false);
+			actual.onComplete();
 		}
 
 		@Override

@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Subscription;
@@ -63,7 +64,14 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 
 		Subscription s;
 
+		boolean hasRequest;
+
 		boolean done;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<AllSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(AllSubscriber.class, "state");
 
 		AllSubscriber(CoreSubscriber<? super Boolean> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
@@ -93,7 +101,25 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 
 		@Override
 		public void request(long n) {
-			s.request(Long.MAX_VALUE);
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						actual.onNext(true);
+						actual.onComplete();
+					}
+				}
+			}
 		}
 
 		@Override
@@ -151,6 +177,18 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 				return;
 			}
 			done = true;
+
+			if (hasRequest) {
+				actual.onNext(true);
+				actual.onComplete();
+				return;
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
+
 			actual.onNext(true);
 			actual.onComplete();
 		}

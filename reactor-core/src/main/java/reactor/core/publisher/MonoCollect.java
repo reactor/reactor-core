@@ -18,11 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -79,7 +79,14 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 
 		Subscription s;
 
+		boolean hasRequest;
+
 		boolean done;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<CollectSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(CollectSubscriber.class, "state");
 
 		CollectSubscriber(CoreSubscriber<? super R> actual,
 				BiConsumer<? super R, ? super T> action,
@@ -160,11 +167,32 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			R c;
+
+			if (hasRequest) {
+				final R c;
+				synchronized (this) {
+					c = container;
+					container = null;
+				}
+
+				if (c != null) {
+					this.actual.onNext(c);
+					this.actual.onComplete();
+				}
+				return;
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
+
+			final R c;
 			synchronized (this) {
 				c = container;
 				container = null;
 			}
+
 			if (c != null) {
 				this.actual.onNext(c);
 				this.actual.onComplete();
@@ -173,17 +201,45 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 
 		@Override
 		public void request(long n) {
-			s.request(Long.MAX_VALUE);
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						final R c;
+						synchronized (this) {
+							c = container;
+							container = null;
+						}
+
+						if (c != null) {
+							this.actual.onNext(c);
+							this.actual.onComplete();
+						}
+					}
+				}
+			}
 		}
 
 		@Override
 		public void cancel() {
 			s.cancel();
+
 			final R c;
 			synchronized (this) {
 				c = container;
 				container = null;
 			}
+
 			if (c != null) {
 				discard(c);
 			}
@@ -191,7 +247,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			return 0;
+			return Fuseable.NONE;
 		}
 
 		@Override
