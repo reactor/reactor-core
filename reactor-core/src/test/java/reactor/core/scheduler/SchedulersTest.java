@@ -735,62 +735,6 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void immediateTaskIsSkippedIfDisposeRightAfter() throws Exception {
-		Scheduler serviceRB = Schedulers.newSingle("rbWork");
-		Scheduler.Worker r = serviceRB.createWorker();
-
-		long start = System.currentTimeMillis();
-		AtomicInteger latch = new AtomicInteger(1);
-		Consumer<String> c =  ev -> {
-			latch.decrementAndGet();
-			try {
-				System.out.println("ev: "+ev);
-				Thread.sleep(1000);
-			}
-			catch(InterruptedException ie){
-				throw Exceptions.propagate(ie);
-			}
-		};
-		r.schedule(() -> c.accept("Hello World!"));
-		serviceRB.dispose();
-
-		Thread.sleep(1200);
-		long end = System.currentTimeMillis();
-
-
-		assertThat(latch.intValue() == 1).as("Task not skipped").isTrue();
-		assertThat((end - start) >= 1000).as("Timeout too long").isTrue();
-	}
-
-	@Test
-	public void immediateTaskIsNotSkippedIfDisposedGracefullyRightAfter() throws Exception {
-		Scheduler serviceRB = Schedulers.newSingle("rbWork");
-		Scheduler.Worker r = serviceRB.createWorker();
-
-		long start = System.currentTimeMillis();
-		AtomicInteger latch = new AtomicInteger(1);
-		Consumer<String> c =  ev -> {
-			latch.decrementAndGet();
-			try {
-				System.out.println("ev: "+ev);
-				Thread.sleep(1000);
-			}
-			catch(InterruptedException ie){
-				throw Exceptions.propagate(ie);
-			}
-		};
-		r.schedule(() -> c.accept("Hello World!"));
-		serviceRB.disposeGracefully(Duration.ofMillis(1200)).subscribe();
-
-		Thread.sleep(1200);
-		long end = System.currentTimeMillis();
-
-
-		assertThat(latch.intValue() == 0).as("Task skipped").isTrue();
-		assertThat((end - start) >= 1000).as("Timeout too long").isTrue();
-	}
-
-	@Test
 	public void singleSchedulerPipelining() throws Exception {
 		Scheduler serviceRB = Schedulers.newSingle("rb", true);
 		Scheduler.Worker dispatcher = serviceRB.createWorker();
