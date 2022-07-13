@@ -14,12 +14,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@e88ed3e650b26bd116cfee53cf198c1f6856682d # tag=v2
+      - uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1 # tag=v2
         name: spotless (license header)
         if: always()
         with:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
-      - uses: gradle/gradle-build-action@e88ed3e650b26bd116cfee53cf198c1f6856682d # tag=v2
+      - uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1 # tag=v2
         name: api compatibility
         if: always()
         with:
@@ -46,7 +46,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 8
-    - uses: gradle/gradle-build-action@e88ed3e650b26bd116cfee53cf198c1f6856682d # tag=v2
+    - uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1 # tag=v2
       name: gradle
       with:
         arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow
@@ -60,7 +60,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 8
-    - uses: gradle/gradle-build-action@e88ed3e650b26bd116cfee53cf198c1f6856682d # tag=v2
+    - uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1 # tag=v2
       name: gradle
       with:
         arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow
@@ -74,7 +74,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 8
-    - uses: gradle/gradle-build-action@e88ed3e650b26bd116cfee53cf198c1f6856682d # tag=v2
+    - uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1 # tag=v2
       name: other tests
       with:
         arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon
