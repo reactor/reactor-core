@@ -16,39 +16,22 @@
 
 package reactor.core.scheduler;
 
-import java.time.Duration;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import io.micrometer.core.instrument.MeterRegistry;
+import reactor.core.Disposable;
+import reactor.core.Exceptions;
+import reactor.core.Scannable;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+import reactor.util.Metrics;
+import reactor.util.annotation.Nullable;
+
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import io.micrometer.core.instrument.MeterRegistry;
-
-import reactor.core.Disposable;
-import reactor.core.Exceptions;
-import reactor.core.Scannable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
-import reactor.util.Logger;
-import reactor.util.Loggers;
-import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -1555,53 +1538,5 @@ public abstract class Schedulers {
 		}
 
 		return null;
-	}
-
-	static final void shutdownAndAwait(ExecutorService executor, Duration duration,
-			Sinks.Empty<Void> disposedNotifier) {
-		executor.shutdown();
-		Schedulers.boundedElastic().schedule(() -> {
-			try {
-				boolean terminated = executor.awaitTermination(duration.toMillis(),
-						TimeUnit.MILLISECONDS);
-				if (terminated) {
-					disposedNotifier.tryEmitEmpty();
-				} else {
-					disposedNotifier.tryEmitError(new TimeoutException("Executor " +
-							"shutdown timed out"));
-				}
-			} catch (InterruptedException e) {
-				disposedNotifier.tryEmitError(e);
-			}
-		});
-	}
-
-	static final void shutdownAndAwait(ScheduledExecutorService[] executors,
-			Duration duration,
-			Sinks.Empty<Void> disposedNotifier) {
-		Flux.fromArray(executors).flatMapDelayError(executor -> {
-			executor.shutdown();
-			Sinks.Empty<Void> done = Sinks.empty();
-			Schedulers.boundedElastic()
-			          .schedule(() -> {
-				          try {
-					          boolean terminated = executor.awaitTermination(duration.toMillis(),
-							          TimeUnit.MILLISECONDS);
-					          if (terminated) {
-						          done.tryEmitEmpty();
-					          }
-					          else {
-						          done.tryEmitError(new TimeoutException(
-								          "Executor " + "shutdown timed out"));
-					          }
-				          }
-				          catch (InterruptedException e) {
-					          done.tryEmitError(e);
-				          }
-			          });
-			return done.asMono();
-		}, executors.length, executors.length)
-		    .subscribe(v -> {}, disposedNotifier::tryEmitError,
-				    disposedNotifier::tryEmitEmpty);
 	}
 }

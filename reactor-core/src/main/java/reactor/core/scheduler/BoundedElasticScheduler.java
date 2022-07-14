@@ -16,49 +16,29 @@
 
 package reactor.core.scheduler;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.List;
-import java.util.Objects;
-import java.util.PriorityQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Stream;
-
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
-import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.CREATING;
-import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.SHUTDOWN;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
+
+import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.*;
 
 /**
  * Scheduler that hosts a pool of 0-N single-threaded {@link BoundedScheduledExecutorService} and exposes workers
@@ -117,7 +97,8 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		this.clock = Objects.requireNonNull(clock, "A Clock must be provided");
 		this.ttlMillis = ttlMillis;
 
-		this.state = SchedulerState.terminated(null); //initially disposed, EVICTOR is also null
+		// initially disposed, evictor is also null, bounded services shutdown
+		this.state = SchedulerState.terminated(null, BoundedServices.ALL_SHUTDOWN);
 	}
 
 	/**
@@ -145,8 +126,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public boolean isDisposed() {
-		SchedulerState state = STATE.get(this);
-		return state != null && state.boundedServices == SHUTDOWN;
+		return STATE.get(this).boundedServices == SHUTDOWN;
 	}
 
 	@Override
@@ -154,14 +134,11 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		SchedulerState b = null;
 		for (;;) {
 			SchedulerState a = STATE.get(this);
-			if (a != null) {
-				if (a.boundedServices != SHUTDOWN) {
-					if (b != null) {
-						b.evictor.shutdownNow();
-					}
-					return;
+			if (a.boundedServices != SHUTDOWN) {
+				if (b != null) {
+					b.evictor.shutdownNow();
 				}
-
+				return;
 			}
 			if (b == null) {
 				b = SchedulerState.fresh(
@@ -188,38 +165,59 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void dispose() {
-		SchedulerState a = STATE.getAndUpdate(this, old -> {
-			if (old == null || old.boundedServices != SHUTDOWN) {
-				return SchedulerState.terminated(old);
+		SchedulerState currentState = STATE.get(this);
+		final BoundedState[] toAwait = currentState.boundedServicesBeforeShutdown.dispose(true);
+
+		SchedulerState previous = STATE.getAndUpdate(this, old -> {
+			if (old.boundedServices != SHUTDOWN && old.boundedServices != SHUTTING_DOWN) {
+				return SchedulerState.terminated(old, toAwait);
 			}
 			return old;
 		});
 
-		if (a != null && a.boundedServices != SHUTDOWN) {
-			a.evictor.shutdownNow();
-			a.boundedServices.dispose();
+		if (previous.evictor != null) {
+			previous.evictor.shutdownNow();
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			SchedulerState previous = STATE.getAndUpdate(this, old -> {
-				if (old == null || old.boundedServices != SHUTDOWN) {
-					return SchedulerState.terminated(old);
-				}
-				return old;
-			});
+			for (;;) {
+				SchedulerState currentState = STATE.get(this);
 
-			if (previous == null) {
-				return Mono.empty();
-			} else if (previous.boundedServices != SHUTDOWN) {
-				previous.evictor.shutdown();
+				if (currentState.boundedServices == SHUTTING_DOWN) {
+					// A rival thread is performing the shutdown, keep spinning.
+					continue;
+				}
+
+				if (currentState.boundedServices == SHUTDOWN) {
+					return Mono.whenDelayError(
+							currentState.boundedServicesOnDispose,
+							currentState.evictorOnDispose
+					);
+				}
+
+				SchedulerState terminating = terminating(currentState);
+
+				if (STATE.compareAndSet(this, currentState, terminating)) {
+					// We need an intermediate state to make sure the disposal happens just once
+					// and that we capture the BoundedStates, otherwise we'd lose references to schedulers
+					// that we need to wait for.
+					final BoundedState[] toAwait = terminating.boundedServicesBeforeShutdown.dispose(false);
+					if (terminating.evictor != null) {
+						terminating.evictor.shutdown();
+					}
+
+					SchedulerState terminated = terminated(terminating, toAwait);
+
+					STATE.set(this, terminated);
+					return Mono.whenDelayError(
+							terminated.boundedServicesOnDispose,
+							terminated.evictorOnDispose
+					);
+				} // else loop until the winner sets SHUTDOWN
 			}
-			return Mono.whenDelayError(
-					previous.boundedServices.disposeGracefully(gracePeriod),
-					previous.evictorOnDispose
-			);
 		}).timeout(gracePeriod);
 	}
 
@@ -340,11 +338,14 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	static final class SchedulerState {
 		static final BoundedServices SHUTDOWN;
+		static final BoundedServices SHUTTING_DOWN;
 		static final BoundedState    CREATING;
 
 		static {
 			SHUTDOWN = new BoundedServices();
-			SHUTDOWN.dispose();
+			SHUTTING_DOWN = new BoundedServices();
+			SHUTDOWN.dispose(true);
+			SHUTTING_DOWN.dispose(true);
 			ScheduledExecutorService s = Executors.newSingleThreadScheduledExecutor();
 			s.shutdownNow();
 			CREATING = new BoundedState(SHUTDOWN, s) {
@@ -358,17 +359,26 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		}
 
 		final BoundedServices boundedServices;
+		final BoundedServices boundedServicesBeforeShutdown;
 		final ScheduledExecutorService evictor;
 		final Mono<Void> evictorOnDispose;
+		final Mono<Void> boundedServicesOnDispose;
 
-		private SchedulerState(BoundedServices boundedServices, @Nullable ScheduledExecutorService evictor, Mono<Void> evictorOnDispose) {
+		private SchedulerState(BoundedServices boundedServices,
+							   BoundedServices boundedServicesBeforeShutdown,
+							   @Nullable ScheduledExecutorService evictor,
+							   Mono<Void> evictorOnDispose,
+							   @Nullable Mono<Void> boundedServicesOnDispose) {
 			this.boundedServices = boundedServices;
+			this.boundedServicesBeforeShutdown = boundedServicesBeforeShutdown;
 			this.evictor = evictor;
 			this.evictorOnDispose = evictorOnDispose;
+			this.boundedServicesOnDispose = boundedServicesOnDispose;
 		}
 
 		static SchedulerState fresh(final BoundedServices boundedServices, final ScheduledExecutorService evictor) {
 			return new SchedulerState(
+					boundedServices,
 					boundedServices,
 					evictor,
 					Flux.<Void>create(sink -> {
@@ -395,17 +405,54 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 						})
 						.replay()
 						.refCount()
-						.next()
+						.next(),
+					null
 			);
 		}
 
-		static SchedulerState terminated(@Nullable SchedulerState base) {
-			return new SchedulerState(SHUTDOWN, base == null ? null : base.evictor,
-					base == null ? Mono.empty() : base.evictorOnDispose);
+		static SchedulerState terminating(@Nullable SchedulerState base) {
+			return new SchedulerState(SHUTTING_DOWN, base.boundedServicesBeforeShutdown, base.evictor, base.evictorOnDispose, null);
+		}
+
+		static SchedulerState terminated(@Nullable SchedulerState base, BoundedState[] statesToAwait) {
+			return new SchedulerState(SHUTDOWN, base == null ? SHUTDOWN : base.boundedServicesBeforeShutdown,
+					base == null ? null : base.evictor,
+					base == null ? Mono.empty() : base.evictorOnDispose,
+					statesToAwait.length == 0 ? Mono.empty() : Flux.<Void>create(sink -> {
+						// TODO(dj): consider a shared pool for all disposeGracefully background tasks
+						// as part of Schedulers internal API
+						Thread backgroundThread = new Thread(() -> {
+							int nextToAwait = 0;
+							while (!Thread.currentThread().isInterrupted()) {
+								try {
+									while (nextToAwait < statesToAwait.length) {
+										if (statesToAwait[nextToAwait].executor.awaitTermination(1, TimeUnit.SECONDS)) {
+											nextToAwait++;
+										} else {
+											break;
+										}
+									}
+									if (nextToAwait == statesToAwait.length) {
+										sink.complete();
+										return;
+									}
+								}
+								catch (InterruptedException e) {
+									Thread.currentThread().interrupt();
+									return;
+								}
+							}
+						});
+						sink.onCancel(backgroundThread::interrupt);
+						backgroundThread.start();
+					})
+					.replay()
+					.refCount()
+					.next());
 		}
 	}
 
-	static final class BoundedServices extends AtomicInteger implements Disposable.Graceful {
+	static final class BoundedServices extends AtomicInteger {
 
 		/**
 		 * Constant for this counter of live executors to reflect the whole pool has been
@@ -426,7 +473,6 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
 		final Clock                               clock;
 		final Deque<BoundedState>                 idleQueue;
-		final Sinks.Empty<Void>                   disposedNotifier = Sinks.empty();
 
 		volatile BoundedState[]                                                   busyArray;
 		static final AtomicReferenceFieldUpdater<BoundedServices, BoundedState[]> BUSY_ARRAY =
@@ -598,35 +644,21 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 			return choice;
 		}
 
-		@Override
-		public boolean isDisposed() {
-			return get() == DISPOSED;
-		}
-
-		@Override
-		public void dispose() {
-			set(DISPOSED);
-			idleQueue.forEach(BoundedState::shutdown);
-			BoundedState[] arr = BUSY_ARRAY.getAndSet(this, ALL_SHUTDOWN);
-			for (int i = 0; i < arr.length; i++) {
-				arr[i].shutdown();
+		public BoundedState[] dispose(boolean now) {
+			if (getAndSet(DISPOSED) == DISPOSED) {
+				return ALL_SHUTDOWN;
 			}
-			disposedNotifier.tryEmitEmpty();
-		}
 
-		@Override
-		public Mono<Void> disposeGracefully(Duration gracePeriod) {
-			return Mono.defer(() -> {
-				int inUse = getAndSet(DISPOSED);
-				if (inUse >= 0) {
-					BoundedState[] arr = BUSY_ARRAY.getAndSet(this, ALL_SHUTDOWN);
-					Mono.whenDelayError(
-							Flux.fromIterable(idleQueue).flatMap(bs -> bs.shutdownGracefully(gracePeriod)),
-							Flux.fromArray(arr).flatMap(bs -> bs.shutdownGracefully(gracePeriod))
-					).subscribe(v -> {}, disposedNotifier::tryEmitError, disposedNotifier::tryEmitEmpty);
-				}
-				return disposedNotifier.asMono();
-			}).timeout(gracePeriod);
+			BoundedState[] arr = BUSY_ARRAY.getAndSet(this, ALL_SHUTDOWN);
+			// The idleQueue must be drained first as concurrent removals
+			// by evictor or additions by finished tasks can invalidate the size
+			// used if a regular array was created here.
+			ArrayList<BoundedState> toAwait = new ArrayList<>(idleQueue);
+			Collections.addAll(toAwait, arr);
+			for (BoundedState bs : toAwait) {
+				bs.shutdown(now);
+			}
+			return toAwait.toArray(new BoundedState[0]);
 		}
 	}
 
@@ -644,7 +676,6 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 		final BoundedServices          parent;
 		final ScheduledExecutorService executor;
-		final Mono<Void> onDisposed;
 
 		long idleSinceTimestamp = -1L;
 
@@ -654,31 +685,6 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		BoundedState(BoundedServices parent, ScheduledExecutorService executor) {
 			this.parent = parent;
 			this.executor = executor;
-			this.onDisposed = Flux.<Void>create(sink -> {
-						// TODO(dj): consider a shared pool for all disposeGracefully background tasks
-						// as part of Schedulers internal API
-						Thread backgroundThread = new Thread(() -> {
-							while (!Thread.currentThread()
-									.isInterrupted()) {
-								try {
-									if (executor.awaitTermination(1, TimeUnit.SECONDS)) {
-										sink.complete();
-										return;
-									}
-								}
-								catch (InterruptedException e) {
-									Thread.currentThread()
-											.interrupt();
-									return;
-								}
-							}
-						});
-						sink.onCancel(backgroundThread::interrupt);
-						backgroundThread.start();
-					})
-					.replay()
-					.refCount()
-					.next();
 		}
 
 		/**
@@ -738,8 +744,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		 * This is called when a worker is done using the executor. {@link #dispose()} is an alias
 		 * to this method (for APIs that take a {@link Disposable}).
 		 *
-		 * @see #shutdown()
-		 * @see #shutdownGracefully(Duration)
+		 * @see #shutdown(boolean)
 		 * @see #dispose()
 		 */
 		void release() {
@@ -766,24 +771,14 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		 * @see #release()
 		 * @see #dispose()
 		 */
-		void shutdown() {
+		void shutdown(boolean now) {
 			this.idleSinceTimestamp = -1L;
 			MARK_COUNT.set(this, EVICTED);
-			this.executor.shutdownNow();
-		}
-
-		Mono<Void> shutdownGracefully(Duration gracePeriod) {
-			return Mono.defer(() -> {
-				this.idleSinceTimestamp = -1L;
-				int inUse = MARK_COUNT.getAndSet(this, EVICTED);
-				if (inUse >= 0) {
-					// TODO(dj): consecutive calls to dispose could simply get an empty mono
-					// but they'd lose the ability to get notified once the shutdown is done
-					// so we need an field for the disposed signal
-					this.executor.shutdown();
-				}
-				return this.onDisposed;
-			}).timeout(gracePeriod);
+			if (now) {
+				this.executor.shutdownNow();
+			} else {
+				this.executor.shutdown();
+			}
 		}
 
 		/**
