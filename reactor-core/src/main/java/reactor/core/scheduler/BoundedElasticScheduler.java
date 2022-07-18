@@ -30,15 +30,38 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
-import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.*;
+import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.CREATING;
+import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.SHUTDOWN;
+import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.SHUTTING_DOWN;
+import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.terminated;
+import static reactor.core.scheduler.BoundedElasticScheduler.SchedulerState.terminating;
 
 /**
  * Scheduler that hosts a pool of 0-N single-threaded {@link BoundedScheduledExecutorService} and exposes workers
@@ -134,6 +157,12 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		SchedulerState b = null;
 		for (;;) {
 			SchedulerState a = STATE.get(this);
+
+			if (a.boundedServices == SHUTTING_DOWN) {
+				// keep spinning until previous shuts down
+				continue;
+			}
+
 			if (a.boundedServices != SHUTDOWN) {
 				if (b != null) {
 					b.evictor.shutdownNow();
@@ -152,12 +181,12 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 					b.evictor.scheduleAtFixedRate(b.boundedServices::eviction,
 							ttlMillis, ttlMillis, TimeUnit.MILLISECONDS);
 					return;
-				}
-				catch (RejectedExecutionException ree) {
-					// the executor was most likely shut down in parallel
-					if (!isDisposed()) {
-						throw ree;
-					} // else swallow
+				} catch (RejectedExecutionException ree) {
+					// The executor was most likely shut down in parallel.
+					// If the state is SHUTDOWN/SHUTTING_DOWN - it's ok, no eviction schedule required;
+					// If it's running - the other thread did a restart and will run its' own schedule.
+					// In both cases it's safe to return.
+					return;
 				}
 			}
 		}

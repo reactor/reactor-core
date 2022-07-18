@@ -425,6 +425,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		assertThat(s.state.boundedServices)
 				.isNotSameAs(servicesBefore)
 				.hasValue(0);
+
+		assertThat(canSubmitTask(scheduler())).isTrue();
 	}
 
 	// below tests similar to ElasticScheduler
@@ -1517,6 +1519,42 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			bounded.shutdownNow();
 			unbounded.shutdownNow();
+		}
+	}
+
+	// This test should belong in SchedulersStressTest in the JCStress suite, however currently the memory consumption
+	// is too high in the existing setup. Please consult the JCStress test class comment for details.
+	@Test
+	@Tag("slow")
+	void schedulerStartedAfterConcurrentRestart() {
+		Scheduler raceScheduler = Schedulers.newBoundedElastic(10, 20_000, "RaceScheduler");
+		for (int j = 0; j < 10_000; j++) {
+			Scheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 1);
+			scheduler.start();
+
+			RaceTestUtils.race(10, raceScheduler,
+					() -> restartScheduler(scheduler),
+					() -> restartScheduler(scheduler)
+			);
+
+			assertThat(canSubmitTask(scheduler)).isTrue();
+
+			scheduler.dispose();
+		}
+	}
+
+	private static void restartScheduler(Scheduler scheduler) {
+		scheduler.disposeGracefully(Duration.ofMillis(1000)).block(Duration.ofMillis(1000));
+		scheduler.start();
+	}
+
+	private static boolean canSubmitTask(Scheduler scheduler) {
+		CountDownLatch latch = new CountDownLatch(1);
+		scheduler.schedule(latch::countDown);
+		try {
+			return latch.await(100, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException ignored) {
+			return false;
 		}
 	}
 }

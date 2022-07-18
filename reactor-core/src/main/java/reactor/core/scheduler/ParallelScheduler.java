@@ -225,7 +225,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         return new ExecutorServiceWorker(pick());
     }
 
-    private static final class SchedulerState {
+    static final class SchedulerState {
 
         static final ScheduledExecutorService TERMINATED;
         static final ScheduledExecutorService[] SHUTDOWN = new ScheduledExecutorService[0];
