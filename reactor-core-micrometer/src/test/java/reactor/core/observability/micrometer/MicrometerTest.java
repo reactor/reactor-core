@@ -92,4 +92,14 @@ class MicrometerTest {
 		assertThat(factory.useClock()).as("clock").isSameAs(customLocalClock).isNotSameAs(Clock.SYSTEM);
 		assertThat(factory.useRegistry()).as("registry").isSameAs(customLocalRegistry).isNotSameAs(customCommonRegistry);
 	}
+
+	@Test
+	void smokeTestContextPropagationIsAvailable() {
+		assertThat(Micrometer.isContextPropagationAvailable()).isTrue();
+	}
+
+	@Test
+	void smokeTestTracingIsAvailable() {
+		assertThat(Micrometer.isTracingAvailable()).isTrue();
+	}
 }

@@ -18,6 +18,7 @@ package reactor.core.observability.micrometer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Predicate;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
@@ -26,6 +27,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
@@ -41,6 +43,70 @@ public final class Micrometer {
 	 * The default "name" to use as a prefix for meter if the instrumented sequence doesn't define a {@link reactor.core.publisher.Flux#name(String) name}.
 	 */
 	public static final String DEFAULT_METER_PREFIX = "reactor";
+
+	private static final boolean isTracingAvailable;
+	private static final boolean isContextPropagationAvailable;
+
+	static final String            OBSERVATION_CONTEXT_KEY;
+	static final Predicate<Object> OBSERVATION_CONTEXT_PREDICATE;
+
+	static {
+		boolean tracing;
+		try {
+			Class.forName("io.micrometer.tracing.Tracer");
+			tracing = true;
+		}
+		catch (Throwable t) {
+			tracing = false;
+		}
+		isTracingAvailable = tracing;
+
+		boolean contextPropagation;
+		String key;
+		try {
+			io.micrometer.context.ContextRegistry.getInstance();
+			contextPropagation = true;
+			//at this point we know we have both Observation (always) and ThreadLocalAccessor/context-propagation
+			//so to get the key it is fine to load ObservationThreadLocalAccessor (which does require both libraries)
+			key = ObservationThreadLocalAccessor.KEY;
+		}
+		catch (Throwable t) {
+			contextPropagation = false;
+			key = "micrometer.observation"; //fallback, constant may have changed in the library?
+		}
+		isContextPropagationAvailable = contextPropagation;
+		OBSERVATION_CONTEXT_KEY = key;
+		OBSERVATION_CONTEXT_PREDICATE = OBSERVATION_CONTEXT_KEY::equals;
+	}
+
+	/**
+	 * Indicate if the current runtime supports Micrometer Tracing features.
+	 * <p>
+	 * This indirectly informs the behavior of {@link #observation(ObservationRegistry)},
+	 * since Micrometer Observation will likely discover and load a tracing handler at
+	 * runtime.
+	 *
+	 * @return true if Micrometer Tracing is available, false otherwise
+	 */
+	public static boolean isTracingAvailable() {
+		return isTracingAvailable;
+	}
+
+	/**
+	 * Indicate if the current runtime supports Micrometer Context Propagation features.
+	 * <p>
+	 * Context Propagation support impacts the behavior of {@link #observation(ObservationRegistry)},
+	 * which uses the feature to propagate Scopes between an observed parent and an observed
+	 * child Flux/Mono.
+	 * <p>
+	 * Please note that Micrometer Core, Metrics and Observation features are always available
+	 * as these features are direct dependencies of the reactor-core-micrometer module.
+	 *
+	 * @return true if Micrometer Context Propagation is available, false otherwise
+	 */
+	public static boolean isContextPropagationAvailable() {
+		return isContextPropagationAvailable;
+	}
 
 	/**
 	 * Set the registry to use in reactor-core-micrometer for metrics related purposes.

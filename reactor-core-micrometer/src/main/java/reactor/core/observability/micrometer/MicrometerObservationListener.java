@@ -18,6 +18,7 @@ package reactor.core.observability.micrometer;
 
 import io.micrometer.context.ContextSnapshot;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
@@ -88,16 +89,38 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doFirst() {
-		ContextSnapshot contextSnapshot = ContextSnapshot.capture(this.originalContext);
+		if (Micrometer.isContextPropagationAvailable()) {
+			//load any parent from either the Reactor context or if none from the ThreadLocal
 
-		try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues()) {
-			this.scope = this.subscribeToTerminalObservation
-				.start()
-				.openScope();
-			//reacquire the scope from ThreadLocal
-			//tap context hasn't been initialized yet, so addToContext can now use the Scope
-			ContextSnapshot contextSnapshot2 = ContextSnapshot.capture(this.originalContext);
-			this.contextWithScope = contextSnapshot2.updateContext(Context.of(this.originalContext));
+			ContextSnapshot contextSnapshot = ContextSnapshot.captureUsing(Micrometer.OBSERVATION_CONTEXT_PREDICATE, this.originalContext);
+
+			try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues(Micrometer.OBSERVATION_CONTEXT_PREDICATE)) {
+				this.scope = this.subscribeToTerminalObservation
+					.start()
+					.openScope();
+				//with the new scope comes a new Observation which we can put in the Context for inner publishers
+				Observation newObservation = this.configuration.registry.getCurrentObservation();
+				this.contextWithScope = Context.of(this.originalContext)
+					.put(Micrometer.OBSERVATION_CONTEXT_KEY, newObservation);
+			}
+		}
+		else {
+			//we should still have a relevant OBSERVATION_CONTEXT_KEY so we'll best effort load a parent from the Reactor Context only
+			Observation toStore;
+			if (this.originalContext.hasKey(Micrometer.OBSERVATION_CONTEXT_KEY)) {
+				//we have Observation in context, let's use that directly and not Scope
+				toStore = this.subscribeToTerminalObservation
+					.parentObservation(this.originalContext.get(Micrometer.OBSERVATION_CONTEXT_KEY))
+					.start();
+				this.scope = null;
+			}
+			else {
+				toStore = this.subscribeToTerminalObservation.start();
+				this.scope = toStore.openScope();
+			}
+
+			//store the newObservation in the context for the benefit of child reactive sequences
+			this.contextWithScope = Context.of(this.originalContext).put(Micrometer.OBSERVATION_CONTEXT_KEY, toStore);
 		}
 	}
 
