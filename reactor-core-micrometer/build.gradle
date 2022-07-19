@@ -46,69 +46,33 @@ dependencies {
 
 	implementation platform(libs.micrometer.bom)
 	api libs.micrometer.core
-	compileOnly libs.micrometer.contextPropagation
-}
+//	implementation libs.micrometer.contextPropagation
 
-// using incubating testSuite plugin, all but the default `test` suite use JUnit5 by default
-testing {
-	suites {
-		test {
-			useJUnitJupiter(libs.versions.junit.get())
+	testImplementation platform(libs.junit.bom)
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testImplementation "org.junit.platform:junit-platform-launcher"
+	testImplementation "org.junit.jupiter:junit-jupiter-params"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
-			dependencies {
-				//JUnit Jupiter bom, api and engine are brought by useJUnitJupiter
-				implementation libs.junit.platform
-				implementation libs.junit.params
+	testImplementation platform(libs.micrometer.bom)
+	testImplementation libs.micrometer.core
+	testImplementation libs.micrometer.test
+	testImplementation libs.micrometer.observation.test
+	testImplementation libs.micrometer.tracing.test
 
-				//project already has Micrometer BOM and core dependencies
-				implementation libs.micrometer.test
-				implementation libs.micrometer.observation.test
-				implementation libs.micrometer.tracing.test
-				implementation libs.micrometer.contextPropagation
-
-				implementation(project(":reactor-test")) {
-					exclude module: 'reactor-core'
-				}
-				// Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
-				implementation project(":reactor-core").sourceSets.test.output
-				runtimeOnly libs.logback
-				implementation libs.assertj
-				implementation libs.mockito
-			}
-		}
-
-		noContextPropagationTest(JvmTestSuite) {
-			useJUnitJupiter(libs.versions.junit.get())
-			dependencies {
-				implementation project
-
-				implementation libs.junit.platform
-				implementation libs.junit.params
-
-				implementation project.dependencies.platform(libs.micrometer.bom)
-				implementation libs.micrometer.core
-				implementation libs.micrometer.test
-				implementation libs.micrometer.observation.test
-//				runtimeOnly libs.micrometer.tracing.test //WHY DOES THIS ADD CONTEXT PROPAGATION ?
-
-				runtimeOnly libs.logback
-				implementation libs.assertj
-				implementation libs.mockito
-			}
-
-			targets {
-				all {
-					testTask.configure {
-						shouldRunAfter(test)
-					}
-				}
-			}
-		}
+	testImplementation(project(":reactor-test")) {
+		exclude module: 'reactor-core'
 	}
+	// Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
+	testImplementation project(":reactor-core").sourceSets.test.output
+
+	testRuntimeOnly libs.logback
+	testImplementation libs.assertj
+	testImplementation libs.mockito
 }
 
-tasks.named('check') {
-	dependsOn(testing.suites.noContextPropagationTest)
+tasks.withType(Test).all {
+  useJUnitPlatform()
 }
 
 // javadoc is configured in gradle/javadoc.gradle

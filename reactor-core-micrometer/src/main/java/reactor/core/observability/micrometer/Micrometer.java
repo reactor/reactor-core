@@ -18,7 +18,6 @@ package reactor.core.observability.micrometer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Predicate;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
@@ -47,9 +46,6 @@ public final class Micrometer {
 	private static final boolean isTracingAvailable;
 	private static final boolean isContextPropagationAvailable;
 
-	static final String            OBSERVATION_CONTEXT_KEY;
-	static final Predicate<Object> OBSERVATION_CONTEXT_PREDICATE;
-
 	static {
 		boolean tracing;
 		try {
@@ -62,21 +58,14 @@ public final class Micrometer {
 		isTracingAvailable = tracing;
 
 		boolean contextPropagation;
-		String key;
-		try {
-			io.micrometer.context.ContextRegistry.getInstance();
-			contextPropagation = true;
-			//at this point we know we have both Observation (always) and ThreadLocalAccessor/context-propagation
-			//so to get the key it is fine to load ObservationThreadLocalAccessor (which does require both libraries)
-			key = ObservationThreadLocalAccessor.KEY;
-		}
-		catch (Throwable t) {
-			contextPropagation = false;
-			key = "micrometer.observation"; //fallback, constant may have changed in the library?
-		}
+//		try {
+//			io.micrometer.context.ContextRegistry.getInstance();
+//			contextPropagation = true;
+//		}
+//		catch (Throwable t) {
+			contextPropagation = isTracingAvailable; //FIXME
+//		}
 		isContextPropagationAvailable = contextPropagation;
-		OBSERVATION_CONTEXT_KEY = key;
-		OBSERVATION_CONTEXT_PREDICATE = OBSERVATION_CONTEXT_KEY::equals;
 	}
 
 	/**

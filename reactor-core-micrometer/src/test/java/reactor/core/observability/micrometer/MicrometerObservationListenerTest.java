@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,7 @@ class MicrometerObservationListenerTest {
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
 		assertThat(listener.valued).as("valued").isFalse();
-		assertThat(listener.subscribeToTerminalObservation)
+		assertThat(listener.tapObservation)
 			.as("subscribeToTerminalObservation field")
 			.isNotNull();
 		assertThat(registry).as("before start").doesNotHaveAnyObservation();
@@ -109,7 +110,7 @@ class MicrometerObservationListenerTest {
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
 		assertThat(listener.valued).as("valued").isFalse();
-		assertThat(listener.subscribeToTerminalObservation)
+		assertThat(listener.tapObservation)
 			.as("subscribeToTerminalObservation field")
 			.isNotNull();
 		assertThat(registry).as("no observation started").doesNotHaveAnyObservation();
@@ -139,7 +140,7 @@ class MicrometerObservationListenerTest {
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration);
 
 		assertThat(listener.valued).as("valued").isFalse();
-		assertThat(listener.subscribeToTerminalObservation)
+		assertThat(listener.tapObservation)
 			.as("subscribeToTerminalObservation field")
 			.isNotNull();
 		assertThat(registry).as("no observation started").doesNotHaveAnyObservation();
@@ -371,7 +372,7 @@ class MicrometerObservationListenerTest {
 	}
 
 	@Test
-	void whenPropagationPrioritizesParentFromContext() {
+	void observationGetsParentFromContext() {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListener.ANONYMOUS_OBSERVATION,
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
@@ -379,65 +380,59 @@ class MicrometerObservationListenerTest {
 			registry,
 			false);
 
-		//detached
-		TestObservationRegistry otherRegistry = TestObservationRegistry.create();
-		Observation parent = Observation.start("testParent", otherRegistry);
-		parent.openScope();
-
-		//attached to test registry
-		Observation inRegistry = Observation.start("inregistry", registry);
-		inRegistry.openScope();
-		Context contextWithAParent = Context.of(subscriberContext).put(Micrometer.OBSERVATION_CONTEXT_KEY, parent);
-
-		//NB: registry.getCurrentObservation() always reflects the last Observation.openScope, even if Observation was started from a different registry
-		assertThat(registry.getCurrentObservation()).as("inRegistry is reported as current / ThreadLocal")
-			.isSameAs(otherRegistry.getCurrentObservation())
-			.isSameAs(inRegistry);
-
+		Observation parent = Observation.start("testParent", registry);
+		Context contextWithAParent = Context.of(subscriberContext).put(ObservationThreadLocalAccessor.KEY, parent);
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(contextWithAParent, configuration);
 
-		listener.doFirst(); // forces observation start and discovery of the parent
+		//we don't open scopes, but we did however start an observation
+		assertThat(registry)
+			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("current scope").isNull())
+			.doesNotHaveAnyRemainingCurrentObservation();
+
+		listener.doFirst(); // forces observation start and discovery of the parent from context
+		listener.doOnComplete(); // forces observation stop
 
 		assertThat(listener.originalContext).as("originalContext").isSameAs(contextWithAParent);
-		assertThat(listener.contextWithScope).as("contextWithScope")
-			.matches(c -> c.hasKey(Micrometer.OBSERVATION_CONTEXT_KEY), "has OBSERVATION_CONTEXT_KEY");
+		assertThat(listener.contextWithObservation).as("contextWithObservation")
+			.matches(c -> c.hasKey(ObservationThreadLocalAccessor.KEY), "has OBSERVATION_CONTEXT_KEY");
 
 		AtomicReference<Observation.Context> parentRef = new AtomicReference<>();
-		AtomicReference<Observation.Context> inRegistryRef = new AtomicReference<>();
 
-		assertThat(otherRegistry)
-			.hasSingleObservationThat()
-			.hasNameEqualTo("testParent")
+		assertThat(registry)
+			//--
+			.hasObservationWithNameEqualTo("testParent")
+			.that()
+			.isSameAs(parent.getContext())
 			.hasBeenStarted()
 			.isNotStopped()
 			.hasNoKeyValues()
-			.satisfies(parentRef::set);
-		assertThat(registry)
-			.hasObservationWithNameEqualTo("inregistry")
-			.that()
-			.satisfies(inRegistryRef::set);
-
-		assertThat(registry)
-			.as("subscribeToTerminalObservation")
+			.satisfies(parentRef::set)
+			.backToTestObservationRegistry()
+			//--
 			.hasObservationWithNameEqualTo("reactor.observation")
 			.that()
 			.hasBeenStarted()
-			.isNotStopped()
+			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
-			.satisfies(o -> {
-				assertThat(o.getParentObservation())
-					.as("parentObservation()")
-					.isNotNull();
-				assertThat(o.getParentObservation().getContext())
-					.as("parent")
-					.isSameAs(parentRef.get())
-					.isNotSameAs(inRegistryRef.get());
-			});
+			.hasLowCardinalityKeyValue("reactor.status", "completedEmpty")
+			.satisfies(o -> assertThat(o.getParentObservation())
+				.as("parentObservation")
+				.isNotNull()
+				.hasFieldOrPropertyWithValue("context", parentRef.get())
+			)
+			.backToTestObservationRegistry()
+			//--
+			.doesNotHaveAnyRemainingCurrentObservation();
+
+		parent.stop();
+		assertThat(registry)
+			.satisfies(r -> assertThat(r.getCurrentObservation()).as("no leftover currentObservation()").isNull())
+			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 
 	@Test
-	void whenPropagationGetsParentFromThreadLocal() {
+	void observationWithEmptyContextHasNoParent() {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListener.ANONYMOUS_OBSERVATION,
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
@@ -445,49 +440,96 @@ class MicrometerObservationListenerTest {
 			registry,
 			false);
 
-		//detached
-		TestObservationRegistry otherRegistry = TestObservationRegistry.create();
-		Observation parent = Observation.start("testParent", otherRegistry);
-		parent.openScope();
-
-
-		//NB: registry.getCurrentObservation() always reflects the last Observation.openScope, even if Observation was started from a different registry
-		assertThat(registry.getCurrentObservation()).as("inRegistry is reported as current / ThreadLocal")
-			.isSameAs(otherRegistry.getCurrentObservation())
-			.isSameAs(parent);
-
 		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(Context.empty(), configuration);
 
-		listener.doFirst(); // forces observation start and discovery of the parent
+		//we don't open scopes so it's never stored
+		assertThat(registry)
+			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no current scope").isNull())
+			.doesNotHaveAnyRemainingCurrentObservation();
 
-		assertThat(listener.contextWithScope).as("contextWithScope")
-			.matches(c -> c.hasKey(Micrometer.OBSERVATION_CONTEXT_KEY), "has OBSERVATION_CONTEXT_KEY");
+		listener.doFirst(); // forces observation start and discovery of the parent from context
+		listener.doOnComplete(); // forces observation stop
 
-		AtomicReference<Observation.Context> parentRef = new AtomicReference<>();
-
-		assertThat(otherRegistry)
-			.hasSingleObservationThat()
-			.hasNameEqualTo("testParent")
-			.hasBeenStarted()
-			.isNotStopped()
-			.hasNoKeyValues()
-			.satisfies(parentRef::set);
+		assertThat(listener.contextWithObservation).as("contextWithObservation")
+			.matches(c -> c.hasKey(ObservationThreadLocalAccessor.KEY), "has OBSERVATION_CONTEXT_KEY");
 
 		assertThat(registry)
-			.as("subscribeToTerminalObservation")
+			//--
 			.hasSingleObservationThat()
 			.hasNameEqualTo("reactor.observation")
 			.hasBeenStarted()
-			.isNotStopped()
+			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
-			.satisfies(o -> {
-				assertThat(o.getParentObservation())
-					.as("parentObservation()")
-					.isNotNull();
-				assertThat(o.getParentObservation().getContext())
-					.as("parent")
-					.isSameAs(parentRef.get());
-			});
+			.hasLowCardinalityKeyValue("reactor.status", "completedEmpty")
+			.satisfies(o -> assertThat(o.getParentObservation())
+				.as("no parent")
+				.isNull()
+			)
+			.backToTestObservationRegistry()
+			//--
+			.doesNotHaveAnyRemainingCurrentObservation();
+
+		assertThat(registry)
+			.satisfies(r -> assertThat(r.getCurrentObservation()).as("no leftover currentObservation()").isNull())
+			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
+	}
+
+	@Test
+	void observationWithEmptyContextHasParentWhenExternalScopeOpened() {
+		configuration = new MicrometerObservationListenerConfiguration(
+			MicrometerObservationListener.ANONYMOUS_OBSERVATION,
+			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
+			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			registry,
+			false);
+
+		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(Context.empty(), configuration);
+		
+		Observation parentFromThreadLocal = Observation.start("testParent", registry);
+		Observation.Scope parentScope = parentFromThreadLocal.openScope();
+
+		//operator doesn't open scopes but we have
+		assertThat(registry)
+			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("has parent scope").isEqualTo(parentScope))
+			.hasRemainingCurrentObservationSameAs(parentFromThreadLocal);
+
+		listener.doFirst(); // forces observation start and discovery of the parent from context
+		listener.doOnComplete(); // forces observation stop
+
+		assertThat(listener.contextWithObservation).as("contextWithObservation")
+			.matches(c -> c.hasKey(ObservationThreadLocalAccessor.KEY), "has OBSERVATION_CONTEXT_KEY");
+
+		AtomicReference<Observation.Context> parentRef = new AtomicReference<>();
+
+		assertThat(registry)
+			//--
+			.hasObservationWithNameEqualTo("testParent")
+			.that()
+			.isSameAs(parentFromThreadLocal.getContext())
+			.hasBeenStarted()
+			.isNotStopped()
+			.hasNoKeyValues()
+			.satisfies(parentRef::set)
+			.backToTestObservationRegistry()
+			//--
+			.hasObservationWithNameEqualTo("reactor.observation")
+			.that()
+			.hasBeenStarted()
+			.hasBeenStopped()
+			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
+			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
+			.hasLowCardinalityKeyValue("reactor.status", "completedEmpty")
+			.satisfies(o -> assertThat(o.getParentObservation())
+				.as("has parent")
+				.isNotNull()
+				.hasFieldOrPropertyWithValue("context", parentRef.get())
+			);
+
+		parentFromThreadLocal.stop();
+		parentScope.close();
+		assertThat(registry)
+			.satisfies(r -> assertThat(r.getCurrentObservation()).as("no leftover currentObservation()").isNull())
+			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 }
