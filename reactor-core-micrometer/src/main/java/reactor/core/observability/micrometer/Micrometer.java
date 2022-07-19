@@ -43,60 +43,6 @@ public final class Micrometer {
 	 */
 	public static final String DEFAULT_METER_PREFIX = "reactor";
 
-	private static final boolean isTracingAvailable;
-	private static final boolean isContextPropagationAvailable;
-
-	static {
-		boolean tracing;
-		try {
-			Class.forName("io.micrometer.tracing.Tracer");
-			tracing = true;
-		}
-		catch (Throwable t) {
-			tracing = false;
-		}
-		isTracingAvailable = tracing;
-
-		boolean contextPropagation;
-//		try {
-//			io.micrometer.context.ContextRegistry.getInstance();
-//			contextPropagation = true;
-//		}
-//		catch (Throwable t) {
-			contextPropagation = isTracingAvailable; //FIXME
-//		}
-		isContextPropagationAvailable = contextPropagation;
-	}
-
-	/**
-	 * Indicate if the current runtime supports Micrometer Tracing features.
-	 * <p>
-	 * This indirectly informs the behavior of {@link #observation(ObservationRegistry)},
-	 * since Micrometer Observation will likely discover and load a tracing handler at
-	 * runtime.
-	 *
-	 * @return true if Micrometer Tracing is available, false otherwise
-	 */
-	public static boolean isTracingAvailable() {
-		return isTracingAvailable;
-	}
-
-	/**
-	 * Indicate if the current runtime supports Micrometer Context Propagation features.
-	 * <p>
-	 * Context Propagation support impacts the behavior of {@link #observation(ObservationRegistry)},
-	 * which uses the feature to propagate Scopes between an observed parent and an observed
-	 * child Flux/Mono.
-	 * <p>
-	 * Please note that Micrometer Core, Metrics and Observation features are always available
-	 * as these features are direct dependencies of the reactor-core-micrometer module.
-	 *
-	 * @return true if Micrometer Context Propagation is available, false otherwise
-	 */
-	public static boolean isContextPropagationAvailable() {
-		return isContextPropagationAvailable;
-	}
-
 	/**
 	 * Set the registry to use in reactor-core-micrometer for metrics related purposes.
 	 * @return the previously configured registry.
