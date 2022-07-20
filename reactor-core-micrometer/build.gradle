@@ -46,7 +46,6 @@ dependencies {
 
 	implementation platform(libs.micrometer.bom)
 	api libs.micrometer.core
-//	implementation libs.micrometer.contextPropagation
 
 	testImplementation platform(libs.junit.bom)
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
