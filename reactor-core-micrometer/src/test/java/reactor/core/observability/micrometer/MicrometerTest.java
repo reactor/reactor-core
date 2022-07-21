@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,5 +92,11 @@ class MicrometerTest {
 
 		assertThat(factory.useClock()).as("clock").isSameAs(customLocalClock).isNotSameAs(Clock.SYSTEM);
 		assertThat(factory.useRegistry()).as("registry").isSameAs(customLocalRegistry).isNotSameAs(customCommonRegistry);
+	}
+
+	@Test
+	void observationContextKeySmokeTest() {
+		assertThat(MicrometerObservationListener.CONTEXT_KEY_OBSERVATION)
+			.isEqualTo(ObservationThreadLocalAccessor.KEY);
 	}
 }

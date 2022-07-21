@@ -17,7 +17,6 @@
 package reactor.core.observability.micrometer;
 
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
@@ -47,7 +46,14 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	static final String STATUS_COMPLETED_EMPTY = MicrometerMeterListener.TAG_STATUS_COMPLETED_EMPTY;
 	static final String STATUS_ERROR = MicrometerMeterListener.TAG_STATUS_ERROR;
 
-	static final String CONTEXT_KEY_OBSERVATION = ObservationThreadLocalAccessor.KEY;
+	/**
+	 * The key to use to store {@link Observation} in context (same as the one from {@code ObservationThreadLocalAccessor}).
+	 *
+	 * @implNote this might be redundant, but we got {@code com.sun.tools.javac.code.Symbol$CompletionFailure: class file for io.micrometer.context.ThreadLocalAccessor not found}
+	 * in reactor-netty while compiling a similar arrangement. A unit test in MicrometerTest acts as a smoke test in case
+	 * micrometer-observation's {@code ObservationThreadLocalAccessor.KEY} changes to something else.
+	 */
+	static final String CONTEXT_KEY_OBSERVATION = "micrometer.observation";
 
 	/**
 	 * A value for the status tag, to be used when a Mono completes from onNext.
@@ -89,12 +95,19 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	@Override
 	public void doFirst() {
 		/* Implementation note on using parentObservation vs openScope:
-		We deliberately don't open nor store Scopes. This is a snake pit, as there's no guarantee that the thread
-		in which doFirst is invoked is going to be the same as the one in which eg. doOnComplete is invoked, in
-		which case we'd get thread pollution (as Scope's role is to put values in ThreadLocals).
-		So this tap listener only deals with Observation and ensuring that Observations are hierarchical including
-		when an inner tap is created in another thread (discovered via Context) or is visible in the current thread
-		(discovered via registry.getCurrentObservation()).
+		Opening a Scope is never necessary in this tap listener, because the Observation we create is stored in
+		the Context the tap operator will expose to upstream, rather than via ThreadLocal population.
+
+		We also make a best-effort attempt to discover such an Observation in the context here in doFirst, so that this
+		can explicitly be used as the parentObservation. At this point, if none is found we take also the opportunity
+		of checking if the registry has a currentObservation.
+
+		As a consequence, fanout (eg. with a `flatMap`) upstream of the tap should be able to see the current Observation
+		in the context and the inner publishers should inherit it as their parent observation if they also use `tap(Micrometer.observation())`.
+
+		Note that Reactor's threading model doesn't generally guarantee that doFirst and doOnNext/doOnComplete/doOnError run
+		in the same thread, and that's the main reason why Scopes are avoided here (as their sole purpose is to set up
+		Thread Local variables).
 		 */
 
 		Observation o;
