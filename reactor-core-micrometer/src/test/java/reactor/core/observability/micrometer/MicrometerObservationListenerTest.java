@@ -396,8 +396,6 @@ class MicrometerObservationListenerTest {
 		assertThat(listener.contextWithObservation).as("contextWithObservation")
 			.matches(c -> c.hasKey(ObservationThreadLocalAccessor.KEY), "has OBSERVATION_CONTEXT_KEY");
 
-		AtomicReference<Observation.Context> parentRef = new AtomicReference<>();
-
 		assertThat(registry)
 			//--
 			.hasObservationWithNameEqualTo("testParent")
@@ -406,7 +404,6 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.isNotStopped()
 			.hasNoKeyValues()
-			.satisfies(parentRef::set)
 			.backToTestObservationRegistry()
 			//--
 			.hasObservationWithNameEqualTo("reactor.observation")
@@ -416,18 +413,14 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
 			.hasLowCardinalityKeyValue("reactor.status", "completedEmpty")
-			.satisfies(o -> assertThat(o.getParentObservation())
-				.as("parentObservation")
-				.isNotNull()
-				.hasFieldOrPropertyWithValue("context", parentRef.get())
-			)
+			.hasParentObservationEqualTo(parent)
 			.backToTestObservationRegistry()
 			//--
 			.doesNotHaveAnyRemainingCurrentObservation();
 
 		parent.stop();
 		assertThat(registry)
-			.satisfies(r -> assertThat(r.getCurrentObservation()).as("no leftover currentObservation()").isNull())
+			.doesNotHaveAnyRemainingCurrentObservation()
 			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 
@@ -462,16 +455,13 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
 			.hasLowCardinalityKeyValue("reactor.status", "completedEmpty")
-			.satisfies(o -> assertThat(o.getParentObservation())
-				.as("no parent")
-				.isNull()
-			)
+			.doesNotHaveParentObservation()
 			.backToTestObservationRegistry()
 			//--
 			.doesNotHaveAnyRemainingCurrentObservation();
 
 		assertThat(registry)
-			.satisfies(r -> assertThat(r.getCurrentObservation()).as("no leftover currentObservation()").isNull())
+			.doesNotHaveAnyRemainingCurrentObservation()
 			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 
@@ -500,8 +490,6 @@ class MicrometerObservationListenerTest {
 		assertThat(listener.contextWithObservation).as("contextWithObservation")
 			.matches(c -> c.hasKey(ObservationThreadLocalAccessor.KEY), "has OBSERVATION_CONTEXT_KEY");
 
-		AtomicReference<Observation.Context> parentRef = new AtomicReference<>();
-
 		assertThat(registry)
 			//--
 			.hasObservationWithNameEqualTo("testParent")
@@ -510,7 +498,6 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.isNotStopped()
 			.hasNoKeyValues()
-			.satisfies(parentRef::set)
 			.backToTestObservationRegistry()
 			//--
 			.hasObservationWithNameEqualTo("reactor.observation")
@@ -520,16 +507,12 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
 			.hasLowCardinalityKeyValue("reactor.status", "completedEmpty")
-			.satisfies(o -> assertThat(o.getParentObservation())
-				.as("has parent")
-				.isNotNull()
-				.hasFieldOrPropertyWithValue("context", parentRef.get())
-			);
+			.hasParentObservationEqualTo(parentFromThreadLocal);
 
 		parentFromThreadLocal.stop();
 		parentScope.close();
 		assertThat(registry)
-			.satisfies(r -> assertThat(r.getCurrentObservation()).as("no leftover currentObservation()").isNull())
+			.doesNotHaveAnyRemainingCurrentObservation()
 			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 }
