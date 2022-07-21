@@ -157,8 +157,63 @@ public class ExceptionsTest {
 	//TODO test terminate
 
 	@Test
+	void isFatalNotJvmFatalBubbling() {
+		Throwable exception = new BubblingException("expected");
+		assertThat(Exceptions.isFatal(exception))
+			.as("isFatal(bubbling)")
+			.isTrue();
+		assertThat(Exceptions.isJvmFatal(exception))
+			.as("isJvmFatal(bubbling)")
+			.isFalse();
+	}
+
+	@Test
+	void isFatalNotJvmFatalErrorCallback() {
+		Throwable exception = new ErrorCallbackNotImplemented(new IllegalStateException("expected cause"));
+		assertThat(Exceptions.isFatal(exception))
+			.as("isFatal(ErrorCallbackNotImplemented)")
+			.isTrue();
+		assertThat(Exceptions.isJvmFatal(exception))
+			.as("isJvmFatal(ErrorCallbackNotImplemented)")
+			.isFalse();
+	}
+
+	@Test
+	void isFatalAndJvmFatalVirtualMachineError() {
+		Throwable exception = new VirtualMachineError() { };
+		assertThat(Exceptions.isFatal(exception))
+			.as("isFatal(VirtualMachineError)")
+			.isTrue();
+		assertThat(Exceptions.isJvmFatal(exception))
+			.as("isJvmFatal(VirtualMachineError)")
+			.isTrue();
+	}
+
+	@Test
+	void isFatalAndJvmFatalLinkageError() {
+		Throwable exception = new LinkageError();
+		assertThat(Exceptions.isFatal(exception))
+			.as("isFatal(LinkageError)")
+			.isTrue();
+		assertThat(Exceptions.isJvmFatal(exception))
+			.as("isJvmFatal(LinkageError)")
+			.isTrue();
+	}
+
+	@Test
+	void isFatalAndJvmFatalThreadDeath() {
+		Throwable exception = new ThreadDeath();
+		assertThat(Exceptions.isFatal(exception))
+			.as("isFatal(ThreadDeath)")
+			.isTrue();
+		assertThat(Exceptions.isJvmFatal(exception))
+			.as("isJvmFatal(ThreadDeath)")
+			.isTrue();
+	}
+
+	@Test
 	public void throwIfFatalThrowsBubbling() {
-		BubblingException expected = new BubblingException("expected");
+		BubblingException expected = new BubblingException("expected to be logged");
 
 		assertThatExceptionOfType(BubblingException.class)
 				.isThrownBy(() -> Exceptions.throwIfFatal(expected))
@@ -167,7 +222,7 @@ public class ExceptionsTest {
 
 	@Test
 	public void throwIfFatalThrowsErrorCallbackNotImplemented() {
-		ErrorCallbackNotImplemented expected = new ErrorCallbackNotImplemented(new IllegalStateException("expected cause"));
+		ErrorCallbackNotImplemented expected = new ErrorCallbackNotImplemented(new IllegalStateException("expected to be logged"));
 
 		assertThatExceptionOfType(ErrorCallbackNotImplemented.class)
 				.isThrownBy(() -> Exceptions.throwIfFatal(expected))
@@ -177,9 +232,14 @@ public class ExceptionsTest {
 
 	@Test
 	public void throwIfJvmFatal() {
-		VirtualMachineError fatal1 = new VirtualMachineError() {};
-		ThreadDeath fatal2 = new ThreadDeath();
-		LinkageError fatal3 = new LinkageError();
+		VirtualMachineError fatal1 = new VirtualMachineError("expected to be logged") {};
+		ThreadDeath fatal2 = new ThreadDeath() {
+			@Override
+			public String getMessage() {
+				return "expected to be logged";
+			}
+		};
+		LinkageError fatal3 = new LinkageError("expected to be logged");
 
 		assertThatExceptionOfType(VirtualMachineError.class)
 				.as("VirtualMachineError")
