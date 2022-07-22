@@ -24,11 +24,14 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import reactor.TestLoggerExtension;
 import reactor.core.publisher.Mono;
+import reactor.test.util.LoggerUtils;
 import reactor.test.util.RaceTestUtils;
+import reactor.test.util.TestLogger;
 import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
@@ -44,6 +47,32 @@ public class ExceptionsTest {
 	volatile @Nullable Throwable addThrowable;
 	static final AtomicReferenceFieldUpdater<ExceptionsTest, Throwable> ADD_THROWABLE =
 			AtomicReferenceFieldUpdater.newUpdater(ExceptionsTest.class, Throwable.class, "addThrowable");
+
+	static VirtualMachineError JVM_FATAL_VIRTUAL_MACHINE_ERROR = new VirtualMachineError("expected to be logged") {
+		@Override
+		public String toString() {
+			return "custom VirtualMachineError: expected to be logged";
+		}
+	};
+
+	static final ThreadDeath JVM_FATAL_THREAD_DEATH = new ThreadDeath() {
+		@Override
+		public String getMessage() {
+			return "expected to be logged";
+		}
+
+		@Override
+		public String toString() {
+			return "custom ThreadDeath: expected to be logged";
+		}
+	};
+
+	static final LinkageError JVM_FATAL_LINKAGE_ERROR = new LinkageError("expected to be logged") {
+		@Override
+		public String toString() {
+			return "custom LinkageError: expected to be logged";
+		}
+	};
 
 	@Test
 	public void bubble() throws Exception {
@@ -182,114 +211,129 @@ public class ExceptionsTest {
 
 	@Test
 	void virtualMachineErrorIsFatalAndJvmFatal() {
-		Throwable exception = new VirtualMachineError() { };
-		assertThat(Exceptions.isFatal(exception))
+		assertThat(Exceptions.isFatal(JVM_FATAL_VIRTUAL_MACHINE_ERROR))
 			.as("isFatal(VirtualMachineError)")
 			.isTrue();
-		assertThat(Exceptions.isJvmFatal(exception))
+		assertThat(Exceptions.isJvmFatal(JVM_FATAL_VIRTUAL_MACHINE_ERROR))
 			.as("isJvmFatal(VirtualMachineError)")
 			.isTrue();
 	}
 
 	@Test
 	void linkageErrorIsFatalAndJvmFatal() {
-		Throwable exception = new LinkageError();
-		assertThat(Exceptions.isFatal(exception))
+		assertThat(Exceptions.isFatal(JVM_FATAL_LINKAGE_ERROR))
 			.as("isFatal(LinkageError)")
 			.isTrue();
-		assertThat(Exceptions.isJvmFatal(exception))
+		assertThat(Exceptions.isJvmFatal(JVM_FATAL_LINKAGE_ERROR))
 			.as("isJvmFatal(LinkageError)")
 			.isTrue();
 	}
 
 	@Test
 	void threadDeathIsFatalAndJvmFatal() {
-		Throwable exception = new ThreadDeath();
-		assertThat(Exceptions.isFatal(exception))
+		assertThat(Exceptions.isFatal(JVM_FATAL_THREAD_DEATH))
 			.as("isFatal(ThreadDeath)")
 			.isTrue();
-		assertThat(Exceptions.isJvmFatal(exception))
+		assertThat(Exceptions.isJvmFatal(JVM_FATAL_THREAD_DEATH))
 			.as("isJvmFatal(ThreadDeath)")
 			.isTrue();
 	}
 
+	@AfterEach
+	void disableCapture() {
+		LoggerUtils.disableCapture();
+	}
+
 	@Test
-	public void throwIfFatalThrowsBubbling() {
+	void throwIfFatalThrowsAndLogsBubbling() {
+		TestLogger testLogger = new TestLogger(false);
+		LoggerUtils.enableCaptureWith(testLogger);
+
 		BubblingException expected = new BubblingException("expected to be logged");
 
 		assertThatExceptionOfType(BubblingException.class)
 				.isThrownBy(() -> Exceptions.throwIfFatal(expected))
 				.isSameAs(expected);
+
+		assertThat(testLogger.getErrContent())
+			.startsWith("[ WARN] throwIfFatal detected a fatal exception, which is thrown and logged below: - reactor.core.Exceptions$BubblingException: expected to be logged");
 	}
 
 	@Test
-	public void throwIfFatalThrowsErrorCallbackNotImplemented() {
+	void throwIfFatalThrowsAndLogsErrorCallbackNotImplemented() {
+		TestLogger testLogger = new TestLogger(false);
+		LoggerUtils.enableCaptureWith(testLogger);
+
 		ErrorCallbackNotImplemented expected = new ErrorCallbackNotImplemented(new IllegalStateException("expected to be logged"));
 
 		assertThatExceptionOfType(ErrorCallbackNotImplemented.class)
 				.isThrownBy(() -> Exceptions.throwIfFatal(expected))
 				.isSameAs(expected)
 				.withCause(expected.getCause());
+
+		assertThat(testLogger.getErrContent())
+			.startsWith("[ WARN] throwIfFatal detected a fatal exception, which is thrown and logged below: - reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException: expected to be logged");
 	}
 
 	@Test
-	void throwIfFatalWithJvmFatalErrors() {
-		VirtualMachineError fatal1 = new VirtualMachineError("expected to be logged") {};
-		ThreadDeath fatal2 = new ThreadDeath() {
-			@Override
-			public String getMessage() {
-				return "expected to be logged";
-			}
-		};
-		LinkageError fatal3 = new LinkageError("expected to be logged");
+	void throwIfFatalWithJvmFatalErrorsDoesThrowAndLog() {
+		TestLogger testLogger = new TestLogger(false);
+		LoggerUtils.enableCaptureWith(testLogger);
 
 		SoftAssertions.assertSoftly(softly -> {
 			softly.assertThatExceptionOfType(VirtualMachineError.class)
 				.as("VirtualMachineError")
-				.isThrownBy(() -> Exceptions.throwIfFatal(fatal1))
-				.isSameAs(fatal1);
+				.isThrownBy(() -> Exceptions.throwIfFatal(JVM_FATAL_VIRTUAL_MACHINE_ERROR))
+				.isSameAs(JVM_FATAL_VIRTUAL_MACHINE_ERROR);
 
 			softly.assertThatExceptionOfType(ThreadDeath.class)
 				.as("ThreadDeath")
-				.isThrownBy(() -> Exceptions.throwIfFatal(fatal2))
-				.isSameAs(fatal2);
+				.isThrownBy(() -> Exceptions.throwIfFatal(JVM_FATAL_THREAD_DEATH))
+				.isSameAs(JVM_FATAL_THREAD_DEATH);
 
 			softly.assertThatExceptionOfType(LinkageError.class)
 				.as("LinkageError")
-				.isThrownBy(() -> Exceptions.throwIfFatal(fatal3))
-				.isSameAs(fatal3);
+				.isThrownBy(() -> Exceptions.throwIfFatal(JVM_FATAL_LINKAGE_ERROR))
+				.isSameAs(JVM_FATAL_LINKAGE_ERROR);
+
+			softly.assertThat(testLogger.getErrContent())
+				.startsWith("[ WARN] throwIfFatal detected a jvm fatal exception, which is thrown and logged below: - custom VirtualMachineError: expected to be logged")
+				.contains("[ WARN] throwIfFatal detected a jvm fatal exception, which is thrown and logged below: - custom ThreadDeath: expected to be logged")
+				.contains("[ WARN] throwIfFatal detected a jvm fatal exception, which is thrown and logged below: - custom LinkageError: expected to be logged");
 		});
 	}
 
 	@Test
-	void throwIfJvmFatal() {
-		VirtualMachineError fatal1 = new VirtualMachineError("expected to be logged") {};
-		ThreadDeath fatal2 = new ThreadDeath() {
-			@Override
-			public String getMessage() {
-				return "expected to be logged";
-			}
-		};
-		LinkageError fatal3 = new LinkageError("expected to be logged");
+	void throwIfJvmFatalDoesThrowAndLog() {
+		TestLogger testLogger = new TestLogger(false);
+		LoggerUtils.enableCaptureWith(testLogger);
 
 		assertThatExceptionOfType(VirtualMachineError.class)
 				.as("VirtualMachineError")
-				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal1))
-				.isSameAs(fatal1);
+				.isThrownBy(() -> Exceptions.throwIfJvmFatal(JVM_FATAL_VIRTUAL_MACHINE_ERROR))
+				.isSameAs(JVM_FATAL_VIRTUAL_MACHINE_ERROR);
 
 		assertThatExceptionOfType(ThreadDeath.class)
 				.as("ThreadDeath")
-				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal2))
-				.isSameAs(fatal2);
+				.isThrownBy(() -> Exceptions.throwIfJvmFatal(JVM_FATAL_THREAD_DEATH))
+				.isSameAs(JVM_FATAL_THREAD_DEATH);
 
 		assertThatExceptionOfType(LinkageError.class)
 				.as("LinkageError")
-				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal3))
-				.isSameAs(fatal3);
-	}
+				.isThrownBy(() -> Exceptions.throwIfJvmFatal(JVM_FATAL_LINKAGE_ERROR))
+				.isSameAs(JVM_FATAL_LINKAGE_ERROR);
+
+		assertThat(testLogger.getErrContent())
+			.startsWith("[ WARN] throwIfJvmFatal detected a jvm fatal exception, which is thrown and logged below: - custom VirtualMachineError: expected to be logged")
+			.contains("[ WARN] throwIfJvmFatal detected a jvm fatal exception, which is thrown and logged below: - custom ThreadDeath: expected to be logged")
+			.contains("[ WARN] throwIfJvmFatal detected a jvm fatal exception, which is thrown and logged below: - custom LinkageError: expected to be logged");
+	};
 
 	@Test
-	void throwIfJvmFatalDoesntThrowOnSimplyFatalExceptions() {
+	void throwIfJvmFatalDoesntThrowNorLogsOnSimplyFatalExceptions() {
+		TestLogger testLogger = new TestLogger(false);
+		LoggerUtils.enableCaptureWith(testLogger);
+
 		SoftAssertions.assertSoftly(softly -> {
 			softly.assertThatCode(() -> Exceptions.throwIfJvmFatal(new BubblingException("not thrown")))
 				.doesNotThrowAnyException();
@@ -297,6 +341,8 @@ public class ExceptionsTest {
 			softly.assertThatCode(() -> Exceptions.throwIfJvmFatal(new ErrorCallbackNotImplemented(new RuntimeException("not thrown"))))
 				.doesNotThrowAnyException();
 		});
+
+		assertThat(testLogger.getErrContent()).isEmpty();
 	}
 
 	@Test

@@ -492,11 +492,11 @@ public abstract class Exceptions {
 			return;
 		}
 		if (isFatalButNotJvmFatal(t)) {
-			LOGGER.warn("throwIfFatal detected a fatal exception, throwing", t);
+			LOGGER.warn("throwIfFatal detected a fatal exception, which is thrown and logged below:", t);
 			throw (RuntimeException) t;
 		}
 		if (isJvmFatal(t)) {
-			LOGGER.warn("throwIfFatal detected a jvm fatal exception, throwing", t);
+			LOGGER.warn("throwIfFatal detected a jvm fatal exception, which is thrown and logged below:", t);
 			throw (Error) t;
 		}
 	}
@@ -514,7 +514,7 @@ public abstract class Exceptions {
 			return;
 		}
 		if (isJvmFatal(t)) {
-			LOGGER.warn("throwIfJvmFatal detected a fatal exception, throwing", t);
+			LOGGER.warn("throwIfJvmFatal detected a jvm fatal exception, which is thrown and logged below:", t);
 			assert t instanceof Error;
 			throw (Error) t;
 		}
