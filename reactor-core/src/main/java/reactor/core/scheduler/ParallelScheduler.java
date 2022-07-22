@@ -87,7 +87,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	@Override
 	public void start() {
 		SchedulerState b = null;
-		for (; ; ) {
+		for (;;) {
 			SchedulerState a = state;
 			if (a != null) {
 				if (a.executors != SchedulerState.SHUTDOWN) {
@@ -115,36 +115,44 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
 	@Override
 	public void dispose() {
-		SchedulerState s = STATE.getAndUpdate(this, old -> {
-			if (old == null || old.executors != SchedulerState.SHUTDOWN) {
-				return SchedulerState.terminated(old);
-			}
-			return old;
-		});
-		if (s != null && s.executors != SchedulerState.SHUTDOWN) {
-			for (ScheduledExecutorService exec : s.executors) {
-				exec.shutdownNow();
-			}
-		}
+        for (;;) {
+            SchedulerState previous = state;
+
+            if (previous != null && previous.executors == SchedulerState.SHUTDOWN) {
+                return;
+            }
+
+            if (STATE.compareAndSet(this, previous, SchedulerState.terminated(previous))) {
+                if (previous != null) {
+                    for (ScheduledExecutorService executor : previous.executors) {
+                        executor.shutdownNow();
+                    }
+                }
+                return;
+            }
+        }
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			SchedulerState previous = STATE.getAndUpdate(this, old -> {
-				if (old == null || old.executors != SchedulerState.SHUTDOWN) {
-					return SchedulerState.terminated(old);
-				}
-				return old;
-			});
-			if (previous == null) {
-				return Mono.empty();
-			} else if (previous.executors != SchedulerState.SHUTDOWN) {
-				for (ScheduledExecutorService executor : previous.executors) {
-					executor.shutdown();
-				}
-			}
-			return previous.onDispose;
+            for (;;) {
+                SchedulerState previous = state;
+
+                if (previous != null && previous.executors == SchedulerState.SHUTDOWN) {
+                    return previous.onDispose;
+                }
+
+                SchedulerState next = SchedulerState.terminated(previous);
+                if (STATE.compareAndSet(this, previous, next)) {
+                    if (previous != null) {
+                        for (ScheduledExecutorService executor : previous.executors) {
+                            executor.shutdown();
+                        }
+                    }
+                }
+                return next.onDispose;
+            }
 		}).timeout(gracePeriod);
 	}
 

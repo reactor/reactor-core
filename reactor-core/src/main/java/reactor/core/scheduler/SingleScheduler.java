@@ -30,6 +30,8 @@ import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
 
+import static reactor.core.scheduler.SchedulerState.TERMINATED;
+
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
  * same-thread work (like an event dispatch thread). This scheduler is time-capable (can
@@ -68,7 +70,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	public boolean isDisposed() {
 		// we only consider disposed as actually shutdown
 		SchedulerState current = state;
-		return current != null && current.executor == SchedulerState.TERMINATED;
+		return current != null && current.executor == TERMINATED;
 	}
 
 	@Override
@@ -78,7 +80,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		for (; ; ) {
 			SchedulerState a = state;
 			if (a != null) {
-				if (a.executor != SchedulerState.TERMINATED) {
+				if (a.executor != TERMINATED) {
 					if (b != null) {
 						b.executor.shutdownNow();
 					}
@@ -100,32 +102,40 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public void dispose() {
-		SchedulerState a = STATE.getAndUpdate(this, old -> {
-			if (old == null || old.executor != SchedulerState.TERMINATED) {
-				return SchedulerState.terminated(old);
+		for (;;) {
+			SchedulerState previous = state;
+
+			if (previous != null && previous.executor == TERMINATED) {
+				return;
 			}
-			return old;
-		});
-		if (a != null && a.executor != SchedulerState.TERMINATED) {
-			a.executor.shutdownNow();
+
+			if (STATE.compareAndSet(this, previous, SchedulerState.terminated(previous))) {
+				if (previous != null) {
+					previous.executor.shutdownNow();
+				}
+				return;
+			}
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			SchedulerState previous = STATE.getAndUpdate(this, old -> {
-				if (old == null || old.executor != SchedulerState.TERMINATED) {
-					return SchedulerState.terminated(old);
+			for (;;) {
+				SchedulerState previous = state;
+
+				if (previous != null && previous.executor == TERMINATED) {
+					return previous.onDispose;
 				}
-				return old;
-			});
-			if (previous == null) {
-				return Mono.empty();
-			} else if (previous.executor != SchedulerState.TERMINATED) {
-				previous.executor.shutdown();
+
+				SchedulerState next = SchedulerState.terminated(previous);
+				if (STATE.compareAndSet(this, previous, next)) {
+					if (previous != null) {
+						previous.executor.shutdown();
+					}
+					return next.onDispose;
+				}
 			}
-			return previous.onDispose;
 		}).timeout(gracePeriod);
 	}
 

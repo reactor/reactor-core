@@ -194,18 +194,21 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void dispose() {
-		SchedulerState currentState = state;
-		final BoundedState[] toAwait = currentState.boundedServicesBeforeShutdown.dispose(true);
+		for (;;) {
+			SchedulerState previous = state;
 
-		SchedulerState previous = STATE.getAndUpdate(this, old -> {
-			if (old.boundedServices != SHUTDOWN && old.boundedServices != SHUTTING_DOWN) {
-				return SchedulerState.terminated(old, toAwait);
+			if (previous.boundedServices == SHUTDOWN || previous.boundedServices == SHUTTING_DOWN) {
+				return;
 			}
-			return old;
-		});
 
-		if (previous.evictor != null) {
-			previous.evictor.shutdownNow();
+			final BoundedState[] toAwait = previous.boundedServicesBeforeShutdown.dispose(true);
+			SchedulerState next = SchedulerState.terminated(previous, toAwait);
+			if (previous.evictor != null) {
+				previous.evictor.shutdownNow();
+			}
+			if (STATE.compareAndSet(this, previous, next)) {
+				return;
+			}
 		}
 	}
 

@@ -38,6 +38,8 @@ import reactor.core.publisher.Sinks;
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
+import static reactor.core.scheduler.SchedulerState.TERMINATED;
+
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
  * Runnables for async operators. This scheduler is time-capable (can schedule with a
@@ -104,8 +106,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	@Override
 	public void start() {
 		STATE.compareAndSet(this, null,
-				SchedulerState.fresh(Schedulers.decorateExecutorService(this,
-				original)));
+				SchedulerState.fresh(Schedulers.decorateExecutorService(this, original)));
 	}
 
 	@Override
@@ -116,32 +117,40 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void dispose() {
-		SchedulerState a = STATE.getAndUpdate(this, old -> {
-			if (old == null || old.executor != SchedulerState.TERMINATED) {
-				return SchedulerState.terminated(old);
+		for (;;) {
+			SchedulerState previous = state;
+
+			if (previous != null && previous.executor == TERMINATED) {
+				return;
 			}
-			return old;
-		});
-		if (a != null && a.executor != SchedulerState.TERMINATED) {
-			a.executor.shutdownNow();
+
+			if (STATE.compareAndSet(this, previous, SchedulerState.terminated(previous))) {
+				if (previous != null) {
+					previous.executor.shutdownNow();
+				}
+				return;
+			}
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			SchedulerState previous = STATE.getAndUpdate(this, old -> {
-				if (old == null || old.executor != SchedulerState.TERMINATED) {
-					return SchedulerState.terminated(old);
+			for (;;) {
+				SchedulerState previous = state;
+
+				if (previous != null && previous.executor == TERMINATED) {
+					return previous.onDispose;
 				}
-				return old;
-			});
-			if (previous == null) {
-				return Mono.empty();
-			} else if (previous.executor != SchedulerState.TERMINATED) {
-				previous.executor.shutdown();
+
+				SchedulerState next = SchedulerState.terminated(previous);
+				if (STATE.compareAndSet(this, previous, next)) {
+					if (previous != null) {
+						previous.executor.shutdown();
+					}
+					return next.onDispose;
+				}
 			}
-			return previous.onDispose;
 		}).timeout(gracePeriod);
 	}
 
