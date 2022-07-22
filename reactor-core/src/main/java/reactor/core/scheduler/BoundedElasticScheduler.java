@@ -121,7 +121,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		this.ttlMillis = ttlMillis;
 
 		// initially disposed, evictor is also null, bounded services shutdown
-		this.state = SchedulerState.terminated(null, BoundedServices.ALL_SHUTDOWN);
+		STATE.lazySet(this, SchedulerState.terminated(null, BoundedServices.ALL_SHUTDOWN));
 	}
 
 	/**
@@ -243,7 +243,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 					SchedulerState terminated = terminated(terminating, toAwait);
 
-					STATE.set(this, terminated);
+					STATE.lazySet(this, terminated);
 					return Mono.whenDelayError(
 							terminated.boundedServicesOnDispose,
 							terminated.evictorOnDispose
