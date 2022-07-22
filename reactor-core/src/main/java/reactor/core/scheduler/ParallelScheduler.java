@@ -80,7 +80,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
 	@Override
 	public boolean isDisposed() {
-		SchedulerState current = STATE.get(this);
+		SchedulerState current = state;
 		return current.executors == SchedulerState.SHUTDOWN;
 	}
 
@@ -88,7 +88,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	public void start() {
 		SchedulerState b = null;
 		for (; ; ) {
-			SchedulerState a = STATE.get(this);
+			SchedulerState a = state;
 			if (a != null) {
 				if (a.executors != SchedulerState.SHUTDOWN) {
 					if (b != null) {
@@ -149,10 +149,10 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	}
 
 	ScheduledExecutorService pick() {
-		SchedulerState a = STATE.get(this);
+		SchedulerState a = state;
 		if (a == null) {
 			start();
-			a = STATE.get(this);
+			a = state;
 			if (a == null) {
 				throw new IllegalStateException("executors uninitialized after implicit start()");
 			}
@@ -216,7 +216,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     @Override
     public Stream<? extends Scannable> inners() {
-        return Stream.of(STATE.get(this).executors)
+        return Stream.of(state.executors)
                 .map(exec -> key -> Schedulers.scanExecutor(exec, key));
     }
 

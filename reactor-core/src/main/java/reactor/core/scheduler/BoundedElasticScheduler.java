@@ -149,14 +149,14 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public boolean isDisposed() {
-		return STATE.get(this).boundedServices == SHUTDOWN;
+		return state.boundedServices == SHUTDOWN;
 	}
 
 	@Override
 	public void start() {
 		SchedulerState b = null;
 		for (;;) {
-			SchedulerState a = STATE.get(this);
+			SchedulerState a = state;
 
 			if (a.boundedServices == SHUTTING_DOWN) {
 				// keep spinning until previous shuts down
@@ -194,7 +194,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void dispose() {
-		SchedulerState currentState = STATE.get(this);
+		SchedulerState currentState = state;
 		final BoundedState[] toAwait = currentState.boundedServicesBeforeShutdown.dispose(true);
 
 		SchedulerState previous = STATE.getAndUpdate(this, old -> {
@@ -213,7 +213,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
 			for (;;) {
-				SchedulerState currentState = STATE.get(this);
+				SchedulerState currentState = state;
 
 				if (currentState.boundedServices == SHUTTING_DOWN) {
 					// A rival thread is performing the shutdown, keep spinning.
@@ -253,14 +253,14 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	@Override
 	public Disposable schedule(Runnable task) {
 		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
-		BoundedState picked = STATE.get(this).boundedServices.pick();
+		BoundedState picked = state.boundedServices.pick();
 		return Schedulers.directSchedule(picked.executor, task, picked, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
-		final BoundedState picked = STATE.get(this).boundedServices.pick();
+		final BoundedState picked = state.boundedServices.pick();
 		return Schedulers.directSchedule(picked.executor, task, picked, delay, unit);
 	}
 
@@ -269,7 +269,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		final BoundedState picked = STATE.get(this).boundedServices.pick();
+		final BoundedState picked = state.boundedServices.pick();
 		Disposable scheduledTask = Schedulers.directSchedulePeriodically(picked.executor,
 				task,
 				initialDelay,
@@ -303,21 +303,21 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * @return a best effort total count of the spinned up executors
 	 */
 	int estimateSize() {
-		return STATE.get(this).boundedServices.get();
+		return state.boundedServices.get();
 	}
 
 	/**
 	 * @return a best effort total count of the busy executors
 	 */
 	int estimateBusy() {
-		return STATE.get(this).boundedServices.busyArray.length;
+		return state.boundedServices.busyArray.length;
 	}
 
 	/**
 	 * @return a best effort total count of the idle executors
 	 */
 	int estimateIdle() {
-		return STATE.get(this).boundedServices.idleQueue.size();
+		return state.boundedServices.idleQueue.size();
 	}
 
 	/**
@@ -326,7 +326,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * @return the total task capacity, or {@literal -1} if any backing executor's task queue size cannot be instrumented
 	 */
 	int estimateRemainingTaskCapacity() {
-		BoundedState[] busyArray = STATE.get(this).boundedServices.busyArray;
+		BoundedState[] busyArray = state.boundedServices.busyArray;
 		int totalTaskCapacity = maxTaskQueuedPerThread * maxThreads;
 		for (BoundedState state : busyArray) {
 			int stateQueueSize = state.estimateQueueSize();
@@ -352,14 +352,14 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public Stream<? extends Scannable> inners() {
-		BoundedServices services = STATE.get(this).boundedServices;
+		BoundedServices services = state.boundedServices;
 		return Stream.concat(Stream.of(services.busyArray), services.idleQueue.stream())
 		             .filter(obj -> obj != null && obj != CREATING);
 	}
 
 	@Override
 	public Worker createWorker() {
-		BoundedState picked = STATE.get(this).boundedServices.pick();
+		BoundedState picked = state.boundedServices.pick();
 		ExecutorServiceWorker worker = new ExecutorServiceWorker(picked.executor);
 		worker.disposables.add(picked); //this ensures the BoundedState will be released when worker is disposed
 		return worker;

@@ -67,7 +67,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	@Override
 	public boolean isDisposed() {
 		// we only consider disposed as actually shutdown
-		SchedulerState current = STATE.get(this);
+		SchedulerState current = state;
 		return current != null && current.executor == SchedulerState.TERMINATED;
 	}
 
@@ -76,7 +76,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		//TODO SingleTimedScheduler didn't implement start, check if any particular reason?
 		SchedulerState b = null;
 		for (; ; ) {
-			SchedulerState a = STATE.get(this);
+			SchedulerState a = state;
 			if (a != null) {
 				if (a.executor != SchedulerState.TERMINATED) {
 					if (b != null) {
@@ -131,14 +131,14 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		ScheduledExecutorService executor = STATE.get(this).executor;
+		ScheduledExecutorService executor = state.executor;
 		return Schedulers.directSchedule(executor, task, null, 0L,
 				TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.directSchedule(STATE.get(this).executor, task, null, delay, unit);
+		return Schedulers.directSchedule(state.executor, task, null, delay, unit);
 	}
 
 	@Override
@@ -146,7 +146,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		return Schedulers.directSchedulePeriodically(STATE.get(this).executor,
+		return Schedulers.directSchedulePeriodically(state.executor,
 				task,
 				initialDelay,
 				period,
@@ -169,11 +169,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (key == Attr.NAME) return this.toString();
 		if (key == Attr.CAPACITY || key == Attr.BUFFERED) return 1; //BUFFERED: number of workers doesn't vary
 
-		return Schedulers.scanExecutor(STATE.get(this).executor, key);
+		return Schedulers.scanExecutor(state.executor, key);
 	}
 
 	@Override
 	public Worker createWorker() {
-		return new ExecutorServiceWorker(STATE.get(this).executor);
+		return new ExecutorServiceWorker(state.executor);
 	}
 }

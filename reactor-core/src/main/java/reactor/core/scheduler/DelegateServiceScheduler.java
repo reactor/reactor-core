@@ -63,10 +63,10 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	}
 
 	ScheduledExecutorService getOrCreate() {
-		SchedulerState s = STATE.get(this);
+		SchedulerState s = state;
 		if (s == null) {
 			start();
-			s = STATE.get(this);
+			s = state;
 			if (s == null) {
 				throw new IllegalStateException("executor is null after implicit start()");
 			}
@@ -110,7 +110,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	@Override
 	public boolean isDisposed() {
-		SchedulerState current = STATE.get(this);
+		SchedulerState current = state;
 		return current != null && current.executor == SchedulerState.TERMINATED;
 	}
 
@@ -158,7 +158,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return toString();
 
-		SchedulerState s = STATE.get(this);
+		SchedulerState s = state;
 		if (s != null) {
 			return Schedulers.scanExecutor(s.executor, key);
 		}
