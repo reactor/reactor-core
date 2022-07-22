@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -1541,6 +1542,83 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 			scheduler.dispose();
 		}
+		raceScheduler.dispose();
+	}
+
+	// This test should belong in SchedulersStressTest in the JCStress suite, however currently the memory consumption
+	// is too high in the existing setup. Please consult the JCStress test class comment for details.
+	@Test
+	@Tag("slow")
+	void schedulerDisposeGracefullyConcurrentBothTimeout() {
+		Scheduler raceScheduler = Schedulers.newBoundedElastic(10, 20_000, "RaceScheduler");
+
+		for (int j = 0; j < 10_000; j++) {
+			BoundedElasticScheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 5);
+			scheduler.start();
+			// Schedule a task that disallows graceful closure until the race is finished
+			// to make sure that racing disposals fail while waiting.
+			CountDownLatch arbiterLatch = new CountDownLatch(1);
+			scheduler.schedule(() -> awaitArbiter(arbiterLatch));
+
+			RaceTestUtils.race(10, raceScheduler,
+					() -> checkDisposeGracefullyTimesOut(scheduler),
+					() -> checkDisposeGracefullyTimesOut(scheduler)
+			);
+
+			arbiterLatch.countDown();
+			assertThat(schedulerDisposed(scheduler)).isTrue();
+		}
+		raceScheduler.dispose();
+	}
+
+	private static void awaitArbiter(CountDownLatch arbiterLatch) {
+		while (true) {
+			try {
+				if (arbiterLatch.await(40, TimeUnit.MILLISECONDS)) {
+					return;
+				}
+			}
+			catch (InterruptedException ignored) {
+			}
+		}
+	}
+
+	private static void checkDisposeGracefullyTimesOut(Scheduler scheduler) {
+		long start = System.nanoTime();
+		try {
+			scheduler.disposeGracefully(Duration.ofMillis(40)).block();
+		} catch (Exception e) {
+			long duration = System.nanoTime() - start;
+			// Validate that the wait took non-zero time.
+			if ((e.getCause() instanceof TimeoutException) && Duration.ofNanos(duration).toMillis() > 30) {
+				return;
+			}
+		}
+		throw new RuntimeException("disposeGracefully did not time out as expected");
+	}
+
+	private static boolean schedulerDisposed(BoundedElasticScheduler scheduler) {
+		try {
+			scheduler.schedule(() -> {});
+		} catch (RejectedExecutionException e) {
+			scheduler.disposeGracefully(Duration.ofMillis(50)).block();
+			return scheduler.isDisposed() && isTerminated(scheduler);
+		}
+		return false;
+	}
+
+	private static boolean isTerminated(BoundedElasticScheduler scheduler) {
+		for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServices.busyArray) {
+			if (!bs.executor.isTerminated()) {
+				return false;
+			}
+		}
+		for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServicesBeforeShutdown.busyArray) {
+			if (!bs.executor.isTerminated()) {
+				return false;
+			}
+		}
+		return scheduler.state.boundedServices.idleQueue.isEmpty();
 	}
 
 	private static void restartScheduler(Scheduler scheduler) {

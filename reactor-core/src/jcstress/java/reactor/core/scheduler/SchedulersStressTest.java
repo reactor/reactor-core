@@ -109,39 +109,6 @@ public abstract class SchedulersStressTest {
 		}
 	}
 
-	// The BoundedElasticScheduler stress test never stops due to JCStress not surfacing OOM errors in spawned JVMs.
-	// Perhaps tuning the memory consumption, combined with allowing the jcstress gradle plugin to pass heapPerFork
-	// argument to JCStress runtime will make it feasible to run this test.
-	// For now, this test resides in BoundedElasticSchedulerTest#testSchedulerStartedAfterConcurrentRestart.
-	@JCStressTest
-	@Outcome(id = {"true"}, expect = Expect.ACCEPTABLE, desc = "Task scheduled after racing restart")
-	@State
-	public static class BoundedElasticSchedulerStartDisposeStressTest {
-
-		final BoundedElasticScheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 5);
-		{
-			scheduler.start();
-		}
-
-		@Actor
-		public void restart1() {
-			restart(scheduler);
-		}
-
-		@Actor
-		public void restart2() {
-			restart(scheduler);
-		}
-
-		@Arbiter
-		public void arbiter(Z_Result r) {
-			// At this stage, at least one actor called scheduler.start(),
-			// so we should be able to execute a task.
-			r.r1 = canScheduleTask(scheduler);
-			scheduler.dispose();
-		}
-	}
-
 	@JCStressTest
 	@Outcome(id = {"true, true, true"}, expect = Expect.ACCEPTABLE,
 			desc = "Both time out, task gets rejected, scheduler disposed eventually")
@@ -229,55 +196,90 @@ public abstract class SchedulersStressTest {
 		}
 	}
 
-	@JCStressTest
-	@Outcome(id = {"true, true, true"}, expect = Expect.ACCEPTABLE,
-			desc = "Both time out, task gets rejected, scheduler disposed eventually")
-	@State
-	public static class BoundedElasticSchedulerDisposeGracefullyStressTest
-			extends RacingDisposeGracefullyStressTest<BoundedElasticScheduler> {
+	// The BoundedElasticScheduler stress tests never stop due to JCStress not surfacing OOM errors in spawned JVMs.
+	// Perhaps tuning the memory consumption, combined with allowing the jcstress gradle plugin to pass heapPerFork
+	// argument to JCStress runtime will make it feasible to run them.
+	// For now, these tests reside in BoundedElasticSchedulerTest as
+	// schedulerDisposeGracefullyConcurrentBothTimeout and schedulerStartedAfterConcurrentRestart.
 
-		@Override
-		BoundedElasticScheduler createScheduler() {
-			return new BoundedElasticScheduler(4, 4, Thread::new, 5);
-		}
+//	@JCStressTest
+//	@Outcome(id = {"true"}, expect = Expect.ACCEPTABLE, desc = "Task scheduled after racing restart")
+//	@State
+//	public static class BoundedElasticSchedulerStartDisposeStressTest {
+//
+//		final BoundedElasticScheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 5);
+//		{
+//			scheduler.start();
+//		}
+//
+//		@Actor
+//		public void restart1() {
+//			restart(scheduler);
+//		}
+//
+//		@Actor
+//		public void restart2() {
+//			restart(scheduler);
+//		}
+//
+//		@Arbiter
+//		public void arbiter(Z_Result r) {
+//			// At this stage, at least one actor called scheduler.start(),
+//			// so we should be able to execute a task.
+//			r.r1 = canScheduleTask(scheduler);
+//			scheduler.dispose();
+//		}
+//	}
 
-		@Override
-		boolean isTerminated() {
-			for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServices.busyArray) {
-				if (!bs.executor.isTerminated()) {
-					return false;
-				}
-			}
-			for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServicesBeforeShutdown.busyArray) {
-				if (!bs.executor.isTerminated()) {
-					return false;
-				}
-			}
-			return scheduler.state.boundedServices.idleQueue.isEmpty();
-		}
-
-		{
-			scheduler.start();
-			// Schedule a task that disallows graceful closure until the arbiter kicks in
-			// to make sure that actors fail while waiting.
-			scheduler.schedule(this::awaitArbiter);
-		}
-
-		@Actor
-		public void disposeGracefully1(ZZZ_Result r) {
-			r.r1 = checkDisposeGracefullyTimesOut();
-		}
-
-		@Actor
-		public void disposeGracefully2(ZZZ_Result r) {
-			r.r2 = checkDisposeGracefullyTimesOut();
-		}
-
-		@Arbiter
-		public void arbiter(ZZZ_Result r) {
-			// Release the task blocking graceful closure.
-			arbiterStarted();
-			r.r3 = validateSchedulerDisposed();
-		}
-	}
+//	@JCStressTest
+//	@Outcome(id = {"true, true, true"}, expect = Expect.ACCEPTABLE,
+//			desc = "Both time out, task gets rejected, scheduler disposed eventually")
+//	@State
+//	public static class BoundedElasticSchedulerDisposeGracefullyStressTest
+//			extends RacingDisposeGracefullyStressTest<BoundedElasticScheduler> {
+//
+//		@Override
+//		BoundedElasticScheduler createScheduler() {
+//			return new BoundedElasticScheduler(4, 4, Thread::new, 5);
+//		}
+//
+//		@Override
+//		boolean isTerminated() {
+//			for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServices.busyArray) {
+//				if (!bs.executor.isTerminated()) {
+//					return false;
+//				}
+//			}
+//			for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServicesBeforeShutdown.busyArray) {
+//				if (!bs.executor.isTerminated()) {
+//					return false;
+//				}
+//			}
+//			return scheduler.state.boundedServices.idleQueue.isEmpty();
+//		}
+//
+//		{
+//			scheduler.start();
+//			// Schedule a task that disallows graceful closure until the arbiter kicks in
+//			// to make sure that actors fail while waiting.
+//			scheduler.schedule(this::awaitArbiter);
+//		}
+//
+//		@Actor
+//		public void disposeGracefully1(ZZZ_Result r) {
+//			r.r1 = checkDisposeGracefullyTimesOut();
+//		}
+//
+//		@Actor
+//		public void disposeGracefully2(ZZZ_Result r) {
+//			r.r2 = checkDisposeGracefullyTimesOut();
+//		}
+//
+//		@Arbiter
+//		public void arbiter(ZZZ_Result r) {
+//			// Release the task blocking graceful closure.
+//			arbiterStarted();
+//			r.r3 = validateSchedulerDisposed();
+//		}
+//	}
 }
