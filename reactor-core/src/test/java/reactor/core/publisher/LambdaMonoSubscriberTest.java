@@ -195,7 +195,7 @@ public class LambdaMonoSubscriberTest {
 			.contains("IllegalArgumentException");
 
 		assertThat(testSubscription.isCancelled).as("subscription isCancelled")
-			.isFalse();
+			.isTrue();
 	}
 
 	@Test
