@@ -27,7 +27,6 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import reactor.TestLoggerExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.util.LoggerUtils;
 import reactor.test.util.RaceTestUtils;
