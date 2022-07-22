@@ -107,16 +107,20 @@ class ReactorContextAccessorTest {
 
 	@Test
 	void readValueWhenKeyPresent() {
+		ReactorContextAccessor test = new ReactorContextAccessor();
 		String expectedValue = "A";
 		ContextView source = Context.of(1, expectedValue, 2, "B");
 
-		assertThat(new ReactorContextAccessor().readValue(source, 1)).isSameAs(expectedValue);
+		String readValue = test.readValue(source, 1);
+		assertThat(readValue).isSameAs(expectedValue);
 	}
 
 	@Test
 	void readValueReturnsNullWhenKeyAbsent() {
+		ReactorContextAccessor test = new ReactorContextAccessor();
 		ContextView source = Context.of(1, "A");
 
-		assertThat(new ReactorContextAccessor().readValue(source, 2)).isNull();
+		String readValue = test.readValue(source, 2);
+		assertThat(readValue).isNull();
 	}
 }
