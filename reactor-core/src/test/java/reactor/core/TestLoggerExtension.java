@@ -44,12 +44,10 @@ import reactor.util.annotation.Nullable;
 public class TestLoggerExtension implements ParameterResolver, AfterEachCallback, BeforeEachCallback {
 
 	/**
-	 * Set up a default {@link TestLoggerExtension}, unless further tuned by {@link WithThreadName}
-	 * and/or @{@link Redirect} annotations.
+	 * Set up a default {@link TestLoggerExtension}, unless @{@link Redirect} annotation is also present.
 	 * By default loggers will route the log messages to both the original logger and the injected
-	 * {@link TestLogger} (without a thread name).
+	 * {@link TestLogger}, and in the latter there won't be automatic inclusion of thread names.
 	 *
-	 * @see WithThreadName
 	 * @see Redirect
 	 */
 	@Retention(RetentionPolicy.RUNTIME)
@@ -58,21 +56,8 @@ public class TestLoggerExtension implements ParameterResolver, AfterEachCallback
 	public @interface Capture { }
 
 	/**
-	 * Set up a {@link TestLoggerExtension} where injected {@link TestLogger} includes the thread names.
-	 * If used in isolation, routes log messages to both original logger and injected {@link TestLogger}.
-	 * If used along {@link Redirect}, only influences the thread name aspect.
-	 */
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target({ ElementType.TYPE, ElementType.METHOD })
-	@ExtendWith(TestLoggerExtension.class)
-	public @interface WithThreadName { }
-
-	/**
 	 * Set up a {@link TestLoggerExtension} that routes log messages only to the injected {@link TestLogger},
-	 * suppressing the logs from the original logger.
-	 * Unless {@link WithThreadName} is also used, the {@link TestLogger} doesn't include thread names in messages.
-	 *
-	 * @see WithThreadName
+	 * suppressing the logs from the original logger. Messages don't include thread names.
 	 */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ ElementType.TYPE, ElementType.METHOD })
@@ -84,9 +69,8 @@ public class TestLoggerExtension implements ParameterResolver, AfterEachCallback
 	@Override
 	public void beforeEach(ExtensionContext context) throws Exception {
 		if (context.getElement().isPresent()) {
-			boolean withThreadName = context.getElement().get().isAnnotationPresent(WithThreadName.class);
 			boolean suppressOriginal = context.getElement().get().isAnnotationPresent(Redirect.class);
-			this.logger = new TestLogger(withThreadName);
+			this.logger = new TestLogger(false);
 			LoggerUtils.enableCaptureWith(logger, !suppressOriginal);
 		}
 	}
