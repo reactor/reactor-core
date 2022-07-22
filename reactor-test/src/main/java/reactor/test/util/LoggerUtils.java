@@ -35,6 +35,7 @@ public final class LoggerUtils {
 
 	@Nullable
 	private static Logger testLogger;
+	private static boolean redirectToOriginal = true;
 
 	private LoggerUtils() {
 	}
@@ -80,6 +81,20 @@ public final class LoggerUtils {
 		if (LoggerUtils.testLogger != null) {
 			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call disableCapture()");
 		}
+		LoggerUtils.redirectToOriginal = true;
+		LoggerUtils.testLogger = testLogger;
+	}
+
+	/**
+	 * Set the logger used for capturing.
+	 *
+	 * @throws IllegalStateException if a previous logger has been set but not cleared via {@link #disableCapture()}
+	 */
+	public static void enableCaptureWith(Logger testLogger, boolean redirectToOriginal) {
+		if (LoggerUtils.testLogger != null) {
+			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call disableCapture()");
+		}
+		LoggerUtils.redirectToOriginal = redirectToOriginal;
 		LoggerUtils.testLogger = testLogger;
 	}
 
@@ -87,6 +102,7 @@ public final class LoggerUtils {
 	 * Disable capturing, forgetting about the logger set via {@link #enableCaptureWith(Logger)}.
 	 */
 	public static void disableCapture() {
+		LoggerUtils.redirectToOriginal = true;
 		LoggerUtils.testLogger = null;
 	}
 
@@ -158,7 +174,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.trace(msg);
 			}
-			delegate.trace(msg);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.trace(msg);
+			}
 		}
 
 		@Override
@@ -167,7 +185,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.trace(format, arguments);
 			}
-			delegate.trace(format, arguments);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.trace(format, arguments);
+			}
 		}
 
 		@Override
@@ -176,7 +196,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.trace(msg, t);
 			}
-			delegate.trace(msg, t);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.trace(msg, t);
+			}
 		}
 
 		@Override
@@ -191,7 +213,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.debug(msg);
 			}
-			delegate.debug(msg);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.debug(msg);
+			}
 		}
 
 		@Override
@@ -200,7 +224,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.debug(format, arguments);
 			}
-			delegate.debug(format, arguments);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.debug(format, arguments);
+			}
 		}
 
 		@Override
@@ -209,7 +235,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.debug(msg, t);
 			}
-			delegate.debug(msg, t);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.debug(msg, t);
+			}
 		}
 
 		@Override
@@ -224,7 +252,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.info(msg);
 			}
-			delegate.info(msg);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.info(msg);
+			}
 		}
 
 		@Override
@@ -233,7 +263,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.info(format, arguments);
 			}
-			delegate.info(format, arguments);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.info(format, arguments);
+			}
 		}
 
 		@Override
@@ -242,7 +274,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.info(msg, t);
 			}
-			delegate.info(msg, t);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.info(msg, t);
+			}
 		}
 
 		@Override
@@ -257,7 +291,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.warn(msg);
 			}
-			delegate.warn(msg);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.warn(msg);
+			}
 		}
 
 		@Override
@@ -266,7 +302,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.warn(format, arguments);
 			}
-			delegate.warn(format, arguments);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.warn(format, arguments);
+			}
 		}
 
 		@Override
@@ -275,7 +313,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.warn(msg, t);
 			}
-			delegate.warn(msg, t);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.warn(msg, t);
+			}
 		}
 
 		@Override
@@ -290,7 +330,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.error(msg);
 			}
-			delegate.error(msg);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.error(msg);
+			}
 		}
 
 		@Override
@@ -299,7 +341,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.error(format, arguments);
 			}
-			delegate.error(format, arguments);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.error(format, arguments);
+			}
 		}
 
 		@Override
@@ -308,7 +352,9 @@ public final class LoggerUtils {
 			if (logger != null) {
 				logger.error(msg, t);
 			}
-			delegate.error(msg, t);
+			if (LoggerUtils.redirectToOriginal) {
+				delegate.error(msg, t);
+			}
 		}
 	}
 }
