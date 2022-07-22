@@ -45,6 +45,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.Operators.CancelledSubscription;
 import reactor.core.publisher.Operators.DeferredSubscription;
 import reactor.core.publisher.Operators.EmptySubscription;
@@ -977,20 +978,14 @@ public class OperatorsTest {
 	}
 
 	@Test
-	public void onDiscardCallbackErrorsLog() {
+	@TestLoggerExtension.Redirect
+	void onDiscardCallbackErrorsLog(TestLogger testLogger) {
 		Context context = Operators.enableOnDiscard(Context.empty(), t -> {
 			throw new RuntimeException("Boom");
 		});
 
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			Operators.onDiscard("Foo", context);
-			assertThat(testLogger.getErrContent()).contains("Error in discard hook - java.lang.RuntimeException: Boom");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		Operators.onDiscard("Foo", context);
+		assertThat(testLogger.getErrContent()).contains("Error in discard hook - java.lang.RuntimeException: Boom");
 	}
 	
 	@Test

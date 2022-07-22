@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 import reactor.util.context.Context;
@@ -176,56 +177,44 @@ public class LambdaMonoSubscriberTest {
 	}
 
 	@Test
-	public void onNextConsumerExceptionNonFatalTriggersCancellation() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
-					value -> { throw new IllegalArgumentException(); },
-					null, //no errorConsumer so that we use onErrorDropped
-					() -> { }, null);
+	@TestLoggerExtension.Redirect
+	void onNextConsumerExceptionNonFatalTriggersCancellation(TestLogger testLogger) {
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
+			value -> { throw new IllegalArgumentException(); },
+			null, //no errorConsumer so that we use onErrorDropped
+			() -> { }, null);
 
-			TestSubscription testSubscription = new TestSubscription();
-			tested.onSubscribe(testSubscription);
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
 
-			//as Mono is single-value, it cancels early on onNext. this leads to an exception
-			//during onNext to be bubbled up as a BubbledException, not propagated through onNext
-			tested.onNext("foo");
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("IllegalArgumentException");
+		//as Mono is single-value, it cancels early on onNext. this leads to an exception
+		//during onNext to be bubbled up as a BubbledException, not propagated through onNext
+		tested.onNext("foo");
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("IllegalArgumentException");
 
-			assertThat(testSubscription.isCancelled).as("subscription isCancelled")
-			                                        .isTrue();
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled")
+			.isFalse();
 	}
 
 	@Test
-	public void onNextConsumerFatalDoesntTriggerCancellation() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
-					value -> { throw new OutOfMemoryError(); },
-					null, //no errorConsumer so that we use onErrorDropped
-					() -> { }, null);
+	@TestLoggerExtension.Redirect
+	void onNextConsumerFatalDoesntTriggerCancellation(TestLogger testLogger) {
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
+			value -> { throw new OutOfMemoryError(); },
+			null, //no errorConsumer so that we use onErrorDropped
+			() -> { }, null);
 
-			TestSubscription testSubscription = new TestSubscription();
-			tested.onSubscribe(testSubscription);
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
 
-			//the error is expected to be thrown as it is fatal, so it doesn't go through onErrorDropped
-			assertThatExceptionOfType(OutOfMemoryError.class).isThrownBy(() -> tested.onNext("foo"));
-			Assertions.assertThat(testLogger.getErrContent()).isEmpty();
+		//the error is expected to be thrown as it is fatal, so it doesn't go through onErrorDropped
+		assertThatExceptionOfType(OutOfMemoryError.class).isThrownBy(() -> tested.onNext("foo"));
+		Assertions.assertThat(testLogger.getErrContent()).isEmpty();
 
-			assertThat(testSubscription.isCancelled).as("subscription isCancelled")
-			                                        .isFalse();
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled")
+			.isFalse();
 	}
 
 	@Test
@@ -276,22 +265,16 @@ public class LambdaMonoSubscriberTest {
 	}
 
 	@Test
-	public void noErrorHookThrowsCallbackNotImplemented() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			RuntimeException boom = new IllegalArgumentException("boom");
-			Mono.error(boom)
-			    .subscribe(v -> {
-			    });
-			assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains(
-					          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+	@TestLoggerExtension.Redirect
+	void noErrorHookThrowsCallbackNotImplemented(TestLogger testLogger) {
+		RuntimeException boom = new IllegalArgumentException("boom");
+		Mono.error(boom)
+			.subscribe(v -> {
+			});
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains(
+				"reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
 	}
 
 	@Test

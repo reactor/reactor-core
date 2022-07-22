@@ -24,6 +24,7 @@ import org.assertj.core.api.Assertions;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
@@ -165,22 +166,16 @@ public class MonoPeekTest {
 	}
 
 	@Test
-	public void testErrorWithDoOnSuccess() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			Mono.error(new NullPointerException("boom"))
-			    .doOnSuccess(aValue -> {
-			    })
-			    .subscribe();
+	@TestLoggerExtension.Redirect
+	void testErrorWithDoOnSuccess(TestLogger testLogger) {
+		Mono.error(new NullPointerException("boom"))
+			.doOnSuccess(aValue -> {
+			})
+			.subscribe();
 
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
 	}
 
 	@Test
