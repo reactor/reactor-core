@@ -104,4 +104,19 @@ class ReactorContextAccessorTest {
 		Mockito.verify(target, never()).putAll((ContextView) any());
 		Mockito.verify(target, times(1)).putAllMap(anyMap());
 	}
+
+	@Test
+	void readValueWhenKeyPresent() {
+		String expectedValue = "A";
+		ContextView source = Context.of(1, expectedValue, 2, "B");
+
+		assertThat(new ReactorContextAccessor().readValue(source, 1)).isSameAs(expectedValue);
+	}
+
+	@Test
+	void readValueReturnsNullWhenKeyAbsent() {
+		ContextView source = Context.of(1, "A");
+
+		assertThat(new ReactorContextAccessor().readValue(source, 2)).isNull();
+	}
 }
