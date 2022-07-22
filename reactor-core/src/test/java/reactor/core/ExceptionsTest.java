@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Mono;
@@ -157,7 +159,7 @@ public class ExceptionsTest {
 	//TODO test terminate
 
 	@Test
-	void isFatalNotJvmFatalBubbling() {
+	void bubblingExceptionIsFatalButNotJvmFatal() {
 		Throwable exception = new BubblingException("expected");
 		assertThat(Exceptions.isFatal(exception))
 			.as("isFatal(bubbling)")
@@ -168,7 +170,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void isFatalNotJvmFatalErrorCallback() {
+	void errorCallbackNotImplementedIsFatalButNotJvmFatal() {
 		Throwable exception = new ErrorCallbackNotImplemented(new IllegalStateException("expected cause"));
 		assertThat(Exceptions.isFatal(exception))
 			.as("isFatal(ErrorCallbackNotImplemented)")
@@ -179,7 +181,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void isFatalAndJvmFatalVirtualMachineError() {
+	void virtualMachineErrorIsFatalAndJvmFatal() {
 		Throwable exception = new VirtualMachineError() { };
 		assertThat(Exceptions.isFatal(exception))
 			.as("isFatal(VirtualMachineError)")
@@ -190,7 +192,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void isFatalAndJvmFatalLinkageError() {
+	void linkageErrorIsFatalAndJvmFatal() {
 		Throwable exception = new LinkageError();
 		assertThat(Exceptions.isFatal(exception))
 			.as("isFatal(LinkageError)")
@@ -201,7 +203,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void isFatalAndJvmFatalThreadDeath() {
+	void threadDeathIsFatalAndJvmFatal() {
 		Throwable exception = new ThreadDeath();
 		assertThat(Exceptions.isFatal(exception))
 			.as("isFatal(ThreadDeath)")
@@ -231,7 +233,36 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	public void throwIfJvmFatal() {
+	void throwIfFatalWithJvmFatalErrors() {
+		VirtualMachineError fatal1 = new VirtualMachineError("expected to be logged") {};
+		ThreadDeath fatal2 = new ThreadDeath() {
+			@Override
+			public String getMessage() {
+				return "expected to be logged";
+			}
+		};
+		LinkageError fatal3 = new LinkageError("expected to be logged");
+
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThatExceptionOfType(VirtualMachineError.class)
+				.as("VirtualMachineError")
+				.isThrownBy(() -> Exceptions.throwIfFatal(fatal1))
+				.isSameAs(fatal1);
+
+			softly.assertThatExceptionOfType(ThreadDeath.class)
+				.as("ThreadDeath")
+				.isThrownBy(() -> Exceptions.throwIfFatal(fatal2))
+				.isSameAs(fatal2);
+
+			softly.assertThatExceptionOfType(LinkageError.class)
+				.as("LinkageError")
+				.isThrownBy(() -> Exceptions.throwIfFatal(fatal3))
+				.isSameAs(fatal3);
+		});
+	}
+
+	@Test
+	void throwIfJvmFatal() {
 		VirtualMachineError fatal1 = new VirtualMachineError("expected to be logged") {};
 		ThreadDeath fatal2 = new ThreadDeath() {
 			@Override
@@ -255,6 +286,17 @@ public class ExceptionsTest {
 				.as("LinkageError")
 				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal3))
 				.isSameAs(fatal3);
+	}
+
+	@Test
+	void throwIfJvmFatalDoesntThrowOnSimplyFatalExceptions() {
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThatCode(() -> Exceptions.throwIfJvmFatal(new BubblingException("not thrown")))
+				.doesNotThrowAnyException();
+
+			softly.assertThatCode(() -> Exceptions.throwIfJvmFatal(new ErrorCallbackNotImplemented(new RuntimeException("not thrown"))))
+				.doesNotThrowAnyException();
+		});
 	}
 
 	@Test

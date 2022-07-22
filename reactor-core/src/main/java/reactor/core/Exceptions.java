@@ -437,12 +437,9 @@ public abstract class Exceptions {
 	 * @return true if the throwable is considered Jvm Fatal
 	 */
 	public static boolean isJvmFatal(@Nullable Throwable t) {
-		if (t instanceof VirtualMachineError ||
+		return t instanceof VirtualMachineError ||
 			t instanceof ThreadDeath ||
-			t instanceof LinkageError) {
-			return true;
-		}
-		return false;
+			t instanceof LinkageError;
 	}
 
 	/**
@@ -471,13 +468,14 @@ public abstract class Exceptions {
 	 * @return true if the throwable is considered fatal
 	 */
 	public static boolean isFatal(@Nullable Throwable t) {
-		if (t instanceof BubblingException || t instanceof ErrorCallbackNotImplemented) {
-			return true;
-		}
-		if (isJvmFatal(t)) {
-			return true;
-		}
-		return false;
+		return isFatalButNotJvmFatal(t) || isJvmFatal(t);
+	}
+
+	/**
+	 * Internal intermediate test that only detect Fatal but not Jvm Fatal exceptions.
+	 */
+	static boolean isFatalButNotJvmFatal(@Nullable Throwable t) {
+		return t instanceof BubblingException || t instanceof ErrorCallbackNotImplemented;
 	}
 
 	/**
@@ -493,12 +491,13 @@ public abstract class Exceptions {
 		if (t == null) {
 			return;
 		}
-		//we give throwIfJvmFatal an opportunity to detect, log and throw first
-		throwIfJvmFatal(t);
-		if (isFatal(t)) {
+		if (isFatalButNotJvmFatal(t)) {
 			LOGGER.warn("throwIfFatal detected a fatal exception, throwing", t);
-			assert t instanceof RuntimeException;
 			throw (RuntimeException) t;
+		}
+		if (isJvmFatal(t)) {
+			LOGGER.warn("throwIfFatal detected a jvm fatal exception, throwing", t);
+			throw (Error) t;
 		}
 	}
 
