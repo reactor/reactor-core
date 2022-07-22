@@ -10,7 +10,7 @@ bytebuddy = "1.12.12"
 jmh = "1.35"
 junit = "5.8.2"
 #note that context-propagation has a different version directly set in libraries
-micrometer = "1.10.0-M3"
+micrometer = "1.10.0-SNAPSHOT" # was -M3
 reactiveStreams = "1.0.4"
 
 [libraries]
@@ -26,14 +26,18 @@ jmh-annotations-processor = { module = "org.openjdk.jmh:jmh-generator-annprocess
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jsr166backport = "io.projectreactor:jsr166:1.0.0.RELEASE"
 jsr305 = "com.google.code.findbugs:jsr305:3.0.1"
+junit-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+junit-params = { module = "org.junit.jupiter:junit-jupiter-params" }
+junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
 logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
-micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-M3"
+micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-SNAPSHOT" # was -M3
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
-micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-M6"
+micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-SNAPSHOT" # was -M6
 micrometer-test = { module = "io.micrometer:micrometer-test" }
 mockito = "org.mockito:mockito-core:4.6.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }

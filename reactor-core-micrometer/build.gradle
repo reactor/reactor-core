@@ -46,7 +46,6 @@ dependencies {
 
 	implementation platform(libs.micrometer.bom)
 	api libs.micrometer.core
-	implementation libs.micrometer.contextPropagation
 
 	testImplementation platform(libs.junit.bom)
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -58,7 +57,10 @@ dependencies {
 	testImplementation libs.micrometer.core
 	testImplementation libs.micrometer.test
 	testImplementation libs.micrometer.observation.test
-	testImplementation libs.micrometer.tracing.test
+	testImplementation libs.micrometer.contextPropagation
+	testImplementation(libs.micrometer.tracing.test) { //brings in context-propagation
+		exclude group: "io.micrometer", module: "context-propagation"
+	}
 
 	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'

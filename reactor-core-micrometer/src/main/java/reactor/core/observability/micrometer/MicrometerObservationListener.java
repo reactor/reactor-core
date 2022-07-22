@@ -16,7 +16,6 @@
 
 package reactor.core.observability.micrometer;
 
-import io.micrometer.context.ContextSnapshot;
 import io.micrometer.observation.Observation;
 
 import reactor.core.observability.SignalListener;
@@ -48,19 +47,26 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	static final String STATUS_ERROR = MicrometerMeterListener.TAG_STATUS_ERROR;
 
 	/**
+	 * The key to use to store {@link Observation} in context (same as the one from {@code ObservationThreadLocalAccessor}).
+	 *
+	 * @implNote this might be redundant, but we got {@code com.sun.tools.javac.code.Symbol$CompletionFailure: class file for io.micrometer.context.ThreadLocalAccessor not found}
+	 * in reactor-netty while compiling a similar arrangement. A unit test in MicrometerTest acts as a smoke test in case
+	 * micrometer-observation's {@code ObservationThreadLocalAccessor.KEY} changes to something else.
+	 */
+	static final String CONTEXT_KEY_OBSERVATION = "micrometer.observation";
+
+	/**
 	 * A value for the status tag, to be used when a Mono completes from onNext.
 	 * In production, this is set to {@link #STATUS_COMPLETED}.
 	 * In some tests, this can be overridden as a way to assert {@link #doOnComplete()} is no-op.
 	 */
 	final String                                     completedOnNextStatus;
 	final MicrometerObservationListenerConfiguration configuration;
-	final ContextView                                originalContext;
-	final Observation                                subscribeToTerminalObservation;
+	final ContextView originalContext;
+	final Observation tapObservation;
 
 	@Nullable
-	Context contextWithScope;
-	@Nullable
-	Observation.Scope scope = null;
+	Context contextWithObservation;
 
 	boolean valued;
 
@@ -78,7 +84,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 		//creation of the listener matches subscription (Publisher.subscribe(Subscriber) / doFirst)
 		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
-		subscribeToTerminalObservation = Observation.createNotStarted(
+		tapObservation = Observation.createNotStarted(
 			configuration.sequenceName,
 			configuration.registry
 		)
@@ -88,17 +94,41 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doFirst() {
-		ContextSnapshot contextSnapshot = ContextSnapshot.capture(this.originalContext);
+		/* Implementation note on using parentObservation vs openScope:
+		Opening a Scope is never necessary in this tap listener, because the Observation we create is stored in
+		the Context the tap operator will expose to upstream, rather than via ThreadLocal population.
 
-		try (ContextSnapshot.Scope ignored = contextSnapshot.setThreadLocalValues()) {
-			this.scope = this.subscribeToTerminalObservation
-				.start()
-				.openScope();
-			//reacquire the scope from ThreadLocal
-			//tap context hasn't been initialized yet, so addToContext can now use the Scope
-			ContextSnapshot contextSnapshot2 = ContextSnapshot.capture(this.originalContext);
-			this.contextWithScope = contextSnapshot2.updateContext(Context.of(this.originalContext));
+		We also make a best-effort attempt to discover such an Observation in the context here in doFirst, so that this
+		can explicitly be used as the parentObservation. At this point, if none is found we take also the opportunity
+		of checking if the registry has a currentObservation.
+
+		As a consequence, fanout (eg. with a `flatMap`) upstream of the tap should be able to see the current Observation
+		in the context and the inner publishers should inherit it as their parent observation if they also use `tap(Micrometer.observation())`.
+
+		Note that Reactor's threading model doesn't generally guarantee that doFirst and doOnNext/doOnComplete/doOnError run
+		in the same thread, and that's the main reason why Scopes are avoided here (as their sole purpose is to set up
+		Thread Local variables).
+		 */
+
+		Observation o;
+		Observation p;
+		if (this.originalContext.hasKey(CONTEXT_KEY_OBSERVATION)) {
+			p = this.originalContext.get(CONTEXT_KEY_OBSERVATION);
 		}
+		else {
+			p = this.configuration.registry.getCurrentObservation();
+		}
+
+		if (p != null) {
+			o = this.tapObservation
+				.parentObservation(p)
+				.start();
+		}
+		else {
+			o = this.tapObservation.start();
+		}
+		this.contextWithObservation = Context.of(this.originalContext)
+			.put(CONTEXT_KEY_OBSERVATION, o);
 	}
 
 	@Override
@@ -106,29 +136,26 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		if (this.originalContext != originalContext) {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("addToContext call on Observation {} with unexpected originalContext {}",
-					this.subscribeToTerminalObservation, originalContext);
+					this.tapObservation, originalContext);
 			}
 			return originalContext;
 		}
-		if (this.contextWithScope == null) {
+		if (this.contextWithObservation == null) {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("addToContext call on Observation {} before contextWithScope is set",
-				this.subscribeToTerminalObservation);
+				this.tapObservation);
 			}
 			return originalContext;
 		}
-		return contextWithScope;
+		return contextWithObservation;
 	}
 
 	@Override
 	public void doOnCancel() {
-		Observation observation = subscribeToTerminalObservation
+		Observation observation = tapObservation
 			.lowCardinalityKeyValue(KEY_STATUS, STATUS_CANCELLED);
 
 		observation.stop();
-		if (scope != null) {
-			scope.close();
-		}
 	}
 
 	@Override
@@ -144,26 +171,20 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 		// if status == null, recording with OnComplete tag is done directly in onNext for the Mono(valued) case
 		if (status != null) {
-			Observation completeObservation = subscribeToTerminalObservation
+			Observation completeObservation = tapObservation
 				.lowCardinalityKeyValue(KEY_STATUS, status);
 
 			completeObservation.stop();
-			if (scope != null) {
-				scope.close();
-			}
 		}
 	}
 
 	@Override
 	public void doOnError(Throwable e) {
-		Observation errorObservation = subscribeToTerminalObservation
+		Observation errorObservation = tapObservation
 			.lowCardinalityKeyValue(KEY_STATUS, STATUS_ERROR)
 			.error(e);
 
 		errorObservation.stop();
-		if (scope != null) {
-			scope.close();
-		}
 	}
 
 	@Override
@@ -171,13 +192,10 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		valued = true;
 		if (configuration.isMono) {
 			//record valued completion directly
-			Observation completeObservation = subscribeToTerminalObservation
+			Observation completeObservation = tapObservation
 				.lowCardinalityKeyValue(KEY_STATUS, completedOnNextStatus);
 
 			completeObservation.stop();
-			if (scope != null) {
-				scope.close();
-			}
 		}
 	}
 
