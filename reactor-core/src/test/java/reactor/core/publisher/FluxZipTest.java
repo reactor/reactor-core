@@ -30,6 +30,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -715,23 +716,18 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleError() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
+	@TestLoggerExtension.Redirect
+	void failDoubleError(TestLogger testLogger) {
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(new Exception("test"));
 				s.onError(new Exception("test2"));
 			}))
-			            .verifyErrorMessage("test");
+			.verifyErrorMessage("test");
 
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("test2");
-		} finally {
-			LoggerUtils.disableCapture();
-		}
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("test2");
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE

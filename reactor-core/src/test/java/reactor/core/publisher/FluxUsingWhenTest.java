@@ -38,6 +38,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable.Attr;
+import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.FluxUsingWhen.ResourceSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.test.ParameterizedTestWithName;
@@ -398,64 +399,53 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources01")
-	public void cancelWithHandlerFailure(Flux<String> source) {
+	@TestLoggerExtension.Redirect
+	void cancelWithHandlerFailure(Flux<String> source, TestLogger testLogger) {
 		TestResource testResource = new TestResource();
-		final TestLogger tl = new TestLogger();
-		Loggers.useCustomLoggers(name -> tl);
-
-		try {
-			Flux<String> test = Flux.usingWhen(Mono.just(testResource),
-					tr -> source,
-					TestResource::commit,
-					TestResource::rollback,
-					r -> r.cancel()
-					      //immediate error to trigger the logging within the test
-					      .concatWith(Mono.error(new IllegalStateException("cancel error")))
+		Flux<String> test = Flux.usingWhen(Mono.just(testResource),
+				tr -> source,
+				TestResource::commit,
+				TestResource::rollback,
+				r -> r.cancel()
+					//immediate error to trigger the logging within the test
+					.concatWith(Mono.error(new IllegalStateException("cancel error")))
 			)
-			                        .take(2);
+			.take(2);
 
-			StepVerifier.create(test)
-			            .expectNext("0", "1")
-			            .verifyComplete();
+		StepVerifier.create(test)
+			.expectNext("0", "1")
+			.verifyComplete();
 
-			testResource.commitProbe.assertWasNotSubscribed();
-			testResource.rollbackProbe.assertWasNotSubscribed();
-			testResource.cancelProbe.assertWasSubscribed();
-		}
-		finally {
-			Loggers.resetLoggerFactory();
-		}
-		assertThat(tl.getErrContent())
+		testResource.commitProbe.assertWasNotSubscribed();
+		testResource.rollbackProbe.assertWasNotSubscribed();
+		testResource.cancelProbe.assertWasSubscribed();
+
+		assertThat(testLogger.getErrContent())
 				.contains("Async resource cleanup failed after cancel")
 				.contains("java.lang.IllegalStateException: cancel error");
 	}
 
 	@ParameterizedTestWithName
 	@MethodSource("sources01")
-	public void cancelWithHandlerGenerationFailureLogs(Flux<String> source) throws InterruptedException {
-		TestLogger tl = new TestLogger();
-		Loggers.useCustomLoggers(name -> tl);
+	@TestLoggerExtension.Redirect
+	void cancelWithHandlerGenerationFailureLogs(Flux<String> source, TestLogger tl) throws InterruptedException {
 		TestResource testResource = new TestResource();
 
-		try {
-			Flux<String> test = Flux.usingWhen(Mono.just(testResource),
-					tr -> source,
-					TestResource::commit,
-					TestResource::rollback,
-					r -> null)
-			                        .take(2);
+		Flux<String> test = Flux.usingWhen(Mono.just(testResource),
+				tr -> source,
+				TestResource::commit,
+				TestResource::rollback,
+				r -> null)
+			.take(2);
 
-			StepVerifier.create(test)
-			            .expectNext("0", "1")
-			            .verifyComplete();
+		StepVerifier.create(test)
+			.expectNext("0", "1")
+			.verifyComplete();
 
-			testResource.commitProbe.assertWasNotSubscribed();
-			testResource.cancelProbe.assertWasNotSubscribed();
-			testResource.rollbackProbe.assertWasNotSubscribed();
-		}
-		finally {
-			Loggers.resetLoggerFactory();
-		}
+		testResource.commitProbe.assertWasNotSubscribed();
+		testResource.cancelProbe.assertWasNotSubscribed();
+		testResource.rollbackProbe.assertWasNotSubscribed();
+
 		assertThat(tl.getErrContent())
 				.contains("Error generating async resource cleanup during onCancel")
 				.contains("java.lang.NullPointerException");
@@ -488,39 +478,33 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sources01")
+	@TestLoggerExtension.Redirect
 	@Deprecated
-	public void cancelDefaultHandlerFailure(Flux<String> source) {
+	void cancelDefaultHandlerFailure(Flux<String> source, TestLogger tl) {
 		TestResource testResource = new TestResource();
-		final TestLogger tl = new TestLogger();
-		Loggers.useCustomLoggers(name -> tl);
+		Function<TestResource, Publisher<?>> completeOrCancel = r -> {
+			return r.commit()
+				//immediate error to trigger the logging within the test
+				.concatWith(Mono.error(new IllegalStateException("commit error")));
+		};
+		Flux<String> test = Flux
+			.usingWhen(
+				Mono.just(testResource),
+				tr -> source,
+				completeOrCancel,
+				(r, e) -> r.rollback(new RuntimeException("placeholder ignored rollback exception")),
+				completeOrCancel
+			)
+			.take(2);
 
-		try {
-			Function<TestResource, Publisher<?>> completeOrCancel = r -> {
-				return r.commit()
-				        //immediate error to trigger the logging within the test
-				        .concatWith(Mono.error(new IllegalStateException("commit error")));
-			};
-			Flux<String> test = Flux
-					.usingWhen(
-							Mono.just(testResource),
-							tr -> source,
-							completeOrCancel,
-							(r, e) -> r.rollback(new RuntimeException("placeholder ignored rollback exception")),
-							completeOrCancel
-					)
-                    .take(2);
+		StepVerifier.create(test)
+			.expectNext("0", "1")
+			.verifyComplete();
 
-			StepVerifier.create(test)
-			            .expectNext("0", "1")
-			            .verifyComplete();
+		testResource.commitProbe.assertWasSubscribed();
+		testResource.cancelProbe.assertWasNotSubscribed();
+		testResource.rollbackProbe.assertWasNotSubscribed();
 
-			testResource.commitProbe.assertWasSubscribed();
-			testResource.cancelProbe.assertWasNotSubscribed();
-			testResource.rollbackProbe.assertWasNotSubscribed();
-		}
-		finally {
-			Loggers.resetLoggerFactory();
-		}
 		assertThat(tl.getErrContent())
 				.contains("Async resource cleanup failed after cancel")
 				.contains("java.lang.IllegalStateException: commit error");
@@ -723,76 +707,63 @@ public class FluxUsingWhenTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
-	public void apiCancelFailure(Flux<String> transaction) {
-		TestLogger testLogger = new TestLogger();
-		Loggers.useCustomLoggers(s -> testLogger);
-		try {
-			final AtomicReference<TestResource> ref = new AtomicReference<>();
-			Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
-					d -> {
-						ref.set(d);
-						return transaction;
-					},
-					TestResource::commit,
-					TestResource::rollback,
-					TestResource::cancelError);
+	@TestLoggerExtension.Redirect
+	void apiCancelFailure(Flux<String> transaction, TestLogger testLogger) {
+		final AtomicReference<TestResource> ref = new AtomicReference<>();
+		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
+			d -> {
+				ref.set(d);
+				return transaction;
+			},
+			TestResource::commit,
+			TestResource::rollback,
+			TestResource::cancelError);
 
 			StepVerifier.create(flux.take(1), 1)
 			            .expectNext("Transaction started")
 			            .verifyComplete();
 
-			assertThat(ref.get())
-					.isNotNull()
-					.matches(tr -> !tr.commitProbe.wasSubscribed(), "no commit")
-					.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback")
-					.matches(tr -> tr.cancelProbe.wasSubscribed(), "cancel method used");
+		assertThat(ref.get())
+			.isNotNull()
+			.matches(tr -> !tr.commitProbe.wasSubscribed(), "no commit")
+			.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback")
+			.matches(tr -> tr.cancelProbe.wasSubscribed(), "cancel method used");
 
-			//since the CancelInner is subscribed in a fire-and-forget fashion, the log comes later
-			//the test must be done before the finally, lest the error message be printed too late for TestLogger to catch it
-			Awaitility.await().atMost(1, TimeUnit.SECONDS)
-			          .untilAsserted(() ->
-					          assertThat(testLogger.getErrContent())
-							          .startsWith("[ WARN]")
-							          .contains("Async resource cleanup failed after cancel - java.lang.ArithmeticException: / by zero"));
-		}
-		finally {
-			Loggers.resetLoggerFactory();
-		}
+		//since the CancelInner is subscribed in a fire-and-forget fashion, the log comes later
+		//the test must be done before the finally, lest the error message be printed too late for TestLogger to catch it
+		Awaitility.await().atMost(1, TimeUnit.SECONDS)
+			.untilAsserted(() ->
+				assertThat(testLogger.getErrContent())
+					.startsWith("[ WARN]")
+					.contains("Async resource cleanup failed after cancel - java.lang.ArithmeticException: / by zero"));
 	}
 
 	@ParameterizedTestWithName
 	@MethodSource("sourcesFullTransaction")
-	public void apiCancelGeneratingNullLogs(Flux<String> transactionToCancel) {
-		TestLogger testLogger = new TestLogger();
-		Loggers.useCustomLoggers(s -> testLogger);
-		try {
-			final AtomicReference<TestResource> ref = new AtomicReference<>();
-			Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
-					d -> {
-						ref.set(d);
-						return transactionToCancel;
-					},
-					TestResource::commit,
-					TestResource::rollback,
-					TestResource::cancelNull);
+	@TestLoggerExtension.Redirect
+	void apiCancelGeneratingNullLogs(Flux<String> transactionToCancel, TestLogger testLogger) {
+		final AtomicReference<TestResource> ref = new AtomicReference<>();
+		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
+			d -> {
+				ref.set(d);
+				return transactionToCancel;
+			},
+			TestResource::commit,
+			TestResource::rollback,
+			TestResource::cancelNull);
 
 			StepVerifier.create(flux.take(1), 1)
 			            .expectNext("Transaction started")
 			            .verifyComplete();
 
-			assertThat(ref.get())
-					.isNotNull()
-					.matches(tr -> !tr.commitProbe.wasSubscribed(), "no commit")
-					.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback")
-					.matches(tr -> !tr.cancelProbe.wasSubscribed(), "cancel method short-circuited");
+		assertThat(ref.get())
+			.isNotNull()
+			.matches(tr -> !tr.commitProbe.wasSubscribed(), "no commit")
+			.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback")
+			.matches(tr -> !tr.cancelProbe.wasSubscribed(), "cancel method short-circuited");
 
-		}
-		finally {
-			Loggers.resetLoggerFactory();
-		}
 		assertThat(testLogger.getErrContent())
-				.contains("[ WARN] (" + Thread.currentThread().getName() + ") " +
-						"Error generating async resource cleanup during onCancel - java.lang.NullPointerException");
+				.contains("[ WARN] Error generating async resource cleanup during onCancel - java.lang.NullPointerException");
 	}
 
 	@Test

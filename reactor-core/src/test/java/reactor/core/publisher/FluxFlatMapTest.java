@@ -39,6 +39,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.util.LoggerUtils;
@@ -780,70 +781,55 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void failDoubleError() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			StepVerifier.create(Flux.from(s -> {
-				s.onSubscribe(Operators.emptySubscription());
-				s.onError(new Exception("test"));
-				s.onError(new Exception("test2"));
-			})
-			                        .flatMap(Flux::just))
-			            .verifyErrorMessage("test");
+	@TestLoggerExtension.Redirect
+	void failDoubleError(TestLogger testLogger) {
+		StepVerifier.create(Flux.from(s -> {
+					s.onSubscribe(Operators.emptySubscription());
+					s.onError(new Exception("test"));
+					s.onError(new Exception("test2"));
+				})
+				.flatMap(Flux::just))
+			.verifyErrorMessage("test");
 
-			assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("java.lang.Exception: test2");
-		} finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("java.lang.Exception: test2");
 	}
 
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorTerminated() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			StepVerifier.create(Flux.from(s -> {
-				s.onSubscribe(Operators.emptySubscription());
-				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain<?, ?>) s);
-				((FluxFlatMap.FlatMapMain<?, ?>) s).done = true;
-				((FluxFlatMap.FlatMapMain<?, ?>) s).drain(null);
-				s.onError(new Exception("test"));
-			})
-			                        .flatMap(Flux::just))
-			            .verifyComplete();
-			assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("java.lang.Exception: test");
-		} finally {
-			LoggerUtils.disableCapture();
-		}
+	@TestLoggerExtension.Redirect
+	void failDoubleErrorTerminated(TestLogger testLogger) {
+		StepVerifier.create(Flux.from(s -> {
+					s.onSubscribe(Operators.emptySubscription());
+					Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain<?, ?>) s);
+					((FluxFlatMap.FlatMapMain<?, ?>) s).done = true;
+					((FluxFlatMap.FlatMapMain<?, ?>) s).drain(null);
+					s.onError(new Exception("test"));
+				})
+				.flatMap(Flux::just))
+			.verifyComplete();
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("java.lang.Exception: test");
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorTerminatedInner() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			StepVerifier.create(Flux.just(1)
-			                        .hide()
-			                        .flatMap(f -> Flux.from(s -> {
-				                        s.onSubscribe(Operators.emptySubscription());
-				                        Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,
-						                        ((FluxFlatMap.FlatMapInner) s).parent);
-				                        s.onError(new Exception("test"));
-			                        })))
-			            .verifyComplete();
+	@TestLoggerExtension.Redirect
+	void failDoubleErrorTerminatedInner(TestLogger testLogger) {
+		StepVerifier.create(Flux.just(1)
+				.hide()
+				.flatMap(f -> Flux.from(s -> {
+					s.onSubscribe(Operators.emptySubscription());
+					Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,
+						((FluxFlatMap.FlatMapInner) s).parent);
+					s.onError(new Exception("test"));
+				})))
+			.verifyComplete();
 
-			assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("java.lang.Exception: test");
-		} finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("java.lang.Exception: test");
 	}
 
 	@Test
