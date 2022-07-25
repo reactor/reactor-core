@@ -31,7 +31,7 @@ import reactor.core.scheduler.Scheduler;
 /**
  * @author Simon Baslé
  */
-public final class TimedScheduler implements Scheduler {
+final class TimedScheduler implements Scheduler {
 
 	//FIXME javadoc
 	public static final String DEFAULT_METRIC_PREFIX        = "reactor.schedulers.";

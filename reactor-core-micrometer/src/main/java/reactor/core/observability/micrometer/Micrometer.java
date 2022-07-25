@@ -20,8 +20,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.scheduler.Scheduler;
@@ -136,5 +139,17 @@ public final class Micrometer {
 	@Deprecated
 	public static void disableSchedulersMetricsDecorator() {
 		Schedulers.removeExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY);
+	}
+
+	//FIXME javadoc
+	//FIXME remove schedulerName ? (as a tag, doesn't make much sense)
+	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix) {
+		return new TimedScheduler(original, "", meterRegistry, metricsPrefix, Tags.empty());
+	}
+
+	//FIXME javadoc
+	//FIXME remove schedulerName ? (as a tag, doesn't make much sense)
+	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix, Iterable<Tag> tags) {
+		return new TimedScheduler(original, "", meterRegistry, metricsPrefix, tags);
 	}
 }
