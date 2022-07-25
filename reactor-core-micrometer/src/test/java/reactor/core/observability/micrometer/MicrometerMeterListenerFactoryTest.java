@@ -17,7 +17,7 @@
 package reactor.core.observability.micrometer;
 
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -37,33 +37,10 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 class MicrometerMeterListenerFactoryTest {
 
 	@Test
-	void useClockDefaultsToSystemClock() {
-		MicrometerMeterListenerFactory<?> factory = new MicrometerMeterListenerFactory<>();
-
-		assertThat(factory.useClock()).isSameAs(Clock.SYSTEM);
-	}
-
-	@Test
-	void useRegistryDefaultsToCommonRegistry() {
-		SimpleMeterRegistry commonRegistry = new SimpleMeterRegistry();
-		MeterRegistry defaultCommon = Micrometer.useRegistry(commonRegistry);
-		try {
-			MicrometerMeterListenerFactory<?> factory = new MicrometerMeterListenerFactory<>();
-
-			assertThat(factory.useRegistry()).isSameAs(Micrometer.getRegistry())
-				.isSameAs(commonRegistry);
-		}
-		finally {
-			Micrometer.useRegistry(defaultCommon);
-		}
-	}
-
-	@Test
 	void configurationFromMono() {
 		MicrometerMeterListenerConfiguration configuration = CUSTOM_FACTORY.initializePublisherState(Mono.just(1));
 
 		assertThat(configuration.registry).as("registry").isSameAs(CUSTOM_REGISTRY);
-		assertThat(configuration.clock).as("clock").isSameAs(CUSTOM_CLOCK);
 		assertThat(configuration.isMono).as("isMono").isTrue();
 		assertThat(configuration.commonTags).map(Object::toString).containsExactly("tag(type=Mono)");
 	}
@@ -73,7 +50,6 @@ class MicrometerMeterListenerFactoryTest {
 		MicrometerMeterListenerConfiguration configuration = CUSTOM_FACTORY.initializePublisherState(Flux.just(1, 2));
 
 		assertThat(configuration.registry).as("registry").isSameAs(CUSTOM_REGISTRY);
-		assertThat(configuration.clock).as("clock").isSameAs(CUSTOM_CLOCK);
 		assertThat(configuration.isMono).as("isMono").isFalse();
 		assertThat(configuration.commonTags).map(Object::toString).containsExactly("tag(type=Flux)");
 	}
@@ -106,17 +82,7 @@ class MicrometerMeterListenerFactoryTest {
 			return 0;
 		}
 	};
-	protected static final SimpleMeterRegistry                    CUSTOM_REGISTRY = new SimpleMeterRegistry();
+	protected static final SimpleMeterRegistry                    CUSTOM_REGISTRY = new SimpleMeterRegistry(SimpleConfig.DEFAULT, CUSTOM_CLOCK);
 	protected static final MicrometerMeterListenerFactory<Object>
-																  CUSTOM_FACTORY  = new MicrometerMeterListenerFactory<Object>() {
-		@Override
-		protected Clock useClock() {
-			return CUSTOM_CLOCK;
-		}
-
-		@Override
-		protected MeterRegistry useRegistry() {
-			return CUSTOM_REGISTRY;
-		}
-	};
+																  CUSTOM_FACTORY  = new MicrometerMeterListenerFactory<Object>(CUSTOM_REGISTRY);
 }

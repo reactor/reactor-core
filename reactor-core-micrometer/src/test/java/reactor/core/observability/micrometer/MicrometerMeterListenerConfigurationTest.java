@@ -58,9 +58,9 @@ class MicrometerMeterListenerConfigurationTest {
 			flux = flux.tag("tag", tag);
 		}
 
-	MicrometerMeterListenerConfiguration configuration = MicrometerMeterListenerConfiguration.fromFlux(flux, expectedRegistry, expectedClock);
+	MicrometerMeterListenerConfiguration configuration = MicrometerMeterListenerConfiguration.fromFlux(flux, expectedRegistry);
 
-		assertThat(configuration.clock).as("clock").isSameAs(expectedClock);
+		assertThat(configuration.registry.config().clock()).as("clock").isSameAs(expectedClock);
 		assertThat(configuration.registry).as("registry").isSameAs(expectedRegistry);
 		assertThat(configuration.isMono).as("isMono").isFalse();
 
@@ -100,9 +100,9 @@ class MicrometerMeterListenerConfigurationTest {
 			mono = mono.tag("tag", tag);
 		}
 
-		MicrometerMeterListenerConfiguration configuration = MicrometerMeterListenerConfiguration.fromMono(mono, expectedRegistry, expectedClock);
+		MicrometerMeterListenerConfiguration configuration = MicrometerMeterListenerConfiguration.fromMono(mono, expectedRegistry);
 
-		assertThat(configuration.clock).as("clock").isSameAs(expectedClock);
+		assertThat(configuration.registry.config().clock()).as("clock").isSameAs(expectedClock);
 		assertThat(configuration.registry).as("registry").isSameAs(expectedRegistry);
 		assertThat(configuration.isMono).as("isMono").isTrue();
 

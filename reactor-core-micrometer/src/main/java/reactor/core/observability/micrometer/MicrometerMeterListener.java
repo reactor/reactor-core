@@ -126,7 +126,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 		}
 		//record the delay since previous onNext/onSubscribe. This also records the count.
 		long last = this.lastNextEventNanos;
-		this.lastNextEventNanos = configuration.clock.monotonicTime();
+		this.lastNextEventNanos = configuration.registry.config().clock().monotonicTime();
 		this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
 	}
 
@@ -138,8 +138,8 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	@Override
 	public void doOnSubscription() {
 		recordOnSubscribe(configuration.sequenceName, configuration.commonTags, configuration.registry);
-		this.subscribeToTerminateSample = Timer.start(configuration.clock);
-		this.lastNextEventNanos = configuration.clock.monotonicTime();
+		this.subscribeToTerminateSample = Timer.start(configuration.registry);
+		this.lastNextEventNanos = configuration.registry.config().clock().monotonicTime();
 	}
 
 	@Override
