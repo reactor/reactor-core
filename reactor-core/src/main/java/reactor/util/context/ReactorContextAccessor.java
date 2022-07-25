@@ -21,6 +21,8 @@ import java.util.function.Predicate;
 
 import io.micrometer.context.ContextAccessor;
 
+import reactor.util.annotation.Nullable;
+
 /**
  * A {@code ContextAccessor} to enable reading values from a Reactor
  * {@link ContextView} and writing values to {@link Context}.
@@ -46,6 +48,12 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 				target.put(k, v);
 			}
 		});
+	}
+
+	@Override
+	@Nullable
+	public <T> T readValue(ContextView sourceContext, Object key) {
+		return sourceContext.getOrDefault(key, null);
 	}
 
 	@Override
