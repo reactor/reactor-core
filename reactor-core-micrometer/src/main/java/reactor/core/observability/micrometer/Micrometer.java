@@ -16,24 +16,18 @@
 
 package reactor.core.observability.micrometer;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 
 import reactor.core.observability.SignalListener;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.core.scheduler.Scheduler;
 
 public final class Micrometer {
 
-	private static final String SCHEDULERS_DECORATOR_KEY = "reactor.core.observability.micrometer.schedulerDecorator";
 	private static MeterRegistry registry = Metrics.globalRegistry;
 
 	/**
@@ -109,36 +103,6 @@ public final class Micrometer {
 				return registry;
 			}
 		};
-	}
-
-	/**
-	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}
-	 * (or scheduler implementations which use {@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}).
-	 * <p>
-	 * The {@link MeterRegistry} to use can be configured via {@link #useRegistry(MeterRegistry)}
-	 * prior to using this method, the default being {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
-	 *
-	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers,
-	 * which doesn't change the Factory.
-	 *
-	 * @deprecated in M4, to be removed in M5. Replace with {@link TimedScheduler#of(Scheduler, String, MeterRegistry, String, Iterable)}
-	 * for individual schedulers that you would like to instrument.
-	 */
-	@Deprecated
-	public static void enableSchedulersMetricsDecorator() {
-		Schedulers.addExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY,
-			new MicrometerSchedulerMetricsDecorator(getRegistry()));
-	}
-
-	/**
-	 * If {@link #enableSchedulersMetricsDecorator()} has been previously called, removes the decorator.
-	 * No-op if {@link #enableSchedulersMetricsDecorator()} hasn't been called.
-	 *
-	 * @deprecated in M4, to be removed in M5. Replaced by {@link TimedScheduler}, which doesn't need global disabling.
-	 */
-	@Deprecated
-	public static void disableSchedulersMetricsDecorator() {
-		Schedulers.removeExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY);
 	}
 
 	/**
