@@ -33,12 +33,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 /**
  * @author Simon Baslé
  */
-class MicrometerListenerTest {
+class MicrometerMeterListenerTest {
 
 	SimpleMeterRegistry registry;
 	AtomicLong virtualClockTime;
-	Clock virtualClock;
-	MicrometerListenerConfiguration configuration;
+	Clock                                virtualClock;
+	MicrometerMeterListenerConfiguration configuration;
 
 	@BeforeEach
 	void initRegistry() {
@@ -55,7 +55,7 @@ class MicrometerListenerTest {
 				return virtualClockTime.get();
 			}
 		};
-		configuration = new MicrometerListenerConfiguration(
+		configuration = new MicrometerMeterListenerConfiguration(
 			"testName",
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -65,14 +65,14 @@ class MicrometerListenerTest {
 
 	@Test
 	void initialStateFluxWithDefaultName() {
-		configuration = new MicrometerListenerConfiguration(
+		configuration = new MicrometerMeterListenerConfiguration(
 			Micrometer.DEFAULT_METER_PREFIX,
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
 			virtualClock,
 			false);
 
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
 		assertThat(listener.valued).as("valued").isFalse();
 		assertThat(listener.requestedCounter).as("requestedCounter disabled").isNull();
@@ -91,14 +91,14 @@ class MicrometerListenerTest {
 
 	@Test
 	void initialStateFluxWithCustomName() {
-		configuration = new MicrometerListenerConfiguration(
+		configuration = new MicrometerMeterListenerConfiguration(
 			"testName",
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
 			virtualClock,
 			false);
 
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
 		assertThat(listener.valued).as("valued").isFalse();
 		assertThat(listener.requestedCounter).as("requestedCounter").isNotNull();
@@ -122,14 +122,14 @@ class MicrometerListenerTest {
 
 	@Test
 	void initialStateMono() {
-		configuration = new MicrometerListenerConfiguration(
+		configuration = new MicrometerMeterListenerConfiguration(
 			Micrometer.DEFAULT_METER_PREFIX,
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
 			virtualClock,
 			true);
 
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
 		assertThat(listener.valued).as("valued").isFalse();
 		assertThat(listener.requestedCounter).as("requestedCounter disabled").isNull();
@@ -142,7 +142,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void timerSampleInitializedInSubscription() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
 		assertThat(listener.subscribeToTerminateSample)
 			.as("subscribeToTerminateSample pre subscription")
@@ -166,7 +166,7 @@ class MicrometerListenerTest {
 		assertThat(registry.getMeters())
 			.as("meters post subscription")
 			.hasSize(3);
-		assertThat(registry.find("testName" + MicrometerListener.METER_SUBSCRIBED).counter())
+		assertThat(registry.find("testName" + MicrometerMeterListener.METER_SUBSCRIBED).counter())
 			.as("meter .subscribed")
 			.isNotNull()
 			.satisfies(meter -> assertThat(meter.count()).isEqualTo(1d));
@@ -174,14 +174,14 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnCancelTimesFlowDurationMeter() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 		assertThat(registry.getMeters()).hasSize(3);
 
 		virtualClockTime.set(100);
 		listener.doOnCancel();
 
-		Timer timer = registry.find("testName" + MicrometerListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -195,14 +195,14 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnCompleteTimesFlowDurationMeter_completeEmpty() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 		assertThat(registry.getMeters()).hasSize(3);
 
 		virtualClockTime.set(100);
 		listener.doOnComplete();
 
-		Timer timer = registry.find("testName" + MicrometerListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -216,7 +216,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnCompleteTimesFlowDurationMeter_completeValued() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 		assertThat(registry.getMeters()).hasSize(3);
 
@@ -224,7 +224,7 @@ class MicrometerListenerTest {
 		listener.valued = true;
 		listener.doOnComplete();
 
-		Timer timer = registry.find("testName" + MicrometerListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -238,14 +238,14 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnErrorTimesFlowDurationMeter() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 		assertThat(registry.getMeters()).hasSize(3);
 
 		virtualClockTime.set(100);
 		listener.doOnError(new IllegalStateException("expected"));
 
-		Timer timer = registry.find("testName" + MicrometerListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -259,7 +259,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnNextRecordsInterval() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 
 		virtualClockTime.set(100);
@@ -268,7 +268,7 @@ class MicrometerListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("lastEventNanos recorded").isEqualTo(100);
 
-		assertThat(registry.find("testName" + MicrometerListener.METER_FLOW_DURATION).meters())
+		assertThat(registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION).meters())
 			.as("no flow.duration meter yet")
 			.isEmpty();
 
@@ -283,9 +283,9 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnNextRecordsInterval_defaultName() {
-		configuration = new MicrometerListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(),
+		configuration = new MicrometerMeterListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(),
 			registry, virtualClock, false);
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 
 		virtualClockTime.set(100);
@@ -294,7 +294,7 @@ class MicrometerListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("lastEventNanos recorded").isEqualTo(100);
 
-		assertThat(registry.find(Micrometer.DEFAULT_METER_PREFIX + MicrometerListener.METER_FLOW_DURATION).meters())
+		assertThat(registry.find(Micrometer.DEFAULT_METER_PREFIX + MicrometerMeterListener.METER_FLOW_DURATION).meters())
 			.as("no flow.duration meter yet")
 			.isEmpty();
 
@@ -308,9 +308,9 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnNext_monoRecordsCompletionOnly() {
-		configuration = new MicrometerListenerConfiguration("testName", Tags.empty(),
+		configuration = new MicrometerMeterListenerConfiguration("testName", Tags.empty(),
 			registry, virtualClock, true);
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
 		listener.doOnSubscription();
 
@@ -320,7 +320,7 @@ class MicrometerListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("no lastEventNanos recorded").isZero();
 
-		Timer timer = registry.find("testName" + MicrometerListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
 			.timer();
 
 		assertThat(timer.getId().toString())
@@ -333,7 +333,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnNextMultipleRecords() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 
 		virtualClockTime.set(100);
@@ -354,7 +354,7 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnRequestRecordsTotalDemand() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnRequest(100L);
 
 		assertThat(listener.requestedCounter.count()).as("1 request calls").isEqualTo(1);
@@ -369,30 +369,30 @@ class MicrometerListenerTest {
 
 	@Test
 	void doOnRequestMonoIgnoresRequest() {
-		configuration = new MicrometerListenerConfiguration("testName", Tags.empty(), registry, virtualClock, true);
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		configuration = new MicrometerMeterListenerConfiguration("testName", Tags.empty(), registry, virtualClock, true);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		assertThatCode(() -> listener.doOnRequest(100L)).doesNotThrowAnyException();
 		assertThat(listener.requestedCounter).isNull();
 	}
 
 	@Test
 	void doOnRequestDefaultNameIgnoresRequest() {
-		configuration = new MicrometerListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(), registry, virtualClock, false);
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		configuration = new MicrometerMeterListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(), registry, virtualClock, false);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		assertThatCode(() -> listener.doOnRequest(100L)).doesNotThrowAnyException();
 		assertThat(listener.requestedCounter).isNull();
 	}
 
 	@Test
 	void malformedCounterCapturesNextCompleteError() {
-		MicrometerListener<Integer> listener = new MicrometerListener<>(configuration);
+		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
-		Counter malformedCounter = registry.find("testName" + MicrometerListener.METER_MALFORMED).counter();
+		Counter malformedCounter = registry.find("testName" + MicrometerMeterListener.METER_MALFORMED).counter();
 		assertThat(malformedCounter).as("counter not registered").isNull();
 
 		listener.doOnMalformedOnNext(123);
 
-		malformedCounter = registry.find("testName" + MicrometerListener.METER_MALFORMED).counter();
+		malformedCounter = registry.find("testName" + MicrometerMeterListener.METER_MALFORMED).counter();
 		assertThat(malformedCounter).as("lazy counter registration").isNotNull();
 		assertThat(malformedCounter.count()).as("onNext malformed").isOne();
 

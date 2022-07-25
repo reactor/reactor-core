@@ -27,13 +27,15 @@ javadoc {
 
 	options.memberLevel = JavadocMemberLevel.PROTECTED
 
-	if (project.name.contains("core")) {
+	if (project.name == "reactor-core") {
 		options.links([rootProject.jdkJavadoc, "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/"] as String[])
 	}
 	else {
 		options.links([rootProject.jdkJavadoc,
 									 "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
 									 "https://projectreactor.io/docs/core/release/api/"] as String[]);
+		//TODO add micrometer javadocs here
+		//tried to using javadoc.io but it is currently impossible to link to these from Javadoc JDK 8, no package-list
 	}
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
 					 "implNote:a:Implementation Note:" ]

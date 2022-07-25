@@ -25,21 +25,21 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 
+import reactor.core.observability.SignalListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 import reactor.util.annotation.Nullable;
-import reactor.core.observability.SignalListener;
 
 /**
  * A {@link SignalListener} that activates metrics gathering using Micrometer 1.x.
  *
  * @author Simon Baslé
  */
-final class MicrometerListener<T> implements SignalListener<T> {
+final class MicrometerMeterListener<T> implements SignalListener<T> {
 
-	final MicrometerListenerConfiguration configuration;
+	final MicrometerMeterListenerConfiguration configuration;
 	@Nullable
-	final DistributionSummary             requestedCounter;
+	final DistributionSummary                  requestedCounter;
 	@Nullable
 	final Timer                           onNextIntervalTimer;
 
@@ -47,7 +47,7 @@ final class MicrometerListener<T> implements SignalListener<T> {
 	long         lastNextEventNanos = -1L;
 	boolean      valued;
 
-	MicrometerListener(MicrometerListenerConfiguration configuration) {
+	MicrometerMeterListener(MicrometerMeterListenerConfiguration configuration) {
 		this.configuration = configuration;
 
 		this.valued = false;
@@ -215,10 +215,16 @@ final class MicrometerListener<T> implements SignalListener<T> {
 	static final Tags   DEFAULT_TAGS_MONO = Tags.of("type", "Mono");
 
 	// === Operator ===
-	static final Tag  TAG_ON_ERROR    = Tag.of("status", "error");
-	static final Tags TAG_ON_COMPLETE = Tags.of("status", "completed", TAG_KEY_EXCEPTION, "");
-	static final Tags TAG_ON_COMPLETE_EMPTY = Tags.of("status", "completedEmpty", TAG_KEY_EXCEPTION, "");
-	static final Tags TAG_CANCEL            = Tags.of("status", "cancelled", TAG_KEY_EXCEPTION, "");
+	static final String TAG_KEY_STATUS = "status";
+	static final String TAG_STATUS_CANCELLED = "cancelled";
+	static final String TAG_STATUS_COMPLETED = "completed";
+	static final String TAG_STATUS_COMPLETED_EMPTY = "completedEmpty";
+	static final String TAG_STATUS_ERROR = "error";
+
+	static final Tag  TAG_ON_ERROR    = Tag.of(TAG_KEY_STATUS, TAG_STATUS_ERROR);
+	static final Tags TAG_ON_COMPLETE = Tags.of(TAG_KEY_STATUS, TAG_STATUS_COMPLETED, TAG_KEY_EXCEPTION, "");
+	static final Tags TAG_ON_COMPLETE_EMPTY = Tags.of(TAG_KEY_STATUS, TAG_STATUS_COMPLETED_EMPTY, TAG_KEY_EXCEPTION, "");
+	static final Tags TAG_CANCEL            = Tags.of(TAG_KEY_STATUS, TAG_STATUS_CANCELLED, TAG_KEY_EXCEPTION, "");
 
 	/*
 	 * This method calls the registry, which can be costly. However the cancel signal is only expected

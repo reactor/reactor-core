@@ -21,14 +21,17 @@ import java.util.function.Predicate;
 
 import io.micrometer.context.ContextAccessor;
 
+import reactor.util.annotation.Nullable;
+
 /**
  * A {@code ContextAccessor} to enable reading values from a Reactor
  * {@link ContextView} and writing values to {@link Context}.
  * <p>
- * Please note that this public class implements the {@code libs.micrometer.contextPropagationApi}
+ * Please note that this public class implements the {@code libs.micrometer.contextPropagation}
  * SPI library, which is an optional dependency.
  *
  * @author Rossen Stoyanchev
+ * @author Simon Baslé
  * @since 3.5.0
  */
 public final class ReactorContextAccessor implements ContextAccessor<ContextView, Context> {
@@ -40,9 +43,17 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 
 	@Override
 	public void readValues(ContextView source, Predicate<Object> keyPredicate, Map<Object, Object> target) {
-		source.stream()
-			.filter(entry -> keyPredicate.test(entry.getKey()))
-			.forEach(entry -> target.put(entry.getKey(), entry.getValue()));
+		source.forEach((k, v) -> {
+			if (keyPredicate.test(k)) {
+				target.put(k, v);
+			}
+		});
+	}
+
+	@Override
+	@Nullable
+	public <T> T readValue(ContextView sourceContext, Object key) {
+		return sourceContext.getOrDefault(key, null);
 	}
 
 	@Override
@@ -52,7 +63,6 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 
 	@Override
 	public Context writeValues(Map<Object, Object> source, Context target) {
-		return target.putAll(Context.of(source).readOnly());
+		return target.putAllMap(source);
 	}
-
 }

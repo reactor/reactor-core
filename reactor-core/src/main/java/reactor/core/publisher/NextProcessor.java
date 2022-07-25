@@ -36,7 +36,9 @@ import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.core.Disposable, Scannable {
+// NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.
+@SuppressWarnings("deprecation")
+class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, reactor.core.Disposable, Scannable {
 
 	/**
 	 * This boolean indicates a usage as `Mono#share()` where, for alignment with Flux#share(), the removal of all
@@ -63,23 +65,24 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 		return isTerminated();
 	}
 
-	/**
-	 * Indicates whether this {@link NextProcessor} has been completed with an error.
-	 *
-	 * @return {@code true} if this {@link NextProcessor} was completed with an error, {@code false} otherwise.
-	 */
-	public final boolean isError() {
-		return getError() != null;
-	}
-
-	/**
-	 * Indicates whether this {@link NextProcessor} has been successfully completed a value.
-	 *
-	 * @return {@code true} if this {@link NextProcessor} is successful, {@code false} otherwise.
-	 */
-	public final boolean isSuccess() {
-		return isTerminated() && !isError();
-	}
+	//TODO reintroduce the boolean getters below once MonoProcessor is removed again
+//	/**
+//	 * Indicates whether this {@link NextProcessor} has been completed with an error.
+//	 *
+//	 * @return {@code true} if this {@link NextProcessor} was completed with an error, {@code false} otherwise.
+//	 */
+//	public final boolean isError() {
+//		return getError() != null;
+//	}
+//
+//	/**
+//	 * Indicates whether this {@link NextProcessor} has been successfully completed a value.
+//	 *
+//	 * @return {@code true} if this {@link NextProcessor} is successful, {@code false} otherwise.
+//	 */
+//	public final boolean isSuccess() {
+//		return isTerminated() && !isError();
+//	}
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<NextProcessor, NextInner[]> SUBSCRIBERS =
@@ -127,7 +130,8 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	 * @throws RuntimeException if the {@link NextProcessor} was completed with an error
 	 */
 	@Nullable
-	O peek() {
+	@Override
+	public O peek() {
 		if (!isTerminated()) {
 			return null;
 		}
@@ -380,10 +384,11 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 	}
 
 	/**
-		 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
-		 *
-		 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
-		 */
+	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+	 *
+	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+	 */
+	@Override
 	public long downstreamCount() {
 		return subscribers.length;
 	}
@@ -414,6 +419,13 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 		}
 	}
 
+	@Override
+	// This method is inherited from a deprecated class and will be removed in 3.5.
+	@SuppressWarnings("deprecation")
+	public void cancel() {
+		doCancel();
+	}
+
 	void doCancel() { //TODO compare with the cancellation in remove(), do we need both approaches?
 		if (isTerminated()) {
 			return;
@@ -437,22 +449,31 @@ class NextProcessor<O> extends Mono<O> implements CoreSubscriber<O>, reactor.cor
 		}
 	}
 
+	@Override
+	// This method is inherited from a deprecated class and will be removed in 3.5.
+	@SuppressWarnings("deprecation")
+	public boolean isCancelled() {
+		return subscription == Operators.cancelledSubscription() && !isTerminated();
+	}
+
 	/**
-		 * Indicates whether this {@link NextProcessor} has been terminated by the
-		 * source producer with a success or an error.
-		 *
-		 * @return {@code true} if this {@link NextProcessor} is successful, {@code false} otherwise.
-		 */
+	 * Indicates whether this {@link NextProcessor} has been terminated by the
+	 * source producer with a success or an error.
+	 *
+	 * @return {@code true} if this {@link NextProcessor} is successful, {@code false} otherwise.
+	 */
+	@Override
 	public boolean isTerminated() {
 		return subscribers == TERMINATED;
 	}
 
 	/**
-		 * Return the produced {@link Throwable} error if any or null
-		 *
-		 * @return the produced {@link Throwable} error if any or null
-		 */
+	 * Return the produced {@link Throwable} error if any or null
+	 *
+	 * @return the produced {@link Throwable} error if any or null
+	 */
 	@Nullable
+	@Override
 	public Throwable getError() {
 		return error;
 	}

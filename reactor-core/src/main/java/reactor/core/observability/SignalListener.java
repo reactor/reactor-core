@@ -200,4 +200,18 @@ public interface SignalListener<T> {
 	 * @param listenerError the exception thrown from a {@link SignalListener} handler method
 	 */
 	void handleListenerError(Throwable listenerError);
+
+	/**
+	 * In some cases, the tap operation should alter the {@link Context} exposed by the operator in order to store additional
+	 * data. This method is invoked when the tap subscriber is created, which is between the invocation of {@link #doFirst()}
+	 * and the invocation of {@link #doOnSubscription()}. Generally, only addition of new keys should be performed on
+	 * the downstream original {@link Context}. Extra care should be exercised if any pre-existing key is to be removed
+	 * or replaced.
+	 *
+	 * @param originalContext the original downstream operator's {@link Context}
+	 * @return the {@link Context} to use and expose upstream
+	 */
+	default Context addToContext(Context originalContext) {
+		return originalContext;
+	}
 }
