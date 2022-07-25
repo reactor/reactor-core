@@ -33,22 +33,11 @@ import reactor.core.scheduler.Scheduler;
  */
 final class TimedScheduler implements Scheduler {
 
-	//FIXME javadoc
-	public static final String DEFAULT_METRIC_PREFIX        = "reactor.schedulers.";
+	//FIXME document somewhere public?
 	public static final String METER_SCHEDULER              = "scheduler";
 	public static final String METER_IDLE                   = "scheduler.idle";
 	public static final String METER_SUBMITTED_ONCE         = "scheduler.submitted.once";
 	public static final String METER_SUBMITTED_REPETITIVELY = "scheduler.submitted.repetitively";
-	public static final String TAG_SCHEDULER_NAME           = "schedulerName";
-
-	static TimedScheduler of(Scheduler s, String schedulerName, MeterRegistry registry,
-							String metricPrefix, Iterable<Tag> tags) {
-		return new TimedScheduler(s, schedulerName, registry, metricPrefix, tags);
-	}
-
-	static TimedScheduler of(Scheduler s, String schedulerName, MeterRegistry registry) {
-		return new TimedScheduler(s, schedulerName, registry, DEFAULT_METRIC_PREFIX, Tags.empty());
-	}
 
 	final Scheduler delegate;
 
@@ -58,17 +47,16 @@ final class TimedScheduler implements Scheduler {
 	final Counter       scheduledOnce;
 	final Counter       scheduledRepetitively;
 
-	TimedScheduler(Scheduler delegate, String schedulerName, MeterRegistry registry,  String metricPrefix, Iterable<Tag> tags) {
+	TimedScheduler(Scheduler delegate, MeterRegistry registry,  String metricPrefix, Iterable<Tag> tags) {
 		this.registry = registry;
 		this.delegate = delegate;
-		Tags finalTags = Tags.concat(tags, TAG_SCHEDULER_NAME, schedulerName);
 		if (!metricPrefix.endsWith(".")) {
 			metricPrefix = metricPrefix + ".";
 		}
-		this.executionTimer = registry.timer(metricPrefix + METER_SCHEDULER, finalTags);
-		this.idleTimer = registry.timer(metricPrefix + METER_IDLE, finalTags);
-		this.scheduledOnce = registry.counter(metricPrefix + METER_SUBMITTED_ONCE, finalTags);
-		this.scheduledRepetitively = registry.counter(metricPrefix + METER_SUBMITTED_REPETITIVELY, finalTags);
+		this.executionTimer = registry.timer(metricPrefix + METER_SCHEDULER, tags);
+		this.idleTimer = registry.timer(metricPrefix + METER_IDLE, tags);
+		this.scheduledOnce = registry.counter(metricPrefix + METER_SUBMITTED_ONCE, tags);
+		this.scheduledRepetitively = registry.counter(metricPrefix + METER_SUBMITTED_REPETITIVELY, tags);
 	}
 
 	/**

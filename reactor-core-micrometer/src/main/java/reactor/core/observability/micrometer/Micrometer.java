@@ -142,14 +142,12 @@ public final class Micrometer {
 	}
 
 	//FIXME javadoc
-	//FIXME remove schedulerName ? (as a tag, doesn't make much sense)
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix) {
-		return new TimedScheduler(original, "", meterRegistry, metricsPrefix, Tags.empty());
+		return new TimedScheduler(original, meterRegistry, metricsPrefix, Tags.empty());
 	}
 
 	//FIXME javadoc
-	//FIXME remove schedulerName ? (as a tag, doesn't make much sense)
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix, Iterable<Tag> tags) {
-		return new TimedScheduler(original, "", meterRegistry, metricsPrefix, tags);
+		return new TimedScheduler(original, meterRegistry, metricsPrefix, tags);
 	}
 }
