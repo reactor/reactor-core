@@ -141,12 +141,32 @@ public final class Micrometer {
 		Schedulers.removeExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY);
 	}
 
-	//FIXME javadoc
+	/**
+	 * Wrap a {@link Scheduler} in an instance that gather various task-related metrics using
+	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
+	 * Note that no tags are set up for these meters.
+	 *
+	 * @param original the original {@link Scheduler} to decorate with metrics
+	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
+	 * @param metricsPrefix the prefix to use in meter names. if needed, a dot is added at the end
+	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
+	 */
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix) {
 		return new TimedScheduler(original, meterRegistry, metricsPrefix, Tags.empty());
 	}
 
-	//FIXME javadoc
+	/**
+	 * Wrap a {@link Scheduler} in an instance that gather various task-related metrics using
+	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
+	 * User-provided collection of {@link Tag} (ie. {@link Tags}) can also be provided to be added to
+	 * all the meters of that timed Scheduler..
+	 *
+	 * @param original the original {@link Scheduler} to decorate with metrics
+	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
+	 * @param metricsPrefix the prefix to use in meter names. if needed, a dot is added at the end
+	 * @param tags the tags to put on meters
+	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
+	 */
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix, Iterable<Tag> tags) {
 		return new TimedScheduler(original, meterRegistry, metricsPrefix, tags);
 	}
