@@ -21,14 +21,13 @@ import java.util.concurrent.TimeUnit;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 
-//FIXME javadoc
 /**
+ * An instrumented {@link Scheduler} wrapping an original {@link Scheduler} and gathering metrics around submitted tasks.
  * @author Simon Baslé
  */
 final class TimedScheduler implements Scheduler {
@@ -36,16 +35,16 @@ final class TimedScheduler implements Scheduler {
 	//FIXME document somewhere public?
 	public static final String METER_SCHEDULER              = "scheduler";
 	public static final String METER_IDLE                   = "scheduler.idle";
-	public static final String METER_SUBMITTED_ONCE         = "scheduler.submitted.once";
-	public static final String METER_SUBMITTED_REPETITIVELY = "scheduler.submitted.repetitively";
+	public static final String METER_SCHEDULED_ONCE         = "scheduler.scheduled.once";
+	public static final String METER_SCHEDULED_PERIODICALLY = "scheduler.scheduled.periodically";
 
 	final Scheduler delegate;
 
 	final MeterRegistry registry;
 	final Timer         executionTimer;
 	final Timer         idleTimer;
-	final Counter       scheduledOnce;
-	final Counter       scheduledRepetitively;
+	final Counter scheduledOnce;
+	final Counter scheduledPeriodically;
 
 	TimedScheduler(Scheduler delegate, MeterRegistry registry,  String metricPrefix, Iterable<Tag> tags) {
 		this.registry = registry;
@@ -55,8 +54,8 @@ final class TimedScheduler implements Scheduler {
 		}
 		this.executionTimer = registry.timer(metricPrefix + METER_SCHEDULER, tags);
 		this.idleTimer = registry.timer(metricPrefix + METER_IDLE, tags);
-		this.scheduledOnce = registry.counter(metricPrefix + METER_SUBMITTED_ONCE, tags);
-		this.scheduledRepetitively = registry.counter(metricPrefix + METER_SUBMITTED_REPETITIVELY, tags);
+		this.scheduledOnce = registry.counter(metricPrefix + METER_SCHEDULED_ONCE, tags);
+		this.scheduledPeriodically = registry.counter(metricPrefix + METER_SCHEDULED_PERIODICALLY, tags);
 	}
 
 	/**
@@ -87,7 +86,7 @@ final class TimedScheduler implements Scheduler {
 
 	@Override
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		scheduledRepetitively.increment();
+		scheduledPeriodically.increment();
 		return delegate.schedulePeriodically(executionTimer.wrap(task), initialDelay, period, unit);
 	}
 
@@ -149,7 +148,7 @@ final class TimedScheduler implements Scheduler {
 
 		@Override
 		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			parent.scheduledRepetitively.increment();
+			parent.scheduledPeriodically.increment();
 			return delegate.schedulePeriodically(parent.executionTimer.wrap(task), initialDelay, period, unit);
 		}
 	}
@@ -173,13 +172,7 @@ final class TimedScheduler implements Scheduler {
 		@Override
 		public void run() {
 			idleSample.stop(idleTimer);
-			Timer.Sample executionSample = Timer.start(registry);
-			try {
-				task.run();
-			}
-			finally {
-				executionSample.stop(executionTimer);
-			}
+			executionTimer.record(task);
 		}
 	}
 }
