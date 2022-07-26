@@ -18,11 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -67,58 +65,28 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class CollectSubscriber<T, R> implements InnerOperator<T, R>,
-	                                                      Fuseable, //for constants only
-	                                                      QueueSubscription<R> {
+	static final class CollectSubscriber<T, R> extends Operators.BaseFluxToMonoOperator<T, R> {
 
 		final BiConsumer<? super R, ? super T> action;
 
-		final CoreSubscriber<? super R> actual;
-
 		R container;
 
-		Subscription s;
-
-		boolean hasRequest;
-
 		boolean done;
-
-		volatile int state;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<CollectSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(CollectSubscriber.class, "state");
 
 		CollectSubscriber(CoreSubscriber<? super R> actual,
 				BiConsumer<? super R, ? super T> action,
 				R container) {
-			this.actual = actual;
+			super(actual);
 			this.action = action;
 			this.container = container;
 		}
 
 		@Override
-		public CoreSubscriber<? super R> actual() {
-			return this.actual;
-		}
-
-		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PREFETCH) return 0;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -137,7 +105,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 					catch (Throwable e) {
 						Context ctx = actual.currentContext();
 						Operators.onDiscard(t, ctx);
-						onError(Operators.onOperatorError(this, e, t, ctx));
+						onError(Operators.onOperatorError(this.s, e, t, ctx));
 					}
 					return;
 				}
@@ -157,6 +125,11 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				c = container;
 				container = null;
 			}
+
+			if (c == null) {
+				return;
+			}
+
 			discard(c);
 			actual.onError(t);
 		}
@@ -168,71 +141,12 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			if (hasRequest) {
-				final R c;
-				synchronized (this) {
-					c = container;
-					container = null;
-				}
-
-				if (c != null) {
-					this.actual.onNext(c);
-					this.actual.onComplete();
-				}
-				return;
-			}
-
-			final int state = this.state;
-			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
-				return;
-			}
-
-			final R c;
-			synchronized (this) {
-				c = container;
-				container = null;
-			}
-
-			if (c != null) {
-				this.actual.onNext(c);
-				this.actual.onComplete();
-			}
-		}
-
-		@Override
-		public void request(long n) {
-			if (!hasRequest) {
-				hasRequest = true;
-
-				final int state = this.state;
-				if ((state & 1) == 1) {
-					return;
-				}
-
-				if (STATE.compareAndSet(this, state, state | 1)) {
-					if (state == 0) {
-						s.request(Long.MAX_VALUE);
-					}
-					else {
-						// completed before request means source was empty
-						final R c;
-						synchronized (this) {
-							c = container;
-							container = null;
-						}
-
-						if (c != null) {
-							this.actual.onNext(c);
-							this.actual.onComplete();
-						}
-					}
-				}
-			}
+			completeWhenEmpty();
 		}
 
 		@Override
 		public void cancel() {
-			s.cancel();
+			super.cancel();
 
 			final R c;
 			synchronized (this) {
@@ -246,28 +160,14 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
+		R resolveValue() {
+			final R c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
 
-		@Override
-		public R poll() {
-			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return false;
-		}
-
-		@Override
-		public void clear() {
-
+			return c;
 		}
 
 		void discard(R v) {

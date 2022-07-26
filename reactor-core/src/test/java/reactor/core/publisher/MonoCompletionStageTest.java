@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,35 @@ MonoCompletionStageTest {
 		            	subRef.get().cancel();
 		            	future.completeExceptionally(new IllegalStateException("boom"));
 		            	future.complete(1);
+		            })
+		            .thenCancel()//already cancelled but need to get to verification
+		            .verifyThenAssertThat()
+		            .hasNotDroppedErrors();
+
+		assertThat(future).isCancelled();
+	}
+
+	@Test
+	public void cancelThenFutureFails1() {
+		CompletableFuture<Integer> future = new CompletableFuture<Integer>() {
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				// noops
+				return false;
+			}
+		};
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+
+		Mono<Integer> mono = Mono
+				.fromFuture(future)
+				.doOnSubscribe(subRef::set);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .then(() -> {
+			            subRef.get().cancel();
+			            future.completeExceptionally(new IllegalStateException("boom"));
+			            future.complete(1);
 		            })
 		            .thenCancel()//already cancelled but need to get to verification
 		            .verifyThenAssertThat()

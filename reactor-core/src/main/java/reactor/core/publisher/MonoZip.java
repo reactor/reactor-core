@@ -221,7 +221,6 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			return Stream.of(subscribers);
 		}
 
-		@SuppressWarnings("unchecked")
 		boolean signal() {
 			ZipInner<R>[] a = subscribers;
 			int n = a.length;
@@ -305,8 +304,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 			final Context context = actual.currentContext();
 			for (ZipInner<R> ms : subscribers) {
-				Operators.onDiscard(ms.value, context);
-				ms.cancel();
+				if (ms.cancel()) {
+					Operators.onDiscard(ms.value, context);
+				}
 			}
 		}
 
@@ -420,12 +420,10 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 		final ZipCoordinator<R> parent;
 
-		volatile     Subscription                                        s;
+		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class,
-						Subscription.class,
-						"s");
+				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class, Subscription.class, "s");
 
 		Object    value;
 		Throwable error;
@@ -473,6 +471,10 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			if (value == null) {
 				value = t;
 				if (!parent.signal()) {
+					final Subscription a = this.s;
+					if (a != Operators.cancelledSubscription() && S.compareAndSet(this, a, Operators.cancelledSubscription())) {
+						return;
+					}
 					Operators.onDiscard(t, parent.actual.currentContext());
 				}
 			}
@@ -522,8 +524,8 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			}
 		}
 
-		void cancel() {
-			Operators.terminate(S, this);
+		boolean cancel() {
+			return !Operators.terminate(S, this);
 		}
 	}
 }

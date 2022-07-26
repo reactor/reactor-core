@@ -18,9 +18,7 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -47,54 +45,25 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		return super.scanUnsafe(key);
 	}
 
-	static final class MonoCollectListSubscriber<T> implements InnerOperator<T, List<T>>,
-	                                                           Fuseable, //for constants only
-	                                                           QueueSubscription<List<T>> {
-
-		final CoreSubscriber<? super List<T>> actual;
+	static final class MonoCollectListSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, List<T>> {
 
 		List<T> list;
 
-		Subscription s;
-
 		boolean done;
 
-		boolean hasRequest;
-
-		volatile int state;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MonoCollectListSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(MonoCollectListSubscriber.class, "state");
-
 		MonoCollectListSubscriber(CoreSubscriber<? super List<T>> actual) {
-			this.actual = actual;
+			super(actual);
 			//not this is not thread safe so concurrent discarding multiple + add might fail with ConcurrentModificationException
 			this.list = new ArrayList<>();
 		}
 
 		@Override
-		public CoreSubscriber<? super List<T>> actual() {
-			return this.actual;
-		}
-
-		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.CANCELLED) return !done && list == null;
 
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -129,6 +98,11 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				l = list;
 				list = null;
 			}
+
+			if (l == null) {
+				return;
+			}
+
 			Operators.onDiscardMultiple(l, actual.currentContext());
 
 			actual.onError(t);
@@ -141,73 +115,14 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			}
 			done = true;
 
-			if (hasRequest) {
-				final List<T> l;
-				synchronized (this) {
-					l = list;
-					list = null;
-				}
-
-				if (l != null) {
-					this.actual.onNext(l);
-					this.actual.onComplete();
-				}
-				return;
-			}
-
-			final int state = this.state;
-			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
-				return;
-			}
-
-			final List<T> l;
-			synchronized (this) {
-				l = list;
-				list = null;
-			}
-
-			if (l != null) {
-				this.actual.onNext(l);
-				this.actual.onComplete();
-			}
-		}
-
-		@Override
-		public void request(long n) {
-			if (!hasRequest) {
-				hasRequest = true;
-
-				final int state = this.state;
-				if ((state & 1) == 1) {
-					return;
-				}
-
-				if (STATE.compareAndSet(this, state, state | 1)) {
-					if (state == 0) {
-						s.request(Long.MAX_VALUE);
-					}
-					else {
-						// completed before request means source was empty
-						final List<T> l;
-						synchronized (this) {
-							l = list;
-							list = null;
-						}
-
-						if (l != null) {
-							this.actual.onNext(l);
-							this.actual.onComplete();
-						}
-					}
-				}
-			}
+			completeWhenEmpty();
 		}
 
 		@Override
 		public void cancel() {
 			s.cancel();
 
-			final List<?> l;
+			final List<T> l;
 			synchronized (this) {
 				l = list;
 				list = null;
@@ -219,28 +134,13 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		}
 
 		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public List<T> poll() {
-			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return false;
-		}
-
-		@Override
-		public void clear() {
-
+		List<T> resolveValue() {
+			final List<T> l;
+			synchronized (this) {
+				l = list;
+				list = null;
+			}
+			return l;
 		}
 	}
 }

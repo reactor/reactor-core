@@ -17,10 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -56,26 +54,15 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 		return super.scanUnsafe(key);
 	}
 
-	static final class AnySubscriber<T> implements InnerOperator<T, Boolean>,
-	                                               Fuseable, //for constants only
-	                                               QueueSubscription<Boolean> {
+	static final class AnySubscriber<T> extends
+	                                    Operators.BaseFluxToMonoOperator<T, Boolean> {
 
-		final CoreSubscriber<? super Boolean> actual;
 		final Predicate<? super T> predicate;
-
-		Subscription s;
 
 		boolean done;
 
-		boolean hasRequest;
-
-		volatile     int                                              state;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<AnySubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(AnySubscriber.class, "state");
-
 		AnySubscriber(CoreSubscriber<? super Boolean> actual, Predicate<? super T> predicate) {
-			this.actual = actual;
+			super(actual);
 			this.predicate = predicate;
 		}
 
@@ -83,53 +70,8 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-			if (key == Attr.PREFETCH) return 0;
 
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public CoreSubscriber<? super Boolean> actual() {
-			return this.actual;
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public void request(long n) {
-			if (!hasRequest) {
-				hasRequest = true;
-
-				final int state = this.state;
-				if ((state & 1) == 1) {
-					return;
-				}
-
-				if (STATE.compareAndSet(this, state, state | 1)) {
-					if (state == 0) {
-						s.request(Long.MAX_VALUE);
-					}
-					else {
-						// completed before request means source was empty
-						actual.onNext(false);
-						actual.onComplete();
-					}
-				}
-			}
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -176,44 +118,12 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 			}
 			done = true;
 
-			if (hasRequest) {
-				this.actual.onNext(false);
-				this.actual.onComplete();
-				return;
-			}
-
-			final int state = this.state;
-			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
-				return;
-			}
-
-			actual.onNext(false);
-			actual.onComplete();
+			completeWhenEmpty();
 		}
 
 		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public Boolean poll() {
-			return null;
-		}
-
-		@Override
-		public void clear() {
-
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return true;
-		}
-
-		@Override
-		public int size() {
-			return 0;
+		Boolean resolveValue() {
+			return false;
 		}
 	}
 }

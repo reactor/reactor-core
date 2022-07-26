@@ -175,7 +175,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 
 		@Override
 		public boolean isEmpty() {
-			return false;
+			return true;
 		}
 
 		@Override

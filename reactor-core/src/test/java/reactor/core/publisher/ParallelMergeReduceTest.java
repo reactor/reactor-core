@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,12 +98,14 @@ public class ParallelMergeReduceTest {
 	public void scanMainSubscriber() {
 		CoreSubscriber<? super Integer> subscriber = new LambdaSubscriber<>(null, e -> { }, null,
 				sub -> sub.request(2));
-		MergeReduceMain<Integer> test = new MergeReduceMain<>(subscriber, 2, (a, b) -> a + b);
+		MergeReduceMain<Integer> test = new MergeReduceMain<>(Flux.<Integer>never()
+		                                                          .parallel(2),
+				subscriber, 2, (a, b) -> a + b);
 
 		subscriber.onSubscribe(test);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -118,11 +120,13 @@ public class ParallelMergeReduceTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
+
 	@Test
 	public void scanMainSubscriberError() {
 		CoreSubscriber<? super Integer> subscriber = new LambdaSubscriber<>(null, e -> { }, null,
 				sub -> sub.request(2));
-		MergeReduceMain<Integer> test = new MergeReduceMain<>(subscriber, 2, (a, b) -> a + b);
+		MergeReduceMain<Integer> test = new MergeReduceMain<>(Flux.range(0, 10)
+		                                                          .parallel(2), subscriber, 2, (a, b) -> a + b);
 
 		subscriber.onSubscribe(test);
 
@@ -134,7 +138,9 @@ public class ParallelMergeReduceTest {
 	@Test
 	public void scanInnerSubscriber() {
 		CoreSubscriber<? super Integer> subscriber = new LambdaSubscriber<>(null, e -> { }, null, null);
-		MergeReduceMain<Integer> main = new MergeReduceMain<>(subscriber, 2, (a, b) -> a + b);
+		MergeReduceMain<Integer> main = new MergeReduceMain<>(Flux.range(0, 10)
+		                                                          .parallel(2),
+				subscriber, 2, (a, b) -> a + b);
 		MergeReduceInner<Integer> test = new MergeReduceInner<>(main, (a, b) -> a + b);
 
 		Subscription s = Operators.emptySubscription();

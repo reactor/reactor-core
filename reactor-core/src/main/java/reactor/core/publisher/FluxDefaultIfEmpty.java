@@ -17,12 +17,9 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -52,15 +49,9 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 	}
 
 	static final class DefaultIfEmptySubscriber<T>
-			implements InnerOperator<T, T>,
-			           Fuseable, //for constants only
-			           Fuseable.QueueSubscription<T> {
+			extends Operators.BaseFluxToMonoOperator<T, T> {
 
-		final CoreSubscriber<? super T> actual;
-
-		Subscription s;
-
-		boolean hasRequest;
+		boolean done;
 
 		boolean hasValue;
 
@@ -69,29 +60,17 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 		static final AtomicReferenceFieldUpdater<DefaultIfEmptySubscriber, Object> FALLBACK_VALUE =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultIfEmptySubscriber.class, Object.class, "fallbackValue");
 
-		volatile int state;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<DefaultIfEmptySubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(DefaultIfEmptySubscriber.class, "state");
-
 		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T fallbackValue) {
-			this.actual = actual;
+			super(actual);
 			FALLBACK_VALUE.lazySet(this, fallbackValue);
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return this.actual;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.PREFETCH) return 0;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.TERMINATED) return done;
 
-			return InnerOperator.super.scanUnsafe(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -121,19 +100,11 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void cancel() {
-			s.cancel();
+			super.cancel();
+
 			final T fallbackValue = this.fallbackValue;
 			if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
 				Operators.onDiscard(fallbackValue, actual.currentContext());
-			}
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
 			}
 		}
 
@@ -153,30 +124,14 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onComplete() {
+			if (done) {
+				return;
+			}
+
+			done = true;
+
 			if (!hasValue) {
-				if (hasRequest) {
-					final T fallbackValue = this.fallbackValue;
-					if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this,
-							fallbackValue,
-							null)) {
-						actual.onNext(fallbackValue);
-						actual.onComplete();
-					}
-					return;
-				}
-
-				final int state = this.state;
-				if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
-					return;
-				}
-
-				final T fallbackValue = this.fallbackValue;
-				if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this,
-						fallbackValue,
-						null)) {
-					actual.onNext(fallbackValue);
-					actual.onComplete();
-				}
+				completeWhenEmpty();
 
 				return;
 			}
@@ -186,6 +141,11 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
+			if (done) {
+				return;
+			}
+
+			done = true;
 			if (!hasValue) {
 				final T fallbackValue = this.fallbackValue;
 				if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
@@ -197,28 +157,12 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE; // prevent fusion because of the upstream
-		}
-
-		@Override
-		public T poll() {
+		T resolveValue() {
+			final T fallbackValue = this.fallbackValue;
+			if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
+				return fallbackValue;
+			}
 			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return false;
-		}
-
-		@Override
-		public void clear() {
-
 		}
 	}
 }

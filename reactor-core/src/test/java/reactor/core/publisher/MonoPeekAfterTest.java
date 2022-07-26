@@ -91,53 +91,6 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onSuccessFusion() {
-		LongAdder invoked = new LongAdder();
-		AtomicBoolean hasNull = new AtomicBoolean();
-
-		Mono<Integer> mono = Flux
-				.range(1, 10)
-				.reduce((a, b) -> a + b)
-				.doOnSuccess(v -> {
-					if (v == null) hasNull.set(true);
-					invoked.increment();
-				});
-
-		StepVerifier.create(mono)
-		            .expectFusion(Fuseable.ASYNC)
-		            .expectNext(55)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(hasNull.get()).as("unexpected call to onSuccess with null").isFalse();
-		assertThat(invoked.intValue()).isEqualTo(1);
-	}
-
-	@Test
-	public void onSuccessFusionConditional() {
-		LongAdder invoked = new LongAdder();
-		AtomicBoolean hasNull = new AtomicBoolean();
-
-		Mono<Integer> mono = Flux
-				.range(1, 10)
-				.reduce((a, b) -> a + b)
-				.filter(v -> true)
-				.doOnSuccess(v -> {
-					if (v == null) hasNull.set(true);
-					invoked.increment();
-				});
-
-		StepVerifier.create(mono)
-		            .expectFusion()
-		            .expectNext(55)
-		            .expectComplete()
-		            .verify();
-
-		assertThat(hasNull.get()).as("unexpected call to onSuccess with null").isFalse();
-		assertThat(invoked.intValue()).isEqualTo(1);
-	}
-
-	@Test
 	public void onAfterTerminateNormalConditional() {
 		LongAdder invoked = new LongAdder();
 
@@ -336,30 +289,6 @@ public class MonoPeekAfterTest {
 
 		StepVerifier.create(mono)
 		            .expectFusion(Fuseable.SYNC)
-		            .expectNext(55)
-		            .expectComplete()
-		            .verify();
-
-		assertThat((Object) successInvocation.get()).isEqualTo(55);
-		assertThat(errorInvocation).hasValue(null);
-	}
-
-	@Test
-	void testCallbacksFusionAsync() {
-		AtomicReference<Integer> successInvocation = new AtomicReference<>();
-		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
-
-		Mono<Integer> source = Flux
-				.range(1, 10)
-				.reduce((a, b) -> a + b);
-
-		Mono<Integer> mono = new MonoPeekTerminal<>(source,
-				successInvocation::set,
-				errorInvocation::set,
-				null); //afterTerminate forces the negotiation of fusion mode NONE
-
-		StepVerifier.create(mono)
-		            .expectFusion(Fuseable.ASYNC)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();

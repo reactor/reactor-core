@@ -195,6 +195,10 @@ public class FluxDefaultIfEmptyTest {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 }

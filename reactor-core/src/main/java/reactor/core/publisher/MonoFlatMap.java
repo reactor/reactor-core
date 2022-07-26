@@ -225,7 +225,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		@Override
 		public boolean isEmpty() {
-			return false;
+			return true;
 		}
 
 		@Override

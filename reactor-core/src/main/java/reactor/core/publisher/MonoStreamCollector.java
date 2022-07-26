@@ -18,12 +18,10 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -68,53 +66,32 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class StreamCollectorSubscriber<T, A, R> implements InnerOperator<T, R>,
-	                                                                 Fuseable, //for constants only
-															         QueueSubscription<R> {
+	static final class StreamCollectorSubscriber<T, A, R> extends Operators.BaseFluxToMonoOperator<T, R> {
 
 		final BiConsumer<? super A, ? super T> accumulator;
 
 		final Function<? super A, ? extends R> finisher;
 
-		final CoreSubscriber<? super R> actual;
-
 		A container; //not final to be able to null it out on termination
 
-		Subscription s;
-
-		boolean hasRequest;
-
 		boolean done;
-
-		volatile int state;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<StreamCollectorSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(StreamCollectorSubscriber.class, "state");
 
 		StreamCollectorSubscriber(CoreSubscriber<? super R> actual,
 				A container,
 				BiConsumer<? super A, ? super T> accumulator,
 				Function<? super A, ? extends R> finisher) {
-			this.actual = actual;
+			super(actual);
 			this.container = container;
 			this.accumulator = accumulator;
 			this.finisher = finisher;
 		}
 
 		@Override
-		public CoreSubscriber<? super R> actual() {
-			return this.actual;
-		}
-
-		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.PREFETCH) return 0;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return InnerOperator.super.scanUnsafe(key);
+			return super.scanUnsafe(key);
 		}
 
 		void discardIntermediateContainer(A a) {
@@ -126,18 +103,6 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				Operators.onDiscard(a, ctx);
 			}
 		}
-		//NB: value and thus discard are not used
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-		}
 
 		@Override
 		public void onNext(T t) {
@@ -147,7 +112,10 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 			try {
 				synchronized (this) {
-					accumulator.accept(container, t);
+					final A container = this.container;
+					if (container != null) {
+						accumulator.accept(container, t);
+					}
 				}
 			}
 			catch (Throwable ex) {
@@ -170,10 +138,12 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				container = null;
 			}
 
-			if (c != null) {
-				discardIntermediateContainer(c);
-				actual.onError(t);
+			if (c == null) {
+				return;
 			}
+
+			discardIntermediateContainer(c);
+			actual.onError(t);
 		}
 
 		@Override
@@ -183,75 +153,12 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			if (hasRequest) {
-				final A c;
-				synchronized (this) {
-					c = container;
-					container = null;
-				}
-
-				if (c == null) {
-					return;
-				}
-
-				R r;
-				try {
-					r = finisher.apply(c);
-				}
-				catch (Throwable ex) {
-					discardIntermediateContainer(c);
-					actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
-					return;
-				}
-
-				if (r == null) {
-					actual.onError(Operators.onOperatorError(new NullPointerException(
-							"Collector returned null"), actual.currentContext()));
-					return;
-				}
-
-				actual.onNext(r);
-				actual.onComplete();
-			}
-
-			final int state = this.state;
-			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
-				return;
-			}
-
-			final A c;
-			synchronized (this) {
-				c = container;
-				container = null;
-			}
-
-			if (c == null) {
-				return;
-			}
-
-			R r;
-			try {
-				r = finisher.apply(c);
-			}
-			catch (Throwable ex) {
-				discardIntermediateContainer(c);
-				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
-				return;
-			}
-
-			if (r == null) {
-				actual.onError(Operators.onOperatorError(new NullPointerException(
-						"Collector returned null"), actual.currentContext()));
-				return;
-			}
-
-			actual.onNext(r);
-			actual.onComplete();
+			completeWhenEmpty();
 		}
 
 		@Override
 		public void cancel() {
-			s.cancel();
+			super.cancel();
 
 			final A c;
 			synchronized (this) {
@@ -263,78 +170,33 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 		}
 
-		@Override
-		public void request(long n) {
-			if (!hasRequest) {
-				hasRequest = true;
-
-				final int state = this.state;
-				if ((state & 1) == 1) {
-					return;
-				}
-
-				if (STATE.compareAndSet(this, state, state | 1)) {
-					if (state == 0) {
-						s.request(Long.MAX_VALUE);
-					}
-					else {
-						// completed before request means source was empty
-						final A c;
-						synchronized (this) {
-							c = container;
-							container = null;
-						}
-
-						if (c == null) {
-							return;
-						}
-
-						R r;
-						try {
-							r = finisher.apply(c);
-						}
-						catch (Throwable ex) {
-							discardIntermediateContainer(c);
-							actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
-							return;
-						}
-
-						if (r == null) {
-							actual.onError(Operators.onOperatorError(new NullPointerException(
-									"Collector returned null"), actual.currentContext()));
-							return;
-						}
-
-						actual.onNext(r);
-						actual.onComplete();
-					}
-				}
+		R resolveValue() {
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
 			}
-		}
 
-		@Override
-		public int requestFusion(int mode) {
-			return Fuseable.NONE;
-		}
+			if (c == null) {
+				return null;
+			}
 
-		@Override
-		public R poll() {
-			return null;
-		}
+			R r;
+			try {
+				r = finisher.apply(c);
+			}
+			catch (Throwable ex) {
+				discardIntermediateContainer(c);
+				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
+				return null;
+			}
 
-		@Override
-		public int size() {
-			return 0;
-		}
+			if (r == null) {
+				actual.onError(Operators.onOperatorError(new NullPointerException(
+						"Collector returned null"), actual.currentContext()));
+			}
 
-		@Override
-		public boolean isEmpty() {
-			return false;
-		}
-
-		@Override
-		public void clear() {
-
+			return r;
 		}
 	}
 }

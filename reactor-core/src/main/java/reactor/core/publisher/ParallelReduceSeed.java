@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,13 +107,11 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 
 
 	static final class ParallelReduceSeedSubscriber<T, R>
-			extends Operators.MonoSubscriber<T, R> {
+			extends Operators.BaseFluxToMonoOperator<T, R> {
 
 		final BiFunction<R, ? super T, R> reducer;
 
 		R accumulator;
-
-		Subscription s;
 
 		boolean done;
 
@@ -126,34 +124,29 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
-			R v;
+			synchronized (this) {
+				R v;
+				try {
+					if (accumulator == null) {
+						return;
+					}
 
-			try {
-				v = Objects.requireNonNull(reducer.apply(accumulator, t), "The reducer returned a null value");
-			}
-			catch (Throwable ex) {
-				onError(Operators.onOperatorError(this, ex, t, actual.currentContext()));
-				return;
-			}
+					v = Objects.requireNonNull(reducer.apply(accumulator, t),
+							"The reducer returned a null value");
+				}
+				catch (Throwable ex) {
+					onError(Operators.onOperatorError(this.s, ex, t, actual.currentContext()));
+					return;
+				}
 
-			accumulator = v;
+				accumulator = v;
+			}
 		}
 
 		@Override
@@ -163,7 +156,21 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 				return;
 			}
 			done = true;
-			accumulator = null;
+
+			final R a;
+			synchronized (this) {
+				a = accumulator;
+				if (a != null) {
+					accumulator = null;
+				}
+			}
+
+			if (a == null) {
+				return;
+			}
+
+			Operators.onDiscard(a, currentContext());
+
 			actual.onError(t);
 		}
 
@@ -174,20 +181,45 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 			}
 			done = true;
 
-			R a = accumulator;
-			accumulator = null;
-			complete(a);
+			completeWhenEmpty();
+		}
+
+		@Override
+		R resolveValue() {
+			final R a;
+			synchronized (this) {
+				a = accumulator;
+				if (a != null) {
+					accumulator = null;
+				}
+			}
+			return a;
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
+
+			final R a;
+			synchronized (this) {
+				a = accumulator;
+				if (a != null) {
+					accumulator = null;
+				}
+			}
+
+			if (a == null) {
+				return;
+			}
+
+			Operators.onDiscard(a, currentContext());
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return !done && accumulator == null;
 			return super.scanUnsafe(key);
 		}
 	}

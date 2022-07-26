@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,7 +174,7 @@ public class MonoDelayElementTest {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		AtomicLong upstreamCancelCount = new AtomicLong();
 
-		Mono<String> source = Mono.just("foo").log().hide()
+		Mono<String> source = Mono.<String>empty().log().hide()
 				.doOnCancel(() -> upstreamCancelCount.incrementAndGet());
 
 		StepVerifier.withVirtualTime(
@@ -187,6 +187,26 @@ public class MonoDelayElementTest {
 
 		vts.advanceTimeBy(Duration.ofHours(1));
 		assertThat(upstreamCancelCount).hasValue(1);
+	}
+	@Test
+	public void neverCancelUpstreamWhenValueResolvedOnce() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		AtomicLong upstreamCancelCount = new AtomicLong();
+
+		Mono<String> source = Mono.just("foo").log().hide()
+		                          .doOnCancel(() -> upstreamCancelCount.incrementAndGet());
+
+		StepVerifier.withVirtualTime(
+				            () -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts),
+				            () -> vts, Long.MAX_VALUE)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscarded("foo");
+
+		vts.advanceTimeBy(Duration.ofHours(1));
+		assertThat(upstreamCancelCount).hasValue(0);
 	}
 
 	@Test
@@ -377,7 +397,7 @@ public class MonoDelayElementTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 

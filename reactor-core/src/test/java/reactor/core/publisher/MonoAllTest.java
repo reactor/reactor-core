@@ -125,7 +125,7 @@ public class MonoAllTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);

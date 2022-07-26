@@ -16,10 +16,6 @@
 
 package reactor.core.publisher;
 
-
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -48,53 +44,27 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		return super.scanUnsafe(key);
 	}
 
-	static final class CountSubscriber<T> implements InnerOperator<T, Long>,
-	                                                 Fuseable, //for constants only
-	                                                 QueueSubscription<Long> {
+	static final class CountSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, Long> {
 
-		final CoreSubscriber<? super Long> actual;
+		boolean done;
 
 		long counter;
 
-		Subscription s;
-
-		boolean hasRequest;
-
-		volatile int state;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<CountSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(CountSubscriber.class, "state");
-
 		CountSubscriber(CoreSubscriber<? super Long> actual) {
-			this.actual = actual;
+			super(actual);
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-			if (key == Attr.PREFETCH) return 0;
+			if (key == Attr.TERMINATED) return done;
 
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public CoreSubscriber<? super Long> actual() {
-			return this.actual;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
+			return super.scanUnsafe(key);
 		}
 
 		@Override
 		public void onNext(T t) {
+			Operators.onDiscard(t, currentContext());
 			counter++;
 		}
 
@@ -105,72 +75,12 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 
 		@Override
 		public void onComplete() {
-			if (hasRequest) {
-				this.actual.onNext(counter);
-				this.actual.onComplete();
-				return;
-			}
-
-			final int state = this.state;
-			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
-				return;
-			}
-
-			this.actual.onNext(0L);
-			this.actual.onComplete();
+			completeWhenEmpty();
 		}
 
 		@Override
-		public void request(long n) {
-			if (!hasRequest) {
-				hasRequest = true;
-
-				final int state = this.state;
-				if ((state & 1) == 1) {
-					return;
-				}
-
-				if (STATE.compareAndSet(this, state, state | 1)) {
-					if (state == 0) {
-						s.request(Long.MAX_VALUE);
-					}
-					else {
-						// completed before request means source was empty
-						this.actual.onNext(0L);
-						this.actual.onComplete();
-					}
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public Long poll() {
-			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return true;
-		}
-
-		@Override
-		public void clear() {
-
+		Long resolveValue() {
+			return counter;
 		}
 	}
 }
