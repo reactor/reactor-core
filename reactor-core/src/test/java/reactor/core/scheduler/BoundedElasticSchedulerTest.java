@@ -99,6 +99,11 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
+	@Override
+	protected boolean shouldCheckMultipleDisposeGracefully() {
+		return true;
+	}
+
 	@AfterAll
 	public static void dumpThreads() {
 		LOGGER.debug("Remaining threads after test class:");
@@ -429,7 +434,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(canSubmitTask(scheduler())).isTrue();
 	}
-
+	
 	// below tests similar to ElasticScheduler
 	@Test
 	public void negativeTtl() {
@@ -1550,9 +1555,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	@Tag("slow")
 	void schedulerDisposeGracefullyConcurrentBothTimeout() {
-		Scheduler raceScheduler = Schedulers.newBoundedElastic(10, 20_000, "RaceScheduler");
+		Scheduler raceScheduler = Schedulers.newBoundedElastic(10, 2_000, "RaceScheduler");
 
-		for (int j = 0; j < 10_000; j++) {
+		for (int j = 0; j < 1_000; j++) {
 			BoundedElasticScheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 5);
 			scheduler.start();
 			// Schedule a task that disallows graceful closure until the race is finished

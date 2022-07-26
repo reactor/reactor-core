@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,9 +28,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import com.pivovarit.function.ThrowingRunnable;
 
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +50,11 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected boolean shouldCheckInterrupted() {
+		return true;
+	}
+
+	@Override
+	protected boolean shouldCheckMultipleDisposeGracefully() {
 		return true;
 	}
 
@@ -225,5 +233,28 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			scheduler.dispose();
 		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void restartSupported(boolean disposeGracefully) {
+		Scheduler s = scheduler();
+		if (disposeGracefully) {
+			s.disposeGracefully(Duration.ofSeconds(1)).subscribe();
+		} else {
+			s.dispose();
+		}
+		ParallelScheduler.SchedulerState stateBefore = ((ParallelScheduler) s).state;
+		assertThat(stateBefore.executors).as("SHUTDOWN").isSameAs(ParallelScheduler.SchedulerState.SHUTDOWN);
+
+		s.start();
+
+		assertThat(((ParallelScheduler) s).state.executors)
+				.isNotSameAs(stateBefore.executors)
+				.allSatisfy(executor -> assertThat(executor)
+						.isInstanceOfSatisfying(ScheduledExecutorService.class, e -> {
+							assertThat(e.isShutdown()).isFalse();
+							assertThat(e.isTerminated()).isFalse();
+						}));
 	}
 }

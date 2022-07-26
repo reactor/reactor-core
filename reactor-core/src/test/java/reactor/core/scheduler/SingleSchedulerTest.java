@@ -18,8 +18,10 @@ package reactor.core.scheduler;
 
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -31,6 +33,7 @@ import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
+import static reactor.core.scheduler.SchedulerState.TERMINATED;
 
 /**
  * @author Stephane Maldini
@@ -44,6 +47,11 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected boolean shouldCheckInterrupted() {
+		return true;
+	}
+
+	@Override
+	protected boolean shouldCheckMultipleDisposeGracefully() {
 		return true;
 	}
 
@@ -197,7 +205,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 			s.dispose();
 		}
 		SchedulerState stateBefore = ((SingleScheduler) s).state;
-		assertThat(stateBefore.executor).as("SHUTDOWN").isSameAs(SchedulerState.TERMINATED);
+		assertThat(stateBefore.executor).as("SHUTDOWN").isSameAs(TERMINATED);
 
 		s.start();
 
@@ -208,74 +216,5 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 							assertThat(executor.isShutdown()).isFalse();
 							assertThat(executor.isTerminated()).isFalse();
 						});
-	}
-
-	@Test
-	void multipleRestarts() {
-		Scheduler s = Schedulers.newSingle("multipleRestarts");
-
-		s.dispose();
-		assertThat(s.isDisposed()).isTrue();
-
-		s.start();
-		assertThat(s.isDisposed()).isFalse();
-
-		s.disposeGracefully(Duration.ofMillis(20)).block();
-		assertThat(s.isDisposed()).isTrue();
-
-		s.start();
-		assertThat(s.isDisposed()).isFalse();
-
-		s.dispose();
-		assertThat(s.isDisposed()).isTrue();
-
-		s.start();
-		assertThat(s.isDisposed()).isFalse();
-	}
-
-	@Test
-	void multipleDisposeGracefully() throws Exception {
-		Scheduler s = Schedulers.newSingle("multipleDisposeGracefully");
-		ExecutorService executor = Executors.newFixedThreadPool(10);
-
-		CountDownLatch finishShutdownLatch = new CountDownLatch(1);
-		s.schedule(() -> {
-			while (true) {
-				try {
-					// ignore cancellation, hold graceful shutdown
-					if (finishShutdownLatch.await(100, TimeUnit.MILLISECONDS)) {
-						return;
-					}
-				} catch (InterruptedException ignored) {
-				}
-			}
-		});
-
-		CountDownLatch tasksLatch = new CountDownLatch(10);
-		for (int i = 0; i < 10; i++) {
-			executor.submit(() -> {
-				assertThatException()
-						.isThrownBy(() -> s.disposeGracefully(Duration.ofMillis(40)).block())
-						.withCauseExactlyInstanceOf(TimeoutException.class);
-				tasksLatch.countDown();
-			});
-		}
-
-		tasksLatch.await(100, TimeUnit.MILLISECONDS);
-
-		assertThatException()
-				.isThrownBy(() -> s.disposeGracefully(Duration.ofMillis(40)).block())
-				.withCauseExactlyInstanceOf(TimeoutException.class);
-
-		finishShutdownLatch.countDown();
-
-		assertThatNoException().isThrownBy(
-				() -> s.disposeGracefully(Duration.ofMillis(100)).block()
-		);
-		assertThatNoException().isThrownBy(
-				() -> s.disposeGracefully(Duration.ofMillis(20)).block()
-		);
-
-		assertThat(s.isDisposed()).isTrue();
 	}
 }
