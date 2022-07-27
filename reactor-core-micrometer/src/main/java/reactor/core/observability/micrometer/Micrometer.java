@@ -100,15 +100,16 @@ public final class Micrometer {
 	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}
 	 * (or scheduler implementations which use {@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}).
 	 * <p>
-	 * The {@link MeterRegistry} to use can be configured via {@link #useRegistry(MeterRegistry)}
+	 * The {@link MeterRegistry} to use can be configured via {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
 	 * prior to using this method, the default being {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 *
 	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers,
 	 * which doesn't change the Factory.
 	 */
+	@Deprecated
 	public static void enableSchedulersMetricsDecorator() {
 		Schedulers.addExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY,
-			new MicrometerSchedulerMetricsDecorator(getRegistry()));
+			new MicrometerSchedulerMetricsDecorator(reactor.util.Metrics.MicrometerConfiguration.getRegistry()));
 	}
 
 	/**
