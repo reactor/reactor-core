@@ -16,13 +16,9 @@
 
 package reactor.core.observability.micrometer;
 
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,66 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MicrometerTest {
 
-	private MeterRegistry defaultRegistry;
-
-	@BeforeEach
-	void init() {
-		defaultRegistry = Micrometer.getRegistry();
-	}
-
-	@AfterEach
-	void restore() {
-		Micrometer.useRegistry(defaultRegistry);
-	}
-
-	@Test
-	void defaultRegistryCanBeChanged() {
-		MeterRegistry registry = Micrometer.getRegistry();
-		try {
-			assertThat(registry).as("default common registry").isEqualTo(Metrics.globalRegistry);
-
-			MeterRegistry replacement = new SimpleMeterRegistry();
-			MeterRegistry old = Micrometer.useRegistry(replacement);
-
-			assertThat(old).as("useRegistry return value").isSameAs(registry);
-			assertThat(Micrometer.getRegistry()).as("getRegistry post useRegistry").isSameAs(replacement);
-		}
-		finally {
-			Micrometer.useRegistry(registry);
-		}
-	}
-
-	@Test
-	void metricsUsesCommonRegistry() {
-		SimpleMeterRegistry customCommonRegistry = new SimpleMeterRegistry();
-		Micrometer.useRegistry(customCommonRegistry);
-		MicrometerMeterListenerFactory<?> factory = (MicrometerMeterListenerFactory<?>) Micrometer.metrics();
-
-		assertThat(factory.useClock()).as("clock").isSameAs(Clock.SYSTEM);
-		assertThat(factory.useRegistry()).as("registry").isSameAs(customCommonRegistry);
-	}
-
 	@Test
 	void metricsUsesSpecifiedClockAndRegistry() {
-		SimpleMeterRegistry customCommonRegistry = new SimpleMeterRegistry();
-		Micrometer.useRegistry(customCommonRegistry);
 		SimpleMeterRegistry customLocalRegistry = new SimpleMeterRegistry();
-		Clock customLocalClock = new Clock() {
-			@Override
-			public long wallTime() {
-				return 0;
-			}
+		MicrometerMeterListenerFactory<?> factory = (MicrometerMeterListenerFactory<?>) Micrometer.metrics(customLocalRegistry);
 
-			@Override
-			public long monotonicTime() {
-				return 0;
-			}
-		};
-
-		MicrometerMeterListenerFactory<?> factory = (MicrometerMeterListenerFactory<?>) Micrometer.metrics(customLocalRegistry, customLocalClock);
-
-		assertThat(factory.useClock()).as("clock").isSameAs(customLocalClock).isNotSameAs(Clock.SYSTEM);
-		assertThat(factory.useRegistry()).as("registry").isSameAs(customLocalRegistry).isNotSameAs(customCommonRegistry);
+		assertThat(factory.registry).as("registry").isSameAs(customLocalRegistry).isNotSameAs(Metrics.globalRegistry);
 	}
 
 	@Test

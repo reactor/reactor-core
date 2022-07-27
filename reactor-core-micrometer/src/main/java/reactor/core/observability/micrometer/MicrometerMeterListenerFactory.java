@@ -17,6 +17,7 @@
 package reactor.core.observability.micrometer;
 
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.reactivestreams.Publisher;
 
@@ -33,22 +34,19 @@ import reactor.util.context.ContextView;
  */
 class MicrometerMeterListenerFactory<T> implements SignalListenerFactory<T, MicrometerMeterListenerConfiguration> {
 
-	protected Clock useClock() {
-		return Clock.SYSTEM;
-	}
+	final MeterRegistry registry;
 
-	@SuppressWarnings("deprecation")
-	protected MeterRegistry useRegistry() {
-		return Micrometer.getRegistry();
+	MicrometerMeterListenerFactory(MeterRegistry registry) {
+		this.registry = registry;
 	}
 
 	@Override
 	public MicrometerMeterListenerConfiguration initializePublisherState(Publisher<? extends T> source) {
 		if (source instanceof Mono) {
-			return MicrometerMeterListenerConfiguration.fromMono((Mono<?>) source, useRegistry(), useClock());
+			return MicrometerMeterListenerConfiguration.fromMono((Mono<?>) source, this.registry);
 		}
 		else if (source instanceof Flux) {
-			return MicrometerMeterListenerConfiguration.fromFlux((Flux<?>) source, useRegistry(), useClock());
+			return MicrometerMeterListenerConfiguration.fromFlux((Flux<?>) source, this.registry);
 		}
 		else {
 			throw new IllegalArgumentException("MicrometerMeterListenerFactory must only be used via the tap operator / with a Flux or Mono");
