@@ -64,6 +64,8 @@ final class TimedScheduler implements Scheduler {
 	 * <p>
 	 * Note that due to periodical tasks not being counted on each iteration, this counter
 	 * cannot really be compared with the {@link #METER_TASKS_COMPLETED} counter.
+	 * Once should add the {@link #METER_SUBMITTED_PERIODICALLY_RERUNS} counter to this counter
+	 * when comparing to completed tasks counter.
 	 */
 	static final String METER_SUBMITTED = "scheduler.tasks.submitted";
 	/**
@@ -73,12 +75,19 @@ final class TimedScheduler implements Scheduler {
 	 */
 	static final String METER_SUBMITTED_DELAYED      = "scheduler.tasks.submitted.delayed";
 	/**
-	 * {@link Counter} that increments by one each time a task is submitted with a period
+	 * {@link Counter} that increments when a task is initially submitted with a period
 	 * (ie. {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
 	 * or {@link Worker#schedulePeriodically(Runnable, long, long, TimeUnit)}). This isn't
 	 * incremented on each re-run of the periodical task.
 	 */
 	static final String METER_SUBMITTED_PERIODICALLY = "scheduler.tasks.submitted.periodically";
+	/**
+	 * {@link Counter} that increments by one each time a task is submitted with a period
+	 * (ie. {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
+	 * or {@link Worker#schedulePeriodically(Runnable, long, long, TimeUnit)}), both initially AND
+	 * each time the task is re-run.
+	 */
+	static final String METER_SUBMITTED_PERIODICALLY_RERUNS = "scheduler.tasks.submitted.periodically.reruns";
 
 	final Scheduler delegate;
 
@@ -87,6 +96,7 @@ final class TimedScheduler implements Scheduler {
 	final Counter       submittedTotal;
 	final Counter       submittedDelayed;
 	final Counter       submittedPeriodically;
+	final Counter       submittedPeriodicallyReruns;
 	final LongTaskTimer pendingTasks;
 	final LongTaskTimer activeTasks;
 	final Timer         completedTasks;
@@ -102,6 +112,7 @@ final class TimedScheduler implements Scheduler {
 		this.submittedTotal = registry.counter(metricPrefix + METER_SUBMITTED, tags);
 		this.submittedDelayed = registry.counter(metricPrefix + METER_SUBMITTED_DELAYED, tags);
 		this.submittedPeriodically = registry.counter(metricPrefix + METER_SUBMITTED_PERIODICALLY, tags);
+		this.submittedPeriodicallyReruns = registry.counter(metricPrefix + METER_SUBMITTED_PERIODICALLY_RERUNS, tags);
 
 		this.pendingTasks = LongTaskTimer.builder(metricPrefix + METER_TASKS_PENDING)
 			.tags(tags).register(registry);
@@ -113,6 +124,10 @@ final class TimedScheduler implements Scheduler {
 
 	Runnable wrap(Runnable task) {
 		return new TimedRunnable(registry, this, task);
+	}
+
+	Runnable wrapPeriodical(Runnable task) {
+		return new TimedRunnable(registry, this, task, true);
 	}
 
 	@Override
@@ -132,7 +147,7 @@ final class TimedScheduler implements Scheduler {
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		this.submittedTotal.increment();
 		this.submittedPeriodically.increment();
-		return delegate.schedulePeriodically(wrap(task), initialDelay, period, unit);
+		return delegate.schedulePeriodically(wrapPeriodical(task), initialDelay, period, unit);
 	}
 
 	@Override
@@ -197,7 +212,7 @@ final class TimedScheduler implements Scheduler {
 		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			parent.submittedTotal.increment();
 			parent.submittedPeriodically.increment();
-			return delegate.schedulePeriodically(parent.wrap(task), initialDelay, period, unit);
+			return delegate.schedulePeriodically(parent.wrapPeriodical(task), initialDelay, period, unit);
 		}
 	}
 
@@ -209,17 +224,41 @@ final class TimedScheduler implements Scheduler {
 
 		final LongTaskTimer.Sample pendingSample;
 
+		boolean isRerun;
+
 		TimedRunnable(MeterRegistry registry, TimedScheduler parent, Runnable task) {
+			this(registry, parent, task, false);
+		}
+
+		TimedRunnable(MeterRegistry registry, TimedScheduler parent, Runnable task, boolean periodically) {
 			this.registry = registry;
 			this.parent = parent;
 			this.task = task;
 
-			this.pendingSample = parent.pendingTasks.start();
+			if (periodically) {
+				this.pendingSample = null;
+			}
+			else {
+				this.pendingSample = parent.pendingTasks.start();
+			}
+			this.isRerun = false; //will be ignored if not periodical
 		}
 
 		@Override
 		public void run() {
-			this.pendingSample.stop();
+			if (this.pendingSample != null) {
+				//NOT periodical
+				this.pendingSample.stop();
+			}
+			else {
+				if (!isRerun) {
+					this.isRerun = true;
+				}
+				else {
+					parent.submittedPeriodicallyReruns.increment();
+				}
+			}
+
 			Runnable completionTrackingTask = parent.completedTasks.wrap(this.task);
 			this.parent.activeTasks.record(completionTrackingTask);
 		}

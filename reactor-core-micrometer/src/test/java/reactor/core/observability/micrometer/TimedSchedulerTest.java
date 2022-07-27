@@ -75,7 +75,7 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void constructorRegistersSixMeters() {
+	void constructorRegistersSevenMeters() {
 		MeterRegistryAssert.assertThat(registry).as("before constructor").hasNoMetrics();
 
 		new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
@@ -88,7 +88,8 @@ class TimedSchedulerTest {
 				"test.scheduler.tasks.pending",
 				"test.scheduler.tasks.submitted",
 				"test.scheduler.tasks.submitted.delayed",
-				"test.scheduler.tasks.submitted.periodically"
+				"test.scheduler.tasks.submitted.periodically",
+				"test.scheduler.tasks.submitted.periodically.reruns"
 			);
 	}
 
