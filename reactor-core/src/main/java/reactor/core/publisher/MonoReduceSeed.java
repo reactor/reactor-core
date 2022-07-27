@@ -112,10 +112,9 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			try {
 				synchronized (this) {
 					v = this.seed;
-					accumulated = Objects.requireNonNull(accumulator.apply(v, t),
-						"The accumulator returned a null value");
-
-					if (this.seed != null) {
+					if (v != null) {
+						accumulated = Objects.requireNonNull(accumulator.apply(v, t),
+								"The accumulator returned a null value");
 						this.seed = accumulated;
 						return;
 					}
@@ -123,7 +122,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 
 				// the actual seed is null, meaning cancelled, new state have to be
 				// discarded as well
-				Operators.onDiscard(accumulated, actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(this.s, e, t, actual.currentContext()));
