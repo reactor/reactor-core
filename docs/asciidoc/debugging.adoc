@@ -448,8 +448,10 @@ You may also re-process existing classes if you cannot run the init eagerly (e.g
 ====
 [source,java]
 ----
-ReactorDebugAgent.init();
-ReactorDebugAgent.processExistingClasses();
+static {
+    ReactorDebugAgent.init();
+    ReactorDebugAgent.processExistingClasses();
+}
 ----
 ====
 
