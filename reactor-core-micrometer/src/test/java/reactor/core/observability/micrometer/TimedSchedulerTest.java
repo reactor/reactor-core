@@ -26,8 +26,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.core.tck.MeterRegistryAssert;
 import org.assertj.core.api.SoftAssertionsProvider;
 import org.assertj.core.data.Offset;
+import org.awaitility.Awaitility;
 import org.junit.function.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
@@ -58,43 +60,57 @@ class TimedSchedulerTest {
 	void constructorAddsDotToPrefixIfNeeded() {
 		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "noDot", Tags.empty());
 
-		assertThat(test.executionTimer.getId().getName()).startsWith("noDot.");
-		assertThat(test.scheduledOnce.getId().getName()).startsWith("noDot.");
-		assertThat(test.scheduledPeriodically.getId().getName()).startsWith("noDot.");
-		assertThat(test.idleTimer.getId().getName()).startsWith("noDot.");
+		assertThat(registry.getMeters())
+			.map(m -> m.getId().getName())
+			.allSatisfy(name -> assertThat(name).startsWith("noDot."));
 	}
 
 	@Test
 	void constructorDoesntAddTwoDots() {
 		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "dot.", Tags.empty());
 
-		assertThat(test.executionTimer.getId().getName()).doesNotContain("..");
-		assertThat(test.scheduledOnce.getId().getName()).doesNotContain("..");
-		assertThat(test.scheduledPeriodically.getId().getName()).doesNotContain("..");
-		assertThat(test.idleTimer.getId().getName()).doesNotContain("..");
+		assertThat(registry.getMeters())
+			.map(m -> m.getId().getName())
+			.allSatisfy(name -> assertThat(name).doesNotContain(".."));
 	}
 
 	@Test
-	void constructorRegistersFourMeters() {
+	void constructorRegistersSixMeters() {
 		MeterRegistryAssert.assertThat(registry).as("before constructor").hasNoMetrics();
 
 		new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
 
-		MeterRegistryAssert.assertThat(registry)
-				.hasMeterWithName("test.scheduler.idle")
-				.hasMeterWithName("test.scheduler") //FIXME better meter name?
-				.hasMeterWithName("test.scheduler.scheduled.once")
-				.hasMeterWithName("test.scheduler.scheduled.periodically");
+		assertThat(registry.getMeters())
+			.map(m -> m.getId().getName())
+			.containsExactlyInAnyOrder(
+				"test.scheduler.tasks.active",
+				"test.scheduler.tasks.completed",
+				"test.scheduler.tasks.pending",
+				"test.scheduler.tasks.submitted",
+				"test.scheduler.tasks.submitted.delayed",
+				"test.scheduler.tasks.submitted.periodically"
+			);
 	}
 
 	@Test
-	void scheduleWhileBusyIncrementsIdleTime() throws InterruptedException {
+	void scheduleWhileBusyAddsToPendingTime() throws InterruptedException {
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+
+		/*
+		This test schedules two tasks in a Schedulers.single(), using latches to "pause" and "resume" the
+		tasks at points where we can make predictable assertions. As a result, task2 will be pending until
+		task1 is un-paused.
+
+		LongTaskTimer only report timings and counts of Runnable that are being executed. Once the Runnable
+		finishes, LTT won't report any activity.
+
+		Timer on the other hand will report cumulative times and counts AFTER the Runnable has finished.
+		This is used for the completedTasks metric, which is asserted at the end.
+		 */
 
 		final CountDownLatch firstTaskPause = new CountDownLatch(1);
 		final CountDownLatch secondTaskDone = new CountDownLatch(1);
 		test.schedule(() -> {
-			System.out.println("start task1");
 			try {
 				firstTaskPause.await(10, TimeUnit.SECONDS);
 			}
@@ -103,9 +119,8 @@ class TimedSchedulerTest {
 			}
 		});
 		test.schedule(() -> {
-			System.out.println("start task2");
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(500);
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
@@ -115,56 +130,103 @@ class TimedSchedulerTest {
 			}
 		});
 
-		//FIXME I'm not measuring what I think I'm measuring
+		//there might be a slight hiccup when the registry doesn't see task1 as active
+		Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(
+			() -> assertThat(test.activeTasks.activeTasks()).as("one active").isOne());
+		assertThat(test.pendingTasks.activeTasks()).as("one idle").isOne();
 
-		assertThat(test.executionTimer.totalTime(TimeUnit.MILLISECONDS))
-			.as("initial execution totalTime")
-			.isZero();
-		assertThat(test.idleTimer.totalTime(TimeUnit.MILLISECONDS))
-			.as("initial idle totalTime")
-			.isCloseTo(0d, Offset.offset(50d));
-		//FIXME the timers don't register new tasks when sampling starts, so count doesn't really represent current submitted / pending tasks
-//		assertThat(test.executionTimer.count()).as("one active").isOne();
-//		assertThat(test.idleTimer.count()).as("one idle").isOne();
-
+		//we give it 2s, expecting that pendingTasks and activeTasks both reflect these 2 seconds (for task2 and task1 respectively)
 		Thread.sleep(2000);
+
+		assertThat(Math.round(test.pendingTasks.duration(TimeUnit.SECONDS)))
+			.as("after 1st idle totalTime SECONDS")
+			.isEqualTo(2);
+		assertThat(Math.round(test.activeTasks.duration(TimeUnit.SECONDS)))
+			.as("after 1st active totalTime SECONDS")
+			.isEqualTo(2);
+
+		// we "resume" both tasks and let them finish, at which point the LongTaskTimers will stop recording
 		firstTaskPause.countDown();
+		secondTaskDone.await(10, TimeUnit.SECONDS);
 
-		assertThat(test.executionTimer.totalTime(TimeUnit.SECONDS)).as("active totalTime SECONDS").isEqualTo(2);
-		assertThat(test.idleTimer.totalTime(TimeUnit.SECONDS)).as("idle totalTime SECONDS").isEqualTo(2);
+		//again, there might be a slight hiccup before registry sees 2nd task as done
+		Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(
+			() -> assertThat(test.activeTasks.duration(TimeUnit.SECONDS))
+			.as("once 2nd done, no active timing")
+			.isEqualTo(0));
+		assertThat(test.pendingTasks.duration(TimeUnit.SECONDS))
+			.as("once 2nd done, no pending timing")
+			.isEqualTo(0);
+		assertThat(test.pendingTasks.activeTasks()).as("at end pendingTasks").isZero();
+		assertThat(test.activeTasks.activeTasks()).as("at end activeTasks").isZero();
 
-		secondTaskDone.countDown();
+		//now we assert that the completedTasks timer reflects an history of all Runnable#run
+		assertThat(test.completedTasks.count())
+			.as("#completed")
+			.isEqualTo(2L);
+		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
+			.as("total duration of tasks")
+			.isCloseTo(2500, Offset.offset(200d));
+	}
 
-		assertThat(test.executionTimer.totalTime(TimeUnit.SECONDS)).as("active totalTime SECONDS").isEqualTo(4);
-		assertThat(test.idleTimer.totalTime(TimeUnit.SECONDS)).as("idle totalTime SECONDS").isEqualTo(2);
+
+	@Test
+	void schedulePeriodicallyTimesOneRunInActiveAndAllRunsInCompleted() throws InterruptedException {
+		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+
+		//schedule a periodic task for which one run takes 500ms. we cancel after 3 runs
+		CountDownLatch latch = new CountDownLatch(3);
+		Disposable d = test.schedulePeriodically(
+			() -> {
+				try {
+					Thread.sleep(500);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				finally {
+					latch.countDown();
+				}
+			},
+			100, 100, TimeUnit.MILLISECONDS);
+		latch.await(10, TimeUnit.SECONDS);
+		d.dispose();
+
+		//now we assert that the completedTasks timer reflects an history of all Runnable#run
+		assertThat(test.submittedTotal.count()).as("#submittedTotal").isOne();
+		assertThat(test.submittedPeriodically.count()).as("#submittedPeriodically").isOne();
+		assertThat(test.completedTasks.count())
+			.as("#completed")
+			.isEqualTo(3L);
+		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
+			.as("total duration of tasks")
+			.isCloseTo(1500, Offset.offset(200d));
 	}
 
 	@Test
-	void scheduleDoesntIncrementCounterButAddsToTimerCount() {
+	void scheduleIncrementTotalCounterOnly() {
 		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
 
 		test.schedule(() -> {});
 
-		assertThat(test.executionTimer.count()).as("executionTimer.count").isOne();
-		assertThat(test.scheduledOnce.count()).as("scheduledOnce").isZero();
-		assertThat(test.scheduledPeriodically.count()).as("scheduledPeriodically").isZero();
+		assertThat(test.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isZero();
+		assertThat(test.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
 	}
 
 	@Test
-	void scheduleDelayIncrementsOnceCounter() throws InterruptedException {
+	void scheduleDelayIncrementsTotalAndDelayedCounters() throws InterruptedException {
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
-		CountDownLatch latch = new CountDownLatch(1);
 
-		test.schedule(latch::countDown, 100, TimeUnit.MILLISECONDS);
+		test.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 
-		latch.await(10, TimeUnit.SECONDS);
-		assertThat(test.executionTimer.count()).as("executionTimer.count").isOne();
-		assertThat(test.scheduledOnce.count()).as("scheduledOnce").isOne();
-		assertThat(test.scheduledPeriodically.count()).as("scheduledPeriodically").isZero();
+		assertThat(test.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isOne();
+		assertThat(test.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
 	}
 
 	@Test
-	void schedulePeriodicallyIncrements_ExecutionCountUntilDisposed_PeriodicallyCounterOnce() throws InterruptedException {
+	void schedulePeriodicallyIncrementsTotalAndPeriodicallyCountersByOne() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
@@ -173,9 +235,24 @@ class TimedSchedulerTest {
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
 
-		assertThat(test.executionTimer.count()).as("executionTimer.count").isEqualTo(5);
-		assertThat(test.scheduledOnce.count()).as("scheduledOnce").isZero();
-		assertThat(test.scheduledPeriodically.count()).as("scheduledPeriodically").isOne();
+		assertThat(test.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isZero();
+		assertThat(test.submittedPeriodically.count()).as("submittedPeriodically.count").isOne();
+
+		assertThat(test.completedTasks.count()).as("completed counter tracks all iterations").isEqualTo(5);
+	}
+
+	@Test
+	void schedulePeriodicallyIncrementsTotalRunsByNumberOfIterations() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(5);
+		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+
+		Disposable d = test.schedulePeriodically(latch::countDown,100, 100, TimeUnit.MILLISECONDS);
+
+		latch.await(10, TimeUnit.SECONDS);
+		d.dispose();
+
+		assertThat(test.completedTasks.count()).isEqualTo(5);
 	}
 
 	@Test
@@ -192,33 +269,31 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void workerScheduleDoesntIncrementCounterButAddsToIdleCount() {
+	void workerScheduleIncrementsTotalCounterOnly() {
 		TimedScheduler testScheduler = new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
 
 		test.schedule(() -> {});
 
-		assertThat(testScheduler.executionTimer.count()).as("executionTimer.count").isOne();
-		assertThat(testScheduler.scheduledOnce.count()).as("worker scheduledOnce").isZero();
-		assertThat(testScheduler.scheduledPeriodically.count()).as("worker scheduledPeriodically").isZero();
+		assertThat(testScheduler.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isZero();
+		assertThat(testScheduler.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
 	}
 
 	@Test
-	void workerScheduleDelayIncrementsOnceCounter() throws InterruptedException {
+	void workerScheduleDelayIncrementsTotalAndDelayedCounters() throws InterruptedException {
 		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
-		CountDownLatch latch = new CountDownLatch(1);
 
-		test.schedule(latch::countDown, 100, TimeUnit.MILLISECONDS);
+		test.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 
-		latch.await(10, TimeUnit.SECONDS);
-		assertThat(testScheduler.executionTimer.count()).as("executionTimer.count").isOne();
-		assertThat(testScheduler.scheduledOnce.count()).as("worker scheduledOnce").isOne();
-		assertThat(testScheduler.scheduledPeriodically.count()).as("worker scheduledPeriodically").isZero();
+		assertThat(testScheduler.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isOne();
+		assertThat(testScheduler.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
 	}
 
 	@Test
-	void workerSchedulePeriodicallyIncrements_ExecutionCountUntilDisposed_PeriodicallyCounterOnce() throws InterruptedException {
+	void workerSchedulePeriodicallyIncrementsTotalAndPeriodicallyCountersByOne() throws InterruptedException {
 		Scheduler original = afterTest.autoDispose(Schedulers.single());
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
@@ -229,8 +304,10 @@ class TimedSchedulerTest {
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
 
-		assertThat(testScheduler.executionTimer.count()).as("executionTimer.count").isEqualTo(5);
-		assertThat(testScheduler.scheduledOnce.count()).as("worker scheduledOnce").isZero();
-		assertThat(testScheduler.scheduledPeriodically.count()).as("worker scheduledPeriodically").isOne();
+		assertThat(testScheduler.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isZero();
+		assertThat(testScheduler.submittedPeriodically.count()).as("submittedPeriodically.count").isOne();
+
+		assertThat(testScheduler.completedTasks.count()).as("completed counter tracks all iterations").isEqualTo(5);
 	}
 }

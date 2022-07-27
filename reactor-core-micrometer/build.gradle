@@ -71,6 +71,7 @@ dependencies {
 	testRuntimeOnly libs.logback
 	testImplementation libs.assertj
 	testImplementation libs.mockito
+	testImplementation libs.awaitility
 }
 
 tasks.withType(Test).all {
