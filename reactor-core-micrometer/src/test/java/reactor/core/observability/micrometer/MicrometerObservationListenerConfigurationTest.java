@@ -125,7 +125,7 @@ class MicrometerObservationListenerConfigurationTest {
 		KeyValues resolvedKeyValues = MicrometerObservationListenerConfiguration.resolveKeyValues(flux, defaultKeyValues);
 
 		assertThat(resolvedKeyValues.stream().map(Object::toString))
-			.containsExactly("tag(common1=commonValue1)");
+			.containsExactly("keyValue(common1=commonValue1)");
 	}
 
 	@Test
@@ -138,8 +138,8 @@ class MicrometerObservationListenerConfigurationTest {
 		KeyValues resolvedKeyValues = MicrometerObservationListenerConfiguration.resolveKeyValues(flux, defaultKeyValues);
 
 		assertThat(resolvedKeyValues.stream().map(Object::toString)).containsExactlyInAnyOrder(
-			"tag(common1=commonValue1)",
-			"tag(k1=v1)"
+			"keyValue(common1=commonValue1)",
+			"keyValue(k1=v1)"
 		);
 	}
 
@@ -155,8 +155,8 @@ class MicrometerObservationListenerConfigurationTest {
 		KeyValues resolvedKeyValues = MicrometerObservationListenerConfiguration.resolveKeyValues(flux, defaultKeyValues);
 
 		assertThat(resolvedKeyValues.stream().map(Object::toString)).containsExactlyInAnyOrder(
-			"tag(common1=commonValue1)",
-			"tag(k1=v1)"
+			"keyValue(common1=commonValue1)",
+			"keyValue(k1=v1)"
 		);
 	}
 
@@ -172,9 +172,9 @@ class MicrometerObservationListenerConfigurationTest {
 		KeyValues resolvedKeyValues = MicrometerObservationListenerConfiguration.resolveKeyValues(flux, defaultKeyValues);
 
 		assertThat(resolvedKeyValues.stream().map(Object::toString)).containsExactlyInAnyOrder(
-			"tag(common1=commonValue1)",
-			"tag(k1=v1)",
-			"tag(k2=v2)"
+			"keyValue(common1=commonValue1)",
+			"keyValue(k1=v1)",
+			"keyValue(k2=v2)"
 		);
 	}
 
@@ -191,9 +191,9 @@ class MicrometerObservationListenerConfigurationTest {
 		KeyValues resolvedKeyValues = MicrometerObservationListenerConfiguration.resolveKeyValues(flux, defaultKeyValues);
 
 		assertThat(resolvedKeyValues.stream().map(Object::toString)).containsExactly(
-			"tag(common1=commonValue1)",
-			"tag(k1=v1)",
-			"tag(k2=v2)"
+			"keyValue(common1=commonValue1)",
+			"keyValue(k1=v1)",
+			"keyValue(k2=v2)"
 		);
 	}
 
@@ -204,6 +204,6 @@ class MicrometerObservationListenerConfigurationTest {
 
 		KeyValues resolvedKeyValues = MicrometerObservationListenerConfiguration.resolveKeyValues(publisher, defaultKeyValues);
 
-		assertThat(resolvedKeyValues.stream().map(Object::toString)).containsExactly("tag(common1=commonValue1)");
+		assertThat(resolvedKeyValues.stream().map(Object::toString)).containsExactly("keyValue(common1=commonValue1)");
 	}
 }
