@@ -32,40 +32,15 @@ import reactor.core.scheduler.Scheduler;
 
 public final class Micrometer {
 
-	private static MeterRegistry registry = Metrics.globalRegistry;
-
 	/**
 	 * The default "name" to use as a prefix for meter if the instrumented sequence doesn't define a {@link reactor.core.publisher.Flux#name(String) name}.
 	 */
 	public static final String DEFAULT_METER_PREFIX = "reactor";
 
 	/**
-	 * Set the registry to use in reactor-core-micrometer for metrics related purposes.
-	 * @return the previously configured registry.
-	 * @deprecated in M4, will be removed in M5 / RC1. prefer your own singleton and explicitly
-	 * passing the registry to {@link #metrics(MeterRegistry, Clock)}
-	 */
-	@Deprecated
-	public static MeterRegistry useRegistry(MeterRegistry newRegistry) {
-		MeterRegistry previous = registry;
-		registry = newRegistry;
-		return previous;
-	}
-
-	/**
-	 * Get the registry used in reactor-core-micrometer for metrics related purposes.
-	 *
-	 * @deprecated in M4, will be removed in M5 / RC1. prefer your own singleton and explicitly
-	 * passing the registry to {@link #metrics(MeterRegistry, Clock)}
-	 */
-	@Deprecated
-	public static MeterRegistry getRegistry() {
-		return registry;
-	}
-
-	/**
 	 * A {@link SignalListener} factory that will ultimately produce Micrometer metrics
-	 * to the configured default {@link #getRegistry() registry}.
+	 * to the provided {@link MeterRegistry} (and using the registry's {@link MeterRegistry.Config#clock() configured}
+	 * {@link Clock} in case additional timings are needed).
 	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
 	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
 	 * <p>
@@ -78,43 +53,11 @@ public final class Micrometer {
 	 * tags for each meter bearing the same name.
 	 *
 	 * @param <T> the type of onNext in the target publisher
-	 * @return a {@link SignalListenerFactory} to record metrics
-	 * @deprecated in M4, will be removed in M5 / RC1. prefer explicitly passing a registry via {@link #metrics(MeterRegistry, Clock)}
-	 */
-	@Deprecated
-	public static <T> SignalListenerFactory<T, ?> metrics() {
-		return new MicrometerMeterListenerFactory<>();
-	}
-
-	/**
-	 * A {@link SignalListener} factory that will ultimately produce Micrometer metrics
-	 * to the provided {@link MeterRegistry} using the provided {@link Clock} for timings.
-	 * To be used with either the {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} or
-	 * {@link reactor.core.publisher.Mono#tap(SignalListenerFactory)} operator.
-	 * <p>
-	 * When used in a {@link reactor.core.publisher.Flux#tap(SignalListenerFactory)} operator, meter names use
-	 * the {@link reactor.core.publisher.Flux#name(String)} set upstream of the tap as id prefix if applicable
-	 * or default to {@link #DEFAULT_METER_PREFIX}. Similarly, upstream tags are gathered and added
-	 * to the default set of tags for meters.
-	 * <p>
-	 * Note that some monitoring systems like Prometheus require to have the exact same set of
-	 * tags for each meter bearing the same name.
-	 *
-	 * @param <T> the type of onNext in the target publisher
+	 * @param meterRegistry the {@link MeterRegistry} in which to register and publish metrics
 	 * @return a {@link SignalListenerFactory} to record metrics
 	 */
-	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry registry, Clock clock) {
-		return new MicrometerMeterListenerFactory<T>() {
-			@Override
-			protected Clock useClock() {
-				return clock;
-			}
-
-			@Override
-			protected MeterRegistry useRegistry() {
-				return registry;
-			}
-		};
+	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry meterRegistry) {
+		return new MicrometerMeterListenerFactory<T>(meterRegistry);
 	}
 
 	/**
@@ -146,8 +89,6 @@ public final class Micrometer {
 	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
 		return new MicrometerObservationListenerFactory<>(registry);
 	}
-
-	//FIXME: remove these and replace with an option to decorate an arbitrary Scheduler
 
 	/**
 	 * Wrap a {@link Scheduler} in an instance that gather various task-related metrics using

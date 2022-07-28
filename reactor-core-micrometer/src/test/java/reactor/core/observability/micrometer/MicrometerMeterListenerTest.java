@@ -23,6 +23,7 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,6 @@ class MicrometerMeterListenerTest {
 
 	@BeforeEach
 	void initRegistry() {
-		registry = new SimpleMeterRegistry();
 		virtualClockTime = new AtomicLong();
 		virtualClock = new Clock() {
 			@Override
@@ -55,11 +55,11 @@ class MicrometerMeterListenerTest {
 				return virtualClockTime.get();
 			}
 		};
+		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, virtualClock);
 		configuration = new MicrometerMeterListenerConfiguration(
 			"testName",
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
-			virtualClock,
 			false);
 	}
 
@@ -69,7 +69,6 @@ class MicrometerMeterListenerTest {
 			Micrometer.DEFAULT_METER_PREFIX,
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
-			virtualClock,
 			false);
 
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
@@ -95,7 +94,6 @@ class MicrometerMeterListenerTest {
 			"testName",
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
-			virtualClock,
 			false);
 
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
@@ -126,7 +124,6 @@ class MicrometerMeterListenerTest {
 			Micrometer.DEFAULT_METER_PREFIX,
 			Tags.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
-			virtualClock,
 			true);
 
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
@@ -284,7 +281,7 @@ class MicrometerMeterListenerTest {
 	@Test
 	void doOnNextRecordsInterval_defaultName() {
 		configuration = new MicrometerMeterListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(),
-			registry, virtualClock, false);
+			registry, false);
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		listener.doOnSubscription();
 
@@ -309,7 +306,7 @@ class MicrometerMeterListenerTest {
 	@Test
 	void doOnNext_monoRecordsCompletionOnly() {
 		configuration = new MicrometerMeterListenerConfiguration("testName", Tags.empty(),
-			registry, virtualClock, true);
+			registry, true);
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
 		listener.doOnSubscription();
@@ -369,7 +366,7 @@ class MicrometerMeterListenerTest {
 
 	@Test
 	void doOnRequestMonoIgnoresRequest() {
-		configuration = new MicrometerMeterListenerConfiguration("testName", Tags.empty(), registry, virtualClock, true);
+		configuration = new MicrometerMeterListenerConfiguration("testName", Tags.empty(), registry, true);
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		assertThatCode(() -> listener.doOnRequest(100L)).doesNotThrowAnyException();
 		assertThat(listener.requestedCounter).isNull();
@@ -377,7 +374,7 @@ class MicrometerMeterListenerTest {
 
 	@Test
 	void doOnRequestDefaultNameIgnoresRequest() {
-		configuration = new MicrometerMeterListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(), registry, virtualClock, false);
+		configuration = new MicrometerMeterListenerConfiguration(Micrometer.DEFAULT_METER_PREFIX, Tags.empty(), registry, false);
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 		assertThatCode(() -> listener.doOnRequest(100L)).doesNotThrowAnyException();
 		assertThat(listener.requestedCounter).isNull();

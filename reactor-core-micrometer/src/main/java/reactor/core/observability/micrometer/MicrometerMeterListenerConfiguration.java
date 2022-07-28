@@ -41,20 +41,20 @@ final class MicrometerMeterListenerConfiguration {
 
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerMeterListenerConfiguration.class);
 
-	static MicrometerMeterListenerConfiguration fromFlux(Flux<?> source, MeterRegistry meterRegistry, Clock clock) {
+	static MicrometerMeterListenerConfiguration fromFlux(Flux<?> source, MeterRegistry meterRegistry) {
 		Tags defaultTags = MicrometerMeterListener.DEFAULT_TAGS_FLUX;
 		final String name = resolveName(source, LOGGER, Micrometer.DEFAULT_METER_PREFIX);
 		final Tags tags = resolveTags(source, defaultTags);
 
-		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, clock, false);
+		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, false);
 	}
 
-	static MicrometerMeterListenerConfiguration fromMono(Mono<?> source, MeterRegistry meterRegistry, Clock clock) {
+	static MicrometerMeterListenerConfiguration fromMono(Mono<?> source, MeterRegistry meterRegistry) {
 		Tags defaultTags = MicrometerMeterListener.DEFAULT_TAGS_MONO;
 		final String name = resolveName(source, LOGGER, Micrometer.DEFAULT_METER_PREFIX);
 		final Tags tags = resolveTags(source, defaultTags);
 
-		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, clock, true);
+		return new MicrometerMeterListenerConfiguration(name, tags, meterRegistry, true);
 	}
 
 	/**
@@ -103,7 +103,6 @@ final class MicrometerMeterListenerConfiguration {
 		return tags;
 	}
 
-	final Clock   clock;
 	final Tags    commonTags;
 	final boolean isMono;
 	final String  sequenceName;
@@ -112,9 +111,7 @@ final class MicrometerMeterListenerConfiguration {
 	// separator is the dot, not camelCase...
 	final MeterRegistry registry;
 
-	MicrometerMeterListenerConfiguration(String sequenceName, Tags tags, MeterRegistry registryCandidate, Clock clock,
-										 boolean isMono) {
-		this.clock = clock;
+	MicrometerMeterListenerConfiguration(String sequenceName, Tags tags, MeterRegistry registryCandidate, boolean isMono) {
 		this.commonTags = tags;
 		this.isMono = isMono;
 		this.sequenceName = sequenceName;
