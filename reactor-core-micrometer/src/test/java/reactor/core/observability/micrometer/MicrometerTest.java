@@ -67,7 +67,7 @@ class MicrometerTest {
 			//this is more about the Micrometer passing down the params than it is about checking _all_ meters in the actual class.
 			Meter.Id id = ts.submittedTotal.getId();
 			assertThat(id.getName()).as("prefix used")
-				.isEqualTo("testSchedulerMetrics.scheduler.scheduled.once");
+				.isEqualTo("testSchedulerMetrics.scheduler.tasks.submitted");
 			assertThat(id.getTags()).as("tags")
 				.containsExactlyElementsOf(tags);
 		});

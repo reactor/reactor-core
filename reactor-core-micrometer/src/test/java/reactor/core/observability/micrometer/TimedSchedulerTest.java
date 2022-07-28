@@ -121,7 +121,7 @@ class TimedSchedulerTest {
 		});
 		test.schedule(() -> {
 			try {
-				Thread.sleep(500);
+				Thread.sleep(1000);
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
@@ -167,7 +167,7 @@ class TimedSchedulerTest {
 			.isEqualTo(2L);
 		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
 			.as("total duration of tasks")
-			.isCloseTo(2500, Offset.offset(200d));
+			.isCloseTo(3000, Offset.offset(500d));
 	}
 
 
