@@ -16,6 +16,26 @@
 
 package reactor.core.scheduler;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -24,14 +44,6 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -755,7 +767,7 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Replace the current Factory and shared Schedulers with the ones saved in a 
+	 * Replace the current Factory and shared Schedulers with the ones saved in a
 	 * previously {@link #setFactoryWithSnapshot(Factory) captured} snapshot.
 	 * <p>
 	 * Passing {@code null} re-applies the default factory.
