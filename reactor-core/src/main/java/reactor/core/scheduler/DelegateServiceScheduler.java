@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,11 +35,8 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
-
-import static reactor.core.scheduler.SchedulerState.TERMINATED;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
@@ -48,13 +46,21 @@ import static reactor.core.scheduler.SchedulerState.TERMINATED;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class DelegateServiceScheduler implements Scheduler, Scannable {
+final class DelegateServiceScheduler implements Scheduler, SchedulerState.DisposeAwaiter<ScheduledExecutorService>, Scannable {
+
+	static final ScheduledExecutorService TERMINATED;
+
+	static {
+		TERMINATED = Executors.newSingleThreadScheduledExecutor();
+		TERMINATED.shutdownNow();
+	}
 
 	final String executorName;
 	final ScheduledExecutorService original;
 
 	@Nullable
-	volatile SchedulerState state;
+	volatile SchedulerState<ScheduledExecutorService> state;
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<DelegateServiceScheduler, SchedulerState> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(DelegateServiceScheduler.class,
 					SchedulerState.class, "state");
@@ -65,7 +71,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	}
 
 	ScheduledExecutorService getOrCreate() {
-		SchedulerState s = state;
+		SchedulerState<ScheduledExecutorService> s = state;
 		if (s == null) {
 			start();
 			s = state;
@@ -73,7 +79,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 				throw new IllegalStateException("executor is null after implicit start()");
 			}
 		}
-		return s.executor;
+		return s.currentResource;
 	}
 
 	@Override
@@ -106,27 +112,37 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	@Override
 	public void start() {
 		STATE.compareAndSet(this, null,
-				SchedulerState.fresh(Schedulers.decorateExecutorService(this, original)));
+				SchedulerState.init(Schedulers.decorateExecutorService(this, original)));
 	}
 
 	@Override
 	public boolean isDisposed() {
-		SchedulerState current = state;
-		return current != null && current.executor == SchedulerState.TERMINATED;
+		SchedulerState<ScheduledExecutorService> current = state;
+		return current != null && current.currentResource == TERMINATED;
+	}
+
+	@Override
+	public boolean await(ScheduledExecutorService resource, long timeout, TimeUnit timeUnit)
+			throws InterruptedException {
+		return resource.awaitTermination(timeout, timeUnit);
 	}
 
 	@Override
 	public void dispose() {
 		for (;;) {
-			SchedulerState previous = state;
+			SchedulerState<ScheduledExecutorService> previous = state;
 
-			if (previous != null && previous.executor == TERMINATED) {
+			if (previous != null && previous.currentResource == TERMINATED) {
+				assert previous.initialResource != null;
+				previous.initialResource.shutdownNow();
 				return;
 			}
 
-			if (STATE.compareAndSet(this, previous, SchedulerState.terminated(previous))) {
-				if (previous != null) {
-					previous.executor.shutdownNow();
+			SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
+					previous == null ? null : previous.currentResource, TERMINATED, this);
+			if (STATE.compareAndSet(this, previous, terminated)) {
+				if (terminated.initialResource != null) {
+					terminated.initialResource.shutdownNow();
 				}
 				return;
 			}
@@ -137,18 +153,19 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
 			for (;;) {
-				SchedulerState previous = state;
+				SchedulerState<ScheduledExecutorService> previous = state;
 
-				if (previous != null && previous.executor == TERMINATED) {
+				if (previous != null && previous.currentResource == TERMINATED) {
 					return previous.onDispose;
 				}
 
-				SchedulerState next = SchedulerState.terminated(previous);
-				if (STATE.compareAndSet(this, previous, next)) {
-					if (previous != null) {
-						previous.executor.shutdown();
+				SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
+						previous == null ? null : previous.currentResource, TERMINATED, this);
+				if (STATE.compareAndSet(this, previous, terminated)) {
+					if (terminated.initialResource != null) {
+						terminated.initialResource.shutdown();
 					}
-					return next.onDispose;
+					return terminated.onDispose;
 				}
 			}
 		}).timeout(gracePeriod);
@@ -167,9 +184,9 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return toString();
 
-		SchedulerState s = state;
+		SchedulerState<ScheduledExecutorService> s = state;
 		if (s != null) {
-			return Schedulers.scanExecutor(s.executor, key);
+			return Schedulers.scanExecutor(s.currentResource, key);
 		}
 		return null;
 	}

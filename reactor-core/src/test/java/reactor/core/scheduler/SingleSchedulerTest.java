@@ -18,10 +18,8 @@ package reactor.core.scheduler;
 
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,7 +31,7 @@ import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
-import static reactor.core.scheduler.SchedulerState.TERMINATED;
+import static reactor.core.scheduler.SingleScheduler.TERMINATED;
 
 /**
  * @author Stephane Maldini
@@ -204,13 +202,13 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		} else {
 			s.dispose();
 		}
-		SchedulerState stateBefore = ((SingleScheduler) s).state;
-		assertThat(stateBefore.executor).as("SHUTDOWN").isSameAs(TERMINATED);
+		SchedulerState<ScheduledExecutorService> stateBefore = ((SingleScheduler) s).state;
+		assertThat(stateBefore.currentResource).as("SHUTDOWN").isSameAs(TERMINATED);
 
 		s.start();
 
-		assertThat(((SingleScheduler) s).state.executor)
-				.isNotSameAs(stateBefore.executor)
+		assertThat(((SingleScheduler) s).state.currentResource)
+				.isNotSameAs(stateBefore.currentResource)
 				.isInstanceOfSatisfying(ScheduledExecutorService.class,
 						executor -> {
 							assertThat(executor.isShutdown()).isFalse();

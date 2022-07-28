@@ -30,27 +30,33 @@ import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
 
-import static reactor.core.scheduler.SchedulerState.TERMINATED;
-
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
  * same-thread work (like an event dispatch thread). This scheduler is time-capable (can
  * schedule with delay / periodically).
  */
 final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService>,
-                                       Scannable {
+                                       Scannable, SchedulerState.DisposeAwaiter<ScheduledExecutorService> {
 
 	static final AtomicLong COUNTER       = new AtomicLong();
+	static final ScheduledExecutorService TERMINATED;
+
+	static {
+		TERMINATED = Executors.newSingleThreadScheduledExecutor();
+		TERMINATED.shutdownNow();
+	}
 
 	final ThreadFactory factory;
 
-	volatile SchedulerState state;
+	volatile SchedulerState<ScheduledExecutorService> state;
+	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<SingleScheduler, SchedulerState> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(
 					SingleScheduler.class, SchedulerState.class, "state"
 			);
 
 	SingleScheduler(ThreadFactory factory) {
+		this.state = SchedulerState.init(TERMINATED);
 		this.factory = factory;
 	}
 
@@ -69,29 +75,25 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	@Override
 	public boolean isDisposed() {
 		// we only consider disposed as actually shutdown
-		SchedulerState current = state;
-		return current != null && current.executor == TERMINATED;
+		SchedulerState<ScheduledExecutorService> current = state;
+		return current != null && current.currentResource == TERMINATED;
 	}
 
 	@Override
 	public void start() {
 		//TODO SingleTimedScheduler didn't implement start, check if any particular reason?
-		SchedulerState b = null;
+		SchedulerState<ScheduledExecutorService> b = null;
 		for (; ; ) {
-			SchedulerState a = state;
-			if (a != null) {
-				if (a.executor != TERMINATED) {
-					if (b != null) {
-						b.executor.shutdownNow();
-					}
-					return;
+			SchedulerState<ScheduledExecutorService> a = state;
+			if (a.currentResource != TERMINATED) {
+				if (b != null) {
+					b.currentResource.shutdownNow();
 				}
+				return;
 			}
 
 			if (b == null) {
-				b = SchedulerState.fresh(
-						Schedulers.decorateExecutorService(this, this.get())
-				);
+				b = SchedulerState.init(Schedulers.decorateExecutorService(this, this.get()));
 			}
 
 			if (STATE.compareAndSet(this, a, b)) {
@@ -101,18 +103,29 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
+	public boolean await(ScheduledExecutorService resource, long timeout, TimeUnit timeUnit)
+			throws InterruptedException {
+		return resource.awaitTermination(timeout, timeUnit);
+	}
+
+	@Override
 	public void dispose() {
 		for (;;) {
-			SchedulerState previous = state;
+			SchedulerState<ScheduledExecutorService> previous = state;
 
-			if (previous != null && previous.executor == TERMINATED) {
+			if (previous.currentResource == TERMINATED) {
+				// In case a graceful shutdown called shutdown and is waiting, but we want to force shutdown,
+				// we need access to the original ScheduledExecutorService.
+				assert previous.initialResource != null;
+				previous.initialResource.shutdownNow();
 				return;
 			}
 
-			if (STATE.compareAndSet(this, previous, SchedulerState.terminated(previous))) {
-				if (previous != null) {
-					previous.executor.shutdownNow();
-				}
+			SchedulerState<ScheduledExecutorService> terminated =
+					SchedulerState.transition(previous.currentResource, TERMINATED, this);
+			if (STATE.compareAndSet(this, previous, terminated)) {
+				assert terminated.initialResource != null;
+				terminated.initialResource.shutdownNow();
 				return;
 			}
 		}
@@ -122,18 +135,17 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
 			for (;;) {
-				SchedulerState previous = state;
+				SchedulerState<ScheduledExecutorService> previous = state;
 
-				if (previous != null && previous.executor == TERMINATED) {
+				if (previous.currentResource == TERMINATED) {
 					return previous.onDispose;
 				}
 
-				SchedulerState next = SchedulerState.terminated(previous);
-				if (STATE.compareAndSet(this, previous, next)) {
-					if (previous != null) {
-						previous.executor.shutdown();
-					}
-					return next.onDispose;
+				SchedulerState<ScheduledExecutorService> terminated =
+						SchedulerState.transition(previous.currentResource, TERMINATED, this);
+				if (STATE.compareAndSet(this, previous, terminated)) {
+					terminated.initialResource.shutdown();
+					return terminated.onDispose;
 				}
 			}
 		}).timeout(gracePeriod);
@@ -141,14 +153,14 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		ScheduledExecutorService executor = state.executor;
+		ScheduledExecutorService executor = state.currentResource;
 		return Schedulers.directSchedule(executor, task, null, 0L,
 				TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.directSchedule(state.executor, task, null, delay, unit);
+		return Schedulers.directSchedule(state.currentResource, task, null, delay, unit);
 	}
 
 	@Override
@@ -156,7 +168,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		return Schedulers.directSchedulePeriodically(state.executor,
+		return Schedulers.directSchedulePeriodically(state.currentResource,
 				task,
 				initialDelay,
 				period,
@@ -179,11 +191,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (key == Attr.NAME) return this.toString();
 		if (key == Attr.CAPACITY || key == Attr.BUFFERED) return 1; //BUFFERED: number of workers doesn't vary
 
-		return Schedulers.scanExecutor(state.executor, key);
+		return Schedulers.scanExecutor(state.currentResource, key);
 	}
 
 	@Override
 	public Worker createWorker() {
-		return new ExecutorServiceWorker(state.executor);
+		return new ExecutorServiceWorker(state.currentResource);
 	}
 }

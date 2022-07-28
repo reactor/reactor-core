@@ -122,7 +122,7 @@ public abstract class SchedulersStressTest {
 
 		@Override
 		boolean isTerminated() {
-			return scheduler.state.executor.isTerminated();
+			return scheduler.state.currentResource.isTerminated();
 		}
 
 		{
@@ -163,7 +163,8 @@ public abstract class SchedulersStressTest {
 
 		@Override
 		boolean isTerminated() {
-			for (ScheduledExecutorService executor : scheduler.state.executors) {
+			assert scheduler.state.initialResource != null;
+			for (ScheduledExecutorService executor : scheduler.state.initialResource) {
 				if (!executor.isTerminated()) {
 					return false;
 				}

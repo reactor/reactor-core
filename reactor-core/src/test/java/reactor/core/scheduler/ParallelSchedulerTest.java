@@ -244,13 +244,13 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		} else {
 			s.dispose();
 		}
-		ParallelScheduler.SchedulerState stateBefore = ((ParallelScheduler) s).state;
-		assertThat(stateBefore.executors).as("SHUTDOWN").isSameAs(ParallelScheduler.SchedulerState.SHUTDOWN);
+		SchedulerState<ScheduledExecutorService[]> stateBefore = ((ParallelScheduler) s).state;
+		assertThat(stateBefore.currentResource).as("SHUTDOWN").isSameAs(ParallelScheduler.SHUTDOWN);
 
 		s.start();
 
-		assertThat(((ParallelScheduler) s).state.executors)
-				.isNotSameAs(stateBefore.executors)
+		assertThat(((ParallelScheduler) s).state.currentResource)
+				.isNotSameAs(stateBefore.currentResource)
 				.allSatisfy(executor -> assertThat(executor)
 						.isInstanceOfSatisfying(ScheduledExecutorService.class, e -> {
 							assertThat(e.isShutdown()).isFalse();

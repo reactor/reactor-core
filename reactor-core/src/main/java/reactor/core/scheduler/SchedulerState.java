@@ -16,64 +16,58 @@
 
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.Nullable;
 
-final class SchedulerState {
+final class SchedulerState<T> {
 
-	static final ScheduledExecutorService TERMINATED;
+	@Nullable
+	final T initialResource;
+	final T currentResource;
+	final Mono<Void> onDispose;
 
-	static {
-		TERMINATED = Executors.newSingleThreadScheduledExecutor();
-		TERMINATED.shutdownNow();
-	}
-
-	final ScheduledExecutorService executor;
-	final Mono<Void>               onDispose;
-
-	private SchedulerState(ScheduledExecutorService executor, Mono<Void> onDispose) {
-		this.executor = executor;
+	private SchedulerState(@Nullable T initialResource, T currentResource, Mono<Void> onDispose) {
+		this.initialResource = initialResource;
+		this.currentResource = currentResource;
 		this.onDispose = onDispose;
 	}
 
-	static SchedulerState fresh(final ScheduledExecutorService executor) {
-		return new SchedulerState(
-				executor,
-				Flux.<Void>create(sink -> {
-					    // TODO(dj): consider a shared pool for all disposeGracefully background tasks
-					    // as part of Schedulers internal API
-					    Thread backgroundThread = new Thread(() -> {
-						    while (!Thread.currentThread()
-						                  .isInterrupted()) {
-							    try {
-								    if (executor.awaitTermination(1, TimeUnit.SECONDS)) {
-									    sink.complete();
-									    return;
-								    }
-							    }
-							    catch (InterruptedException e) {
-								    Thread.currentThread()
-								          .interrupt();
-								    return;
-							    }
-						    }
-					    });
-					    sink.onCancel(backgroundThread::interrupt);
-					    backgroundThread.start();
-				    })
-				    .replay()
-				    .refCount()
-				    .next()
-		);
+	static <T> SchedulerState<T> init(final T resource) {
+		return new SchedulerState<>(resource, resource, Mono.empty());
 	}
 
-	static SchedulerState terminated(@Nullable SchedulerState base) {
-		return new SchedulerState(TERMINATED,
-				base == null ? Mono.empty() : base.onDispose);
+	static <T> SchedulerState<T> transition(@Nullable T initial, T next, DisposeAwaiter<T> awaiter) {
+		return new SchedulerState<T>(
+				initial,
+				next,
+				initial == null ? Mono.empty() :
+						Flux.<Void>create(sink -> {
+									// TODO(dj): consider a shared pool for all disposeGracefully background tasks
+									// as part of Schedulers internal API
+									Thread backgroundThread = new Thread(() -> {
+										while (!Thread.currentThread().isInterrupted()) {
+											try {
+												if (awaiter.await(initial, 1, TimeUnit.SECONDS)) {
+													sink.complete();
+													return;
+												}
+											} catch (InterruptedException e) {
+												return;
+											}
+										}
+									});
+									sink.onCancel(backgroundThread::interrupt);
+									backgroundThread.start();
+								})
+								.replay()
+								.refCount()
+								.next());
+	}
+
+	interface DisposeAwaiter<T> {
+		boolean await(T resource, long timeout, TimeUnit timeUnit) throws InterruptedException;
 	}
 }
