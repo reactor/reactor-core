@@ -82,21 +82,24 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	@Override
 	public void start() {
 		//TODO SingleTimedScheduler didn't implement start, check if any particular reason?
-		SchedulerState<ScheduledExecutorService> b = null;
+		SchedulerState<ScheduledExecutorService> a = this.state;
+		if (a.currentResource != TERMINATED) {
+			return;
+		}
+
+		SchedulerState<ScheduledExecutorService> b = SchedulerState.init(
+				Schedulers.decorateExecutorService(this, this.get())
+		);
+
 		for (; ; ) {
-			SchedulerState<ScheduledExecutorService> a = state;
-			if (a.currentResource != TERMINATED) {
-				if (b != null) {
-					b.currentResource.shutdownNow();
-				}
+			if (STATE.compareAndSet(this, a, b)) {
 				return;
 			}
 
-			if (b == null) {
-				b = SchedulerState.init(Schedulers.decorateExecutorService(this, this.get()));
-			}
+			a = this.state;
 
-			if (STATE.compareAndSet(this, a, b)) {
+			if (a != null && a.currentResource != TERMINATED) {
+				b.currentResource.shutdownNow();
 				return;
 			}
 		}

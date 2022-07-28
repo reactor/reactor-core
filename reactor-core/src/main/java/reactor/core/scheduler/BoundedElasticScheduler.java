@@ -151,23 +151,19 @@ final class BoundedElasticScheduler implements Scheduler,
 
 	@Override
 	public void start() {
-		SchedulerState<BoundedServicesState> b = null;
+		SchedulerState<BoundedServicesState> a = this.state;
+		if (a.currentResource.boundedServices != SHUTDOWN
+				&& a.currentResource.boundedServices != SHUTTING_DOWN) {
+			return;
+		}
+		SchedulerState<BoundedServicesState> b = SchedulerState.init(
+				BoundedServicesState.wrap(new BoundedServices(this))
+		);
 		for (;;) {
-			SchedulerState<BoundedServicesState> a = state;
-
+			a = this.state;
 			if (a.currentResource.boundedServices == SHUTTING_DOWN) {
 				// keep spinning until previous shuts down
 				continue;
-			}
-
-			if (a.currentResource.boundedServices != SHUTDOWN) {
-				if (b != null) {
-					b.currentResource.boundedServices.evictor.shutdownNow();
-				}
-				return;
-			}
-			if (b == null) {
-				b = SchedulerState.init(BoundedServicesState.wrap(new BoundedServices(this)));
 			}
 
 			if (STATE.compareAndSet(this, a, b)) {
@@ -184,6 +180,11 @@ final class BoundedElasticScheduler implements Scheduler,
 					// In both cases it's safe to return.
 					return;
 				}
+			}
+
+			if (a.currentResource.boundedServices != SHUTDOWN) {
+				b.currentResource.boundedServices.evictor.shutdownNow();
+				return;
 			}
 		}
 	}

@@ -92,28 +92,29 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
 	@Override
 	public void start() {
-		SchedulerState<ScheduledExecutorService[]> b = null;
-		for (;;) {
-			SchedulerState<ScheduledExecutorService[]> a = state;
-            if (a != null) {
-                if (a.currentResource != SHUTDOWN) {
-                    if (b != null) {
-                        for (ScheduledExecutorService exec : b.currentResource) {
-                            exec.shutdownNow();
-                        }
-                    }
-                    return;
-                }
-            }
+		SchedulerState<ScheduledExecutorService[]> a = this.state;
 
-			if (b == null) {
-				b = SchedulerState.init(new ScheduledExecutorService[n]);
-				for (int i = 0; i < n; i++) {
-					b.currentResource[i] = Schedulers.decorateExecutorService(this, this.get());
-				}
+		if (a != null && a.currentResource != SHUTDOWN) {
+			return;
+		}
+
+		SchedulerState<ScheduledExecutorService[]> b =
+				SchedulerState.init(new ScheduledExecutorService[n]);
+		for (int i = 0; i < n; i++) {
+			b.currentResource[i] = Schedulers.decorateExecutorService(this, this.get());
+		}
+
+		for (;;) {
+			if (STATE.compareAndSet(this, a, b)) {
+				return;
 			}
 
-			if (STATE.compareAndSet(this, a, b)) {
+			a = this.state;
+
+			if (a != null && a.currentResource != SHUTDOWN) {
+				for (ScheduledExecutorService exec : b.currentResource) {
+					exec.shutdownNow();
+				}
 				return;
 			}
 		}
