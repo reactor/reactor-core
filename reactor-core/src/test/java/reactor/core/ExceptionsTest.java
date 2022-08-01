@@ -24,11 +24,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Mono;
-import reactor.test.util.LoggerUtils;
 import reactor.test.util.RaceTestUtils;
 import reactor.test.util.TestLogger;
 import reactor.util.annotation.Nullable;
@@ -238,16 +236,9 @@ public class ExceptionsTest {
 			.isTrue();
 	}
 
-	@AfterEach
-	void disableCapture() {
-		LoggerUtils.disableCapture();
-	}
-
 	@Test
-	void throwIfFatalThrowsAndLogsBubbling() {
-		TestLogger testLogger = new TestLogger(false);
-		LoggerUtils.enableCaptureWith(testLogger);
-
+	@TestLoggerExtension.Redirect
+	void throwIfFatalThrowsAndLogsBubbling(TestLogger testLogger) {
 		BubblingException expected = new BubblingException("expected to be logged");
 
 		assertThatExceptionOfType(BubblingException.class)
@@ -259,10 +250,8 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void throwIfFatalThrowsAndLogsErrorCallbackNotImplemented() {
-		TestLogger testLogger = new TestLogger(false);
-		LoggerUtils.enableCaptureWith(testLogger);
-
+	@TestLoggerExtension.Redirect
+	void throwIfFatalThrowsAndLogsErrorCallbackNotImplemented(TestLogger testLogger) {
 		ErrorCallbackNotImplemented expected = new ErrorCallbackNotImplemented(new IllegalStateException("expected to be logged"));
 
 		assertThatExceptionOfType(ErrorCallbackNotImplemented.class)
@@ -275,10 +264,8 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void throwIfFatalWithJvmFatalErrorsDoesThrowAndLog() {
-		TestLogger testLogger = new TestLogger(false);
-		LoggerUtils.enableCaptureWith(testLogger);
-
+	@TestLoggerExtension.Redirect
+	void throwIfFatalWithJvmFatalErrorsDoesThrowAndLog(TestLogger testLogger) {
 		SoftAssertions.assertSoftly(softly -> {
 			softly.assertThatExceptionOfType(VirtualMachineError.class)
 				.as("VirtualMachineError")
@@ -303,10 +290,8 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	void throwIfJvmFatalDoesThrowAndLog() {
-		TestLogger testLogger = new TestLogger(false);
-		LoggerUtils.enableCaptureWith(testLogger);
-
+	@TestLoggerExtension.Redirect
+	void throwIfJvmFatalDoesThrowAndLog(TestLogger testLogger) {
 		assertThatExceptionOfType(VirtualMachineError.class)
 				.as("VirtualMachineError")
 				.isThrownBy(() -> Exceptions.throwIfJvmFatal(JVM_FATAL_VIRTUAL_MACHINE_ERROR))
@@ -329,10 +314,8 @@ public class ExceptionsTest {
 	};
 
 	@Test
-	void throwIfJvmFatalDoesntThrowNorLogsOnSimplyFatalExceptions() {
-		TestLogger testLogger = new TestLogger(false);
-		LoggerUtils.enableCaptureWith(testLogger);
-
+	@TestLoggerExtension.Redirect
+	void throwIfJvmFatalDoesntThrowNorLogsOnSimplyFatalExceptions(TestLogger testLogger) {
 		SoftAssertions.assertSoftly(softly -> {
 			softly.assertThatCode(() -> Exceptions.throwIfJvmFatal(new BubblingException("not thrown")))
 				.doesNotThrowAnyException();
