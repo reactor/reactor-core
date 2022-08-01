@@ -192,7 +192,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		}
 
 		@Override
-		C resolveValue() {
+		C accumulatedValue() {
 			final C c;
 			synchronized (this) {
 				c = collection;

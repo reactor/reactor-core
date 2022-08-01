@@ -79,7 +79,7 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		}
 
 		@Override
-		Long resolveValue() {
+		Long accumulatedValue() {
 			return counter;
 		}
 	}

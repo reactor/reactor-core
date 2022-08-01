@@ -160,7 +160,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		R resolveValue() {
+		R accumulatedValue() {
 			final R c;
 			synchronized (this) {
 				c = container;

@@ -170,7 +170,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 		}
 
-		R resolveValue() {
+		R accumulatedValue() {
 			final A c;
 			synchronized (this) {
 				c = container;

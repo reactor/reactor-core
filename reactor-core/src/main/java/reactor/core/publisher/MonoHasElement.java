@@ -97,7 +97,7 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 		}
 
 		@Override
-		Boolean resolveValue() {
+		Boolean accumulatedValue() {
 			return false;
 		}
 	}

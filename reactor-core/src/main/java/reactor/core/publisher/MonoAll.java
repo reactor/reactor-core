@@ -118,7 +118,7 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 		}
 
 		@Override
-		Boolean resolveValue() {
+		Boolean accumulatedValue() {
 			return true;
 		}
 	}

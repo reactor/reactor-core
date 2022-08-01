@@ -1114,7 +1114,7 @@ public abstract class Operators {
 			T value, String stepName){
 		return new ScalarSubscription<>(subscriber, value, stepName);
 	}
-	
+
 	/**
 	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
 	 * sequentially (serialized).
@@ -2040,7 +2040,7 @@ public abstract class Operators {
 					}
 					else {
 						// completed before request means source was empty
-						final O value = resolveValue();
+						final O value = accumulatedValue();
 
 						if (value == null) {
 							return;
@@ -2060,7 +2060,7 @@ public abstract class Operators {
 
 		final void completeWhenEmpty() {
 			if (hasRequest) {
-				final O value = resolveValue();
+				final O value = accumulatedValue();
 
 				if (value == null) {
 					return;
@@ -2076,7 +2076,7 @@ public abstract class Operators {
 				return;
 			}
 
-			final O value = resolveValue();
+			final O value = accumulatedValue();
 
 			if (value == null) {
 				return;
@@ -2086,8 +2086,19 @@ public abstract class Operators {
 			this.actual.onComplete();
 		}
 
+		/**
+		 * This method is being called either during onComplete invocation in case request
+		 * has happened before, or during request invocation in case onComplete with no
+		 * values has happened before.
+		 * <p>
+		 * <b>Note</b>, this method expectedly returns null if cancellation happened
+		 * before
+		 * </p>
+		 *
+		 * @return accumulated/default value or null if cancelled before
+		 */
 		@Nullable
-		abstract O resolveValue();
+		abstract O accumulatedValue();
 
 		@Override
 		public final I poll() {
@@ -2418,7 +2429,7 @@ public abstract class Operators {
 	                    }
 	                } else if (mr != 0L && a != null) {
 	                    requestAmount = addCap(requestAmount, mr);
-	                    alreadyInRequestAmount += mr; 
+	                    alreadyInRequestAmount += mr;
 	                    requestTarget = a;
 	                }
 	            }

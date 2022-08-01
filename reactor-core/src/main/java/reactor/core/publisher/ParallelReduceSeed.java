@@ -185,7 +185,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 		}
 
 		@Override
-		R resolveValue() {
+		R accumulatedValue() {
 			final R a;
 			synchronized (this) {
 				a = accumulator;

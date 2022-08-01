@@ -57,7 +57,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 	                                                   Fuseable,
 	                                                   QueueSubscription<T> {
 
-		static final Object INITIAL_STATE = new Object();
+		static final Object CANCELLED = new Object();
 
 		final BiFunction<T, T, T> aggregator;
 		final CoreSubscriber<? super T> actual;
@@ -72,8 +72,6 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				BiFunction<T, T, T> aggregator) {
 			this.actual = actual;
 			this.aggregator = aggregator;
-			//noinspection unchecked
-			this.aggregate = (T) INITIAL_STATE;
 		}
 
 		@Override
@@ -85,7 +83,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.CANCELLED) return !done && aggregate == null;
+			if (key == Attr.CANCELLED) return !done && aggregate == CANCELLED;
 			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -107,28 +105,32 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			T r = this.aggregate;
-			if (r == null) {
+
+			final T r = this.aggregate;
+			if (r == CANCELLED) {
 				return;
 			}
 
-			if (r == INITIAL_STATE) {
+			// initial scenario when aggregate has nothing in it
+			if (r == null) {
 				synchronized (this) {
-					if (this.aggregate == INITIAL_STATE) {
+					if (this.aggregate == null) {
 						this.aggregate = t;
+						return;
 					}
 				}
+
+				Operators.onDiscard(t, actual.currentContext());
 			}
 			else {
 				try {
 					synchronized (this) {
-						r = Objects.requireNonNull(aggregator.apply(r, t), "The aggregator returned a null value");
-						if (this.aggregate != null) {
-							this.aggregate = r;
+						if (this.aggregate != CANCELLED) {
+							this.aggregate = Objects.requireNonNull(aggregator.apply(r, t), "The aggregator returned a null value");
 							return;
 						}
 					}
-					Operators.onDiscard(r, actual.currentContext());
+					Operators.onDiscard(t, actual.currentContext());
 				}
 				catch (Throwable ex) {
 					done = true;
@@ -158,11 +160,11 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				this.aggregate = null;
 			}
 
-			if (r == null) {
+			if (r == CANCELLED) {
 				return;
 			}
 
-			if (r != INITIAL_STATE) {
+			if (r != null) {
 				Operators.onDiscard(r, actual.currentContext());
 			}
 
@@ -182,11 +184,11 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				this.aggregate = null;
 			}
 
-			if (r == null) {
+			if (r == CANCELLED) {
 				return;
 			}
 
-			if (r == INITIAL_STATE) {
+			if (r == null) {
 				actual.onComplete();
 			}
 			else {
@@ -202,7 +204,12 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 			final T r;
 			synchronized (this) {
 				r = this.aggregate;
-				this.aggregate = null;
+				//noinspection unchecked
+				this.aggregate = (T) CANCELLED;
+			}
+
+			if (r == null || r == CANCELLED) {
+				return;
 			}
 
 			Operators.onDiscard(r, actual.currentContext());

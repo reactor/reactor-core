@@ -127,6 +127,10 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 
+			if (v != null) {
+				Operators.onDiscard(v, actual.currentContext());
+			}
+
 			this.actual.onError(t);
 		}
 
@@ -175,12 +179,17 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		T resolveValue() {
+		T accumulatedValue() {
 			final T v;
 			synchronized (this) {
 				v = this.value;
 				this.value = null;
 			}
+
+			if (v == CANCELLED) {
+				return null;
+			}
+
 			return v;
 		}
 	}

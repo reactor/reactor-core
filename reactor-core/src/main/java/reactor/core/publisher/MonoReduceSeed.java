@@ -163,7 +163,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		R resolveValue() {
+		R accumulatedValue() {
 			final R seed;
 			synchronized (this) {
 				seed = this.seed;

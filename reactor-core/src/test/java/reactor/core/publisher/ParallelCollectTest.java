@@ -113,7 +113,7 @@ public class ParallelCollectTest {
 	}
 
 	@Test
-	public void scanSubscriber() {
+	public void scanSubscriberTerminatedScenario() {
 		CoreSubscriber<List<Integer>> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
 		ParallelCollectSubscriber<Integer, List<Integer>> test = new ParallelCollectSubscriber<>(
 				subscriber, new ArrayList<>(), List::add);
@@ -130,7 +130,7 @@ public class ParallelCollectTest {
 	}
 
 	@Test
-	public void scanSubscriber1() {
+	public void scanSubscriberCancelledScenario() {
 		CoreSubscriber<List<Integer>> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
 		ParallelCollectSubscriber<Integer, List<Integer>> test = new ParallelCollectSubscriber<>(
 				subscriber, new ArrayList<>(), List::add);

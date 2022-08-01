@@ -313,9 +313,8 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		void cancelExcept(ZipInner<R> source) {
 			final Context context = actual.currentContext();
 			for (ZipInner<R> ms : subscribers) {
-				if(ms != source) {
+				if (ms != source && ms.cancel()) {
 					Operators.onDiscard(ms.value, context);
-					ms.cancel();
 				}
 			}
 		}
@@ -470,13 +469,13 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		public void onNext(Object t) {
 			if (value == null) {
 				value = t;
-				if (!parent.signal()) {
-					final Subscription a = this.s;
-					if (a != Operators.cancelledSubscription() && S.compareAndSet(this, a, Operators.cancelledSubscription())) {
-						return;
-					}
-					Operators.onDiscard(t, parent.actual.currentContext());
+				parent.signal();
+
+				final Subscription a = this.s;
+				if (a != Operators.cancelledSubscription() && S.compareAndSet(this, a, Operators.cancelledSubscription())) {
+					return;
 				}
+				Operators.onDiscard(t, parent.actual.currentContext());
 			}
 		}
 

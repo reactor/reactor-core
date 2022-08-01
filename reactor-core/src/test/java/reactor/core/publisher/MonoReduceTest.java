@@ -307,7 +307,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 	}
 
 	@Test
-	public void scanSubscriber() {
+	public void scanSubscriberTerminatedScenario() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoReduce.ReduceSubscriber<String> test = new MonoReduce.ReduceSubscriber<>(actual, (s1, s2) -> s1 + s2);
 		Subscription parent = Operators.emptySubscription();
@@ -325,7 +325,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 	}
 
 	@Test
-	public void scanSubscriber1() {
+	public void scanSubscriberCancelledScenario() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoReduce.ReduceSubscriber<String> test = new MonoReduce.ReduceSubscriber<>(actual, (s1, s2) -> s1 + s2);
 		Subscription parent = Operators.emptySubscription();

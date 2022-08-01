@@ -141,7 +141,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		T resolveValue() {
+		T accumulatedValue() {
 			return defaultValue;
 		}
 	}
