@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 
@@ -82,30 +83,23 @@ public class BaseSubscriberTest {
 	}
 
 	@Test
-	public void onErrorCallbackNotImplemented() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			Flux<String> flux = Flux.error(new IllegalStateException());
+	@TestLoggerExtension.Redirect
+	void onErrorCallbackNotImplemented(TestLogger testLogger) {
+		Flux<String> flux = Flux.error(new IllegalStateException());
 
-			flux.subscribe(new BaseSubscriber<String>() {
-				@Override
-				protected void hookOnSubscribe(Subscription subscription) {
-					request(1);
-				}
+		flux.subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
 
-				@Override
-				protected void hookOnNext(String value) {
-					//NO-OP
-				}
-			});
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+			@Override
+			protected void hookOnNext(String value) {
+				//NO-OP
+			}
+		});
+		Assertions.assertThat(testLogger.getErrContent())
+			.startsWith("[ERROR] Operator called default onErrorDropped - reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException");
 	}
 
 	@Test
@@ -277,41 +271,33 @@ public class BaseSubscriberTest {
 	}
 
 	@Test
-	public void finallyExecutesWhenHookOnErrorFails() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			RuntimeException error = new IllegalArgumentException("hookOnError");
-			AtomicReference<SignalType> checkFinally = new AtomicReference<>();
+	@TestLoggerExtension.Redirect
+	void finallyExecutesWhenHookOnErrorFails(TestLogger testLogger) {
+		RuntimeException error = new IllegalArgumentException("hookOnError");
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 
-			Flux.<String>error(new IllegalStateException("someError")).subscribe(new BaseSubscriber<String>() {
-				@Override
-				protected void hookOnSubscribe(Subscription subscription) {
-					requestUnbounded();
-				}
+		Flux.<String>error(new IllegalStateException("someError")).subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				requestUnbounded();
+			}
 
-				@Override
-				protected void hookOnNext(String value) {
-				}
+			@Override
+			protected void hookOnNext(String value) {
+			}
 
-				@Override
-				protected void hookOnError(Throwable throwable) {
-					throw error;
-				}
+			@Override
+			protected void hookOnError(Throwable throwable) {
+				throw error;
+			}
 
-				@Override
-				protected void hookFinally(SignalType type) {
-					checkFinally.set(type);
-				}
-			});
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains(error.getMessage());
-			assertThat(checkFinally).hasValue(SignalType.ON_ERROR);
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+			@Override
+			protected void hookFinally(SignalType type) {
+				checkFinally.set(type);
+			}
+		});
+		Assertions.assertThat(testLogger.getErrContent())
+			.startsWith("[ERROR] Operator called default onErrorDropped - java.lang.IllegalArgumentException: hookOnError");
 	}
 
 	@Test

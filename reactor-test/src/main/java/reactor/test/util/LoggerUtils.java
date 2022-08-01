@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package reactor.test.util;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.function.Function;
 
 import reactor.core.Disposable;
@@ -34,7 +32,7 @@ import reactor.util.annotation.Nullable;
 public final class LoggerUtils {
 
 	@Nullable
-	private static Logger testLogger;
+	static CapturingFactory currentCapturingFactory;
 
 	private LoggerUtils() {
 	}
@@ -55,18 +53,19 @@ public final class LoggerUtils {
 		try {
 			Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
 			lfField.setAccessible(true);
-			Object originalFactory = lfField.get(Loggers.class);
-			if (originalFactory instanceof CapturingFactory) {
-				return (Disposable) originalFactory;
+			Object originalFactoryInstance = lfField.get(Loggers.class);
+			if (originalFactoryInstance instanceof CapturingFactory) {
+				return (Disposable) originalFactoryInstance;
 			}
-			Method originalFactoryMethod = originalFactory.getClass().getMethod("apply", String.class);
-			originalFactoryMethod.setAccessible(true);
-
-			CapturingFactory capturingFactory = new CapturingFactory(originalFactory, originalFactoryMethod);
+			@SuppressWarnings("unchecked")
+			final Function<String, ? extends Logger> originalFactory =
+				(Function<String, ? extends Logger>) originalFactoryInstance;
+			CapturingFactory capturingFactory = new CapturingFactory(originalFactory);
+			currentCapturingFactory = capturingFactory;
 			Loggers.useCustomLoggers(capturingFactory);
 			return capturingFactory;
 		}
-		catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException e) {
+		catch (NoSuchFieldException | IllegalAccessException e) {
 			throw new IllegalStateException("Could not install custom logger", e);
 		}
 	}
@@ -74,46 +73,92 @@ public final class LoggerUtils {
 	/**
 	 * Set the logger used for capturing.
 	 *
-	 * @throws IllegalStateException if a previous logger has been set but not cleared via {@link #disableCapture()}
+	 * @param testLogger the {@link Logger} in which to copy logs
+	 * @throws IllegalStateException if no capturing factory is installed or a previous logger has been set but not
+	 * cleared via {@link #disableCapture()}
 	 */
 	public static void enableCaptureWith(Logger testLogger) {
-		if (LoggerUtils.testLogger != null) {
-			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call disableCapture()");
+		CapturingFactory f = currentCapturingFactory;
+		if (f == null) {
+			throw new IllegalStateException("LoggerUtils#useCurrentLoggerWithCapture() hasn't been called");
 		}
-		LoggerUtils.testLogger = testLogger;
+		f.enableRedirection(testLogger, true); //throws ISE also
+	}
+
+	/**
+	 * Set the logger used for capturing, an optionally suppress log messages from original logger.
+	 *
+	 * @param testLogger the {@link TestLogger} in which to copy or redirect logs
+	 * @param redirectToOriginal whether log messages should also go to the original logging infrastructure
+	 * @throws IllegalStateException if no capturing factory is installed or a previous logger has been set but not
+	 * cleared via {@link #disableCapture()}
+	 */
+	public static void enableCaptureWith(Logger testLogger, boolean redirectToOriginal) {
+		CapturingFactory f = currentCapturingFactory;
+		if (f == null) {
+			throw new IllegalStateException("LoggerUtils#useCurrentLoggerWithCapture() hasn't been called");
+		}
+		f.enableRedirection(testLogger, redirectToOriginal); //throws ISE also
 	}
 
 	/**
 	 * Disable capturing, forgetting about the logger set via {@link #enableCaptureWith(Logger)}.
 	 */
 	public static void disableCapture() {
-		LoggerUtils.testLogger = null;
+		CapturingFactory f = currentCapturingFactory;
+		if (f == null) {
+			throw new IllegalStateException("LoggerUtils#useCurrentLoggerWithCapture() hasn't been called");
+		}
+		f.disableRedirection();
 	}
 
 
-	private static class CapturingFactory implements Function<String, Logger>, Disposable {
+	static final class CapturingFactory implements Function<String, Logger>, Disposable {
 
-		private final Object originalFactory;
-		private final Method originalFactoryMethod;
+		final Function<String, ? extends Logger> originalFactory;
 
-		private CapturingFactory(Object factory, Method method) {
-			originalFactory = factory;
-			originalFactoryMethod = method;
+		@Nullable
+		Logger capturingLogger;
+		boolean redirectToOriginal;
+
+		CapturingFactory(Function<String, ? extends Logger> originalFactory) {
+			this.originalFactory = originalFactory;
+			disableRedirection();
+		}
+
+		void disableRedirection() {
+			this.redirectToOriginal = true;
+			this.capturingLogger = null;
+		}
+
+		void enableRedirection(Logger captureLogger, boolean redirectToOriginal) {
+			if (this.capturingLogger != null) {
+				throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call disableCapture()");
+			}
+			this.redirectToOriginal = redirectToOriginal;
+			this.capturingLogger = captureLogger;
+		}
+
+		@Nullable
+		Logger getCapturingLogger() {
+			return this.capturingLogger;
+		}
+
+		boolean isRedirectToOriginal() {
+			return this.redirectToOriginal;
 		}
 
 		@Override
 		public Logger apply(String category) {
-			try {
-				Logger original = (Logger) originalFactoryMethod.invoke(originalFactory, category);
-				return new DivertingLogger(original);
-			}
-			catch (IllegalAccessException | InvocationTargetException e) {
-				throw new RuntimeException(e);
-			}
+			Logger original = originalFactory.apply(category);
+			return new DivertingLogger(original, this);
 		}
 
 		@Override
 		public void dispose() {
+			if (LoggerUtils.currentCapturingFactory == this) {
+				LoggerUtils.currentCapturingFactory = null;
+			}
 			try {
 				Field lfField = Loggers.class.getDeclaredField("LOGGER_FACTORY");
 				lfField.setAccessible(true);
@@ -131,14 +176,17 @@ public final class LoggerUtils {
 	}
 
 	/**
-	 * A Logger that behaves like its {@link #delegate} but also logs to {@link LoggerUtils#testLogger} if it is set.
+	 * A Logger that behaves like its {@link #delegate} but also logs to its parent {@link CapturingFactory}
+	 * {@link CapturingFactory#getCapturingLogger() capturing logger} if it is set.
 	 */
-	private static class DivertingLogger implements reactor.util.Logger {
+	static class DivertingLogger implements reactor.util.Logger {
 
 		private final reactor.util.Logger delegate;
+		private final CapturingFactory parent;
 
-		private DivertingLogger(Logger delegate) {
+		DivertingLogger(Logger delegate, CapturingFactory parent) {
 			this.delegate = delegate;
+			this.parent = parent;
 		}
 
 		@Override
@@ -148,167 +196,197 @@ public final class LoggerUtils {
 
 		@Override
 		public boolean isTraceEnabled() {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			return delegate.isTraceEnabled() || (logger != null && logger.isTraceEnabled());
 		}
 
 		@Override
 		public void trace(String msg) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.trace(msg);
 			}
-			delegate.trace(msg);
+			if (parent.isRedirectToOriginal()) {
+				delegate.trace(msg);
+			}
 		}
 
 		@Override
 		public void trace(String format, Object... arguments) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.trace(format, arguments);
 			}
-			delegate.trace(format, arguments);
+			if (parent.isRedirectToOriginal()) {
+				delegate.trace(format, arguments);
+			}
 		}
 
 		@Override
 		public void trace(String msg, Throwable t) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.trace(msg, t);
 			}
-			delegate.trace(msg, t);
+			if (parent.isRedirectToOriginal()) {
+				delegate.trace(msg, t);
+			}
 		}
 
 		@Override
 		public boolean isDebugEnabled() {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			return delegate.isDebugEnabled() || (logger != null && logger.isDebugEnabled());
 		}
 
 		@Override
 		public void debug(String msg) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.debug(msg);
 			}
-			delegate.debug(msg);
+			if (parent.isRedirectToOriginal()) {
+				delegate.debug(msg);
+			}
 		}
 
 		@Override
 		public void debug(String format, Object... arguments) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.debug(format, arguments);
 			}
-			delegate.debug(format, arguments);
+			if (parent.isRedirectToOriginal()) {
+				delegate.debug(format, arguments);
+			}
 		}
 
 		@Override
 		public void debug(String msg, Throwable t) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.debug(msg, t);
 			}
-			delegate.debug(msg, t);
+			if (parent.isRedirectToOriginal()) {
+				delegate.debug(msg, t);
+			}
 		}
 
 		@Override
 		public boolean isInfoEnabled() {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			return delegate.isInfoEnabled() || (logger != null && logger.isInfoEnabled());
 		}
 
 		@Override
 		public void info(String msg) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.info(msg);
 			}
-			delegate.info(msg);
+			if (parent.isRedirectToOriginal()) {
+				delegate.info(msg);
+			}
 		}
 
 		@Override
 		public void info(String format, Object... arguments) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.info(format, arguments);
 			}
-			delegate.info(format, arguments);
+			if (parent.isRedirectToOriginal()) {
+				delegate.info(format, arguments);
+			}
 		}
 
 		@Override
 		public void info(String msg, Throwable t) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.info(msg, t);
 			}
-			delegate.info(msg, t);
+			if (parent.isRedirectToOriginal()) {
+				delegate.info(msg, t);
+			}
 		}
 
 		@Override
 		public boolean isWarnEnabled() {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			return delegate.isWarnEnabled() || (logger != null && logger.isWarnEnabled());
 		}
 
 		@Override
 		public void warn(String msg) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.warn(msg);
 			}
-			delegate.warn(msg);
+			if (parent.isRedirectToOriginal()) {
+				delegate.warn(msg);
+			}
 		}
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.warn(format, arguments);
 			}
-			delegate.warn(format, arguments);
+			if (parent.isRedirectToOriginal()) {
+				delegate.warn(format, arguments);
+			}
 		}
 
 		@Override
 		public void warn(String msg, Throwable t) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.warn(msg, t);
 			}
-			delegate.warn(msg, t);
+			if (parent.isRedirectToOriginal()) {
+				delegate.warn(msg, t);
+			}
 		}
 
 		@Override
 		public boolean isErrorEnabled() {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			return delegate.isErrorEnabled() || (logger != null && logger.isErrorEnabled());
 		}
 
 		@Override
 		public void error(String msg) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.error(msg);
 			}
-			delegate.error(msg);
+			if (parent.isRedirectToOriginal()) {
+				delegate.error(msg);
+			}
 		}
 
 		@Override
 		public void error(String format, Object... arguments) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.error(format, arguments);
 			}
-			delegate.error(format, arguments);
+			if (parent.isRedirectToOriginal()) {
+				delegate.error(format, arguments);
+			}
 		}
 
 		@Override
 		public void error(String msg, Throwable t) {
-			Logger logger = LoggerUtils.testLogger;
+			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.error(msg, t);
 			}
-			delegate.error(msg, t);
+			if (parent.isRedirectToOriginal()) {
+				delegate.error(msg, t);
+			}
 		}
 	}
 }
