@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.publisher.Flux;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.retry.Retry;
 
@@ -35,6 +37,8 @@ import reactor.util.retry.Retry;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 public abstract class Exceptions {
+
+	private static final Logger LOGGER = Loggers.getLogger(Exceptions.class);
 
 	/**
 	 * A common error message used when a reactive streams source doesn't seem to respect
@@ -413,6 +417,68 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Check if a {@link Throwable} is considered by Reactor as Jvm Fatal and would be thrown
+	 * by both {@link #throwIfFatal(Throwable)} and {@link #throwIfJvmFatal(Throwable)}.
+	 * This is a subset of {@link #isFatal(Throwable)}, namely:
+	 * <ul>
+	 *     <li>{@link VirtualMachineError}</li>
+	 *     <li>{@link ThreadDeath}</li>
+	 *     <li>{@link LinkageError}</li>
+	 * </ul>
+	 * <p>
+	 * Unless wrapped explicitly, such exceptions would always be thrown by operators instead of
+	 * propagation through onError, potentially interrupting progress of Flux/Mono sequences.
+	 * When they occur, the JVM itself is assumed to be in an unrecoverable state, and so is Reactor.
+	 *
+	 * @see #throwIfFatal(Throwable)
+	 * @see #throwIfJvmFatal(Throwable)
+	 * @see #isFatal(Throwable)
+	 * @param t the {@link Throwable} to check
+	 * @return true if the throwable is considered Jvm Fatal
+	 */
+	public static boolean isJvmFatal(@Nullable Throwable t) {
+		return t instanceof VirtualMachineError ||
+			t instanceof ThreadDeath ||
+			t instanceof LinkageError;
+	}
+
+	/**
+	 * Check if a {@link Throwable} is considered by Reactor as Fatal and would be thrown by
+	 * {@link #throwIfFatal(Throwable)}.
+	 * <ul>
+	 * 	<li>{@code BubblingException} (as detectable by {@link #isBubbling(Throwable)})</li>
+	 * 	<li>{@code ErrorCallbackNotImplemented} (as detectable by {@link #isErrorCallbackNotImplemented(Throwable)})</li>
+	 * 	<li> {@link #isJvmFatal(Throwable) Jvm Fatal exceptions}
+	 * 	  <ul>
+	 * 		<li>{@link VirtualMachineError}</li>
+	 * 		<li>{@link ThreadDeath}</li>
+	 * 		<li>{@link LinkageError}</li>
+	 * 	  </ul>
+	 * 	</li>
+	 * </ul>
+	 * <p>
+	 * Unless wrapped explicitly, such exceptions would always be thrown by operators instead of
+	 * propagation through onError, potentially interrupting progress of Flux/Mono sequences.
+	 * When they occur, the assumption is that Reactor is in an unrecoverable state (notably
+	 * because the JVM itself might be in an unrecoverable state).
+	 *
+	 * @see #throwIfFatal(Throwable)
+	 * @see #isJvmFatal(Throwable)
+	 * @param t the {@link Throwable} to check
+	 * @return true if the throwable is considered fatal
+	 */
+	public static boolean isFatal(@Nullable Throwable t) {
+		return isFatalButNotJvmFatal(t) || isJvmFatal(t);
+	}
+
+	/**
+	 * Internal intermediate test that only detect Fatal but not Jvm Fatal exceptions.
+	 */
+	static boolean isFatalButNotJvmFatal(@Nullable Throwable t) {
+		return t instanceof BubblingException || t instanceof ErrorCallbackNotImplemented;
+	}
+
+	/**
 	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
 	 * varieties. These varieties are as follows: <ul>
 	 *     <li>{@code BubblingException} (as detectable by {@link #isBubbling(Throwable)})</li>
@@ -422,13 +488,17 @@ public abstract class Exceptions {
 	 * @param t the exception to evaluate
 	 */
 	public static void throwIfFatal(@Nullable Throwable t) {
-		if (t instanceof BubblingException) {
-			throw (BubblingException) t;
+		if (t == null) {
+			return;
 		}
-		if (t instanceof ErrorCallbackNotImplemented) {
-			throw (ErrorCallbackNotImplemented) t;
+		if (isFatalButNotJvmFatal(t)) {
+			LOGGER.warn("throwIfFatal detected a fatal exception, which is thrown and logged below:", t);
+			throw (RuntimeException) t;
 		}
-		throwIfJvmFatal(t);
+		if (isJvmFatal(t)) {
+			LOGGER.warn("throwIfFatal detected a jvm fatal exception, which is thrown and logged below:", t);
+			throw (Error) t;
+		}
 	}
 
 	/**
@@ -440,14 +510,13 @@ public abstract class Exceptions {
 	 * @param t the exception to evaluate
 	 */
 	public static void throwIfJvmFatal(@Nullable Throwable t) {
-		if (t instanceof VirtualMachineError) {
-			throw (VirtualMachineError) t;
+		if (t == null) {
+			return;
 		}
-		if (t instanceof ThreadDeath) {
-			throw (ThreadDeath) t;
-		}
-		if (t instanceof LinkageError) {
-			throw (LinkageError) t;
+		if (isJvmFatal(t)) {
+			LOGGER.warn("throwIfJvmFatal detected a jvm fatal exception, which is thrown and logged below:", t);
+			assert t instanceof Error;
+			throw (Error) t;
 		}
 	}
 
