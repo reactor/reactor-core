@@ -164,9 +164,10 @@ final class BoundedElasticScheduler implements Scheduler,
 			} catch (RejectedExecutionException ree) {
 				// The executor was most likely shut down in parallel.
 				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
-				// If it's running - the other thread did a restart and will run its' own schedule.
-				// In both cases it's safe to return.
-				return;
+				// If it's running - the other thread did a restart and will run its own schedule.
+				// In both cases we let the caller know.
+				throw new ConcurrentModificationException("Start called concurrently with " +
+						"another start, dispose, or disposeGracefully");
 			}
 		}
 
@@ -182,11 +183,9 @@ final class BoundedElasticScheduler implements Scheduler,
 		if (!boundedServices.evictor.awaitTermination(timeout, timeUnit)) {
 			return false;
 		}
-		if (boundedServices.busyArray != null) {
-			for (BoundedState bs : boundedServices.busyArray) {
-				if (!bs.executor.awaitTermination(timeout, timeUnit)) {
-					return false;
-				}
+		for (BoundedState bs : boundedServices.busyStates.array) {
+			if (!bs.executor.awaitTermination(timeout, timeUnit)) {
+				return false;
 			}
 		}
 		return true;
@@ -201,7 +200,7 @@ final class BoundedElasticScheduler implements Scheduler,
 			// so we do our best to release the resources without updating the state.
 			if (previous.initialResource != null) {
 				previous.initialResource.evictor.shutdownNow();
-				for (BoundedState bs : previous.initialResource.busyArray) {
+				for (BoundedState bs : previous.initialResource.busyStates.array) {
 					bs.shutdown(true);
 				}
 			}
@@ -214,19 +213,10 @@ final class BoundedElasticScheduler implements Scheduler,
 				SHUTDOWN, this
 		);
 
-		if (!STATE.compareAndSet(this, previous, shutDown)) {
-			// either another thread disposed or restarted
-			previous = state;
-			if (previous.currentResource == SHUTDOWN) {
-				assert previous.initialResource != null;
-				previous.initialResource.evictor.shutdownNow();
+		STATE.compareAndSet(this, previous, shutDown);
+		// If unsuccessful - either another thread disposed or restarted - no issue,
+		// we only care about the one stored in shutDown.
 
-				for (BoundedState bs : previous.initialResource.busyArray) {
-					bs.shutdown(true);
-				}
-			} // restarted -> nothing to do here
-		}
-		// in all cases, dispose the resources
 		assert shutDown.initialResource != null;
 		shutDown.initialResource.evictor.shutdownNow();
 		for (BoundedState bs : toAwait) {
@@ -249,19 +239,10 @@ final class BoundedElasticScheduler implements Scheduler,
 					SHUTDOWN, this
 			);
 
-			if (!STATE.compareAndSet(this, previous, shutDown)) {
-				// either another thread disposed or restarted
-				// (or disposed the restarted one -- ABA problem -- in such racy
-				// condition, we choose to coordinate with the last shutdown anyway)
-				previous = state;
-				if (previous.currentResource == SHUTDOWN) {
-					for (BoundedState bs : toAwait) {
-						bs.shutdown(false);
-					}
-					return previous.onDispose;
-				} // else: restarted -> nothing to do here
-			}
-			// in all cases, dispose the resources and coordinate on shutDown
+			STATE.compareAndSet(this, previous, shutDown);
+			// If unsuccessful - either another thread disposed or restarted - no issue,
+			// we only care about the one stored in shutDown.
+
 			assert shutDown.initialResource != null;
 			shutDown.initialResource.evictor.shutdown();
 			for (BoundedState bs : toAwait) {
@@ -331,7 +312,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	 * @return a best effort total count of the busy executors
 	 */
 	int estimateBusy() {
-		return state.currentResource.busyArray.length;
+		return state.currentResource.busyStates.array.length;
 	}
 
 	/**
@@ -347,7 +328,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	 * @return the total task capacity, or {@literal -1} if any backing executor's task queue size cannot be instrumented
 	 */
 	int estimateRemainingTaskCapacity() {
-		BoundedState[] busyArray = state.currentResource.busyArray;
+		BoundedState[] busyArray = state.currentResource.busyStates.array;
 		int totalTaskCapacity = maxTaskQueuedPerThread * maxThreads;
 		for (BoundedState state : busyArray) {
 			int stateQueueSize = state.estimateQueueSize();
@@ -374,7 +355,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	@Override
 	public Stream<? extends Scannable> inners() {
 		BoundedServices services = state.currentResource;
-		return Stream.concat(Stream.of(services.busyArray), services.idleQueue.stream())
+		return Stream.concat(Stream.of(services.busyStates.array), services.idleQueue.stream())
 		             .filter(obj -> obj != null && obj != CREATING);
 	}
 
@@ -387,6 +368,16 @@ final class BoundedElasticScheduler implements Scheduler,
 	}
 
 	static final class BoundedServices extends AtomicInteger {
+
+		static final class BusyStates {
+			final BoundedState[] array;
+			final boolean shutdown;
+
+			public BusyStates(BoundedState[] array, boolean shutdown) {
+				this.array = array;
+				this.shutdown = shutdown;
+			}
+		}
 
 		/**
 		 * Constant for this counter of live executors to reflect the whole pool has been
@@ -402,8 +393,8 @@ final class BoundedElasticScheduler implements Scheduler,
 		 */
 		static final ZoneId                       ZONE_UTC = ZoneId.of("UTC");
 
-		static final BoundedState[] ALL_IDLE = new BoundedState[0];
-		static final BoundedState[] ALL_SHUTDOWN = new BoundedState[0];
+		static final BusyStates ALL_IDLE = new BusyStates(new BoundedState[0], false);
+		static final BusyStates ALL_SHUTDOWN = new BusyStates(new BoundedState[0], true);
 		static final ScheduledExecutorService EVICTOR_SHUTDOWN;
 
 		static final BoundedServices SHUTDOWN;
@@ -445,16 +436,18 @@ final class BoundedElasticScheduler implements Scheduler,
 		final ScheduledExecutorService            evictor;
 		final Deque<BoundedState>                 idleQueue;
 
-		volatile BoundedState[]                                                   busyArray;
-		static final AtomicReferenceFieldUpdater<BoundedServices, BoundedState[]> BUSY_ARRAY =
-			AtomicReferenceFieldUpdater.newUpdater(BoundedServices.class, BoundedState[].class, "busyArray");
+		// busyArray -> busyState { busyArray, flag=running/shutdown }
+		volatile BusyStates                                                   busyStates;
+		static final AtomicReferenceFieldUpdater<BoundedServices, BusyStates> BUSY_STATES =
+			AtomicReferenceFieldUpdater.newUpdater(BoundedServices.class, BusyStates.class,
+					"busyStates");
 
 		//constructor for SHUTDOWN
 		private BoundedServices() {
 			this.parent = null;
 			this.clock = Clock.fixed(Instant.EPOCH, ZONE_UTC);
 			this.idleQueue = new ConcurrentLinkedDeque<>();
-			this.busyArray = ALL_SHUTDOWN;
+			this.busyStates = ALL_SHUTDOWN;
 			this.evictor = EVICTOR_SHUTDOWN;
 		}
 
@@ -462,7 +455,7 @@ final class BoundedElasticScheduler implements Scheduler,
 			this.parent = parent;
 			this.clock = parent.clock;
 			this.idleQueue = new ConcurrentLinkedDeque<>();
-			this.busyArray = ALL_IDLE;
+			this.busyStates = ALL_IDLE;
 			this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
 		}
 
@@ -487,17 +480,18 @@ final class BoundedElasticScheduler implements Scheduler,
 		 */
 		boolean setBusy(BoundedState bs) {
 			for (; ; ) {
-				if (get() == DISPOSED) {
+				BusyStates previous = busyStates;
+				if (previous.shutdown) {
 					return false;
 				}
-				BoundedState[] previous = busyArray;
 
-				int len = previous.length;
+				int len = previous.array.length;
 				BoundedState[] replacement = new BoundedState[len + 1];
-				System.arraycopy(previous, 0, replacement, 0, len);
+				System.arraycopy(previous.array, 0, replacement, 0, len);
 				replacement[len] = bs;
 
-				if (BUSY_ARRAY.compareAndSet(this, previous, replacement)) {
+				if (BUSY_STATES.compareAndSet(this, previous,
+						new BusyStates(replacement, false))) {
 					return true;
 				}
 			}
@@ -505,15 +499,16 @@ final class BoundedElasticScheduler implements Scheduler,
 
 		void setIdle(BoundedState boundedState) {
 			for(;;) {
-				BoundedState[] arr = busyArray;
+				BusyStates current = busyStates;
+				BoundedState[] arr = busyStates.array;
 				int len = arr.length;
 
-				if (len == 0 || get() == DISPOSED) {
+				if (len == 0 || current.shutdown) {
 					return;
 				}
 
 
-				BoundedState[] replacement = null;
+				BusyStates replacement = null;
 				if (len == 1) {
 					if (arr[0] == boundedState) {
 						replacement = ALL_IDLE;
@@ -523,9 +518,11 @@ final class BoundedElasticScheduler implements Scheduler,
 					for (int i = 0; i < len; i++) {
 						BoundedState state = arr[i];
 						if (state == boundedState) {
-							replacement = new BoundedState[len - 1];
-							System.arraycopy(arr, 0, replacement, 0, i);
-							System.arraycopy(arr, i + 1, replacement, i, len - i - 1);
+							replacement = new BusyStates(
+									new BoundedState[len - 1], false
+							);
+							System.arraycopy(arr, 0, replacement.array, 0, i);
+							System.arraycopy(arr, i + 1, replacement.array, i, len - i - 1);
 							break;
 						}
 					}
@@ -534,10 +531,18 @@ final class BoundedElasticScheduler implements Scheduler,
 					//bounded state not found, ignore
 					return;
 				}
-				if (BUSY_ARRAY.compareAndSet(this, arr, replacement)) {
+				if (BUSY_STATES.compareAndSet(this, current, replacement)) {
 					//impl. note: reversed order could lead to a race condition where state is added to idleQueue
 					//then concurrently pick()ed into busyQueue then removed from same busyQueue.
 					this.idleQueue.add(boundedState);
+					// check whether we missed a shutdown
+					if (this.busyStates.shutdown) {
+						// we did, so we make sure the racing adds don't leak
+						for (BoundedState bs : this.idleQueue) {
+							bs.shutdown(true);
+						}
+						boundedState.shutdown(true);
+					}
 					return;
 				}
 			}
@@ -553,7 +558,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		BoundedState pick() {
 			for (;;) {
 				int a = get();
-				if (a == DISPOSED || busyArray == ALL_SHUTDOWN) {
+				if (a == DISPOSED || busyStates == ALL_SHUTDOWN) {
 					return CREATING; //synonym for shutdown, since the underlying executor is shut down
 				}
 
@@ -561,7 +566,11 @@ final class BoundedElasticScheduler implements Scheduler,
 					//try to find an idle resource
 					BoundedState bs = idleQueue.pollLast();
 					if (bs != null && bs.markPicked()) {
-						setBusy(bs);
+						boolean accepted = setBusy(bs);
+						if (!accepted) { // shutdown in the meantime
+							bs.shutdown(true);
+							return CREATING;
+						}
 						return bs;
 					}
 					//else optimistically retry (implicit continue here)
@@ -572,7 +581,11 @@ final class BoundedElasticScheduler implements Scheduler,
 						ScheduledExecutorService s = Schedulers.decorateExecutorService(parent, parent.createBoundedExecutorService());
 						BoundedState newState = new BoundedState(this, s);
 						if (newState.markPicked()) {
-							setBusy(newState);
+							boolean accepted = setBusy(newState);
+							if (!accepted) { // shutdown in the meantime
+								newState.shutdown(true);
+								return CREATING;
+							}
 							return newState;
 						}
 					}
@@ -590,7 +603,7 @@ final class BoundedElasticScheduler implements Scheduler,
 
 		@Nullable
 		private BoundedState choseOneBusy() {
-			BoundedState[] arr = busyArray;
+			BoundedState[] arr = busyStates.array;
 			int len = arr.length;
 			if (len == 0) {
 				return null; //implicit retry in the pick() loop
@@ -615,7 +628,13 @@ final class BoundedElasticScheduler implements Scheduler,
 
 		public BoundedState[] dispose() {
 			set(DISPOSED);
-			BoundedState[] arr = busyArray;
+			BusyStates current = busyStates;
+
+			if (busyStates.shutdown || !BUSY_STATES.compareAndSet(this, current,
+					new BusyStates(current.array, true))) {
+				return busyStates.array;
+			}
+			BoundedState[] arr = current.array;
 			// The idleQueue must be drained first as concurrent removals
 			// by evictor or additions by finished tasks can invalidate the size
 			// used if a regular array was created here.

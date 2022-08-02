@@ -34,7 +34,10 @@ public abstract class SchedulersStressTest {
 
 	private static void restart(Scheduler scheduler) {
 		scheduler.disposeGracefully(Duration.ofMillis(100)).block(Duration.ofMillis(100));
-		scheduler.start();
+		try {
+			scheduler.start();
+		} catch (Exception ignored) {
+		}
 	}
 
 	private static boolean canScheduleTask(Scheduler scheduler) {
@@ -246,17 +249,22 @@ public abstract class SchedulersStressTest {
 //
 //		@Override
 //		boolean isTerminated() {
-//			for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServices.busyArray) {
+//			for (BoundedElasticScheduler.BoundedState bs  :
+//					scheduler.state.currentResource.busyStates.array) {
 //				if (!bs.executor.isTerminated()) {
 //					return false;
 //				}
 //			}
-//			for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.boundedServicesBeforeShutdown.busyArray) {
+//			if (!scheduler.state.initialResource.idleQueue.isEmpty()) {
+//				return false;
+//			}
+//			for (BoundedElasticScheduler.BoundedState bs :
+//					scheduler.state.initialResource.busyStates.array) {
 //				if (!bs.executor.isTerminated()) {
 //					return false;
 //				}
 //			}
-//			return scheduler.state.boundedServices.idleQueue.isEmpty();
+//			return scheduler.state.currentResource.idleQueue.isEmpty();
 //		}
 //
 //		{

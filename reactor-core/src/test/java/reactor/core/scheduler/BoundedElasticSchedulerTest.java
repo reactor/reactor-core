@@ -645,7 +645,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		Worker worker = scheduler.createWorker();
 
-		List<BoundedState> beforeEviction = new ArrayList<>(Arrays.asList(scheduler.state.currentResource.busyArray));
+		List<BoundedState> beforeEviction =
+				new ArrayList<>(Arrays.asList(scheduler.state.currentResource.busyStates.array));
 
 		assertThat(scheduler.estimateSize())
 				.as("before eviction")
@@ -670,7 +671,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.isZero();
 
 		afterTest.autoDispose(scheduler.createWorker());
-		assertThat(scheduler.state.currentResource.busyArray)
+		assertThat(scheduler.state.currentResource.busyStates.array)
 				.as("after regrowth")
 				.isNotEmpty()
 				.hasSize(1)
@@ -703,7 +704,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		boundedElasticScheduler.schedulePeriodically(() -> {}, 1000, 100, TimeUnit.MILLISECONDS);
 
 		//any attempt at scheduling more task should result in rejection
-		ScheduledThreadPoolExecutor threadPoolExecutor = (ScheduledThreadPoolExecutor) boundedElasticScheduler.state.currentResource.busyArray[0].executor;
+		ScheduledThreadPoolExecutor threadPoolExecutor = (ScheduledThreadPoolExecutor) boundedElasticScheduler.state.currentResource.busyStates.array[0].executor;
 		assertThat(threadPoolExecutor.getQueue().size()).as("queue full").isEqualTo(9);
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 immediate").isThrownBy(() -> worker1.schedule(() -> {}));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 delayed").isThrownBy(() -> worker1.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
@@ -1262,7 +1263,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 
 		assertThat(scheduler.state.currentResource.get()).as("state count").isOne();
-		assertThat(scheduler.state.currentResource.busyArray.length + scheduler.state.currentResource.idleQueue.size()).as("busyOrIdle").isOne();
+		assertThat(scheduler.state.currentResource.busyStates.array.length + scheduler.state.currentResource.idleQueue.size()).as("busyOrIdle").isOne();
 
 	}
 	@Test
@@ -1281,7 +1282,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			);
 		}
 
-		assertThat(scheduler.state.currentResource.busyArray.length + scheduler.state.currentResource.idleQueue.size()).as("busyOrIdle").isOne();
+		assertThat(scheduler.state.currentResource.busyStates.array.length + scheduler.state.currentResource.idleQueue.size()).as("busyOrIdle").isOne();
 	}
 
 	//gh-1992 smoke test
@@ -1613,7 +1614,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	private static boolean isTerminated(BoundedElasticScheduler scheduler) {
-		for (BoundedElasticScheduler.BoundedState bs  : scheduler.state.currentResource.busyArray) {
+		for (BoundedElasticScheduler.BoundedState bs :
+				scheduler.state.currentResource.busyStates.array) {
 			if (!bs.executor.isTerminated()) {
 				return false;
 			}
@@ -1623,7 +1625,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			return false;
 		}
 		for (BoundedElasticScheduler.BoundedState bs :
-				scheduler.state.initialResource.busyArray) {
+				scheduler.state.initialResource.busyStates.array) {
 			if (!bs.executor.isTerminated()) {
 				return false;
 			}
