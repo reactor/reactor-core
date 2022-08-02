@@ -32,6 +32,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -82,7 +83,6 @@ final class BoundedElasticScheduler implements Scheduler,
 	static final int DEFAULT_TTL_SECONDS = 60;
 
 	static final BoundedServicesState SHUTDOWN_STATE = wrap(SHUTDOWN);
-	static final BoundedServicesState SHUTTING_DOWN_STATE = wrap(SHUTTING_DOWN);
 
 	final int maxThreads;
 	final int maxTaskQueuedPerThread;
@@ -152,41 +152,34 @@ final class BoundedElasticScheduler implements Scheduler,
 	@Override
 	public void start() {
 		SchedulerState<BoundedServicesState> a = this.state;
-		if (a.currentResource.boundedServices != SHUTDOWN
-				&& a.currentResource.boundedServices != SHUTTING_DOWN) {
+
+		if (a.currentResource.boundedServices != SHUTDOWN) {
 			return;
 		}
+
 		SchedulerState<BoundedServicesState> b = SchedulerState.init(
 				BoundedServicesState.wrap(new BoundedServices(this))
 		);
-		for (;;) {
-			a = this.state;
-			if (a.currentResource.boundedServices == SHUTTING_DOWN) {
-				// keep spinning until previous shuts down
-				continue;
-			}
-
-			if (STATE.compareAndSet(this, a, b)) {
-				try {
-					b.currentResource.boundedServices.evictor.scheduleAtFixedRate(
-							b.currentResource.boundedServices::eviction,
-							ttlMillis, ttlMillis, TimeUnit.MILLISECONDS
-					);
-					return;
-				} catch (RejectedExecutionException ree) {
-					// The executor was most likely shut down in parallel.
-					// If the state is SHUTDOWN/SHUTTING_DOWN - it's ok, no eviction schedule required;
-					// If it's running - the other thread did a restart and will run its' own schedule.
-					// In both cases it's safe to return.
-					return;
-				}
-			}
-
-			if (a.currentResource.boundedServices != SHUTDOWN) {
-				b.currentResource.boundedServices.evictor.shutdownNow();
+		if (STATE.compareAndSet(this, a, b)) {
+			try {
+				b.currentResource.boundedServices.evictor.scheduleAtFixedRate(
+						b.currentResource.boundedServices::eviction,
+						ttlMillis, ttlMillis, TimeUnit.MILLISECONDS
+				);
+				return;
+			} catch (RejectedExecutionException ree) {
+				// The executor was most likely shut down in parallel.
+				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
+				// If it's running - the other thread did a restart and will run its' own schedule.
+				// In both cases it's safe to return.
 				return;
 			}
 		}
+
+		// someone else shutdown or started successfully, free the resource
+		b.currentResource.boundedServices.evictor.shutdownNow();
+		throw new ConcurrentModificationException("Start called concurrently with " +
+				"another start, dispose, or disposeGracefully");
 	}
 
 	@Override
@@ -207,84 +200,83 @@ final class BoundedElasticScheduler implements Scheduler,
 
 	@Override
 	public void dispose() {
-		for (;;) {
-			SchedulerState<BoundedServicesState> previous = state;
+		SchedulerState<BoundedServicesState> previous = state;
 
-			if (previous.currentResource.boundedServices == SHUTTING_DOWN) {
-				continue;
-			}
-
-			if (previous.currentResource.boundedServices == SHUTDOWN ) {
-				// A dispose process might be ongoing, but we want a forceful shutdown,
-				// so we do our best to release the resources without updating the state.
-				if (previous.initialResource != null) {
-					previous.initialResource.boundedServices.evictor.shutdownNow();
-					if (previous.initialResource.disposedBoundedStates != null) {
-						for (BoundedState bs : previous.initialResource.disposedBoundedStates) {
-							bs.shutdown(true);
-						}
+		if (previous.currentResource.boundedServices == SHUTDOWN) {
+			// A dispose process might be ongoing, but we want a forceful shutdown,
+			// so we do our best to release the resources without updating the state.
+			if (previous.initialResource != null) {
+				previous.initialResource.boundedServices.evictor.shutdownNow();
+				if (previous.initialResource.disposedBoundedStates != null) {
+					for (BoundedState bs : previous.initialResource.disposedBoundedStates) {
+						bs.shutdown(true);
 					}
 				}
-				return;
 			}
+			return;
+		}
 
-			SchedulerState<BoundedServicesState> shuttingDown = SchedulerState.transition(
-					previous.currentResource, SHUTTING_DOWN_STATE, this
-			);
-			if (STATE.compareAndSet(this, previous, shuttingDown)) {
-				assert shuttingDown.initialResource != null;
-				final BoundedState[] toAwait =
-						shuttingDown.initialResource.boundedServices.dispose(true);
-				shuttingDown.initialResource.boundedServices.evictor.shutdownNow();
+		final BoundedState[] toAwait = previous.currentResource.boundedServices.dispose();
+		SchedulerState<BoundedServicesState> shutDown = SchedulerState.transition(
+				disposed(previous.currentResource.boundedServices, toAwait),
+				SHUTDOWN_STATE, this
+		);
 
-				SchedulerState<BoundedServicesState> shutdown = SchedulerState.transition(
-						disposed(shuttingDown.initialResource.boundedServices, toAwait),
-						SHUTDOWN_STATE,
-						this
-				);
-				STATE.lazySet(this, shutdown);
-			}
+		if (!STATE.compareAndSet(this, previous, shutDown)) {
+			// either another thread disposed or restarted
+			previous = state;
+			if (previous.currentResource == SHUTDOWN_STATE) {
+				assert previous.initialResource != null;
+				previous.initialResource.boundedServices.evictor.shutdownNow();
+
+				assert previous.initialResource.disposedBoundedStates != null;
+				for (BoundedState bs : previous.initialResource.disposedBoundedStates) {
+					bs.shutdown(true);
+				}
+			} // restarted -> nothing to do here
+		}
+		// in all cases, dispose the resources
+		assert shutDown.initialResource != null;
+		shutDown.initialResource.boundedServices.evictor.shutdownNow();
+		for (BoundedState bs : toAwait) {
+			bs.shutdown(true);
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			for (;;) {
-				SchedulerState<BoundedServicesState> previous = state;
+			SchedulerState<BoundedServicesState> previous = state;
 
-				if (previous.currentResource.boundedServices == SHUTTING_DOWN) {
-					// A rival thread is performing the shutdown, keep spinning.
-					continue;
-				}
-
-				if (previous.currentResource.boundedServices == SHUTDOWN) {
-					return previous.onDispose;
-				}
-
-				SchedulerState<BoundedServicesState> shuttingDown =
-						SchedulerState.transition(
-								previous.currentResource, SHUTTING_DOWN_STATE, this
-						);
-
-				if (STATE.compareAndSet(this, previous, shuttingDown)) {
-					// We need an intermediate state to make sure the disposal happens just once
-					// and that we capture the BoundedStates, otherwise we'd lose references to schedulers
-					// that we need to wait for.
-					assert shuttingDown.initialResource != null;
-					final BoundedState[] toAwait =
-							shuttingDown.initialResource.boundedServices.dispose(false);
-					shuttingDown.initialResource.boundedServices.evictor.shutdown();
-					SchedulerState<BoundedServicesState> shutdown =
-							SchedulerState.transition(
-									disposed(shuttingDown.initialResource.boundedServices, toAwait),
-									SHUTDOWN_STATE,
-									this
-							);
-					STATE.lazySet(this, shutdown);
-					return shutdown.onDispose;
-				} // else loop until the winner sets SHUTDOWN
+			if (previous.currentResource.boundedServices == SHUTDOWN) {
+				return previous.onDispose;
 			}
+
+			final BoundedState[] toAwait = previous.currentResource.boundedServices.dispose();
+			SchedulerState<BoundedServicesState> shutDown = SchedulerState.transition(
+					disposed(previous.currentResource.boundedServices, toAwait),
+					SHUTDOWN_STATE, this
+			);
+
+			if (!STATE.compareAndSet(this, previous, shutDown)) {
+				// either another thread disposed or restarted
+				// (or disposed the restarted one -- ABA problem -- in such racy
+				// condition, we choose to coordinate with the last shutdown anyway)
+				previous = state;
+				if (previous.currentResource == SHUTDOWN_STATE) {
+					for (BoundedState bs : toAwait) {
+						bs.shutdown(false);
+					}
+					return previous.onDispose;
+				} // else: restarted -> nothing to do here
+			}
+			// in all cases, dispose the resources and coordinate on shutDown
+			assert shutDown.initialResource != null;
+			shutDown.initialResource.boundedServices.evictor.shutdown();
+			for (BoundedState bs : toAwait) {
+				bs.shutdown(false);
+			}
+			return shutDown.onDispose;
 		}).timeout(gracePeriod);
 	}
 
@@ -411,8 +403,8 @@ final class BoundedElasticScheduler implements Scheduler,
 		static {
 			SHUTDOWN = new BoundedServices();
 			SHUTTING_DOWN = new BoundedServices();
-			SHUTDOWN.dispose(true);
-			SHUTTING_DOWN.dispose(true);
+			SHUTDOWN.dispose();
+			SHUTTING_DOWN.dispose();
 			ScheduledExecutorService s = Executors.newSingleThreadScheduledExecutor();
 			s.shutdownNow();
 			CREATING = new BoundedState(SHUTDOWN, s) {
@@ -525,11 +517,10 @@ final class BoundedElasticScheduler implements Scheduler,
 		 */
 		boolean setBusy(BoundedState bs) {
 			for (; ; ) {
-				BoundedState[] previous = busyArray;
-
-				if (previous == ALL_SHUTDOWN) {
+				if (get() == DISPOSED) {
 					return false;
 				}
+				BoundedState[] previous = busyArray;
 
 				int len = previous.length;
 				BoundedState[] replacement = new BoundedState[len + 1];
@@ -547,7 +538,7 @@ final class BoundedElasticScheduler implements Scheduler,
 				BoundedState[] arr = busyArray;
 				int len = arr.length;
 
-				if (len == 0) {
+				if (len == 0 || get() == DISPOSED) {
 					return;
 				}
 
@@ -652,20 +643,18 @@ final class BoundedElasticScheduler implements Scheduler,
 			return choice;
 		}
 
-		public BoundedState[] dispose(boolean now) {
-			if (getAndSet(DISPOSED) == DISPOSED) {
-				return ALL_SHUTDOWN;
-			}
-
-			BoundedState[] arr = BUSY_ARRAY.getAndSet(this, ALL_SHUTDOWN);
+		public BoundedState[] dispose() {
+			set(DISPOSED);
+			BoundedState[] arr = busyArray;
 			// The idleQueue must be drained first as concurrent removals
 			// by evictor or additions by finished tasks can invalidate the size
 			// used if a regular array was created here.
+			// In case of concurrent calls, it is not needed to atomically drain the
+			// queue, nor guarantee same BoundedStates are read, as long as the caller
+			// shuts down the returned BoundedStates. Also, idle ones should easily
+			// shut down, it's not necessary to distinguish graceful from forceful.
 			ArrayList<BoundedState> toAwait = new ArrayList<>(idleQueue);
 			Collections.addAll(toAwait, arr);
-			for (BoundedState bs : toAwait) {
-				bs.shutdown(now);
-			}
 			return toAwait.toArray(new BoundedState[0]);
 		}
 	}

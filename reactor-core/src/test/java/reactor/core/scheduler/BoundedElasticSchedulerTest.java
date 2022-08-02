@@ -1630,7 +1630,12 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	private static void restartScheduler(Scheduler scheduler) {
 		scheduler.disposeGracefully(Duration.ofMillis(1000)).block(Duration.ofMillis(1000));
-		scheduler.start();
+
+		try {
+			scheduler.start();
+		} catch (Exception ignored) {
+			// ignore concurrent exceptions, they're expected
+		}
 	}
 
 	private static boolean canSubmitTask(Scheduler scheduler) {
