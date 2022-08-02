@@ -380,12 +380,6 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		/**
-		 * Constant for this counter of live executors to reflect the whole pool has been
-		 * stopped.
-		 */
-		static final int                          DISPOSED = -1;
-
-		/**
 		 * The {@link ZoneId} used for clocks. Since the {@link Clock} is only used to ensure
 		 * TTL cleanup is executed every N seconds, the zone doesn't really matter, hence UTC.
 		 * @implNote Note that {@link ZoneId#systemDefault()} isn't used since it triggers disk read,
@@ -436,7 +430,6 @@ final class BoundedElasticScheduler implements Scheduler,
 		final ScheduledExecutorService            evictor;
 		final Deque<BoundedState>                 idleQueue;
 
-		// busyArray -> busyState { busyArray, flag=running/shutdown }
 		volatile BusyStates                                                   busyStates;
 		static final AtomicReferenceFieldUpdater<BoundedServices, BusyStates> BUSY_STATES =
 			AtomicReferenceFieldUpdater.newUpdater(BoundedServices.class, BusyStates.class,
@@ -507,7 +500,6 @@ final class BoundedElasticScheduler implements Scheduler,
 					return;
 				}
 
-
 				BusyStates replacement = null;
 				if (len == 1) {
 					if (arr[0] == boundedState) {
@@ -557,11 +549,11 @@ final class BoundedElasticScheduler implements Scheduler,
 		 */
 		BoundedState pick() {
 			for (;;) {
-				int a = get();
-				if (a == DISPOSED || busyStates == ALL_SHUTDOWN) {
+				if (busyStates == ALL_SHUTDOWN) {
 					return CREATING; //synonym for shutdown, since the underlying executor is shut down
 				}
 
+				int a = get();
 				if (!idleQueue.isEmpty()) {
 					//try to find an idle resource
 					BoundedState bs = idleQueue.pollLast();
@@ -627,10 +619,9 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		public BoundedState[] dispose() {
-			set(DISPOSED);
 			BusyStates current = busyStates;
 
-			if (busyStates.shutdown || !BUSY_STATES.compareAndSet(this, current,
+			if (current.shutdown || !BUSY_STATES.compareAndSet(this, current,
 					new BusyStates(current.array, true))) {
 				return busyStates.array;
 			}
