@@ -470,7 +470,15 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			if (value == null) {
 				value = t;
 				parent.signal();
-
+				/*
+				 We use cancelledSubscription() as a marker to detect whether a value is present in the cancelAll/cancelExcept parent phase.
+				 This is done in order to deal with a single volatile.
+				 Of course, it could also be set that way due to an early cancellation (in which case we very much want to discard the t).
+				 Note the accumulator should already have seen and used the value in parent.signal().
+				 We don't really cancel the subscription, but we don't really care because that's a Mono. Having received onNext, we're sure
+				 to get onComplete afterwards.
+				 See also boolean cancel().
+				 */
 				final Subscription a = this.s;
 				if (a != Operators.cancelledSubscription() && S.compareAndSet(this, a, Operators.cancelledSubscription())) {
 					return;
@@ -524,6 +532,13 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		boolean cancel() {
+			/*
+			If S == cancelledSubscription, it means we've either already cancelled (nothing to do) or previously signalled an onNext.
+			In both cases, terminate will return false (having failed to swap to cancelledSubscription) and the method will return true.
+			This is to be interpreted by parent callers (cancelAll/cancelExcept) as an indicator that a value is likely present,
+			and that it should be discarded by the parent. Parent could try to discard twice, in the case of double cancellation, but
+			discard should be idempotent.
+			 */
 			return !Operators.terminate(S, this);
 		}
 	}
