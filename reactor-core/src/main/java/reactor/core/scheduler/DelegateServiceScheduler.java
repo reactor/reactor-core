@@ -129,45 +129,46 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 
 	@Override
 	public void dispose() {
-		for (;;) {
-			SchedulerState<ScheduledExecutorService> previous = state;
+		SchedulerState<ScheduledExecutorService> previous = state;
 
-			if (previous != null && previous.currentResource == TERMINATED) {
-				assert previous.initialResource != null;
-				previous.initialResource.shutdownNow();
-				return;
-			}
+		if (previous != null && previous.currentResource == TERMINATED) {
+			assert previous.initialResource != null;
+			previous.initialResource.shutdownNow();
+			return;
+		}
 
-			SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
-					previous == null ? null : previous.currentResource, TERMINATED, this);
-			if (STATE.compareAndSet(this, previous, terminated)) {
-				if (terminated.initialResource != null) {
-					terminated.initialResource.shutdownNow();
-				}
-				return;
-			}
+		SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
+				previous == null ? null : previous.currentResource, TERMINATED, this);
+
+		STATE.compareAndSet(this, previous, terminated);
+
+		// If unsuccessful - either another thread disposed or restarted - no issue,
+		// we only care about the one stored in terminated.
+		if (terminated.initialResource != null) {
+			terminated.initialResource.shutdownNow();
 		}
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			for (;;) {
-				SchedulerState<ScheduledExecutorService> previous = state;
+			SchedulerState<ScheduledExecutorService> previous = state;
 
-				if (previous != null && previous.currentResource == TERMINATED) {
-					return previous.onDispose;
-				}
-
-				SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
-						previous == null ? null : previous.currentResource, TERMINATED, this);
-				if (STATE.compareAndSet(this, previous, terminated)) {
-					if (terminated.initialResource != null) {
-						terminated.initialResource.shutdown();
-					}
-					return terminated.onDispose;
-				}
+			if (previous != null && previous.currentResource == TERMINATED) {
+				return previous.onDispose;
 			}
+
+			SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
+					previous == null ? null : previous.currentResource, TERMINATED, this);
+
+			STATE.compareAndSet(this, previous, terminated);
+
+			// If unsuccessful - either another thread disposed or restarted - no issue,
+			// we only care about the one stored in terminated.
+			if (terminated.initialResource != null) {
+				terminated.initialResource.shutdown();
+			}
+			return terminated.onDispose;
 		}).timeout(gracePeriod);
 	}
 

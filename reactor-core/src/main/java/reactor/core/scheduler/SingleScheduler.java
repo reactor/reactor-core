@@ -17,6 +17,7 @@
 package reactor.core.scheduler;
 
 import java.time.Duration;
+import java.util.ConcurrentModificationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -91,18 +92,14 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				Schedulers.decorateExecutorService(this, this.get())
 		);
 
-		for (; ; ) {
-			if (STATE.compareAndSet(this, a, b)) {
-				return;
-			}
-
-			a = this.state;
-
-			if (a != null && a.currentResource != TERMINATED) {
-				b.currentResource.shutdownNow();
-				return;
-			}
+		if (STATE.compareAndSet(this, a, b)) {
+			return;
 		}
+
+		// someone else shutdown or started successfully, free the resource
+		b.currentResource.shutdownNow();
+		throw new ConcurrentModificationException("Start called concurrently with " +
+				"another start, dispose, or disposeGracefully");
 	}
 
 	@Override
@@ -113,44 +110,46 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public void dispose() {
-		for (;;) {
-			SchedulerState<ScheduledExecutorService> previous = state;
+		SchedulerState<ScheduledExecutorService> previous = state;
 
-			if (previous.currentResource == TERMINATED) {
-				// In case a graceful shutdown called shutdown and is waiting, but we want to force shutdown,
-				// we need access to the original ScheduledExecutorService.
-				assert previous.initialResource != null;
-				previous.initialResource.shutdownNow();
-				return;
-			}
-
-			SchedulerState<ScheduledExecutorService> terminated =
-					SchedulerState.transition(previous.currentResource, TERMINATED, this);
-			if (STATE.compareAndSet(this, previous, terminated)) {
-				assert terminated.initialResource != null;
-				terminated.initialResource.shutdownNow();
-				return;
-			}
+		if (previous.currentResource == TERMINATED) {
+			// In case a graceful shutdown called shutdown and is waiting, but we want to force shutdown,
+			// we need access to the original ScheduledExecutorService.
+			assert previous.initialResource != null;
+			previous.initialResource.shutdownNow();
+			return;
 		}
+
+		SchedulerState<ScheduledExecutorService> terminated =
+				SchedulerState.transition(previous.currentResource, TERMINATED, this);
+
+		STATE.compareAndSet(this, previous, terminated);
+
+		// If unsuccessful - either another thread disposed or restarted - no issue,
+		// we only care about the one stored in terminated.
+		assert terminated.initialResource != null;
+		terminated.initialResource.shutdownNow();
 	}
 
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-			for (;;) {
-				SchedulerState<ScheduledExecutorService> previous = state;
+			SchedulerState<ScheduledExecutorService> previous = state;
 
-				if (previous.currentResource == TERMINATED) {
-					return previous.onDispose;
-				}
-
-				SchedulerState<ScheduledExecutorService> terminated =
-						SchedulerState.transition(previous.currentResource, TERMINATED, this);
-				if (STATE.compareAndSet(this, previous, terminated)) {
-					terminated.initialResource.shutdown();
-					return terminated.onDispose;
-				}
+			if (previous.currentResource == TERMINATED) {
+				return previous.onDispose;
 			}
+
+			SchedulerState<ScheduledExecutorService> terminated =
+					SchedulerState.transition(previous.currentResource, TERMINATED, this);
+
+			STATE.compareAndSet(this, previous, terminated);
+
+			// If unsuccessful - either another thread disposed or restarted - no issue,
+			// we only care about the one stored in terminated.
+			assert terminated.initialResource != null;
+			terminated.initialResource.shutdown();
+			return terminated.onDispose;
 		}).timeout(gracePeriod);
 	}
 

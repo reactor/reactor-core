@@ -17,6 +17,7 @@
 package reactor.core.scheduler;
 
 import java.time.Duration;
+import java.util.ConcurrentModificationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -104,20 +105,16 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 			b.currentResource[i] = Schedulers.decorateExecutorService(this, this.get());
 		}
 
-		for (;;) {
-			if (STATE.compareAndSet(this, a, b)) {
-				return;
-			}
-
-			a = this.state;
-
-			if (a != null && a.currentResource != SHUTDOWN) {
-				for (ScheduledExecutorService exec : b.currentResource) {
-					exec.shutdownNow();
-				}
-				return;
-			}
+		if (STATE.compareAndSet(this, a, b)) {
+			return;
 		}
+
+		// someone else shutdown or started successfully, free the resource
+		for (ScheduledExecutorService exec : b.currentResource) {
+			exec.shutdownNow();
+		}
+		throw new ConcurrentModificationException("Start called concurrently with " +
+				"another start, dispose, or disposeGracefully");
 	}
 
     @Override
@@ -132,28 +129,28 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     @Override
 	public void dispose() {
-        for (;;) {
-            SchedulerState<ScheduledExecutorService[]> previous = state;
+        SchedulerState<ScheduledExecutorService[]> previous = state;
 
-            if (previous != null && previous.currentResource == SHUTDOWN) {
-                if (previous.initialResource != null) {
-                    for (ScheduledExecutorService executor : previous.initialResource) {
-                        executor.shutdownNow();
-                    }
+        if (previous != null && previous.currentResource == SHUTDOWN) {
+            if (previous.initialResource != null) {
+                for (ScheduledExecutorService executor : previous.initialResource) {
+                    executor.shutdownNow();
                 }
-                return;
             }
+            return;
+        }
 
-            SchedulerState<ScheduledExecutorService[]> shutdown = SchedulerState.transition(
-                    previous == null ? null : previous.currentResource, SHUTDOWN, this
-            );
-            if (STATE.compareAndSet(this, previous, shutdown)) {
-                if (shutdown.initialResource != null) {
-                    for (ScheduledExecutorService executor : shutdown.initialResource) {
-                        executor.shutdownNow();
-                    }
-                }
-                return;
+        SchedulerState<ScheduledExecutorService[]> shutdown = SchedulerState.transition(
+                previous == null ? null : previous.currentResource, SHUTDOWN, this
+        );
+
+        STATE.compareAndSet(this, previous, shutdown);
+
+	    // If unsuccessful - either another thread disposed or restarted - no issue,
+	    // we only care about the one stored in shutdown.
+        if (shutdown.initialResource != null) {
+            for (ScheduledExecutorService executor : shutdown.initialResource) {
+                executor.shutdownNow();
             }
         }
 	}
@@ -161,25 +158,26 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	@Override
 	public Mono<Void> disposeGracefully(Duration gracePeriod) {
 		return Mono.defer(() -> {
-            for (;;) {
-                SchedulerState<ScheduledExecutorService[]> previous = state;
+            SchedulerState<ScheduledExecutorService[]> previous = state;
 
-                if (previous != null && previous.currentResource == SHUTDOWN) {
-                    return previous.onDispose;
-                }
+            if (previous != null && previous.currentResource == SHUTDOWN) {
+                return previous.onDispose;
+            }
 
-                SchedulerState<ScheduledExecutorService[]> shutdown = SchedulerState.transition(
-                        previous == null ? null : previous.currentResource, SHUTDOWN, this
-                );
-                if (STATE.compareAndSet(this, previous, shutdown)) {
-                    if (shutdown.initialResource != null) {
-                        for (ScheduledExecutorService executor : shutdown.initialResource) {
-                            executor.shutdown();
-                        }
-                    }
-                    return shutdown.onDispose;
+            SchedulerState<ScheduledExecutorService[]> shutdown = SchedulerState.transition(
+                    previous == null ? null : previous.currentResource, SHUTDOWN, this
+            );
+
+            STATE.compareAndSet(this, previous, shutdown);
+
+			// If unsuccessful - either another thread disposed or restarted - no issue,
+			// we only care about the one stored in shutdown.
+            if (shutdown.initialResource != null) {
+                for (ScheduledExecutorService executor : shutdown.initialResource) {
+                    executor.shutdown();
                 }
             }
+            return shutdown.onDispose;
 		}).timeout(gracePeriod);
 	}
 
