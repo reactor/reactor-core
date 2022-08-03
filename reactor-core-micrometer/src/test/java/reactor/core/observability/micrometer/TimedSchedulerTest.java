@@ -18,24 +18,19 @@ package reactor.core.observability.micrometer;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.core.tck.MeterRegistryAssert;
-import org.assertj.core.api.SoftAssertionsProvider;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.function.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import reactor.core.Disposable;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
@@ -47,8 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class TimedSchedulerTest {
 
-	@RegisterExtension
-	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 	private SimpleMeterRegistry registry;
 
 	@BeforeEach
@@ -75,21 +68,26 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void constructorRegistersSevenMeters() {
+	void constructorRegistersSevenMetersWithFourSimilarCountersWithSubmissionTypeTag() {
 		MeterRegistryAssert.assertThat(registry).as("before constructor").hasNoMetrics();
 
 		new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
 
 		assertThat(registry.getMeters())
-			.map(m -> m.getId().getName())
+			.map(m -> {
+				String name = m.getId().getName();
+				String type = m.getId().getTag("submission.type");
+				return name + (type == null ? "" : " submission.type=" + type);
+			})
 			.containsExactlyInAnyOrder(
 				"test.scheduler.tasks.active",
 				"test.scheduler.tasks.completed",
 				"test.scheduler.tasks.pending",
-				"test.scheduler.tasks.submitted",
-				"test.scheduler.tasks.submitted.delayed",
-				"test.scheduler.tasks.submitted.periodically",
-				"test.scheduler.tasks.submitted.periodically.reruns"
+				//technically 4 different submitted counters
+				"test.scheduler.tasks.submitted submission.type=direct",
+				"test.scheduler.tasks.submitted submission.type=delayed",
+				"test.scheduler.tasks.submitted submission.type=periodically_initial",
+				"test.scheduler.tasks.submitted submission.type=periodically_iteration"
 			);
 	}
 
@@ -194,8 +192,8 @@ class TimedSchedulerTest {
 		d.dispose();
 
 		//now we assert that the completedTasks timer reflects an history of all Runnable#run
-		assertThat(test.submittedTotal.count()).as("#submittedTotal").isOne();
-		assertThat(test.submittedPeriodically.count()).as("#submittedPeriodically").isOne();
+		assertThat(test.submittedDirect.count()).as("#submittedDirect").isZero();
+		assertThat(test.submittedPeriodicallyInitial.count()).as("#submittedPeriodically").isOne();
 		assertThat(test.completedTasks.count())
 			.as("#completed")
 			.isEqualTo(3L);
@@ -205,29 +203,31 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void scheduleIncrementTotalCounterOnly() {
+	void scheduleIncrementDirectCounterOnly() {
 		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
 
 		test.schedule(() -> {});
 
-		assertThat(test.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(test.submittedDirect.count()).as("submittedDirect.count").isOne();
 		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isZero();
-		assertThat(test.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
+		assertThat(test.submittedPeriodicallyInitial.count()).as("submittedPeriodicallyInitial.count").isZero();
+		assertThat(test.submittedPeriodicallyIteration.count()).as("submittedPeriodicallyIteration.count").isZero();
 	}
 
 	@Test
-	void scheduleDelayIncrementsTotalAndDelayedCounters() throws InterruptedException {
+	void scheduleDelayIncrementsDelayedCounter() throws InterruptedException {
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
 		test.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 
-		assertThat(test.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(test.submittedDirect.count()).as("submittedDirect.count").isZero();
 		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isOne();
-		assertThat(test.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
+		assertThat(test.submittedPeriodicallyInitial.count()).as("submittedPeriodicallyInitial.count").isZero();
+		assertThat(test.submittedPeriodicallyIteration.count()).as("submittedPeriodicallyIteration.count").isZero();
 	}
 
 	@Test
-	void schedulePeriodicallyIncrementsTotalAndPeriodicallyCountersByOne() throws InterruptedException {
+	void schedulePeriodicallyIncrementsPeriodicallyCountersInitialByOneAndIterationByFour() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
@@ -236,15 +236,14 @@ class TimedSchedulerTest {
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
 
-		assertThat(test.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(test.submittedDirect.count()).as("submittedDirect.count").isZero();
 		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isZero();
-		assertThat(test.submittedPeriodically.count()).as("submittedPeriodically.count").isOne();
-
-		assertThat(test.completedTasks.count()).as("completed counter tracks all iterations").isEqualTo(5);
+		assertThat(test.submittedPeriodicallyInitial.count()).as("submittedPeriodicallyInitial.count").isOne();
+		assertThat(test.submittedPeriodicallyIteration.count()).as("submittedPeriodicallyIteration.count").isEqualTo(4);
 	}
 
 	@Test
-	void schedulePeriodicallyIncrementsTotalRunsByNumberOfIterations() throws InterruptedException {
+	void schedulePeriodicallyIncrementsCompletedTasksByNumberOfIterations() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
@@ -253,7 +252,11 @@ class TimedSchedulerTest {
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
 
-		assertThat(test.completedTasks.count()).isEqualTo(5);
+		assertThat(test.completedTasks.count())
+			.as("completed counter tracks all iterations")
+			.isEqualTo(5)
+			.matches(l -> l == test.submittedDirect.count() + test.submittedDelayed.count()  + test.submittedPeriodicallyInitial.count()
+				+ test.submittedPeriodicallyIteration.count(), "completed tasks == sum of all timer counts");
 	}
 
 	@Test
@@ -270,32 +273,34 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void workerScheduleIncrementsTotalCounterOnly() {
+	void workerScheduleIncrementsDirectCounterOnly() {
 		TimedScheduler testScheduler = new TimedScheduler(Schedulers.immediate(), registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
 
 		test.schedule(() -> {});
 
-		assertThat(testScheduler.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(testScheduler.submittedDirect.count()).as("submittedDirect.count").isOne();
 		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isZero();
-		assertThat(testScheduler.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
+		assertThat(testScheduler.submittedPeriodicallyInitial.count()).as("submittedPeriodicallyInitial.count").isZero();
+		assertThat(testScheduler.submittedPeriodicallyIteration.count()).as("submittedPeriodicallyIteration.count").isZero();
 	}
 
 	@Test
-	void workerScheduleDelayIncrementsTotalAndDelayedCounters() throws InterruptedException {
+	void workerScheduleDelayIncrementsDelayedCounter() throws InterruptedException {
 		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
 
 		test.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
 
-		assertThat(testScheduler.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(testScheduler.submittedDirect.count()).as("submittedDirect.count").isZero();
 		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isOne();
-		assertThat(testScheduler.submittedPeriodically.count()).as("submittedPeriodically.count").isZero();
+		assertThat(testScheduler.submittedPeriodicallyInitial.count()).as("submittedPeriodicallyInitial.count").isZero();
+		assertThat(testScheduler.submittedPeriodicallyIteration.count()).as("submittedPeriodicallyIteration.count").isZero();
 	}
 
 	@Test
-	void workerSchedulePeriodicallyIncrementsTotalAndPeriodicallyCountersByOne() throws InterruptedException {
-		Scheduler original = afterTest.autoDispose(Schedulers.single());
+	void workerSchedulePeriodicallyIncrementsPeriodicallyCountersInitialByOneAndIterationByFour() throws InterruptedException {
+		Scheduler original = Schedulers.single();
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
@@ -305,10 +310,31 @@ class TimedSchedulerTest {
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
 
-		assertThat(testScheduler.submittedTotal.count()).as("submittedTotal.count").isOne();
+		assertThat(testScheduler.submittedDirect.count()).as("submittedDirect.count").isZero();
 		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isZero();
-		assertThat(testScheduler.submittedPeriodically.count()).as("submittedPeriodically.count").isOne();
+		assertThat(testScheduler.submittedPeriodicallyInitial.count()).as("submittedPeriodicallyInitial.count").isOne();
+		assertThat(testScheduler.submittedPeriodicallyIteration.count()).as("submittedPeriodicallyIteration.count").isEqualTo(4);
+	}
 
-		assertThat(testScheduler.completedTasks.count()).as("completed counter tracks all iterations").isEqualTo(5);
+
+	@Test
+	void workerSchedulePeriodicallyIncrementsCompletedTasksByNumberOfIterations() throws InterruptedException {
+		Scheduler original = Schedulers.single();
+		CountDownLatch latch = new CountDownLatch(5);
+		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		Scheduler.Worker test = testScheduler.createWorker();
+
+		Disposable d = test.schedulePeriodically(latch::countDown,100, 100, TimeUnit.MILLISECONDS);
+
+		latch.await(10, TimeUnit.SECONDS);
+		d.dispose();
+
+		assertThat(testScheduler.completedTasks.count())
+			.as("completed counter tracks all iterations")
+			.isEqualTo(5)
+			.matches(l -> l == testScheduler.submittedDirect.count()
+				+ testScheduler.submittedDelayed.count()
+				+ testScheduler.submittedPeriodicallyInitial.count()
+				+ testScheduler.submittedPeriodicallyIteration.count(), "completed tasks == sum of all timer counts");
 	}
 }

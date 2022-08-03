@@ -65,7 +65,7 @@ class MicrometerTest {
 			assertThat(ts.registry).as("registry").isSameAs(registry);
 			//we verify the tags and prefix we passed made it to at least one meter.
 			//this is more about the Micrometer passing down the params than it is about checking _all_ meters in the actual class.
-			Meter.Id id = ts.submittedTotal.getId();
+			Meter.Id id = ts.submittedDirect.getId();
 			assertThat(id.getName()).as("prefix used")
 				.isEqualTo("testSchedulerMetrics.scheduler.tasks.submitted");
 			assertThat(id.getTags()).as("tags")
