@@ -530,10 +530,10 @@ final class BoundedElasticScheduler implements Scheduler,
 					// check whether we missed a shutdown
 					if (this.busyStates.shutdown) {
 						// we did, so we make sure the racing adds don't leak
-						for (BoundedState bs : this.idleQueue) {
-							bs.shutdown(true);
-						}
 						boundedState.shutdown(true);
+						while ((boundedState = idleQueue.pollLast()) != null) {
+							boundedState.shutdown(true);
+						}
 					}
 					return;
 				}
@@ -619,12 +619,22 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		public BoundedState[] dispose() {
-			BusyStates current = busyStates;
+			BusyStates current;
+			for (;;) {
+				current = busyStates;
 
-			if (current.shutdown || !BUSY_STATES.compareAndSet(this, current,
-					new BusyStates(current.array, true))) {
-				return busyStates.array;
+				if (current.shutdown) {
+					return current.array;
+				}
+
+				if (BUSY_STATES.compareAndSet(this,
+						current, new BusyStates(current.array,	true))) {
+					break;
+				}
+				// the race can happen also with scheduled tasks and eviction
+				// so we need to retry if shutdown transition fails
 			}
+
 			BoundedState[] arr = current.array;
 			// The idleQueue must be drained first as concurrent removals
 			// by evictor or additions by finished tasks can invalidate the size
@@ -633,7 +643,11 @@ final class BoundedElasticScheduler implements Scheduler,
 			// queue, nor guarantee same BoundedStates are read, as long as the caller
 			// shuts down the returned BoundedStates. Also, idle ones should easily
 			// shut down, it's not necessary to distinguish graceful from forceful.
-			ArrayList<BoundedState> toAwait = new ArrayList<>(idleQueue);
+			ArrayList<BoundedState> toAwait = new ArrayList<>(idleQueue.size() + arr.length);
+			BoundedState bs;
+			while ((bs = idleQueue.pollLast()) != null) {
+				toAwait.add(bs);
+			}
 			Collections.addAll(toAwait, arr);
 			return toAwait.toArray(new BoundedState[0]);
 		}

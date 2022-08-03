@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -70,6 +71,8 @@ import reactor.test.StepVerifier;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.concurrent.MpscLinkedQueueTest;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
@@ -1526,120 +1529,6 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			bounded.shutdownNow();
 			unbounded.shutdownNow();
-		}
-	}
-
-	// This test should belong in SchedulersStressTest in the JCStress suite, however currently the memory consumption
-	// is too high in the existing setup. Please consult the JCStress test class comment for details.
-	@Test
-	@Tag("slow")
-	void schedulerStartedAfterConcurrentRestart() {
-		Scheduler raceScheduler = Schedulers.newBoundedElastic(10, 20_000, "RaceScheduler");
-		for (int j = 0; j < 10_000; j++) {
-			Scheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 1);
-			scheduler.start();
-
-			RaceTestUtils.race(10, raceScheduler,
-					() -> restartScheduler(scheduler),
-					() -> restartScheduler(scheduler)
-			);
-
-			assertThat(canSubmitTask(scheduler)).isTrue();
-
-			scheduler.dispose();
-		}
-		raceScheduler.dispose();
-	}
-
-	// This test should belong in SchedulersStressTest in the JCStress suite, however currently the memory consumption
-	// is too high in the existing setup. Please consult the JCStress test class comment for details.
-	@Test
-	@Tag("slow")
-	void schedulerDisposeGracefullyConcurrentBothTimeout() {
-		Scheduler raceScheduler = Schedulers.newBoundedElastic(10, 2_000, "RaceScheduler");
-
-		for (int j = 0; j < 1_000; j++) {
-			BoundedElasticScheduler scheduler = new BoundedElasticScheduler(1, 1, Thread::new, 5);
-			scheduler.start();
-			// Schedule a task that disallows graceful closure until the race is finished
-			// to make sure that racing disposals fail while waiting.
-			CountDownLatch arbiterLatch = new CountDownLatch(1);
-			scheduler.schedule(() -> awaitArbiter(arbiterLatch));
-
-			RaceTestUtils.race(10, raceScheduler,
-					() -> checkDisposeGracefullyTimesOut(scheduler),
-					() -> checkDisposeGracefullyTimesOut(scheduler)
-			);
-
-			arbiterLatch.countDown();
-			assertThat(schedulerDisposed(scheduler)).isTrue();
-		}
-		raceScheduler.dispose();
-	}
-
-	private static void awaitArbiter(CountDownLatch arbiterLatch) {
-		while (true) {
-			try {
-				if (arbiterLatch.await(40, TimeUnit.MILLISECONDS)) {
-					return;
-				}
-			}
-			catch (InterruptedException ignored) {
-			}
-		}
-	}
-
-	private static void checkDisposeGracefullyTimesOut(Scheduler scheduler) {
-		long start = System.nanoTime();
-		try {
-			scheduler.disposeGracefully(Duration.ofMillis(40)).block();
-		} catch (Exception e) {
-			long duration = System.nanoTime() - start;
-			// Validate that the wait took non-zero time.
-			if ((e.getCause() instanceof TimeoutException) && Duration.ofNanos(duration).toMillis() > 30) {
-				return;
-			}
-		}
-		throw new RuntimeException("disposeGracefully did not time out as expected");
-	}
-
-	private static boolean schedulerDisposed(BoundedElasticScheduler scheduler) {
-		try {
-			scheduler.schedule(() -> {});
-		} catch (RejectedExecutionException e) {
-			scheduler.disposeGracefully(Duration.ofMillis(50)).block();
-			return scheduler.isDisposed() && isTerminated(scheduler);
-		}
-		return false;
-	}
-
-	private static boolean isTerminated(BoundedElasticScheduler scheduler) {
-		for (BoundedElasticScheduler.BoundedState bs :
-				scheduler.state.currentResource.busyStates.array) {
-			if (!bs.executor.isTerminated()) {
-				return false;
-			}
-		}
-		assert scheduler.state.initialResource != null;
-		if (!scheduler.state.initialResource.idleQueue.isEmpty()) {
-			return false;
-		}
-		for (BoundedElasticScheduler.BoundedState bs :
-				scheduler.state.initialResource.busyStates.array) {
-			if (!bs.executor.isTerminated()) {
-				return false;
-			}
-		}
-		return scheduler.state.currentResource.idleQueue.isEmpty();
-	}
-
-	private static void restartScheduler(Scheduler scheduler) {
-		scheduler.disposeGracefully(Duration.ofMillis(1000)).block(Duration.ofMillis(1000));
-
-		try {
-			scheduler.start();
-		} catch (Exception ignored) {
-			// ignore concurrent exceptions, they're expected
 		}
 	}
 
