@@ -2058,7 +2058,7 @@ public abstract class Operators {
 			s.cancel();
 		}
 
-		final void completeWhenEmpty() {
+		final void completePossiblyEmpty() {
 			if (hasRequest) {
 				final O value = accumulatedValue();
 

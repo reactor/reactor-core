@@ -115,8 +115,10 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 					final A container = this.container;
 					if (container != null) {
 						accumulator.accept(container, t);
+						return;
 					}
 				}
+				Operators.onDiscard(t, actual.currentContext());
 			}
 			catch (Throwable ex) {
 				Context ctx = actual.currentContext();
@@ -139,6 +141,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 
 			if (c == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -153,7 +156,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

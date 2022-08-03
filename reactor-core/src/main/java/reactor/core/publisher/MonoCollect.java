@@ -95,22 +95,22 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			R c;
-			synchronized (this) {
-				c = container;
-				if (c != null) {
-					try {
+			try {
+				final R c;
+				synchronized (this) {
+					c = container;
+					if (c != null) {
 						action.accept(c, t);
+						return;
 					}
-					catch (Throwable e) {
-						Context ctx = actual.currentContext();
-						Operators.onDiscard(t, ctx);
-						onError(Operators.onOperatorError(this.s, e, t, ctx));
-					}
-					return;
 				}
+				Operators.onDiscard(t, actual.currentContext());
 			}
-			Operators.onDiscard(t, actual.currentContext());
+			catch (Throwable e) {
+				Context ctx = actual.currentContext();
+				Operators.onDiscard(t, ctx);
+				onError(Operators.onOperatorError(this.s, e, t, ctx));
+			}
 		}
 
 		@Override
@@ -127,6 +127,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 			}
 
 			if (c == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -141,7 +142,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

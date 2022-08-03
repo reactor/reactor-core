@@ -131,7 +131,7 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 			done = true;
 
 			if (!hasValue) {
-				completeWhenEmpty();
+				completePossiblyEmpty();
 
 				return;
 			}

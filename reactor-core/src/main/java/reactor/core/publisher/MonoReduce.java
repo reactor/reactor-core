@@ -108,6 +108,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 
 			final T r = this.aggregate;
 			if (r == CANCELLED) {
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 
@@ -161,6 +162,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 			}
 
 			if (r == CANCELLED) {
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 

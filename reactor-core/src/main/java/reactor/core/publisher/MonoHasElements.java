@@ -90,7 +90,7 @@ final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
 
 			this.done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

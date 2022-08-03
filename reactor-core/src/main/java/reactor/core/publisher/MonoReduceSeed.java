@@ -144,6 +144,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			}
 
 			if (seed == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -159,7 +160,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

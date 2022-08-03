@@ -21,7 +21,6 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -181,7 +180,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 			}
 			done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

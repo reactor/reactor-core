@@ -159,7 +159,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

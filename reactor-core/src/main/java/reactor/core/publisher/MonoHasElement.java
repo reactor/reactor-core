@@ -93,7 +93,7 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 
 			this.done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

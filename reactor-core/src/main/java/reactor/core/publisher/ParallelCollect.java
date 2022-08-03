@@ -21,7 +21,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -173,7 +172,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 			}
 			done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

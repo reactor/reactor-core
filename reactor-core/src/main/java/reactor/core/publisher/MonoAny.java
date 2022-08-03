@@ -118,7 +118,7 @@ final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
 			}
 			done = true;
 
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

@@ -75,7 +75,7 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 
 		@Override
 		public void onComplete() {
-			completeWhenEmpty();
+			completePossiblyEmpty();
 		}
 
 		@Override

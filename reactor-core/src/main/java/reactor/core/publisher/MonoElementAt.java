@@ -130,7 +130,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 
 			final T dv = defaultValue;
 			if (dv != null) {
-				completeWhenEmpty();
+				completePossiblyEmpty();
 			}
 			else{
 				long count = target - index;
