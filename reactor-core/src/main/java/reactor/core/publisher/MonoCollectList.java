@@ -19,8 +19,6 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -47,11 +45,9 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		return super.scanUnsafe(key);
 	}
 
-	static final class MonoCollectListSubscriber<T> extends Operators.MonoSubscriber<T, List<T>> {
+	static final class MonoCollectListSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, List<T>> {
 
 		List<T> list;
-
-		Subscription s;
 
 		boolean done;
 
@@ -64,21 +60,10 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.CANCELLED) return !done && list == null;
+
 			return super.scanUnsafe(key);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
 		}
 
 		@Override
@@ -87,7 +72,8 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			List<T> l;
+
+			final List<T> l;
 			synchronized (this) {
 				l = list;
 				if (l != null) {
@@ -95,6 +81,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 					return;
 				}
 			}
+
 			Operators.onDiscard(t, actual.currentContext());
 		}
 
@@ -105,57 +92,55 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				return;
 			}
 			done = true;
-			List<T> l;
+
+			final List<T> l;
 			synchronized (this) {
 				l = list;
 				list = null;
 			}
-			discard(l);
+
+			if (l == null) {
+				return;
+			}
+
+			Operators.onDiscardMultiple(l, actual.currentContext());
+
 			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			if(done) {
+			if (done) {
 				return;
 			}
 			done = true;
-			List<T> l;
-			synchronized (this) {
-				l = list;
-				list = null;
-			}
-			if (l != null) {
-				complete(l);
-			}
-		}
 
-		@Override
-		protected void discard(List<T> v) {
-			Operators.onDiscardMultiple(v, actual.currentContext());
+			completePossiblyEmpty();
 		}
 
 		@Override
 		public void cancel() {
-			int state;
-			List<T> l;
-			state = STATE.getAndSet(this, CANCELLED);
-			if (state != CANCELLED) {
-				s.cancel();
-			}
+			s.cancel();
+
+			final List<T> l;
 			synchronized (this) {
-				if (state <= HAS_REQUEST_NO_VALUE) {
-					l = list;
-					this.value = null;
-					list = null;
-				}
-				else {
-					l = null;
-				}
+				l = list;
+				list = null;
 			}
+
 			if (l != null) {
-				discard(l);
+				Operators.onDiscardMultiple(l, actual.currentContext());
 			}
+		}
+
+		@Override
+		List<T> accumulatedValue() {
+			final List<T> l;
+			synchronized (this) {
+				l = list;
+				list = null;
+			}
+			return l;
 		}
 	}
 }

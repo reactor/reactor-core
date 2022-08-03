@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -56,37 +55,29 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	static final class TakeLastOneSubscriber<T>
-			extends Operators.MonoSubscriber<T, T>  {
+			extends Operators.BaseFluxToMonoOperator<T, T>  {
+
+		static final Object CANCELLED = new Object();
 
 		final boolean mustEmit;
-		final T       defaultValue;
-		Subscription s;
+
+		T value;
+
+		boolean done;
 
 		TakeLastOneSubscriber(CoreSubscriber<? super T> actual,
 				@Nullable T defaultValue,
 				boolean mustEmit) {
 			super(actual);
-			this.defaultValue = defaultValue;
+			this.value = defaultValue;
 			this.mustEmit = mustEmit;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.TERMINATED) return done && value == null;
+			if (key == Attr.CANCELLED) return value == CANCELLED;
 
 			return super.scanUnsafe(key);
 		}
@@ -94,36 +85,112 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		@Override
 		public void onNext(T t) {
 			T old = this.value;
-			setValue(t);
+			if (old == CANCELLED) {
+				// cancelled
+				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+
+			synchronized (this) {
+				old = this.value;
+				if (old != CANCELLED) {
+					this.value = t;
+				}
+			}
+
+			if (old == CANCELLED) {
+				// cancelled
+				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+
 			Operators.onDiscard(old, actual.currentContext()); //FIXME cache context
 		}
 
 		@Override
+		public void onError(Throwable t) {
+			if (this.done) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+			this.done = true;
+
+
+			final T v;
+			synchronized (this) {
+				v = this.value;
+				this.value = null;
+			}
+
+			if (v == CANCELLED) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+
+			if (v != null) {
+				Operators.onDiscard(v, actual.currentContext());
+			}
+
+			this.actual.onError(t);
+		}
+
+		@Override
 		public void onComplete() {
-			T v = this.value;
+			if (this.done) {
+				return;
+			}
+			this.done = true;
+
+			final T v = this.value;
+
+			if (v == CANCELLED) {
+				return;
+			}
+
 			if (v == null) {
 				if (mustEmit) {
-					if(defaultValue != null){
-						complete(defaultValue);
-					}
-					else {
-						actual.onError(Operators.onOperatorError(new NoSuchElementException(
-								"Flux#last() didn't observe any " + "onNext signal"),
-								actual.currentContext()));
-					}
+					actual.onError(Operators.onOperatorError(new NoSuchElementException(
+							"Flux#last() didn't observe any " + "onNext signal"),
+							actual.currentContext()));
 				}
 				else {
 					actual.onComplete();
 				}
 				return;
 			}
-			complete(v);
+
+			completePossiblyEmpty();
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
+
+			final T v;
+			synchronized (this) {
+				v = this.value;
+				//noinspection unchecked
+				this.value = (T) CANCELLED;
+			}
+
+			if (v != null) {
+				Operators.onDiscard(v, actual.currentContext());
+			}
+		}
+
+		@Override
+		T accumulatedValue() {
+			final T v;
+			synchronized (this) {
+				v = this.value;
+				this.value = null;
+			}
+
+			if (v == CANCELLED) {
+				return null;
+			}
+
+			return v;
 		}
 	}
 }

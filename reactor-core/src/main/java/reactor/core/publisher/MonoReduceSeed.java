@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -63,82 +62,70 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class ReduceSeedSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
+	static final class ReduceSeedSubscriber<T, R> extends Operators.BaseFluxToMonoOperator<T, R>  {
 
 		final BiFunction<R, ? super T, R> accumulator;
 
-		Subscription s;
+		R seed;
 
 		boolean done;
 
 		ReduceSeedSubscriber(CoreSubscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
-				R value) {
+				R seed) {
 			super(actual);
 			this.accumulator = accumulator;
-			//noinspection deprecation
-			this.value = value; //setValue is made NO-OP in order to ignore redundant writes in base class
+			this.seed = seed;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.CANCELLED) return !done && seed == null;
 
 			return super.scanUnsafe(key);
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
-		}
 
-		@Override
-		public void setValue(R value) {
-			// value is updated directly in onNext. writes from the base class are redundant.
-			// if cancel() happens before first reduction, the seed is visible from constructor and will be discarded.
-			// if there was some accumulation in progress post cancel, onNext will take care of it.
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
+			final R seed;
+			synchronized (this) {
+				seed = this.seed;
+				this.seed = null;
 			}
+
+			if (seed == null) {
+				return;
+			}
+
+			Operators.onDiscard(seed, actual.currentContext());
 		}
 
 		@Override
 		public void onNext(T t) {
-			R v = this.value;
-			R accumulated;
+			final R v;
+			final R accumulated;
 
-			if (v != null) { //value null when cancelled
-				try {
-					accumulated = Objects.requireNonNull(accumulator.apply(v, t),
-							"The accumulator returned a null value");
+			try {
+				synchronized (this) {
+					v = this.seed;
+					if (v != null) {
+						accumulated = Objects.requireNonNull(accumulator.apply(v, t),
+								"The accumulator returned a null value");
+						this.seed = accumulated;
+						return;
+					}
+				}
 
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(this, e, t, actual.currentContext()));
-					return;
-				}
-				if (STATE.get(this) == CANCELLED) {
-					discard(accumulated);
-					this.value = null;
-				}
-				else {
-					//noinspection deprecation
-					this.value = accumulated; //setValue is made NO-OP in order to ignore redundant writes in base class
-				}
-			} else {
+				// the actual seed is null, meaning cancelled, new state have to be
+				// discarded as well
 				Operators.onDiscard(t, actual.currentContext());
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(this.s, e, t, actual.currentContext()));
 			}
 		}
 
@@ -149,8 +136,19 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			discard(this.value);
-			this.value = null;
+
+			final R seed;
+			synchronized (this) {
+				seed = this.seed;
+				this.seed = null;
+			}
+
+			if (seed == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+
+			Operators.onDiscard(seed, actual.currentContext());
 
 			actual.onError(t);
 		}
@@ -162,8 +160,17 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			complete(this.value);
-			//we DON'T null out the value, complete will do that once there's been a request
+			completePossiblyEmpty();
+		}
+
+		@Override
+		R accumulatedValue() {
+			final R seed;
+			synchronized (this) {
+				seed = this.seed;
+				this.seed = null;
+			}
+			return seed;
 		}
 	}
 }

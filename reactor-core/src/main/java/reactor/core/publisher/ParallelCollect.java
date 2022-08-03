@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -107,13 +106,11 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	}
 
 	static final class ParallelCollectSubscriber<T, C>
-			extends Operators.MonoSubscriber<T, C> {
+			extends Operators.BaseFluxToMonoOperator<T, C> {
 
 		final BiConsumer<? super C, ? super T> collector;
 
 		C collection;
-
-		Subscription s;
 
 		boolean done;
 
@@ -126,17 +123,6 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, actual.currentContext());
@@ -144,10 +130,15 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 			}
 
 			try {
-				collector.accept(collection, t);
+				synchronized (this) {
+					final C collection = this.collection;
+					if (collection != null) {
+						collector.accept(collection, t);
+					}
+				}
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(this, ex, t, actual.currentContext()));
+				onError(Operators.onOperatorError(this.s, ex, t, actual.currentContext()));
 			}
 		}
 
@@ -158,7 +149,19 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 				return;
 			}
 			done = true;
-			collection = null;
+
+			final C c;
+			synchronized (this) {
+				c = collection;
+				collection = null;
+			}
+
+			if (c == null) {
+				return;
+			}
+
+			Operators.onDiscard(c, actual.currentContext());
+
 			actual.onError(t);
 		}
 
@@ -168,20 +171,40 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 				return;
 			}
 			done = true;
-			C c = collection;
-			collection = null;
-			complete(c);
+
+			completePossiblyEmpty();
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
+
+			final C c;
+			synchronized (this) {
+				c = collection;
+				collection = null;
+			}
+
+			if (c != null) {
+				Operators.onDiscard(c, actual.currentContext());
+			}
+		}
+
+		@Override
+		C accumulatedValue() {
+			final C c;
+			synchronized (this) {
+				c = collection;
+				collection = null;
+			}
+			return c;
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return collection == null && !done;
 			return super.scanUnsafe(key);
 		}
 	}

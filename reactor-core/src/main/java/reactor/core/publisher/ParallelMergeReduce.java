@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,24 +58,28 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		MergeReduceMain<T> parent =
-				new MergeReduceMain<>(actual, source.parallelism(), reducer);
+				new MergeReduceMain<>(source, actual, source.parallelism(), reducer);
 		actual.onSubscribe(parent);
-
-		source.subscribe(parent.subscribers);
 	}
 
 	static final class MergeReduceMain<T>
-			extends Operators.MonoSubscriber<T, T> {
+			implements InnerProducer<T>,
+			           Fuseable,
+			           QueueSubscription<T> {
+
+		final ParallelFlux<? extends T> source;
+
+		final CoreSubscriber<? super T> actual;
 
 		final MergeReduceInner<T>[] subscribers;
 
 		final BiFunction<T, T, T> reducer;
 
 		volatile SlotPair<T> current;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeReduceMain, SlotPair>
-				CURRENT = AtomicReferenceFieldUpdater.newUpdater(
-				MergeReduceMain.class,
+		static final AtomicReferenceFieldUpdater<MergeReduceMain, SlotPair> CURRENT =
+				AtomicReferenceFieldUpdater.newUpdater(MergeReduceMain.class,
 				SlotPair.class,
 				"current");
 
@@ -94,10 +98,13 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				Throwable.class,
 				"error");
 
-		MergeReduceMain(CoreSubscriber<? super T> subscriber,
+		MergeReduceMain(
+				ParallelFlux<? extends T> source,
+				CoreSubscriber<? super T> actual,
 				int n,
 				BiFunction<T, T, T> reducer) {
-			super(subscriber);
+			this.actual = actual;
+			this.source = source;
 			@SuppressWarnings("unchecked") MergeReduceInner<T>[] a =
 					new MergeReduceInner[n];
 			for (int i = 0; i < n; i++) {
@@ -105,17 +112,23 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 			}
 			this.subscribers = a;
 			this.reducer = reducer;
-			REMAINING.lazySet(this, n);
+			REMAINING.lazySet(this, n | Integer.MIN_VALUE);
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ERROR) return error;
-			if (key == Attr.TERMINATED) return REMAINING.get(this) == 0;
+			if (key == Attr.TERMINATED) return this.remaining == 0;
+			if (key == Attr.CANCELLED) return this.remaining == Integer.MIN_VALUE;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return super.scanUnsafe(key);
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Nullable
@@ -152,10 +165,24 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		@Override
 		public void cancel() {
-			for (MergeReduceInner<T> inner : subscribers) {
-				inner.cancel();
+			int r = REMAINING.getAndSet(this, Integer.MIN_VALUE);
+			if ((r & Integer.MIN_VALUE) != Integer.MIN_VALUE) {
+				for (MergeReduceInner<T> inner : subscribers) {
+					inner.cancel();
+				}
 			}
-			super.cancel();
+		}
+
+		@Override
+		public void request(long n) {
+			final int r = this.remaining;
+			if ((r & Integer.MIN_VALUE) != Integer.MIN_VALUE) {
+				return;
+			}
+
+			if (REMAINING.compareAndSet(this, r, r & Integer.MAX_VALUE)) {
+				source.subscribe(subscribers);
+			}
 		}
 
 		void innerError(Throwable ex) {
@@ -191,17 +218,55 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				}
 			}
 
-			if (REMAINING.decrementAndGet(this) == 0) {
-				SlotPair<T> sp = current;
+			if (decrementAndGet(this) == 0) {
+				final SlotPair<T> sp = current;
 				CURRENT.lazySet(this, null);
 
 				if (sp != null) {
-					complete(sp.first);
+					actual.onNext(sp.first);
+					actual.onComplete();
 				}
 				else {
 					actual.onComplete();
 				}
 			}
+		}
+
+		static <T> int decrementAndGet(MergeReduceMain<T> instance) {
+			int prev, next;
+			do {
+				prev = instance.remaining;
+				if (prev == Integer.MIN_VALUE) {
+					return Integer.MIN_VALUE;
+				}
+				next = prev - 1;
+			} while (!REMAINING.compareAndSet(instance, prev, next));
+			return next;
+		}
+
+		@Override
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 
@@ -231,7 +296,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return parent.actual.currentContext();
 		}
 
 		@Override
@@ -283,7 +348,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, parent.currentContext());
+				Operators.onErrorDropped(t, parent.actual.currentContext());
 				return;
 			}
 			done = true;

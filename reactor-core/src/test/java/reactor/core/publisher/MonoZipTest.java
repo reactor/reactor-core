@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -457,10 +457,10 @@ public class MonoZipTest {
 	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(
+		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(new Mono[2],
 				actual, 2, true, a -> String.valueOf(a[0]));
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -476,28 +476,28 @@ public class MonoZipTest {
 	@Test
 	public void innerErrorIncrementsParentDone() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoZip.ZipCoordinator<String> parent = new MonoZip.ZipCoordinator<>(
+		MonoZip.ZipCoordinator<String> parent = new MonoZip.ZipCoordinator<>(new Mono[2],
 				actual, 2, false, a -> String.valueOf(a[0]));
 		MonoZip.ZipInner<String> test = new MonoZip.ZipInner<>(parent);
 
-		assertThat(parent.done).isZero();
+		assertThat(parent.state).isZero();
 
 		test.onError(new IllegalStateException("boom"));
 
-		assertThat(parent.done).isEqualTo(2);
+		assertThat(parent.state).isEqualTo(MonoZip.ZipCoordinator.INTERRUPTED_FLAG + 2);
 		assertThat(parent.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
 	public void scanCoordinatorNotDoneUntilN() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(
+		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(new Mono[2],
 				actual, 10, true, a -> String.valueOf(a[0]));
 
-		test.done = 9;
+		test.state = 9;
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
-		test.done = 10;
+		test.state = 10;
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
@@ -506,7 +506,8 @@ public class MonoZipTest {
 		CoreSubscriber<? super String> actual = new LambdaMonoSubscriber<>(null, e ->
 		{}, null, null);
 		MonoZip.ZipCoordinator<String>
-				coordinator = new MonoZip.ZipCoordinator<>(actual, 2, false, a -> null);
+				coordinator = new MonoZip.ZipCoordinator<>(new Mono[2], actual, 2,
+				false, a -> null);
 		MonoZip.ZipInner<String> test = new MonoZip.ZipInner<>(coordinator);
 		Subscription innerSub = Operators.cancelledSubscription();
 		test.onSubscribe(innerSub);

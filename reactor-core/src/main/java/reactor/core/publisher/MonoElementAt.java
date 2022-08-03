@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -66,20 +65,17 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 		return super.scanUnsafe(key);
 	}
 
-	static final class ElementAtSubscriber<T>
-			extends Operators.MonoSubscriber<T, T> {
+	static final class ElementAtSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, T> {
+		@Nullable
 		final T defaultValue;
 
 		long index;
 
 		final long target;
 
-		Subscription s;
-
 		boolean done;
 
-		ElementAtSubscriber(CoreSubscriber<? super T> actual, long index,
-											T defaultValue) {
+		ElementAtSubscriber(CoreSubscriber<? super T> actual, long index, @Nullable T defaultValue) {
 			super(actual);
 			this.index = index;
 			this.target = index;
@@ -90,33 +86,8 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
-		}
-
-		@Override
-		public void request(long n) {
-			super.request(n);
-			if (n > 0L) {
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
-		public void cancel() {
-			super.cancel();
-			s.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
 		}
 
 		@Override
@@ -157,8 +128,9 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 			}
 			done = true;
 
-			if(defaultValue != null) {
-				complete(defaultValue);
+			final T dv = defaultValue;
+			if (dv != null) {
+				completePossiblyEmpty();
 			}
 			else{
 				long count = target - index;
@@ -166,6 +138,11 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 								"source had " + count + " elements, expected at least " + (target + 1)),
 						actual.currentContext()));
 			}
+		}
+
+		@Override
+		T accumulatedValue() {
+			return defaultValue;
 		}
 	}
 }

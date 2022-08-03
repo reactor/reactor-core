@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -43,8 +42,9 @@ final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
 		return super.scanUnsafe(key);
 	}
 
-	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
-		Subscription s;
+	static final class HasElementsSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, Boolean> {
+
+		boolean done;
 
 		HasElementsSubscriber(CoreSubscriber<? super Boolean> actual) {
 			super(actual);
@@ -53,39 +53,49 @@ final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.TERMINATED) return done;
 
 			return super.scanUnsafe(key);
 		}
 
 		@Override
-		public void cancel() {
-			super.cancel();
-			s.cancel();
-		}
+		public void onNext(T t) {
+			Operators.onDiscard(t, currentContext());
 
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
+			if (!done) {
+				s.cancel();
 
-				s.request(Long.MAX_VALUE);
+				this.done = true;
+
+				this.actual.onNext(true);
+				this.actual.onComplete();
 			}
 		}
 
 		@Override
-		public void onNext(T t) {
-			s.cancel();
+		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t, currentContext());
+				return;
+			}
 
-			complete(true);
+			this.actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			complete(false);
+			if (done) {
+				return;
+			}
+
+			this.done = true;
+
+			completePossiblyEmpty();
 		}
 
+		@Override
+		Boolean accumulatedValue() {
+			return false;
+		}
 	}
 }

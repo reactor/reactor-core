@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -252,7 +252,7 @@ public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String>
 
 	@Test
 	public void scanSubscriber() {
-		ParallelFlux<Integer> source = Flux.just(500, 300).parallel(10);
+		ParallelFlux<Integer> source = Flux.just(500, 300).parallel(2);
 
 		LambdaSubscriber<String> subscriber = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
@@ -261,24 +261,20 @@ public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String>
 				subscriber, "", (s, i) -> s + i);
 
 		@SuppressWarnings("unchecked")
-		final CoreSubscriber<Integer>[] testSubscribers = new CoreSubscriber[1];
+		final CoreSubscriber<Integer>[] testSubscribers = new CoreSubscriber[2];
 		testSubscribers[0] = test;
+		testSubscribers[1] = new ParallelReduceSeed.ParallelReduceSeedSubscriber<>(
+				subscriber, "", (s, i) -> s + i);;
 		source.subscribe(testSubscribers);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
-		test.state = Operators.MonoSubscriber.HAS_REQUEST_HAS_VALUE;
+		test.done = true;
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
-		test.state = Operators.MonoSubscriber.HAS_REQUEST_NO_VALUE;
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-
-		test.state = Operators.MonoSubscriber.NO_REQUEST_HAS_VALUE;
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
+		test.done = false;
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();

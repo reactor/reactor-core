@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,28 +41,12 @@ class MonoPublishMulticastTest {
 		                      .publish(o -> o.flatMap(s -> Mono.just(2)));
 
 		StepVerifier.create(m)
-		            .expectFusion()
+		            .expectNoFusionSupport()
 		            .expectNext(2)
 		            .verifyComplete();
 
 		StepVerifier.create(m)
-		            .expectFusion()
-		            .expectNext(2)
-		            .verifyComplete();
-	}
-
-	@Test
-	void normalHide() {
-		AtomicInteger i = new AtomicInteger();
-		Mono<Integer> m = Mono.fromCallable(i::incrementAndGet)
-		                      //actually, o isn't Fuseable to start with
-		                      .publish(o -> o.map(s -> 2).hide());
-
-		StepVerifier.create(m)
-		            .expectNext(2)
-		            .verifyComplete();
-
-		StepVerifier.create(m)
+		            .expectNoFusionSupport()
 		            .expectNext(2)
 		            .verifyComplete();
 	}
@@ -141,29 +125,10 @@ class MonoPublishMulticastTest {
 
 	//see https://github.com/reactor/reactor-core/issues/2600
 	@Test
-	void errorFused() {
+	void errorPropagated() {
 		final String errorMessage = "Error in Mono";
 		final Mono<Object> source = Mono.error(new RuntimeException(errorMessage));
 		final Mono<Object> published = source.publish(coordinator -> coordinator.flatMap(Mono::just));
-
-		StepVerifier.create(published)
-		            .expectFusion()
-		            .expectErrorMessage(errorMessage)
-		            .verify();
-
-		StepVerifier.create(published, StepVerifierOptions.create().scenarioName("second shared invocation"))
-		            .expectFusion()
-		            .expectErrorMessage(errorMessage)
-		            .verify();
-	}
-
-	//see https://github.com/reactor/reactor-core/issues/2600
-	@Test
-	void errorHide() {
-		final String errorMessage = "Error in Mono";
-		final Mono<Object> source = Mono.error(new RuntimeException(errorMessage));
-		//value passed to Function is not Fuseable
-		final Mono<Object> published = source.publish(Function.identity());
 
 		StepVerifier.create(published)
 		            .expectNoFusionSupport()

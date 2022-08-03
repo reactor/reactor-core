@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,10 +54,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			return null;
 		}
 
-		FlatMapMain<T, R> manager = new FlatMapMain<>(actual, mapper);
-		actual.onSubscribe(manager);
-
-		return manager;
+		return new FlatMapMain<>(actual, mapper);
 	}
 
 	@Override
@@ -66,26 +63,28 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		return super.scanUnsafe(key);
 	}
 
-	static final class FlatMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
+	static final class FlatMapMain<T, R> implements InnerOperator<T, R>,
+	                                                Fuseable, //for constants only
+			                                        QueueSubscription<R> {
 
 		final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-		final FlatMapInner<R> second;
+		final CoreSubscriber<? super R> actual;
 
 		boolean done;
 
-		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapMain, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
-						Subscription.class,
-						"s");
+		Subscription s;
 
-		FlatMapMain(CoreSubscriber<? super R> subscriber,
+		volatile FlatMapInner<R> second;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<FlatMapMain, FlatMapInner> SECOND =
+				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class, FlatMapInner.class, "second");
+
+		FlatMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Mono<? extends R>> mapper) {
-			super(subscriber);
+			this.actual = actual;
 			this.mapper = mapper;
-			this.second = new FlatMapInner<>(this);
 		}
 
 		@Override
@@ -94,20 +93,28 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		}
 
 		@Override
+		public CoreSubscriber<? super R> actual() {
+			return this.actual;
+		}
+
+		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PREFETCH) return 0;
+			if (key == Attr.CANCELLED) return second == FlatMapInner.CANCELLED;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
-				s.request(Long.MAX_VALUE);
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				this.actual.onSubscribe(this);
 			}
 		}
 
@@ -148,13 +155,14 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 					actual.onComplete();
 				}
 				else {
-					complete(v);
+					actual.onNext(v);
+					actual.onComplete();
 				}
 				return;
 			}
 
 			try {
-				m.subscribe(second);
+				m.subscribe(new FlatMapInner<>(this));
 			}
 			catch (Throwable e) {
 				actual.onError(Operators.onOperatorError(this, e, t,
@@ -182,14 +190,60 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		}
 
 		@Override
+		public void request(long n) {
+			this.s.request(n);
+		}
+
+		@Override
 		public void cancel() {
-			super.cancel();
-			Operators.terminate(S, this);
-			second.cancel();
+			this.s.cancel();
+
+			final FlatMapInner<R> second = this.second;
+			if (second == FlatMapInner.CANCELLED || !SECOND.compareAndSet(this, second, FlatMapInner.CANCELLED)) {
+				return;
+			}
+
+			if (second != null) {
+				second.s.cancel();
+			}
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public R poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public void clear() {
+
+		}
+
+		boolean setSecond(FlatMapInner<R> inner) {
+			return this.second == null && SECOND.compareAndSet(this, null, inner);
 		}
 
 		void secondError(Throwable ex) {
 			actual.onError(ex);
+		}
+
+		void secondComplete(R t) {
+			actual.onNext(t);
+			actual.onComplete();
 		}
 
 		void secondComplete() {
@@ -199,21 +253,17 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 	static final class FlatMapInner<R> implements InnerConsumer<R> {
 
+		static final FlatMapInner<?> CANCELLED = new FlatMapInner<>(null);
+
 		final FlatMapMain<?, R> parent;
 
-		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapInner, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class,
-						Subscription.class,
-						"s");
+		Subscription s;
 
 		boolean done;
 
 		FlatMapInner(FlatMapMain<?, R> parent) {
 			this.parent = parent;
 		}
-
 
 		@Override
 		public Context currentContext() {
@@ -234,8 +284,14 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
-				s.request(Long.MAX_VALUE);
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				if (this.parent.setSecond(this)) {
+					s.request(Long.MAX_VALUE);
+				} else {
+					s.cancel();
+				}
 			}
 		}
 
@@ -246,7 +302,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 				return;
 			}
 			done = true;
-			this.parent.complete(t);
+			this.parent.secondComplete(t);
 		}
 
 		@Override
@@ -267,10 +323,5 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			done = true;
 			this.parent.secondComplete();
 		}
-
-		void cancel() {
-			Operators.terminate(S, this);
-		}
-
 	}
 }

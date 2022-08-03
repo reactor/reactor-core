@@ -177,7 +177,7 @@ class MonoCollectListTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -186,10 +186,6 @@ class MonoCollectListTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test

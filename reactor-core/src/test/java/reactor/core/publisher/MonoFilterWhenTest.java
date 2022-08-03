@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -332,7 +332,7 @@ public class MonoFilterWhenTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -351,7 +351,7 @@ public class MonoFilterWhenTest {
 		MonoFilterWhen.MonoFilterWhenMain<String>
 				main = new MonoFilterWhen.MonoFilterWhenMain<>(
 				actual, s -> Mono.just(false));
-		MonoFilterWhen.FilterWhenInner test = new MonoFilterWhen.FilterWhenInner(main, true);
+		MonoFilterWhen.FilterWhenInner test = new MonoFilterWhen.FilterWhenInner(main, true, null);
 
 		Subscription innerSubscription = Operators.emptySubscription();
 		test.onSubscribe(innerSubscription);
@@ -360,17 +360,13 @@ public class MonoFilterWhenTest {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSubscription);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

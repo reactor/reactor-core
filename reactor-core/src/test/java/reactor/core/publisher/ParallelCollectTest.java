@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
@@ -114,7 +113,7 @@ public class ParallelCollectTest {
 	}
 
 	@Test
-	public void scanSubscriber() {
+	public void scanSubscriberTerminatedScenario() {
 		CoreSubscriber<List<Integer>> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
 		ParallelCollectSubscriber<Integer, List<Integer>> test = new ParallelCollectSubscriber<>(
 				subscriber, new ArrayList<>(), List::add);
@@ -122,12 +121,25 @@ public class ParallelCollectTest {
 		test.onSubscribe(s);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.complete(Collections.emptyList());
+		test.onComplete();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriberCancelledScenario() {
+		CoreSubscriber<List<Integer>> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+		ParallelCollectSubscriber<Integer, List<Integer>> test = new ParallelCollectSubscriber<>(
+				subscriber, new ArrayList<>(), List::add);
+		Subscription s = Operators.emptySubscription();
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();

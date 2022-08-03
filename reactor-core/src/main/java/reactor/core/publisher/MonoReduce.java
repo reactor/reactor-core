@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,16 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		return super.scanUnsafe(key);
 	}
 
-	static final class ReduceSubscriber<T> extends Operators.MonoSubscriber<T, T> {
+	static final class ReduceSubscriber<T>  implements InnerOperator<T, T>,
+	                                                   Fuseable,
+	                                                   QueueSubscription<T> {
+
+		static final Object CANCELLED = new Object();
 
 		final BiFunction<T, T, T> aggregator;
+		final CoreSubscriber<? super T> actual;
+
+		T aggregate;
 
 		Subscription s;
 
@@ -63,18 +70,25 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 
 		ReduceSubscriber(CoreSubscriber<? super T> actual,
 				BiFunction<T, T, T> aggregator) {
-			super(actual);
+			this.actual = actual;
 			this.aggregator = aggregator;
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return this.actual;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return !done && aggregate == CANCELLED;
+			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -82,7 +96,6 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -92,27 +105,45 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			T r = this.value;
+
+			final T r = this.aggregate;
+			if (r == CANCELLED) {
+				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+
+			// initial scenario when aggregate has nothing in it
 			if (r == null) {
-				setValue(t);
+				synchronized (this) {
+					if (this.aggregate == null) {
+						this.aggregate = t;
+						return;
+					}
+				}
+
+				Operators.onDiscard(t, actual.currentContext());
 			}
 			else {
 				try {
-					r = Objects.requireNonNull(aggregator.apply(r, t),
-							"The aggregator returned a null value");
+					synchronized (this) {
+						if (this.aggregate != CANCELLED) {
+							this.aggregate = Objects.requireNonNull(aggregator.apply(r, t), "The aggregator returned a null value");
+							return;
+						}
+					}
+					Operators.onDiscard(t, actual.currentContext());
 				}
 				catch (Throwable ex) {
 					done = true;
 					Context ctx = actual.currentContext();
+					synchronized (this) {
+						this.aggregate = null;
+					}
 					Operators.onDiscard(t, ctx);
-					Operators.onDiscard(this.value, ctx);
-					this.value = null;
+					Operators.onDiscard(r, ctx);
 					actual.onError(Operators.onOperatorError(s, ex, t,
 							actual.currentContext()));
-					return;
 				}
-
-				setValue(r);
 			}
 		}
 
@@ -123,8 +154,22 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			discard(this.value);
-			this.value = null;
+
+			final T r;
+			synchronized (this) {
+				r = this.aggregate;
+				this.aggregate = null;
+			}
+
+			if (r == CANCELLED) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+
+			if (r != null) {
+				Operators.onDiscard(r, actual.currentContext());
+			}
+
 			actual.onError(t);
 		}
 
@@ -134,19 +179,72 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			T r = this.value;
-			if (r != null) {
-				complete(r);
+
+			final T r;
+			synchronized (this) {
+				r = this.aggregate;
+				this.aggregate = null;
+			}
+
+			if (r == CANCELLED) {
+				return;
+			}
+
+			if (r == null) {
+				actual.onComplete();
 			}
 			else {
+				actual.onNext(r);
 				actual.onComplete();
 			}
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
 			s.cancel();
+
+			final T r;
+			synchronized (this) {
+				r = this.aggregate;
+				//noinspection unchecked
+				this.aggregate = (T) CANCELLED;
+			}
+
+			if (r == null || r == CANCELLED) {
+				return;
+			}
+
+			Operators.onDiscard(r, actual.currentContext());
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(Long.MAX_VALUE);
+		}
+
+		@Override
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 }

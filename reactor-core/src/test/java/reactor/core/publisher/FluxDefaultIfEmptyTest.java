@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ public class FluxDefaultIfEmptyTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -199,19 +199,6 @@ public class FluxDefaultIfEmptyTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-	}
-
-	@Test
-	public void scanSubscriberCancelled() {
-		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxDefaultIfEmpty.DefaultIfEmptySubscriber<String> test =
-				new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, "bar");
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

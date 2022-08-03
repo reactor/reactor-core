@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
@@ -63,20 +66,35 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		return super.scanUnsafe(key);
 	}
 
-	static final class DelayElementSubscriber<T> extends Operators.MonoSubscriber<T,T> {
+	static final class DelayElementSubscriber<T> implements InnerOperator<T, T>,
+	                                                        Fuseable,
+	                                                        Fuseable.QueueSubscription<T>,
+	                                                        Runnable {
 
+		static final Disposable CANCELLED  = Disposables.disposed();
+		static final Disposable TERMINATED = Disposables.disposed();
+
+		final CoreSubscriber<? super T> actual;
 		final long delay;
 		final Scheduler scheduler;
 		final TimeUnit unit;
 
 		Subscription s;
-
-		volatile Disposable task;
+		T value;
 		boolean done;
 
-		DelayElementSubscriber(CoreSubscriber<? super T> actual, Scheduler scheduler,
-				long delay, TimeUnit unit) {
-			super(actual);
+		volatile Disposable task;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<DelayElementSubscriber, Disposable> TASK =
+				AtomicReferenceFieldUpdater.newUpdater(DelayElementSubscriber.class, Disposable.class, "task");
+
+		DelayElementSubscriber(
+			CoreSubscriber<? super T> actual,
+			Scheduler scheduler,
+			long delay,
+			TimeUnit unit
+		) {
+			this.actual = actual;
 			this.scheduler = scheduler;
 			this.delay = delay;
 			this.unit = unit;
@@ -85,23 +103,22 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) {
+				final Disposable task = this.task;
+				return done && (task == TERMINATED || (task == null && value == null));
+			}
+			if (key == Attr.CANCELLED) return task == CANCELLED;
+			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_ON) return scheduler;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
-		public void cancel() {
-			super.cancel();
-			if (task != null) {
-				task.dispose();
-			}
-			if (s != Operators.cancelledSubscription()) {
-				s.cancel();
-			}
+		public CoreSubscriber<? super T> actual() {
+			return this.actual;
 		}
 
 		@Override
@@ -110,7 +127,6 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 				this.s = s;
 
 				actual.onSubscribe(this);
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -120,15 +136,66 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
+
 			this.done = true;
+			this.value = t;
+
 			try {
-				this.task = scheduler.schedule(() -> complete(t), delay, unit);
+				final Disposable currentTask = this.task;
+				final Disposable nextTask = scheduler.schedule(this, delay, unit);
+				if (currentTask != null || !TASK.compareAndSet(this, null, nextTask)) {
+					this.value = null;
+					nextTask.dispose();
+					Operators.onDiscard(t, actual.currentContext());
+				}
 			}
 			catch (RejectedExecutionException ree) {
-				actual.onError(Operators.onRejectedExecution(ree, this, null, t,
-						actual.currentContext()));
+				this.value = null;
+				Operators.onDiscard(t, actual.currentContext());
+				actual.onError(Operators.onRejectedExecution(ree, this, null, t, actual.currentContext()));
+			}
+		}
+
+		@Override
+		public void run() {
+			final Disposable currentTask = this.task;
+
+			if (currentTask == CANCELLED || !TASK.compareAndSet(this, currentTask, TERMINATED)) {
 				return;
 			}
+
+			final T value = this.value;
+			this.value = null;
+
+			this.actual.onNext(value);
+			this.actual.onComplete();
+		}
+
+		@Override
+		public void cancel() {
+			final Disposable task = this.task;
+			if (task == CANCELLED || task == TERMINATED) {
+				return;
+			}
+
+			if (TASK.compareAndSet(this, task, CANCELLED)) {
+				if (task != null) {
+					task.dispose();
+
+					final T value = this.value;
+					this.value = null;
+
+					Operators.onDiscard(value, actual.currentContext());
+					return;
+				}
+			}
+
+			s.cancel();
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(n);
 		}
 
 		@Override
@@ -137,6 +204,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 				return;
 			}
 			this.done = true;
+
 			actual.onComplete();
 		}
 
@@ -147,7 +215,33 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 				return;
 			}
 			this.done = true;
+
 			actual.onError(t);
+		}
+
+		@Override
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 }

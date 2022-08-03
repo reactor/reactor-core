@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,20 +74,11 @@ public class MonoCountTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-
-		//only TERMINATED state evaluated is one from Operators: hasValue
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.onComplete();
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

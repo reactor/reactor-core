@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,7 +218,7 @@ public class MonoHasElementsTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -240,22 +240,6 @@ public class MonoHasElementsTest {
 	}
 
 	@Test
-	public void scanHasElementsCancelled() {
-		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoHasElements.HasElementsSubscriber<String> test = new MonoHasElements.HasElementsSubscriber<>(actual);
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
-
-		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
-	}
-
-	@Test
 	public void scanHasElement() {
 		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
@@ -264,7 +248,7 @@ public class MonoHasElementsTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -276,29 +260,14 @@ public class MonoHasElementsTest {
 	}
 
 	@Test
-	public void scanHasElementNoTerminatedOnError() {
+	public void scanHasElementTerminatedOnError() {
 		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 
-		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-	}
-
-	@Test
-	public void scanHasElementCancelled() {
-		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
-
 		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 }

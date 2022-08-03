@@ -52,25 +52,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class FluxDoOnEachTest {
 
-
-	// see https://github.com/reactor/reactor-core/issues/3044
-	@Test
-	void doOnEachAsyncFusionDoesntTriggerOnNextTwice() {
-		List<String> signals = new ArrayList<>();
-		StepVerifier.create(Flux.just("a", "b", "c")
-				.collectList()
-				.doOnEach(sig -> signals.add(sig.toString()))
-			)
-			.expectFusion(Fuseable.ASYNC)
-			.expectNext(Arrays.asList("a", "b", "c"))
-			.verifyComplete();
-
-		assertThat(signals).containsExactly(
-			"doOnEach_onNext([a, b, c])",
-			"onComplete()"
-		);
-	}
-
 	@Test
 	public void nullSource() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {

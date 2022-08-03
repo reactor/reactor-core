@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
 import static java.lang.Thread.sleep;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoReduceTest extends ReduceOperatorTest<String, String>{
@@ -231,7 +230,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		sub.onSubscribe(Operators. emptySubscription());
 
 		sub.onNext(1);
-		assertThat(sub.value).isEqualTo(1);
+		assertThat(sub.aggregate).isEqualTo(1);
 
 		sub.cancel();
 		testSubscriber.assertNoError();
@@ -252,7 +251,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		sub.onSubscribe(Operators. emptySubscription());
 
 		sub.onNext(1);
-		assertThat(sub.value).isEqualTo(1);
+		assertThat(sub.aggregate).isEqualTo(1);
 
 		sub.onError(new RuntimeException("boom"));
 		testSubscriber.assertErrorMessage("boom");
@@ -271,11 +270,11 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 		sub.onNext(1);
 		sub.onNext(2);
-		assertThat(sub.value).isEqualTo(3);
+		assertThat(sub.aggregate).isEqualTo(3);
 
 		sub.request(1);
 		sub.onComplete();
-		assertThat(sub.value).isNull();
+		assertThat(sub.aggregate).isNull();
 
 		testSubscriber.assertNoError();
 	}
@@ -292,10 +291,10 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 		sub.onNext(1);
 		sub.onNext(2);
-		assertThat(sub.value).isEqualTo(3);
+		assertThat(sub.aggregate).isEqualTo(3);
 
 		sub.onError(new RuntimeException("boom"));
-		assertThat(sub.value).isNull();
+		assertThat(sub.aggregate).isNull();
 
 		testSubscriber.assertErrorMessage("boom");
 	}
@@ -308,13 +307,13 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 	}
 
 	@Test
-	public void scanSubscriber() {
+	public void scanSubscriberTerminatedScenario() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoReduce.ReduceSubscriber<String> test = new MonoReduce.ReduceSubscriber<>(actual, (s1, s2) -> s1 + s2);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -323,6 +322,20 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriberCancelledScenario() {
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoReduce.ReduceSubscriber<String> test = new MonoReduce.ReduceSubscriber<>(actual, (s1, s2) -> s1 + s2);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();

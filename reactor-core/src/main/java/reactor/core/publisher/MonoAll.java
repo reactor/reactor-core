@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -55,11 +54,8 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 		return super.scanUnsafe(key);
 	}
 
-	static final class AllSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
+	static final class AllSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, Boolean> {
 		final Predicate<? super T> predicate;
-
-		Subscription s;
-
 		boolean done;
 
 		AllSubscriber(CoreSubscriber<? super Boolean> actual, Predicate<? super T> predicate) {
@@ -71,32 +67,14 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
 
 		@Override
-		public void cancel() {
-			s.cancel();
-			super.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
 		public void onNext(T t) {
-
 			if (done) {
+				Operators.onDiscard(t, this.actual.currentContext());
 				return;
 			}
 
@@ -113,7 +91,8 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 				done = true;
 				s.cancel();
 
-				complete(false);
+				this.actual.onNext(false);
+				this.actual.onComplete();
 			}
 		}
 
@@ -134,8 +113,13 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 				return;
 			}
 			done = true;
-			complete(true);
+
+			completePossiblyEmpty();
 		}
 
+		@Override
+		Boolean accumulatedValue() {
+			return true;
+		}
 	}
 }

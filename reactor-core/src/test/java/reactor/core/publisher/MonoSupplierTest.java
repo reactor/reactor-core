@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,6 @@ public class MonoSupplierTest {
 	@Test
 	public void normalSupplyingNull() {
 		StepVerifier.create(Mono.fromSupplier(() -> null))
-		            .verifyComplete();
-	}
-
-	@Test
-	public void normalSupplyingNullBackpressuredShortcuts() {
-		StepVerifier.create(Mono.fromSupplier(() -> null), 0)
-		            .expectSubscription()
 		            .verifyComplete();
 	}
 

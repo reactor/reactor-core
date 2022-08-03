@@ -21,8 +21,6 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -67,13 +65,11 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
+	static final class CollectSubscriber<T, R> extends Operators.BaseFluxToMonoOperator<T, R> {
 
 		final BiConsumer<? super R, ? super T> action;
 
 		R container;
-
-		Subscription s;
 
 		boolean done;
 
@@ -88,21 +84,9 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
 			return super.scanUnsafe(key);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
 		}
 
 		@Override
@@ -111,22 +95,22 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			R c;
-			synchronized (this) {
-				c = container;
-				if (c != null) {
-					try {
+			try {
+				final R c;
+				synchronized (this) {
+					c = container;
+					if (c != null) {
 						action.accept(c, t);
+						return;
 					}
-					catch (Throwable e) {
-						Context ctx = actual.currentContext();
-						Operators.onDiscard(t, ctx);
-						onError(Operators.onOperatorError(this, e, t, ctx));
-					}
-					return;
 				}
+				Operators.onDiscard(t, actual.currentContext());
 			}
-			Operators.onDiscard(t, actual.currentContext());
+			catch (Throwable e) {
+				Context ctx = actual.currentContext();
+				Operators.onDiscard(t, ctx);
+				onError(Operators.onOperatorError(this.s, e, t, ctx));
+			}
 		}
 
 		@Override
@@ -141,6 +125,12 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				c = container;
 				container = null;
 			}
+
+			if (c == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+
 			discard(c);
 			actual.onError(t);
 		}
@@ -151,47 +141,43 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			R c;
+
+			completePossiblyEmpty();
+		}
+
+		@Override
+		public void cancel() {
+			super.cancel();
+
+			final R c;
 			synchronized (this) {
 				c = container;
 				container = null;
 			}
+
 			if (c != null) {
-				complete(c);
+				discard(c);
 			}
 		}
 
 		@Override
-		protected void discard(R v) {
+		R accumulatedValue() {
+			final R c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+
+			return c;
+		}
+
+		void discard(R v) {
 			if (v instanceof Collection) {
 				Collection<?> c = (Collection<?>) v;
 				Operators.onDiscardMultiple(c, actual.currentContext());
 			}
 			else {
-				super.discard(v);
-			}
-		}
-
-		@Override
-		public void cancel() {
-			int state;
-			R c;
-			state = STATE.getAndSet(this, CANCELLED);
-			if (state != CANCELLED) {
-				s.cancel();
-			}
-			if (state <= HAS_REQUEST_NO_VALUE) {
-				synchronized (this) {
-					c = container;
-					this.value = null;
-					container = null;
-				}
-			}
-			else {
-				c = null;
-			}
-			if (c != null) {
-				discard(c);
+				Operators.onDiscard(v, actual.currentContext());
 			}
 		}
 	}

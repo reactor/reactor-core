@@ -1114,7 +1114,7 @@ public abstract class Operators {
 			T value, String stepName){
 		return new ScalarSubscription<>(subscriber, value, stepName);
 	}
-	
+
 	/**
 	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
 	 * sequentially (serialized).
@@ -1982,6 +1982,151 @@ public abstract class Operators {
 	}
 
 
+	static abstract class BaseFluxToMonoOperator<I, O> implements InnerOperator<I, O>,
+	                                                              Fuseable,
+			                                                      QueueSubscription<I> {
+		final CoreSubscriber<? super O> actual;
+
+		Subscription s;
+
+		boolean hasRequest;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<BaseFluxToMonoOperator> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(BaseFluxToMonoOperator.class, "state");
+
+		BaseFluxToMonoOperator(CoreSubscriber<? super O> actual) {
+			this.actual = actual;
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Scannable.Attr key) {
+			if (key == Scannable.Attr.PREFETCH) return 0;
+			if (key == Scannable.Attr.PARENT) return s;
+			if (key == Scannable.Attr.RUN_STYLE) return Scannable.Attr.RunStyle.SYNC;
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public final CoreSubscriber<? super O> actual() {
+			return this.actual;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (!hasRequest) {
+				hasRequest = true;
+
+				final int state = this.state;
+				if ((state & 1) == 1) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, state, state | 1)) {
+					if (state == 0) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						// completed before request means source was empty
+						final O value = accumulatedValue();
+
+						if (value == null) {
+							return;
+						}
+
+						this.actual.onNext(value);
+						this.actual.onComplete();
+					}
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+
+		final void completePossiblyEmpty() {
+			if (hasRequest) {
+				final O value = accumulatedValue();
+
+				if (value == null) {
+					return;
+				}
+
+				this.actual.onNext(value);
+				this.actual.onComplete();
+				return;
+			}
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				return;
+			}
+
+			final O value = accumulatedValue();
+
+			if (value == null) {
+				return;
+			}
+
+			this.actual.onNext(value);
+			this.actual.onComplete();
+		}
+
+		/**
+		 * This method is being called either during onComplete invocation in case request
+		 * has happened before, or during request invocation in case onComplete with no
+		 * values has happened before.
+		 * <p>
+		 * <b>Note</b>, this method expectedly returns null if cancellation happened
+		 * before
+		 * </p>
+		 *
+		 * @return accumulated/default value or null if cancelled before
+		 */
+		@Nullable
+		abstract O accumulatedValue();
+
+		@Override
+		public final I poll() {
+			return null;
+		}
+
+		@Override
+		public final int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public final int size() {
+			return 0;
+		}
+
+		@Override
+		public final boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public final void clear() {
+
+		}
+	}
+
+
 	/**
 	 * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the
 	 * duration until the first Subscription is set.
@@ -2284,7 +2429,7 @@ public abstract class Operators {
 	                    }
 	                } else if (mr != 0L && a != null) {
 	                    requestAmount = addCap(requestAmount, mr);
-	                    alreadyInRequestAmount += mr; 
+	                    alreadyInRequestAmount += mr;
 	                    requestTarget = a;
 	                }
 	            }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -67,16 +66,13 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		return super.scanUnsafe(key);
 	}
 
-	static final class StreamCollectorSubscriber<T, A, R>
-			extends Operators.MonoSubscriber<T, R> {
+	static final class StreamCollectorSubscriber<T, A, R> extends Operators.BaseFluxToMonoOperator<T, R> {
 
 		final BiConsumer<? super A, ? super T> accumulator;
 
 		final Function<? super A, ? extends R> finisher;
 
 		A container; //not final to be able to null it out on termination
-
-		Subscription s;
 
 		boolean done;
 
@@ -94,31 +90,17 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
 
-		protected void discardIntermediateContainer(A a) {
+		void discardIntermediateContainer(A a) {
 			Context ctx = actual.currentContext();
 			if (a instanceof Collection) {
 				Operators.onDiscardMultiple((Collection<?>) a, ctx);
 			}
 			else {
 				Operators.onDiscard(a, ctx);
-			}
-		}
-		//NB: value and thus discard are not used
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -129,7 +111,14 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			try {
-				accumulator.accept(container, t);
+				synchronized (this) {
+					final A container = this.container;
+					if (container != null) {
+						accumulator.accept(container, t);
+						return;
+					}
+				}
+				Operators.onDiscard(t, actual.currentContext());
 			}
 			catch (Throwable ex) {
 				Context ctx = actual.currentContext();
@@ -145,8 +134,18 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
-			discardIntermediateContainer(container);
-			container = null;
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+
+			if (c == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+
+			discardIntermediateContainer(c);
 			actual.onError(t);
 		}
 
@@ -157,33 +156,50 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 
-			A a = container;
-			container = null;
-
-			R r;
-
-			try {
-				r = finisher.apply(a);
-			}
-			catch (Throwable ex) {
-				discardIntermediateContainer(a);
-				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
-				return;
-			}
-
-			if (r == null) {
-				actual.onError(Operators.onOperatorError(new NullPointerException("Collector returned null"), actual.currentContext()));
-				return;
-			}
-			complete(r);
+			completePossiblyEmpty();
 		}
 
 		@Override
 		public void cancel() {
 			super.cancel();
-			s.cancel();
-			discardIntermediateContainer(container);
-			container = null;
+
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+			if (c != null) {
+				discardIntermediateContainer(c);
+			}
+		}
+
+		R accumulatedValue() {
+			final A c;
+			synchronized (this) {
+				c = container;
+				container = null;
+			}
+
+			if (c == null) {
+				return null;
+			}
+
+			R r;
+			try {
+				r = finisher.apply(c);
+			}
+			catch (Throwable ex) {
+				discardIntermediateContainer(c);
+				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
+				return null;
+			}
+
+			if (r == null) {
+				actual.onError(Operators.onOperatorError(new NullPointerException(
+						"Collector returned null"), actual.currentContext()));
+			}
+
+			return r;
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,14 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
-/**
+ /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
  * <p>
  *  Preferred to {@link java.util.function.Supplier} because the Callable may throw.
@@ -44,28 +45,7 @@ final class MonoCallable<T> extends Mono<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Operators.MonoSubscriber<T, T>
-				sds = new Operators.MonoSubscriber<>(actual);
-
-		actual.onSubscribe(sds);
-
-		if (sds.isCancelled()) {
-			return;
-		}
-
-		try {
-			T t = callable.call();
-			if (t == null) {
-				sds.onComplete();
-			}
-			else {
-				sds.complete(t);
-			}
-		}
-		catch (Throwable e) {
-			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-		}
-
+		actual.onSubscribe(new MonoCallableSubscription<>(actual, this.callable));
 	}
 
 	@Override
@@ -96,5 +76,112 @@ final class MonoCallable<T> extends Mono<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
+	}
+
+	static class MonoCallableSubscription<T>
+			implements InnerProducer<T>, Fuseable, QueueSubscription<T> {
+
+		final CoreSubscriber<? super T> actual;
+		final Callable<? extends T>     callable;
+
+		boolean done;
+
+		volatile int requestedOnce;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<MonoCallableSubscription> REQUESTED_ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(MonoCallableSubscription.class,
+						"requestedOnce");
+
+		volatile boolean cancelled;
+
+		MonoCallableSubscription(CoreSubscriber<? super T> actual, Callable<? extends T> callable) {
+			this.actual = actual;
+			this.callable = callable;
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return this.actual;
+		}
+
+		@Override
+		public T poll() {
+			if (this.done) {
+				return null;
+			}
+
+			this.done = true;
+
+			try {
+				return this.callable.call();
+			}
+			catch (Throwable e) {
+				throw Exceptions.propagate(e);
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (this.cancelled) {
+				return;
+			}
+
+			if (this.requestedOnce == 1 || !REQUESTED_ONCE.compareAndSet(this, 0 , 1)) {
+				return;
+			}
+
+			final CoreSubscriber<? super T> s = this.actual;
+
+			final T value;
+			try {
+				value = this.callable.call();
+			}
+			catch (Exception e) {
+				if (this.cancelled) {
+					Operators.onErrorDropped(e, s.currentContext());
+					return;
+				}
+
+				s.onError(e);
+				return;
+			}
+
+
+			if (this.cancelled) {
+				Operators.onDiscard(value, s.currentContext());
+				return;
+			}
+
+			if (value != null) {
+				s.onNext(value);
+			}
+
+			s.onComplete();
+		}
+
+		@Override
+		public void cancel() {
+			this.cancelled = true;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return requestedMode & SYNC;
+		}
+
+		@Override
+		public int size() {
+			return this.done ? 0 : 1;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return this.done;
+		}
+
+		@Override
+		public void clear() {
+			this.done = true;
+		}
 	}
 }

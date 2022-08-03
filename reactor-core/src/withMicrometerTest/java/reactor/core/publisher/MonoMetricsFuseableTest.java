@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -328,32 +328,6 @@ public class MonoMetricsFuseableTest {
 	}
 
 	@Test
-	public void completeEmptyAsyncFusion() {
-		Mono<Integer> source = Mono.fromCallable(() -> null);
-
-		StepVerifier.create(new MonoMetricsFuseable<>(source))
-		            .expectFusion(Fuseable.ASYNC)
-		            .verifyComplete();
-
-		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-				.tags(Tags.of(TAG_ON_COMPLETE))
-				.timer();
-
-		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
-				.timer();
-
-		assertThat(stcCompleteCounter)
-				.as("complete with element")
-				.isNull();
-
-		assertThat(stcCompleteEmptyCounter)
-				.as("complete without any element")
-				.isNotNull()
-				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
-	}
-
-	@Test
 	public void completeEmptySyncFusion() {
 		MonoMetricsFuseable.MetricsFuseableSubscriber<Object> subscriber =
 				new MetricsFuseableSubscriber<>(AssertSubscriber.create(),
@@ -410,33 +384,6 @@ public class MonoMetricsFuseableTest {
 	}
 
 	@Test
-	public void completeWithElementAsyncFusion() {
-		Mono<Integer> source = Mono.fromCallable(() -> 1);
-
-		StepVerifier.create(new MonoMetricsFuseable<>(source))
-		            .expectFusion(Fuseable.ASYNC)
-		            .expectNext(1)
-		            .verifyComplete();
-
-		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-				.tags(Tags.of(TAG_ON_COMPLETE))
-				.timer();
-
-		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
-				.timer();
-
-		assertThat(stcCompleteCounter)
-				.as("complete with element")
-				.isNotNull()
-				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
-
-		assertThat(stcCompleteEmptyCounter)
-				.as("complete without any element")
-				.isNull();
-	}
-
-	@Test
 	public void completeWithElementSyncFusion() {
 		Mono<Integer> source = Mono.just(1);
 
@@ -461,46 +408,6 @@ public class MonoMetricsFuseableTest {
 		assertThat(stcCompleteEmptyCounter)
 				.as("complete without any element")
 				.isNull();
-	}
-
-	@Test
-	public void subscribeToCompleteFuseable() {
-		Mono<String> source = Mono.fromCallable(() -> {
-			Thread.sleep(100);
-			return "foo";
-		});
-
-		StepVerifier.create(new MonoMetricsFuseable<>(source))
-		            .expectFusion(Fuseable.ASYNC)
-		            .expectNext("foo")
-		            .verifyComplete();
-
-
-		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-		                                 .tags(Tags.of(TAG_ON_COMPLETE))
-		                                 .timer();
-
-		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-		                              .tags(Tags.of(TAG_ON_ERROR))
-		                              .timer();
-
-		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
-		                               .tags(Tags.of(TAG_CANCEL))
-		                               .timer();
-
-		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
-			      .as("subscribe to complete timer")
-			      .isGreaterThanOrEqualTo(100);
-
-			softly.assertThat(stcErrorTimer)
-			      .as("subscribe to error timer lazily registered")
-			      .isNull();
-
-			softly.assertThat(stcCancelTimer)
-			      .as("subscribe to cancel timer")
-			      .isNull();
-		});
 	}
 
 	@Test

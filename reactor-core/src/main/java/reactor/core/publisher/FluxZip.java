@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -304,24 +304,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				coordinator.subscribe(n, sc, srcs);
 			}
 			else {
-				Operators.MonoSubscriber<R, R> sds = new Operators.MonoSubscriber<>(s);
-
-				s.onSubscribe(sds);
-
-				R r;
-
-				try {
-					r = Objects.requireNonNull(zipper.apply(scalars),
-							"The zipper returned a null value");
-				}
-				catch (Throwable e) {
-					s.onError(Operators.onOperatorError(e, s.currentContext()));
-					return;
-				}
-
-				sds.complete(r);
+				s.onSubscribe(new ZipScalarCoordinator<>(s, zipper, scalars));
 			}
-
 		}
 		else {
 			ZipCoordinator<T, R> coordinator =
@@ -338,6 +322,124 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
+	}
+
+	static final class ZipScalarCoordinator<R> implements InnerProducer<R>,
+	                                                      Fuseable,
+	                                                      Fuseable.QueueSubscription<R> {
+
+		final CoreSubscriber<? super R> actual;
+		final Function<? super Object[], ? extends R> zipper;
+		final Object[] scalars;
+
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ZipScalarCoordinator> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(ZipScalarCoordinator.class, "state");
+
+		boolean done;
+		boolean cancelled;
+
+		ZipScalarCoordinator(CoreSubscriber<? super R> actual, Function<? super Object[], ? extends R> zipper, Object[] scalars) {
+			this.actual = actual;
+			this.zipper = zipper;
+			this.scalars = scalars;
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.BUFFERED) return scalars.length;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
+			return InnerProducer.super.scanUnsafe(key);
+		}
+
+		@Override
+		public CoreSubscriber<? super R> actual() {
+			return this.actual;
+		}
+
+		@Override
+		public void request(long n) {
+			if (done) {
+				return;
+			}
+			done = true;
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 1)) {
+				final R r;
+				try {
+					r = Objects.requireNonNull(zipper.apply(scalars),
+							"The zipper returned a null value");
+				}
+				catch (Throwable e) {
+					actual.onError(Operators.onOperatorError(e, actual.currentContext()));
+					return;
+				}
+
+				this.actual.onNext(r);
+				this.actual.onComplete();
+			}
+		}
+
+		@Override
+		public void cancel() {
+			if (cancelled) {
+				return;
+			}
+			cancelled = true;
+
+			final int state = this.state;
+			if (state == 0 && STATE.compareAndSet(this, 0, 2)) {
+				final Context context = actual.currentContext();
+				for (Object scalar : scalars) {
+					Operators.onDiscard(scalar, context);
+				}
+			}
+		}
+
+		@Override
+		public R poll() {
+			if (done) {
+				return null;
+			}
+			done = true;
+
+			return Objects.requireNonNull(zipper.apply(scalars), "The zipper returned a null value");
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return requestedMode & SYNC;
+		}
+
+		@Override
+		public int size() {
+			return done ? 0 : 1;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return done;
+		}
+
+		@Override
+		public void clear() {
+			if (done || cancelled) {
+				return;
+			}
+
+			cancelled = true;
+
+			final Context context = actual.currentContext();
+			for (Object scalar : scalars) {
+				Operators.onDiscard(scalar, context);
+			}
+		}
 	}
 
 	static final class ZipSingleCoordinator<T, R> extends Operators.MonoSubscriber<R, R> {

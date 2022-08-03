@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -34,6 +32,7 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
 		return super.scanUnsafe(key);
 	}
 
@@ -43,8 +42,9 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 	}
 
 	static final class HasElementSubscriber<T>
-			extends Operators.MonoSubscriber<T, Boolean> {
-		Subscription s;
+			extends Operators.BaseFluxToMonoOperator<T, Boolean> {
+
+		boolean done;
 
 		HasElementSubscriber(CoreSubscriber<? super Boolean> actual) {
 			super(actual);
@@ -53,41 +53,52 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return s;
-			}
-			if (key == Attr.RUN_STYLE) {
-				return Attr.RunStyle.SYNC;
-			}
+			if (key == Attr.TERMINATED) return done;
+
 			return super.scanUnsafe(key);
 		}
 
 		@Override
-		public void cancel() {
-			super.cancel();
-			s.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
 		public void onNext(T t) {
-			//here we avoid the cancel because the source is assumed to be a Mono
-			complete(true);
+			if (done) {
+				Operators.onNextDropped(t, currentContext());
+				return;
+			}
+
+			this.done = true;
+
+			Operators.onDiscard(t, currentContext());
+
+			this.actual.onNext(true);
+			this.actual.onComplete();
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t, currentContext());
+				return;
+			}
+
+			this.done = true;
+
+			this.actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			complete(false);
+			if (done) {
+				return;
+			}
+
+			this.done = true;
+
+			completePossiblyEmpty();
 		}
 
+		@Override
+		Boolean accumulatedValue() {
+			return false;
+		}
 	}
 }
