@@ -20,18 +20,21 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.core.tck.MeterRegistryAssert;
-import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.AutoDisposingExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,6 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Simon Baslé
  */
 class TimedSchedulerTest {
+
+	@RegisterExtension
+	AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	private SimpleMeterRegistry registry;
 
@@ -90,8 +96,11 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void scheduleWhileBusyAddsToPendingTime() throws InterruptedException {
-		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+	void timingOfActiveAndPendingTasks() throws InterruptedException {
+		MockClock virtualClock = new MockClock();
+		SimpleMeterRegistry registryWithVirtualClock = new SimpleMeterRegistry(SimpleConfig.DEFAULT, virtualClock);
+		afterTest.autoDispose(registryWithVirtualClock::close);
+		TimedScheduler test = new TimedScheduler(Schedulers.single(), registryWithVirtualClock, "test", Tags.empty());
 
 		/*
 		This test schedules two tasks in a Schedulers.single(), using latches to "pause" and "resume" the
@@ -109,7 +118,7 @@ class TimedSchedulerTest {
 		final CountDownLatch secondTaskDone = new CountDownLatch(1);
 		test.schedule(() -> {
 			try {
-				firstTaskPause.await(10, TimeUnit.SECONDS);
+				firstTaskPause.await(1, TimeUnit.SECONDS);
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
@@ -117,10 +126,7 @@ class TimedSchedulerTest {
 		});
 		test.schedule(() -> {
 			try {
-				Thread.sleep(1000);
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
+				virtualClock.addSeconds(1);
 			}
 			finally {
 				secondTaskDone.countDown();
@@ -132,19 +138,19 @@ class TimedSchedulerTest {
 			() -> assertThat(test.activeTasks.activeTasks()).as("one active").isOne());
 		assertThat(test.pendingTasks.activeTasks()).as("one idle").isOne();
 
-		//we give it 2s, expecting that pendingTasks and activeTasks both reflect these 2 seconds (for task2 and task1 respectively)
-		Thread.sleep(2000);
+		//we advance time by 2s, expecting that pendingTasks and activeTasks both reflect these 2 seconds (for task2 and task1 respectively)
+		virtualClock.addSeconds(2);
 
-		assertThat(Math.round(test.pendingTasks.duration(TimeUnit.SECONDS)))
+		assertThat(test.pendingTasks.duration(TimeUnit.SECONDS))
 			.as("after 1st idle totalTime SECONDS")
 			.isEqualTo(2);
-		assertThat(Math.round(test.activeTasks.duration(TimeUnit.SECONDS)))
+		assertThat(test.activeTasks.duration(TimeUnit.SECONDS))
 			.as("after 1st active totalTime SECONDS")
 			.isEqualTo(2);
 
 		// we "resume" both tasks and let them finish, at which point the LongTaskTimers will stop recording
 		firstTaskPause.countDown();
-		secondTaskDone.await(10, TimeUnit.SECONDS);
+		secondTaskDone.await(1, TimeUnit.SECONDS);
 
 		//again, there might be a slight hiccup before registry sees 2nd task as done
 		Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(
@@ -157,36 +163,34 @@ class TimedSchedulerTest {
 		assertThat(test.pendingTasks.activeTasks()).as("at end pendingTasks").isZero();
 		assertThat(test.activeTasks.activeTasks()).as("at end activeTasks").isZero();
 
-		//now we assert that the completedTasks timer reflects an history of all Runnable#run
+		//now we assert that the completedTasks timer reflects a history of all Runnable#run
 		assertThat(test.completedTasks.count())
 			.as("#completed")
 			.isEqualTo(2L);
 		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
 			.as("total duration of tasks")
-			.isCloseTo(3000, Offset.offset(500d));
+			.isEqualTo(3000);
 	}
-
 
 	@Test
 	void schedulePeriodicallyTimesOneRunInActiveAndAllRunsInCompleted() throws InterruptedException {
-		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+		MockClock virtualClock = new MockClock();
+		SimpleMeterRegistry registryWithVirtualClock = new SimpleMeterRegistry(SimpleConfig.DEFAULT, virtualClock);
+		TimedScheduler test = new TimedScheduler(Schedulers.single(), registryWithVirtualClock, "test", Tags.empty());
 
 		//schedule a periodic task for which one run takes 500ms. we cancel after 3 runs
 		CountDownLatch latch = new CountDownLatch(3);
 		Disposable d = test.schedulePeriodically(
 			() -> {
 				try {
-					Thread.sleep(500);
-				}
-				catch (InterruptedException e) {
-					throw new RuntimeException(e);
+					virtualClock.add(Duration.ofMillis(500));
 				}
 				finally {
 					latch.countDown();
 				}
 			},
 			100, 100, TimeUnit.MILLISECONDS);
-		latch.await(10, TimeUnit.SECONDS);
+		latch.await(1, TimeUnit.SECONDS);
 		d.dispose();
 
 		//now we assert that the completedTasks timer reflects a history of all Runnable#run
@@ -198,7 +202,7 @@ class TimedSchedulerTest {
 			.isEqualTo(3L);
 		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
 			.as("total duration of tasks")
-			.isCloseTo(1500, Offset.offset(200d));
+			.isEqualTo(1500);
 	}
 
 	@Test
