@@ -69,7 +69,7 @@ class MicrometerTest {
 			assertThat(id.getName()).as("prefix used")
 				.isEqualTo("testSchedulerMetrics.scheduler.tasks.submitted");
 			assertThat(id.getTags()).as("tags")
-				.containsExactlyElementsOf(tags);
+				.containsExactlyElementsOf(tags.and(TimedScheduler.TAG_SUBMISSION, TimedScheduler.SUBMISSION_DIRECT));
 		});
 	}
 }
