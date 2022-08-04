@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.core.tck.MeterRegistryAssert;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -51,6 +52,11 @@ class TimedSchedulerTest {
 	@BeforeEach
 	void setUp() {
 		registry = new SimpleMeterRegistry();
+	}
+
+	@AfterEach
+	void closeRegistry() {
+		registry.close();
 	}
 
 	@Test
