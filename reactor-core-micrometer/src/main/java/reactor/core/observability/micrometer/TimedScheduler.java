@@ -60,16 +60,23 @@ final class TimedScheduler implements Scheduler {
 	 */
 	static final String METER_TASKS_PENDING   = "scheduler.tasks.pending";
 
+	/**
+	 * The type of submission:
+	 * <ul>
+	 *   <li>{@link #SUBMISSION_DIRECT} for {@link Scheduler#schedule(Runnable)}</li>
+	 *   <li>{@link #SUBMISSION_DELAYED} for {@link Scheduler#schedule(Runnable, long, TimeUnit)}</li>
+	 *   <li>{@link #SUBMISSION_PERIODIC_INITIAL} for {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)} after the initial delay</li>
+	 *   <li>{@link #SUBMISSION_PERIODIC_ITERATION} for {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)} further periodic iterations</li>
+	 * </ul>
+	 */
 	static final String TAG_SUBMISSION = "submission.type";
 
 	/**
 	 * {@link Counter} that increments by one each time a task is submitted (via any of the
 	 * schedule methods on both {@link Scheduler} and {@link Worker}).
 	 * <p>
-	 * Note that there are actually 4 counters, which are tagged with {@link #TAG_SUBMISSION}:
-	 * {@link #SUBMISSION_DIRECT}, {@link #SUBMISSION_DELAYED}, {@link #SUBMISSION_PERIODICALLY_INITIAL}
-	 * and {@link #SUBMISSION_PERIODICALLY_ITERATION}. The sum of all these can thus be compared with the
-	 * {@link #METER_TASKS_COMPLETED} counter.
+	 * Note that there are actually 4 counters, which can be differentiated by the {@link #TAG_SUBMISSION} tag.
+	 * The sum of all these can thus be compared with the {@link #METER_TASKS_COMPLETED} counter.
 	 */
 	static final String METER_SUBMITTED = "scheduler.tasks.submitted";
 
@@ -88,16 +95,16 @@ final class TimedScheduler implements Scheduler {
 	 * {@link Counter} that increments when a task is initially submitted with a period
 	 * (ie. {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
 	 * or {@link Worker#schedulePeriodically(Runnable, long, long, TimeUnit)}). This isn't
-	 * incremented on each re-run of the periodical task.
+	 * incremented on further iterations of the periodic task.
 	 */
-	static final String SUBMISSION_PERIODICALLY_INITIAL = "periodically_initial";
+	static final String SUBMISSION_PERIODIC_INITIAL = "periodic_initial";
 	/**
-	 * {@link Counter} that increments by one each time a task is submitted with a period
-	 * (ie. {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
-	 * or {@link Worker#schedulePeriodically(Runnable, long, long, TimeUnit)}), both initially AND
-	 * each time the task is re-run.
+	 * {@link Counter} that increments by one each time a task is re-executed due to the periodic
+	 * nature of {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
+	 * or {@link Worker#schedulePeriodically(Runnable, long, long, TimeUnit)} (ie. iterations
+	 * past the initial one).
 	 */
-	static final String SUBMISSION_PERIODICALLY_ITERATION = "periodically_iteration";
+	static final String SUBMISSION_PERIODIC_ITERATION = "periodic_iteration";
 
 	final Scheduler delegate;
 
@@ -105,26 +112,26 @@ final class TimedScheduler implements Scheduler {
 
 	final Counter       submittedDirect;
 	final Counter       submittedDelayed;
-	final Counter       submittedPeriodicallyInitial;
-	final Counter       submittedPeriodicallyIteration;
+	final Counter       submittedPeriodicInitial;
+	final Counter       submittedPeriodicIteration;
 	final LongTaskTimer pendingTasks;
 	final LongTaskTimer activeTasks;
 	final Timer         completedTasks;
 
 
-	TimedScheduler(Scheduler delegate, MeterRegistry registry,  String metricPrefix, Iterable<Tag> tagsList) {
-		this.registry = registry;
+	TimedScheduler(Scheduler delegate, MeterRegistry registry, String metricPrefix, Iterable<Tag> tagsList) {
 		this.delegate = delegate;
+		this.registry = registry;
 		if (!metricPrefix.endsWith(".")) {
 			metricPrefix = metricPrefix + ".";
 		}
-
 		Tags tags = Tags.of(tagsList);
 
-		this.submittedDirect = registry.counter(metricPrefix + METER_SUBMITTED, tags.and(TAG_SUBMISSION, SUBMISSION_DIRECT));
-		this.submittedDelayed = registry.counter(metricPrefix + METER_SUBMITTED, tags.and(TAG_SUBMISSION, SUBMISSION_DELAYED));
-		this.submittedPeriodicallyInitial = registry.counter(metricPrefix + METER_SUBMITTED, tags.and(TAG_SUBMISSION, SUBMISSION_PERIODICALLY_INITIAL));
-		this.submittedPeriodicallyIteration = registry.counter(metricPrefix + METER_SUBMITTED, tags.and(TAG_SUBMISSION, SUBMISSION_PERIODICALLY_ITERATION));
+		String submittedName = metricPrefix + METER_SUBMITTED;
+		this.submittedDirect = registry.counter(submittedName, tags.and(TAG_SUBMISSION, SUBMISSION_DIRECT));
+		this.submittedDelayed = registry.counter(submittedName, tags.and(TAG_SUBMISSION, SUBMISSION_DELAYED));
+		this.submittedPeriodicInitial = registry.counter(submittedName, tags.and(TAG_SUBMISSION, SUBMISSION_PERIODIC_INITIAL));
+		this.submittedPeriodicIteration = registry.counter(submittedName, tags.and(TAG_SUBMISSION, SUBMISSION_PERIODIC_ITERATION));
 
 		this.pendingTasks = LongTaskTimer.builder(metricPrefix + METER_TASKS_PENDING)
 			.tags(tags).register(registry);
@@ -138,7 +145,7 @@ final class TimedScheduler implements Scheduler {
 		return new TimedRunnable(registry, this, task);
 	}
 
-	Runnable wrapPeriodical(Runnable task) {
+	Runnable wrapPeriodic(Runnable task) {
 		return new TimedRunnable(registry, this, task, true);
 	}
 
@@ -156,8 +163,8 @@ final class TimedScheduler implements Scheduler {
 
 	@Override
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		this.submittedPeriodicallyInitial.increment();
-		return delegate.schedulePeriodically(wrapPeriodical(task), initialDelay, period, unit);
+		this.submittedPeriodicInitial.increment();
+		return delegate.schedulePeriodically(wrapPeriodic(task), initialDelay, period, unit);
 	}
 
 	@Override
@@ -219,8 +226,8 @@ final class TimedScheduler implements Scheduler {
 
 		@Override
 		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			parent.submittedPeriodicallyInitial.increment();
-			return delegate.schedulePeriodically(parent.wrapPeriodical(task), initialDelay, period, unit);
+			parent.submittedPeriodicInitial.increment();
+			return delegate.schedulePeriodically(parent.wrapPeriodic(task), initialDelay, period, unit);
 		}
 	}
 
@@ -238,24 +245,24 @@ final class TimedScheduler implements Scheduler {
 			this(registry, parent, task, false);
 		}
 
-		TimedRunnable(MeterRegistry registry, TimedScheduler parent, Runnable task, boolean periodically) {
+		TimedRunnable(MeterRegistry registry, TimedScheduler parent, Runnable task, boolean periodic) {
 			this.registry = registry;
 			this.parent = parent;
 			this.task = task;
 
-			if (periodically) {
+			if (periodic) {
 				this.pendingSample = null;
 			}
 			else {
 				this.pendingSample = parent.pendingTasks.start();
 			}
-			this.isRerun = false; //will be ignored if not periodical
+			this.isRerun = false; //will be ignored if not periodic
 		}
 
 		@Override
 		public void run() {
 			if (this.pendingSample != null) {
-				//NOT periodical
+				//NOT periodic
 				this.pendingSample.stop();
 			}
 			else {
@@ -263,7 +270,7 @@ final class TimedScheduler implements Scheduler {
 					this.isRerun = true;
 				}
 				else {
-					parent.submittedPeriodicallyIteration.increment();
+					parent.submittedPeriodicIteration.increment();
 				}
 			}
 
