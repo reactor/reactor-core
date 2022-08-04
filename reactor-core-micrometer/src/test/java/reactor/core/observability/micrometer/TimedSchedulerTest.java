@@ -226,11 +226,11 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void schedulePeriodicallyIncrementsPeriodicCountersInitialByOneAndIterationByFour() throws InterruptedException {
+	void schedulePeriodicallyIsCorrectlyMetered() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
-		Disposable d = test.schedulePeriodically(latch::countDown,100, 100, TimeUnit.MILLISECONDS);
+		Disposable d = test.schedulePeriodically(latch::countDown, 100, 100, TimeUnit.MILLISECONDS);
 
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
@@ -239,18 +239,6 @@ class TimedSchedulerTest {
 		assertThat(test.submittedDelayed.count()).as("submittedDelayed.count").isZero();
 		assertThat(test.submittedPeriodicInitial.count()).as("submittedPeriodicInitial.count").isOne();
 		assertThat(test.submittedPeriodicIteration.count()).as("submittedPeriodicIteration.count").isEqualTo(4);
-	}
-
-	@Test
-	void schedulePeriodicallyIncrementsCompletedTasksByNumberOfIterations() throws InterruptedException {
-		CountDownLatch latch = new CountDownLatch(5);
-		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
-
-		Disposable d = test.schedulePeriodically(latch::countDown,100, 100, TimeUnit.MILLISECONDS);
-
-		latch.await(10, TimeUnit.SECONDS);
-		d.dispose();
-
 		assertThat(test.completedTasks.count())
 			.as("completed counter tracks all iterations")
 			.isEqualTo(5)
@@ -298,13 +286,13 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void workerSchedulePeriodicallyIncrementsPeriodicCountersInitialByOneAndIterationByFour() throws InterruptedException {
+	void workerSchedulePeriodicallyIsCorrectlyMetered() throws InterruptedException {
 		Scheduler original = Schedulers.single();
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
 
-		Disposable d = test.schedulePeriodically(latch::countDown,100, 100, TimeUnit.MILLISECONDS);
+		Disposable d = test.schedulePeriodically(latch::countDown, 100, 100, TimeUnit.MILLISECONDS);
 
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
@@ -313,21 +301,6 @@ class TimedSchedulerTest {
 		assertThat(testScheduler.submittedDelayed.count()).as("submittedDelayed.count").isZero();
 		assertThat(testScheduler.submittedPeriodicInitial.count()).as("submittedPeriodicInitial.count").isOne();
 		assertThat(testScheduler.submittedPeriodicIteration.count()).as("submittedPeriodicIteration.count").isEqualTo(4);
-	}
-
-
-	@Test
-	void workerSchedulePeriodicallyIncrementsCompletedTasksByNumberOfIterations() throws InterruptedException {
-		Scheduler original = Schedulers.single();
-		CountDownLatch latch = new CountDownLatch(5);
-		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
-		Scheduler.Worker test = testScheduler.createWorker();
-
-		Disposable d = test.schedulePeriodically(latch::countDown,100, 100, TimeUnit.MILLISECONDS);
-
-		latch.await(10, TimeUnit.SECONDS);
-		d.dispose();
-
 		assertThat(testScheduler.completedTasks.count())
 			.as("completed counter tracks all iterations")
 			.isEqualTo(5)
