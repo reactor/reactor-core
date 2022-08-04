@@ -253,7 +253,7 @@ class TimedSchedulerTest {
 	@Test
 	void createWorkerDelegatesToAnOriginalWorker() {
 		Scheduler mockScheduler = Mockito.mock(Scheduler.class);
-		Scheduler.Worker mockWorker = Mockito.spy(Scheduler.Worker.class);
+		Scheduler.Worker mockWorker = Mockito.mock(Scheduler.Worker.class);
 		Mockito.when(mockScheduler.createWorker()).thenReturn(mockWorker);
 
 		TimedScheduler test = new TimedScheduler(mockScheduler, registry, "test", Tags.empty());
