@@ -16,10 +16,16 @@
 
 package reactor.core.observability.micrometer;
 
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import reactor.core.scheduler.Scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,5 +46,30 @@ class MicrometerTest {
 	void observationContextKeySmokeTest() {
 		assertThat(MicrometerObservationListener.CONTEXT_KEY_OBSERVATION)
 			.isEqualTo(ObservationThreadLocalAccessor.KEY);
+	}
+
+	@Test
+	void timedSchedulerReturnsAConfiguredTimedScheduler() {
+		Scheduler mockScheduler = Mockito.mock(Scheduler.class);
+		Scheduler.Worker mockWorker = Mockito.mock(Scheduler.Worker.class);
+		Mockito.when(mockScheduler.createWorker()).thenReturn(mockWorker);
+
+		final MeterRegistry registry = new SimpleMeterRegistry();
+		final Tags tags = Tags.of("1", "A", "2", "B");
+		final String prefix =  "testSchedulerMetrics";
+
+		Scheduler test = Micrometer.timedScheduler(mockScheduler, registry, prefix, tags);
+
+		assertThat(test).isInstanceOfSatisfying(TimedScheduler.class, ts -> {
+			assertThat(ts.delegate).as("delegate").isSameAs(mockScheduler);
+			assertThat(ts.registry).as("registry").isSameAs(registry);
+			//we verify the tags and prefix we passed made it to at least one meter.
+			//this is more about the Micrometer passing down the params than it is about checking _all_ meters in the actual class.
+			Meter.Id id = ts.submittedDirect.getId();
+			assertThat(id.getName()).as("prefix used")
+				.isEqualTo("testSchedulerMetrics.scheduler.tasks.submitted");
+			assertThat(id.getTags()).as("tags")
+				.containsExactlyElementsOf(tags.and(TimedScheduler.TAG_SUBMISSION, TimedScheduler.SUBMISSION_DIRECT));
+		});
 	}
 }

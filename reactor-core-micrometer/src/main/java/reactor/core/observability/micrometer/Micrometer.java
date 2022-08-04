@@ -16,25 +16,21 @@
 
 package reactor.core.observability.micrometer;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 public final class Micrometer {
-
-	private static final String SCHEDULERS_DECORATOR_KEY = "reactor.core.observability.micrometer.schedulerDecorator";
 
 	/**
 	 * The default "name" to use as a prefix for meter if the instrumented sequence doesn't define a {@link reactor.core.publisher.Flux#name(String) name}.
@@ -94,29 +90,33 @@ public final class Micrometer {
 		return new MicrometerObservationListenerFactory<>(registry);
 	}
 
-	//FIXME: remove these and replace with an option to decorate an arbitrary Scheduler
-
 	/**
-	 * Set-up a decorator that will instrument any {@link ExecutorService} that backs a reactor-core {@link Scheduler}
-	 * (or scheduler implementations which use {@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}).
-	 * <p>
-	 * The {@link MeterRegistry} to use can be configured via {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
-	 * prior to using this method, the default being {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
+	 * Wrap a {@link Scheduler} in an instance that gathers various task-related metrics using
+	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
+	 * Note that no tags are set up for these meters.
 	 *
-	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers,
-	 * which doesn't change the Factory.
+	 * @param original the original {@link Scheduler} to decorate with metrics
+	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
+	 * @param metricsPrefix the prefix to use in meter names. If needed, a dot is added at the end
+	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
 	 */
-	@Deprecated
-	public static void enableSchedulersMetricsDecorator() {
-		Schedulers.addExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY,
-			new MicrometerSchedulerMetricsDecorator(reactor.util.Metrics.MicrometerConfiguration.getRegistry()));
+	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix) {
+		return new TimedScheduler(original, meterRegistry, metricsPrefix, Tags.empty());
 	}
 
 	/**
-	 * If {@link #enableSchedulersMetricsDecorator()} has been previously called, removes the decorator.
-	 * No-op if {@link #enableSchedulersMetricsDecorator()} hasn't been called.
+	 * Wrap a {@link Scheduler} in an instance that gathers various task-related metrics using
+	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
+	 * User-provided collection of {@link Tag} (ie. {@link Tags}) can also be provided to be added to
+	 * all the meters of that timed Scheduler.
+	 *
+	 * @param original the original {@link Scheduler} to decorate with metrics
+	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
+	 * @param metricsPrefix the prefix to use in meter names. If needed, a dot is added at the end
+	 * @param tags the tags to put on meters
+	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
 	 */
-	public static void disableSchedulersMetricsDecorator() {
-		Schedulers.removeExecutorServiceDecorator(SCHEDULERS_DECORATOR_KEY);
+	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix, Iterable<Tag> tags) {
+		return new TimedScheduler(original, meterRegistry, metricsPrefix, tags);
 	}
 }
