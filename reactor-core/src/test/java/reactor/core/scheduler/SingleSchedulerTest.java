@@ -17,14 +17,17 @@
 package reactor.core.scheduler;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
+
+import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.*;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -127,6 +130,57 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 	    } finally {
 	        s.dispose();
 	    }
+	}
+
+
+	@Test
+	void independentWorkers() throws InterruptedException {
+		Scheduler timer = afterTest.autoDispose(Schedulers.newSingle("test-timer"));
+
+		Worker w1 = timer.createWorker();
+
+		Worker w2 = timer.createWorker();
+
+		CountDownLatch cdl = new CountDownLatch(1);
+
+		w1.dispose();
+
+		assertThatExceptionOfType(Throwable.class).isThrownBy(() -> {
+			w1.schedule(() -> { });
+		});
+
+		w2.schedule(cdl::countDown);
+
+		if (!cdl.await(1, TimeUnit.SECONDS)) {
+			fail("Worker 2 didn't execute in time");
+		}
+		w2.dispose();
+	}
+
+	@Test
+	void massCancel() {
+		Scheduler timer = afterTest.autoDispose(Schedulers.newSingle("test-timer"));
+		Worker w1 = timer.createWorker();
+
+		AtomicInteger counter = new AtomicInteger();
+
+		Runnable task = counter::getAndIncrement;
+
+		int tasks = 10;
+
+		Disposable[] c = new Disposable[tasks];
+
+		for (int i = 0; i < tasks; i++) {
+			c[i] = w1.schedulePeriodically(task, 500, 500, TimeUnit.MILLISECONDS);
+		}
+
+		w1.dispose();
+
+		for (int i = 0; i < tasks; i++) {
+			assertThat(c[i].isDisposed()).isTrue();
+		}
+
+		assertThat(counter).hasValue(0);
 	}
 
 
