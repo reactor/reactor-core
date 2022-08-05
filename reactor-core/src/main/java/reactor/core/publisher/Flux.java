@@ -4030,6 +4030,50 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * If Micrometer's {@code context-propagation} library is on the classpath, this
+	 * is a convenience shortcut to capture thread local values during the subscription phase
+	 * and put them in the {@link Context} that is visible upstream of this operator.
+	 * <p>
+	 * As a result this operator should generally be used as close as possible to the end of
+	 * the chain / subscription point.
+	 *
+	 * @return a new {@link Flux} where context-propagation API has been used to capture entries and
+	 * inject them into the {@link Context}
+	 * @see #contextCapture(Predicate)
+	 */
+	public final Flux<T> contextCapture() {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
+			return this;
+		}
+		return onAssembly(new FluxContextWrite<>(this, ContextPropagation.contextCapture()));
+	}
+
+	/**
+	 * If Micrometer's {@code context-propagation} library is on the classpath, this
+	 * is a convenience shortcut to capture thread local values during the subscription phase
+	 * and put them in the {@link Context} that is visible upstream of this operator.
+	 * <p>
+	 * As a result this operator should generally be used as close as possible to the end of
+	 * the chain / subscription point.
+	 * <p>
+	 * The provided {@link Predicate} is used on keys associated to the thread locals
+	 * by the Context-Propagation API to filter which entries should be captured in the
+	 * first place.
+	 *
+	 * @param captureFilter a {@link Predicate} used on keys to determine if each entry should be
+	 * injected into the new {@link Context}
+	 * @return a new {@link Flux} where context-propagation API has been used to capture
+	 * entries which pass the filter and inject them into the {@link Context}
+	 * @see #contextCapture()
+	 */
+	public final Flux<T> contextCapture(Predicate<Object> captureFilter) {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
+			return this;
+		}
+		return onAssembly(new FluxContextWrite<>(this, ContextPropagation.contextCapture(captureFilter)));
+	}
+
+	/**
 	 * Enrich the {@link Context} visible from downstream for the benefit of upstream
 	 * operators, by making all values from the provided {@link ContextView} visible on top
 	 * of pairs from downstream.
