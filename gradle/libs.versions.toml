@@ -8,7 +8,7 @@ baselinePerfExtra = "3.4.8"
 asciidoctor = "3.3.2"
 bytebuddy = "1.12.12"
 jmh = "1.35"
-junit = "5.8.2"
+junit = "5.9.0"
 #note that context-propagation has a different version directly set in libraries
 micrometer = "1.10.0-SNAPSHOT" # was -M3
 reactiveStreams = "1.0.4"
