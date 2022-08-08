@@ -106,26 +106,6 @@ Done
 ----
 ====
 
-The last signature of the `subscribe` method includes a `Consumer<Subscription>`.
-
-NOTE: That variant requires you to do something with the `Subscription` (perform a
-`request(long)` on it or `cancel()` it). Otherwise the `Flux` hangs.
-
-The following example shows the last signature of the `subscribe` method:
-
-====
-[source,java]
-----
-Flux<Integer> ints = Flux.range(1, 4);
-ints.subscribe(i -> System.out.println(i),
-    error -> System.err.println("Error " + error),
-    () -> System.out.println("Done"),
-    sub -> sub.request(10)); <1>
-----
-<1> When we subscribe we receive a `Subscription`. Signal that we want up to `10`
-elements from the source (which will actually emit 4 elements and complete).
-====
-
 === Cancelling a `subscribe()` with Its `Disposable`
 
 All these lambda-based variants of `subscribe()` have a `Disposable` return type.
