@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -476,40 +477,28 @@ class NextProcessorTest {
 	}
 
 	@Test
-	void doubleError() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			NextProcessor<String> mp = new NextProcessor<>(null);
+	@TestLoggerExtension.Redirect
+	void doubleError(TestLogger testLogger) {
+		NextProcessor<String> mp = new NextProcessor<>(null);
 
-			mp.onError(new Exception("test"));
-			mp.onError(new Exception("test2"));
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("test2");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		mp.onError(new Exception("test"));
+		mp.onError(new Exception("test2"));
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("test2");
 	}
 
 	@Test
-	void doubleSignal() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			NextProcessor<String> mp = new NextProcessor<>(null);
+	@TestLoggerExtension.Redirect
+	void doubleSignal(TestLogger testLogger) {
+		NextProcessor<String> mp = new NextProcessor<>(null);
 
-			mp.onNext("test");
-			mp.onError(new Exception("test2"));
+		mp.onNext("test");
+		mp.onError(new Exception("test2"));
 
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
 			          .contains("test2");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
 	}
 
 	@Test

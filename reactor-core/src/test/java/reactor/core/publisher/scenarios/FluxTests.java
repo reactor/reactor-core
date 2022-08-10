@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
@@ -1195,25 +1196,20 @@ public class FluxTests extends AbstractReactorTest {
 		latch.await(30, TimeUnit.SECONDS);
 		assertThat(latch.getCount()).as("dispatch count").isEqualTo(0L);
 	}
+
 	@Test
-	public void unimplementedErrorCallback() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			Flux.error(new Exception("forced1"))
-			    .log("error")
-			    .subscribe();
+	@TestLoggerExtension.Capture
+	public void unimplementedErrorCallback(TestLogger testLogger) {
+		Flux.error(new Exception("forced1"))
+			.log("error")
+			.subscribe();
 
-			Flux.error(new Exception("forced2"))
-			    .subscribe();
+		Flux.error(new Exception("forced2"))
+			.subscribe();
 
-			assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
 	}
 
 	@Test
@@ -1446,9 +1442,8 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
+	@TestLoggerExtension.Capture
+	void testThrowWithoutOnErrorShowsUpInSchedulerHandler(TestLogger testLogger) {
 		AtomicReference<String> failure = new AtomicReference<>(null);
 		AtomicBoolean handled = new AtomicBoolean(false);
 
@@ -1488,7 +1483,6 @@ public class FluxTests extends AbstractReactorTest {
 			fail(e.toString());
 		}
 		finally {
-			LoggerUtils.disableCapture();
 			Thread.setDefaultUncaughtExceptionHandler(null);
 			Schedulers.resetOnHandleError();
 			Schedulers.resetOnScheduleHook("test");

@@ -49,6 +49,7 @@ import com.pivovarit.function.ThrowingSupplier;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -326,6 +327,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		"1000, 1", "1000, 100", "1000, 1000",
 		"10000, 1", "10000, 100", "10000, 1000"
 	} )
+	@Disabled("flaky, the boundedElasticScheduler is not 100% consistent in picking patterns")
 	void whenCapReachedPicksLeastBusyExecutorWithContention(int maxThreads, int contention) throws InterruptedException {
 		BoundedElasticScheduler s = scheduler(maxThreads);
 		HashSet<BoundedElasticScheduler.BoundedState> boundedStates = new HashSet<>();

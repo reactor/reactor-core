@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.assertj.core.api.Assertions;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
@@ -165,22 +166,16 @@ public class MonoPeekTest {
 	}
 
 	@Test
-	public void testErrorWithDoOnSuccess() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			Mono.error(new NullPointerException("boom"))
-			    .doOnSuccess(aValue -> {
-			    })
-			    .subscribe();
+	@TestLoggerExtension.Redirect
+	void testErrorWithDoOnSuccess(TestLogger testLogger) {
+		Mono.error(new NullPointerException("boom"))
+			.doOnSuccess(aValue -> {
+			})
+			.subscribe();
 
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
 	}
 
 	@Test

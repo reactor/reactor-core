@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -494,39 +495,34 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			IllegalStateException e = new IllegalStateException("test");
-			AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
+	@TestLoggerExtension.Redirect
+	void afterTerminateCallbackErrorDoesNotInvokeOnError(TestLogger testLogger) {
+		IllegalStateException e = new IllegalStateException("test");
+		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 
-			FluxPeek<String> flux = new FluxPeek<>(Flux.empty(),
-					null,
-					null,
-					errorCallbackCapture::set,
-					null,
-					() -> {
-						throw e;
-					},
-					null,
-					null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(),
+			null,
+			null,
+			errorCallbackCapture::set,
+			null,
+			() -> {
+				throw e;
+			},
+			null,
+			null);
 
-			AssertSubscriber<String> ts = AssertSubscriber.create();
+		AssertSubscriber<String> ts = AssertSubscriber.create();
 
-			flux.subscribe(ts);
+		flux.subscribe(ts);
 
-			ts.assertNoValues();
-			ts.assertComplete();
+		ts.assertNoValues();
+		ts.assertComplete();
 
-			assertThat(errorCallbackCapture.get()).isNull();
+		assertThat(errorCallbackCapture.get()).isNull();
 
-			assertThat(testLogger.getErrContent())
-					.contains("Operator called default onErrorDropped")
-					.contains(e.toString());
-		} finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains(e.toString());
 	}
 
 	@Test
@@ -573,68 +569,57 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorAndErrorCallbackError() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			IllegalStateException error1 = new IllegalStateException("afterTerminate");
-			IllegalArgumentException error2 = new IllegalArgumentException("error");
+	@TestLoggerExtension.Redirect
+	void afterTerminateCallbackErrorAndErrorCallbackError(TestLogger testLogger) {
+		IllegalStateException error1 = new IllegalStateException("afterTerminate");
+		IllegalArgumentException error2 = new IllegalArgumentException("error");
 
-			FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, e -> {
-				throw error2;
-			}, null, () -> {
-				throw error1;
-			}, null, null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, e -> {
+			throw error2;
+		}, null, () -> {
+			throw error1;
+		}, null, null);
 
-			AssertSubscriber<String> ts = AssertSubscriber.create();
+		AssertSubscriber<String> ts = AssertSubscriber.create();
 
-			flux.subscribe(ts);
-			assertThat(testLogger.getErrContent())
-					.contains("Operator called default onErrorDropped")
-					.contains(error1.getMessage());
-			assertThat(error2.getSuppressed()).hasSize(0);
-			//error2 is never thrown
-			ts.assertNoValues();
-			ts.assertComplete();
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		flux.subscribe(ts);
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains(error1.getMessage());
+		assertThat(error2.getSuppressed()).hasSize(0);
+		//error2 is never thrown
+		ts.assertNoValues();
+		ts.assertComplete();
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
-			IllegalArgumentException error = new IllegalArgumentException("error");
-			NullPointerException ex = new NullPointerException();
+	@TestLoggerExtension.Redirect
+	void afterTerminateCallbackErrorAndErrorCallbackError2(TestLogger testLogger) {
+		IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
+		IllegalArgumentException error = new IllegalArgumentException("error");
+		NullPointerException ex = new NullPointerException();
 
-			FluxPeek<String> flux = new FluxPeek<>(Flux.error(ex), null, null, e -> {
-				throw error;
-			}, null, () -> {
-				throw afterTerminate;
-			}, null, null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.error(ex), null, null, e -> {
+			throw error;
+		}, null, () -> {
+			throw afterTerminate;
+		}, null, null);
 
-			AssertSubscriber<String> ts = AssertSubscriber.create();
+		AssertSubscriber<String> ts = AssertSubscriber.create();
 
-			flux.subscribe(ts);
-			assertThat(testLogger.getErrContent())
-					.contains("Operator called default onErrorDropped")
-					.contains(afterTerminate.getMessage());
-			//afterTerminate suppressed error which itself suppressed original err
-			assertThat(afterTerminate.getSuppressed()).hasSize(1);
-			assertThat(afterTerminate).hasSuppressedException(error);
+		flux.subscribe(ts);
+		assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains(afterTerminate.getMessage());
+		//afterTerminate suppressed error which itself suppressed original err
+		assertThat(afterTerminate.getSuppressed()).hasSize(1);
+		assertThat(afterTerminate).hasSuppressedException(error);
 
-			assertThat(error.getSuppressed()).hasSize(1);
-			assertThat(error).hasSuppressedException(ex);
-			ts.assertNoValues();
-			//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
-			ts.assertErrorMessage("error");
-		}  finally {
-			LoggerUtils.disableCapture();
-		}
+		assertThat(error.getSuppressed()).hasSize(1);
+		assertThat(error).hasSuppressedException(ex);
+		ts.assertNoValues();
+		//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
+		ts.assertErrorMessage("error");
 	}
 
 	@Test

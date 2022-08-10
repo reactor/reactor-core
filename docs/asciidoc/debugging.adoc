@@ -433,7 +433,7 @@ ReactorDebugAgent.init();
 ====
 
 TIP: Since the implementation will instrument your classes when they are loaded,
-the best place to put it is before everything else in your main(String[]) methood:
+the best place to put it is before everything else in your main(String[]) method:
 ====
 [source,java]
 ----
@@ -444,7 +444,7 @@ public static void main(String[] args) {
 ----
 ====
 
-You may also re-process existing classes if you cannot run the init eagerly (e.g. in the tests):
+You may also re-process existing classes with `processExistingClasses()` if you cannot run the init eagerly. For example, in https://junit.org/junit5/docs/current/user-guide/#launcher-api-listeners-custom[JUnit5 tests from a `TestExecutionListener`] or even in the class `static` initializer block:
 ====
 [source,java]
 ----

@@ -28,6 +28,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.Sinks.EmitResult;
 import reactor.test.StepVerifier;
 import reactor.test.util.LoggerUtils;
@@ -210,40 +211,28 @@ class SinkOneMulticastTest {
 	}
 
 	@Test
-	void doubleError() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			SinkOneMulticast<String> sink = new SinkOneMulticast<>();
+	@TestLoggerExtension.Redirect
+	void doubleError(TestLogger testLogger) {
+		SinkOneMulticast<String> sink = new SinkOneMulticast<>();
 
-			sink.emitError(new Exception("test"), Sinks.EmitFailureHandler.FAIL_FAST);
-			sink.emitError(new Exception("test2"), Sinks.EmitFailureHandler.FAIL_FAST);
-			Assertions.assertThat(testLogger.getErrContent())
-				.contains("Operator called default onErrorDropped")
-				.contains("test2");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		sink.emitError(new Exception("test"), Sinks.EmitFailureHandler.FAIL_FAST);
+		sink.emitError(new Exception("test2"), Sinks.EmitFailureHandler.FAIL_FAST);
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("test2");
 	}
 
 	@Test
-	void doubleSignal() {
-		TestLogger testLogger = new TestLogger();
-		LoggerUtils.enableCaptureWith(testLogger);
-		try {
-			SinkOneMulticast<String> sink = new SinkOneMulticast<>();
+	@TestLoggerExtension.Redirect
+	void doubleSignal(TestLogger testLogger) {
+		SinkOneMulticast<String> sink = new SinkOneMulticast<>();
 
-			sink.emitValue("test", Sinks.EmitFailureHandler.FAIL_FAST);
-			sink.emitError(new Exception("test2"), Sinks.EmitFailureHandler.FAIL_FAST);
+		sink.emitValue("test", Sinks.EmitFailureHandler.FAIL_FAST);
+		sink.emitError(new Exception("test2"), Sinks.EmitFailureHandler.FAIL_FAST);
 
-			Assertions.assertThat(testLogger.getErrContent())
-				.contains("Operator called default onErrorDropped")
-				.contains("test2");
-		}
-		finally {
-			LoggerUtils.disableCapture();
-		}
+		Assertions.assertThat(testLogger.getErrContent())
+			.contains("Operator called default onErrorDropped")
+			.contains("test2");
 	}
 
 	@Test
