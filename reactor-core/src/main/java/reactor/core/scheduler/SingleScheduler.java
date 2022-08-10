@@ -132,7 +132,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
-	public Mono<Void> disposeGracefully(Duration gracePeriod) {
+	public Mono<Void> disposeGracefully() {
 		return Mono.defer(() -> {
 			SchedulerState<ScheduledExecutorService> previous = state;
 
@@ -150,7 +150,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			assert terminated.initialResource != null;
 			terminated.initialResource.shutdown();
 			return terminated.onDispose;
-		}).timeout(gracePeriod);
+		});
 	}
 
 	@Override

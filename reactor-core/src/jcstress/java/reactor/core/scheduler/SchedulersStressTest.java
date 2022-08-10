@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class SchedulersStressTest {
 
 	private static void restart(Scheduler scheduler) {
-		scheduler.disposeGracefully(Duration.ofMillis(100)).block(Duration.ofMillis(100));
+		scheduler.disposeGracefully().timeout(Duration.ofMillis(100)).block(Duration.ofMillis(100));
 		try {
 			scheduler.start();
 		} catch (Exception ignored) {

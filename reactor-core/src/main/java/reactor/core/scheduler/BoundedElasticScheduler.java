@@ -225,7 +225,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	}
 
 	@Override
-	public Mono<Void> disposeGracefully(Duration gracePeriod) {
+	public Mono<Void> disposeGracefully() {
 		return Mono.defer(() -> {
 			SchedulerState<BoundedServices> previous = state;
 
@@ -249,7 +249,7 @@ final class BoundedElasticScheduler implements Scheduler,
 				bs.shutdown(false);
 			}
 			return shutDown.onDispose;
-		}).timeout(gracePeriod);
+		});
 	}
 
 	@Override

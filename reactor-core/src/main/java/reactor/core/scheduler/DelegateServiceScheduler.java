@@ -150,7 +150,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	}
 
 	@Override
-	public Mono<Void> disposeGracefully(Duration gracePeriod) {
+	public Mono<Void> disposeGracefully() {
 		return Mono.defer(() -> {
 			SchedulerState<ScheduledExecutorService> previous = state;
 
@@ -169,7 +169,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 				terminated.initialResource.shutdown();
 			}
 			return terminated.onDispose;
-		}).timeout(gracePeriod);
+		});
 	}
 
 	@SuppressWarnings("unchecked")

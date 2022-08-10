@@ -240,7 +240,7 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 	void restartSupported(boolean disposeGracefully) {
 		Scheduler s = scheduler();
 		if (disposeGracefully) {
-			s.disposeGracefully(Duration.ofSeconds(1)).subscribe();
+			s.disposeGracefully().timeout(Duration.ofSeconds(1)).subscribe();
 		} else {
 			s.dispose();
 		}

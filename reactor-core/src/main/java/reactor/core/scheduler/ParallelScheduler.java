@@ -156,7 +156,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	}
 
 	@Override
-	public Mono<Void> disposeGracefully(Duration gracePeriod) {
+	public Mono<Void> disposeGracefully() {
 		return Mono.defer(() -> {
             SchedulerState<ScheduledExecutorService[]> previous = state;
 
@@ -178,7 +178,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
                 }
             }
             return shutdown.onDispose;
-		}).timeout(gracePeriod);
+		});
 	}
 
 	ScheduledExecutorService pick() {

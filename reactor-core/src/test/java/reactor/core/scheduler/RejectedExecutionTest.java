@@ -361,8 +361,8 @@ public class RejectedExecutionTest {
 		}
 
 		@Override
-		public Mono<Void> disposeGracefully(Duration gracePeriod) {
-			return actual.disposeGracefully(gracePeriod);
+		public Mono<Void> disposeGracefully() {
+			return actual.disposeGracefully();
 		}
 
 		@Override

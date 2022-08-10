@@ -1166,7 +1166,7 @@ public class SchedulersTest {
 	public void testDisposeGracefully() {
 		EmptyScheduler s = new EmptyScheduler();
 
-		s.disposeGracefully(Duration.ofSeconds(1)).subscribe();
+		s.disposeGracefully().timeout(Duration.ofSeconds(1)).subscribe();
 		assertThat(s.disposeCalled).isTrue();
 
 		EmptyScheduler.EmptyWorker w = s.createWorker();

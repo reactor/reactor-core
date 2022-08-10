@@ -218,9 +218,9 @@ public abstract class AbstractSchedulerTest {
 			executor.submit(() -> {
 				try {
 					if (withForceDispose) {
-						s.disposeGracefully(Duration.ofMillis(40)).retry(5).onErrorResume(e -> Mono.fromRunnable(s::dispose));
+						s.disposeGracefully().timeout(Duration.ofMillis(40)).retry(5).onErrorResume(e -> Mono.fromRunnable(s::dispose));
 					} else {
-						s.disposeGracefully(Duration.ofMillis(40)).block();
+						s.disposeGracefully().timeout(Duration.ofMillis(40)).block();
 					}
 				} catch (Exception e) {
 					exceptions.add(e);
@@ -237,16 +237,16 @@ public abstract class AbstractSchedulerTest {
 			assertThat(exceptions).hasSize(10).allMatch(e -> e.getCause() instanceof TimeoutException);
 		}
 		assertThatException()
-				.isThrownBy(() -> s.disposeGracefully(Duration.ofMillis(40)).block())
+				.isThrownBy(() -> s.disposeGracefully().timeout(Duration.ofMillis(40)).block())
 				.withCauseExactlyInstanceOf(TimeoutException.class);
 
 		finishShutdownLatch.countDown();
 
 		assertThatNoException().isThrownBy(
-				() -> s.disposeGracefully(Duration.ofMillis(100)).block()
+				() -> s.disposeGracefully().timeout(Duration.ofMillis(100)).block()
 		);
 		assertThatNoException().isThrownBy(
-				() -> s.disposeGracefully(Duration.ofMillis(20)).block()
+				() -> s.disposeGracefully().timeout(Duration.ofMillis(20)).block()
 		);
 
 		assertThat(s.isDisposed()).isTrue();
@@ -266,7 +266,7 @@ public abstract class AbstractSchedulerTest {
 		s.start();
 		assertThat(s.isDisposed()).isFalse();
 
-		s.disposeGracefully(Duration.ofMillis(20)).block();
+		s.disposeGracefully().timeout(Duration.ofMillis(20)).block();
 		assertThat(s.isDisposed()).isTrue();
 
 		s.start();

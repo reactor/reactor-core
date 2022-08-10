@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-public interface Scheduler extends Disposable.Graceful {
+public interface Scheduler extends Disposable {
 
 	/**
 	 * Schedules the non-delayed execution of the given task on this scheduler.
@@ -144,20 +144,20 @@ public interface Scheduler extends Disposable.Graceful {
 
 	/**
 	 * Lazy variant of {@link #dispose()} that also allows for graceful cleanup
-	 * of underlying resources. The returned {@link Mono} can be retried in case of
+	 * of underlying resources.
+	 * <p>It is advised to apply a {@link Mono#timeout(Duration)} operator to the
+	 * resulting {@link Mono}.
+	 * <p>The returned {@link Mono} can be {@link Mono#retry(long) retried} in case of
 	 * {@link java.util.concurrent.TimeoutException timeout errors}. It can also be
 	 * followed by a call to {@link #dispose()} to issue a forceful shutdown of
 	 * underlying resources.
 	 *
-	 * @param gracePeriod {@link Mono#timeout(Duration) timeout} parameter
-	 * to limit the wait time for underlying resources to be cleaned up.
 	 * @return {@link Mono} which upon subscription initiates the graceful dispose
-	 * procedure. It will time out according to the gracePeriod provided. If
-	 * disposal is successful, the returned {@link Mono} completes without an error.
+	 * procedure. If the disposal is successful, the returned {@link Mono} completes
+	 * without an error.
 	 */
-	@Override
-	default Mono<Void> disposeGracefully(Duration gracePeriod) {
-		return Graceful.super.disposeGracefully(gracePeriod);
+	default Mono<Void> disposeGracefully() {
+		return Mono.fromRunnable(this::dispose);
 	}
 
 	/**

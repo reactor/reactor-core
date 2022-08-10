@@ -16,12 +16,10 @@
 
 package reactor.core;
 
-import java.time.Duration;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 import reactor.test.FakeDisposable;
-import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -224,14 +222,5 @@ public class DisposableTest {
 	@Test
 	public void neverCreatesInstances() {
 		assertThat(Disposables.never()).isNotSameAs(Disposables.never());
-	}
-
-	@Test
-	public void gracefulDisposable() {
-		Disposable.Graceful gracefulDisposable = () -> {};
-
-		StepVerifier.create(
-				gracefulDisposable.disposeGracefully(Duration.ofSeconds(1))
-		).verifyComplete();
 	}
 }

@@ -421,7 +421,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	void restartSupported(boolean disposeGracefully) {
 		BoundedElasticScheduler s = scheduler();
 		if (disposeGracefully) {
-			s.disposeGracefully(Duration.ofSeconds(1)).subscribe();
+			s.disposeGracefully().timeout(Duration.ofSeconds(1)).subscribe();
 		} else {
 			s.dispose();
 		}
@@ -594,7 +594,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			System.out.println(Arrays.toString(Arrays.copyOf(threadCountTrend, threadCountChange)));
 		}
 		finally {
-			scheduler.disposeGracefully(Duration.ofMillis(100)).block();
+			scheduler.disposeGracefully().timeout(Duration.ofMillis(100)).block();
 			final long postShutdown = dumpThreadNames().filter(name -> name.contains("dequeueEviction")).count();
 			LOGGER.info("{} worker threads active post shutdown", postShutdown);
 			assertThat(postShutdown)
@@ -624,7 +624,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
 
 		if (disposeGracefully) {
-			s.disposeGracefully(Duration.ofMillis(100)).block();
+			s.disposeGracefully().timeout(Duration.ofMillis(100)).block();
 			assertThat(dumpThreadNames()).doesNotContain(threadName.get());
 		} else {
 			s.dispose();

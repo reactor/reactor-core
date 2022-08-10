@@ -167,29 +167,4 @@ public interface Disposable {
 		 */
 		int size();
 	}
-
-	/**
-	 * Adds capabilities for lazy graceful disposal of underlying resources with the
-	 * ability to be notified when these resources have been successfully released.
-	 */
-	interface Graceful extends Disposable {
-
-		/**
-		 * Lazy variant of {@link #dispose()} that also allows for graceful cleanup
-		 * of underlying resources. Implementations should specify whether the returned
-		 * {@link Mono} can be retried in case of
-		 * {@link java.util.concurrent.TimeoutException timeout errors}. Implementors
-		 * can also allow following by a call to {@link #dispose()} to issue a forceful
-		 * shutdown of underlying resources.
-		 *
-		 * @param gracePeriod {@link Mono#timeout(Duration) timeout} parameter
-		 * to limit the wait time for underlying resources to be cleaned up
-		 * @return {@link Mono} which upon subscription initiates the graceful dispose
-		 * procedure. It will time out according to the gracePeriod provided. If
-		 * disposal is successful, the returned {@link Mono} completes without an error.
-		 */
-		default Mono<Void> disposeGracefully(Duration gracePeriod) {
-			return Mono.fromRunnable(this::dispose);
-		}
-	}
 }

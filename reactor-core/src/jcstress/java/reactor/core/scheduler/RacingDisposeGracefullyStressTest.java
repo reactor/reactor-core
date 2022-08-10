@@ -53,7 +53,7 @@ abstract class RacingDisposeGracefullyStressTest<T extends Scheduler> {
     boolean checkDisposeGracefullyTimesOut() {
         long start = System.nanoTime();
         try {
-            scheduler.disposeGracefully(Duration.ofMillis(40)).block();
+            scheduler.disposeGracefully().timeout(Duration.ofMillis(40)).block();
         } catch (Exception e) {
             long duration = System.nanoTime() - start;
             // Validate that the wait took non-zero time.
@@ -66,7 +66,7 @@ abstract class RacingDisposeGracefullyStressTest<T extends Scheduler> {
         try {
             scheduler.schedule(() -> {});
         } catch (RejectedExecutionException e) {
-            scheduler.disposeGracefully(Duration.ofMillis(50)).block();
+            scheduler.disposeGracefully().timeout(Duration.ofMillis(50)).block();
             return scheduler.isDisposed() && isTerminated();
         }
         return false;
