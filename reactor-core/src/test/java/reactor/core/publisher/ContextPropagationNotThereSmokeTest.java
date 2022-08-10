@@ -20,6 +20,9 @@ import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.util.context.Context;
+import reactor.util.function.FunctionalWrappers;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -38,6 +41,12 @@ class ContextPropagationNotThereSmokeTest {
 	void captureContextIsNoOp() {
 		assertThat(ContextPropagation.contextCapture()).as("without predicate").isSameAs(ContextPropagation.NO_OP);
 		assertThat(ContextPropagation.contextCapture(v -> true)).as("with predicate").isSameAs(ContextPropagation.NO_OP);
+	}
+
+	@Test
+	void functionalWrappersIsNoOp() {
+		assertThat(ContextPropagation.functionalWrappersOf(Context.empty())).as("without predicate").isSameAs(FunctionalWrappers.IDENTITY);
+		assertThat(ContextPropagation.functionalWrappersOf(Context.empty(), v -> true)).as("with predicate").isSameAs(FunctionalWrappers.IDENTITY);
 	}
 
 }

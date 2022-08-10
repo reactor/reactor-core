@@ -16,14 +16,24 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.Callable;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
 
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
+import reactor.util.function.FunctionalWrappers;
 
 /**
  * Utility private class to detect if Context-Propagation is on the classpath and to offer
@@ -100,6 +110,17 @@ final class ContextPropagation {
 		return new ContextCaptureFunction(captureKeyPredicate, null);
 	}
 
+	public static FunctionalWrappers functionalWrappersOf(ContextView ctx) {
+		return functionalWrappersOf(ctx, PREDICATE_TRUE);
+	}
+
+	public static FunctionalWrappers functionalWrappersOf(ContextView ctx, Predicate<Object> keyPredicate) {
+		if (!isContextPropagationAvailable()) {
+			return FunctionalWrappers.IDENTITY;
+		}
+		return new ContextPropagationWrappers(ctx, null, keyPredicate);
+	}
+
 	//the Function indirection allows tests to directly assert code in this class rather than static methods
 	static final class ContextCaptureFunction implements Function<Context, Context> {
 
@@ -117,4 +138,103 @@ final class ContextPropagation {
 		}
 	}
 
+	static final class ContextPropagationWrappers implements FunctionalWrappers {
+
+		final ContextView context;
+		final ContextRegistry registry;
+		final ContextSnapshot snapshot;
+
+		ContextPropagationWrappers(ContextView ctx, @Nullable ContextRegistry registry, Predicate<Object> keyPredicate) {
+			this.context = ctx;
+			this.registry = registry == null ? ContextRegistry.getInstance() : registry;
+			this.snapshot = ContextSnapshot.captureUsing(this.registry, keyPredicate, ctx);
+		}
+
+		@Override
+		public Runnable runnable(Runnable original) {
+			return snapshot.wrap(original);
+		}
+
+		@Override
+		public <T> Callable<T> callable(Callable<T> original) {
+			return snapshot.wrap(original);
+		}
+
+		@Override
+		public <T> Consumer<T> consumer(Consumer<T> original) {
+			return snapshot.wrap(original);
+		}
+
+		@Override
+		public <T, U> BiConsumer<T, U> biConsumer(BiConsumer<T, U> original) {
+			return (a, b) -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					original.accept(a, b);
+				}
+			};
+		}
+
+		@Override
+		public <T> Supplier<T> supplier(Supplier<T> original) {
+			return () -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					return original.get();
+				}
+			};
+		}
+
+		@Override
+		public <T, R> Function<T, R> function(Function<T, R> original) {
+			return a -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					return original.apply(a);
+				}
+			};
+		}
+
+		@Override
+		public <T1, T2, R> BiFunction<T1, T2, R> biFunction(BiFunction<T1, T2, R> original) {
+			return (a, b) -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					return original.apply(a, b);
+				}
+			};
+		}
+
+		@Override
+		public <T> Predicate<T> predicate(Predicate<T> original) {
+			return a -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					return original.test(a);
+				}
+			};
+		}
+
+		@Override
+		public <T, U> BiPredicate<T, U> biPredicate(BiPredicate<T, U> original) {
+			return (a, b) -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					return original.test(a, b);
+				}
+			};
+		}
+
+		@Override
+		public BooleanSupplier booleanSupplier(BooleanSupplier original) {
+			return () -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					return original.getAsBoolean();
+				}
+			};
+		}
+
+		@Override
+		public LongConsumer longConsumer(LongConsumer original) {
+			return l -> {
+				try (ContextSnapshot.Scope scope = snapshot.setThreadLocalValues()) {
+					original.accept(l);
+				}
+			};
+		}
+	}
 }

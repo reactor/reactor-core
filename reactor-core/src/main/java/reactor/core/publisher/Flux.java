@@ -57,6 +57,8 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.observability.SignalListener;
+import reactor.core.observability.SignalListenerFactory;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.publisher.FluxOnAssembly.CheckpointHeavySnapshot;
 import reactor.core.publisher.FluxOnAssembly.CheckpointLightSnapshot;
@@ -70,6 +72,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+import reactor.util.function.FunctionalWrappers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -78,8 +81,6 @@ import reactor.util.function.Tuple6;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
-import reactor.core.observability.SignalListener;
-import reactor.core.observability.SignalListenerFactory;
 import reactor.util.retry.Retry;
 
 /**
@@ -4093,6 +4094,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> contextWrite(ContextView contextToAppend) {
 		return contextWrite(c -> c.putAll(contextToAppend));
+	}
+
+	public final <R> Flux<R> transformWithWrappers(BiFunction<Flux<T>, FunctionalWrappers, Flux<R>> transformWithWrappers) {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
+			return onAssembly(transformWithWrappers.apply(this, FunctionalWrappers.IDENTITY));
+		}
+		return onAssembly(new FluxDeferContextual<>(ctx -> transformWithWrappers.apply(this, ContextPropagation.functionalWrappersOf(ctx))));
+	}
+
+	public final <R> Flux<R> transformWithWrappers(Predicate<Object> contextKeyPredicate, BiFunction<Flux<T>, FunctionalWrappers, Flux<R>> transformWithWrappers) {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
+			return onAssembly(transformWithWrappers.apply(this, FunctionalWrappers.IDENTITY));
+		}
+		return onAssembly(new FluxDeferContextual<>(ctx -> transformWithWrappers.apply(this, ContextPropagation.functionalWrappersOf(ctx, contextKeyPredicate))));
 	}
 
 	/**
