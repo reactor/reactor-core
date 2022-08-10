@@ -44,7 +44,7 @@ MonoCompletionStageTest {
 		StepVerifier.create(mono)
 		            .expectSubscription()
 		            .thenCancel()
-		            .verifyThenAssertThat();
+		            .verify();
 
 		assertThat(future).isCancelled();
 	}
