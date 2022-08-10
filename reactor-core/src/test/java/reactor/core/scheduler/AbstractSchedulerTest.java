@@ -37,6 +37,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.test.AutoDisposingExtension;
 import reactor.test.ParameterizedTestWithName;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -190,7 +191,7 @@ public abstract class AbstractSchedulerTest {
 
 	@ParameterizedTestWithName
 	@ValueSource(booleans = {true, false})
-	void multipleDisposeGracefully(boolean withForceDispose) throws Exception {
+	void concurrentDisposeGracefully(boolean withForceDispose) throws Exception {
 		if (!shouldCheckMultipleDisposeGracefully()) {
 			return;
 		}
@@ -248,6 +249,41 @@ public abstract class AbstractSchedulerTest {
 		assertThatNoException().isThrownBy(
 				() -> s.disposeGracefully().timeout(Duration.ofMillis(20)).block()
 		);
+
+		assertThat(s.isDisposed()).isTrue();
+	}
+
+	@Test
+	void multipleDisposeGracefully() {
+		if (!shouldCheckMultipleDisposeGracefully()) {
+			return;
+		}
+
+		Scheduler s = scheduler();
+
+		CountDownLatch finishShutdownLatch = new CountDownLatch(1);
+		s.schedule(() -> {
+			while (true) {
+				try {
+					// ignore cancellation, hold graceful shutdown
+					if (finishShutdownLatch.await(100, TimeUnit.MILLISECONDS)) {
+						return;
+					}
+				} catch (InterruptedException ignored) {
+				}
+			}
+		});
+
+		Mono<Void> dispose1 = s.disposeGracefully();
+		Mono<Void> dispose2 = s.disposeGracefully();
+
+		StepVerifier.create(dispose1).expectTimeout(Duration.ofMillis(50)).verify();
+		StepVerifier.create(dispose2).expectTimeout(Duration.ofMillis(50)).verify();
+
+		finishShutdownLatch.countDown();
+
+		StepVerifier.create(dispose1).verifyComplete();
+		StepVerifier.create(dispose2).verifyComplete();
 
 		assertThat(s.isDisposed()).isTrue();
 	}
