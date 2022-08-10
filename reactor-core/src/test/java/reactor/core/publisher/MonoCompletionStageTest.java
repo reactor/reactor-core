@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class
 MonoCompletionStageTest {
 
+	//https://github.com/reactor/reactor-core/issues/3138
+	@Test
+	public void propagateCancellationToCompletionFuture() {
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+
+		Mono<Integer> mono = Mono
+				.fromFuture(future);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .thenCancel()
+		            .verifyThenAssertThat();
+
+		assertThat(future).isCancelled();
+	}
+
 	@Test
 	public void cancelThenFutureFails() {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -45,9 +61,9 @@ MonoCompletionStageTest {
 		StepVerifier.create(mono)
 		            .expectSubscription()
 		            .then(() -> {
-		            	subRef.get().cancel();
-		            	future.completeExceptionally(new IllegalStateException("boom"));
-		            	future.complete(1);
+			            subRef.get().cancel();
+			            future.completeExceptionally(new IllegalStateException("boom"));
+			            future.complete(1);
 		            })
 		            .thenCancel()//already cancelled but need to get to verification
 		            .verifyThenAssertThat()
