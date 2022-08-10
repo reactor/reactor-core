@@ -34,10 +34,7 @@ public abstract class SchedulersStressTest {
 
 	private static void restart(Scheduler scheduler) {
 		scheduler.disposeGracefully().timeout(Duration.ofMillis(100)).block(Duration.ofMillis(100));
-		try {
-			scheduler.start();
-		} catch (Exception ignored) {
-		}
+		scheduler.start();
 	}
 
 	private static boolean canScheduleTask(Scheduler scheduler) {

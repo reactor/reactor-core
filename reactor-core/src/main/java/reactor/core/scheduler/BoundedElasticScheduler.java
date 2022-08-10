@@ -26,13 +26,11 @@ import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -165,16 +163,12 @@ final class BoundedElasticScheduler implements Scheduler,
 				// The executor was most likely shut down in parallel.
 				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
 				// If it's running - the other thread did a restart and will run its own schedule.
-				// In both cases we let the caller know.
-				throw new ConcurrentModificationException("Start called concurrently with " +
-						"another start, dispose, or disposeGracefully");
+				// In both cases we ignore it.
 			}
 		}
 
 		// someone else shutdown or started successfully, free the resource
 		b.currentResource.evictor.shutdownNow();
-		throw new ConcurrentModificationException("Start called concurrently with " +
-				"another start, dispose, or disposeGracefully");
 	}
 
 	@Override

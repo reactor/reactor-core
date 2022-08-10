@@ -16,8 +16,6 @@
 
 package reactor.core.scheduler;
 
-import java.time.Duration;
-import java.util.ConcurrentModificationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -113,8 +111,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 		for (ScheduledExecutorService exec : b.currentResource) {
 			exec.shutdownNow();
 		}
-		throw new ConcurrentModificationException("Start called concurrently with " +
-				"another start, dispose, or disposeGracefully");
 	}
 
     @Override

@@ -16,8 +16,6 @@
 
 package reactor.core.scheduler;
 
-import java.time.Duration;
-import java.util.ConcurrentModificationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -98,8 +96,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 		// someone else shutdown or started successfully, free the resource
 		b.currentResource.shutdownNow();
-		throw new ConcurrentModificationException("Start called concurrently with " +
-				"another start, dispose, or disposeGracefully");
 	}
 
 	@Override
