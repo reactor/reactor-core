@@ -18,8 +18,6 @@ package reactor.core.scheduler;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jcstress.annotations.Actor;
@@ -50,49 +48,6 @@ public abstract class SchedulersStressTest {
 		} catch (InterruptedException ignored) {
 		}
 		return taskDone;
-	}
-
-	private static boolean validateSchedulerDisposed(Scheduler scheduler) {
-		try {
-			scheduler.schedule(() -> {});
-		}
-		catch (RejectedExecutionException e) {
-			return scheduler.isDisposed();
-		}
-		return false;
-	}
-
-	private static boolean isTerminated(SingleScheduler scheduler) {
-		return scheduler.state.currentResource.isTerminated();
-	}
-
-	private static boolean isTerminated(ParallelScheduler scheduler) {
-		assert scheduler.state.initialResource != null;
-		for (ScheduledExecutorService executor : scheduler.state.initialResource) {
-			if (!executor.isTerminated()) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	private static boolean isTerminated(BoundedElasticScheduler scheduler) {
-		for (BoundedElasticScheduler.BoundedState bs  :
-				scheduler.state.currentResource.busyStates.array) {
-			if (!bs.executor.isTerminated()) {
-				return false;
-			}
-		}
-		if (!scheduler.state.initialResource.idleQueue.isEmpty()) {
-			return false;
-		}
-		for (BoundedElasticScheduler.BoundedState bs :
-				scheduler.state.initialResource.busyStates.array) {
-			if (!bs.executor.isTerminated()) {
-				return false;
-			}
-		}
-		return scheduler.state.currentResource.idleQueue.isEmpty();
 	}
 
 	@JCStressTest
@@ -217,9 +172,7 @@ public abstract class SchedulersStressTest {
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState
-					&& validateSchedulerDisposed(scheduler)
-					&& isTerminated(scheduler);
+			r.r3 = consistentState && scheduler.isDisposed();
 		}
 	}
 
@@ -255,9 +208,7 @@ public abstract class SchedulersStressTest {
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState
-					&& validateSchedulerDisposed(scheduler)
-					&& isTerminated(scheduler);
+			r.r3 = consistentState && scheduler.isDisposed();
 		}
 	}
 
@@ -293,9 +244,7 @@ public abstract class SchedulersStressTest {
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState
-					&& validateSchedulerDisposed(scheduler)
-					&& isTerminated(scheduler);
+			r.r3 = consistentState && scheduler.isDisposed();
 		}
 	}
 
@@ -330,9 +279,7 @@ public abstract class SchedulersStressTest {
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState
-					&& validateSchedulerDisposed(scheduler)
-					&& isTerminated(scheduler);
+			r.r3 = consistentState && scheduler.isDisposed();
 		}
 	}
 
@@ -368,9 +315,7 @@ public abstract class SchedulersStressTest {
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState
-					&& validateSchedulerDisposed(scheduler)
-					&& isTerminated(scheduler);
+			r.r3 = consistentState && scheduler.isDisposed();
 		}
 	}
 
@@ -407,9 +352,7 @@ public abstract class SchedulersStressTest {
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState
-					&& validateSchedulerDisposed(scheduler)
-					&& isTerminated(scheduler);
+			r.r3 = consistentState && scheduler.isDisposed();
 		}
 	}
 }

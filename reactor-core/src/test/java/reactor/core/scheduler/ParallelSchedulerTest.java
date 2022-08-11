@@ -58,6 +58,18 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
+	@Override
+	protected boolean isTerminated(Scheduler s) {
+		ParallelScheduler scheduler = (ParallelScheduler) s;
+		assert scheduler.state.initialResource != null;
+		for (ScheduledExecutorService executor : scheduler.state.initialResource) {
+			if (!executor.isTerminated()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	@Test
 	public void startAndDecorationImplicit() {
 		AtomicInteger decorationCount = new AtomicInteger();

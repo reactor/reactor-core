@@ -62,6 +62,12 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
+	@Override
+	protected boolean isTerminated(Scheduler s) {
+		DelegateServiceScheduler scheduler = (DelegateServiceScheduler) s;
+		return scheduler.original.isTerminated();
+	}
+
 	@Test
 	public void startAndDecorationImplicit() {
 		AtomicInteger decorationCount = new AtomicInteger();

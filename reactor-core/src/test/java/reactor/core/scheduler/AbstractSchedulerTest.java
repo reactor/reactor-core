@@ -88,6 +88,16 @@ public abstract class AbstractSchedulerTest {
 		return s;
 	}
 
+	/**
+	 * Tests that return {@code true} from {@link #shouldCheckMultipleDisposeGracefully}
+	 * should override this method.
+	 * @param s the {@link Scheduler}
+	 * @return whether the {@link Scheduler} is fully terminated
+	 */
+	protected boolean isTerminated(Scheduler s) {
+		return s.isDisposed();
+	}
+
 	@Test
 	public void restartSupport() {
 		boolean supportsRestart = shouldCheckSupportRestart();
@@ -250,6 +260,9 @@ public abstract class AbstractSchedulerTest {
 				() -> s.disposeGracefully().timeout(Duration.ofMillis(20)).block()
 		);
 
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> s.schedule(() -> {}));
+		assertThat(isTerminated(s)).isTrue();
 		assertThat(s.isDisposed()).isTrue();
 	}
 
@@ -285,6 +298,9 @@ public abstract class AbstractSchedulerTest {
 		StepVerifier.create(dispose1).verifyComplete();
 		StepVerifier.create(dispose2).verifyComplete();
 
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> s.schedule(() -> {}));
+		assertThat(isTerminated(s)).isTrue();
 		assertThat(s.isDisposed()).isTrue();
 	}
 

@@ -104,6 +104,27 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
+	@Override
+	protected boolean isTerminated(Scheduler s) {
+		BoundedElasticScheduler scheduler = (BoundedElasticScheduler) s;
+		for (BoundedElasticScheduler.BoundedState bs  :
+				scheduler.state.currentResource.busyStates.array) {
+			if (!bs.executor.isTerminated()) {
+				return false;
+			}
+		}
+		if (!scheduler.state.initialResource.idleQueue.isEmpty()) {
+			return false;
+		}
+		for (BoundedElasticScheduler.BoundedState bs :
+				scheduler.state.initialResource.busyStates.array) {
+			if (!bs.executor.isTerminated()) {
+				return false;
+			}
+		}
+		return scheduler.state.currentResource.idleQueue.isEmpty();
+	}
+
 	@AfterAll
 	public static void dumpThreads() {
 		LOGGER.debug("Remaining threads after test class:");

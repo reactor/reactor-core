@@ -53,6 +53,12 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
+	@Override
+	protected boolean isTerminated(Scheduler s) {
+		SingleScheduler scheduler = (SingleScheduler) s;
+		return scheduler.state.currentResource.isTerminated();
+	}
+
 	@Test
 	public void smokeTestDelay() {
 		for (int i = 0; i < 20; i++) {
