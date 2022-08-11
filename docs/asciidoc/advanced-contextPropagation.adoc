@@ -1,0 +1,38 @@
+[[context.propagation]]
+= Context-Propagation Support
+
+Since 3.5.0, Reactor-Core embeds support for the `io.micrometer:context-propagation` SPI.
+This library is intended as a mean to easily adapt between various implementations of the concept of a Context, of which
+`ContextView`/`Context` is an example, and between `ThreadLocal` variables as well.
+
+`ReactorContextAccessor` allows the Context-Propagation library to understand Reactor `Context` and `Contextview`.
+It implements the SPI and is loaded via `ServiceLoader`.
+No user action is required, other than depending on reactor-core and `context-propagation` (the class is public but shouldn't generally be accessed by user code).
+
+On top of that, Reactor-Core 3.5.0 also introduces operators that transparently deal with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
+
+== `contextCapture` Operator
+
+This operator is a convenient alternative to `contextWrite` which performs a `ContextSnapshot#capture` and uses the SPI to translate that snapshot into the Reactor `Context`.
+
+As a result, if there were any threadlocals during subscription phase they would now be stored into the `Context` and visible
+at runtime in upstream operators.
+
+====
+[source,java]
+----
+//assuming TL is known to Context-Propagation as key TLKEY.
+static final ThreadLocal<String> TL = new ThreadLocal<>();
+
+//in the main thread, tl is set to "HELLO"
+TL.set("HELLO");
+
+Mono.deferContextual(ctx ->
+  Mono.delay(Duration.ofSeconds(1))
+      //we're now in another thread, tl is not set
+      .map(v -> "delayed " + ctx.getOrDefault(TLKEY, "not found") + ", tl=" + TL.get())
+)
+.contextCapture()
+.block(); // returns "delayed HELLO, tl=null"
+----
+====

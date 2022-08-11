@@ -4036,6 +4036,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * As a result this operator should generally be used as close as possible to the end of
 	 * the chain / subscription point.
+	 * <p>
+	 * If context-propagation is not available at runtime, this operator simply returns the current {@link Flux}
+	 * instance.
 	 *
 	 * @return a new {@link Flux} where context-propagation API has been used to capture entries and
 	 * inject them into the {@link Context}
