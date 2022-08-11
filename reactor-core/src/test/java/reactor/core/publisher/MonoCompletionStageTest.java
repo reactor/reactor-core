@@ -67,7 +67,7 @@ MonoCompletionStageTest {
 		            })
 		            .thenCancel()//already cancelled but need to get to verification
 		            .verifyThenAssertThat()
-		            .hasDroppedErrorWithMessage("boom");
+		            .hasNotDroppedErrors();
 	}
 
 	@Test
