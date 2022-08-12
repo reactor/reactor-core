@@ -469,7 +469,7 @@ public class MonoPeekAfterTest {
 			catch (Throwable t) {
 				Throwable e = Exceptions.unwrap(t);
 				assertThat(e).isExactlyInstanceOf(AssertionError.class)
-						.hasMessage("expectation \"expectNext(bar)\" failed (expected value: bar; actual value: foo)");
+						.hasMessage("expectation \"expectNext(bar)\" failed (expected value: java.lang.String<bar>; actual value: java.lang.String<foo>)");
 			}
 
 			assertThat(invoked.intValue()).isEqualTo(1);
@@ -505,7 +505,7 @@ public class MonoPeekAfterTest {
 			catch (Throwable t) {
 				Throwable e = Exceptions.unwrap(t);
 				assertThat(e).isExactlyInstanceOf(AssertionError.class)
-						.hasMessage("expectation \"expectNext(bar)\" failed (expected value: bar; actual value: foo)");
+						.hasMessage("expectation \"expectNext(bar)\" failed (expected value: java.lang.String<bar>; actual value: java.lang.String<foo>)");
 			}
 
 			assertThat(invoked.intValue()).isEqualTo(1);

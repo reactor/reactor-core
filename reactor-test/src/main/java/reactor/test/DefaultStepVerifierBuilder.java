@@ -509,7 +509,8 @@ final class DefaultStepVerifierBuilder<T>
 				return messageFormatter.failOptional(se, "expected: onNext(%s); actual: %s", value, signal);
 			}
 			else if (!Objects.equals(value, signal.get())) {
-				return messageFormatter.failOptional(se, "expected value: %s; actual value: %s", value, signal.get());
+				return messageFormatter.failOptional(se, "expected value: %s<%s>; actual value: %s<%s>",
+						value.getClass().getName(), value, signal.get().getClass().getName(), signal.get());
 			}
 			else {
 				return Optional.empty();
