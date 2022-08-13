@@ -39,7 +39,7 @@ micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-M4"
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
 micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-M7"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
-mockito = "org.mockito:mockito-core:4.6.1"
+mockito = "org.mockito:mockito-core:4.7.0"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
