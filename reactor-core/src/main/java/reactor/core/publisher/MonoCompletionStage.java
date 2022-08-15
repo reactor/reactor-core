@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -47,7 +48,15 @@ final class MonoCompletionStage<T> extends Mono<T>
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
         Operators.MonoSubscriber<T, T>
-                sds = new Operators.MonoSubscriber<>(actual);
+                sds = new Operators.MonoSubscriber<T, T>(actual) {
+            @Override
+            public void cancel() {
+                super.cancel();
+                if (future instanceof Future) {
+                    ((Future<?>) future).cancel(true);
+                }
+            }
+        };
 
         actual.onSubscribe(sds);
 
