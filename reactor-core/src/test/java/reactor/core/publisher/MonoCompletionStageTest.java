@@ -33,6 +33,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class
 MonoCompletionStageTest {
 
+	//https://github.com/reactor/reactor-core/issues/3138
+	@Test
+	public void propagateCancellationToCompletionFuture() {
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+
+		Mono<Integer> mono = Mono
+				.fromFuture(future);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .thenCancel()
+		            .verify();
+
+		assertThat(future).isCancelled();
+	}
+
 	@Test
 	public void cancelThenFutureFails() {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
