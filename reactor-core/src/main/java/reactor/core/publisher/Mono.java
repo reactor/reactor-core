@@ -4375,6 +4375,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
+		if (subscriber instanceof Fuseable.QueueSubscription && this != publisher && this instanceof Fuseable && !(publisher instanceof Fuseable)) {
+			subscriber = new FluxHide.SuppressFuseableSubscriber<>(subscriber);
+		}
+
 		try {
 			if (publisher instanceof OptimizableOperator) {
 				OptimizableOperator operator = (OptimizableOperator) publisher;
