@@ -87,6 +87,28 @@ class ContextPropagationTest {
 				assertThat(f.registry).as("function default registry").isSameAs(ContextRegistry.getInstance()));
 	}
 
+	@Test
+	void fluxApiUsesContextPropagationConstantFunction() {
+		Flux<Integer> source = Flux.empty();
+		assertThat(source.contextCapture())
+			.isInstanceOfSatisfying(FluxContextWrite.class, fcw ->
+				assertThat(fcw.doOnContext)
+					.as("flux's capture function")
+					.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
+			);
+	}
+
+	@Test
+	void monoApiUsesContextPropagationConstantFunction() {
+		Mono<Integer> source = Mono.empty();
+		assertThat(source.contextCapture())
+			.isInstanceOfSatisfying(MonoContextWrite.class, fcw ->
+				assertThat(fcw.doOnContext)
+					.as("mono's capture function")
+					.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
+			);
+	}
+
 	@Nested
 	class ContextCaptureFunctionTest {
 
