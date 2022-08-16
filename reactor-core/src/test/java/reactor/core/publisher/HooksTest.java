@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,29 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Stephane Maldini
  */
 public class HooksTest {
+
+	// https://github.com/reactor/reactor-core/issues/3137
+	@Test
+	public void reproduceClassCastExceptionWithHooks() {
+		Hooks.onLastOperator(objectPublisher -> {
+			if (objectPublisher instanceof Mono) {
+				return Hooks.convertToMonoBypassingHooks(objectPublisher, false)
+				            .doFinally(signalType -> {
+				            });
+			} else {
+				return objectPublisher;
+			}
+		});
+
+		Mono.just(1)
+		    .flatMap(fsm ->
+				    Mono.just(1)
+				        .doOnSubscribe(subscription -> {})
+		    )
+		    .doOnSubscribe(subscription -> {
+		    })
+		    .block();
+	}
 
 	void simpleFlux(){
 		Flux.just(1)
