@@ -162,7 +162,9 @@ task japicmp(type: JapicmpTask) {
 	// TODO after a .0 release, bump the gradle.properties baseline
 	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [ ]
-	methodExcludes = [ ]
+	methodExcludes = [
+			"reactor.core.scheduler.Scheduler#disposeGracefully()"
+	]
 }
 
 gradle.taskGraph.afterTask { task, state ->

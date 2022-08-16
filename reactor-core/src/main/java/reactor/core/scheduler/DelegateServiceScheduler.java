@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package reactor.core.scheduler;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -32,6 +34,7 @@ import java.util.function.Supplier;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
@@ -43,32 +46,40 @@ import reactor.util.annotation.Nullable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class DelegateServiceScheduler implements Scheduler, Scannable {
+final class DelegateServiceScheduler implements Scheduler, SchedulerState.DisposeAwaiter<ScheduledExecutorService>, Scannable {
+
+	static final ScheduledExecutorService TERMINATED;
+
+	static {
+		TERMINATED = Executors.newSingleThreadScheduledExecutor();
+		TERMINATED.shutdownNow();
+	}
 
 	final String executorName;
 	final ScheduledExecutorService original;
 
 	@Nullable
-	volatile ScheduledExecutorService executor;
-	static final AtomicReferenceFieldUpdater<DelegateServiceScheduler, ScheduledExecutorService> EXECUTOR =
-			AtomicReferenceFieldUpdater.newUpdater(DelegateServiceScheduler.class, ScheduledExecutorService.class, "executor");
+	volatile SchedulerState<ScheduledExecutorService> state;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<DelegateServiceScheduler, SchedulerState> STATE =
+			AtomicReferenceFieldUpdater.newUpdater(DelegateServiceScheduler.class,
+					SchedulerState.class, "state");
 
 	DelegateServiceScheduler(String executorName, ExecutorService executorService) {
 			this.executorName = executorName;
 			this.original = convert(executorService);
-			this.executor = null; //to be initialized in start()
 	}
 
 	ScheduledExecutorService getOrCreate() {
-		ScheduledExecutorService e = executor;
-		if (e == null) {
+		SchedulerState<ScheduledExecutorService> s = state;
+		if (s == null) {
 			start();
-			e = executor;
-			if (e == null) {
+			s = state;
+			if (s == null) {
 				throw new IllegalStateException("executor is null after implicit start()");
 			}
 		}
-		return e;
+		return s.currentResource;
 	}
 
 	@Override
@@ -100,21 +111,65 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void start() {
-		EXECUTOR.compareAndSet(this, null, Schedulers.decorateExecutorService(this, original));
+		STATE.compareAndSet(this, null,
+				SchedulerState.init(Schedulers.decorateExecutorService(this, original)));
 	}
 
 	@Override
 	public boolean isDisposed() {
-		ScheduledExecutorService e = executor;
-		return e != null && e.isShutdown();
+		SchedulerState<ScheduledExecutorService> current = state;
+		return current != null && current.currentResource == TERMINATED;
+	}
+
+	@Override
+	public boolean await(ScheduledExecutorService resource, long timeout, TimeUnit timeUnit)
+			throws InterruptedException {
+		return resource.awaitTermination(timeout, timeUnit);
 	}
 
 	@Override
 	public void dispose() {
-		ScheduledExecutorService e = executor;
-		if (e != null) {
-			e.shutdownNow();
+		SchedulerState<ScheduledExecutorService> previous = state;
+
+		if (previous != null && previous.currentResource == TERMINATED) {
+			assert previous.initialResource != null;
+			previous.initialResource.shutdownNow();
+			return;
 		}
+
+		SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
+				previous == null ? null : previous.currentResource, TERMINATED, this);
+
+		STATE.compareAndSet(this, previous, terminated);
+
+		// If unsuccessful - either another thread disposed or restarted - no issue,
+		// we only care about the one stored in terminated.
+		if (terminated.initialResource != null) {
+			terminated.initialResource.shutdownNow();
+		}
+	}
+
+	@Override
+	public Mono<Void> disposeGracefully() {
+		return Mono.defer(() -> {
+			SchedulerState<ScheduledExecutorService> previous = state;
+
+			if (previous != null && previous.currentResource == TERMINATED) {
+				return previous.onDispose;
+			}
+
+			SchedulerState<ScheduledExecutorService> terminated = SchedulerState.transition(
+					previous == null ? null : previous.currentResource, TERMINATED, this);
+
+			STATE.compareAndSet(this, previous, terminated);
+
+			// If unsuccessful - either another thread disposed or restarted - no issue,
+			// we only care about the one stored in terminated.
+			if (terminated.initialResource != null) {
+				terminated.initialResource.shutdown();
+			}
+			return terminated.onDispose;
+		});
 	}
 
 	@SuppressWarnings("unchecked")
@@ -130,9 +185,9 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return toString();
 
-		ScheduledExecutorService e = executor;
-		if (e != null) {
-			return Schedulers.scanExecutor(e, key);
+		SchedulerState<ScheduledExecutorService> s = state;
+		if (s != null) {
+			return Schedulers.scanExecutor(s.currentResource, key);
 		}
 		return null;
 	}

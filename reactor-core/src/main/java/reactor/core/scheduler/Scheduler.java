@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executor;
+import reactor.core.Disposable;
+import reactor.core.Exceptions;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import reactor.core.Disposable;
-import reactor.core.Exceptions;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
@@ -133,9 +134,30 @@ public interface Scheduler extends Disposable {
 	 * leave the Scheduler in either active or inactive state.
 	 *
 	 * <p>The Scheduler may choose to ignore this instruction.
-	 *
+	 * <p>When used in combination with {@link #disposeGracefully(Duration)}
+	 * there are no guarantees that all resources will be forcefully shutdown.
+	 * When a graceful disposal has started, the references to the underlying
+	 * {@link java.util.concurrent.Executor}s might have already been lost.
 	 */
 	default void dispose() {
+	}
+
+	/**
+	 * Lazy variant of {@link #dispose()} that also allows for graceful cleanup
+	 * of underlying resources.
+	 * <p>It is advised to apply a {@link Mono#timeout(Duration)} operator to the
+	 * resulting {@link Mono}.
+	 * <p>The returned {@link Mono} can be {@link Mono#retry(long) retried} in case of
+	 * {@link java.util.concurrent.TimeoutException timeout errors}. It can also be
+	 * followed by a call to {@link #dispose()} to issue a forceful shutdown of
+	 * underlying resources.
+	 *
+	 * @return {@link Mono} which upon subscription initiates the graceful dispose
+	 * procedure. If the disposal is successful, the returned {@link Mono} completes
+	 * without an error.
+	 */
+	default Mono<Void> disposeGracefully() {
+		return Mono.fromRunnable(this::dispose);
 	}
 
 	/**

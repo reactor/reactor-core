@@ -37,7 +37,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.MeterRegistry;
-
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -768,7 +767,7 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Replace the current Factory and shared Schedulers with the ones saved in a 
+	 * Replace the current Factory and shared Schedulers with the ones saved in a
 	 * previously {@link #setFactoryWithSnapshot(Factory) captured} snapshot.
 	 * <p>
 	 * Passing {@code null} re-applies the default factory.
@@ -1552,5 +1551,4 @@ public abstract class Schedulers {
 
 		return null;
 	}
-
 }

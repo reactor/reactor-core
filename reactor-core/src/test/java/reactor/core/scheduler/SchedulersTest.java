@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -735,34 +735,6 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void immediateTaskIsSkippedIfDisposeRightAfter() throws Exception {
-		Scheduler serviceRB = Schedulers.newSingle("rbWork");
-		Scheduler.Worker r = serviceRB.createWorker();
-
-		long start = System.currentTimeMillis();
-		AtomicInteger latch = new AtomicInteger(1);
-		Consumer<String> c =  ev -> {
-			latch.decrementAndGet();
-			try {
-				System.out.println("ev: "+ev);
-				Thread.sleep(1000);
-			}
-			catch(InterruptedException ie){
-				throw Exceptions.propagate(ie);
-			}
-		};
-		r.schedule(() -> c.accept("Hello World!"));
-		serviceRB.dispose();
-
-		Thread.sleep(1200);
-		long end = System.currentTimeMillis();
-
-
-		assertThat(latch.intValue() == 1).as("Task not skipped").isTrue();
-		assertThat((end - start) >= 1000).as("Timeout too long").isTrue();
-	}
-
-	@Test
 	public void singleSchedulerPipelining() throws Exception {
 		Scheduler serviceRB = Schedulers.newSingle("rb", true);
 		Scheduler.Worker dispatcher = serviceRB.createWorker();
@@ -1188,6 +1160,18 @@ public class SchedulersTest {
 		Scheduler elastic = Schedulers.elastic();
 		//noop
 		elastic.dispose();
+	}
+
+	@Test
+	public void testDisposeGracefully() {
+		EmptyScheduler s = new EmptyScheduler();
+
+		s.disposeGracefully().timeout(Duration.ofSeconds(1)).subscribe();
+		assertThat(s.disposeCalled).isTrue();
+
+		EmptyScheduler.EmptyWorker w = s.createWorker();
+		w.dispose();
+		assertThat(w.disposeCalled).isTrue();
 	}
 
 	@Test

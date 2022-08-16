@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Mono;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
@@ -38,25 +39,27 @@ import reactor.core.Scannable;
  * @author Simon Baslé
  */
 final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorService>,
+                                         SchedulerState.DisposeAwaiter<ScheduledExecutorService[]>,
                                          Scannable {
 
+    static final ScheduledExecutorService TERMINATED;
+    static final ScheduledExecutorService[] SHUTDOWN = new ScheduledExecutorService[0];
     static final AtomicLong COUNTER = new AtomicLong();
 
-    final int n;
-    
-    final ThreadFactory factory;
-
-    volatile ScheduledExecutorService[] executors;
-    static final AtomicReferenceFieldUpdater<ParallelScheduler, ScheduledExecutorService[]> EXECUTORS =
-            AtomicReferenceFieldUpdater.newUpdater(ParallelScheduler.class, ScheduledExecutorService[].class, "executors");
-
-    static final ScheduledExecutorService[] SHUTDOWN = new ScheduledExecutorService[0];
-    
-    static final ScheduledExecutorService TERMINATED;
     static {
         TERMINATED = Executors.newSingleThreadScheduledExecutor();
         TERMINATED.shutdownNow();
     }
+
+    final int n;
+    final ThreadFactory factory;
+
+    volatile SchedulerState<ScheduledExecutorService[]> state;
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<ParallelScheduler, SchedulerState> STATE =
+            AtomicReferenceFieldUpdater.newUpdater(
+                    ParallelScheduler.class, SchedulerState.class, "state"
+            );
 
     int roundRobin;
 
@@ -79,74 +82,124 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         poolExecutor.setRemoveOnCancelPolicy(true);
         return poolExecutor;
     }
-    
+
 	@Override
 	public boolean isDisposed() {
-		return executors == SHUTDOWN;
+		SchedulerState<ScheduledExecutorService[]> current = state;
+		return current != null && current.currentResource == SHUTDOWN;
 	}
 
 	@Override
-    public void start() {
-        ScheduledExecutorService[] b = null;
-        for (;;) {
-            ScheduledExecutorService[] a = executors;
-            if (a != SHUTDOWN && a != null) {
-                if (b != null) {
-                    for (ScheduledExecutorService exec : b) {
-                        exec.shutdownNow();
-                    }
-                }
-                return;
-            }
+	public void start() {
+		SchedulerState<ScheduledExecutorService[]> a = this.state;
 
-            if (b == null) {
-                b = new ScheduledExecutorService[n];
-                for (int i = 0; i < n; i++) {
-                    b[i] = Schedulers.decorateExecutorService(this, this.get());
-                }
-            }
-            
-            if (EXECUTORS.compareAndSet(this, a, b)) {
-                return;
+		if (a != null && a.currentResource != SHUTDOWN) {
+			return;
+		}
+
+		SchedulerState<ScheduledExecutorService[]> b =
+				SchedulerState.init(new ScheduledExecutorService[n]);
+		for (int i = 0; i < n; i++) {
+			b.currentResource[i] = Schedulers.decorateExecutorService(this, this.get());
+		}
+
+		if (STATE.compareAndSet(this, a, b)) {
+			return;
+		}
+
+		// someone else shutdown or started successfully, free the resource
+		for (ScheduledExecutorService exec : b.currentResource) {
+			exec.shutdownNow();
+		}
+	}
+
+    @Override
+    public boolean await(ScheduledExecutorService[] resource, long timeout, TimeUnit timeUnit) throws InterruptedException {
+        for (ScheduledExecutorService executor : resource) {
+            if (!executor.awaitTermination(timeout, timeUnit)) {
+                return false;
             }
         }
+        return true;
     }
 
     @Override
-    public void dispose() {
-        ScheduledExecutorService[] a = executors;
-        if (a != SHUTDOWN) {
-            a = EXECUTORS.getAndSet(this, SHUTDOWN);
-            if (a != SHUTDOWN && a != null) {
-                for (ScheduledExecutorService exec : a) {
-                    exec.shutdownNow();
+	public void dispose() {
+        SchedulerState<ScheduledExecutorService[]> previous = state;
+
+        if (previous != null && previous.currentResource == SHUTDOWN) {
+            if (previous.initialResource != null) {
+                for (ScheduledExecutorService executor : previous.initialResource) {
+                    executor.shutdownNow();
                 }
             }
+            return;
         }
-    }
-    
-    ScheduledExecutorService pick() {
-        ScheduledExecutorService[] a = executors;
-        if (a == null) {
-            start();
-            a = executors;
-            if (a == null) {
-                throw new IllegalStateException("executors uninitialized after implicit start()");
+
+        SchedulerState<ScheduledExecutorService[]> shutdown = SchedulerState.transition(
+                previous == null ? null : previous.currentResource, SHUTDOWN, this
+        );
+
+        STATE.compareAndSet(this, previous, shutdown);
+
+	    // If unsuccessful - either another thread disposed or restarted - no issue,
+	    // we only care about the one stored in shutdown.
+        if (shutdown.initialResource != null) {
+            for (ScheduledExecutorService executor : shutdown.initialResource) {
+                executor.shutdownNow();
             }
         }
-        if (a != SHUTDOWN) {
-            // ignoring the race condition here, its already random who gets which executor
-            int idx = roundRobin;
-            if (idx == n) {
-                idx = 0;
-                roundRobin = 1;
-            } else {
-                roundRobin = idx + 1;
+	}
+
+	@Override
+	public Mono<Void> disposeGracefully() {
+		return Mono.defer(() -> {
+            SchedulerState<ScheduledExecutorService[]> previous = state;
+
+            if (previous != null && previous.currentResource == SHUTDOWN) {
+                return previous.onDispose;
             }
-            return a[idx];
-        }
-        return TERMINATED;
-    }
+
+            SchedulerState<ScheduledExecutorService[]> shutdown = SchedulerState.transition(
+                    previous == null ? null : previous.currentResource, SHUTDOWN, this
+            );
+
+            STATE.compareAndSet(this, previous, shutdown);
+
+			// If unsuccessful - either another thread disposed or restarted - no issue,
+			// we only care about the one stored in shutdown.
+            if (shutdown.initialResource != null) {
+                for (ScheduledExecutorService executor : shutdown.initialResource) {
+                    executor.shutdown();
+                }
+            }
+            return shutdown.onDispose;
+		});
+	}
+
+	ScheduledExecutorService pick() {
+		SchedulerState<ScheduledExecutorService[]> a = state;
+		if (a == null) {
+			start();
+			a = state;
+			if (a == null) {
+				throw new IllegalStateException("executors uninitialized after implicit start()");
+			}
+		}
+		if (a.currentResource != SHUTDOWN) {
+			// ignoring the race condition here, its already random who gets which executor
+			int idx = roundRobin;
+			if (idx == n) {
+				idx = 0;
+				roundRobin = 1;
+			}
+			else {
+				roundRobin = idx + 1;
+			}
+			return a.currentResource[idx];
+		}
+		return TERMINATED;
+	}
 
     @Override
     public Disposable schedule(Runnable task) {
@@ -192,7 +245,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     @Override
     public Stream<? extends Scannable> inners() {
-        return Stream.of(executors)
+        return Stream.of(state.currentResource)
                 .map(exec -> key -> Schedulers.scanExecutor(exec, key));
     }
 
