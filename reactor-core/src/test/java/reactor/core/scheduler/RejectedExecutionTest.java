@@ -360,6 +360,11 @@ public class RejectedExecutionTest {
 		}
 
 		@Override
+		public Mono<Void> disposeGracefully() {
+			return actual.disposeGracefully();
+		}
+
+		@Override
 		public Disposable schedule(Runnable task) {
 			if (tasksRemaining.decrementAndGet() < 0)
 				throw new RejectedExecutionException("BoundedScheduler schedule: no more tasks");

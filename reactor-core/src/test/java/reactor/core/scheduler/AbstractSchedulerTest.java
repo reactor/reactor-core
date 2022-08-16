@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,34 @@
 
 package reactor.core.scheduler;
 
+import java.time.Duration;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Mono;
 import reactor.test.AutoDisposingExtension;
+import reactor.test.ParameterizedTestWithName;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
@@ -65,11 +77,25 @@ public abstract class AbstractSchedulerTest {
 
 	protected boolean shouldCheckSupportRestart() { return true; }
 
+	protected boolean shouldCheckMultipleDisposeGracefully() {
+		return false;
+	}
+
 	protected Scheduler schedulerNotCached() {
 		Scheduler s = scheduler();
 		assertThat(s).as("common scheduler tests should not use a CachedScheduler")
 				.isNotInstanceOf(Schedulers.CachedScheduler.class);
 		return s;
+	}
+
+	/**
+	 * Tests that return {@code true} from {@link #shouldCheckMultipleDisposeGracefully}
+	 * should override this method.
+	 * @param s the {@link Scheduler}
+	 * @return whether the {@link Scheduler} is fully terminated
+	 */
+	protected boolean isTerminated(Scheduler s) {
+		return s.isDisposed();
 	}
 
 	@Test
@@ -171,6 +197,138 @@ public abstract class AbstractSchedulerTest {
 			s.dispose();
 			s.dispose();//noop
 		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void concurrentDisposeGracefully(boolean withForceDispose) throws Exception {
+		if (!shouldCheckMultipleDisposeGracefully()) {
+			return;
+		}
+
+		Scheduler s = scheduler();
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+
+		CountDownLatch finishShutdownLatch = new CountDownLatch(1);
+		s.schedule(() -> {
+			while (true) {
+				try {
+					// ignore cancellation, hold graceful shutdown
+					if (finishShutdownLatch.await(100, TimeUnit.MILLISECONDS)) {
+						return;
+					}
+				} catch (InterruptedException ignored) {
+				}
+			}
+		});
+
+		CountDownLatch tasksLatch = new CountDownLatch(10);
+
+		BlockingQueue<Exception> exceptions = new ArrayBlockingQueue<>(10);
+		for (int i = 0; i < 10; i++) {
+			executor.submit(() -> {
+				try {
+					if (withForceDispose) {
+						s.disposeGracefully().timeout(Duration.ofMillis(40)).retry(5).onErrorResume(e -> Mono.fromRunnable(s::dispose));
+					} else {
+						s.disposeGracefully().timeout(Duration.ofMillis(40)).block();
+					}
+				} catch (Exception e) {
+					exceptions.add(e);
+				}
+				tasksLatch.countDown();
+			});
+		}
+
+		tasksLatch.await(100, TimeUnit.MILLISECONDS);
+
+		if (withForceDispose) {
+			assertThat(exceptions).isEmpty();
+		} else {
+			assertThat(exceptions).hasSize(10).allMatch(e -> e.getCause() instanceof TimeoutException);
+		}
+		assertThatException()
+				.isThrownBy(() -> s.disposeGracefully().timeout(Duration.ofMillis(40)).block())
+				.withCauseExactlyInstanceOf(TimeoutException.class);
+
+		finishShutdownLatch.countDown();
+
+		assertThatNoException().isThrownBy(
+				() -> s.disposeGracefully().timeout(Duration.ofMillis(100)).block()
+		);
+		assertThatNoException().isThrownBy(
+				() -> s.disposeGracefully().timeout(Duration.ofMillis(20)).block()
+		);
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> s.schedule(() -> {}));
+		assertThat(isTerminated(s)).isTrue();
+		assertThat(s.isDisposed()).isTrue();
+	}
+
+	@Test
+	void multipleDisposeGracefully() {
+		if (!shouldCheckMultipleDisposeGracefully()) {
+			return;
+		}
+
+		Scheduler s = scheduler();
+
+		CountDownLatch finishShutdownLatch = new CountDownLatch(1);
+		s.schedule(() -> {
+			while (true) {
+				try {
+					// ignore cancellation, hold graceful shutdown
+					if (finishShutdownLatch.await(100, TimeUnit.MILLISECONDS)) {
+						return;
+					}
+				} catch (InterruptedException ignored) {
+				}
+			}
+		});
+
+		Mono<Void> dispose1 = s.disposeGracefully();
+		Mono<Void> dispose2 = s.disposeGracefully();
+
+		StepVerifier.create(dispose1).expectTimeout(Duration.ofMillis(50)).verify();
+		StepVerifier.create(dispose2).expectTimeout(Duration.ofMillis(50)).verify();
+
+		finishShutdownLatch.countDown();
+
+		StepVerifier.create(dispose1).verifyComplete();
+		StepVerifier.create(dispose2).verifyComplete();
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> s.schedule(() -> {}));
+		assertThat(isTerminated(s)).isTrue();
+		assertThat(s.isDisposed()).isTrue();
+	}
+
+	@Test
+	void multipleRestarts() {
+		if (!shouldCheckSupportRestart()) {
+			return;
+		}
+
+		Scheduler s = scheduler();
+
+		s.dispose();
+		assertThat(s.isDisposed()).isTrue();
+
+		s.start();
+		assertThat(s.isDisposed()).isFalse();
+
+		s.disposeGracefully().timeout(Duration.ofMillis(20)).block();
+		assertThat(s.isDisposed()).isTrue();
+
+		s.start();
+		assertThat(s.isDisposed()).isFalse();
+
+		s.dispose();
+		assertThat(s.isDisposed()).isTrue();
+
+		s.start();
+		assertThat(s.isDisposed()).isFalse();
 	}
 
 	@Test

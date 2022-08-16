@@ -16,22 +16,26 @@
 
 package reactor.core.scheduler;
 
-import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.*;
-
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.core.publisher.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.*;
+import static reactor.core.scheduler.SingleScheduler.TERMINATED;
 
 /**
  * @author Stephane Maldini
@@ -46,6 +50,17 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
+	}
+
+	@Override
+	protected boolean shouldCheckMultipleDisposeGracefully() {
+		return true;
+	}
+
+	@Override
+	protected boolean isTerminated(Scheduler s) {
+		SingleScheduler scheduler = (SingleScheduler) s;
+		return scheduler.state.currentResource.isTerminated();
 	}
 
 	@Test
@@ -237,5 +252,28 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			scheduler.dispose();
 		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void restartSupported(boolean disposeGracefully) {
+		Scheduler s = Schedulers.newSingle("restartSupported");
+		if (disposeGracefully) {
+			s.disposeGracefully().timeout(Duration.ofSeconds(1)).subscribe();
+		} else {
+			s.dispose();
+		}
+		SchedulerState<ScheduledExecutorService> stateBefore = ((SingleScheduler) s).state;
+		assertThat(stateBefore.currentResource).as("SHUTDOWN").isSameAs(TERMINATED);
+
+		s.start();
+
+		assertThat(((SingleScheduler) s).state.currentResource)
+				.isNotSameAs(stateBefore.currentResource)
+				.isInstanceOfSatisfying(ScheduledExecutorService.class,
+						executor -> {
+							assertThat(executor.isShutdown()).isFalse();
+							assertThat(executor.isTerminated()).isFalse();
+						});
 	}
 }

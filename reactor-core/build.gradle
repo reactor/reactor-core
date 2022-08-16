@@ -197,7 +197,8 @@ task japicmp(type: JapicmpTask) {
 		'reactor.core.scheduler.Schedulers#newElastic(int, java.util.concurrent.ThreadFactory)',
 		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)',
 		'reactor.core.Scannable#tagsDeduplicated()',
-		"reactor.core.publisher.Mono#toProcessor()"
+		"reactor.core.publisher.Mono#toProcessor()",
+		"reactor.core.scheduler.Scheduler#disposeGracefully()"
 	]
 }
 
