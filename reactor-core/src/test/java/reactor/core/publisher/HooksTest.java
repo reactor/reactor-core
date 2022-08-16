@@ -54,32 +54,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class HooksTest {
 
-	// https://github.com/reactor/reactor-core/issues/3137
-	@Test
-	public void reproduceClassCastExceptionWithHooks() {
-		Hooks.onLastOperator(objectPublisher -> {
-			if (objectPublisher instanceof Mono) {
-				return Hooks.convertToMonoBypassingHooks(objectPublisher, false)
-				            .doFinally(signalType -> {
-				            });
-			} else {
-				return objectPublisher;
-			}
-		});
-
-		try {
-			Mono.just(1)
-			    .flatMap(fsm -> Mono.just(1)
-			                        .doOnSubscribe(subscription -> {
-			                        }))
-			    .doOnSubscribe(subscription -> {
-			    })
-			    .block();
-		} finally {
-			Hooks.resetOnLastOperator();
-		}
-	}
-
 	void simpleFlux(){
 		Flux.just(1)
 		    .map(d -> d + 1)
@@ -95,7 +69,6 @@ public class HooksTest {
 			super(message);
 		}
 	}
-
 
 	@Test
 	public void staticActivationOfOperatorDebug() {
@@ -1280,5 +1253,31 @@ public class HooksTest {
 				sub.onComplete();
 			}
 		};
+	}
+
+	// https://github.com/reactor/reactor-core/issues/3137
+	@Test
+	public void reproduceClassCastExceptionWithHooks() {
+		Hooks.onLastOperator(objectPublisher -> {
+			if (objectPublisher instanceof Mono) {
+				return Hooks.convertToMonoBypassingHooks(objectPublisher, false)
+				            .doFinally(signalType -> {
+				            });
+			} else {
+				return objectPublisher;
+			}
+		});
+
+		try {
+			Mono.just(1)
+			    .flatMap(fsm -> Mono.just(1)
+			                        .doOnSubscribe(subscription -> {
+			                        }))
+			    .doOnSubscribe(subscription -> {
+			    })
+			    .block();
+		} finally {
+			Hooks.resetOnLastOperator();
+		}
 	}
 }
