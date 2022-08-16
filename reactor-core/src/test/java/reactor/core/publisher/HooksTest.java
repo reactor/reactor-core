@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,6 @@ public class HooksTest {
 			super(message);
 		}
 	}
-
 
 	@Test
 	public void staticActivationOfOperatorDebug() {
@@ -141,6 +140,7 @@ public class HooksTest {
 	public void onEachOperatorOneHookNoComposite() {
 		Function<? super Publisher<Object>, ? extends Publisher<Object>> hook = p -> p;
 		Hooks.onEachOperator(hook);
+
 
 		assertThat(Hooks.onEachOperatorHook).isSameAs(hook);
 	}
@@ -1253,5 +1253,31 @@ public class HooksTest {
 				sub.onComplete();
 			}
 		};
+	}
+
+	// https://github.com/reactor/reactor-core/issues/3137
+	@Test
+	public void reproduceClassCastExceptionWithHooks() {
+		Hooks.onLastOperator(objectPublisher -> {
+			if (objectPublisher instanceof Mono) {
+				return Hooks.convertToMonoBypassingHooks(objectPublisher, false)
+				            .doFinally(signalType -> {
+				            });
+			} else {
+				return objectPublisher;
+			}
+		});
+
+		try {
+			Mono.just(1)
+			    .flatMap(fsm -> Mono.just(1)
+			                        .doOnSubscribe(subscription -> {
+			                        }))
+			    .doOnSubscribe(subscription -> {
+			    })
+			    .block();
+		} finally {
+			Hooks.resetOnLastOperator();
+		}
 	}
 }
