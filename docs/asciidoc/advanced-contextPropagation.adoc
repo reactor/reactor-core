@@ -2,7 +2,7 @@
 = Context-Propagation Support
 
 Since 3.5.0, Reactor-Core embeds support for the `io.micrometer:context-propagation` SPI.
-This library is intended as a mean to easily adapt between various implementations of the concept of a Context, of which
+This library is intended as a means to easily adapt between various implementations of the concept of a Context, of which
 `ContextView`/`Context` is an example, and between `ThreadLocal` variables as well.
 
 `ReactorContextAccessor` allows the Context-Propagation library to understand Reactor `Context` and `Contextview`.
