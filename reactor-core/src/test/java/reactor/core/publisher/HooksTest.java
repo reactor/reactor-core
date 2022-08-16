@@ -67,14 +67,17 @@ public class HooksTest {
 			}
 		});
 
-		Mono.just(1)
-		    .flatMap(fsm ->
-				    Mono.just(1)
-				        .doOnSubscribe(subscription -> {})
-		    )
-		    .doOnSubscribe(subscription -> {
-		    })
-		    .block();
+		try {
+			Mono.just(1)
+			    .flatMap(fsm -> Mono.just(1)
+			                        .doOnSubscribe(subscription -> {
+			                        }))
+			    .doOnSubscribe(subscription -> {
+			    })
+			    .block();
+		} finally {
+			Hooks.resetOnLastOperator();
+		}
 	}
 
 	void simpleFlux(){
@@ -164,6 +167,7 @@ public class HooksTest {
 	public void onEachOperatorOneHookNoComposite() {
 		Function<? super Publisher<Object>, ? extends Publisher<Object>> hook = p -> p;
 		Hooks.onEachOperator(hook);
+
 
 		assertThat(Hooks.onEachOperatorHook).isSameAs(hook);
 	}
