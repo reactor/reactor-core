@@ -15,7 +15,7 @@ On top of that, Reactor-Core 3.5.0 also introduces operators that transparently 
 
 This operator is a convenient alternative to `contextWrite` which performs a `ContextSnapshot#capture` and uses the SPI to translate that snapshot into the Reactor `Context`.
 
-As a result, if there were any threadlocals during subscription phase they would now be stored into the `Context` and visible
+As a result, if there were any ThreadLocal values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
 at runtime in upstream operators.
 
 ====

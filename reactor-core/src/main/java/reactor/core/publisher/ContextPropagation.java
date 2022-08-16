@@ -26,7 +26,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * Utility private class to detect if Context-Propagation is on the classpath and to offer
+ * Utility private class to detect if the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a> is on the classpath and to offer
  * ContextSnapshot support to {@link Flux} and {@link Mono}.
  *
  * @author Simon Baslé
