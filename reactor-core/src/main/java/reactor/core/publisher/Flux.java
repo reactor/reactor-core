@@ -6756,6 +6756,43 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
+	 * with an {@link Subscriber#onComplete() onComplete signal}. All other signals are propagated as-is.
+	 *
+	 * @return a new {@link Flux} falling back on completion when an onError occurs
+	 * @see #onErrorReturn(Object)
+	 */
+	public final Flux<T> onErrorComplete() {
+		return onAssembly(new FluxOnErrorReturn<>(this, null, null));
+	}
+
+	/**
+	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
+	 * with an {@link Subscriber#onComplete() onComplete signal} if the error matches the given
+	 * {@link Class}. All other signals, including non-matching onError, are propagated as-is.
+	 *
+	 * @return a new {@link Flux} falling back on completion when a matching error occurs
+	 * @see #onErrorReturn(Class, Object)
+	 */
+	public final Flux<T> onErrorComplete(Class<? extends Throwable> type) {
+		Objects.requireNonNull(type, "type must not be null");
+		return onErrorComplete(type::isInstance);
+	}
+
+	/**
+	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
+	 * with an {@link Subscriber#onComplete() onComplete signal} if the error matches the given
+	 * {@link Predicate}. All other signals, including non-matching onError, are propagated as-is.
+	 *
+	 * @return a new {@link Flux} falling back on completion when a matching error occurs
+	 * @see #onErrorReturn(Predicate, Object)
+	 */
+	public final Flux<T> onErrorComplete(Predicate<? super Throwable> predicate) {
+		Objects.requireNonNull(predicate, "predicate must not be null");
+		return onAssembly(new FluxOnErrorReturn<>(this, predicate, null));
+	}
+
+	/**
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
@@ -7004,9 +7041,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param fallbackValue the value to emit if an error occurs
 	 *
 	 * @return a new falling back {@link Flux}
+	 * @see #onErrorComplete()
 	 */
 	public final Flux<T> onErrorReturn(T fallbackValue) {
-		return onErrorResume(t -> just(fallbackValue));
+		Objects.requireNonNull(fallbackValue, "fallbackValue must not be null");
+		return onAssembly(new FluxOnErrorReturn<>(this, null, fallbackValue));
 	}
 
 	/**
@@ -7020,10 +7059,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new falling back {@link Flux}
+	 * @see #onErrorComplete(Class)
 	 */
-	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type,
-			T fallbackValue) {
-		return onErrorResume(type, t -> just(fallbackValue));
+	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type, T fallbackValue) {
+		Objects.requireNonNull(type, "type must not be null");
+		return onErrorReturn(type::isInstance, fallbackValue);
 	}
 
 	/**
@@ -7036,9 +7076,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
 	 *
 	 * @return a new falling back {@link Flux}
+	 * @see #onErrorComplete(Predicate)
 	 */
 	public final Flux<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
-		return onErrorResume(predicate, t -> just(fallbackValue));
+		Objects.requireNonNull(predicate, "predicate must not be null");
+		Objects.requireNonNull(fallbackValue, "fallbackValue must not be null");
+		return onAssembly(new FluxOnErrorReturn<>(this, predicate, fallbackValue));
 	}
 
 	/**
