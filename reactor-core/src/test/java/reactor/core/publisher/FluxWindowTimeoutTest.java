@@ -17,11 +17,11 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
@@ -35,6 +35,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -468,5 +469,33 @@ public class FluxWindowTimeoutTest {
 		test.cancel();
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED))
 		          .isTrue();
+	}
+
+	@Test
+	public void sourceError() {
+		TestPublisher<Integer> source = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .windowTimeout(2, Duration.ofSeconds(1), true)
+		                          .flatMap(Flux::materialize)
+		            )
+					.then(() -> source.next(1))
+					.expectNext(Signal.next(1))
+		            .then(() -> source.error(
+				            new IllegalStateException("expected failure")))
+		            // failure observed by window
+		            .expectNextMatches(signalSourceErrorMessage("expected failure"))
+		            // failure observed by main Flux
+		            .expectErrorMessage("expected failure")
+		            .verify();
+
+		source.assertNoSubscribers();
+	}
+
+	private <T> Predicate<? super Signal<T>> signalSourceErrorMessage(String expectedMessage) {
+		return signal -> signal.isOnError()
+				&& signal.getThrowable() != null
+				&& signal.getThrowable().getCause() != null
+				&& expectedMessage.equals(signal.getThrowable().getCause().getMessage());
 	}
 }

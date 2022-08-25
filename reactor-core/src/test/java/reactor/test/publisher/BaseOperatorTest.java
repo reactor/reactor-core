@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.ReactorTestExecutionListener;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -179,9 +178,6 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 						}
 						throw Exceptions.propagate(e);
 					});
-//						step.expectErrorMessage(m)
-//						.verifyThenAssertThat()
-//						.hasOperatorErrorWithMessage(m);
 				}
 				catch (Throwable e) {
 					if (e instanceof AssertionError) {

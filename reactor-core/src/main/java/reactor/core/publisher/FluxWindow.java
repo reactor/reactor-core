@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+
+import static reactor.core.Exceptions.wrapSource;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -195,7 +197,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST);
+				w.emitError(wrapSource(t), Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			actual.onError(t);
@@ -376,7 +378,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST);
+				w.emitError(wrapSource(t), Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			actual.onError(t);
@@ -586,7 +588,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			done = true;
 
 			for (Sinks.Many<T> w : this) {
-				w.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST);
+				w.emitError(wrapSource(t), Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 			clear();
 

@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
@@ -353,6 +354,37 @@ public class FluxWindowWhenTest {
 		            .assertNext(t -> assertThat(t).containsExactly(4, 5))
 		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
 		            .verifyComplete();
+	}
+
+	@Test
+	public void sourceError() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> start = TestPublisher.create();
+		TestPublisher<Integer> end = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .windowWhen(start, v -> end)
+		                          .flatMap(Flux::materialize)
+		            )
+		            .then(() -> start.next(1))
+		            .then(() -> source.error(
+							new IllegalStateException("expected failure")))
+		            // failure observerd by window
+					.expectNextMatches(signalSourceErrorMessage("expected failure"))
+		            // failure observed by main Flux
+		            .expectErrorMessage("expected failure")
+		            .verify();
+
+		source.assertNoSubscribers();
+		start.assertNoSubscribers();
+		end.assertNoSubscribers();
+	}
+
+	private <T> Predicate<? super Signal<T>> signalSourceErrorMessage(String expectedMessage) {
+		return signal -> signal.isOnError()
+				&& signal.getThrowable() != null
+				&& signal.getThrowable().getCause() != null
+				&& expectedMessage.equals(signal.getThrowable().getCause().getMessage());
 	}
 
 	@Test
