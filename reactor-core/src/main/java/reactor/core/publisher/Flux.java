@@ -6759,6 +6759,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
 	 * with an {@link Subscriber#onComplete() onComplete signal}. All other signals are propagated as-is.
 	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/onErrorCompleteForFlux.svg" alt="">
+	 *
 	 * @return a new {@link Flux} falling back on completion when an onError occurs
 	 * @see #onErrorReturn(Object)
 	 */
@@ -6770,6 +6773,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
 	 * with an {@link Subscriber#onComplete() onComplete signal} if the error matches the given
 	 * {@link Class}. All other signals, including non-matching onError, are propagated as-is.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/onErrorCompleteForFlux.svg" alt="">
 	 *
 	 * @return a new {@link Flux} falling back on completion when a matching error occurs
 	 * @see #onErrorReturn(Class, Object)
@@ -6783,6 +6789,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
 	 * with an {@link Subscriber#onComplete() onComplete signal} if the error matches the given
 	 * {@link Predicate}. All other signals, including non-matching onError, are propagated as-is.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/onErrorCompleteForFlux.svg" alt="">
 	 *
 	 * @return a new {@link Flux} falling back on completion when a matching error occurs
 	 * @see #onErrorReturn(Predicate, Object)
