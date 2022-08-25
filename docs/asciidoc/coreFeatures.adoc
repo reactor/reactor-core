@@ -477,6 +477,26 @@ Flux.just(10)
 <1> Recover only if the message of the exception is `"boom10"`
 ====
 
+==== Catch and swallow the error
+
+If you don't even want to replace the exception with a fallback value, but instead to ignore it and
+only propagate elements that have been produced so far, what you want is essentially replacing
+the `onError` signal with an `onComplete` signal. This can be done by the `onErrorComplete` operator:
+
+====
+[source,java]
+----
+Flux.just(10,20,30)
+    .map(this::doSomethingDangerousOn30)
+    .onErrorComplete(); //<1>
+----
+<1> Recover by turning the `onError` into an `onComplete`
+----
+====
+
+Like `onErrorReturn`, `onErrorComplete` has variants that let you filter which exceptions
+to fall back on, based either on the exception's class or on a `Predicate`.
+
 ==== Fallback Method
 
 If you want more than a single default value and you have an alternative (safer) way of
