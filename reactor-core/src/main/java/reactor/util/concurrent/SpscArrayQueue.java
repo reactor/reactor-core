@@ -179,22 +179,22 @@ class SpscArrayQueueP1<T> extends SpscArrayQueueCold<T> {
 	/** */
 	private static final long serialVersionUID = -4461305682174876914L;
 
-	byte b000,b001,b002,b003,b004,b005,b006,b007;//  8b
-	byte b010,b011,b012,b013,b014,b015,b016,b017;// 16b
-	byte b020,b021,b022,b023,b024,b025,b026,b027;// 24b
-	byte b030,b031,b032,b033,b034,b035,b036,b037;// 32b
-	byte b040,b041,b042,b043,b044,b045,b046,b047;// 40b
-	byte b050,b051,b052,b053,b054,b055,b056,b057;// 48b
-	byte b060,b061,b062,b063,b064,b065,b066,b067;// 56b
-	byte b070,b071,b072,b073,b074,b075,b076,b077;// 64b
-	byte b100,b101,b102,b103,b104,b105,b106,b107;// 72b
-	byte b110,b111,b112,b113,b114,b115,b116,b117;// 80b
-	byte b120,b121,b122,b123,b124,b125,b126,b127;// 88b
-	byte b130,b131,b132,b133,b134,b135,b136,b137;// 96b
-	byte b140,b141,b142,b143,b144,b145,b146,b147;//104b
-	byte b150,b151,b152,b153,b154,b155,b156,b157;//112b
-	byte b160,b161,b162,b163,b164,b165,b166,b167;//120b
-	byte b170,b171,b172,b173,b174,b175,b176,b177;//128b
+	byte pad000,pad001,pad002,pad003,pad004,pad005,pad006,pad007;//  8b
+	byte pad010,pad011,pad012,pad013,pad014,pad015,pad016,pad017;// 16b
+	byte pad020,pad021,pad022,pad023,pad024,pad025,pad026,pad027;// 24b
+	byte pad030,pad031,pad032,pad033,pad034,pad035,pad036,pad037;// 32b
+	byte pad040,pad041,pad042,pad043,pad044,pad045,pad046,pad047;// 40b
+	byte pad050,pad051,pad052,pad053,pad054,pad055,pad056,pad057;// 48b
+	byte pad060,pad061,pad062,pad063,pad064,pad065,pad066,pad067;// 56b
+	byte pad070,pad071,pad072,pad073,pad074,pad075,pad076,pad077;// 64b
+	byte pad100,pad101,pad102,pad103,pad104,pad105,pad106,pad107;// 72b
+	byte pad110,pad111,pad112,pad113,pad114,pad115,pad116,pad117;// 80b
+	byte pad120,pad121,pad122,pad123,pad124,pad125,pad126,pad127;// 88b
+	byte pad130,pad131,pad132,pad133,pad134,pad135,pad136,pad137;// 96b
+	byte pad140,pad141,pad142,pad143,pad144,pad145,pad146,pad147;//104b
+	byte pad150,pad151,pad152,pad153,pad154,pad155,pad156,pad157;//112b
+	byte pad160,pad161,pad162,pad163,pad164,pad165,pad166,pad167;//120b
+	byte pad170,pad171,pad172,pad173,pad174,pad175,pad176,pad177;//128b
 
 	SpscArrayQueueP1(int length) {
 		super(length);
@@ -221,22 +221,22 @@ class SpscArrayQueueP2<T> extends SpscArrayQueueProducer<T> {
 	/** */
 	private static final long serialVersionUID = -5400235061461013116L;
 
-	byte b000,b001,b002,b003,b004,b005,b006,b007;//  8b
-	byte b010,b011,b012,b013,b014,b015,b016,b017;// 16b
-	byte b020,b021,b022,b023,b024,b025,b026,b027;// 24b
-	byte b030,b031,b032,b033,b034,b035,b036,b037;// 32b
-	byte b040,b041,b042,b043,b044,b045,b046,b047;// 40b
-	byte b050,b051,b052,b053,b054,b055,b056,b057;// 48b
-	byte b060,b061,b062,b063,b064,b065,b066,b067;// 56b
-	byte b070,b071,b072,b073,b074,b075,b076,b077;// 64b
-	byte b100,b101,b102,b103,b104,b105,b106,b107;// 72b
-	byte b110,b111,b112,b113,b114,b115,b116,b117;// 80b
-	byte b120,b121,b122,b123,b124,b125,b126,b127;// 88b
-	byte b130,b131,b132,b133,b134,b135,b136,b137;// 96b
-	byte b140,b141,b142,b143,b144,b145,b146,b147;//104b
-	byte b150,b151,b152,b153,b154,b155,b156,b157;//112b
-	byte b160,b161,b162,b163,b164,b165,b166,b167;//120b
-	byte b170,b171,b172,b173,b174,b175,b176,b177;//128b
+	byte pad000,pad001,pad002,pad003,pad004,pad005,pad006,pad007;//  8b
+	byte pad010,pad011,pad012,pad013,pad014,pad015,pad016,pad017;// 16b
+	byte pad020,pad021,pad022,pad023,pad024,pad025,pad026,pad027;// 24b
+	byte pad030,pad031,pad032,pad033,pad034,pad035,pad036,pad037;// 32b
+	byte pad040,pad041,pad042,pad043,pad044,pad045,pad046,pad047;// 40b
+	byte pad050,pad051,pad052,pad053,pad054,pad055,pad056,pad057;// 48b
+	byte pad060,pad061,pad062,pad063,pad064,pad065,pad066,pad067;// 56b
+	byte pad070,pad071,pad072,pad073,pad074,pad075,pad076,pad077;// 64b
+	byte pad100,pad101,pad102,pad103,pad104,pad105,pad106,pad107;// 72b
+	byte pad110,pad111,pad112,pad113,pad114,pad115,pad116,pad117;// 80b
+	byte pad120,pad121,pad122,pad123,pad124,pad125,pad126,pad127;// 88b
+	byte pad130,pad131,pad132,pad133,pad134,pad135,pad136,pad137;// 96b
+	byte pad140,pad141,pad142,pad143,pad144,pad145,pad146,pad147;//104b
+	byte pad150,pad151,pad152,pad153,pad154,pad155,pad156,pad157;//112b
+	byte pad160,pad161,pad162,pad163,pad164,pad165,pad166,pad167;//120b
+	byte pad170,pad171,pad172,pad173,pad174,pad175,pad176,pad177;//128b
 
 	SpscArrayQueueP2(int length) {
 		super(length);
@@ -263,22 +263,22 @@ class SpscArrayQueueP3<T> extends SpscArrayQueueConsumer<T> {
 	/** */
 	private static final long serialVersionUID = -2684922090021364171L;
 
-	byte b000,b001,b002,b003,b004,b005,b006,b007;//  8b
-	byte b010,b011,b012,b013,b014,b015,b016,b017;// 16b
-	byte b020,b021,b022,b023,b024,b025,b026,b027;// 24b
-	byte b030,b031,b032,b033,b034,b035,b036,b037;// 32b
-	byte b040,b041,b042,b043,b044,b045,b046,b047;// 40b
-	byte b050,b051,b052,b053,b054,b055,b056,b057;// 48b
-	byte b060,b061,b062,b063,b064,b065,b066,b067;// 56b
-	byte b070,b071,b072,b073,b074,b075,b076,b077;// 64b
-	byte b100,b101,b102,b103,b104,b105,b106,b107;// 72b
-	byte b110,b111,b112,b113,b114,b115,b116,b117;// 80b
-	byte b120,b121,b122,b123,b124,b125,b126,b127;// 88b
-	byte b130,b131,b132,b133,b134,b135,b136,b137;// 96b
-	byte b140,b141,b142,b143,b144,b145,b146,b147;//104b
-	byte b150,b151,b152,b153,b154,b155,b156,b157;//112b
-	byte b160,b161,b162,b163,b164,b165,b166,b167;//120b
-	byte b170,b171,b172,b173,b174,b175,b176,b177;//128b
+	byte pad000,pad001,pad002,pad003,pad004,pad005,pad006,pad007;//  8b
+	byte pad010,pad011,pad012,pad013,pad014,pad015,pad016,pad017;// 16b
+	byte pad020,pad021,pad022,pad023,pad024,pad025,pad026,pad027;// 24b
+	byte pad030,pad031,pad032,pad033,pad034,pad035,pad036,pad037;// 32b
+	byte pad040,pad041,pad042,pad043,pad044,pad045,pad046,pad047;// 40b
+	byte pad050,pad051,pad052,pad053,pad054,pad055,pad056,pad057;// 48b
+	byte pad060,pad061,pad062,pad063,pad064,pad065,pad066,pad067;// 56b
+	byte pad070,pad071,pad072,pad073,pad074,pad075,pad076,pad077;// 64b
+	byte pad100,pad101,pad102,pad103,pad104,pad105,pad106,pad107;// 72b
+	byte pad110,pad111,pad112,pad113,pad114,pad115,pad116,pad117;// 80b
+	byte pad120,pad121,pad122,pad123,pad124,pad125,pad126,pad127;// 88b
+	byte pad130,pad131,pad132,pad133,pad134,pad135,pad136,pad137;// 96b
+	byte pad140,pad141,pad142,pad143,pad144,pad145,pad146,pad147;//104b
+	byte pad150,pad151,pad152,pad153,pad154,pad155,pad156,pad157;//112b
+	byte pad160,pad161,pad162,pad163,pad164,pad165,pad166,pad167;//120b
+	byte pad170,pad171,pad172,pad173,pad174,pad175,pad176,pad177;//128b
 
 	SpscArrayQueueP3(int length) {
 		super(length);
