@@ -6,7 +6,7 @@ baselinePerfExtra = "3.4.8"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.12"
+bytebuddy = "1.12.14"
 jmh = "1.35"
 junit = "5.9.0"
 #note that context-propagation has a different version directly set in libraries
