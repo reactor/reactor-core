@@ -16,8 +16,14 @@
 
 package reactor.util.concurrent;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.openjdk.jol.info.ClassLayout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -118,5 +124,45 @@ public class SpscArrayQueueTest {
 		for (int i = 0; i < 100; i++) {
 			assertThat(q.peek()).isEqualTo(1);
 			assertThat(q.size()).isEqualTo(2);		}
+	}
+
+	@Test
+	@Tag("slow")
+	void objectPadding() {
+		ClassLayout layout = ClassLayout.parseClass(SpscArrayQueue.class);
+
+		AtomicLong currentPaddingSize = new AtomicLong();
+		List<String> interestingFields = new ArrayList<>();
+		List<Long> paddingSizes = new ArrayList<>();
+
+		layout.fields().forEach(field -> {
+			if (field.name().startsWith("pad")) {
+				currentPaddingSize.addAndGet(field.size());
+			}
+			else {
+				if (currentPaddingSize.get() > 0) {
+					interestingFields.add("[padding]");
+					paddingSizes.add(currentPaddingSize.getAndSet(0));
+				}
+				interestingFields.add(field.name());
+			}
+		});
+		if (currentPaddingSize.get() > 0) {
+			interestingFields.add("[padding]");
+			paddingSizes.add(currentPaddingSize.getAndSet(0));
+		}
+
+		assertThat(interestingFields).containsExactly(
+				"array",
+				"mask",
+				"[padding]",
+				"producerIndex",
+				"[padding]",
+				"consumerIndex",
+				"[padding]"
+		);
+
+		final long minPaddingSize = 120;
+		assertThat(paddingSizes).filteredOn(padSize -> padSize >= minPaddingSize).hasSize(3);
 	}
 }
