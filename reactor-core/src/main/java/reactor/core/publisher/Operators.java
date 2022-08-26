@@ -622,7 +622,7 @@ public abstract class Operators {
 	 * An unexpected exception is about to be dropped.
 	 * <p>
 	 * If no hook is registered for {@link Hooks#onErrorDropped(Consumer)}, the dropped
-	 * error is logged at ERROR level and thrown (via {@link Exceptions#bubble(Throwable)}.
+	 * error is logged at ERROR level.
 	 *
 	 * @param e the dropped exception
 	 * @param context a context that might hold a local error consumer
@@ -746,7 +746,7 @@ public abstract class Operators {
 	 * operator. This exception denotes that an execution was rejected by a
 	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
-	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
+	 * Wrapping is done by calling both {@link Exceptions#failWithRejected(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object, Context)}.
 	 *
 	 * @param original the original execution error
