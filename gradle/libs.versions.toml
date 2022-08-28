@@ -31,7 +31,7 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 junit-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
-logback = "ch.qos.logback:logback-classic:1.2.11"
+logback = "ch.qos.logback:logback-classic:1.4.0"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
