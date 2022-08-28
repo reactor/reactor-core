@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,6 @@ public class SpscArrayQueueTest {
 				"[padding]"
 		);
 
-		final long minPaddingSize = 120;
-		assertThat(paddingSizes).filteredOn(padSize -> padSize >= minPaddingSize).hasSize(3);
+		assertThat(paddingSizes).containsExactly(124L, 128L, 128L);
 	}
 }
