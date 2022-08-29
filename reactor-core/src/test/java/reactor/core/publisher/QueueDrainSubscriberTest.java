@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jol.info.ClassLayout;
-import org.openjdk.jol.info.FieldLayout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,51 +30,42 @@ public class QueueDrainSubscriberTest {
 
 	@Test
 	@Tag("slow")
-	public void objectPadding() {
+	void objectPadding() {
 		ClassLayout layout = ClassLayout.parseClass(QueueDrainSubscriber.class);
-		AtomicReference<FieldLayout> wip = new AtomicReference<>();
-		AtomicReference<FieldLayout> requested = new AtomicReference<>();
+
+		AtomicLong currentPaddingSize = new AtomicLong();
+		List<String> fields = new ArrayList<>();
+		List<Long> paddingSizes = new ArrayList<>();
 
 		layout.fields().forEach(f -> {
-			if ("wip".equals(f.name())) wip.set(f);
-			else if ("requested".equals(f.name())) requested.set(f);
+			if (f.name().startsWith("pad")) {
+				currentPaddingSize.addAndGet(f.size());
+			} else {
+				if (currentPaddingSize.get() > 0) {
+					fields.add("[padding]");
+					paddingSizes.add(currentPaddingSize.getAndSet(0));
+				}
+				fields.add(f.name());
+			}
 		});
+		if (currentPaddingSize.get() > 0) {
+			fields.add("[padding]");
+			paddingSizes.add(currentPaddingSize.getAndSet(0));
+		}
 
-		final FieldLayout fieldAfterRequested = layout.fields()
-		                                              .tailSet(requested.get())
-		                                              .stream()
-		                                              .skip(1)
-		                                              .filter(fl -> fl.name().length() >= 4)
-		                                              .findFirst()
-		                                              .get();
+		assertThat(fields).containsExactly(
+				"[padding]",
+				"wip",
+				"[padding]",
+				"requested",
+				"[padding]",
+				"cancelled",
+				"done",
+				"actual",
+				"queue",
+				"error"
+		);
 
-		assertThat(layout.fields().headSet(wip.get()))
-				.as("wip pre-padding")
-				.hasSize(15)
-				.allSatisfy(fl -> assertThat(fl.name()).startsWith("p"));
-
-		assertThat(layout.fields().subSet(wip.get(), requested.get()).stream().skip(1))
-				.as("wip-requested padding")
-				.hasSize(15)
-				.allSatisfy(fl -> assertThat(fl.name()).startsWith("p").endsWith("a"));
-
-		assertThat(layout.fields().subSet(requested.get(), fieldAfterRequested)
-		                 .stream()
-		                 .skip(1))
-				.as("requested post-padding")
-				.hasSize(15)
-				.allSatisfy(fl -> assertThat(fl.name()).startsWith("q").isNotEqualTo("queue"));
-
-		assertThat(wip.get().offset())
-				.as("wip offset")
-				.isEqualTo(136);
-		assertThat(requested.get().offset())
-				.as("requested offset")
-				.isEqualTo(wip.get().offset() + 128);
-
-		System.out.println(wip.get());
-		System.out.println(requested.get());
-		System.out.println(fieldAfterRequested);
+		assertThat(paddingSizes).containsExactly(128L, 128L, 128L);
 	}
-
 }
