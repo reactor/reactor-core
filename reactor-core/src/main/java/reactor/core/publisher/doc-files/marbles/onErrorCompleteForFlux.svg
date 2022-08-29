@@ -1,0 +1,35 @@
+<svg width="313.85" height="287" viewBox="0 0 83.04 75.93" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="b" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <path d="M8 0 0-3v6z" fill="currentColor" stroke="currentColor"/>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="a" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
+   <path d="M12 0 0-4v9z" fill="currentColor" stroke="currentColor"/>
+  </marker>
+ </defs>
+ <g transform="translate(-5.57 -5.33)">
+  <path d="M9.22 38.64h73.1l.22.27v16.97l-.23.27H9.21L9 55.88V38.91Z" fill="#fff" stroke="#34302c" stroke-width=".49" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="-49.46" y="43.43" fill="#34302c" style="font-size:3.175px;stroke-width:.264583"><tspan font-size="6.35" font-weight="700" x="16.95" y="49.25" font-family="Tahoma, 'Nimbus Sans L'" style="stroke-width:.0700043">onErrorComplete()</tspan></text>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#a)" d="M5.84 11.68H81.5"/>
+  <circle cx="25.15" cy="11.68" fill="#6cb33e" r="6.09" style="stroke-width:.264583"/>
+  <circle cx="25.15" cy="11.68" fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" r="6.09"/>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)" d="M25.15 17.5v16.14"/>
+  <circle cx="48.97" cy="11.68" fill="#e6ba31" r="6.09" style="stroke-width:.264583"/>
+  <circle cx="48.97" cy="11.68" fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" r="6.09"/>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)" d="M48.97 17.5v16.14"/>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)" d="M70.13 13v20.64"/>
+  <path fill="none" stroke="#34302c" stroke-width=".49" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#a)" d="M5.88 74.91h76.11"/>
+  <circle cx="25.15" cy="74.91" fill="#6cb33e" r="6.09" style="stroke-width:.264583"/>
+  <circle cx="25.15" cy="74.91" fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" r="6.09"/>
+  <path d="M70.13 68.56c.27 0 .53 0 .53.53v11.64l-.53.53-.53-.53V69.1c0-.53.27-.53.53-.53z" fill="#34302c" style="stroke-width:.264583"/>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)" d="M25.15 55.86v7.4"/>
+  <circle cx="49.23" cy="74.91" fill="#e6ba31" r="6.09" style="stroke-width:.264583"/>
+  <circle cx="49.23" cy="74.91" fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" r="6.09"/>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)" d="M49.23 55.86v7.4"/>
+  <path fill="none" stroke="#34302c" stroke-width=".53" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2, 6" marker-end="url(#b)" d="m69.87 55.86.26 7.4"/>
+  <g fill="#ef2200">
+   <path d="m75.16 15.9-.53.54h-.8l-8.2-8.2v-.8l.53-.53h.8l8.2 8.2z"/>
+   <path d="m74.63 6.91.53.53v.8l-8.2 8.2h-.8l-.53-.53v-.8l8.2-8.2z"/>
+  </g>
+ </g>
+</svg>

@@ -3553,6 +3553,52 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
+	 * with an {@link Subscriber#onComplete() onComplete signal}. All other signals are propagated as-is.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/onErrorCompleteForMono.svg" alt="">
+	 *
+	 * @return a new {@link Mono} falling back on completion when an onError occurs
+	 * @see #onErrorReturn(Object)
+	 */
+	public final Mono<T> onErrorComplete() {
+		return onAssembly(new MonoOnErrorReturn<>(this, null, null));
+	}
+
+	/**
+	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
+	 * with an {@link Subscriber#onComplete() onComplete signal} if the error matches the given
+	 * {@link Class}. All other signals, including non-matching onError, are propagated as-is.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/onErrorCompleteForMono.svg" alt="">
+	 *
+	 * @return a new {@link Mono} falling back on completion when a matching error occurs
+	 * @see #onErrorReturn(Class, Object)
+	 */
+	public final Mono<T> onErrorComplete(Class<? extends Throwable> type) {
+		Objects.requireNonNull(type, "type must not be null");
+		return onErrorComplete(type::isInstance);
+	}
+
+	/**
+	 * Simply complete the sequence by replacing an {@link Subscriber#onError(Throwable) onError signal}
+	 * with an {@link Subscriber#onComplete() onComplete signal} if the error matches the given
+	 * {@link Predicate}. All other signals, including non-matching onError, are propagated as-is.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/onErrorCompleteForMono.svg" alt="">
+	 *
+	 * @return a new {@link Mono} falling back on completion when a matching error occurs
+	 * @see #onErrorReturn(Predicate, Object)
+	 */
+	public final Mono<T> onErrorComplete(Predicate<? super Throwable> predicate) {
+		Objects.requireNonNull(predicate, "predicate must not be null");
+		return onAssembly(new MonoOnErrorReturn<>(this, predicate, null));
+	}
+
+	/**
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
@@ -3812,12 +3858,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorReturnForMono.svg" alt="">
 	 *
-	 * @param fallback the value to emit if an error occurs
+	 * @param fallbackValue the value to emit if an error occurs
 	 *
 	 * @return a new falling back {@link Mono}
+	 * @see #onErrorComplete()
 	 */
-	public final Mono<T> onErrorReturn(final T fallback) {
-		return onErrorResume(throwable -> just(fallback));
+	public final Mono<T> onErrorReturn(final T fallbackValue) {
+		Objects.requireNonNull(fallbackValue, "fallbackValue must not be null");
+		return onAssembly(new MonoOnErrorReturn<>(this, null, fallbackValue));
 	}
 
 	/**
@@ -3831,9 +3879,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new falling back {@link Mono}
+	 * @see #onErrorComplete(Class)
 	 */
 	public final <E extends Throwable> Mono<T> onErrorReturn(Class<E> type, T fallbackValue) {
-		return onErrorResume(type, throwable -> just(fallbackValue));
+		Objects.requireNonNull(type, "type must not be null");
+		Objects.requireNonNull(fallbackValue, "fallbackValue must not be null");
+		return onErrorReturn(type::isInstance, fallbackValue);
 	}
 
 	/**
@@ -3846,9 +3897,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
 	 *
 	 * @return a new {@link Mono}
+	 * @see #onErrorComplete(Predicate)
 	 */
 	public final Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
-		return onErrorResume(predicate,  throwable -> just(fallbackValue));
+		Objects.requireNonNull(predicate, "predicate must not be null");
+		Objects.requireNonNull(fallbackValue, "fallbackValue must not be null");
+		return onAssembly(new MonoOnErrorReturn<>(this, predicate, fallbackValue));
 	}
 
 	/**
