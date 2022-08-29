@@ -36,6 +36,8 @@ import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
+import static reactor.core.Exceptions.wrapSource;
+
 /**
  * @author David Karnok
  */
@@ -207,7 +209,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			final InnerWindow<T> window = this.window;
 			if (window != null) {
-				window.sendError(t);
+				window.sendError(wrapSource(t));
 
 				if (hasUnsentWindow(previousState)) {
 					return;

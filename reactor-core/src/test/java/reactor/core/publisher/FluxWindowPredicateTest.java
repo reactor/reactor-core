@@ -538,7 +538,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(Signal.next(4))
 		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            //this is the error in the window:
-		            .expectNextMatches(signalErrorMessage("forced failure"))
+		            .expectNextMatches(signalSourceErrorMessage("forced failure"))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
@@ -567,7 +567,7 @@ public class FluxWindowPredicateTest extends
 					.expectNext(Signal.next(4))
 					.then(() -> sp1.emitNext(5, FAIL_FAST))
 					//error in the window:
-					.expectNextMatches(signalErrorMessage("predicate failure"))
+					.expectNextMatches(signalSourceErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -624,7 +624,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(Signal.next(4))
 		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            //this is the error in the window:
-		            .expectNextMatches(signalErrorMessage("forced failure"))
+		            .expectNextMatches(signalSourceErrorMessage("forced failure"))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
@@ -653,16 +653,18 @@ public class FluxWindowPredicateTest extends
 					.expectNext(Signal.next(4))
 					.then(() -> sp1.emitNext(5, FAIL_FAST))
 					//error in the window:
-					.expectNextMatches(signalErrorMessage("predicate failure"))
+					.expectNextMatches(signalSourceErrorMessage("predicate failure"))
+					//this is the error in the main:
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
-	private <T> Predicate<? super Signal<T>> signalErrorMessage(String expectedMessage) {
+	private <T> Predicate<? super Signal<T>> signalSourceErrorMessage(String expectedMessage) {
 		return signal -> signal.isOnError()
 				&& signal.getThrowable() != null
-				&& expectedMessage.equals(signal.getThrowable().getMessage());
+				&& signal.getThrowable().getCause() != null
+				&& expectedMessage.equals(signal.getThrowable().getCause().getMessage());
 	}
 
 	@Test
@@ -770,7 +772,7 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
+	public void mainErrorWhileIsPropagatedOnlyToMain() {
 		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -837,8 +839,8 @@ public class FluxWindowPredicateTest extends
 					.expectNext(Signal.next(3))
 					.then(() -> sp1.emitNext(4, FAIL_FAST)) //previous window closes, new (empty) window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(5, FAIL_FAST)) //fails, the empty window receives onError
-					//error in the window:
+					.then(() -> sp1.emitNext(5, FAIL_FAST)) //fails, the empty window is discarded
+					//error in the main:
 					.expectErrorMessage("predicate failure")
 					.verify(ofMillis(100));
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();

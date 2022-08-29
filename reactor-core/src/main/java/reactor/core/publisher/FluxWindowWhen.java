@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+
+import static reactor.core.Exceptions.wrapSource;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items
@@ -235,15 +237,16 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						dispose();
 						Throwable e = error;
 						if (e != null) {
-							actual.onError(e);
 							for (Sinks.Many<T> w : ws) {
-								w.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST);
+								w.emitError(wrapSource(e),
+										Sinks.EmitFailureHandler.FAIL_FAST);
 							}
+							actual.onError(e);
 						} else {
-							actual.onComplete();
 							for (Sinks.Many<T> w : ws) {
 								w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 							}
+							actual.onComplete();
 						}
 						ws.clear();
 						return;

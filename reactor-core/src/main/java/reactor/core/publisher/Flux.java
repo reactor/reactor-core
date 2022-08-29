@@ -9629,6 +9629,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9664,6 +9669,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
@@ -9695,6 +9705,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors and those emitted by the {@code boundary} delivered to the window
+	 * {@link Flux} are wrapped in {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9721,6 +9736,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9760,6 +9780,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
@@ -9788,6 +9813,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9828,6 +9858,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
@@ -9863,6 +9898,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9891,6 +9931,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9923,6 +9968,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
@@ -9952,6 +10002,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
@@ -9987,6 +10042,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -10024,6 +10084,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -10064,6 +10129,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
 	 * it also discards the remaining elements that were bound for it until the main sequence completes
@@ -10098,6 +10168,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
 	 * it also discards the remaining elements that were bound for it until the main sequence completes
@@ -10123,6 +10198,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -10151,6 +10231,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. Upon cancellation of the current window,
@@ -10187,6 +10272,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
 	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
+	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
 	 * the predicate). Upon cancellation of the current window, it also discards the remaining elements
@@ -10219,6 +10309,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
@@ -10258,6 +10353,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe to a window more than once: they are unicast.
 	 * This is most noticeable when trying to {@link #retry()} or {@link #repeat()} a window,
 	 * as these operators are based on re-subscription.
+	 *
+	 * <p>
+	 * To distinguish errors emitted by the processing of individual windows, source
+	 * sequence errors delivered to the window {@link Flux} are wrapped in
+	 * {@link reactor.core.Exceptions.SourceException}.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator DOES NOT discard elements.
 	 *

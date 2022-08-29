@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+
+import static reactor.core.Exceptions.wrapSource;
 
 /**
  * Splits the source sequence into continuous, non-overlapping windowEnds
@@ -294,7 +296,8 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
-							w.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST);
+							w.emitError(wrapSource(e),
+									Sinks.EmitFailureHandler.FAIL_FAST);
 
 							a.onError(e);
 						}

@@ -103,6 +103,18 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Wrap a {@link Throwable} delivered via {@link org.reactivestreams.Subscriber#onError(Throwable)}
+	 * from an upstream {@link org.reactivestreams.Publisher} that itself
+	 * emits {@link org.reactivestreams.Publisher}s to distinguish the error signal from
+	 * the inner sequence's processing errors.
+	 * @param throwable the source sequence {@code error} signal
+	 * @return {@link SourceException}
+	 */
+	public static Throwable wrapSource(Throwable throwable) {
+		return new SourceException(throwable);
+	}
+
+	/**
 	 * Create a composite exception that wraps the given {@link Throwable Throwable(s)},
 	 * as suppressed exceptions. Instances create by this method can be detected using the
 	 * {@link #isMultiple(Throwable)} check. The {@link #unwrapMultiple(Throwable)} method
@@ -723,6 +735,23 @@ public abstract class Exceptions {
 		}
 
 		private static final long serialVersionUID = 2491425227432776143L;
+	}
+
+	/**
+	 * A {@link Throwable} that wraps the actual {@code cause} delivered via
+	 * {@link org.reactivestreams.Subscriber#onError(Throwable)} in case of
+	 * {@link org.reactivestreams.Publisher}s that themselves emit items of type
+	 * {@link org.reactivestreams.Publisher}. This wrapper is used to distinguish
+	 * {@code error}s delivered by the upstream sequence from the ones that happen via
+	 * the inner sequence processing chain.
+	 */
+	public static class SourceException extends ReactiveException {
+
+		SourceException(Throwable cause) {
+			super(cause);
+		}
+
+		private static final long serialVersionUID = 5747581575202629465L;
 	}
 
 	static final class ErrorCallbackNotImplemented extends UnsupportedOperationException {

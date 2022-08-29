@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+
+import static reactor.core.Exceptions.wrapSource;
 
 /**
  * Cut a sequence into non-overlapping windows where each window boundary is determined by
@@ -347,7 +349,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			windowCount = 0;
 			WindowFlux<T> g = window;
 			if (g != null) {
-				g.onError(e);
+				g.onError(wrapSource(e));
 			}
 			actual.onError(e);
 			window = null;
