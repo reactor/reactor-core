@@ -66,6 +66,6 @@ public class QueueDrainSubscriberTest {
 				"error"
 		);
 
-		assertThat(paddingSizes).containsExactly(120L, 128L, 128L);
+		assertThat(paddingSizes).containsExactly(128L, 128L, 128L);
 	}
 }

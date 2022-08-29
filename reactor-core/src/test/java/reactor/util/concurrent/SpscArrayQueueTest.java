@@ -128,7 +128,7 @@ public class SpscArrayQueueTest {
 
 	@Test
 	@Tag("slow")
-	void objectPadding() {
+	public void objectPadding() {
 		ClassLayout layout = ClassLayout.parseClass(SpscArrayQueue.class);
 
 		AtomicLong currentPaddingSize = new AtomicLong();
@@ -162,6 +162,6 @@ public class SpscArrayQueueTest {
 				"[padding]"
 		);
 
-		assertThat(paddingSizes).containsExactly(124L, 128L, 128L);
+		assertThat(paddingSizes).containsExactly(132L, 128L, 128L);
 	}
 }
