@@ -212,6 +212,7 @@ final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 					actual.onNext(this.fallbackValue);
 					actual.onComplete();
 				}
+				//at this point we failed to swap to PENDING_FALLBACK but there is no measurable request, which MUST mean we were cancelled
 			} // else next request will take care of delivering
 		}
 
