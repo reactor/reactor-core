@@ -30,7 +30,7 @@ public class QueueDrainSubscriberTest {
 
 	@Test
 	@Tag("slow")
-	public void objectPadding() {
+	void objectPadding() {
 		ClassLayout layout = ClassLayout.parseClass(QueueDrainSubscriber.class);
 
 		AtomicLong currentPaddingSize = new AtomicLong();
