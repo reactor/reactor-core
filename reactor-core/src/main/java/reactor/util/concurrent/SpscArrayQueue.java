@@ -195,7 +195,7 @@ class SpscArrayQueueP1<T> extends SpscArrayQueueCold<T> {
 	byte pad140,pad141,pad142,pad143,pad144,pad145,pad146,pad147;//112b
 	byte pad150,pad151,pad152,pad153,pad154,pad155,pad156,pad157;//120b
 	byte pad160,pad161,pad162,pad163,pad164,pad165,pad166,pad167;//128b
-	byte pad170,pad171,pad172,pad173;							 //132b
+	byte pad170,pad171,pad172,pad173;                            //132b
 
 	SpscArrayQueueP1(int length) {
 		super(length);
