@@ -617,6 +617,11 @@ public abstract class Loggers {
 			this.err.format("[ERROR] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.err);
 		}
+
+		@Override
+		public String toString() {
+			return "ConsoleLogger[name="+getName()+", verbose="+verbose+"]";
+		}
 	}
 
 	static final class ConsoleLoggerFactory implements Function<String, Logger> {

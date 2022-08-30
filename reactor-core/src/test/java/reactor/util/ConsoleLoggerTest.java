@@ -321,4 +321,17 @@ public class ConsoleLoggerTest {
 			fail("Cannot acquire a console logger", e);
 		}
 	}
+
+	@Test
+	public void consoleLoggerCacheDoesNotCorruptVerbosity() {
+		final String loggerName = "console.cache.test";
+		final Logger verboseLogger = new Loggers.ConsoleLoggerFactory(true)
+				.apply(loggerName);
+		final Logger notVerboseLogger = new Loggers.ConsoleLoggerFactory(false)
+						.apply(loggerName);
+
+		assertThat(verboseLogger)
+				.as("Logger verbosity should not match")
+				.isNotEqualTo(notVerboseLogger);
+	}
 }
