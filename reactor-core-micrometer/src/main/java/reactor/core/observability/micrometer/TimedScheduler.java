@@ -62,17 +62,17 @@ final class TimedScheduler implements Scheduler {
 		}
 		Tags tags = Tags.of(tagsList);
 
-		String submittedName = SUBMITTED.getName(metricPrefix);
+		String submittedName = metricPrefix + SUBMITTED.getName();
 		this.submittedDirect = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_DIRECT));
 		this.submittedDelayed = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_DELAYED));
 		this.submittedPeriodicInitial = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_PERIODIC_INITIAL));
 		this.submittedPeriodicIteration = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_PERIODIC_ITERATION));
 
-		this.pendingTasks = LongTaskTimer.builder(TASKS_PENDING.getName(metricPrefix))
+		this.pendingTasks = LongTaskTimer.builder(metricPrefix + TASKS_PENDING.getName())
 			.tags(tags).register(registry);
-		this.activeTasks = LongTaskTimer.builder(TASKS_ACTIVE.getName(metricPrefix))
+		this.activeTasks = LongTaskTimer.builder(metricPrefix + TASKS_ACTIVE.getName())
 			.tags(tags).register(registry);
-		this.completedTasks = registry.timer(TASKS_COMPLETED.getName(metricPrefix), tags);
+		this.completedTasks = registry.timer(metricPrefix + TASKS_COMPLETED.getName(), tags);
 
 	}
 
