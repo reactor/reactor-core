@@ -19,9 +19,6 @@ package reactor.core.observability.micrometer;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.docs.DocumentedMeter;
-import org.reactivestreams.Subscriber;
-
-import reactor.core.publisher.Flux;
 
 /**
  * Meters and tags used by {@link MicrometerMeterListener}.
@@ -31,7 +28,7 @@ public enum PublisherMeters implements DocumentedMeter {
 	/**
 	 * Counts the number of events received from a malformed source (ie an onNext after an onComplete).
 	 */
-	MALFORMED {
+	MALFORMED_SOURCE_EVENTS {
 		@Override
 		public KeyName[] getKeyNames() {
 			return CommonTags.values();
@@ -76,7 +73,7 @@ public enum PublisherMeters implements DocumentedMeter {
 	/**
 	 * Counts the amount requested to a named sequence (eg.  Flux.name(String)) by all subscribers, until at least one requests an unbounded amount.
 	 */
-	REQUESTED {
+	REQUESTED_AMOUNT {
 		@Override
 		public KeyName[] getKeyNames() {
 			return CommonTags.values();

@@ -5,7 +5,7 @@
 Below is the list of meters used by Reactor-Core-Micrometer's metrics tap listener feature,
 as exposed via `Micrometer.metrics(MeterRegistry meterRegistry)`.
 
-Please note that metrics below use a dynamic `%s` prefix.
+IMPORTANT: Please note that metrics below use a dynamic `%s` prefix.
 When applied on a `Flux` or `Mono` that uses the `name(String n)` operator, this is replaced with `n`.
 Otherwise, this is replaced by the default value of `"reactor"`.
 
@@ -15,6 +15,6 @@ include::{root-target}meterListener.adoc[leveloffset=3]
 Below is the list of meters used by Reactor-Core-Micrometer's TimedScheduler feature,
 as exposed via `Micrometer.timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix)`.
 
-Please note that metrics names will be prefixed by the provided `metricsPrefix` (with a dot separator if needed).
+IMPORTANT: Please note that metrics names will be prefixed by the provided `metricsPrefix` (with a dot separator if needed).
 
 include::{root-target}timedScheduler.adoc[leveloffset=3]

@@ -98,7 +98,7 @@ configure(rootProject) {
 		/*, "generateObservabilitySpansDocs"*/]) {
 	}
 
-	//TODO generate and polish for TimedScheduler, MicrometerObservationListener
+	//TODO generate and polish for MicrometerObservationListener
 
 	task generateMeterListenerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
