@@ -18,6 +18,10 @@ configure(rootProject) {
 	apply plugin: 'org.asciidoctor.jvm.convert'
 	apply plugin: 'org.asciidoctor.jvm.pdf'
 
+	repositories {
+		maven { url 'https://repo.spring.io/milestone' }
+	}
+
 	// This configuration applies both to the asciidoctor & asciidoctorPdf tasks
 	asciidoctorj {
 		options = [doctype: 'book']
@@ -28,6 +32,7 @@ configure(rootProject) {
 	}
 
 	asciidoctor {
+		dependsOn "generateObservabilityDocs"
 		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
@@ -74,5 +79,29 @@ configure(rootProject) {
 		}
 		from(asciidoctor) { into("docs/") }
 	}
+
+	configurations {
+		adoc
+	}
+
+	dependencies {
+		//FIXME add to version catalog
+		adoc "io.micrometer:micrometer-docs-generator-metrics:1.0.0-M6"
+	}
+
+	task generateObservabilityDocs(dependsOn: ["generateObservabilityMetricsDocs"/*, "generateObservabilitySpansDocs"*/]) {
+	}
+
+	task generateObservabilityMetricsDocs(type: JavaExec) {
+		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		classpath configurations.adoc
+		args project.rootDir.getAbsolutePath(), ".*", project.rootProject.buildDir.getAbsolutePath()
+	}
+//
+//	task generateObservabilitySpansDocs(type: JavaExec) {
+//		mainClass = "io.micrometer.docs.spans.DocsFromSources"
+//		classpath configurations.adoc
+//		args project.rootDir.getAbsolutePath(), ".*", project.rootProject.buildDir.getAbsolutePath()
+//	}
 }
 
