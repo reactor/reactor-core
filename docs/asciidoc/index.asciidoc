@@ -56,17 +56,7 @@ ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/metrics.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
 to "<<metrics>>"
 endif::[]
-
-:root-target: ./../../build/documentedMetrics/
-### Meters and tags for `Micrometer.metrics()`
-Below is the list of meters used by Reactor-Core-Micrometer's `Micrometer.metrics()` feature:
-
-include::{root-target}meterListener.adoc[leveloffset=3]
-
-### Meters and tags for `TimedScheduler`
-Below is the list of meters used by Reactor-Core-Micrometer's `TimedScheduler` wrapper class:
-
-include::{root-target}timedScheduler.adoc[leveloffset=3]
+include::metrics-details.adoc[]
 
 include::advancedFeatures.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
