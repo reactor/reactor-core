@@ -89,14 +89,36 @@ configure(rootProject) {
 		adoc "io.micrometer:micrometer-docs-generator-metrics:1.0.0-M6"
 	}
 
-	task generateObservabilityDocs(dependsOn: ["generateObservabilityMetricsDocs"/*, "generateObservabilitySpansDocs"*/]) {
+	task generateObservabilityDocs(dependsOn: [
+		"generateMeterListenerDocs",
+		"polishMeterListenerDocs"
+		/*, "generateObservabilitySpansDocs"*/]) {
 	}
 
-	task generateObservabilityMetricsDocs(type: JavaExec) {
+	//TODO generate and polish for TimedScheduler, MicrometerObservationListener
+
+	task generateMeterListenerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*", project.rootProject.buildDir.getAbsolutePath()
+		args project.rootDir.getAbsolutePath(), ".*PublisherMeters.java", project.rootProject.buildDir.toPath().resolve("documentedMetrics/meterListener").toAbsolutePath().toString()
 	}
+
+	task polishMeterListenerDocs(type: Copy) {
+		mustRunAfter "generateMeterListenerDocs"
+		from project.rootProject.buildDir.toString() + "/documentedMetrics/meterListener/"
+		into project.rootProject.buildDir.toString() + "/documentedMetrics"
+		include "_*.adoc"
+		rename '_metrics.adoc', 'meterListener.adoc'
+		filter { String line ->
+			line.startsWith('[[observability-metrics]]') ||
+				line.startsWith('=== Observability - Metrics') ||
+				line.startsWith('Below you can find a list of all samples ')
+				? null : line
+		}
+		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
+	}
+
+
 //
 //	task generateObservabilitySpansDocs(type: JavaExec) {
 //		mainClass = "io.micrometer.docs.spans.DocsFromSources"

@@ -64,7 +64,7 @@ public enum PublisherMeters implements DocumentedMeter {
 
 		@Override
 		public String getName() {
-			return "%s" + ".onNext.delay";
+			return "%s.onNext.delay";
 		}
 
 		@Override
@@ -84,7 +84,7 @@ public enum PublisherMeters implements DocumentedMeter {
 
 		@Override
 		public String getName() {
-			return "%s" + ".requested";
+			return "%s.requested";
 		}
 
 		@Override
@@ -104,7 +104,7 @@ public enum PublisherMeters implements DocumentedMeter {
 
 		@Override
 		public String getName() {
-			return "%s" + ".subscribed";
+			return "%s.subscribed";
 		}
 
 		@Override
@@ -128,7 +128,7 @@ public enum PublisherMeters implements DocumentedMeter {
 
 		@Override
 		public String getName() {
-			return "%s" + ".flow.duration";
+			return "%s.flow.duration";
 		}
 
 		@Override
@@ -136,8 +136,6 @@ public enum PublisherMeters implements DocumentedMeter {
 			return Meter.Type.DISTRIBUTION_SUMMARY;
 		}
 	};
-
-//
 
 	/**
 	 * Tags that are common to all {@link PublisherMeters}.
