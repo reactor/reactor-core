@@ -33,6 +33,7 @@ configure(rootProject) {
 
 	asciidoctor {
 		dependsOn "generateObservabilityDocs"
+		inputs.dir("$buildDir/generatedMetricsDocs/") // force the task to consider changes in this folder, making it not UP-TO-DATE
 		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
@@ -91,7 +92,9 @@ configure(rootProject) {
 
 	task generateObservabilityDocs(dependsOn: [
 		"generateMeterListenerDocs",
-		"polishMeterListenerDocs"
+		"polishMeterListenerDocs",
+		"generateTimedSchedulerDocs",
+		"polishTimedSchedulerDocs"
 		/*, "generateObservabilitySpansDocs"*/]) {
 	}
 
@@ -100,15 +103,36 @@ configure(rootProject) {
 	task generateMeterListenerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*PublisherMeters.java", project.rootProject.buildDir.toPath().resolve("documentedMetrics/meterListener").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(), ".*PublisherMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
 	}
 
 	task polishMeterListenerDocs(type: Copy) {
 		mustRunAfter "generateMeterListenerDocs"
-		from project.rootProject.buildDir.toString() + "/documentedMetrics/meterListener/"
+		from project.rootProject.buildDir.toString() + "/generatedMetricsDocs/meterListener/"
 		into project.rootProject.buildDir.toString() + "/documentedMetrics"
 		include "_*.adoc"
 		rename '_metrics.adoc', 'meterListener.adoc'
+		filter { String line ->
+			line.startsWith('[[observability-metrics]]') ||
+				line.startsWith('=== Observability - Metrics') ||
+				line.startsWith('Below you can find a list of all samples ')
+				? null : line
+		}
+		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
+	}
+
+	task generateTimedSchedulerDocs(type: JavaExec) {
+		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		classpath configurations.adoc
+		args project.rootDir.getAbsolutePath(), ".*SchedulerMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
+	}
+
+	task polishTimedSchedulerDocs(type: Copy) {
+		mustRunAfter "generateTimedSchedulerDocs"
+		from project.rootProject.buildDir.toString() + "/generatedMetricsDocs/timedScheduler/"
+		into project.rootProject.buildDir.toString() + "/documentedMetrics"
+		include "_*.adoc"
+		rename '_metrics.adoc', 'timedScheduler.adoc'
 		filter { String line ->
 			line.startsWith('[[observability-metrics]]') ||
 				line.startsWith('=== Observability - Metrics') ||
