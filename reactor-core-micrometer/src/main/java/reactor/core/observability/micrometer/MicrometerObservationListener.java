@@ -41,10 +41,10 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	static final String ANONYMOUS_OBSERVATION = "reactor.observation";
 	static final String KEY_STATUS            = "reactor.status";
 	static final String KEY_TYPE = "reactor.type";
-	static final String STATUS_CANCELLED = MicrometerMeterListener.TAG_STATUS_CANCELLED;
-	static final String STATUS_COMPLETED = MicrometerMeterListener.TAG_STATUS_COMPLETED;
-	static final String STATUS_COMPLETED_EMPTY = MicrometerMeterListener.TAG_STATUS_COMPLETED_EMPTY;
-	static final String STATUS_ERROR = MicrometerMeterListener.TAG_STATUS_ERROR;
+	static final String STATUS_CANCELLED = PublisherMeters.TerminationTags.TAG_STATUS_CANCELLED;
+	static final String STATUS_COMPLETED = PublisherMeters.TerminationTags.TAG_STATUS_COMPLETED;
+	static final String STATUS_COMPLETED_EMPTY = PublisherMeters.TerminationTags.TAG_STATUS_COMPLETED_EMPTY;
+	static final String STATUS_ERROR = PublisherMeters.TerminationTags.TAG_STATUS_ERROR;
 
 	/**
 	 * The key to use to store {@link Observation} in context (same as the one from {@code ObservationThreadLocalAccessor}).

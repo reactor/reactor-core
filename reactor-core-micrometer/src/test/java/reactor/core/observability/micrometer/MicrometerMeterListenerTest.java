@@ -163,7 +163,7 @@ class MicrometerMeterListenerTest {
 		assertThat(registry.getMeters())
 			.as("meters post subscription")
 			.hasSize(3);
-		assertThat(registry.find("testName" + MicrometerMeterListener.METER_SUBSCRIBED).counter())
+		assertThat(registry.find("testName.subscribed").counter())
 			.as("meter .subscribed")
 			.isNotNull()
 			.satisfies(meter -> assertThat(meter.count()).isEqualTo(1d));
@@ -178,7 +178,7 @@ class MicrometerMeterListenerTest {
 		virtualClockTime.set(100);
 		listener.doOnCancel();
 
-		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName.flow.duration")
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -199,7 +199,7 @@ class MicrometerMeterListenerTest {
 		virtualClockTime.set(100);
 		listener.doOnComplete();
 
-		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName.flow.duration")
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -221,7 +221,7 @@ class MicrometerMeterListenerTest {
 		listener.valued = true;
 		listener.doOnComplete();
 
-		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName.flow.duration")
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -242,7 +242,7 @@ class MicrometerMeterListenerTest {
 		virtualClockTime.set(100);
 		listener.doOnError(new IllegalStateException("expected"));
 
-		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName.flow.duration")
 			.timer();
 
 		assertThat(registry.getMeters()).hasSize(4);
@@ -265,7 +265,7 @@ class MicrometerMeterListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("lastEventNanos recorded").isEqualTo(100);
 
-		assertThat(registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION).meters())
+		assertThat(registry.find("testName.flow.duration").meters())
 			.as("no flow.duration meter yet")
 			.isEmpty();
 
@@ -291,7 +291,7 @@ class MicrometerMeterListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("lastEventNanos recorded").isEqualTo(100);
 
-		assertThat(registry.find(Micrometer.DEFAULT_METER_PREFIX + MicrometerMeterListener.METER_FLOW_DURATION).meters())
+		assertThat(registry.find(Micrometer.DEFAULT_METER_PREFIX + ".flow.duration").meters())
 			.as("no flow.duration meter yet")
 			.isEmpty();
 
@@ -317,7 +317,7 @@ class MicrometerMeterListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("no lastEventNanos recorded").isZero();
 
-		Timer timer = registry.find("testName" + MicrometerMeterListener.METER_FLOW_DURATION)
+		Timer timer = registry.find("testName.flow.duration")
 			.timer();
 
 		assertThat(timer.getId().toString())
@@ -384,12 +384,12 @@ class MicrometerMeterListenerTest {
 	void malformedCounterCapturesNextCompleteError() {
 		MicrometerMeterListener<Integer> listener = new MicrometerMeterListener<>(configuration);
 
-		Counter malformedCounter = registry.find("testName" + MicrometerMeterListener.METER_MALFORMED).counter();
+		Counter malformedCounter = registry.find("testName.malformed.source").counter();
 		assertThat(malformedCounter).as("counter not registered").isNull();
 
 		listener.doOnMalformedOnNext(123);
 
-		malformedCounter = registry.find("testName" + MicrometerMeterListener.METER_MALFORMED).counter();
+		malformedCounter = registry.find("testName.malformed.source").counter();
 		assertThat(malformedCounter).as("lazy counter registration").isNotNull();
 		assertThat(malformedCounter.count()).as("onNext malformed").isOne();
 
