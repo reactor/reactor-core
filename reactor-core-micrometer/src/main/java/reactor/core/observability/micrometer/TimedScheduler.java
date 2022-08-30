@@ -62,7 +62,7 @@ final class TimedScheduler implements Scheduler {
 		}
 		Tags tags = Tags.of(tagsList);
 
-		String submittedName = metricPrefix + SUBMITTED.getName();
+		String submittedName = metricPrefix + TASKS_SUBMITTED.getName();
 		this.submittedDirect = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_DIRECT));
 		this.submittedDelayed = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_DELAYED));
 		this.submittedPeriodicInitial = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_PERIODIC_INITIAL));

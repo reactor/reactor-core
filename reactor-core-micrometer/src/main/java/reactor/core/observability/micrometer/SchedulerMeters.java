@@ -32,7 +32,7 @@ public enum SchedulerMeters implements DocumentedMeter {
 	 * Note that there are actually 4 counters, which can be differentiated by the SubmittedTags#SUBMISSION tag.
 	 * The sum of all these can thus be compared with the TASKS_COMPLETED counter.
 	 */
-	SUBMITTED {
+	TASKS_SUBMITTED {
 		@Override
 		public KeyName[] getKeyNames() {
 			return SubmittedTags.values();
@@ -104,7 +104,7 @@ public enum SchedulerMeters implements DocumentedMeter {
 	;
 
 	/**
-	 * Tag for the SchedulerMeters#SUBMITTED meter.
+	 * Tag for the SchedulerMeters#TASKS_SUBMITTED meter.
 	 */
 	public enum SubmittedTags implements KeyName {
 
