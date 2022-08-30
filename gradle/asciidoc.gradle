@@ -92,9 +92,8 @@ configure(rootProject) {
 
 	task generateObservabilityDocs(dependsOn: [
 		"generateMeterListenerDocs",
-		"polishMeterListenerDocs",
 		"generateTimedSchedulerDocs",
-		"polishTimedSchedulerDocs"
+		"polishGeneratedMetricsDocs"
 		/*, "generateObservabilitySpansDocs"*/]) {
 	}
 
@@ -106,42 +105,33 @@ configure(rootProject) {
 		args project.rootDir.getAbsolutePath(), ".*PublisherMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
 	}
 
-	task polishMeterListenerDocs(type: Copy) {
-		mustRunAfter "generateMeterListenerDocs"
-		from project.rootProject.buildDir.toString() + "/generatedMetricsDocs/meterListener/"
-		into project.rootProject.buildDir.toString() + "/documentedMetrics"
-		include "_*.adoc"
-		rename '_metrics.adoc', 'meterListener.adoc'
-		filter { String line ->
-			line.startsWith('[[observability-metrics]]') ||
-				line.startsWith('=== Observability - Metrics') ||
-				line.startsWith('Below you can find a list of all samples ')
-				? null : line
-		}
-		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
-	}
-
 	task generateTimedSchedulerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
 		classpath configurations.adoc
 		args project.rootDir.getAbsolutePath(), ".*SchedulerMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
 	}
 
-	task polishTimedSchedulerDocs(type: Copy) {
+	task polishGeneratedMetricsDocs(type: Copy) {
+		mustRunAfter "generateMeterListenerDocs"
 		mustRunAfter "generateTimedSchedulerDocs"
-		from project.rootProject.buildDir.toString() + "/generatedMetricsDocs/timedScheduler/"
+		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/meterListener/") {
+			include "_*.adoc"
+			rename '_metrics.adoc', 'meterListener.adoc'
+		}
+		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/timedScheduler/") {
+			include "_*.adoc"
+			rename '_metrics.adoc', 'timedScheduler.adoc'
+		}
 		into project.rootProject.buildDir.toString() + "/documentedMetrics"
-		include "_*.adoc"
-		rename '_metrics.adoc', 'timedScheduler.adoc'
 		filter { String line ->
 			line.startsWith('[[observability-metrics]]') ||
 				line.startsWith('=== Observability - Metrics') ||
-				line.startsWith('Below you can find a list of all samples ')
+				line.startsWith('Below you can find a list of all samples ') ||
+				line.startsWith("Fully qualified name of the enclosing class ")
 				? null : line
 		}
 		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
 	}
-
 
 //
 //	task generateObservabilitySpansDocs(type: JavaExec) {
