@@ -74,7 +74,7 @@ public enum PublisherMeters implements DocumentedMeter {
 	},
 
 	/**
-	 * Counts the amount requested to a {@link Flux#name(String) named} sequence by all subscribers, until at least one requests an unbounded amount.
+	 * Counts the amount requested to a named sequence (eg.  Flux.name(String)) by all subscribers, until at least one requests an unbounded amount.
 	 */
 	REQUESTED {
 		@Override
@@ -115,7 +115,7 @@ public enum PublisherMeters implements DocumentedMeter {
 
 	/**
 	 * Times the duration elapsed between a subscription and the termination or cancellation of the sequence.
-	 * A {@link TerminationTags#STATUS status} tag is added to specify what event caused the timer to end (completed, completedEmpty, error, cancelled).
+	 * A TerminationTags#STATUS tag is added to specify what event caused the timer to end (completed, completedEmpty, error, cancelled).
 	 */
 	FLOW_DURATION {
 		@Override
@@ -138,12 +138,12 @@ public enum PublisherMeters implements DocumentedMeter {
 	};
 
 	/**
-	 * Tags that are common to all {@link PublisherMeters}.
+	 * Tags that are common to all PublisherMeters.
 	 */
 	public enum CommonTags implements KeyName {
 
 		/**
-		 * The type of the sequence ({@link #TAG_TYPE_FLUX Flux} or {@link #TAG_TYPE_MONO Mono}).
+		 * The type of the sequence (Flux or Mono).
 		 */
 		TYPE {
 			@Override
@@ -153,18 +153,18 @@ public enum PublisherMeters implements DocumentedMeter {
 		};
 
 		/**
-		 * {@link #TYPE} for {@link reactor.core.publisher.Flux}
+		 * TYPE for reactor.core.publisher.Flux
 		 */
 		public static final String TAG_TYPE_FLUX = "Flux";
 		/**
-		 * {@link #TYPE} for {@link reactor.core.publisher.Mono}
+		 * TYPE for reactor.core.publisher.Mono
 		 */
 		public static final String TAG_TYPE_MONO = "Mono";
 
 	}
 
 	/**
-	 * Additional tags for {@link PublisherMeters#FLOW_DURATION} that reflects the termination
+	 * Additional tags for PublisherMeters#FLOW_DURATION that reflects the termination
 	 * of the sequence.
 	 */
 	public enum TerminationTags implements KeyName {
@@ -172,10 +172,10 @@ public enum PublisherMeters implements DocumentedMeter {
 		/**
 		 * The termination status:
 		 * <ul>
-		 *     <li>{@link #TAG_STATUS_COMPLETED} for a sequence that terminates with an {@link Subscriber#onComplete() onComplete}, with onNext(s)</li>
-		 *     <li>{@link #TAG_STATUS_COMPLETED_EMPTY} for a sequence that terminates without any onNext before the {@link Subscriber#onComplete() onComplete}</li>
-		 *     <li>{@link #TAG_STATUS_ERROR} for a sequence that terminates with an {@link Subscriber#onError(Throwable) onError}</li>
-		 *     <li>{@link #TAG_STATUS_CANCELLED} for a sequence that has cancelled its subscription</li>
+		 *     <li>TAG_STATUS_COMPLETED for a sequence that terminates with an onComplete, with onNext(s)</li>
+		 *     <li>TAG_STATUS_COMPLETED_EMPTY for a sequence that terminates without any onNext before the onComplete</li>
+		 *     <li>TAG_STATUS_ERROR for a sequence that terminates with an onError</li>
+		 *     <li>TAG_STATUS_CANCELLED for a sequence that has cancelled its subscription</li>
 		 * </ul>
 		 */
 		STATUS {
@@ -186,7 +186,7 @@ public enum PublisherMeters implements DocumentedMeter {
 		},
 
 		/**
-		 * Tag used by {@link #FLOW_DURATION} when {@link #STATUS} is {@link #TAG_STATUS_ERROR}, to store the
+		 * Tag used by FLOW_DURATION when STATUS is TAG_STATUS_ERROR, to store the
 		 * exception that occurred.
 		 */
 		EXCEPTION {
@@ -202,15 +202,15 @@ public enum PublisherMeters implements DocumentedMeter {
 		 */
 		public static final String TAG_STATUS_CANCELLED       = "cancelled";
 		/**
-		 * Status for a sequence that terminates with an {@link Subscriber#onComplete() onComplete}, with onNext(s).
+		 * Status for a sequence that terminates with an onComplete, with onNext(s).
 		 */
 		public static final String TAG_STATUS_COMPLETED       = "completed";
 		/**
-		 * Status for a sequence that terminates without any onNext before the {@link Subscriber#onComplete() onComplete}.
+		 * Status for a sequence that terminates without any onNext before the onComplete.
 		 */
 		public static final String TAG_STATUS_COMPLETED_EMPTY = "completedEmpty";
 		/**
-		 * Status for a sequence that terminates with an {@link Subscriber#onError(Throwable) onError}.
+		 * Status for a sequence that terminates with an onError.
 		 */
 		public static final String TAG_STATUS_ERROR           = "error";
 

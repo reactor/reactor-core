@@ -16,26 +16,21 @@
 
 package reactor.core.observability.micrometer;
 
-import java.util.concurrent.TimeUnit;
-
 import io.micrometer.common.docs.KeyName;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.docs.DocumentedMeter;
 
-import reactor.core.scheduler.Scheduler;
-
-//
+/**
+ * Meters and tags used by {@link TimedScheduler}.
+ */
 public enum SchedulerMeters implements DocumentedMeter {
 
 	/**
-	 * {@link Counter} that increments by one each time a task is submitted (via any of the
-	 * schedule methods on both {@link Scheduler} and {@link Scheduler.Worker}).
+	 * Counter that increments by one each time a task is submitted (via any of the
+	 * schedule methods on both Scheduler and Scheduler.Worker).
 	 * <p>
-	 * Note that there are actually 4 counters, which can be differentiated by the {@link SubmittedTags#SUBMISSION} tag.
-	 * The sum of all these can thus be compared with the {@link #TASKS_COMPLETED} counter.
+	 * Note that there are actually 4 counters, which can be differentiated by the SubmittedTags#SUBMISSION tag.
+	 * The sum of all these can thus be compared with the TASKS_COMPLETED counter.
 	 */
 	SUBMITTED {
 		@Override
@@ -45,7 +40,7 @@ public enum SchedulerMeters implements DocumentedMeter {
 
 		@Override
 		public String getName() {
-			return "%s" + "scheduler.tasks.submitted";
+			return "%sscheduler.tasks.submitted";
 		}
 
 		@Override
@@ -55,9 +50,8 @@ public enum SchedulerMeters implements DocumentedMeter {
 	},
 
 	/**
-	 * {@link LongTaskTimer} reflecting tasks currently running. Note that this reflects all types of
-	 * active tasks, including tasks scheduled {@link Scheduler#schedule(Runnable, long, TimeUnit) with a delay}
-	 * or {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit) periodically} (each
+	 * LongTaskTimer reflecting tasks currently running. Note that this reflects all types of
+	 * active tasks, including tasks scheduled with a delay or periodically (each
 	 * iteration being considered an active task).
 	 */
 	TASKS_ACTIVE {
@@ -73,10 +67,9 @@ public enum SchedulerMeters implements DocumentedMeter {
 	},
 
 	/**
-	 * {@link Timer} reflecting tasks that have finished execution. Note that this reflects all types of
-	 * active tasks, including tasks scheduled {@link Scheduler#schedule(Runnable, long, TimeUnit) with a delay}
-	 * or {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit) periodically} (each
-	 * iteration being considered a separate completed task).
+	 * Timer reflecting tasks that have finished execution. Note that this reflects all types of
+	 * active tasks, including tasks  with a delay or periodically (each iteration being considered
+	 * a separate completed task).
 	 */
 	TASKS_COMPLETED {
 		@Override
@@ -91,10 +84,10 @@ public enum SchedulerMeters implements DocumentedMeter {
 	},
 
 	/**
-	 * {@link LongTaskTimer} reflecting tasks that were submitted for immediate execution but
+	 * LongTaskTimer reflecting tasks that were submitted for immediate execution but
 	 * couldn't be started immediately because the scheduler is already at max capacity.
-	 * Note that only immediate submissions via {@link Scheduler#schedule(Runnable)} and
-	 * {@link Scheduler.Worker#schedule(Runnable)} are considered.
+	 * Note that only immediate submissions via Scheduler#schedule(Runnable) and
+	 * Scheduler.Worker#schedule(Runnable) are considered.
 	 */
 	TASKS_PENDING {
 		@Override
@@ -111,17 +104,17 @@ public enum SchedulerMeters implements DocumentedMeter {
 	;
 
 	/**
-	 * Tag for the {@link SchedulerMeters#SUBMITTED} meter.
+	 * Tag for the SchedulerMeters#SUBMITTED meter.
 	 */
 	public enum SubmittedTags implements KeyName {
 
 		/**
 		 * The type of submission:
 		 * <ul>
-		 *   <li>{@link #SUBMISSION_DIRECT} for {@link Scheduler#schedule(Runnable)}</li>
-		 *   <li>{@link #SUBMISSION_DELAYED} for {@link Scheduler#schedule(Runnable, long, TimeUnit)}</li>
-		 *   <li>{@link #SUBMISSION_PERIODIC_INITIAL} for {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)} after the initial delay</li>
-		 *   <li>{@link #SUBMISSION_PERIODIC_ITERATION} for {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)} further periodic iterations</li>
+		 *   <li>#SUBMISSION_DIRECT for Scheduler#schedule(Runnable)</li>
+		 *   <li>#SUBMISSION_DELAYED for Scheduler#schedule(Runnable, long, TimeUnit)</li>
+		 *   <li>#SUBMISSION_PERIODIC_INITIAL for Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit) after the initial delay</li>
+		 *   <li>#SUBMISSION_PERIODIC_ITERATION for Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit) further periodic iterations</li>
 		 * </ul>
 		 */
 		SUBMISSION {
@@ -132,27 +125,27 @@ public enum SchedulerMeters implements DocumentedMeter {
 		};
 
 		/**
-		 * {@link Counter} that increments by one each time a task is submitted for immediate execution
-		 * (ie. {@link Scheduler#schedule(Runnable)} or {@link Scheduler.Worker#schedule(Runnable)}).
+		 * Counter that increments by one each time a task is submitted for immediate execution
+		 * (ie. Scheduler#schedule(Runnable) or Scheduler.Worker#schedule(Runnable)).
 		 */
 		public static final String SUBMISSION_DIRECT             = "direct";
 		/**
-		 * {@link Counter} that increments by one each time a task is submitted with a delay
-		 * (ie. {@link Scheduler#schedule(Runnable, long, TimeUnit)}
-		 * or {@link Scheduler.Worker#schedule(Runnable, long, TimeUnit)}).
+		 * Counter that increments by one each time a task is submitted with a delay
+		 * (ie. Scheduler#schedule(Runnable, long, TimeUnit)
+		 * or Scheduler.Worker#schedule(Runnable, long, TimeUnit)).
 		 */
 		public static final String SUBMISSION_DELAYED            = "delayed";
 		/**
-		 * {@link Counter} that increments when a task is initially submitted with a period
-		 * (ie. {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
-		 * or {@link Scheduler.Worker#schedulePeriodically(Runnable, long, long, TimeUnit)}). This isn't
+		 * Counter that increments when a task is initially submitted with a period
+		 * (ie. Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)
+		 * or Scheduler.Worker#schedulePeriodically(Runnable, long, long, TimeUnit)). This isn't
 		 * incremented on further iterations of the periodic task.
 		 */
 		public static final String SUBMISSION_PERIODIC_INITIAL   = "periodic_initial";
 		/**
-		 * {@link Counter} that increments by one each time a task is re-executed due to the periodic
-		 * nature of {@link Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)}
-		 * or {@link Scheduler.Worker#schedulePeriodically(Runnable, long, long, TimeUnit)} (ie. iterations
+		 * Counter that increments by one each time a task is re-executed due to the periodic
+		 * nature of Scheduler#schedulePeriodically(Runnable, long, long, TimeUnit)
+		 * or Scheduler.Worker#schedulePeriodically(Runnable, long, long, TimeUnit) (ie. iterations
 		 * past the initial one).
 		 */
 		public static final String SUBMISSION_PERIODIC_ITERATION = "periodic_iteration";
