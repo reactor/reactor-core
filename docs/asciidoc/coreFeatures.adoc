@@ -491,7 +491,6 @@ Flux.just(10,20,30)
     .onErrorComplete(); //<1>
 ----
 <1> Recover by turning the `onError` into an `onComplete`
-----
 ====
 
 Like `onErrorReturn`, `onErrorComplete` has variants that let you filter which exceptions
