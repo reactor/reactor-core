@@ -132,6 +132,12 @@ public abstract class Loggers {
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
 	 *
+	 * <h4>Thread-safety</h4>
+	 *
+	 * Given logger acquisition function <em>must</em> be thread-safe.
+	 * It means that it is user responsibility to ensure that any internal state and cache
+	 * used by the provided function is properly synchronized.
+	 *
 	 * @param loggerFactory the {@link Function} that provides a (possibly cached) {@link Logger}
 	 * given a name.
 	 */
