@@ -66,7 +66,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 				.register(configuration.registry);
 
 			if (!Micrometer.DEFAULT_METER_PREFIX.equals(configuration.sequenceName)) {
-				this.requestedCounter = DistributionSummary.builder(DocumentedMeterListenerMeters.REQUESTED.getName(configuration.sequenceName))
+				this.requestedCounter = DistributionSummary.builder(DocumentedMeterListenerMeters.REQUESTED_AMOUNT.getName(configuration.sequenceName))
 					.tags(configuration.commonTags)
 					.register(configuration.registry);
 			}
@@ -214,7 +214,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * with the added benefit of paying that cost only in case of onNext/onError after termination.
 	 */
 	static void recordMalformed(String name, Tags commonTags, MeterRegistry registry) {
-		registry.counter(DocumentedMeterListenerMeters.MALFORMED.getName(name), commonTags)
+		registry.counter(DocumentedMeterListenerMeters.MALFORMED_SOURCE_EVENTS.getName(name), commonTags)
 			.increment();
 	}
 

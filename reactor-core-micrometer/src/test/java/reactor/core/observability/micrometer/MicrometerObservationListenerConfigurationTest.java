@@ -61,7 +61,7 @@ class MicrometerObservationListenerConfigurationTest {
 
 		assertThat(configuration.sequenceName)
 			.as("sequenceName")
-			.isEqualTo(name == null ? MicrometerObservationListener.ANONYMOUS_OBSERVATION : name);
+			.isEqualTo(name == null ? "reactor.observation" : name);
 
 		if (tag == null) {
 			assertThat(configuration.commonKeyValues.stream().map(t -> t.getKey() + "=" + t.getValue()))
@@ -101,7 +101,7 @@ class MicrometerObservationListenerConfigurationTest {
 
 		assertThat(configuration.sequenceName)
 			.as("sequenceName")
-			.isEqualTo(name == null ? MicrometerObservationListener.ANONYMOUS_OBSERVATION : name);
+			.isEqualTo(name == null ? "reactor.observation": name);
 
 		if (tag == null) {
 			assertThat(configuration.commonKeyValues.stream().map(t -> t.getKey() + "=" + t.getValue()))
