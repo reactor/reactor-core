@@ -17,14 +17,14 @@ include::{root-target}meterListener.adoc[leveloffset=4]
 Below is the list of meters used by the TimedScheduler feature, as exposed via
 `Micrometer.timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix)`.
 
-IMPORTANT: Please note that metrics names will be prefixed by the provided `metricsPrefix` (with a dot separator if needed).
+IMPORTANT: Please note that metrics below use a dynamic `%s` prefix. This is replaced with the provided `metricsPrefix` in practice.
 
 include::{root-target}timedScheduler.adoc[leveloffset=4]
 
 #### `Micrometer.observation()`
 Below is the list of meters used by the observation tap listener feature, as exposed via
 `Micrometer.observation(ObservationRegistry registry)`.
-//
-//IMPORTANT: Please note that metrics names will be prefixed by the provided `metricsPrefix` (with a dot separator if needed).
+
+This is the ANONYMOUS observation, but you can create a similar Observation with a custom name by using the `name(String)` operator.
 
 include::{root-target}observation.adoc[leveloffset=4]

@@ -47,7 +47,7 @@ public enum DocumentedTimedSchedulerMeters implements DocumentedMeter {
 
 		@Override
 		public String getName() {
-			return "scheduler.tasks.submitted";
+			return "%s.scheduler.tasks.submitted";
 		}
 
 		@Override
@@ -64,7 +64,7 @@ public enum DocumentedTimedSchedulerMeters implements DocumentedMeter {
 	TASKS_ACTIVE {
 		@Override
 		public String getName() {
-			return "scheduler.tasks.active";
+			return "%s.scheduler.tasks.active";
 		}
 
 		@Override
@@ -81,7 +81,7 @@ public enum DocumentedTimedSchedulerMeters implements DocumentedMeter {
 	TASKS_COMPLETED {
 		@Override
 		public String getName() {
-			return "scheduler.tasks.completed";
+			return "%s.scheduler.tasks.completed";
 		}
 
 		@Override
@@ -99,7 +99,7 @@ public enum DocumentedTimedSchedulerMeters implements DocumentedMeter {
 	TASKS_PENDING {
 		@Override
 		public String getName() {
-			return "scheduler.tasks.pending";
+			return "%s.scheduler.tasks.pending";
 		}
 
 		@Override
