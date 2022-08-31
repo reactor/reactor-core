@@ -20,7 +20,6 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.observation.Observation;
@@ -48,6 +47,7 @@ public final class Micrometer {
 	 * the {@link reactor.core.publisher.Flux#name(String)} set upstream of the tap as id prefix if applicable
 	 * or default to {@link #DEFAULT_METER_PREFIX}. Similarly, upstream tags are gathered and added
 	 * to the default set of tags for meters.
+	 * See {@link PublisherMeters} for a documentation of the default set of meters and tags.
 	 * <p>
 	 * Note that some monitoring systems like Prometheus require to have the exact same set of
 	 * tags for each meter bearing the same name.
@@ -55,6 +55,7 @@ public final class Micrometer {
 	 * @param <T> the type of onNext in the target publisher
 	 * @param meterRegistry the {@link MeterRegistry} in which to register and publish metrics
 	 * @return a {@link SignalListenerFactory} to record metrics
+	 * @see PublisherMeters
 	 */
 	public static <T> SignalListenerFactory<T, ?> metrics(MeterRegistry meterRegistry) {
 		return new MicrometerMeterListenerFactory<T>(meterRegistry);
@@ -83,7 +84,7 @@ public final class Micrometer {
 	 * are gathered and added to the default set of {@link io.micrometer.common.KeyValues} used by the Observation
 	 * as {@link Observation#lowCardinalityKeyValues(KeyValues) low cardinality keyValues}.
 	 *
-	 *  @param <T> the type of onNext in the target publisher
+	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link SignalListenerFactory} to record observations
 	 */
 	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
@@ -93,12 +94,14 @@ public final class Micrometer {
 	/**
 	 * Wrap a {@link Scheduler} in an instance that gathers various task-related metrics using
 	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
-	 * Note that no tags are set up for these meters.
+	 * Note that no common tags are set up for these meters.
+	 * See {@link SchedulerMeters} for a documentation of the default set of meters and tags.
 	 *
 	 * @param original the original {@link Scheduler} to decorate with metrics
 	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
 	 * @param metricsPrefix the prefix to use in meter names. If needed, a dot is added at the end
 	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
+	 * @see SchedulerMeters
 	 */
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix) {
 		return new TimedScheduler(original, meterRegistry, metricsPrefix, Tags.empty());
@@ -107,14 +110,16 @@ public final class Micrometer {
 	/**
 	 * Wrap a {@link Scheduler} in an instance that gathers various task-related metrics using
 	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
-	 * User-provided collection of {@link Tag} (ie. {@link Tags}) can also be provided to be added to
+	 * User-provided collection of common tags (ie. {@link Tags}) can also be provided to be added to
 	 * all the meters of that timed Scheduler.
+	 * See {@link SchedulerMeters} for a documentation of the default set of meters and tags.
 	 *
 	 * @param original the original {@link Scheduler} to decorate with metrics
 	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
 	 * @param metricsPrefix the prefix to use in meter names. If needed, a dot is added at the end
 	 * @param tags the tags to put on meters
 	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
+	 * @see SchedulerMeters
 	 */
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix, Iterable<Tag> tags) {
 		return new TimedScheduler(original, meterRegistry, metricsPrefix, tags);
