@@ -93,11 +93,9 @@ configure(rootProject) {
 	task generateObservabilityDocs(dependsOn: [
 		"generateMeterListenerDocs",
 		"generateTimedSchedulerDocs",
-		"polishGeneratedMetricsDocs"
-		/*, "generateObservabilitySpansDocs"*/]) {
+		"generateObservationDocs",
+		"polishGeneratedMetricsDocs"]) {
 	}
-
-	//TODO generate and polish for MicrometerObservationListener
 
 	task generateMeterListenerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
@@ -111,9 +109,16 @@ configure(rootProject) {
 		args project.rootDir.getAbsolutePath(), ".*SchedulerMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
 	}
 
+	task generateObservationDocs(type: JavaExec) {
+		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		classpath configurations.adoc
+		args project.rootDir.getAbsolutePath(), ".*PublisherObservations.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/observation").toAbsolutePath().toString()
+	}
+
 	task polishGeneratedMetricsDocs(type: Copy) {
 		mustRunAfter "generateMeterListenerDocs"
 		mustRunAfter "generateTimedSchedulerDocs"
+		mustRunAfter "generateObservationDocs"
 		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/meterListener/") {
 			include "_*.adoc"
 			rename '_metrics.adoc', 'meterListener.adoc'
@@ -121,6 +126,10 @@ configure(rootProject) {
 		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/timedScheduler/") {
 			include "_*.adoc"
 			rename '_metrics.adoc', 'timedScheduler.adoc'
+		}
+		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/observation/") {
+			include "_*.adoc"
+			rename '_metrics.adoc', 'observation.adoc'
 		}
 		into project.rootProject.buildDir.toString() + "/documentedMetrics"
 		filter { String line ->
@@ -133,11 +142,5 @@ configure(rootProject) {
 		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
 	}
 
-//
-//	task generateObservabilitySpansDocs(type: JavaExec) {
-//		mainClass = "io.micrometer.docs.spans.DocsFromSources"
-//		classpath configurations.adoc
-//		args project.rootDir.getAbsolutePath(), ".*", project.rootProject.buildDir.getAbsolutePath()
-//	}
 }
 

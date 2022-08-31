@@ -83,9 +83,11 @@ public final class Micrometer {
 	 * Similarly, Reactor tags defined upstream via eg. {@link reactor.core.publisher.Flux#tag(String, String)})
 	 * are gathered and added to the default set of {@link io.micrometer.common.KeyValues} used by the Observation
 	 * as {@link Observation#lowCardinalityKeyValues(KeyValues) low cardinality keyValues}.
+	 * See {@link PublisherObservations} for a documentation of the default set of tags.
 	 *
 	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link SignalListenerFactory} to record observations
+	 * @see PublisherObservations
 	 */
 	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
 		return new MicrometerObservationListenerFactory<>(registry);

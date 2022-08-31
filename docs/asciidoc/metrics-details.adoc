@@ -20,3 +20,11 @@ Below is the list of meters used by the TimedScheduler feature, as exposed via
 IMPORTANT: Please note that metrics names will be prefixed by the provided `metricsPrefix` (with a dot separator if needed).
 
 include::{root-target}timedScheduler.adoc[leveloffset=4]
+
+#### `Micrometer.observation()`
+Below is the list of meters used by the observation tap listener feature, as exposed via
+`Micrometer.observation(ObservationRegistry registry)`.
+//
+//IMPORTANT: Please note that metrics names will be prefixed by the provided `metricsPrefix` (with a dot separator if needed).
+
+include::{root-target}observation.adoc[leveloffset=4]
