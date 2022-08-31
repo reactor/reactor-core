@@ -19,7 +19,7 @@ package reactor.core.observability.micrometer;
 import io.micrometer.observation.Observation;
 
 import reactor.core.observability.SignalListener;
-import reactor.core.observability.micrometer.PublisherObservations.ObservationTags;
+import reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags;
 import reactor.core.publisher.SignalType;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -27,7 +27,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
-import static reactor.core.observability.micrometer.PublisherObservations.ObservationTags.*;
+import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.*;
 
 /**
  * A {@link SignalListener} that makes timings using the {@link io.micrometer.observation.Observation} API from Micrometer 1.10.

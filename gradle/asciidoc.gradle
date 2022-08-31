@@ -100,19 +100,19 @@ configure(rootProject) {
 	task generateMeterListenerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*PublisherMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(), ".*DocumentedMeter.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
 	}
 
 	task generateTimedSchedulerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*SchedulerMeters.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(), ".*DocumentedTimedScheduler.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
 	}
 
 	task generateObservationDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*PublisherObservations.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/observation").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(), ".*DocumentedObservation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/observation").toAbsolutePath().toString()
 	}
 
 	task polishGeneratedMetricsDocs(type: Copy) {
