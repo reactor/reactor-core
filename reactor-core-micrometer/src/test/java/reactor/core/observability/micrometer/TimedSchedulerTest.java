@@ -38,6 +38,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Simon Baslé
@@ -60,7 +61,7 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void constructorAddsDotToPrefixIfNeeded() {
+	void aDotIsAddedToPrefix() {
 		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "noDot", Tags.empty());
 
 		assertThat(registry.getMeters())
@@ -69,12 +70,12 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void constructorDoesntAddTwoDots() {
-		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "dot.", Tags.empty());
+	void constructorRejectsDotAtEndOfMetricPrefix() {
+		assertThatIllegalArgumentException().isThrownBy(() -> new TimedScheduler(Schedulers.immediate(), registry, "dot.", Tags.empty()))
+				.withMessage("metricPrefix shouldn't end with a dot");
 
 		assertThat(registry.getMeters())
-			.map(m -> m.getId().getName())
-			.allSatisfy(name -> assertThat(name).doesNotContain(".."));
+			.isEmpty();
 	}
 
 	@Test

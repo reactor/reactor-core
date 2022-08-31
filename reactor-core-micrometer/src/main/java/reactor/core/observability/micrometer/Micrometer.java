@@ -101,7 +101,7 @@ public final class Micrometer {
 	 *
 	 * @param original the original {@link Scheduler} to decorate with metrics
 	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
-	 * @param metricsPrefix the prefix to use in meter names. If needed, a dot is added at the end
+	 * @param metricsPrefix the prefix to use in meter names. Must not end with a dot, which is automatically added.
 	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
 	 * @see DocumentedTimedSchedulerMeters
 	 */
@@ -118,7 +118,7 @@ public final class Micrometer {
 	 *
 	 * @param original the original {@link Scheduler} to decorate with metrics
 	 * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
-	 * @param metricsPrefix the prefix to use in meter names. If needed, a dot is added at the end
+	 * @param metricsPrefix the prefix to use in meter names. Must not end with a dot, which is automatically added.
 	 * @param tags the tags to put on meters
 	 * @return a {@link Scheduler} that is instrumented with dedicated metrics
 	 * @see DocumentedTimedSchedulerMeters

@@ -57,22 +57,22 @@ final class TimedScheduler implements Scheduler {
 	TimedScheduler(Scheduler delegate, MeterRegistry registry, String metricPrefix, Iterable<Tag> tagsList) {
 		this.delegate = delegate;
 		this.registry = registry;
-		if (!metricPrefix.endsWith(".")) {
-			metricPrefix = metricPrefix + ".";
+		if (metricPrefix.endsWith(".")) {
+			throw new IllegalArgumentException("metricPrefix shouldn't end with a dot");
 		}
 		Tags tags = Tags.of(tagsList);
 
-		String submittedName = metricPrefix + TASKS_SUBMITTED.getName();
+		String submittedName = TASKS_SUBMITTED.getName(metricPrefix);
 		this.submittedDirect = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_DIRECT));
 		this.submittedDelayed = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_DELAYED));
 		this.submittedPeriodicInitial = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_PERIODIC_INITIAL));
 		this.submittedPeriodicIteration = registry.counter(submittedName, tags.and(SubmittedTags.SUBMISSION.asString(), SubmittedTags.SUBMISSION_PERIODIC_ITERATION));
 
-		this.pendingTasks = LongTaskTimer.builder(metricPrefix + TASKS_PENDING.getName())
+		this.pendingTasks = LongTaskTimer.builder(TASKS_PENDING.getName(metricPrefix))
 			.tags(tags).register(registry);
-		this.activeTasks = LongTaskTimer.builder(metricPrefix + TASKS_ACTIVE.getName())
+		this.activeTasks = LongTaskTimer.builder(TASKS_ACTIVE.getName(metricPrefix))
 			.tags(tags).register(registry);
-		this.completedTasks = registry.timer(metricPrefix + TASKS_COMPLETED.getName(), tags);
+		this.completedTasks = registry.timer(TASKS_COMPLETED.getName(metricPrefix), tags);
 
 	}
 
