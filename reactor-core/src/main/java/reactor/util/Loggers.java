@@ -473,13 +473,11 @@ public abstract class Loggers {
 		private final ConsoleLoggerKey identifier;
 		private final PrintStream err;
 		private final PrintStream log;
-		private final boolean verbose;
 
 		ConsoleLogger(ConsoleLoggerKey identifier, PrintStream log, PrintStream err) {
 			this.identifier = identifier;
 			this.log = log;
 			this.err = err;
-			this.verbose = identifier.verbose;
 		}
 
 		ConsoleLogger(String name, PrintStream log, PrintStream err, boolean verbose) {
@@ -511,12 +509,12 @@ public abstract class Loggers {
 
 		@Override
 		public boolean isTraceEnabled() {
-			return verbose;
+			return identifier.verbose;
 		}
 
 		@Override
 		public synchronized void trace(String msg) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), msg);
@@ -524,14 +522,14 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void trace(String format, Object... arguments) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
 		}
 		@Override
 		public synchronized void trace(String msg, Throwable t) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[TRACE] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
@@ -540,12 +538,12 @@ public abstract class Loggers {
 
 		@Override
 		public boolean isDebugEnabled() {
-			return verbose;
+			return identifier.verbose;
 		}
 
 		@Override
 		public synchronized void debug(String msg) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), msg);
@@ -553,7 +551,7 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void debug(String format, Object... arguments) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
@@ -561,7 +559,7 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void debug(String msg, Throwable t) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[DEBUG] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
@@ -633,7 +631,7 @@ public abstract class Loggers {
 
 		@Override
 		public String toString() {
-			return "ConsoleLogger[name="+getName()+", verbose="+verbose+"]";
+			return "ConsoleLogger[name="+getName()+", verbose="+identifier.verbose+"]";
 		}
 	}
 
