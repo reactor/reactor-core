@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,10 @@
 package reactor.util;
 
 import java.io.PrintStream;
-import java.util.HashMap;
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.Objects;
+import java.util.WeakHashMap;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -128,6 +131,12 @@ public abstract class Loggers {
 	 * <p>
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
+	 *
+	 * <h4>Thread-safety</h4>
+	 *
+	 * Given logger acquisition function <em>must</em> be thread-safe.
+	 * It means that it is user responsibility to ensure that any internal state and cache
+	 * used by the provided function is properly synchronized.
 	 *
 	 * @param loggerFactory the {@link Function} that provides a (possibly cached) {@link Logger}
 	 * given a name.
@@ -461,25 +470,27 @@ public abstract class Loggers {
 	 */
 	static final class ConsoleLogger implements Logger {
 
-		private final String name;
+		private final ConsoleLoggerKey identifier;
 		private final PrintStream err;
 		private final PrintStream log;
-		private final boolean verbose;
 
-		ConsoleLogger(String name, PrintStream log, PrintStream err, boolean verbose) {
-			this.name = name;
+		ConsoleLogger(ConsoleLoggerKey identifier, PrintStream log, PrintStream err) {
+			this.identifier = identifier;
 			this.log = log;
 			this.err = err;
-			this.verbose = verbose;
 		}
 
-		ConsoleLogger(String name, boolean verbose) {
-			this(name, System.out, System.err, verbose);
+		ConsoleLogger(String name, PrintStream log, PrintStream err, boolean verbose) {
+			this(new ConsoleLoggerKey(name, verbose), log, err);
+		}
+
+		ConsoleLogger(ConsoleLoggerKey identifier) {
+			this(identifier, System.out, System.err);
 		}
 
 		@Override
 		public String getName() {
-			return this.name;
+			return identifier.name;
 		}
 
 		@Nullable
@@ -498,12 +509,12 @@ public abstract class Loggers {
 
 		@Override
 		public boolean isTraceEnabled() {
-			return verbose;
+			return identifier.verbose;
 		}
 
 		@Override
 		public synchronized void trace(String msg) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), msg);
@@ -511,14 +522,14 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void trace(String format, Object... arguments) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
 		}
 		@Override
 		public synchronized void trace(String msg, Throwable t) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[TRACE] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
@@ -527,12 +538,12 @@ public abstract class Loggers {
 
 		@Override
 		public boolean isDebugEnabled() {
-			return verbose;
+			return identifier.verbose;
 		}
 
 		@Override
 		public synchronized void debug(String msg) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), msg);
@@ -540,7 +551,7 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void debug(String format, Object... arguments) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
@@ -548,7 +559,7 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void debug(String msg, Throwable t) {
-			if (!verbose) {
+			if (!identifier.verbose) {
 				return;
 			}
 			this.log.format("[DEBUG] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
@@ -617,21 +628,76 @@ public abstract class Loggers {
 			this.err.format("[ERROR] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.err);
 		}
+
+		@Override
+		public String toString() {
+			return "ConsoleLogger[name="+getName()+", verbose="+identifier.verbose+"]";
+		}
 	}
 
-	private static final class ConsoleLoggerFactory implements Function<String, Logger> {
+	/**
+	 * A key object to serve a dual purpose:
+	 * <ul>
+	 *     <li>Allow consistent identification of cached console loggers using not
+	 *     only its name, but also its verbosity level</li>
+	 *     <li>Provide an object eligible to cache eviction. Contrary to a logger or
+	 *     a string (logger name) object, this is a good candidate for weak reference key,
+	 *     because it should be held only internally by the attached logger and by the
+	 *     logger cache (as evictable key).</li>
+	 * </ul>
+	 */
+	private static final class ConsoleLoggerKey {
 
-		private static final HashMap<String, Logger> consoleLoggers = new HashMap<>();
+		private final String name;
+		private final boolean verbose;
+
+		private ConsoleLoggerKey(String name, boolean verbose) {
+			this.name = name;
+			this.verbose = verbose;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			ConsoleLoggerKey key = (ConsoleLoggerKey) o;
+			return verbose == key.verbose && Objects.equals(name, key.name);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(name, verbose);
+		}
+	}
+
+	static final class ConsoleLoggerFactory implements Function<String, Logger> {
+
+		private static final Map<ConsoleLoggerKey, WeakReference<Logger>> consoleLoggers =
+				new WeakHashMap<>();
 
 		final boolean verbose;
 
-		private ConsoleLoggerFactory(boolean verbose) {
+		ConsoleLoggerFactory(boolean verbose) {
 			this.verbose = verbose;
 		}
 
 		@Override
 		public Logger apply(String name) {
-			return consoleLoggers.computeIfAbsent(name, n -> new ConsoleLogger(n, verbose));
+			final ConsoleLoggerKey key = new ConsoleLoggerKey(name, verbose);
+			synchronized (consoleLoggers) {
+				final WeakReference<Logger> ref = consoleLoggers.get(key);
+				Logger cached = ref == null ? null : ref.get();
+				if (cached == null) {
+					cached = new ConsoleLogger(key);
+					consoleLoggers.put(key, new WeakReference<>(cached));
+				}
+
+				return cached;
+			}
 		}
 	}
 
