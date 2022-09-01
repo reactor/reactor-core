@@ -6,7 +6,7 @@ This library is intended as a means to easily adapt between various implementati
 `ContextView`/`Context` is an example, and between `ThreadLocal` variables as well.
 
 `ReactorContextAccessor` allows the Context-Propagation library to understand Reactor `Context` and `Contextview`.
-It implements the SPI and is loaded via `ServiceLoader`.
+It implements the SPI and is loaded via `java.util.ServiceLoader`.
 No user action is required, other than having a dependency on both reactor-core and `io.micrometer:context-propagation`. The `ReactorContextAccessor` class is public but shouldn't generally be accessed by user code.
 
 On top of that, Reactor-Core 3.5.0 also introduces operators that transparently deal with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
