@@ -7,13 +7,13 @@ This library is intended as a means to easily adapt between various implementati
 
 `ReactorContextAccessor` allows the Context-Propagation library to understand Reactor `Context` and `Contextview`.
 It implements the SPI and is loaded via `ServiceLoader`.
-No user action is required, other than depending on reactor-core and `context-propagation` (the class is public but shouldn't generally be accessed by user code).
+No user action is required, other than having a dependency on both reactor-core and `io.micrometer:context-propagation`. The `ReactorContextAccessor` class is public but shouldn't generally be accessed by user code.
 
 On top of that, Reactor-Core 3.5.0 also introduces operators that transparently deal with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
 
 == `contextCapture` Operator
 
-This operator is a convenient alternative to `contextWrite` which performs a `ContextSnapshot#capture` and uses the SPI to translate that snapshot into the Reactor `Context`.
+This operator is a convenient alternative to `contextWrite` to perform a `ContextSnapshot#capture` and then to use that snapshot to populate the Reactor `Context`.
 
 As a result, if there were any ThreadLocal values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
 at runtime in upstream operators.
