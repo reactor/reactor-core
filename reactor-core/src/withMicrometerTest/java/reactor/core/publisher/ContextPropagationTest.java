@@ -24,11 +24,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
-import net.bytebuddy.implementation.bytecode.Throw;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -50,8 +49,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ContextPropagationTest {
 
-	private static final String KEY1 = "key1";
-	private static final String KEY2 = "key2";
+	private static final String KEY1 = "ContextPropagationTest.key1";
+	private static final String KEY2 = "ContextPropagationTest.key2";
 
 	private static final AtomicReference<String> REF1 = new AtomicReference<>();
 	private static final AtomicReference<String> REF2 = new AtomicReference<>();
@@ -60,7 +59,7 @@ class ContextPropagationTest {
 	private ContextRegistry registry;
 
 	@BeforeEach
-	void setup() {
+	void initializeThreadLocals() {
 		registry = new ContextRegistry().loadContextAccessors();
 
 		REF1.set("ref1_init");
@@ -71,6 +70,14 @@ class ContextPropagationTest {
 
 		registry.registerThreadLocalAccessor(
 			KEY2, REF2::get, REF2::set, () -> REF2.set(null));
+	}
+
+	//the cleanup of "thread locals" could be especially important if one starts relying on
+	//the global registry in tests: it would ensure no TL pollution.
+	@AfterEach
+	void cleanupThreadLocals() {
+		REF1.set(null);
+		REF2.set(null);
 	}
 
 	@Test
@@ -342,64 +349,50 @@ class ContextPropagationTest {
 
 		@Test
 		void threadLocalRestoredInSignalListener() throws InterruptedException {
+			//FIXME this pollutes the global registry, but for now ContextRestoreSignalListener can only work with said global registry
+			//this should be fine though because now we make sure to clean REF1 and REF2 at the end of each test.
+			ContextRegistry registryToUse = ContextRegistry.getInstance();
+			registryToUse.registerThreadLocalAccessor(
+				KEY1, REF1::get, REF1::set, () -> REF1.set(null));
+			registryToUse.registerThreadLocalAccessor(
+				KEY2, REF2::get, REF2::set, () -> REF2.set(null));
+
 			REF1.set(null);
 			Context context = Context.of(KEY1, "expected");
-
-			ContextPropagation.ContextRestoreSignalListener<Object> listener = new ContextPropagation.ContextRestoreSignalListener<>(Mockito.mock(SignalListener.class), context, registry);
 			List<String> list = new ArrayList<>();
+
+			SignalListener<Object> tlReadingListener = Mockito.mock(SignalListener.class, invocation -> {
+				list.add(invocation.getMethod().getName() + ": " + REF1.getAndSet(null));
+				return null;
+			});
+
+			ContextPropagation.ContextRestoreSignalListener<Object> listener = new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context,
+				//FIXME use local test registry once ContextRegistry.getInstance isn't hardcoded in the Listener
+				null);
 
 			Thread t = new Thread(() -> {
 				try {
 					listener.doFirst();
-					list.add("doFirst: " + REF1.getAndSet(null));
-
 					listener.doOnSubscription();
-					list.add("doOnSubscription: " + REF1.getAndSet(null));
 
 					listener.doOnFusion(1);
-					list.add("doOnFusion: " + REF1.getAndSet(null));
-
-					listener.doOnFusion(1);
-					list.add("doOnFusion: " + REF1.getAndSet(null));
-
 					listener.doOnRequest(1L);
-					list.add("doOnRequest: " + REF1.getAndSet(null));
-
 					listener.doOnCancel();
-					list.add("doOnCancel: " + REF1.getAndSet(null));
 
 					listener.doOnNext(1);
-					list.add("doOnNext: " + REF1.getAndSet(null));
-
 					listener.doOnComplete();
-					list.add("doOnComplete: " + REF1.getAndSet(null));
-
 					listener.doOnError(new IllegalStateException("boom"));
-					list.add("doOnError: " + REF1.getAndSet(null));
 
 					listener.doAfterComplete();
-					list.add("doAfterComplete: " + REF1.getAndSet(null));
-
 					listener.doAfterError(new IllegalStateException("boom"));
-					list.add("doAfterError: " + REF1.getAndSet(null));
-
 					listener.doFinally(SignalType.ON_COMPLETE);
-					list.add("doFinally: " + REF1.getAndSet(null));
 
 					listener.doOnMalformedOnNext(1);
-					list.add("doOnMalformedOnNext: " + REF1.getAndSet(null));
-
 					listener.doOnMalformedOnComplete();
-					list.add("doOnMalformedOnComplete: " + REF1.getAndSet(null));
-
 					listener.doOnMalformedOnError(new IllegalStateException("boom"));
-					list.add("doOnMalformedOnComplete: " + REF1.getAndSet(null));
 
 					listener.addToContext(Context.empty());
-					list.add("addToContext: " + REF1.getAndSet(null));
-
 					listener.handleListenerError(new IllegalStateException("boom"));
-					list.add("handleListenerError: " + REF1.getAndSet(null));
 				}
 				catch (Throwable error) {
 					error.printStackTrace();
@@ -413,7 +406,6 @@ class ContextPropagationTest {
 					"doFirst: expected",
 					"doOnSubscription: expected",
 					"doOnFusion: expected",
-					"doOnFusion: expected",
 					"doOnRequest: expected",
 					"doOnCancel: expected",
 					"doOnNext: expected",
@@ -424,7 +416,7 @@ class ContextPropagationTest {
 					"doFinally: expected",
 					"doOnMalformedOnNext: expected",
 					"doOnMalformedOnComplete: expected",
-					"doOnMalformedOnComplete: expected",
+					"doOnMalformedOnError: expected",
 					"addToContext: expected",
 					"handleListenerError: expected"
 				);

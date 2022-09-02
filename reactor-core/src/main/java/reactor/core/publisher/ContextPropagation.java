@@ -156,115 +156,121 @@ final class ContextPropagation {
 			this.context = context;
 			this.registry = registry == null ? ContextRegistry.getInstance() : registry;
 		}
+		
+		ContextSnapshot.Scope restoreThreadLocals() {
+			//FIXME use this.registry to directly restore all ThreadLocals without providing keyPredicate/keys, once that method becomes available
+			ContextSnapshot snapshot = ContextSnapshot.capture(this.context);
+			return snapshot.setThreadLocalValues();
+		}
 
 		@Override
 		public void doFirst() throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doFirst();
 			}
 		}
 
 		@Override
 		public void doFinally(SignalType terminationType) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doFinally(terminationType);
 			}
 		}
 
 		@Override
 		public void doOnSubscription() throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnSubscription();
 			}
 		}
 
 		@Override
 		public void doOnFusion(int negotiatedFusion) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnFusion(negotiatedFusion);
 			}
 		}
 
 		@Override
 		public void doOnRequest(long requested) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnRequest(requested);
 			}
 		}
 
 		@Override
 		public void doOnCancel() throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnCancel();
 			}
 		}
 
 		@Override
 		public void doOnNext(T value) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnNext(value);
 			}
 		}
 
 		@Override
 		public void doOnComplete() throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnComplete();
 			}
 		}
 
 		@Override
 		public void doOnError(Throwable error) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnError(error);
 			}
 		}
 
 		@Override
 		public void doAfterComplete() throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doAfterComplete();
 			}
 		}
 
 		@Override
 		public void doAfterError(Throwable error) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doAfterError(error);
 			}
 		}
 
 		@Override
 		public void doOnMalformedOnNext(T value) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnMalformedOnNext(value);
 			}
 		}
 
 		@Override
 		public void doOnMalformedOnError(Throwable error) throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnMalformedOnError(error);
 			}
 		}
 
 		@Override
 		public void doOnMalformedOnComplete() throws Throwable {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnMalformedOnComplete();
 			}
 		}
 
 		@Override
 		public void handleListenerError(Throwable listenerError) {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.handleListenerError(listenerError);
 			}
 		}
 
 		@Override
 		public Context addToContext(Context originalContext) {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				return original.addToContext(originalContext);
 			}
 		}
