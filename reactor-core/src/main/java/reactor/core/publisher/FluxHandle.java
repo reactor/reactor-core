@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -44,12 +45,13 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagation.contextRestoreForHandle(this.handler, actual);
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			@SuppressWarnings("unchecked")
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) actual;
-			return new HandleConditionalSubscriber<>(cs, handler);
+			return new HandleConditionalSubscriber<>(cs, handler2);
 		}
-		return new HandleSubscriber<>(actual, handler);
+		return new HandleSubscriber<>(actual, handler2);
 	}
 
 	@Override

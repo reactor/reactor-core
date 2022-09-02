@@ -43,7 +43,8 @@ final class MonoHandleFuseable<T, R> extends InternalMonoOperator<T, R>
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		return new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler);
+		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagation.contextRestoreForHandle(this.handler, actual);
+		return new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler2);
 	}
 
 	@Override

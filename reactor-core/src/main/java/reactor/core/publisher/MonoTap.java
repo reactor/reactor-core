@@ -53,6 +53,9 @@ final class MonoTap<T, STATE> extends InternalMonoOperator<T, T> {
 			Operators.error(actual, generatorError);
 			return null;
 		}
+		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
+		// (only if ContextPropagation.isContextPropagationAvailable() is true)
+		signalListener = ContextPropagation.contextRestoringSignalListener(signalListener, actual);
 
 		try {
 			signalListener.doFirst();

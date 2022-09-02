@@ -16,14 +16,18 @@
 
 package reactor.core.publisher;
 
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
 
+import reactor.core.CoreSubscriber;
+import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Utility private class to detect if the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a> is on the classpath and to offer
@@ -34,6 +38,8 @@ import reactor.util.context.Context;
 final class ContextPropagation {
 
 	static final boolean isContextPropagationAvailable;
+
+	static final String CAPTURED_CONTEXT_MARKER = "reactor.core.contextSnapshotCaptured";
 
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
 	static final Function<Context, Context> NO_OP = c -> c;
@@ -100,6 +106,25 @@ final class ContextPropagation {
 		return new ContextCaptureFunction(captureKeyPredicate, null);
 	}
 
+	public static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, CoreSubscriber<? super R> actual) {
+		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
+			return handler;
+		}
+		return (t, s) -> {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(actual.currentContext())) {
+				handler.accept(t, s);
+			}
+		};
+	}
+
+	public static <T> SignalListener<T> contextRestoringSignalListener(final SignalListener<T> original,
+																	   CoreSubscriber<? super T> actual) {
+		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
+			return original;
+		}
+		return new ContextRestoreSignalListener<T>(original, actual.currentContext(), ContextRegistry.getInstance());
+	}
+
 	//the Function indirection allows tests to directly assert code in this class rather than static methods
 	static final class ContextCaptureFunction implements Function<Context, Context> {
 
@@ -113,8 +138,135 @@ final class ContextPropagation {
 
 		@Override
 		public Context apply(Context target) {
-			return ContextSnapshot.captureAllUsing(capturePredicate, this.registry).updateContext(target);
+			return ContextSnapshot.captureAllUsing(capturePredicate, this.registry)
+				.updateContext(target)
+				.put(CAPTURED_CONTEXT_MARKER, true);
 		}
 	}
 
+	//the SignalListener implementation can be tested independently with a test-specific ContextRegistry
+	static final class ContextRestoreSignalListener<T> implements SignalListener<T> {
+
+		final SignalListener<T> original;
+		final ContextView context;
+		final ContextRegistry registry;
+
+		public ContextRestoreSignalListener(SignalListener<T> original, ContextView context, @Nullable ContextRegistry registry) {
+			this.original = original;
+			this.context = context;
+			this.registry = registry == null ? ContextRegistry.getInstance() : registry;
+		}
+
+		@Override
+		public void doFirst() throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doFirst();
+			}
+		}
+
+		@Override
+		public void doFinally(SignalType terminationType) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doFinally(terminationType);
+			}
+		}
+
+		@Override
+		public void doOnSubscription() throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context)) {
+				original.doOnSubscription();
+			}
+		}
+
+		@Override
+		public void doOnFusion(int negotiatedFusion) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnFusion(negotiatedFusion);
+			}
+		}
+
+		@Override
+		public void doOnRequest(long requested) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnRequest(requested);
+			}
+		}
+
+		@Override
+		public void doOnCancel() throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnCancel();
+			}
+		}
+
+		@Override
+		public void doOnNext(T value) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnNext(value);
+			}
+		}
+
+		@Override
+		public void doOnComplete() throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnComplete();
+			}
+		}
+
+		@Override
+		public void doOnError(Throwable error) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnError(error);
+			}
+		}
+
+		@Override
+		public void doAfterComplete() throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doAfterComplete();
+			}
+		}
+
+		@Override
+		public void doAfterError(Throwable error) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doAfterError(error);
+			}
+		}
+
+		@Override
+		public void doOnMalformedOnNext(T value) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnMalformedOnNext(value);
+			}
+		}
+
+		@Override
+		public void doOnMalformedOnError(Throwable error) throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnMalformedOnError(error);
+			}
+		}
+
+		@Override
+		public void doOnMalformedOnComplete() throws Throwable {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.doOnMalformedOnComplete();
+			}
+		}
+
+		@Override
+		public void handleListenerError(Throwable listenerError) {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				original.handleListenerError(listenerError);
+			}
+		}
+
+		@Override
+		public Context addToContext(Context originalContext) {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(this.context, this.registry)) {
+				return original.addToContext(originalContext);
+			}
+		}
+	}
 }
