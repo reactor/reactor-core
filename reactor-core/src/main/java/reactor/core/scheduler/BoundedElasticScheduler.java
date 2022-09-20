@@ -253,7 +253,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		try {
 			return Schedulers.directSchedule(picked.executor, task, picked, 0L, TimeUnit.MILLISECONDS);
 		} catch (RejectedExecutionException ex) {
-			//if task rejected need releases the BoundedState for decreases its usage by one
+			// ensure to free the BoundedState so it can be reused
 			picked.dispose();
 			throw ex;
 		}
@@ -266,7 +266,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		try {
 			return Schedulers.directSchedule(picked.executor, task, picked, delay, unit);
 		} catch (RejectedExecutionException ex) {
-			//if task rejected need releases the BoundedState for decreases its usage by one
+			// ensure to free the BoundedState so it can be reused
 			picked.dispose();
 			throw ex;
 		}
@@ -288,7 +288,7 @@ final class BoundedElasticScheduler implements Scheduler,
 			// (ie decreases its usage by one)
 			return Disposables.composite(scheduledTask, picked);
 		} catch (RejectedExecutionException ex) {
-			//if task rejected need releases the BoundedState for decreases its usage by one
+			// ensure to free the BoundedState so it can be reused
 			picked.dispose();
 			throw ex;
 		}

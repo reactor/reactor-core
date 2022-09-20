@@ -1552,8 +1552,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void moveToIdleAfterHaveRejectTasksAndCompleteAllTasks() throws InterruptedException {
-		AtomicInteger taskRejected = new AtomicInteger();
+	public void transitionsToIdleAfterRejectionAndFollowingCompletion() throws InterruptedException {
+		int taskRejected = 0;
 
 		int maxThreads = 2;
 		int maxTaskQueuedPerThread = 10;
@@ -1571,13 +1571,13 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 						60));
 		scheduler.start();
 
-		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch releaseAllTasksLatch = new CountDownLatch(1);
 		CountDownLatch tasksStartedLatch = new CountDownLatch(maxThreads);
 
 		Runnable startedAndWaitLatchRunnable = () -> {
 			try {
 				tasksStartedLatch.countDown();
-				latch.await(30, TimeUnit.SECONDS);
+				releaseAllTasksLatch.await(30, TimeUnit.SECONDS);
 			}
 			catch (InterruptedException e) {
 				e.printStackTrace();
@@ -1586,49 +1586,50 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		Runnable waitLatchRunnable = () -> {
 			try {
-				latch.await(30, TimeUnit.SECONDS);
+				releaseAllTasksLatch.await(30, TimeUnit.SECONDS);
 			}
 			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		};
 
-		//initial task that blocks the threads, causing other tasks to enter pending queue
+		// initial tasks that block the threads, causing other tasks to enter the pending queue
 		for (int i = 0; i < maxThreads; i++) {
 			scheduler.schedule(startedAndWaitLatchRunnable);
 		}
 
-		assertThat(tasksStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue(); //small window to start the first task
+		// small window to start the first task
+		assertThat(tasksStartedLatch.await(1, TimeUnit.SECONDS)).as("task picked").isTrue();
 
-		//initial all queue
+		// fill up pending queue
 		for (int i = 0; i < maxThreads * maxTaskQueuedPerThread; i++) {
 			scheduler.schedule(waitLatchRunnable);
 		}
 
-		//check reject new tasks
+		// check new tasks are rejected
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.as("must reject for method schedule without delay")
 				.isThrownBy(() -> scheduler.schedule(waitLatchRunnable));
-		taskRejected.incrementAndGet();
+		taskRejected++;
 
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.as("must reject for method schedule with delay")
 				.isThrownBy(() -> scheduler.schedule(waitLatchRunnable, 100, TimeUnit.MILLISECONDS));
-		taskRejected.incrementAndGet();
+		taskRejected++;
 
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.as("must reject for method schedulePeriodically")
 				.isThrownBy(() -> scheduler.schedulePeriodically(waitLatchRunnable, 100, 100, TimeUnit.MILLISECONDS));
-		taskRejected.incrementAndGet();
+		taskRejected++;
 
-		assertThat(taskRejected).as("task rejected").hasValue(3);
+		assertThat(taskRejected).as("task rejected").isEqualTo(3);
 
-		latch.countDown();
+		releaseAllTasksLatch.countDown();
 
-		Awaitility.with().pollInterval(50, TimeUnit.MILLISECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
+		Awaitility.with().pollInterval(50, TimeUnit.MILLISECONDS).pollDelay(50, TimeUnit.MILLISECONDS)
 				.await().atMost(500, TimeUnit.MILLISECONDS)
 				.untilAsserted(() -> assertThat(scheduler.estimateIdle())
-						.as("all tasks idle after complete tasks")
+						.as("all BoundedStates are idle after all pending tasks finish")
 						.isEqualTo(maxThreads)
 				);
 	}
