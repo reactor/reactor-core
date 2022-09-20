@@ -250,14 +250,26 @@ final class BoundedElasticScheduler implements Scheduler,
 	public Disposable schedule(Runnable task) {
 		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
 		BoundedState picked = state.currentResource.pick();
-		return Schedulers.directSchedule(picked.executor, task, picked, 0L, TimeUnit.MILLISECONDS);
+		try {
+			return Schedulers.directSchedule(picked.executor, task, picked, 0L, TimeUnit.MILLISECONDS);
+		} catch (RejectedExecutionException ex) {
+			// ensure to free the BoundedState so it can be reused
+			picked.dispose();
+			throw ex;
+		}
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
 		final BoundedState picked = state.currentResource.pick();
-		return Schedulers.directSchedule(picked.executor, task, picked, delay, unit);
+		try {
+			return Schedulers.directSchedule(picked.executor, task, picked, delay, unit);
+		} catch (RejectedExecutionException ex) {
+			// ensure to free the BoundedState so it can be reused
+			picked.dispose();
+			throw ex;
+		}
 	}
 
 	@Override
@@ -266,14 +278,20 @@ final class BoundedElasticScheduler implements Scheduler,
 			long period,
 			TimeUnit unit) {
 		final BoundedState picked = state.currentResource.pick();
-		Disposable scheduledTask = Schedulers.directSchedulePeriodically(picked.executor,
-				task,
-				initialDelay,
-				period,
-				unit);
-		//a composite with picked ensures the cancellation of the task releases the BoundedState
-		// (ie decreases its usage by one)
-		return Disposables.composite(scheduledTask, picked);
+		try {
+			Disposable scheduledTask = Schedulers.directSchedulePeriodically(picked.executor,
+					task,
+					initialDelay,
+					period,
+					unit);
+			//a composite with picked ensures the cancellation of the task releases the BoundedState
+			// (ie decreases its usage by one)
+			return Disposables.composite(scheduledTask, picked);
+		} catch (RejectedExecutionException ex) {
+			// ensure to free the BoundedState so it can be reused
+			picked.dispose();
+			throw ex;
+		}
 	}
 
 	@Override
