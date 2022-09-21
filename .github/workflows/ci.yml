@@ -21,6 +21,7 @@ jobs:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
       - uses: gradle/gradle-build-action@cd579d970f8aec1cf0cae5f62a8e418768970015 # tag=v2
         name: api compatibility
+        id: apiCompatibility
         if: always()
         with:
           arguments: japicmp --quiet
@@ -40,7 +41,7 @@ jobs:
           echo ""
           exit -1
       - name: api compatibility report in job summary
-        if: failure()
+        if: failure() && steps.apiCompatibility.outcome == 'failure'
         # the cat after grep ensure that if no match found the script isn't interrupted
         run: |
           echo "# API compatibility filtered report" >> $GITHUB_STEP_SUMMARY
