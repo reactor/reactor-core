@@ -41,15 +41,16 @@ jobs:
           exit -1
       - name: api compatibility report in job summary
         if: failure()
+        # the cat after grep ensure that if no match found the script isn't interrupted
         run: |
           echo "# API compatibility filtered report" >> $GITHUB_STEP_SUMMARY
           echo "## for reactor-core" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ./gradlew :reactor-core:japicmpReport | grep "incompatible change" >> $GITHUB_STEP_SUMMARY
+          ./gradlew :reactor-core:japicmpReport | grep "incompatible change" | cat >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## for reactor-test" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ./gradlew :reactor-test:japicmpReport | grep "incompatible change" >> $GITHUB_STEP_SUMMARY
+          ./gradlew :reactor-test:japicmpReport | grep "incompatible change" | cat >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
   core-fast:
     name: core fast tests
