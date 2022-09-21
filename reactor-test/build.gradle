@@ -65,11 +65,11 @@ task downloadBaseline(type: Download) {
 }
 
 def japicmpReport = tasks.register('japicmpReport') {
+	def reportFile = file("${project.buildDir}/reports/japi.txt")
 	onlyIf {
-		japicmp.state.failure != null
+		japicmp.state.failure != null || reportFile.exists()
 	}
 	doLast {
-		def reportFile = file("${project.buildDir}/reports/japi.txt")
 		if (reportFile.exists()) {
 			println "\n *********************************"
 			println " * /!\\ API compatibility failures *"
@@ -82,7 +82,7 @@ def japicmpReport = tasks.register('japicmpReport') {
 					println "binary incompatible change: $it"
 			}
 		}
-		else println "No japi report to print in $reportFile"
+		else println "No incompatible change to report"
 	}
 }
 
