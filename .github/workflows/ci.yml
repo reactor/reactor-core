@@ -34,25 +34,12 @@ jobs:
           echo -e "\n - \u001b[1mSpotless (license headers)\u001b[0m failures on touched java files \033[38;5;255;48;5;0m\u001b[1mcan be automatically fixed by running\u001b[0m:"
           echo -e "   \033[38;5;0;48;5;255m ./gradlew spotlessApply \033[0m"
           echo -e "\n - \u001b[1mAPI Compatibility\u001b[0m failures should be considered carefully and \033[38;5;255;48;5;0m\u001b[1mdiscussed with maintainers in the PR\u001b[0m"
-          echo "   If there are failures, the detail should be available in the"
-          echo -e "   \033[38;5;0;48;5;255m GitHub Job Summary \033[0m"
+          echo "   If there are failures, the detail should be available in the step's log:"
+          echo -e "   Look for the \033[38;5;0;48;5;255m API compatibility failures \033[0m block(s)."
           echo "   Alternatively, locally run the following command to get access to the full report:"
           echo -e "   \033[38;5;0;48;5;255m ./gradlew japicmp \033[0m"
           echo ""
           exit -1
-      - name: api compatibility report in job summary
-        if: failure() && steps.apiCompatibility.outcome == 'failure'
-        # the cat after grep ensure that if no match found the script isn't interrupted
-        run: |
-          echo "### API compatibility filtered report" >> $GITHUB_STEP_SUMMARY
-          echo "#### for reactor-core" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ./gradlew :reactor-core:japicmpReport | grep "incompatible change" | cat >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "#### for reactor-test" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ./gradlew :reactor-test:japicmpReport | grep "incompatible change" | cat >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
   core-fast:
     name: core fast tests
     runs-on: ubuntu-latest
