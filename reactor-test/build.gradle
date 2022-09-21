@@ -65,11 +65,11 @@ task downloadBaseline(type: Download) {
 }
 
 def japicmpReport = tasks.register('japicmpReport') {
-	def reportFile = file("${project.buildDir}/reports/japi.txt")
 	onlyIf {
-		japicmp.state.failure != null || reportFile.exists()
+		japicmp.state.failure != null
 	}
 	doLast {
+		def reportFile = file("${project.buildDir}/reports/japi.txt")
 		if (reportFile.exists()) {
 			println "\n *********************************"
 			println " * /!\\ API compatibility failures *"
