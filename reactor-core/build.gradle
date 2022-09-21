@@ -181,6 +181,7 @@ task japicmp(type: JapicmpTask) {
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
 	ignoreMissingClasses = true
 	includeSynthetic = true
+	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
 	// TODO after a .0 release, bump the gradle.properties baseline
 	// TODO after a .0 release, remove the reactor-core exclusions below if any

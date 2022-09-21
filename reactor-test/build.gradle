@@ -109,6 +109,7 @@ task japicmp(type: JapicmpTask) {
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
 	ignoreMissingClasses = true
 	includeSynthetic = true
+	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
 	methodExcludes = [ ]
