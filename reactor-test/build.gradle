@@ -71,6 +71,9 @@ def japicmpReport = tasks.register('japicmpReport') {
 	doLast {
 		def reportFile = file("${project.buildDir}/reports/japi.txt")
 		if (reportFile.exists()) {
+			println "\n *********************************"
+			println " * /!\\ API compatibility failures *"
+			println " **********************************"
 			println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
 			reportFile.eachLine {
 				if (it.contains("*") && (!it.contains("***") || it.contains("****")))

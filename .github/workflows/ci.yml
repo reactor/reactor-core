@@ -34,6 +34,9 @@ jobs:
           echo -e "   \033[38;5;0;48;5;255m ./gradlew spotlessApply \033[0m"
           echo -e "\n - \u001b[1mAPI Compatibility\u001b[0m failures should be considered carefully and \033[38;5;255;48;5;0m\u001b[1mdiscussed with maintainers in the PR\u001b[0m"
           echo "   If there are failures, the detail should be available in the logs of the api compatibility step above"
+          echo "   (look for 'API compatibility failures' section in Gradle output)."
+          echo "   Alternatively, locally run the following command to get access to the full report:"
+          echo -e "   \033[38;5;0;48;5;255m ./gradlew japicmp \033[0m"
           echo ""
           exit -1
   core-fast:
