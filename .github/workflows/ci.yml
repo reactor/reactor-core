@@ -42,16 +42,15 @@ jobs:
       - name: api compatibility report in job summary
         if: failure()
         run: |
-          echo "# API compatibility filtered report" > japiCmpSummary.md
-          echo "## for reactor-core" >> japiCmpSummary.md
-          echo "\`\`\`" >> japiCmpSummary.md
-          ./gradlew :reactor-core:japicmpReport | grep "incompatible change" >> japiCmpSummary.md
-          echo "\`\`\`" >> japiCmpSummary.md
-          echo "## for reactor-test" >> japiCmpSummary.md
-          echo "\`\`\`" >> japiCmpSummary.md
-          ./gradlew :reactor-test:japicmpReport | grep "incompatible change" >> japiCmpSummary.md
-          echo "\`\`\`" >> japiCmpSummary.md
-          cat japiCmpSummary.md >> $GITHUB_STEP_SUMMARY
+          echo "# API compatibility filtered report" >> $GITHUB_STEP_SUMMARY
+          echo "## for reactor-core" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ./gradlew :reactor-core:japicmpReport | grep "incompatible change" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## for reactor-test" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ./gradlew :reactor-test:japicmpReport | grep "incompatible change" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
   core-fast:
     name: core fast tests
     runs-on: ubuntu-latest
