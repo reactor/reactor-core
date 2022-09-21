@@ -66,6 +66,10 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 	 */
 	static final class ImmutableTimed<T> implements Timed<T> {
 
+		public void test() {
+
+		}
+
 		final long eventElapsedSinceSubscriptionNanos;
 		final long eventElapsedNanos;
 		final long eventTimestampEpochMillis;

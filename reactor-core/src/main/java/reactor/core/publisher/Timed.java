@@ -25,6 +25,12 @@ import java.util.function.Supplier;
  */
 public interface Timed<T> extends Supplier<T> {
 
+	void test();
+
+	default void testDefault() {
+
+	}
+
 	/**
 	 * Get the value wrapped by this {@link Timed}.
 	 *
