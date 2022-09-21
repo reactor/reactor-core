@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,6 @@ import java.util.function.Supplier;
  * @author Simon Baslé
  */
 public interface Timed<T> extends Supplier<T> {
-
-	void test();
-
-	default void testDefault() {
-
-	}
 
 	/**
 	 * Get the value wrapped by this {@link Timed}.
