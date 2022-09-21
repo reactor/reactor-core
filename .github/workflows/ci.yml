@@ -21,10 +21,9 @@ jobs:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
       - uses: gradle/gradle-build-action@cd579d970f8aec1cf0cae5f62a8e418768970015 # tag=v2
         name: api compatibility
-        id: apiCompatibility
         if: always()
         with:
-          arguments: japicmp --quiet
+          arguments: japicmp
       - name: how to fix
         if: failure()
         # the foreground (38;5) color code 208 is orange. we also have bold, white bg (38;5;0;48;5;255m), white fg on black bg...
