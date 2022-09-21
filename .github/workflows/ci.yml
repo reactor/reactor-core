@@ -23,7 +23,7 @@ jobs:
         name: api compatibility
         if: always()
         with:
-          arguments: japicmp
+          arguments: japicmp --quiet
       - name: how to fix
         if: failure()
         # the foreground (38;5) color code 208 is orange. we also have bold, white bg (38;5;0;48;5;255m), white fg on black bg...
@@ -33,8 +33,8 @@ jobs:
           echo -e "\n - \u001b[1mSpotless (license headers)\u001b[0m failures on touched java files \033[38;5;255;48;5;0m\u001b[1mcan be automatically fixed by running\u001b[0m:"
           echo -e "   \033[38;5;0;48;5;255m ./gradlew spotlessApply \033[0m"
           echo -e "\n - \u001b[1mAPI Compatibility\u001b[0m failures should be considered carefully and \033[38;5;255;48;5;0m\u001b[1mdiscussed with maintainers in the PR\u001b[0m"
-          echo "   If there are failures, the detail should be available in the logs of the api compatibility step above"
-          echo "   (look for 'API compatibility failures' section in Gradle output)."
+          echo "   If there are failures, the detail should be available in the logs of the api compatibility step above:"
+          echo -e "   \033[38;5;0;48;5;255m look for 'API compatibility failures' section \033[0m towards the end of Gradle output."
           echo "   Alternatively, locally run the following command to get access to the full report:"
           echo -e "   \033[38;5;0;48;5;255m ./gradlew japicmp \033[0m"
           echo ""
