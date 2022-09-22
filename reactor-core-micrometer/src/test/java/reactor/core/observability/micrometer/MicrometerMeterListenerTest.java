@@ -80,7 +80,7 @@ class MicrometerMeterListenerTest {
 		assertThat(registry.getMetersAsString().split("\n"))
 			.as("registered meters: onNextIntervalTimer")
 			.containsExactly(
-				Micrometer.DEFAULT_METER_PREFIX + ".onNext.delay(TIMER)[testTag1='testTagValue1', testTag2='testTagValue2']; count=0.0, total_time=0.0 seconds, max=0.0 seconds"
+				"reactor.onNext.delay(TIMER)[testTag1='testTagValue1', testTag2='testTagValue2']; count=0.0, total_time=0.0 seconds, max=0.0 seconds"
 			);
 
 		assertThat(registry.remove(listener.onNextIntervalTimer))
@@ -291,7 +291,7 @@ class MicrometerMeterListenerTest {
 		assertThat(listener.valued).as("valued").isTrue();
 		assertThat(listener.lastNextEventNanos).as("lastEventNanos recorded").isEqualTo(100);
 
-		assertThat(registry.find(Micrometer.DEFAULT_METER_PREFIX + ".flow.duration").meters())
+		assertThat(registry.find("reactor.flow.duration").meters())
 			.as("no flow.duration meter yet")
 			.isEmpty();
 

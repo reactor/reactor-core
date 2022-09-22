@@ -58,7 +58,7 @@ final class TimedScheduler implements Scheduler {
 		this.delegate = delegate;
 		this.registry = registry;
 		if (metricPrefix.endsWith(".")) {
-			throw new IllegalArgumentException("metricPrefix shouldn't end with a dot");
+			metricPrefix = metricPrefix.substring(0, metricPrefix.length() - 1);
 		}
 		Tags tags = Tags.of(tagsList);
 

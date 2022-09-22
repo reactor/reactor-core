@@ -66,16 +66,20 @@ class TimedSchedulerTest {
 
 		assertThat(registry.getMeters())
 			.map(m -> m.getId().getName())
+			.isNotEmpty()
 			.allSatisfy(name -> assertThat(name).startsWith("noDot."));
 	}
 
 	@Test
-	void constructorRejectsDotAtEndOfMetricPrefix() {
-		assertThatIllegalArgumentException().isThrownBy(() -> new TimedScheduler(Schedulers.immediate(), registry, "dot.", Tags.empty()))
-				.withMessage("metricPrefix shouldn't end with a dot");
+	void constructorIgnoresDotAtEndOfMetricPrefix() {
+		TimedScheduler test = new TimedScheduler(Schedulers.immediate(), registry, "dot.", Tags.empty());
 
 		assertThat(registry.getMeters())
-			.isEmpty();
+			.map(m -> m.getId().getName())
+			.isNotEmpty()
+			.allSatisfy(name -> assertThat(name)
+				.startsWith("dot.")
+				.doesNotContain(".."));
 	}
 
 	@Test
