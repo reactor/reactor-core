@@ -27,7 +27,11 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
-import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.*;
+import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.STATUS;
+import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_CANCELLED;
+import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_COMPLETED;
+import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_COMPLETED_EMPTY;
+import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_ERROR;
 
 /**
  * A {@link SignalListener} that makes timings using the {@link io.micrometer.observation.Observation} API from Micrometer 1.10.
