@@ -1,7 +1,7 @@
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.4.22"
-baselinePerfCore = "3.4.22"
+baseline-core-api = "3.4.23"
+baselinePerfCore = "3.4.23"
 baselinePerfExtra = "3.4.8"
 
 # Other shared versions
@@ -10,7 +10,7 @@ bytebuddy = "1.12.14"
 jmh = "1.35"
 junit = "5.9.0"
 #note that context-propagation has a different version directly set in libraries
-micrometer = "1.10.0-M4"
+micrometer = "1.10.0-M6"
 reactiveStreams = "1.0.4"
 
 [libraries]
@@ -35,9 +35,9 @@ logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
-micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-M4"
+micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-M5"
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
-micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-M7"
+micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-M8"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
 mockito = "org.mockito:mockito-core:4.7.0"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
