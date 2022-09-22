@@ -111,7 +111,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			}
 
 			PublishSubscriber<T> c = connection;
-			if (c == null || c.isTerminated()) {
+			if (c == null) {
 				PublishSubscriber<T> u = new PublishSubscriber<>(prefetch, this);
 				if (!CONNECTION.compareAndSet(this, c, u)) {
 					continue;
@@ -120,16 +120,25 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				c = u;
 			}
 
-			if (c.add(inner)) {
-				if (inner.isCancelled()) {
-					c.remove(inner);
-				}
-				else {
-					inner.parent = c;
-				}
-				c.drain();
-				break;
+			if (inner.isCancelled()) {
+				c.remove(inner);
 			}
+			else {
+				inner.parent = c;
+			}
+			if (c.add(inner)) {
+				c.drain();
+			} else {
+				if (c.error != null) {
+					inner.actual.onError(c.error);
+				} else {
+					if (c.queue.isEmpty()) {
+						c.drain();
+					}
+					inner.actual.onComplete();
+				}
+			}
+			break;
 		}
 	}
 
@@ -515,7 +524,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
-					CONNECTION.compareAndSet(parent, this, null);
 					e = Exceptions.terminate(ERROR, this);
 					queue.clear();
 					for (PubSubInner<T> inner : terminate()) {
@@ -524,7 +532,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					return true;
 				}
 				else if (empty) {
-					CONNECTION.compareAndSet(parent, this, null);
 					for (PubSubInner<T> inner : terminate()) {
 						inner.actual.onComplete();
 					}

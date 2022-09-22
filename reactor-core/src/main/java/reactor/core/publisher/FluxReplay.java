@@ -1161,6 +1161,20 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 	}
 
+	public static void main(String[] args) throws Exception {
+		ConnectableFlux<Integer> f = Flux.just(1, 2, 3).replay(0);
+
+		f.subscribe(System.out::println, System.out::println, () -> System.out.println(
+				"complete"));
+		f.connect();
+
+		f.subscribe(System.out::println, System.out::println, () -> System.out.println(
+				"complete"));
+
+		Thread.sleep(100);
+//		f.connect();
+	}
+
 	@Override
 	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual)
 			throws Throwable {
