@@ -56,7 +56,7 @@ asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "ascii
 asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.3.1" }
 download = { id = "de.undercouch.download", version = "5.1.2" }
-japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.0" }
+japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.1" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.13" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.10" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
