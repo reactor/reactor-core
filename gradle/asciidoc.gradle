@@ -18,6 +18,10 @@ configure(rootProject) {
 	apply plugin: 'org.asciidoctor.jvm.convert'
 	apply plugin: 'org.asciidoctor.jvm.pdf'
 
+	repositories {
+		maven { url 'https://repo.spring.io/milestone' }
+	}
+
 	// This configuration applies both to the asciidoctor & asciidoctorPdf tasks
 	asciidoctorj {
 		options = [doctype: 'book']
@@ -28,6 +32,8 @@ configure(rootProject) {
 	}
 
 	asciidoctor {
+		dependsOn "generateObservabilityDocs"
+		inputs.dir("$buildDir/generatedMetricsDocs/") // force the task to consider changes in this folder, making it not UP-TO-DATE
 		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
@@ -52,6 +58,7 @@ configure(rootProject) {
 
 	asciidoctorPdf {
 		onlyIf { isCiServer || !rootProject.version.toString().endsWith("-SNAPSHOT") || rootProject.hasProperty("forcePdf") }
+		dependsOn "generateObservabilityDocs"
 		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
@@ -62,7 +69,9 @@ configure(rootProject) {
 		attributes 'source-highlighter': 'rouge'
 	}
 
-	task docsZip(type: Zip, dependsOn: [asciidoctor, asciidoctorPdf]) {
+	task asciidocs(dependsOn: [asciidoctor, asciidoctorPdf], group: "documentation") { }
+
+	task docsZip(type: Zip, dependsOn: asciidocs) {
 		archiveBaseName.set("reactor-core")
 		archiveClassifier.set('docs')
 		afterEvaluate() {
@@ -74,5 +83,67 @@ configure(rootProject) {
 		}
 		from(asciidoctor) { into("docs/") }
 	}
+
+	configurations {
+		adoc
+	}
+
+	dependencies {
+		adoc platform(libs.micrometer.docsGenerator.bom)
+		adoc libs.micrometer.docsGenerator.metrics
+	}
+
+	task generateObservabilityDocs(dependsOn: [
+		"generateMeterListenerDocs",
+		"generateTimedSchedulerDocs",
+		"generateObservationDocs",
+		"polishGeneratedMetricsDocs"]) {
+	}
+
+	task generateMeterListenerDocs(type: JavaExec) {
+		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		classpath configurations.adoc
+		args project.rootDir.getAbsolutePath(), ".*DocumentedMeter.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
+	}
+
+	task generateTimedSchedulerDocs(type: JavaExec) {
+		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		classpath configurations.adoc
+		args project.rootDir.getAbsolutePath(), ".*DocumentedTimedScheduler.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
+	}
+
+	task generateObservationDocs(type: JavaExec) {
+		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		classpath configurations.adoc
+		args project.rootDir.getAbsolutePath(), ".*DocumentedObservation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/observation").toAbsolutePath().toString()
+	}
+
+	task polishGeneratedMetricsDocs(type: Copy) {
+		mustRunAfter "generateMeterListenerDocs"
+		mustRunAfter "generateTimedSchedulerDocs"
+		mustRunAfter "generateObservationDocs"
+		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/meterListener/") {
+			include "_*.adoc"
+			rename '_metrics.adoc', 'meterListener.adoc'
+		}
+		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/timedScheduler/") {
+			include "_*.adoc"
+			rename '_metrics.adoc', 'timedScheduler.adoc'
+		}
+		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/observation/") {
+			include "_*.adoc"
+			rename '_metrics.adoc', 'observation.adoc'
+		}
+		into project.rootProject.buildDir.toString() + "/documentedMetrics"
+		filter { String line ->
+			line.startsWith('[[observability-metrics]]') ||
+				line.startsWith('=== Observability - Metrics') ||
+				line.startsWith('Below you can find a list of all samples ') ||
+				line.startsWith("Fully qualified name of the enclosing class ")
+				? null : line
+		}
+		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
+	}
+
 }
 

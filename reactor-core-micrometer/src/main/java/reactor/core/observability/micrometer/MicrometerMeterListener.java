@@ -26,9 +26,11 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 
 import reactor.core.observability.SignalListener;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 import reactor.util.annotation.Nullable;
+
+import static reactor.core.observability.micrometer.DocumentedMeterListenerMeters.CommonTags.*;
+import static reactor.core.observability.micrometer.DocumentedMeterListenerMeters.TerminationTags.*;
 
 /**
  * A {@link SignalListener} that activates metrics gathering using Micrometer 1.x.
@@ -59,17 +61,13 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 			requestedCounter = null;
 		}
 		else {
-			this.onNextIntervalTimer = Timer.builder(configuration.sequenceName + METER_ON_NEXT_DELAY)
+			this.onNextIntervalTimer = Timer.builder(DocumentedMeterListenerMeters.ON_NEXT_DELAY.getName(configuration.sequenceName))
 				.tags(configuration.commonTags)
-				.description(
-					"Measures delays between onNext signals (or between onSubscribe and first onNext)")
 				.register(configuration.registry);
 
 			if (!Micrometer.DEFAULT_METER_PREFIX.equals(configuration.sequenceName)) {
-				this.requestedCounter = DistributionSummary.builder(configuration.sequenceName + METER_REQUESTED)
+				this.requestedCounter = DistributionSummary.builder(DocumentedMeterListenerMeters.REQUESTED_AMOUNT.getName(configuration.sequenceName))
 					.tags(configuration.commonTags)
-					.description(
-						"Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
 					.register(configuration.registry);
 			}
 			else {
@@ -182,49 +180,16 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 		// NO-OP
 	}
 
-	/**
-	 * Meter that counts the number of events received from a malformed source (ie an onNext after an onComplete).
-	 */
-	static final String METER_MALFORMED      = ".malformed.source";
-	/**
-	 * Meter that counts the number of subscriptions to a sequence.
-	 */
-	static final String METER_SUBSCRIBED     = ".subscribed";
-	/**
-	 * Meter that times the duration elapsed between a subscription and the termination or cancellation of the sequence.
-	 * A status tag is added to specify what event caused the timer to end (completed, completedEmpty, error, cancelled).
-	 */
-	static final String METER_FLOW_DURATION  = ".flow.duration";
-	/**
-	 * Meter that times the delays between each onNext (or between the first onNext and the onSubscribe event).
-	 */
-	static final String METER_ON_NEXT_DELAY  = ".onNext.delay";
-	/**
-	 * Meter that tracks the request amount, in {@link Flux#name(String) named} sequences only.
-	 */
-	static final String METER_REQUESTED      = ".requested";
-	/**
-	 * Tag used by {@link #METER_FLOW_DURATION} when "status" is {@link #TAG_ON_ERROR}, to store the
-	 * exception that occurred.
-	 */
-	static final String TAG_KEY_EXCEPTION = "exception";
-	/**
-	 * Tag bearing the sequence's name, as given by the {@link Flux#name(String)} operator.
-	 */
-	static final Tags   DEFAULT_TAGS_FLUX = Tags.of("type", "Flux");
-	static final Tags   DEFAULT_TAGS_MONO = Tags.of("type", "Mono");
 
-	// === Operator ===
-	static final String TAG_KEY_STATUS = "status";
-	static final String TAG_STATUS_CANCELLED = "cancelled";
-	static final String TAG_STATUS_COMPLETED = "completed";
-	static final String TAG_STATUS_COMPLETED_EMPTY = "completedEmpty";
-	static final String TAG_STATUS_ERROR = "error";
+	// == from KeyNames to Tags
+	static final Tags  DEFAULT_TAGS_FLUX = Tags.of(TYPE.asString(), TAG_TYPE_FLUX);
+	static final Tags  DEFAULT_TAGS_MONO = Tags.of(TYPE.asString(), TAG_TYPE_MONO);
+	static final Tag  TAG_ON_ERROR    = Tag.of(STATUS.asString(), TAG_STATUS_ERROR);
+	static final Tags TAG_ON_COMPLETE = Tags.of(STATUS.asString(), TAG_STATUS_COMPLETED, EXCEPTION.asString(), "");
+	static final Tags TAG_ON_COMPLETE_EMPTY = Tags.of(STATUS.asString(), TAG_STATUS_COMPLETED_EMPTY, EXCEPTION.asString(), "");
+	static final Tags TAG_CANCEL            = Tags.of(STATUS.asString(), TAG_STATUS_CANCELLED, EXCEPTION.asString(), "");
 
-	static final Tag  TAG_ON_ERROR    = Tag.of(TAG_KEY_STATUS, TAG_STATUS_ERROR);
-	static final Tags TAG_ON_COMPLETE = Tags.of(TAG_KEY_STATUS, TAG_STATUS_COMPLETED, TAG_KEY_EXCEPTION, "");
-	static final Tags TAG_ON_COMPLETE_EMPTY = Tags.of(TAG_KEY_STATUS, TAG_STATUS_COMPLETED_EMPTY, TAG_KEY_EXCEPTION, "");
-	static final Tags TAG_CANCEL            = Tags.of(TAG_KEY_STATUS, TAG_STATUS_CANCELLED, TAG_KEY_EXCEPTION, "");
+	// === Record methods ===
 
 	/*
 	 * This method calls the registry, which can be costly. However the cancel signal is only expected
@@ -233,7 +198,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * cost only in case of cancellation.
 	 */
 	static void recordCancel(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
-		Timer timer = Timer.builder(name + METER_FLOW_DURATION)
+		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_CANCEL))
 			.description(
 				"Times the duration elapsed between a subscription and the cancellation of the sequence")
@@ -249,7 +214,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * with the added benefit of paying that cost only in case of onNext/onError after termination.
 	 */
 	static void recordMalformed(String name, Tags commonTags, MeterRegistry registry) {
-		registry.counter(name + METER_MALFORMED, commonTags)
+		registry.counter(DocumentedMeterListenerMeters.MALFORMED_SOURCE_EVENTS.getName(name), commonTags)
 			.increment();
 	}
 
@@ -261,11 +226,10 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 */
 	static void recordOnError(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration,
 							  Throwable e) {
-		Timer timer = Timer.builder(name + METER_FLOW_DURATION)
+		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_ON_ERROR))
-			.tag(TAG_KEY_EXCEPTION,
-				e.getClass()
-					.getName())
+			.tag(DocumentedMeterListenerMeters.TerminationTags.EXCEPTION.asString(),
+				e.getClass().getName())
 			.description(
 				"Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag.")
 			.register(registry);
@@ -280,7 +244,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * that cost only in case of completion (which is not always occurring).
 	 */
 	static void recordOnComplete(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
-		Timer timer = Timer.builder(name + METER_FLOW_DURATION)
+		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_ON_COMPLETE))
 			.description(
 				"Times the duration elapsed between a subscription and the onComplete termination of a sequence that did emit some elements")
@@ -296,7 +260,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * that cost only in case of completion (which is not always occurring).
 	 */
 	static void recordOnCompleteEmpty(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
-		Timer timer = Timer.builder(name + METER_FLOW_DURATION)
+		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_ON_COMPLETE_EMPTY))
 			.description(
 				"Times the duration elapsed between a subscription and the onComplete termination of a sequence that didn't emit any element")
@@ -312,9 +276,8 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * that cost only in case of subscription.
 	 */
 	static void recordOnSubscribe(String name, Tags commonTags, MeterRegistry registry) {
-		Counter.builder(name + METER_SUBSCRIBED)
+		Counter.builder(DocumentedMeterListenerMeters.SUBSCRIBED.getName(name))
 			.tags(commonTags)
-			.description("Counts how many Reactor sequences have been subscribed to")
 			.register(registry)
 			.increment();
 	}

@@ -78,7 +78,6 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 			spansAssert.hasSize(4);
 
 			assertThatMain
-				//FIXME reactor-defined Tags and KeyValues should be Documented
 				.hasTag("reactor.status", "error")
 				.hasTag("reactor.type", "Flux")
 				.hasTag("interval", "500ms")

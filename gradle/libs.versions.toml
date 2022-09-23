@@ -9,7 +9,7 @@ asciidoctor = "3.3.2"
 bytebuddy = "1.12.14"
 jmh = "1.35"
 junit = "5.9.0"
-#note that context-propagation has a different version directly set in libraries
+#note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
 micrometer = "1.10.0-M6"
 reactiveStreams = "1.0.4"
 
@@ -36,6 +36,8 @@ micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micro
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-M5"
+micrometer-docsGenerator-bom = { module = "io.micrometer:micrometer-docs-generator-bom", version = "1.0.0-M7"}
+micrometer-docsGenerator-metrics = { module = "io.micrometer:micrometer-docs-generator-metrics" }
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
 micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-M8"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
