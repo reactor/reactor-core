@@ -6,9 +6,9 @@ baselinePerfExtra = "3.4.8"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.14"
+bytebuddy = "1.12.17"
 jmh = "1.35"
-junit = "5.9.0"
+junit = "5.9.1"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
 micrometer = "1.10.0-M6"
 reactiveStreams = "1.0.4"
