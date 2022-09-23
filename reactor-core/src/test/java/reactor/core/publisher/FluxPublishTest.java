@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,12 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
@@ -53,8 +55,9 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.publish().autoConnect()),
-
-				scenario(f -> f.publish().refCount())
+				scenario(f -> f.publish().refCount()),
+				scenario(f -> f.replay(0).autoConnect()),
+				scenario(f -> f.replay(0).refCount())
 		);
 	}
 
@@ -118,12 +121,15 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ctb.test();
 	}*/
 
-	@Test
-	public void normal() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void normal(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).hide().publish();
+		Flux<Integer> source = Flux.range(1, 5).hide();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -147,14 +153,34 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+		if (replayTerminalSignal) {
+			ts3.assertNoValues()
+			   .assertNoError()
+			   .assertComplete();
+		} else {
+			ts3.assertNoEvents();
+
+			p.connect();
+
+			ts3.assertValues(1, 2, 3, 4, 5)
+			   .assertNoError()
+			   .assertComplete();
+		}
 	}
 
-	@Test
-	public void normalBackpressured() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void normalBackpressured(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).hide().publish();
+		Flux<Integer> source = Flux.range(1, 5).hide();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -202,10 +228,28 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+		if (replayTerminalSignal) {
+			ts3.assertNoValues()
+			   .assertNoError()
+			   .assertComplete();
+		} else {
+			ts3.assertNoEvents();
+
+			p.connect();
+
+			ts3.assertValues(1, 2, 3, 4, 5)
+			   .assertNoError()
+			   .assertComplete();
+		}
 	}
 
-	@Test
-	public void normalAsyncFused() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void normalAsyncFused(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
@@ -217,7 +261,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		up.emitNext(5, FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
 
-		ConnectableFlux<Integer> p = up.asFlux().publish();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				up.asFlux().replay(0) : up.asFlux().publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -241,10 +286,20 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+
+		// late subscriber
+		if (replayTerminalSignal) {
+			AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+			p.subscribe(ts3);
+			ts3.assertNoValues()
+			   .assertNoError()
+			   .assertComplete();
+		} // no else - unicast disallows second connect
 	}
 
-	@Test
-	public void normalBackpressuredAsyncFused() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void normalBackpressuredAsyncFused(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
@@ -256,7 +311,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		up.emitNext(5, FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
 
-		ConnectableFlux<Integer> p = up.asFlux().publish();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				up.asFlux().replay(0) : up.asFlux().publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -304,14 +360,26 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+
+		// late subscriber
+		if (replayTerminalSignal) {
+			AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+			p.subscribe(ts3);
+			ts3.assertNoValues()
+			   .assertNoError()
+			   .assertComplete();
+		} // no else - unicast disallows second connect
 	}
 
-	@Test
-	public void normalSyncFused() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void normalSyncFused(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).publish(5);
+		Flux<Integer> source = Flux.range(1, 5);
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				source.replay(0) : source.publish(5);
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -337,12 +405,15 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertComplete();
 	}
 
-	@Test
-	public void normalBackpressuredSyncFused() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void normalBackpressuredSyncFused(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).publish(5);
+		Flux<Integer> source = Flux.range(1, 5);
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				source.replay(0) : source.publish(5);
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -390,6 +461,23 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+		if (replayTerminalSignal) {
+			ts3.assertNoValues()
+			   .assertNoError()
+			   .assertComplete();
+		} else {
+			ts3.assertNoEvents();
+
+			p.connect();
+
+			ts3.assertValues(1, 2, 3, 4, 5)
+			   .assertNoError()
+			   .assertComplete();
+		}
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1302
@@ -408,13 +496,15 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		    .verify(Duration.ofSeconds(5));
 	}
 
-	@Test
-	public void disconnect() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void disconnect(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
-		ConnectableFlux<Integer> p = e.asFlux().publish();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				e.asFlux().replay(0) : e.asFlux().publish();
 
 		p.subscribe(ts);
 
@@ -430,15 +520,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertNotComplete();
 
 		assertThat(e.currentSubscriberCount()).as("still connected").isZero();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+		ts3.assertNoEvents();
 	}
 
-	@Test
-	public void disconnectBackpressured() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void disconnectBackpressured(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
-		ConnectableFlux<Integer> p = e.asFlux().publish();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				e.asFlux().replay(0) : e.asFlux().publish();
 
 		p.subscribe(ts);
 
@@ -451,15 +548,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertNotComplete();
 
 		assertThat(e.currentSubscriberCount()).as("still connected").isZero();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+		ts3.assertNoEvents();
 	}
 
-	@Test
-	public void error() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void error(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
-		ConnectableFlux<Integer> p = e.asFlux().publish();
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				e.asFlux().replay(0) : e.asFlux().publish();
 
 		p.subscribe(ts);
 
@@ -473,13 +577,28 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 				.assertError(RuntimeException.class)
 				.assertErrorWith(x -> assertThat(x).hasMessageContaining("forced failure"))
 				.assertNotComplete();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+
+		if (replayTerminalSignal) {
+			ts3.assertError(RuntimeException.class)
+			  .assertErrorWith(x -> assertThat(x).hasMessageContaining("forced failure"))
+			  .assertNotComplete();
+		} else {
+			ts3.assertNoEvents();
+		}
 	}
 
-	@Test
-	public void fusedMapInvalid() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void fusedMapInvalid(boolean replayTerminalSignal) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).publish();
+		Flux<Integer> source = Flux.range(1, 5).map(v -> (Integer) null);
+		ConnectableFlux<Integer> p = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 
 		p.subscribe(ts);
 
@@ -488,15 +607,27 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts.assertNoValues()
 		.assertError(NullPointerException.class)
 		.assertNotComplete();
+
+		// late subscriber
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
+		p.subscribe(ts3);
+
+		if (replayTerminalSignal) {
+			ts3.assertError(NullPointerException.class)
+			   .assertNotComplete();
+		} else {
+			ts3.assertNoEvents();
+		}
 	}
 
-
-	@Test
-	public void retry() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void retry(boolean replayTerminalSignal) {
 		Sinks.Many<Integer> dp = Sinks.unsafe().many().multicast().directBestEffort();
+		ConnectableFlux<Integer> flux = replayTerminalSignal ?
+				dp.asFlux().replay(0) : dp.asFlux().publish();
 		StepVerifier.create(
-				dp.asFlux()
-				  .publish()
+				flux
 				  .autoConnect().<Integer>handle((s1, sink) -> {
 					if (s1 == 1) {
 						sink.error(new RuntimeException());
@@ -518,12 +649,16 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		dp.emitComplete(FAIL_FAST);
 	}
 
-	@Test
-	public void retryWithPublishOn() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void retryWithPublishOn(boolean replayTerminalSignal) {
 		Sinks.Many<Integer> dp = Sinks.unsafe().many().multicast().directBestEffort();
+		Flux<Integer> source = dp.asFlux().publishOn(Schedulers.parallel());
+
+		ConnectableFlux<Integer> flux = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 		StepVerifier.create(
-				dp.asFlux()
-				  .publishOn(Schedulers.parallel()).publish()
+				flux
 				  .autoConnect().<Integer>handle((s1, sink) -> {
 					if (s1 == 1) {
 						sink.error(new RuntimeException());
@@ -548,7 +683,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanMain() {
         Flux<Integer> parent = Flux.just(1).map(i -> i);
-        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.unbounded());
+        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.unbounded(),
+		        true);
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
@@ -557,7 +693,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.unbounded());
+        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123,
+		        Queues.unbounded(), true);
         FluxPublish.PublishSubscriber<Integer> test = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -583,7 +720,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.unbounded());
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123,
+				Queues.unbounded(), true);
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
@@ -607,7 +745,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanPubSubInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.unbounded());
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123,
+				Queues.unbounded(), true);
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
@@ -624,10 +763,11 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
     }
 
     //see https://github.com/reactor/reactor-core/issues/1290
-    @Test
-    public void syncFusionSingle() { //single value in the SYNC fusion
-	    final ConnectableFlux<String> publish = Flux.just("foo")
-	                                 .publish();
+    @ParameterizedTestWithName
+    @ValueSource(booleans = {true, false})
+    public void syncFusionSingle(boolean replayTerminalSignal) { //single value in the SYNC fusion
+	    final ConnectableFlux<String> publish = replayTerminalSignal ?
+			    Flux.just("foo").replay(0) : Flux.just("foo").publish();
 
 		StepVerifier.create(publish)
 		            .then(publish::connect)
@@ -637,10 +777,12 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
     }
 
     //see https://github.com/reactor/reactor-core/issues/1290
-	@Test
-	public void syncFusionMultiple() { //multiple values in the SYNC fusion
-		final ConnectableFlux<Integer> publish = Flux.range(1, 5)
-		                                             .publish();
+    @ParameterizedTestWithName
+    @ValueSource(booleans = {true, false})
+	public void syncFusionMultiple(boolean replayTerminalSignal) { //multiple values in the SYNC fusion
+		final ConnectableFlux<Integer> publish = replayTerminalSignal ?
+				Flux.range(1, 5).replay(0) :
+				Flux.range(1, 5).publish();
 
 		StepVerifier.create(publish)
 		            .then(publish::connect)
@@ -650,12 +792,13 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528
-	@Test
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
 	@Timeout(4)
-	public void syncFusionFromInfiniteStream() {
-		final ConnectableFlux<Integer> publish =
-				Flux.fromStream(Stream.iterate(0, i -> i + 1))
-				    .publish();
+	public void syncFusionFromInfiniteStream(boolean replayTerminalSignal) {
+		Flux<Integer> source = Flux.fromStream(Stream.iterate(0, i -> i + 1));
+		final ConnectableFlux<Integer> publish = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 
 		StepVerifier.create(publish)
 		            .then(publish::connect)
@@ -666,12 +809,15 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528
-	@Test
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
 	@Timeout(4)
-	public void syncFusionFromInfiniteStreamAndTake() {
+	public void syncFusionFromInfiniteStreamAndTake(boolean replayTerminalSignal) {
+		Flux<Integer> source = Flux.fromStream(Stream.iterate(0, i -> i + 1));
+		ConnectableFlux<Integer> flux = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 		final Flux<Integer> publish =
-				Flux.fromStream(Stream.iterate(0, i -> i + 1))
-				    .publish()
+				flux
 				    .autoConnect()
 				    .take(10);
 
@@ -681,10 +827,12 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		            .verify(Duration.ofSeconds(4));
 	}
 
-	@Test
-	public void dataDroppedIfConnectImmediately() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void dataDroppedIfConnectImmediately(boolean replayTerminalSignal) {
 		TestPublisher<Integer> publisher = TestPublisher.create();
-		ConnectableFlux<Integer> connectableFlux = publisher.flux().publish();
+		ConnectableFlux<Integer> connectableFlux = replayTerminalSignal ?
+				publisher.flux().replay(0) : publisher.flux().publish();
 
 		connectableFlux.connect();
 
@@ -700,10 +848,13 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 
-	@Test
-	public void dataDroppedIfAutoconnectZero() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void dataDroppedIfAutoconnectZero(boolean replayTerminalSignal) {
 		TestPublisher<Integer> publisher = TestPublisher.create();
-		Flux<Integer> flux = publisher.flux().publish().autoConnect(0);
+		ConnectableFlux<Integer> publish = replayTerminalSignal ?
+				publisher.flux().replay(0) : publisher.flux().publish();
+		Flux<Integer> flux = publish.autoConnect(0);
 
 		publisher.next(1);
 		publisher.next(2);
@@ -733,21 +884,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		assertThat(subscriber.subscribers).as("post remove inner").isEmpty();
 	}
 
-	@Test
-	public void subscriberContextPropagation() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	public void subscriberContextPropagation(boolean replayTerminalSignal) {
 		String key = "key";
 		int expectedValue = 1;
 
 		AtomicReference<ContextView> reference = new AtomicReference<>();
 
+		Flux<Integer> source = Flux.just(1, 2, 3)
+		                         .flatMap(value -> Mono.deferContextual(Mono::just)
+		                                               .doOnNext(reference::set)
+		                                               .thenReturn(value));
+		ConnectableFlux<Integer> publish = replayTerminalSignal ?
+				source.replay(0) : source.publish();
 		Flux<Integer> integerFlux =
-				Flux.just(1, 2, 3)
-				    .flatMap(value ->
-						    Mono.deferContextual(Mono::just)
-						        .doOnNext(reference::set)
-						        .thenReturn(value)
-				    )
-				    .publish()
+				publish
 				    .autoConnect(2);
 
 		integerFlux.contextWrite(Context.of(key, expectedValue))
