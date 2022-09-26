@@ -1451,7 +1451,6 @@ final class DefaultStepVerifierBuilder<T>
 					//possibly re-evaluate the current onNext
 					onExpectation(actualSignal);
 					return;
-//					event = this.script.peek();
 				}
 
 				if (event instanceof CollectEvent) {
