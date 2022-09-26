@@ -17,6 +17,7 @@
 package reactor.test;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +46,22 @@ import static org.assertj.core.api.Assertions.*;
  * @author Stephane Maldini
  */
 public class DefaultStepVerifierBuilderTests {
+
+	@Test
+	void consumeWhileFollowedByTaskEvent() {
+		List<Integer> consumed = new ArrayList<>();
+
+		Flux.range(1, 20)
+			.as(StepVerifier::create)
+			.thenConsumeWhile(i -> i < 18, consumed::add)
+			.then(() -> consumed.add(100))
+			.expectNext(18, 19, 20)
+			.verifyComplete();
+
+		assertThat(consumed)
+			.containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+				11, 12, 13, 14, 15, 16, 17, 100);
+	}
 
 	@Test
 	public void subscribedTwice() {
