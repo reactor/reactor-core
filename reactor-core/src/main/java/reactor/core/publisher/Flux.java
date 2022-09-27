@@ -7988,9 +7988,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe once, late subscribers might therefore miss items.
 	 */
 	public final Flux<T> share() {
-		return onAssembly(new FluxRefCount<>(
-				new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.small(), true)
-				, 1)
+		return onAssembly(
+				new FluxRefCount<>(new FluxPublish<>(
+						this, Queues.SMALL_BUFFER_SIZE, Queues.small(), true
+				), 1)
 		);
 	}
 

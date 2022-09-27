@@ -683,8 +683,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanMain() {
         Flux<Integer> parent = Flux.just(1).map(i -> i);
-        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.unbounded(),
-		        true);
+        FluxPublish<Integer> test =
+		        new FluxPublish<>(parent, 123, Queues.unbounded(), true);
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
@@ -693,8 +693,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123,
-		        Queues.unbounded(), true);
+        FluxPublish<Integer> main =
+		        new FluxPublish<>(Flux.just(1), 123, Queues.unbounded(), true);
         FluxPublish.PublishSubscriber<Integer> test = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -720,8 +720,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123,
-				Queues.unbounded(), true);
+		FluxPublish<Integer> main =
+				new FluxPublish<>(Flux.just(1), 123, Queues.unbounded(), true);
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
@@ -745,8 +745,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanPubSubInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123,
-				Queues.unbounded(), true);
+		FluxPublish<Integer> main =
+				new FluxPublish<>(Flux.just(1), 123, Queues.unbounded(), true);
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
