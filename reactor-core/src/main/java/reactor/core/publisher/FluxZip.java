@@ -296,12 +296,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			int sc) {
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
+				System.out.println("here");
 				ZipSingleCoordinator<T, R> coordinator =
-						new ZipSingleCoordinator<>(s, scalars, n, zipper);
+						new ZipSingleCoordinator<>(s, scalars, n, sc, zipper);
 
 				s.onSubscribe(coordinator);
 
-				coordinator.subscribe(n, sc, srcs);
+				coordinator.subscribe(n, srcs);
 			}
 			else {
 				Operators.MonoSubscriber<R, R> sds = new Operators.MonoSubscriber<>(s);
@@ -357,6 +358,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		ZipSingleCoordinator(CoreSubscriber<? super R> subscriber,
 				Object[] scalars,
 				int n,
+				int sc,
 				Function<? super Object[], ? extends R> zipper) {
 			super(subscriber);
 			this.zipper = zipper;
@@ -368,10 +370,10 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				}
 			}
 			this.subscribers = a;
+			WIP.lazySet(this, n - sc);
 		}
 
-		void subscribe(int n, int sc, Publisher<? extends T>[] sources) {
-			WIP.lazySet(this, n - sc);
+		void subscribe(int n, Publisher<? extends T>[] sources) {
 			ZipSingleSubscriber<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
 				if (wip <= 0 || isCancelled()) {
@@ -392,7 +394,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		void next(T value, int index) {
 			Object[] a = scalars;
 			a[index] = value;
-			if (WIP.decrementAndGet(this) == 0) {
+			int wip = WIP.decrementAndGet(this);
+			if (wip == 0) {
 				R r;
 
 				try {
@@ -406,8 +409,12 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				}
 
 				complete(r);
+			} else if (wip < 0) {
+				Operators.onDiscard(value, actual.currentContext());
 			}
 		}
+
+
 
 		void error(Throwable e, int index) {
 			if (WIP.getAndSet(this, 0) > 0) {
@@ -429,7 +436,25 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		public void cancel() {
 			super.cancel();
-			cancelAll();
+			if (WIP.getAndSet(this, 0) > 0) {
+				cancelAll();
+			}
+		}
+
+		@Override
+		protected void discard(R v) {
+			if (v != null) {
+				if (v instanceof Iterable) {
+					Operators.onDiscardMultiple(((Iterable<?>) v).iterator(), true, actual.currentContext());
+				}
+				else if (v.getClass()
+				          .isArray()) {
+					Operators.onDiscardMultiple(Arrays.asList((Object[]) v), actual.currentContext());
+				}
+				else {
+					Operators.onDiscard(v, actual.currentContext());
+				}
+			}
 		}
 
 		@Override
@@ -453,6 +478,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 					s.dispose();
 				}
 			}
+			Object[] scalars = this.scalars;
+			Operators.onDiscardMultiple(Arrays.asList(scalars), actual.currentContext());
 		}
 	}
 
@@ -506,7 +533,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, parent.currentContext());
+				Operators.onDiscard(t, parent.currentContext());
 				return;
 			}
 			done = true;
@@ -604,7 +631,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
-				drain();
+				drain(null, null);
 			}
 		}
 
@@ -614,6 +641,10 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				cancelled = true;
 
 				cancelAll();
+
+				if (WIP.getAndIncrement(this) == 0) {
+					discardAll(1);
+				}
 			}
 		}
 
@@ -640,7 +671,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		void error(Throwable e, int index) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
-				drain();
+				drain(null, null);
 			}
 			else {
 				Operators.onErrorDropped(e, actual.currentContext());
@@ -653,9 +684,45 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			}
 		}
 
-		void drain() {
+		void discardAll(int m) {
+			final Context context = actual.currentContext();
+			final Object[] values = current;
+			Operators.onDiscardMultiple(Arrays.asList(values), context);
+			Arrays.fill(values, null);
 
+			for (;;) {
+				for (ZipInner<T> s : subscribers) {
+					final Queue<T> queue = s.queue;
+					final int sourceMode = s.sourceMode;
+
+					if (queue != null) {
+						if (sourceMode == ASYNC) {
+							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+							queue.clear();
+						}
+						else {
+							Operators.onDiscardQueueWithClear(queue, context, null);
+						}
+					}
+				}
+
+				m = WIP.addAndGet(this, -m);
+				if (m == 0) {
+					return;
+				}
+			}
+		}
+
+		void drain(@Nullable ZipInner<T> callerInner, @Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (callerInner != null) {
+					if (cancelled) {
+						if (callerInner.sourceMode != ASYNC) {
+							// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+							Operators.onDiscard(dataSignal, actual.currentContext());
+						}
+					}
+				}
 				return;
 			}
 
@@ -674,11 +741,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				while (r != e) {
 
 					if (cancelled) {
+						discardAll(missed);
 						return;
 					}
 
 					if (error != null) {
 						cancelAll();
+						discardAll(missed);
 
 						Throwable ex = Exceptions.terminate(ERROR, this);
 
@@ -701,6 +770,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 								boolean sourceEmpty = v == null;
 								if (d && sourceEmpty) {
 									cancelAll();
+									discardAll(missed);
 
 									a.onComplete();
 									return;
@@ -717,6 +787,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 										actual.currentContext());
 
 								cancelAll();
+								discardAll(missed);
 
 								Exceptions.addThrowable(ERROR, this, ex);
 								//noinspection ConstantConditions
@@ -743,6 +814,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						ex = Operators.onOperatorError(null, ex, values.clone(),
 								actual.currentContext());
 						cancelAll();
+						discardAll(missed);
 
 						Exceptions.addThrowable(ERROR, this, ex);
 						//noinspection ConstantConditions
@@ -767,6 +839,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 					if (error != null) {
 						cancelAll();
+						discardAll(missed);
 
 						Throwable ex = Exceptions.terminate(ERROR, this);
 
@@ -786,6 +859,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 								boolean empty = v == null;
 								if (d && empty) {
 									cancelAll();
+									discardAll(missed);
 
 									a.onComplete();
 									return;
@@ -799,6 +873,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 										actual.currentContext());
 
 								cancelAll();
+								discardAll(missed);
 
 								Exceptions.addThrowable(ERROR, this, ex);
 								//noinspection ConstantConditions
@@ -885,7 +960,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						sourceMode = SYNC;
 						queue = f;
 						done = true;
-						parent.drain();
+						parent.drain(this, null);
 						return;
 					}
 					else if (m == ASYNC) {
@@ -900,6 +975,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 					queue = queueSupplier.get();
 				}
 				s.request(Operators.unboundedOrPrefetch(prefetch));
+				parent.drain(this, null);
 			}
 		}
 
@@ -907,12 +983,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		public void onNext(T t) {
 			if (sourceMode != ASYNC) {
 				if (!queue.offer(t)) {
+					Operators.onDiscard(t, currentContext());
 					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow
 							(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), currentContext()));
 					return;
 				}
 			}
-			parent.drain();
+			parent.drain(this, t);
 		}
 
 		@Override
@@ -933,7 +1010,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		public void onComplete() {
 			done = true;
-			parent.drain();
+			parent.drain(this, null);
 		}
 
 		@Override
