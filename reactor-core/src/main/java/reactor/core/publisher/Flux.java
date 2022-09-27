@@ -7663,7 +7663,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		Objects.requireNonNull(timer, "timer");
 		if (history == 0) {
 			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE,
-					Queues.get(Queues.SMALL_BUFFER_SIZE), false));
+					Queues.get(Queues.SMALL_BUFFER_SIZE), true));
 		}
 		return onAssembly(new FluxReplay<>(this, history, ttl.toNanos(), timer));
 	}

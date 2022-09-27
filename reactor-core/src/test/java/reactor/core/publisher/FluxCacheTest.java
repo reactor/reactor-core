@@ -103,7 +103,7 @@ public class FluxCacheTest {
 	}
 
 	@Test
-	public void cacheFluxTTL2() {
+	public void cacheFluxTTLReconnectsAfterTTL() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		AtomicInteger i = new AtomicInteger(0);
@@ -126,7 +126,7 @@ public class FluxCacheTest {
 	}
 
 	@Test
-	void cacheZeroFlux() {
+	void cacheZeroFluxCachesCompletion() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -146,7 +146,7 @@ public class FluxCacheTest {
 	}
 
 	@Test
-	public void cacheZeroFluxTTL() {
+	public void cacheZeroFluxTTLReconnectsAfterSourceCompletion() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -163,7 +163,7 @@ public class FluxCacheTest {
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
 		            .verifyComplete();
 
-		StepVerifier.create(source).verifyComplete();
+		StepVerifier.create(source).expectTimeout(Duration.ofMillis(500)).verify();
 	}
 
 	@Test
