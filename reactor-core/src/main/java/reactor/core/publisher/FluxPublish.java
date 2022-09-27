@@ -139,9 +139,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				if (c.error != null) {
 					inner.actual.onError(c.error);
 				} else {
-					if (c.queue.isEmpty()) {
-						c.drain();
-					}
 					inner.actual.onComplete();
 				}
 				break;
