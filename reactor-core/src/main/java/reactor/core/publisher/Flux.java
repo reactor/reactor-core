@@ -7569,6 +7569,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *     expiration.
 	 *
 	 * <p>
+	 *     Re-connects are not supported.
+	 * <p>
 	 * <img class="marble" src="doc-files/marbles/replayWithHistory.svg" alt="">
 	 *
 	 * @param history number of events retained in history excluding complete and
