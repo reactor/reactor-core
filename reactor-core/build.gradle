@@ -139,6 +139,28 @@ task downloadBaseline(type: Download) {
 	dest "${buildDir}/baselineLibs/reactor-core-${libs.versions.baseline.core.api.get()}.jar"
 }
 
+def japicmpReport = tasks.register('japicmpReport') {
+	onlyIf {
+		japicmp.state.failure != null
+	}
+	doLast {
+		def reportFile = file("${project.buildDir}/reports/japi.txt")
+		if (reportFile.exists()) {
+			println "\n **********************************"
+			println " * /!\\ API compatibility failures *"
+			println " **********************************"
+			println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
+			reportFile.eachLine {
+				if (it.contains("*") && (!it.contains("***") || it.contains("****")))
+					println "source incompatible change: $it"
+				else if (it.contains("!"))
+					println "binary incompatible change: $it"
+			}
+		}
+		else println "No incompatible change to report"
+	}
+}
+
 task japicmp(type: JapicmpTask) {
 	if (project.gradle.startParameter.isOffline()) {
 		println "Offline: skipping downloading of baseline and JAPICMP"
@@ -152,16 +174,21 @@ task japicmp(type: JapicmpTask) {
 		println "Will download and perform baseline comparison with ${libs.versions.baseline.core.api.get()}"
 		dependsOn(downloadBaseline)
 		dependsOn(jar)
+		finalizedBy(japicmpReport)
 	}
 
 	oldClasspath.from(files("${buildDir}/baselineLibs/reactor-core-${libs.versions.baseline.core.api.get()}.jar"))
 	newClasspath.from(files(jar.archiveFile))
-	onlyBinaryIncompatibleModified = true
+	// these onlyXxx parameters result in a report that is slightly too noisy, but better than
+	// onlyBinaryIncompatibleModified = true which masks source-incompatible-only changes
+	onlyBinaryIncompatibleModified = false
+	onlyModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
 	ignoreMissingClasses = true
 	includeSynthetic = true
+	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
 	// TODO after a .0 release, bump the gradle.properties baseline
 	// TODO after a .0 release, remove the reactor-core exclusions below if any

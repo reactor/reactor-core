@@ -60,28 +60,55 @@ task downloadBaseline(type: Download) {
 	finalizedBy { japicmp }
 }
 
+def japicmpReport = tasks.register('japicmpReport') {
+	onlyIf {
+		japicmp.state.failure != null
+	}
+	doLast {
+		def reportFile = file("${project.buildDir}/reports/japi.txt")
+		if (reportFile.exists()) {
+			println "\n *********************************"
+			println " * /!\\ API compatibility failures *"
+			println " **********************************"
+			println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
+			reportFile.eachLine {
+				if (it.contains("*") && (!it.contains("***") || it.contains("****")))
+					println "source incompatible change: $it"
+				else if (it.contains("!"))
+					println "binary incompatible change: $it"
+			}
+		}
+		else println "No incompatible change to report"
+	}
+}
+
 task japicmp(type: JapicmpTask) {
 	if (project.gradle.startParameter.isOffline()) {
 		println "Offline: skipping downloading of baseline and JAPICMP"
-	  	enabled = false
+		enabled = false
 	}
 	else if ("${libs.versions.baseline.core.api.get()}" == "SKIP") {
 		println "SKIP: Instructed to skip the baseline comparison"
-	  	enabled = false
+		enabled = false
 	}
 	else {
 		println "Will download and perform baseline comparison with ${libs.versions.baseline.core.api.get()}"
-	  	dependsOn(downloadBaseline)
+		dependsOn(downloadBaseline)
+		finalizedBy(japicmpReport)
 	}
 
 	oldClasspath.from(files("${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar"))
 	newClasspath.from(files(jar.archiveFile))
-	onlyBinaryIncompatibleModified = true
+	// these onlyXxx parameters result in a report that is slightly too noisy, but better than
+	// onlyBinaryIncompatibleModified = true which masks source-incompatible-only changes
+	onlyBinaryIncompatibleModified = false
+	onlyModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
 	ignoreMissingClasses = true
 	includeSynthetic = true
+	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
 	classExcludes = [ "reactor.test.StepVerifierExtensionsKt" ]
