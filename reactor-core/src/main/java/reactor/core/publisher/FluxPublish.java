@@ -127,11 +127,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				c = u;
 			}
 
-			inner.parent = c;
-
 			if (c.add(inner)) {
 				if (inner.isCancelled()) {
 					c.remove(inner);
+				} else {
+					inner.parent = c;
 				}
 				c.drain();
 				break;
