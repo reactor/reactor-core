@@ -7219,7 +7219,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final ConnectableFlux<T> publish(int prefetch) {
 		return onAssembly(new FluxPublish<>(this, prefetch, Queues
-				.get(prefetch)));
+				.get(prefetch), true));
 	}
 
 	/**
@@ -7565,9 +7565,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Will retain up to the given history size onNext signals. Completion and Error will also be
 	 * replayed.
 	 * <p>
-	 *     Note that {@code cache(0)} will only cache the terminal signal without
+	 *     Note that {@code replay(0)} will only cache the terminal signal without
 	 *     expiration.
 	 *
+	 * <p>
+	 *     Re-connects are not supported.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/replayWithHistory.svg" alt="">
 	 *
@@ -7579,8 +7581,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final ConnectableFlux<T> replay(int history) {
 		if (history == 0) {
-			//TODO Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version
-			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.get(Queues.SMALL_BUFFER_SIZE)));
+			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE,
+					Queues.get(Queues.SMALL_BUFFER_SIZE), false));
 		}
 		return onAssembly(new FluxReplay<>(this, history, 0L, null));
 	}
@@ -7662,8 +7664,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
 		if (history == 0) {
-			//TODO Flux.replay with history == 0 doesn't make much sense. This was replaced by Flux.publish, but such calls will be rejected in a future version
-			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.get(Queues.SMALL_BUFFER_SIZE)));
+			return onAssembly(new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE,
+					Queues.get(Queues.SMALL_BUFFER_SIZE), true));
 		}
 		return onAssembly(new FluxReplay<>(this, history, ttl.toNanos(), timer));
 	}
@@ -7986,8 +7988,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * to subscribe once, late subscribers might therefore miss items.
 	 */
 	public final Flux<T> share() {
-		return onAssembly(new FluxRefCount<>(
-				new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.small()), 1)
+		return onAssembly(
+				new FluxRefCount<>(new FluxPublish<>(
+						this, Queues.SMALL_BUFFER_SIZE, Queues.small(), true
+				), 1)
 		);
 	}
 

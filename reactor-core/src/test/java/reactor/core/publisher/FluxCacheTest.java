@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class FluxCacheTest {
 	}
 
 	@Test
-	public void cacheFluxTTL2() {
+	public void cacheFluxTTLReconnectsAfterTTL() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		AtomicInteger i = new AtomicInteger(0);
@@ -123,6 +123,47 @@ public class FluxCacheTest {
 		StepVerifier.create(source)
 		            .expectNext(2)
 		            .verifyComplete();
+	}
+
+	@Test
+	void cacheZeroFluxCachesCompletion() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+
+		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+		                                         .delayElements(Duration.ofMillis(1000)
+				                                         , vts)
+		                                         .cache(0)
+		                                         .elapsed(vts);
+
+		StepVerifier.withVirtualTime(() -> source, () -> vts, Long.MAX_VALUE)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+		            .verifyComplete();
+
+		StepVerifier.create(source).verifyComplete();
+	}
+
+	@Test
+	public void cacheZeroFluxTTLReconnectsAfterSourceCompletion() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+
+		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+		                                         .delayElements(
+														 Duration.ofMillis(1000), vts
+		                                         )
+		                                         .cache(0, Duration.ofMillis(2000), vts)
+		                                         .elapsed(vts);
+
+		StepVerifier.withVirtualTime(() -> source, () -> vts, Long.MAX_VALUE)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+		            .verifyComplete();
+
+		StepVerifier.create(source).expectTimeout(Duration.ofMillis(500)).verify();
 	}
 
 	@Test
@@ -154,6 +195,38 @@ public class FluxCacheTest {
 		String cacheHit3 = cached.blockLast();
 		assertThat(cacheHit3).as("cacheHit3").isEqualTo("GOOD1");
 		assertThat(contextFillCount).as("cacheHit3").hasValue(4);
+	}
+
+	@Test
+	public void cacheZeroContext() {
+		AtomicInteger contextFillCount = new AtomicInteger();
+		Flux<String> cached = Flux.just(1, 2)
+		                          .flatMap(i -> Mono.deferContextual(Mono::just)
+		                                            .map(ctx -> ctx.getOrDefault("a", "BAD"))
+		                          )
+		                          .cache(0)
+		                          .contextWrite(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
+
+		// at first pass, the Context is propagated to subscriber, but not cached
+		String cacheMiss = cached.blockLast();
+		assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
+		assertThat(contextFillCount).as("cacheMiss").hasValue(1);
+
+		// at second subscribe, the Context fill attempt is still done, but ultimately
+		// ignored since source terminated
+		String zeroCache = cached.blockLast();
+		assertThat(zeroCache).as("zeroCache").isNull(); //value from the cache
+		assertThat(contextFillCount).as("zeroCache").hasValue(2); //function was still invoked
+
+		//at third subscribe, function is called for the 3rd time, but the context is still cached
+		String zeroCache2 = cached.blockLast();
+		assertThat(zeroCache2).as("zeroCache2").isNull();
+		assertThat(contextFillCount).as("zeroCache2").hasValue(3);
+
+		//at fourth subscribe, function is called for the 4th time, but the context is still cached
+		String zeroCache3 = cached.blockLast();
+		assertThat(zeroCache3).as("zeroCache3").isNull();
+		assertThat(contextFillCount).as("zeroCache3").hasValue(4);
 	}
 
 	@Test
