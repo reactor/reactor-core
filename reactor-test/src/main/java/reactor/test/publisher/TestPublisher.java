@@ -16,16 +16,18 @@
 
 package reactor.test.publisher;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A {@link Publisher} that you can directly manipulate, triggering
@@ -218,7 +220,17 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
 	 * @return this {@link TestPublisher} for chaining.
 	 */
-	public abstract TestPublisher<T> next(@Nullable T value);
+	public TestPublisher<T> next(@Nullable T value) {
+		return next(value, v -> Operators.onNextDropped(v, Context.empty()));
+	}
+
+	/**
+	 * Send 1 {@link Subscriber#onNext(Object) onNext} signal to the subscribers.
+	 *
+	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
+	 * @return this {@link TestPublisher} for chaining.
+	 */
+	public abstract TestPublisher<T> next(@Nullable T value, Consumer<T> onUndeliveredHandler);
 
 	/**
 	 * Triggers an {@link Subscriber#onError(Throwable) error} signal to the subscribers.

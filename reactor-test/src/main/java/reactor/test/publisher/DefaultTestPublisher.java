@@ -392,13 +392,18 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
-	public DefaultTestPublisher<T> next(@Nullable T t) {
+	public DefaultTestPublisher<T> next(@Nullable T t, Consumer<T> onUndelivered) {
 		if (!violations.contains(Violation.ALLOW_NULL)) {
 			Objects.requireNonNull(t, "emitted values must be non-null");
 		}
 
-		for (TestPublisherSubscription<T> s : subscribers) {
-			s.onNext(t);
+		TestPublisherSubscription<T>[] subscribers = this.subscribers;
+		if (subscribers.length > 0) {
+			for (TestPublisherSubscription<T> s : subscribers) {
+				s.onNext(t);
+			}
+		} else if (t != null) {
+			onUndelivered.accept(t);
 		}
 
 		return this;
