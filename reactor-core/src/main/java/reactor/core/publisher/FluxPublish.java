@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 	final Supplier<? extends Queue<T>> queueSupplier;
 
+	/**
+	 * Whether to prepare for a reconnect after the source terminates.
+	 */
+	final boolean resetUponSourceTermination;
+
 	volatile PublishSubscriber<T> connection;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<FluxPublish, PublishSubscriber> CONNECTION =
@@ -66,13 +71,15 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 	FluxPublish(Flux<? extends T> source,
 			int prefetch,
-			Supplier<? extends Queue<T>> queueSupplier) {
+			Supplier<? extends Queue<T>> queueSupplier,
+			boolean resetUponSourceTermination) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("bufferSize > 0 required but it was " + prefetch);
 		}
 		this.source = Objects.requireNonNull(source, "source");
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
+		this.resetUponSourceTermination = resetUponSourceTermination;
 	}
 
 	@Override
@@ -111,7 +118,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			}
 
 			PublishSubscriber<T> c = connection;
-			if (c == null || c.isTerminated()) {
+			if (c == null || (this.resetUponSourceTermination && c.isTerminated())) {
 				PublishSubscriber<T> u = new PublishSubscriber<>(prefetch, this);
 				if (!CONNECTION.compareAndSet(this, c, u)) {
 					continue;
@@ -123,11 +130,17 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (c.add(inner)) {
 				if (inner.isCancelled()) {
 					c.remove(inner);
-				}
-				else {
+				} else {
 					inner.parent = c;
 				}
 				c.drain();
+				break;
+			} else if (!this.resetUponSourceTermination) {
+				if (c.error != null) {
+					inner.actual.onError(c.error);
+				} else {
+					inner.actual.onComplete();
+				}
 				break;
 			}
 		}
@@ -515,8 +528,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
-					CONNECTION.compareAndSet(parent, this, null);
-					e = Exceptions.terminate(ERROR, this);
+					if (parent.resetUponSourceTermination) {
+						CONNECTION.compareAndSet(parent, this, null);
+						e = Exceptions.terminate(ERROR, this);
+					}
 					queue.clear();
 					for (PubSubInner<T> inner : terminate()) {
 						inner.actual.onError(e);
@@ -524,7 +539,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					return true;
 				}
 				else if (empty) {
-					CONNECTION.compareAndSet(parent, this, null);
+					if (parent.resetUponSourceTermination) {
+						CONNECTION.compareAndSet(parent, this, null);
+					}
 					for (PubSubInner<T> inner : terminate()) {
 						inner.actual.onComplete();
 					}
