@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -457,7 +456,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
-	public ColdTestPublisher<T> next(@Nullable T t, Consumer<T> onUndelivered) {
+	public ColdTestPublisher<T> next(@Nullable T t) {
 		if (!violations.contains(ALLOW_NULL)) {
 			Objects.requireNonNull(t, "emitted values must be non-null");
 		}

@@ -31,6 +31,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A default implementation of a {@link TestPublisher}.
@@ -392,7 +393,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
-	public DefaultTestPublisher<T> next(@Nullable T t, Consumer<T> onUndelivered) {
+	public DefaultTestPublisher<T> next(@Nullable T t) {
 		if (!violations.contains(Violation.ALLOW_NULL)) {
 			Objects.requireNonNull(t, "emitted values must be non-null");
 		}
@@ -403,7 +404,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 				s.onNext(t);
 			}
 		} else if (t != null) {
-			onUndelivered.accept(t);
+			Operators.onNextDropped(t, Context.empty());
 		}
 
 		return this;

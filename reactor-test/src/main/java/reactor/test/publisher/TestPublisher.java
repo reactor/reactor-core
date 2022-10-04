@@ -220,17 +220,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
 	 * @return this {@link TestPublisher} for chaining.
 	 */
-	public TestPublisher<T> next(@Nullable T value) {
-		return next(value, v -> Operators.onNextDropped(v, Context.empty()));
-	}
-
-	/**
-	 * Send 1 {@link Subscriber#onNext(Object) onNext} signal to the subscribers.
-	 *
-	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
-	 * @return this {@link TestPublisher} for chaining.
-	 */
-	public abstract TestPublisher<T> next(@Nullable T value, Consumer<T> onUndeliveredHandler);
+	public abstract TestPublisher<T> next(@Nullable T value);
 
 	/**
 	 * Triggers an {@link Subscriber#onError(Throwable) error} signal to the subscribers.
