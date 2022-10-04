@@ -26,16 +26,16 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 
 import reactor.core.Disposable;
-import reactor.core.observability.micrometer.DocumentedTimedSchedulerMeters.SubmittedTags;
+import reactor.core.observability.micrometer.TimedSchedulerMeterDocumentation.SubmittedTags;
 import reactor.core.scheduler.Scheduler;
 
-import static reactor.core.observability.micrometer.DocumentedTimedSchedulerMeters.*;
+import static reactor.core.observability.micrometer.TimedSchedulerMeterDocumentation.*;
 
 /**
  * An instrumented {@link Scheduler} wrapping an original {@link Scheduler}
  * and gathering metrics around submitted tasks.
  * <p>
- * See {@link DocumentedTimedSchedulerMeters} for the various metrics and tags associated with this class.
+ * See {@link TimedSchedulerMeterDocumentation} for the various metrics and tags associated with this class.
  *
  * @author Simon Baslé
  */
