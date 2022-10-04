@@ -74,22 +74,46 @@ public class ReactorBlockHoundIntegrationTest {
 	}
 
 	@Test
-	public void shouldNotReportScheduledFutureTask() {
-		for (int i = 0; i < 1_000; i++) {
+	public void shouldNotReportSchedulerScheduledFutureTask() {
+		for (int i = 0; i < 10_000; i++) {
 			Scheduler taskScheduler = Schedulers.newSingle("foo");
 			try {
 				Runnable dummyRunnable = () -> {
 				};
 
 				for (int j = 0; j < 257; j++) {
-					taskScheduler.schedule(dummyRunnable, 200, TimeUnit.MILLISECONDS);
+					taskScheduler.schedule(dummyRunnable, j + 1, TimeUnit.MILLISECONDS);
 				}
 				Disposable disposable = taskScheduler.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
 
-				RaceTestUtils.race(disposable::dispose, disposable::dispose);
+				RaceTestUtils.race(Schedulers.parallel(), disposable::dispose);
 			}
 			finally {
 				taskScheduler.dispose();
+			}
+		}
+	}
+
+	@Test
+	public void shouldNotReportWorkerScheduledFutureTask() {
+		for (int i = 0; i < 10_000; i++) {
+			Scheduler scheduler = Schedulers.newSingle("foo");
+			Scheduler.Worker worker = scheduler.createWorker();
+
+			try {
+				Runnable dummyRunnable = () -> {
+				};
+
+				for (int j = 0; j < 257; j++) {
+					worker.schedule(dummyRunnable, j + 1, TimeUnit.MILLISECONDS);
+				}
+				Disposable disposable = worker.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
+
+				RaceTestUtils.race(Schedulers.parallel(), disposable::dispose);
+			}
+			finally {
+				worker.dispose();
+				scheduler.dispose();
 			}
 		}
 	}
