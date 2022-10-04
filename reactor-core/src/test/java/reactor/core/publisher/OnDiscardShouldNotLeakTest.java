@@ -113,6 +113,18 @@ public class OnDiscardShouldNotLeakTest {
 						           })
 						           .then(Mono.just(Tracked.RELEASED));
 					}),
+			DiscardScenario.allFluxSourceArray("zipMono", 4,
+					sources -> {
+						Mono<Tracked>[] sources1 =
+								Stream.concat(sources.stream().map(f -> f.next()), Stream.of(Mono.just(Tracked.RELEASED))).toArray(Mono[]::new);
+						return Mono.zip(Tuples::fromArray, sources1)
+						           .doOnNext(l -> {
+							           for (Object o : (Iterable<Object>) l) {
+								           ((Tracked) o).release();
+							           }
+						           })
+						           .then(Mono.just(Tracked.RELEASED));
+					}),
 			DiscardScenario.fluxSource("onBackpressureBuffer", Flux::onBackpressureBuffer),
 			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", f -> f
 					.onBackpressureBuffer()
