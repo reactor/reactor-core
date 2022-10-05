@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -61,6 +62,75 @@ public class DefaultStepVerifierBuilderTests {
 		assertThat(consumed)
 			.containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 				11, 12, 13, 14, 15, 16, 17, 100);
+	}
+
+	@Test
+	void thenConsumeWhile_NoElementsShouldBeConsumed_oneElement() {
+		Flux<String> given = Flux.just("a");
+
+		StepVerifier.create(given)
+			.thenConsumeWhile(s -> s.equals("42"))
+			.then(() -> {}) // do nothing
+			.consumeNextWith(s -> Assertions.assertEquals("a", s))
+			.verifyComplete();
+
+		// expectation "consumeNextWith" failed (expected: onNext(); actual: onComplete())
+	}
+
+	@Test
+	void thenConsumeWhile_NoElementsShouldBeConsumed_consumeWhileTwice() {
+		Flux<String> given = Flux.just("a", "a");
+
+		StepVerifier.create(given)
+			.thenConsumeWhile(s -> s.equals("42"))
+			.then(() -> {})
+			.thenConsumeWhile(s -> s.equals("42"))
+			.then(() -> {})
+			.consumeNextWith(s -> Assertions.assertEquals("a", s))
+			.consumeNextWith(s -> Assertions.assertEquals("a", s))
+			.verifyComplete();
+
+		// expectation "consumeNextWith" failed (expected: onNext(); actual: onComplete())
+	}
+
+	@Test
+	void thenConsumeWhile_NoElementsShouldBeConsumed_moreThanOneElement() {
+		Flux<String> given = Flux.just("a", "b");
+
+		StepVerifier.create(given)
+			.thenConsumeWhile(s -> s.equals("42"))
+			.then(() -> {}) // do nothing
+			.consumeNextWith(s -> Assertions.assertEquals("a", s))
+			.consumeNextWith(s -> Assertions.assertEquals("b", s))
+			.verifyComplete();
+
+		// org.opentest4j.AssertionFailedError: expected: <a> but was: <b>
+	}
+
+	@Test
+	void thenConsumeWhile_OneElementShouldBeConsumed() {
+		Flux<String> given = Flux.just("a", "b");
+
+		StepVerifier.create(given)
+			.thenConsumeWhile(s -> s.equals("a"))
+			.then(() -> {}) // do nothing
+			.consumeNextWith(s -> Assertions.assertEquals("b", s))
+			.verifyComplete();
+
+		// expectation "consumeNextWith" failed (expected: onNext(); actual: onComplete())
+	}
+
+	@Test
+	void thenConsumeWhile_onlyTwoElementsShouldBeConsumed() {
+		Flux<String> given = Flux.just("a", "a", "b");
+
+		StepVerifier.create(given)
+			.thenConsumeWhile(s -> s.equals("a"))
+			.then(() -> {}) // do nothing
+			.consumeNextWith(s -> Assertions.assertEquals("b", s))
+			.verifyComplete();
+
+		// expectation "consumeNextWith" failed (expected: onNext(); actual: onComplete())
 	}
 
 	@Test
