@@ -113,7 +113,7 @@ final class ContextPropagation {
 
 		@Override
 		public Context apply(Context target) {
-			return ContextSnapshot.captureUsing(this.registry, capturePredicate).updateContext(target);
+			return ContextSnapshot.captureAllUsing(capturePredicate, this.registry).updateContext(target);
 		}
 	}
 
