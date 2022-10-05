@@ -35,7 +35,7 @@ logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
-micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-M5"
+micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0-SNAPSHOT" # was -M5
 micrometer-docsGenerator-bom = { module = "io.micrometer:micrometer-docs-generator-bom", version = "1.0.0-SNAPSHOT"} # was -M7
 micrometer-docsGenerator-metrics = { module = "io.micrometer:micrometer-docs-generator-metrics" }
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }

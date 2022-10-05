@@ -38,22 +38,22 @@ class ReactorContextAccessorTest {
 
 	@Test
 	void canReadFromContext() {
-		assertThat(accessor.canReadFrom(Context.class)).isTrue();
+		assertThat(accessor.readableType().isAssignableFrom(Context.class)).isTrue();
 	}
 
 	@Test
 	void canReadFromContextView() {
-		assertThat(accessor.canReadFrom(ContextView.class)).isTrue();
+		assertThat(accessor.readableType().isAssignableFrom(ContextView.class)).isTrue();
 	}
 
 	@Test
 	void canWriteToContext() {
-		assertThat(accessor.canWriteTo(Context.class)).isTrue();
+		assertThat(accessor.writeableType().isAssignableFrom(Context.class)).isTrue();
 	}
 
 	@Test
 	void cannotWriteToContextView() {
-		assertThat(accessor.canWriteTo(ContextView.class)).isFalse();
+		assertThat(accessor.writeableType().isAssignableFrom(ContextView.class)).isFalse();
 	}
 
 	@Test
