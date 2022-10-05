@@ -12,8 +12,10 @@ No user action is required, other than having a dependency on both reactor-core 
 On top of that, Reactor-Core 3.5.0 also introduces the `contextCapture` operator that transparently deals with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
 
 == `contextCapture` Operator
+This operator can be used when one needs to capture `ThreadLocal` value(s) at subscription time and reflect these values in the Reactor `Context` for the benefit of upstream operators.
+It relies on the `context-propagation` library and notably the registered `ThreadLocalAccessor`(s) to discover relevant ThreadLocal values.
 
-This operator is a convenient alternative to `contextWrite` to perform a `ContextSnapshot#capture` and then to use that snapshot to populate the Reactor `Context`.
+This is a convenient alternative to `contextWrite` which uses the `context-propagation` API to obtain a `ContextSnapshot` and then uses that snapshot to populate the Reactor `Context`.
 
 As a result, if there were any ThreadLocal values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
 at runtime in upstream operators.
