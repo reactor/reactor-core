@@ -9,7 +9,7 @@ This library is intended as a means to easily adapt between various implementati
 It implements the SPI and is loaded via `java.util.ServiceLoader`.
 No user action is required, other than having a dependency on both reactor-core and `io.micrometer:context-propagation`. The `ReactorContextAccessor` class is public but shouldn't generally be accessed by user code.
 
-On top of that, Reactor-Core 3.5.0 also introduces operators that transparently deal with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
+On top of that, Reactor-Core 3.5.0 also introduces the `contextCapture` operator that transparently deals with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
 
 == `contextCapture` Operator
 
@@ -24,15 +24,15 @@ at runtime in upstream operators.
 //assuming TL is known to Context-Propagation as key TLKEY.
 static final ThreadLocal<String> TL = new ThreadLocal<>();
 
-//in the main thread, tl is set to "HELLO"
+//in the main thread, TL is set to "HELLO"
 TL.set("HELLO");
 
 Mono.deferContextual(ctx ->
   Mono.delay(Duration.ofSeconds(1))
-      //we're now in another thread, tl is not set
-      .map(v -> "delayed " + ctx.getOrDefault(TLKEY, "not found") + ", tl=" + TL.get())
+      //we're now in another thread, TL is not set
+      .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get())
 )
 .contextCapture()
-.block(); // returns "delayed HELLO, tl=null"
+.block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null"
 ----
 ====
