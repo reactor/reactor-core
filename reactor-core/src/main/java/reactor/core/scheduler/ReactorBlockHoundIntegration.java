@@ -42,6 +42,7 @@ public final class ReactorBlockHoundIntegration implements BlockHoundIntegration
 
         // Calls ScheduledFutureTask#cancel that may short park in DelayedWorkQueue#remove for getting a lock
         builder.allowBlockingCallsInside(SchedulerTask.class.getName(), "dispose");
+        builder.allowBlockingCallsInside(WorkerTask.class.getName(), "dispose");
 
         builder.allowBlockingCallsInside(ThreadPoolExecutor.class.getName(), "processWorkerExit");
     }
