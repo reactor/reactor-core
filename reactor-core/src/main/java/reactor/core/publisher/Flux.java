@@ -4030,6 +4030,27 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * If <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is on the classpath, this is a convenience shortcut to capture thread local values during the
+	 * subscription phase and put them in the {@link Context} that is visible upstream of this operator.
+	 * <p>
+	 * As a result this operator should generally be used as close as possible to the end of
+	 * the chain / subscription point.
+	 * <p>
+	 * If context-propagation is not available at runtime, this operator simply returns the current {@link Flux}
+	 * instance.
+	 *
+	 * @return a new {@link Flux} where context-propagation API has been used to capture entries and
+	 * inject them into the {@link Context}
+	 */
+	public final Flux<T> contextCapture() {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
+			return this;
+		}
+		return onAssembly(new FluxContextWrite<>(this, ContextPropagation.contextCapture()));
+	}
+
+	/**
 	 * Enrich the {@link Context} visible from downstream for the benefit of upstream
 	 * operators, by making all values from the provided {@link ContextView} visible on top
 	 * of pairs from downstream.
