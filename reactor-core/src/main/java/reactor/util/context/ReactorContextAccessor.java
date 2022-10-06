@@ -37,8 +37,8 @@ import reactor.util.annotation.Nullable;
 public final class ReactorContextAccessor implements ContextAccessor<ContextView, Context> {
 
 	@Override
-	public boolean canReadFrom(Class<?> contextType) {
-		return ContextView.class.isAssignableFrom(contextType);
+	public Class<? extends ContextView> readableType() {
+		return ContextView.class;
 	}
 
 	@Override
@@ -57,8 +57,8 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 	}
 
 	@Override
-	public boolean canWriteTo(Class<?> contextType) {
-		return Context.class.isAssignableFrom(contextType);
+	public Class<? extends Context> writeableType() {
+		return Context.class;
 	}
 
 	@Override

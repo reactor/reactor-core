@@ -29,8 +29,8 @@ import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
 import reactor.util.annotation.Nullable;
 
-import static reactor.core.observability.micrometer.DocumentedMeterListenerMeters.CommonTags.*;
-import static reactor.core.observability.micrometer.DocumentedMeterListenerMeters.TerminationTags.*;
+import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.CommonTags.*;
+import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.TerminationTags.*;
 
 /**
  * A {@link SignalListener} that activates metrics gathering using Micrometer 1.x.
@@ -61,12 +61,12 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 			requestedCounter = null;
 		}
 		else {
-			this.onNextIntervalTimer = Timer.builder(DocumentedMeterListenerMeters.ON_NEXT_DELAY.getName(configuration.sequenceName))
+			this.onNextIntervalTimer = Timer.builder(MicrometerMeterListenerDocumentation.ON_NEXT_DELAY.getName(configuration.sequenceName))
 				.tags(configuration.commonTags)
 				.register(configuration.registry);
 
 			if (!Micrometer.DEFAULT_METER_PREFIX.equals(configuration.sequenceName)) {
-				this.requestedCounter = DistributionSummary.builder(DocumentedMeterListenerMeters.REQUESTED_AMOUNT.getName(configuration.sequenceName))
+				this.requestedCounter = DistributionSummary.builder(MicrometerMeterListenerDocumentation.REQUESTED_AMOUNT.getName(configuration.sequenceName))
 					.tags(configuration.commonTags)
 					.register(configuration.registry);
 			}
@@ -198,7 +198,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * cost only in case of cancellation.
 	 */
 	static void recordCancel(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
-		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
+		Timer timer = Timer.builder(MicrometerMeterListenerDocumentation.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_CANCEL))
 			.description(
 				"Times the duration elapsed between a subscription and the cancellation of the sequence")
@@ -214,7 +214,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * with the added benefit of paying that cost only in case of onNext/onError after termination.
 	 */
 	static void recordMalformed(String name, Tags commonTags, MeterRegistry registry) {
-		registry.counter(DocumentedMeterListenerMeters.MALFORMED_SOURCE_EVENTS.getName(name), commonTags)
+		registry.counter(MicrometerMeterListenerDocumentation.MALFORMED_SOURCE_EVENTS.getName(name), commonTags)
 			.increment();
 	}
 
@@ -226,9 +226,9 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 */
 	static void recordOnError(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration,
 							  Throwable e) {
-		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
+		Timer timer = Timer.builder(MicrometerMeterListenerDocumentation.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_ON_ERROR))
-			.tag(DocumentedMeterListenerMeters.TerminationTags.EXCEPTION.asString(),
+			.tag(MicrometerMeterListenerDocumentation.TerminationTags.EXCEPTION.asString(),
 				e.getClass().getName())
 			.description(
 				"Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag.")
@@ -244,7 +244,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * that cost only in case of completion (which is not always occurring).
 	 */
 	static void recordOnComplete(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
-		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
+		Timer timer = Timer.builder(MicrometerMeterListenerDocumentation.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_ON_COMPLETE))
 			.description(
 				"Times the duration elapsed between a subscription and the onComplete termination of a sequence that did emit some elements")
@@ -260,7 +260,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * that cost only in case of completion (which is not always occurring).
 	 */
 	static void recordOnCompleteEmpty(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
-		Timer timer = Timer.builder(DocumentedMeterListenerMeters.FLOW_DURATION.getName(name))
+		Timer timer = Timer.builder(MicrometerMeterListenerDocumentation.FLOW_DURATION.getName(name))
 			.tags(commonTags.and(TAG_ON_COMPLETE_EMPTY))
 			.description(
 				"Times the duration elapsed between a subscription and the onComplete termination of a sequence that didn't emit any element")
@@ -276,7 +276,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	 * that cost only in case of subscription.
 	 */
 	static void recordOnSubscribe(String name, Tags commonTags, MeterRegistry registry) {
-		Counter.builder(DocumentedMeterListenerMeters.SUBSCRIBED.getName(name))
+		Counter.builder(MicrometerMeterListenerDocumentation.SUBSCRIBED.getName(name))
 			.tags(commonTags)
 			.register(registry)
 			.increment();

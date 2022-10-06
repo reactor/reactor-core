@@ -38,14 +38,14 @@ import reactor.util.Loggers;
  */
 final class MicrometerObservationListenerConfiguration {
 
-	static final KeyValues DEFAULT_KV_FLUX = KeyValues.of(DocumentedObservationListenerTags.ObservationTags.TYPE.asString(), "Flux");
-	static final KeyValues DEFAULT_KV_MONO = KeyValues.of(DocumentedObservationListenerTags.ObservationTags.TYPE.asString(), "Mono");
+	static final KeyValues DEFAULT_KV_FLUX = KeyValues.of(MicrometerObservationListenerDocumentation.ObservationTags.TYPE.asString(), "Flux");
+	static final KeyValues DEFAULT_KV_MONO = KeyValues.of(MicrometerObservationListenerDocumentation.ObservationTags.TYPE.asString(), "Mono");
 
 	private static final Logger LOGGER = Loggers.getLogger(MicrometerObservationListenerConfiguration.class);
 
 	static MicrometerObservationListenerConfiguration fromFlux(Flux<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_FLUX;
-		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, DocumentedObservationListenerTags.ANONYMOUS.getName());
+		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, MicrometerObservationListenerDocumentation.ANONYMOUS.getName());
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
 		return new MicrometerObservationListenerConfiguration(name, keyValues, observationRegistry, false);
@@ -53,7 +53,7 @@ final class MicrometerObservationListenerConfiguration {
 
 	static MicrometerObservationListenerConfiguration fromMono(Mono<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_MONO;
-		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, DocumentedObservationListenerTags.ANONYMOUS.getName());
+		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, MicrometerObservationListenerDocumentation.ANONYMOUS.getName());
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
 		return new MicrometerObservationListenerConfiguration(name, keyValues, observationRegistry, true);

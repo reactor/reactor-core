@@ -19,7 +19,7 @@ package reactor.core.observability.micrometer;
 import io.micrometer.observation.Observation;
 
 import reactor.core.observability.SignalListener;
-import reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags;
+import reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags;
 import reactor.core.publisher.SignalType;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -27,11 +27,11 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
-import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.STATUS;
-import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_CANCELLED;
-import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_COMPLETED;
-import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_COMPLETED_EMPTY;
-import static reactor.core.observability.micrometer.DocumentedObservationListenerTags.ObservationTags.TAG_STATUS_ERROR;
+import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.STATUS;
+import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.TAG_STATUS_CANCELLED;
+import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.TAG_STATUS_COMPLETED;
+import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.TAG_STATUS_COMPLETED_EMPTY;
+import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.TAG_STATUS_ERROR;
 
 /**
  * A {@link SignalListener} that makes timings using the {@link io.micrometer.observation.Observation} API from Micrometer 1.10.

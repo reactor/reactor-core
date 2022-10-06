@@ -17,7 +17,6 @@
 package reactor.core.observability.micrometer;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
@@ -72,7 +71,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void whenStartedFluxWithDefaultName() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			DocumentedObservationListenerTags.ANONYMOUS.getName(),
+			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -131,7 +130,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void whenStartedMono() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			DocumentedObservationListenerTags.ANONYMOUS.getName(),
+			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromMono (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -374,7 +373,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void observationGetsParentFromContext() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			DocumentedObservationListenerTags.ANONYMOUS.getName(),
+			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -427,7 +426,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void observationWithEmptyContextHasNoParent() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			DocumentedObservationListenerTags.ANONYMOUS.getName(),
+			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
@@ -468,7 +467,7 @@ class MicrometerObservationListenerTest {
 	@Test
 	void observationWithEmptyContextHasParentWhenExternalScopeOpened() {
 		configuration = new MicrometerObservationListenerConfiguration(
-			DocumentedObservationListenerTags.ANONYMOUS.getName(),
+			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
 			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
 			registry,
