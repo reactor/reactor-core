@@ -321,7 +321,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 				sds.complete(r);
 			}
-
 		}
 		else {
 			ZipCoordinator<T, R> coordinator =
@@ -459,7 +458,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED) return wip == 0;
+			if (key == Attr.TERMINATED) return wip == 0 && !isCancelled();
 			if (key == Attr.BUFFERED) return wip > 0 ? scalars.length : 0;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -705,20 +704,29 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 					}
 				}
 
-				m = WIP.addAndGet(this, -m);
-				if (m == 0) {
-					return;
+				int missed = wip;
+				if (m == missed) {
+					if (WIP.compareAndSet(this, m, Integer.MIN_VALUE)) {
+						return;
+					} else {
+						m = wip;
+					}
+				} else {
+					m = missed;
 				}
 			}
 		}
 
 		void drain(@Nullable ZipInner<T> callerInner, @Nullable Object dataSignal) {
-			if (WIP.getAndIncrement(this) != 0) {
+			int previousWork = addWork(this);
+			if (previousWork != 0) {
 				if (callerInner != null) {
-					if (cancelled) {
+					if (cancelled || previousWork == Integer.MIN_VALUE) {
 						if (callerInner.sourceMode != ASYNC) {
 							// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
 							Operators.onDiscard(dataSignal, actual.currentContext());
+						} else if (previousWork == Integer.MIN_VALUE) {
+							callerInner.queue.clear();
 						}
 					}
 				}
@@ -905,6 +913,20 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				}
 			}
 		}
+
+		static int addWork(ZipCoordinator<?, ?> instance) {
+			for (;;) {
+				int state = instance.wip;
+
+				if (state == Integer.MIN_VALUE) {
+					return Integer.MIN_VALUE;
+				}
+
+				if (WIP.compareAndSet(instance, state, state + 1)) {
+					return state;
+				}
+			}
+		}
 	}
 
 	static final class ZipInner<T>
@@ -1019,7 +1041,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == Attr.TERMINATED) return done && (queue == null || queue.isEmpty());
+			if (key == Attr.TERMINATED) return done && s != Operators.cancelledSubscription();
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

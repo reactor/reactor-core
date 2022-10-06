@@ -1161,13 +1161,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.Attr.BUFFERED)).isEqualTo(3))
+		                                      .scan(Scannable.Attr.BUFFERED)).isEqualTo(0))
 		            .then(() -> assertThat(ref.get()
 		                                      .scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE))
 		            .then(() -> assertThat(ref.get()
 		                                      .inners()).hasSize(3))
 		            .thenCancel()
-		            .verify();
+		            .verifyThenAssertThat()
+					.hasDiscardedExactly(1, 3, 3); // discards only those values which are delivered to zip
 
 		assertInnerSubscriber(ref.get());
 	}

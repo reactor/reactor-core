@@ -258,7 +258,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 		@Override
 		public void cancel() {
-			if (DONE.getAndSet(this, Integer.MIN_VALUE) <=0) {
+			if (DONE.getAndSet(this, Integer.MIN_VALUE) < 0) {
 				return;
 			}
 
@@ -347,10 +347,6 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 		@Override
 		public void onError(Throwable t) {
-			if (value != null) {
-				return;
-			}
-
 			error = t;
 			if (parent.delayError) {
 				parent.signal();
