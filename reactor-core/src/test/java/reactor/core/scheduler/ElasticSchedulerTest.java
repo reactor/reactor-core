@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		assertThatCode(scheduler::start).as("start").doesNotThrowAnyException();
 
 		scheduler.dispose();
+		// TODO: in 3.6.x: remove restart capability and this validation
 		assertThatCode(scheduler::start).as("restart").doesNotThrowAnyException();
 	}
 

@@ -70,7 +70,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 */
 	public static VirtualTimeScheduler create(boolean defer) {
 		VirtualTimeScheduler instance = new VirtualTimeScheduler(defer);
-		instance.start();
+		instance.init();
 		return instance;
 	}
 

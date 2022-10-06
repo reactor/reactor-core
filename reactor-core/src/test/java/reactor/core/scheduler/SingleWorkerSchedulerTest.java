@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,11 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected Scheduler scheduler() {
 		return Schedulers.single(Schedulers.immediate());
+	}
+
+	@Override
+	protected boolean shouldCheckInit() {
+		return false;
 	}
 
 	@Override

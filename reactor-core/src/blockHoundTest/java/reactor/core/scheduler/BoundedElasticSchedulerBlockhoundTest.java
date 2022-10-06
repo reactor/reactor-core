@@ -96,7 +96,7 @@ public class BoundedElasticSchedulerBlockhoundTest {
 	@RepeatedTest(3) //we got false positives from time to time. with repeat(3), only 1 block out of 500 was a false positive (with a total of 75 false positives out of 1500 runs)
 	void shouldNotReportEnsureQueueCapacity() {
 		BoundedElasticScheduler scheduler = autoDispose(new BoundedElasticScheduler(1, 100, Thread::new, 1));
-		scheduler.start();
+		scheduler.init();
 		ExecutorServiceWorker worker = (ExecutorServiceWorker) autoDispose(scheduler.createWorker());
 		BoundedElasticScheduler.BoundedScheduledExecutorService executor =
 			(BoundedElasticScheduler.BoundedScheduledExecutorService) worker.exec;

@@ -39,12 +39,7 @@ import reactor.test.AutoDisposingExtension;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatException;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -55,9 +50,13 @@ public abstract class AbstractSchedulerTest {
 	public AutoDisposingExtension afterTest = new AutoDisposingExtension();
 
 	/**
-	 * @return the {@link Scheduler} to be tested, {@link Scheduler#start() started}
+	 * @return the {@link Scheduler} to be tested, {@link Scheduler#init() initialized}
 	 */
 	protected abstract Scheduler scheduler();
+
+	protected boolean shouldCheckInit() {
+		return true;
+	}
 
 	protected boolean shouldCheckInterrupted(){
 		return false;
@@ -99,10 +98,37 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test
+	void cannotInitTwice() {
+		Assumptions.assumeThat(shouldCheckInit())
+		           .as("scheduler supports restart prevention").isTrue();
+
+		Scheduler s = scheduler();
+		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(s::init);
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void cannotInitAfterDispose(boolean withForceDispose) {
+		Assumptions.assumeThat(shouldCheckInit())
+		           .as("scheduler supports restart prevention").isTrue();
+
+		Scheduler s = scheduler();
+
+		if (withForceDispose) {
+			s.dispose();
+		} else {
+			s.disposeGracefully().block(Duration.ofSeconds(1));
+		}
+
+		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(s::init);
+	}
+
+	@Test
 	public void restartSupport() {
 		boolean supportsRestart = shouldCheckSupportRestart();
 		Scheduler s = scheduler();
 		s.dispose();
+		// TODO: in 3.6.x: remove restart capability and this validation
 		s.start();
 
 		if (supportsRestart) {
@@ -120,6 +146,7 @@ public abstract class AbstractSchedulerTest {
 		Scheduler scheduler = scheduler();
 		scheduler.dispose();
 
+		// TODO: in 3.6.x: remove restart capability and this validation
 		scheduler.start();
 		assertThatCode(() -> scheduler.schedule(() -> {})).doesNotThrowAnyException();
 	}
@@ -315,6 +342,7 @@ public abstract class AbstractSchedulerTest {
 		s.dispose();
 		assertThat(s.isDisposed()).isTrue();
 
+		// TODO: in 3.6.x: remove restart capability and this validation
 		s.start();
 		assertThat(s.isDisposed()).isFalse();
 

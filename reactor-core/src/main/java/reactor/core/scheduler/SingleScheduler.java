@@ -54,8 +54,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 					SingleScheduler.class, SchedulerState.class, "state"
 			);
 
+	private static final SchedulerState<ScheduledExecutorService> INIT =
+			SchedulerState.init(TERMINATED);
+
 	SingleScheduler(ThreadFactory factory) {
-		this.state = SchedulerState.init(TERMINATED);
+		this.state = INIT;
 		this.factory = factory;
 	}
 
@@ -76,6 +79,19 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		// we only consider disposed as actually shutdown
 		SchedulerState<ScheduledExecutorService> current = state;
 		return current != null && current.currentResource == TERMINATED;
+	}
+
+	@Override
+	public void init() {
+		SchedulerState<ScheduledExecutorService> b = SchedulerState.init(
+				Schedulers.decorateExecutorService(this, this.get())
+		);
+
+		if (!STATE.compareAndSet(this, INIT, b)) {
+			b.currentResource.shutdownNow();
+			throw new IllegalStateException("Failed to initialize Scheduler. " +
+					"Initialization is only possible on a fresh instance.");
+		}
 	}
 
 	@Override

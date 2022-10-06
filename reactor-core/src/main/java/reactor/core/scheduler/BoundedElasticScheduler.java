@@ -89,6 +89,9 @@ final class BoundedElasticScheduler implements Scheduler,
 	static final AtomicReferenceFieldUpdater<BoundedElasticScheduler, SchedulerState> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(BoundedElasticScheduler.class, SchedulerState.class, "state");
 
+	private static final SchedulerState<BoundedServices> INIT =
+			SchedulerState.init(SHUTDOWN);
+
 	/**
 	 * This constructor lets define millisecond-grained TTLs and a custom {@link Clock},
 	 * which can be useful for tests.
@@ -111,7 +114,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		this.ttlMillis = ttlMillis;
 
 		// initially disposed
-		STATE.lazySet(this, SchedulerState.init(SHUTDOWN));
+		STATE.lazySet(this, INIT);
 	}
 
 	/**
@@ -140,6 +143,30 @@ final class BoundedElasticScheduler implements Scheduler,
 	@Override
 	public boolean isDisposed() {
 		return state.currentResource == SHUTDOWN;
+	}
+
+	@Override
+	public void init() {
+		SchedulerState<BoundedServices> b =
+				SchedulerState.init(new BoundedServices(this));
+		if (STATE.compareAndSet(this, INIT, b)) {
+			try {
+				b.currentResource.evictor.scheduleAtFixedRate(
+						b.currentResource::eviction,
+						ttlMillis, ttlMillis, TimeUnit.MILLISECONDS
+				);
+				return;
+			} catch (RejectedExecutionException ree) {
+				// The executor was most likely shut down in parallel.
+				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
+				// If it's running - the other thread did a restart and will run its own schedule.
+				// In both cases we ignore it.
+			}
+		} else {
+			b.currentResource.evictor.shutdownNow();
+			throw new IllegalStateException("Failed to initialize Scheduler. " +
+					"Initialization is only possible on a fresh instance.");
+		}
 	}
 
 	@Override

@@ -211,6 +211,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		SchedulerState<ScheduledExecutorService> stateBefore = ((SingleScheduler) s).state;
 		assertThat(stateBefore.currentResource).as("SHUTDOWN").isSameAs(TERMINATED);
 
+		// TODO: in 3.6.x: remove restart capability and this validation
 		s.start();
 
 		assertThat(((SingleScheduler) s).state.currentResource)

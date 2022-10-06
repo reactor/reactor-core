@@ -129,12 +129,10 @@ public interface Scheduler extends Disposable {
 	 * Instructs this Scheduler to release all resources and reject
 	 * any new tasks to be executed.
 	 *
-	 * <p>The operation is thread-safe but one should avoid using
-	 * start() and dispose() concurrently as it would non-deterministically
-	 * leave the Scheduler in either active or inactive state.
+	 * <p>The operation is thread-safe.
 	 *
 	 * <p>The Scheduler may choose to ignore this instruction.
-	 * <p>When used in combination with {@link #disposeGracefully(Duration)}
+	 * <p>When used in combination with {@link #disposeGracefully()}
 	 * there are no guarantees that all resources will be forcefully shutdown.
 	 * When a graceful disposal has started, the references to the underlying
 	 * {@link java.util.concurrent.Executor}s might have already been lost.
@@ -167,8 +165,26 @@ public interface Scheduler extends Disposable {
 	 * <p>The operation is thread-safe but one should avoid using
 	 * start() and dispose() concurrently as it would non-deterministically
 	 * leave the Scheduler in either active or inactive state.
+	 *
+	 * @deprecated Use {@link #init()} instead. The use of this method is discouraged.
+	 * Some implementations allowed restarting a Scheduler, while others did not. One
+	 * of the issues with restarting is that checking
+	 * {@link #isDisposed() the disposed state} is unreliable in concurrent scenarios.
 	 */
+	@Deprecated
 	default void start() {
+	}
+
+	/**
+	 * Instructs this Scheduler to prepare itself for running tasks
+	 * directly or through its {@link Worker}s.
+	 *
+	 * <p><strong>It should be called only once</strong>. Implementations are free to
+	 * throw an exception if this method is called again either during the runtime of the
+	 * scheduler or after it has been disposed via {@link #dispose()}
+	 * or {@link #disposeGracefully()}.
+	 */
+	default void init() {
 	}
 
 	/**

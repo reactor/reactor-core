@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,21 @@ final class ElasticScheduler implements Scheduler, Scannable {
 		poolExecutor.setMaximumPoolSize(1);
 		poolExecutor.setRemoveOnCancelPolicy(true);
 		return poolExecutor;
+	}
+
+	@Override
+	public void init() {
+		if (evictor != null || !shutdown) {
+			throw new IllegalStateException("Failed to initialize Scheduler. " +
+					"Initialization is only possible on a fresh instance.");
+		}
+
+		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
+		this.evictor.scheduleAtFixedRate(this::eviction,
+				ttlSeconds,
+				ttlSeconds,
+				TimeUnit.SECONDS);
+		this.shutdown = false;
 	}
 
 	@Override
