@@ -192,8 +192,13 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		boolean signal() {
 			ZipInner<R>[] a = subscribers;
 			int n = a.length;
-			if (DONE.incrementAndGet(this) != n) {
+			final int state = DONE.incrementAndGet(this);
+			if (state <= 0) {
 				return false;
+			}
+
+			if (state != n) {
+				return true;
 			}
 
 			Object[] o = new Object[n];
