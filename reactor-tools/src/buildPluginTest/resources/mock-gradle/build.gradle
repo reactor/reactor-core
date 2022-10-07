@@ -22,8 +22,6 @@ buildscript {
 		//the plugin feature only works with the -original jar !!
 		//otherwise implemented Plugin interface is the shaded one
 		classpath files("@AGENT@")
-		//version 1.12.13 cannot be found on Gradle Plugin Repository, this syntax allows looking it up on MavenCentral
-		classpath 'net.bytebuddy:byte-buddy-gradle-plugin:@BYTE_BUDDY_VERSION@'
 	}
 }
 
