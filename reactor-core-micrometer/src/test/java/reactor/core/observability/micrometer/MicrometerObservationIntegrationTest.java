@@ -63,7 +63,6 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 					.tag("endpoint", "simulated/" + id)
 					.map(ignored -> "query for id " + id)
 					.doOnNext(v -> {
-						System.err.println(Thread.currentThread().getName() + " span for id " + id + ": " + bb.getTracer().currentSpan());
 						if (id == 2L) throw EXCEPTION;
 					})
 					.name("query" + id)
