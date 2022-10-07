@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,7 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 				return;
 			}
 			once = true;
+			main.cancelMain();
 			main.onComplete();
 		}
 	}
@@ -219,14 +220,13 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-
 			if (main == null) {
 				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 					Operators.error(actual, t);
 					return;
 				}
 			}
-			cancel();
+			cancelOther();
 
 			actual.onError(t);
 		}
@@ -235,12 +235,11 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		public void onComplete() {
 			if (main == null) {
 				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
-					cancelOther();
 					Operators.complete(actual);
 					return;
 				}
 			}
-			cancel();
+			cancelOther();
 
 			actual.onComplete();
 		}
