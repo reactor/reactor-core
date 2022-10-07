@@ -18,16 +18,13 @@ package reactor.test.publisher;
 
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * A {@link Publisher} that you can directly manipulate, triggering
