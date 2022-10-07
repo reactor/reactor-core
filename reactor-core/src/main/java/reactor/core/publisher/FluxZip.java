@@ -496,6 +496,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						"s");
 
 		boolean done;
+		boolean hasFirstValue;
 
 		ZipSingleSubscriber(ZipSingleCoordinator<T, ?> parent, int index) {
 			this.parent = parent;
@@ -531,17 +532,22 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
+				Operators.onNextDropped(t, parent.currentContext());
+			}
+
+			if (hasFirstValue) {
 				Operators.onDiscard(t, parent.currentContext());
 				return;
 			}
-			done = true;
+
+			hasFirstValue = true;
 			Operators.terminate(S, this);
 			parent.next(t, index);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (done) {
+			if (hasFirstValue || done) {
 				Operators.onErrorDropped(t, parent.currentContext());
 				return;
 			}
@@ -551,7 +557,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		@Override
 		public void onComplete() {
-			if (done) {
+			if (hasFirstValue || done) {
 				return;
 			}
 			done = true;
