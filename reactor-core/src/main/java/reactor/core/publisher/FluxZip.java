@@ -512,7 +512,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) return done || hasFirstValue;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.BUFFERED) return parent.scalars[index] == null ? 0 : 1;
