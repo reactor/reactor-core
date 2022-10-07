@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -294,15 +294,14 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
-			if (WIP.getAndIncrement(this) != 0) {
-				if (cancelled) {
-					if (sourceMode == ASYNC) {
-						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
-						queue.clear();
-					}
-					else {
+			final int previousWork = addWork(this);
+			if (previousWork != 0) {
+				if (cancelled || previousWork == Integer.MIN_VALUE) {
+					if (sourceMode != ASYNC) {
 						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
 						Operators.onDiscard(dataSignal, actual.currentContext());
+					} else if (previousWork == Integer.MIN_VALUE) {
+						queue.clear();
 					}
 				}
 				return;
@@ -414,22 +413,14 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						if (sourceMode == ASYNC) {
-							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
-							queue.clear();
-						} else {
-							// discard MUST be happening only and only if there is no racing on elements consumption
-							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-						}
-
+						clearAndFinalize(missed);
 						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
 					}
 
 					boolean empty = v == null;
 
-					if (checkTerminated(d, empty, a, v)) {
+					if (checkTerminated(d, empty, a, v, missed)) {
 						return;
 					}
 
@@ -449,7 +440,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 				}
 
-				if (e == r && checkTerminated(done, q.isEmpty(), a, null)) {
+				if (e == r && checkTerminated(done, q.isEmpty(), a, null, missed)) {
 					return;
 				}
 
@@ -528,17 +519,10 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v, int missed) {
 			if (cancelled) {
 				Operators.onDiscard(v, actual.currentContext());
-				if (sourceMode == ASYNC) {
-					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
-					queue.clear();
-				} else {
-					// discard MUST be happening only and only if there is no racing on elements consumption
-					// which is guaranteed by the WIP guard here
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-				}
+				clearAndFinalize(missed);
 				return true;
 			}
 			if (d) {
@@ -558,14 +542,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					Throwable e = error;
 					if (e != null) {
 						Operators.onDiscard(v, actual.currentContext());
-						if (sourceMode == ASYNC) {
-							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
-							queue.clear();
-						} else {
-							// discard MUST be happening only and only if there is no racing on elements consumption
-							// which is guaranteed by the WIP guard here
-							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-						}
+						clearAndFinalize(missed);
 						doError(a, e);
 						return true;
 					}
@@ -662,6 +639,46 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		@Override
 		public int size() {
 			return queue.size();
+		}
+
+		void clearAndFinalize(int expectedMissing) {
+			final Queue<T> q = queue;
+			for (;;) {
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					q.clear();
+				}
+				else {
+					// In all other modes we are free to discard queue immediately since there is no racing on pooling
+					Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+				}
+
+				final int currentMissing = wip;
+				if (expectedMissing == currentMissing) {
+					if (WIP.compareAndSet(this, expectedMissing, Integer.MIN_VALUE)) {
+						return;
+					} else {
+						expectedMissing = wip;
+					}
+				} else {
+					expectedMissing = currentMissing;
+				}
+			}
+		}
+
+
+		static int addWork(PublishOnSubscriber<?> instance) {
+			for (;;) {
+				int state = instance.wip;
+
+				if (state == Integer.MIN_VALUE) {
+					return Integer.MIN_VALUE;
+				}
+
+				if (WIP.compareAndSet(instance, state, state + 1)) {
+					return state;
+				}
+			}
 		}
 	}
 
