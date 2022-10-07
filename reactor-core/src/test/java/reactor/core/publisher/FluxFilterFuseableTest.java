@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 
 package reactor.core.publisher;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -160,8 +163,17 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void discardPollAsyncPredicateFail() {
+		CountDownLatch latch = new CountDownLatch(10);
 		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
 		                        .publishOn(Schedulers.newSingle("discardPollAsync"), 1)
+				                .contextWrite(previous -> {
+					                Consumer previousDiscardHandler = previous.get(Hooks.KEY_ON_DISCARD);
+
+									return Operators.enableOnDiscard(previous, (discarded) -> {
+												latch.countDown();
+												previousDiscardHandler.accept(discarded);
+											});
+				                })
 		                        .filter(i -> { throw new IllegalStateException("boom"); })
 		)
 		            .expectFusion(Fuseable.ASYNC)
@@ -266,10 +278,19 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void discardConditionalPollAsyncPredicateFail() {
+		CountDownLatch latch = new CountDownLatch(10);
 		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext, so let's use just instead
 		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
 		                        .filter(i -> { throw new IllegalStateException("boom"); })
 		                        .filter(i -> true)
+		                        .contextWrite(previous -> {
+			                        Consumer previousDiscardHandler = previous.get(Hooks.KEY_ON_DISCARD);
+
+			                        return Operators.enableOnDiscard(previous, (discarded) -> {
+				                        latch.countDown();
+				                        previousDiscardHandler.accept(discarded);
+			                        });
+		                        })
 		)
 		            .expectFusion(Fuseable.ASYNC)
 		            .expectErrorMessage("boom")
