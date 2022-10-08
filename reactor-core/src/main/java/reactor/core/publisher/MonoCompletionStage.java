@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -62,7 +62,7 @@ final class MonoCompletionStage<T> extends Mono<T>
     static class MonoCompletionStageSubscription<T> implements InnerProducer<T>,
                                                                Fuseable,
                                                                QueueSubscription<T>,
-                                                               BiConsumer<T, Throwable> {
+                                                               BiFunction<T, Throwable, Void> {
 
         final CoreSubscriber<? super T>    actual;
         final CompletionStage<? extends T> future;
@@ -85,7 +85,7 @@ final class MonoCompletionStage<T> extends Mono<T>
         }
 
         @Override
-        public void accept(@Nullable T value, @Nullable Throwable e) {
+        public Void apply(@Nullable T value, @Nullable Throwable e) {
             final CoreSubscriber<? super T> actual = this.actual;
 
             if (this.cancelled) {
@@ -102,7 +102,7 @@ final class MonoCompletionStage<T> extends Mono<T>
                     Operators.onDiscard(value, ctx);
                 }
 
-                return;
+                return null;
             }
 
             try {
@@ -124,6 +124,7 @@ final class MonoCompletionStage<T> extends Mono<T>
                 Operators.onErrorDropped(e1, actual.currentContext());
                 throw Exceptions.bubble(e1);
             }
+            return null;
         }
 
         @Override
@@ -136,7 +137,7 @@ final class MonoCompletionStage<T> extends Mono<T>
                 return;
             }
 
-            future.whenComplete(this);
+            future.handle(this);
         }
 
         @Override
