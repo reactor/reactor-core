@@ -90,8 +90,7 @@ configure(rootProject) {
 	}
 
 	dependencies {
-		adoc platform(libs.micrometer.docsGenerator.bom)
-		adoc libs.micrometer.docsGenerator.metrics
+		adoc libs.micrometer.docsGenerator
 	}
 
 	task generateObservabilityDocs(dependsOn: [
@@ -102,19 +101,19 @@ configure(rootProject) {
 	}
 
 	task generateMeterListenerDocs(type: JavaExec) {
-		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
 		classpath configurations.adoc
 		args project.rootDir.getAbsolutePath(), ".*MicrometerMeterListenerDocumentation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
 	}
 
 	task generateTimedSchedulerDocs(type: JavaExec) {
-		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
 		classpath configurations.adoc
 		args project.rootDir.getAbsolutePath(), ".*TimedSchedulerMeterDocumentation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
 	}
 
 	task generateObservationDocs(type: JavaExec) {
-		mainClass.set("io.micrometer.docs.metrics.DocsFromSources")
+		mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
 		classpath configurations.adoc
 		args project.rootDir.getAbsolutePath(), ".*MicrometerObservationListenerDocumentation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/observation").toAbsolutePath().toString()
 	}
