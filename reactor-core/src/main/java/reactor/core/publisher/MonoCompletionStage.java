@@ -64,7 +64,7 @@ final class MonoCompletionStage<T> extends Mono<T>
             return;
         }
 
-        future.whenComplete((v, e) -> {
+        future.handle((v, e) -> {
             if (sds.isCancelled()) {
                 //nobody is interested in the Mono anymore, don't risk dropping errors
                 Context ctx = sds.currentContext();
@@ -79,7 +79,7 @@ final class MonoCompletionStage<T> extends Mono<T>
                     Operators.onDiscard(v, ctx);
                 }
 
-                return;
+                return null;
             }
             try {
                 if (e instanceof CompletionException) {
@@ -99,6 +99,7 @@ final class MonoCompletionStage<T> extends Mono<T>
                 Operators.onErrorDropped(e1, actual.currentContext());
                 throw Exceptions.bubble(e1);
             }
+            return null;
         });
     }
 
