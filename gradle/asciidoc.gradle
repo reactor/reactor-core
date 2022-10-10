@@ -138,11 +138,17 @@ configure(rootProject) {
 		filter { String line ->
 			line.startsWith('[[observability-metrics]]') ||
 				line.startsWith('=== Observability - Metrics') ||
-				line.startsWith('Below you can find a list of all samples ') ||
+				line.startsWith('Below you can find a list of all ') ||
 				line.startsWith("Fully qualified name of the enclosing class ")
 				? null : line
 		}
 		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
+		doLast {
+			//since these are the files that get explicitly included in asciidoc, smoke test they exist
+			assert file(project.rootProject.buildDir.toString() + "/documentedMetrics/meterListener_metrics.adoc").exists()
+			assert file(project.rootProject.buildDir.toString() + "/documentedMetrics/timedScheduler_metrics.adoc").exists()
+			assert file(project.rootProject.buildDir.toString() + "/documentedMetrics/observation_metrics.adoc").exists()
+		}
 	}
 
 }
