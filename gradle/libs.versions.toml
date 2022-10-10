@@ -46,7 +46,7 @@ reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", ver
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
 reactor-perfBaseline-extra = { module = "io.projectreactor.addons:reactor-extra", version.ref = "baselinePerfExtra" }
 slf4j = "org.slf4j:slf4j-api:1.7.36"
-testNg = "org.testng:testng:7.5" # since 7.6 JDK8 is unsupported, don't bump
+testNg = "org.testng:testng:7.6.1" # since 7.6 JDK8 is unsupported, don't bump
 throwingFunction = "com.pivovarit:throwing-function:1.5.1"
 
 [plugins]
