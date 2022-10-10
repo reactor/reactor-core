@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -27,7 +28,6 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FluxTakeUntilOtherTest {
 
@@ -49,14 +49,19 @@ public class FluxTakeUntilOtherTest {
 	@Test
 	public void takeAll() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AtomicBoolean mainCancelled = new AtomicBoolean(false);
+		AtomicBoolean otherCancelled = new AtomicBoolean(false);
 
 		Flux.range(1, 10)
-		    .takeUntilOther(Flux.never())
+		    .doOnCancel(() -> mainCancelled.set(true))
+		    .takeUntilOther(Flux.never().doOnCancel(() -> otherCancelled.set(true)))
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertComplete()
 		  .assertNoError();
+		Assertions.assertThat(mainCancelled).isFalse();
+		Assertions.assertThat(otherCancelled).isTrue();
 	}
 
 	@Test
@@ -87,14 +92,22 @@ public class FluxTakeUntilOtherTest {
 	@Test
 	public void takeNone() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AtomicBoolean mainCancelled = new AtomicBoolean(false);
+		AtomicBoolean otherCancelled = new AtomicBoolean(false);
 
+		Flux<Object> other =
+				Flux.empty()
+				    .doOnCancel(() -> otherCancelled.set(true));
 		Flux.range(1, 10)
-		    .takeUntilOther(Flux.empty())
+		    .doOnCancel(() -> mainCancelled.set(true))
+		    .takeUntilOther(other)
 		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertComplete()
 		  .assertNoError();
+		Assertions.assertThat(mainCancelled).isTrue();
+		Assertions.assertThat(otherCancelled).isTrue();
 	}
 
 	@Test
@@ -113,14 +126,23 @@ public class FluxTakeUntilOtherTest {
 	@Test
 	public void takeNoneOtherMany() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AtomicBoolean mainCancelled = new AtomicBoolean(false);
+		AtomicBoolean otherCancelled = new AtomicBoolean(false);
 
+		Flux<Integer> other =
+			Flux.range(1, 10)
+			    .doOnCancel(() -> otherCancelled.set(true));
 		Flux.range(1, 10)
-		    .takeUntilOther(Flux.range(1, 10))
+		    .doOnCancel(() -> mainCancelled.set(true))
+		    .takeUntilOther(other)
 		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertComplete()
 		  .assertNoError();
+
+		Assertions.assertThat(mainCancelled).isTrue();
+		Assertions.assertThat(otherCancelled).isTrue();
 	}
 
 	@Test
@@ -139,15 +161,24 @@ public class FluxTakeUntilOtherTest {
 	@Test
 	public void otherSignalsError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AtomicBoolean mainCancelled = new AtomicBoolean(false);
+		AtomicBoolean otherCancelled = new AtomicBoolean(false);
 
+		Flux<Object> other =
+				Flux.error(new RuntimeException("forced " + "failure"))
+				    .doOnCancel(() -> otherCancelled.set(true));
 		Flux.range(1, 10)
-		    .takeUntilOther(Flux.error(new RuntimeException("forced " + "failure")))
+		    .doOnCancel(() -> mainCancelled.set(true))
+		    .takeUntilOther(other)
 		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
+
+		Assertions.assertThat(mainCancelled).isTrue();
+		Assertions.assertThat(otherCancelled).isFalse();
 	}
 
 	@Test
@@ -162,6 +193,29 @@ public class FluxTakeUntilOtherTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void mainSignalsError() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AtomicBoolean mainCancelled = new AtomicBoolean(false);
+		AtomicBoolean otherCancelled = new AtomicBoolean(false);
+
+		Flux<Object> other =
+				Flux.never()
+				    .doOnCancel(() -> otherCancelled.set(true));
+		Flux.<Integer>error(new RuntimeException("forced " + "failure"))
+		    .doOnCancel(() -> mainCancelled.set(true))
+		    .takeUntilOther(other)
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+
+		Assertions.assertThat(mainCancelled).isFalse();
+		Assertions.assertThat(otherCancelled).isTrue();
 	}
 
 	Flux<Integer> scenario_aFluxCanBeLimitedByTime(){
@@ -240,7 +294,9 @@ public class FluxTakeUntilOtherTest {
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        Assertions.assertThat(main.scan(Scannable.Attr.CANCELLED)).isFalse();
         main.cancel();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(main.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }
