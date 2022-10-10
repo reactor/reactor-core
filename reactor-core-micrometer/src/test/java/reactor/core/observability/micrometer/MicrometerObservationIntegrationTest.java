@@ -19,6 +19,7 @@ package reactor.core.observability.micrometer;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import io.micrometer.tracing.Span;
@@ -34,6 +35,12 @@ import reactor.core.scheduler.Schedulers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * To run this integration test on an actual Zipkin instance, one can use Docker:
+ * <p>
+ * {@code docker run -d -p 9411:9411 openzipkin/zipkin}
+ * <p>
+ * Then open <a href="http://localhost:9411/zipkin/">http://localhost:9411/zipkin/</a> in your browser.
+ *
  * @author Simon Baslé
  */
 @Tag("slow")
@@ -109,18 +116,30 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 				.isEqualTo(beforeStart); //original span was restored
 
 			//finally, assert that the delay thread was not polluted either
+			/*
+			Impl note: This assertion is a bit redundant since we don't use Scope anyway so there shouldn't
+			be any possibility of polluting ThreadLocals. It used to fail for Brave because Brave defaults to
+			using InheritableThreadLocals. Now that SampleTestRunner configures Brave to use simple ThreadLocal,
+			it works both for OTel and Brave.
+			The atomic ref ensures that the Tracer is used and found nothing. It also allows the test to fail
+			by ensuring only the Span capture is done in separate thread (the assertion has to be done in main
+			testing thread).
+			*/
+			String notCaptured = "tracer.currentSpan() not invoked";
+			AtomicReference<Object> delaySpanRef = new AtomicReference<>(notCaptured);
 			CountDownLatch latch = new CountDownLatch(1);
 			delayScheduler.schedule(() -> {
 				try {
-					assertThat(bb.getTracer().currentSpan())
-						.as("no leftover span in delay thread")
-						.isNull();
+					delaySpanRef.set(bb.getTracer().currentSpan());
 				}
 				finally {
 					latch.countDown();
 				}
 			});
 			latch.await(10, TimeUnit.SECONDS);
+			assertThat(delaySpanRef.get())
+				.as("no leftover span in delay thread")
+				.isNull();
 		};
 	}
 }
