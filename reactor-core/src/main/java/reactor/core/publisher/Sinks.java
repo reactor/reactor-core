@@ -269,7 +269,8 @@ public final class Sinks {
 		 * <p>
 		 * As a result there will always be some delay between this computation and the actual first
 		 * use of the handler (at a minimum, the time it takes for the first sink emission attempt).
-		 * Consider this when choosing the {@link Duration}, and probably prefer something above 100ms.
+		 * Consider this when choosing the {@link Duration}, and probably prefer something above 100ms,
+		 * and don't cache the returning handler for later usage.
 		 *
 		 * @param duration {@link Duration} for the deadline
 		 * @return an optimistic and bounded busy-looping {@link EmitFailureHandler}
