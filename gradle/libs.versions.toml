@@ -14,7 +14,7 @@ micrometer = "1.10.0-RC1"
 reactiveStreams = "1.0.4"
 
 [libraries]
-archUnit = "com.tngtech.archunit:archunit:0.23.1"
+archUnit = "com.tngtech.archunit:archunit:1.0.0"
 assertj = "org.assertj:assertj-core:3.23.1"
 awaitility = "org.awaitility:awaitility:4.2.0"
 blockhound = "io.projectreactor.tools:blockhound:1.0.6.RELEASE"
