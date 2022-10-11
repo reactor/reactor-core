@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -294,16 +295,30 @@ public abstract class Hooks {
 	 * @param c the {@link Consumer} to apply to data (onNext) that is dropped
 	 * @see #onNextDroppedFail()
 	 */
+	@Deprecated
 	public static void onNextDropped(Consumer<Object> c) {
-		Objects.requireNonNull(c, "onNextDroppedHook");
-		log.debug("Hooking new default : onNextDropped");
+		onNextDiscarded((v, r) -> c.accept(v));
+	}
+
+	/**
+	 * Override global data discard strategy which by default logs at DEBUG level.
+	 * <p>
+	 * The hook is cumulative, so calling this method several times will set up the hook
+	 * for as many consumer invocations (even if called with the same consumer instance).
+	 *
+	 * @param c the {@link BiConsumer} to apply to data (onNext) that is dropped
+	 * @see #onNextDiscardedFail()
+	 */
+	public static void onNextDiscarded(BiConsumer<Object, Operators.DiscardReason> c) {
+		Objects.requireNonNull(c, "onNextDiscardedHook");
+		log.debug("Hooking new default : onNextDiscarded");
 
 		synchronized(log) {
-			if (onNextDroppedHook != null) {
-				onNextDroppedHook = onNextDroppedHook.andThen(c);
+			if (onNextDiscardedHook != null) {
+				onNextDiscardedHook = onNextDiscardedHook.andThen(c);
 			}
 			else {
-				onNextDroppedHook = c;
+				onNextDiscardedHook = c;
 			}
 		}
 	}
@@ -314,12 +329,25 @@ public abstract class Hooks {
 	 * <p>
 	 * Use {@link #resetOnNextDropped()} to reset to the default strategy of logging.
 	 */
-	public static void onNextDroppedFail() {
-		log.debug("Enabling failure mode for onNextDropped");
+	public static void onNextDiscardedFail() {
+		log.debug("Enabling failure mode for onNextDiscarded");
 
 		synchronized(log) {
-			onNextDroppedHook = n -> {throw Exceptions.failWithCancel();};
+			onNextDiscardedHook = (n, r) -> {throw Exceptions.failWithCancel();};
 		}
+	}
+
+	/**
+	 * Resets {@link #resetOnNextDropped() onNextDropped hook(s)} and
+	 * apply a strategy of throwing {@link Exceptions#failWithCancel()} instead.
+	 * <p>
+	 * Use {@link #resetOnNextDropped()} to reset to the default strategy of logging.
+	 *
+	 * @deprecated in favor of {@link #onNextDiscardedFail()}
+	 */
+	@Deprecated
+	public static void onNextDroppedFail() {
+		onNextDiscardedFail();
 	}
 
 	/**
@@ -474,11 +502,22 @@ public abstract class Hooks {
 	 * Reset global data dropped strategy to throwing via {@link
 	 * reactor.core.Exceptions#failWithCancel()}
 	 */
-	public static void resetOnNextDropped() {
-		log.debug("Reset to factory defaults : onNextDropped");
+	public static void resetOnNextDiscarded() {
+		log.debug("Reset to factory defaults : onNextDiscarded");
 		synchronized (log) {
-			onNextDroppedHook = null;
+			onNextDiscardedHook = null;
 		}
+	}
+
+	/**
+	 * Reset global data dropped strategy to throwing via {@link
+	 * reactor.core.Exceptions#failWithCancel()}
+	 *
+	 * @deprecated in favor of {@link #resetOnNextDiscarded()}
+	 */
+	@Deprecated
+	public static void resetOnNextDropped() {
+		resetOnNextDiscarded();
 	}
 
 	/**
@@ -549,8 +588,8 @@ public abstract class Hooks {
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
 
 	//Hooks that are just callbacks
-	static volatile Consumer<? super Throwable> onErrorDroppedHook;
-	static volatile Consumer<Object>            onNextDroppedHook;
+	static volatile Consumer<? super Throwable>                 onErrorDroppedHook;
+	static volatile BiConsumer<Object, Operators.DiscardReason> onNextDiscardedHook;
 
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;

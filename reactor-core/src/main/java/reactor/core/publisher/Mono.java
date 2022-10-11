@@ -2587,6 +2587,34 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Potentially modify the behavior of the <i>whole chain</i> of operators upstream of this one to
+	 * conditionally clean up elements that get <i>discarded</i> by these operators.
+	 * <p>
+	 * The {@code discardHook} MUST be idempotent and safe to use on any instance of the desired
+	 * type.
+	 * Calls to this method are additive, and the order of invocation of the {@code discardHook}
+	 * is the same as the order of declaration (calling {@code .filter(...).doOnDiscard(first).doOnDiscard(second)}
+	 * will let the filter invoke {@code first} then {@code second} handlers).
+	 * <p>
+	 * Two main categories of discarding operators exist:
+	 * <ul>
+	 *     <li>filtering operators, dropping some source elements as part of their designed behavior</li>
+	 *     <li>operators that prefetch a few elements and keep them around pending a request, but get cancelled/in error</li>
+	 * </ul>
+	 * WARNING: Not all operators support this instruction. The ones that do are identified in the javadoc by
+	 * the presence of a <strong>Discard Support</strong> section.
+	 *
+	 * @param type the {@link Class} of elements in the upstream chain of operators that
+	 * this cleanup hook should take into account.
+	 * @param discardHook a {@link BiConsumer} of elements in the upstream chain of operators
+	 * that performs the cleanup.
+	 * @return a {@link Mono} that cleans up matching elements that get discarded upstream of it.
+	 */
+	public final <R> Mono<T> doOnDiscard(final Class<R> type, final BiConsumer<? super R, Operators.DiscardReason> discardHook) {
+		return contextWrite(Operators.discardLocalAdapter(type, discardHook));
+	}
+
+	/**
 	 * Add behavior triggered when the {@link Mono} emits a data successfully.
 	 *
 	 * <p>

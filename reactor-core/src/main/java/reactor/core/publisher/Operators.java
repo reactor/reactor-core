@@ -25,6 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -381,17 +382,32 @@ public abstract class Operators {
 	 * updating a context-local discard hook.
 	 */
 	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, Consumer<? super R> discardHook) {
+		return discardLocalAdapter(type, (v, reason) -> discardHook.accept(v));
+	}
+
+	/**
+	 * Create an adapter for local onDiscard hooks that check the element
+	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
+	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
+	 *
+	 * @param type the type of elements to take into account
+	 * @param discardHook the discarding handler for this type of elements
+	 * @param <R> element type
+	 * @return a {@link Function} that can be used to modify a {@link Context}, adding or
+	 * updating a context-local discard hook.
+	 */
+	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, BiConsumer<? super R, DiscardReason> discardHook) {
 		Objects.requireNonNull(type, "onDiscard must be based on a type");
 		Objects.requireNonNull(discardHook, "onDiscard must be provided a discardHook Consumer");
 
-		final Consumer<Object> safeConsumer = obj -> {
+		final BiConsumer<Object, DiscardReason> safeConsumer = (obj, reason) -> {
 			if (type.isInstance(obj)) {
-				discardHook.accept(type.cast(obj));
+				discardHook.accept(type.cast(obj), reason);
 			}
 		};
 
 		return ctx -> {
-			Consumer<Object> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+			BiConsumer<Object, DiscardReason> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 			if (consumer == null) {
 				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer);
 			}
@@ -411,6 +427,19 @@ public abstract class Operators {
 	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
 	 */
 	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
+		return enableOnDiscard(target, (v, r) -> ((Consumer)discardConsumer).accept(v));
+	}
+
+	/**
+	 * Utility method to activate the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
+	 * in a target {@link Context}. Prefer using the {@link Flux} API, and reserve this for
+	 * testing purposes.
+	 *
+	 * @param target the original {@link Context}
+	 * @param discardConsumer the consumer that will be used to cleanup discarded elements
+	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
+	 */
+	public static final Context enableOnDiscard(@Nullable Context target, BiConsumer<?, DiscardReason> discardConsumer) {
 		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
 		if (target == null) {
 			return Context.of(Hooks.KEY_ON_DISCARD, discardConsumer);
@@ -435,15 +464,43 @@ public abstract class Operators {
 	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
 	 */
 	public static <T> void onDiscard(@Nullable T element, Context context) {
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
-		if (element != null && hook != null) {
-			try {
-				hook.accept(element);
-			}
-			catch (Throwable t) {
-				log.warn("Error in discard hook", t);
+		onDiscard(element, DiscardReason.CANCELLED, context);
+	}
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded. This
+	 * includes elements that are dropped (for malformed sources), but also filtered out
+	 * (eg. not passing a {@code filter()} predicate).
+	 * <p>
+	 * For elements that are buffered or enqueued, but subsequently discarded due to
+	 * cancellation or error, see {@link #onDiscardMultiple(Stream, Context)} and
+	 * {@link #onDiscardQueueWithClear(Queue, Context, Function)}.
+	 *
+	 * @param element the element that is being discarded
+	 * @param reason the reason why element is being discarded
+	 * @param context the context in which to look for a local hook
+	 * @param <T> the type of the element
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
+	public static <T> void onDiscard(@Nullable T element, DiscardReason reason, Context context) {
+		if (element != null) {
+			BiConsumer<Object, DiscardReason> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onNextDiscardedHook);
+
+			if (hook != null) {
+				try {
+					hook.accept(element, reason);
+				}
+				catch (Throwable t) {
+					log.warn("Error in discard hook", t);
+				}
 			}
 		}
+	}
+
+	public enum DiscardReason {
+		VIOLATED, CANCELLED, ERRORED
 	}
 
 	/**
@@ -465,11 +522,35 @@ public abstract class Operators {
 			@Nullable Queue<T> queue,
 			Context context,
 			@Nullable Function<T, Stream<?>> extract) {
+		onDiscardQueueWithClear(queue, DiscardReason.CANCELLED, context, extract);
+	}
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded
+	 * en masse after having been enqueued, due to cancellation or error. This method
+	 * also empties the {@link Queue} (either by repeated {@link Queue#poll()} calls if
+	 * a hook is defined, or by {@link Queue#clear()} as a shortcut if no hook is defined).
+	 *
+	 * @param queue the queue that is being discarded and cleared
+	 * @param reason the reason why elements are being discarded
+	 * @param context the context in which to look for a local hook
+	 * @param extract an optional extractor method for cases where the queue doesn't
+	 * directly contain the elements to discard
+	 * @param <T> the type of the element
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscard(Object, Context)
+	 */
+	public static <T> void onDiscardQueueWithClear(
+			@Nullable Queue<T> queue,
+			DiscardReason reason,
+			Context context,
+			@Nullable Function<T, Stream<?>> extract) {
 		if (queue == null) {
 			return;
 		}
 
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		BiConsumer<Object, DiscardReason> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onNextDiscardedHook);
 		if (hook == null) {
 			queue.clear();
 			return;
@@ -487,7 +568,7 @@ public abstract class Operators {
 						extract.apply(toDiscard)
 						       .forEach(elementToDiscard -> {
 							       try {
-								       hook.accept(elementToDiscard);
+								       hook.accept(elementToDiscard, reason);
 							       }
 							       catch (Throwable t) {
 								       log.warn("Error while discarding item extracted from a queue element, continuing with next item", t);
@@ -500,7 +581,7 @@ public abstract class Operators {
 				}
 				else {
 					try {
-						hook.accept(toDiscard);
+						hook.accept(toDiscard, reason);
 					}
 					catch (Throwable t) {
 						log.warn("Error while discarding a queue element, continuing with next queue element", t);
@@ -513,26 +594,43 @@ public abstract class Operators {
 		}
 	}
 
-  /**
-   * Invoke a (local or global) hook that processes elements that get discarded en masse.
-   * This includes elements that are buffered but subsequently discarded due to
-   * cancellation or error.
-   *
-   * @param multiple the collection of elements to discard (possibly extracted from other
-   * collections/arrays/queues)
-   * @param context the {@link Context} in which to look for local hook
-   * @see #onDiscard(Object, Context)
-   * @see #onDiscardMultiple(Collection, Context)
-   * @see #onDiscardQueueWithClear(Queue, Context, Function)
-   */
-  public static void onDiscardMultiple(Stream<?> multiple, Context context) {
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded en masse.
+	 * This includes elements that are buffered but subsequently discarded due to
+	 * cancellation or error.
+	 *
+	 * @param multiple the collection of elements to discard (possibly extracted from other
+	 * collections/arrays/queues)
+	 * @param context the {@link Context} in which to look for local hook
+	 * @see #onDiscard(Object, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
+	public static void onDiscardMultiple(Stream<?> multiple, Context context) {
+		onDiscardMultiple(multiple, DiscardReason.CANCELLED, context);
+	}
+
+    /**
+     * Invoke a (local or global) hook that processes elements that get discarded en masse.
+     * This includes elements that are buffered but subsequently discarded due to
+     * cancellation or error.
+     *
+     * @param multiple the collection of elements to discard (possibly extracted from other
+     * collections/arrays/queues)
+     * @param context the {@link Context} in which to look for local hook
+     * @see #onDiscard(Object, Context)
+     * @see #onDiscardMultiple(Collection, Context)
+     * @see #onDiscardQueueWithClear(Queue, Context, Function)
+     */
+    public static void onDiscardMultiple(Stream<?> multiple, DiscardReason reason, Context context) {
+		BiConsumer<Object, DiscardReason> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onNextDiscardedHook);
+
 		if (hook != null) {
 			try {
 				multiple.filter(Objects::nonNull)
 				        .forEach(v -> {
 				        	try {
-				        		hook.accept(v);
+				        		hook.accept(v, reason);
 					        }
 				        	catch (Throwable t) {
 				        		log.warn("Error while discarding a stream element, continuing with next element", t);
@@ -545,20 +643,41 @@ public abstract class Operators {
 		}
 	}
 
-  /**
-   * Invoke a (local or global) hook that processes elements that get discarded en masse.
-   * This includes elements that are buffered but subsequently discarded due to
-   * cancellation or error.
-   *
-   * @param multiple the collection of elements to discard
-   * @param context the {@link Context} in which to look for local hook
-   * @see #onDiscard(Object, Context)
-   * @see #onDiscardMultiple(Stream, Context)
-   * @see #onDiscardQueueWithClear(Queue, Context, Function)
-   */
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded en masse.
+	 * This includes elements that are buffered but subsequently discarded due to
+	 * cancellation or error.
+	 *
+	 * @param multiple the collection of elements to discard
+	 * @param context the {@link Context} in which to look for local hook
+	 * @see #onDiscard(Object, Context)
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
+		onDiscardMultiple(multiple, DiscardReason.CANCELLED, context);
+	}
+
+    /**
+     * Invoke a (local or global) hook that processes elements that get discarded en masse.
+     * This includes elements that are buffered but subsequently discarded due to
+     * cancellation or error.
+     *
+     * @param multiple the collection of elements to discard
+     * @param discardReason the reason why elements are discard
+     * @param context the {@link Context} in which to look for local hook
+     * @see #onDiscard(Object, Context)
+     * @see #onDiscardMultiple(Stream, Context)
+     * @see #onDiscardQueueWithClear(Queue, Context, Function)
+     */
+	public static void onDiscardMultiple(@Nullable Collection<?> multiple, DiscardReason discardReason, Context context) {
 		if (multiple == null) return;
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		BiConsumer<Object, DiscardReason> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+
+		if (hook == null) {
+			hook = Hooks.onNextDiscardedHook;
+		}
+
 		if (hook != null) {
 			try {
 				if (multiple.isEmpty()) {
@@ -567,7 +686,7 @@ public abstract class Operators {
 				for (Object o : multiple) {
 					if (o != null) {
 						try {
-							hook.accept(o);
+							hook.accept(o, discardReason);
 						}
 						catch (Throwable t) {
 							log.warn("Error while discarding element from a Collection, continuing with next element", t);
@@ -581,30 +700,49 @@ public abstract class Operators {
 		}
 	}
 
-  /**
-   * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Iterator}.
-   * Since iterators can be infinite, this method requires that you explicitly ensure the iterator is
-   * {@code knownToBeFinite}. Typically, operating on an {@link Iterable} one can get such a
-   * guarantee by looking at the {@link Iterable#spliterator() Spliterator's} {@link Spliterator#getExactSizeIfKnown()}.
-   *
-   * @param multiple the {@link Iterator} whose remainder to discard
-   * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
-   * @param context the {@link Context} in which to look for local hook
-   * @see #onDiscard(Object, Context)
-   * @see #onDiscardMultiple(Collection, Context)
-   * @see #onDiscardQueueWithClear(Queue, Context, Function)
-   */
+	/**
+	 * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Iterator}.
+	 * Since iterators can be infinite, this method requires that you explicitly ensure the iterator is
+	 * {@code knownToBeFinite}. Typically, operating on an {@link Iterable} one can get such a
+	 * guarantee by looking at the {@link Iterable#spliterator() Spliterator's} {@link Spliterator#getExactSizeIfKnown()}.
+	 *
+	 * @param multiple the {@link Iterator} whose remainder to discard
+	 * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
+	 * @param context the {@link Context} in which to look for local hook
+	 * @see #onDiscard(Object, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
 	public static void onDiscardMultiple(@Nullable Iterator<?> multiple, boolean knownToBeFinite, Context context) {
+		onDiscardMultiple(multiple, knownToBeFinite, DiscardReason.CANCELLED, context);
+	}
+
+    /**
+     * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Iterator}.
+     * Since iterators can be infinite, this method requires that you explicitly ensure the iterator is
+     * {@code knownToBeFinite}. Typically, operating on an {@link Iterable} one can get such a
+     * guarantee by looking at the {@link Iterable#spliterator() Spliterator's} {@link Spliterator#getExactSizeIfKnown()}.
+     *
+     * @param multiple the {@link Iterator} whose remainder to discard
+     * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
+     * @param reason the reason why elements are discard
+     * @param context the {@link Context} in which to look for local hook
+     * @see #onDiscard(Object, Context)
+     * @see #onDiscardMultiple(Collection, Context)
+     * @see #onDiscardQueueWithClear(Queue, Context, Function)
+     */
+	public static void onDiscardMultiple(@Nullable Iterator<?> multiple, boolean knownToBeFinite, DiscardReason reason, Context context) {
 		if (multiple == null) return;
 		if (!knownToBeFinite) return;
 
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		BiConsumer<Object, DiscardReason> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onNextDiscardedHook);
+
 		if (hook != null) {
 			try {
 				multiple.forEachRemaining(o -> {
 					if (o != null) {
 						try {
-							hook.accept(o);
+							hook.accept(o, reason);
 						}
 						catch (Throwable t) {
 							log.warn("Error while discarding element from an Iterator, continuing with next element", t);
@@ -648,16 +786,21 @@ public abstract class Operators {
 	 * @param <T> the dropped value type
 	 * @param t the dropped data
 	 * @param context a context that might hold a local next consumer
+	 *
+	 * @deprecated since 3.5.0 in favor of {@link #onDiscard(Object, DiscardReason, Context)}
 	 */
+	@Deprecated
 	public static <T> void onNextDropped(T t, Context context) {
 		Objects.requireNonNull(t, "onNext");
 		Objects.requireNonNull(context, "context");
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_NEXT_DROPPED, null);
+		BiConsumer<Object, DiscardReason> hook = context.getOrDefault(Hooks.KEY_ON_NEXT_DROPPED, null);
+
 		if (hook == null) {
-			hook = Hooks.onNextDroppedHook;
+			hook = Hooks.onNextDiscardedHook;
 		}
+
 		if (hook != null) {
-			hook.accept(t);
+			hook.accept(t, DiscardReason.VIOLATED);
 		}
 		else if (log.isDebugEnabled()) {
 			log.debug("onNextDropped: " + t);
