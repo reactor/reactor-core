@@ -38,25 +38,25 @@ dependencies {
     compileOnly libs.jsr305
     compileOnly libs.jsr305
 
-    shaded libs.byteBuddy.api
-    shaded libs.byteBuddy.agent
+    shaded "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    shaded "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
     for (dependency in project.configurations.shaded.dependencies) {
         compileOnly(dependency)
         testRuntimeOnly(dependency)
         javaAgentTestRuntimeOnly(dependency)
     }
 
-    testImplementation platform(libs.junit.bom)
+    testImplementation platform("org.junit:junit-bom:$junitVersion")
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
-    testImplementation libs.assertj
-    testImplementation libs.cglib
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "cglib:cglib:$cglibVersion"
 
-    jarFileTestImplementation libs.assertj
+    jarFileTestImplementation "org.assertj:assertj-core:$assertjVersion"
 
     buildPluginTestImplementation gradleTestKit()
-    buildPluginTestImplementation platform(libs.junit.bom)
+    buildPluginTestImplementation platform("org.junit:junit-bom:$junitVersion")
     buildPluginTestImplementation "org.junit.jupiter:junit-jupiter-api"
     buildPluginTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
@@ -177,8 +177,8 @@ task generateMockGradle(type: Copy) {
       CORE: coreJar,
       AGENT: agentJar,
       REACTIVE_STREAMS_VERSION: libs.versions.reactiveStreams.get(),
-      JUNIT_BOM_VERSION: libs.versions.junit.get(),
-      BYTE_BUDDY_VERSION: libs.versions.bytebuddy.get()
+      JUNIT_BOM_VERSION: "$junitVersion",
+      BYTE_BUDDY_VERSION: "$byteBuddyVersion"
     ])
 }
 

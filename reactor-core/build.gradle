@@ -73,15 +73,15 @@ dependencies {
 		*/
 		exclude group: 'junit', module: 'junit'
 	}
-	tckTestImplementation libs.testNg
+	tckTestImplementation "org.testng:testng:$testngVersion"
 
 	// JSR-305 annotations
 	compileOnly libs.jsr305
 	testCompileOnly libs.jsr305
 
 	// Optional Logging Operator
-	compileOnly libs.slf4j
-	testCompileOnly libs.slf4j
+	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+	testCompileOnly "org.slf4j:slf4j-api:$slf4jVersion"
 
 	// Optional Metrics
 	compileOnly libs.micrometer
@@ -91,15 +91,15 @@ dependencies {
 	testImplementation libs.kotlin.stdlib
 
 	// Optional BlockHound support
-	compileOnly libs.blockhound
+	compileOnly "io.projectreactor.tools:blockhound:$blockhoundVersion"
 	// Also make BlockHound visible in the CP of dedicated testset
-	blockHoundTestImplementation libs.blockhound
+	blockHoundTestImplementation "io.projectreactor.tools:blockhound:$blockhoundVersion"
 
 	// Optional JDK 9 Converter
 	jsr166backport libs.jsr166backport
 
 	// Testing
-	testImplementation platform(libs.junit.bom)
+	testImplementation platform("org.junit:junit-bom:$junitVersion")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testImplementation "org.junit.platform:junit-platform-launcher"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
@@ -107,13 +107,13 @@ dependencies {
 	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
-	testImplementation libs.logback //need to access API to decrease some tests verbosity
-	testImplementation libs.assertj
-	testImplementation libs.mockito
-	testImplementation libs.javaObjectLayout
-	testImplementation libs.awaitility
-	testImplementation libs.throwingFunction
-	testImplementation libs.archUnit
+	testImplementation "ch.qos.logback:logback-classic:$logbackVersion" //need to access API to decrease some tests verbosity
+	testImplementation "org.assertj:assertj-core:$assertjVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
+	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
+	testImplementation "com.pivovarit:throwing-function:$throwingFunctionVersion"
+	testImplementation "com.tngtech.archunit:archunit:$archUnitVersion"
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
@@ -123,7 +123,7 @@ dependencies {
 	jcstressImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
-	jcstressImplementation libs.logback
+	jcstressImplementation "ch.qos.logback:logback-classic:$logbackVersion"
 
 }
 
