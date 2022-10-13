@@ -24,6 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +39,10 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.core.publisher.FluxHandle.HandleConditionalSubscriber;
+import reactor.core.publisher.FluxHandle.HandleSubscriber;
+import reactor.core.publisher.FluxHandleFuseable.HandleFuseableConditionalSubscriber;
+import reactor.core.publisher.FluxHandleFuseable.HandleFuseableSubscriber;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.test.subscriber.TestSubscriberBuilder;
@@ -467,6 +472,74 @@ class ContextPropagationTest {
 			SynchronousSink<String> mockSink = Mockito.mock(SynchronousSink.class);
 			decoratedHandler.accept("bar", mockSink);
 			Mockito.verify(mockSink, Mockito.times(1)).next(expected);
+		}
+
+		@SuppressWarnings("rawtypes")
+		@Test
+		void fluxHandleVariantsCallTheWrapper() {
+			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> {};
+
+			FluxHandle<String, String> publisher = new FluxHandle<>(Flux.empty(), originalHandler);
+			FluxHandleFuseable<String, String> publisherFuseable = new FluxHandleFuseable<>(Flux.empty(), originalHandler);
+
+			CoreSubscriber<Object> actual = TestSubscriber.builder().contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true).build();
+			Fuseable.ConditionalSubscriber<Object> actualCondi = TestSubscriber.builder().contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true).buildConditional(v -> true);
+
+			HandleSubscriber sub = (HandleSubscriber) publisher.subscribeOrReturn(actual);
+			HandleConditionalSubscriber subCondi = (HandleConditionalSubscriber) publisher.subscribeOrReturn(actualCondi);
+			HandleFuseableSubscriber subFused = (HandleFuseableSubscriber) publisherFuseable.subscribeOrReturn(actual);
+			HandleFuseableConditionalSubscriber subFusedCondi = (HandleFuseableConditionalSubscriber) publisherFuseable.subscribeOrReturn(actualCondi);
+
+			SoftAssertions.assertSoftly(softly -> {
+				softly.assertThat(publisher.handler).as("publisher.handler").isSameAs(originalHandler);
+				softly.assertThat(publisherFuseable.handler).as("publisherFuseable.handler").isSameAs(originalHandler);
+
+				softly.assertThat(sub.handler)
+					.as("sub.handler")
+					.isNotSameAs(originalHandler)
+					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+				softly.assertThat(subCondi.handler)
+					.as("subCondi.handler")
+					.isNotSameAs(originalHandler)
+					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+				softly.assertThat(subFused.handler)
+					.as("subFused.handler")
+					.isNotSameAs(originalHandler)
+					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+				softly.assertThat(subFusedCondi.handler)
+					.as("subFusedCondi.handler")
+					.isNotSameAs(originalHandler)
+					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+			});
+		}
+
+		@SuppressWarnings("rawtypes")
+		@Test
+		void monoHandleVariantsCallTheWrapper() {
+			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> {};
+
+			MonoHandle<String, String> publisher = new MonoHandle<>(Mono.empty(), originalHandler);
+			MonoHandleFuseable<String, String> publisherFuseable = new MonoHandleFuseable<>(Mono.empty(), originalHandler);
+
+			CoreSubscriber<Object> actual = TestSubscriber.builder().contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true).build();
+
+			HandleSubscriber sub = (HandleSubscriber) publisher.subscribeOrReturn(actual);
+			HandleFuseableSubscriber subFused = (HandleFuseableSubscriber) publisherFuseable.subscribeOrReturn(actual);
+			//note: unlike FluxHandle, MonoHandle doesn't have support for ConditionalSubscriber
+
+			SoftAssertions.assertSoftly(softly -> {
+				softly.assertThat(publisher.handler).as("publisher.handler").isSameAs(originalHandler);
+				softly.assertThat(publisherFuseable.handler).as("publisherFuseable.handler").isSameAs(originalHandler);
+
+				softly.assertThat(sub.handler)
+					.as("sub.handler")
+					.isNotSameAs(originalHandler)
+					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+				softly.assertThat(subFused.handler)
+					.as("subFused.handler")
+					.isNotSameAs(originalHandler)
+					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+			});
 		}
 	}
 }
