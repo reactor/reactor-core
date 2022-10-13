@@ -110,11 +110,7 @@ final class ContextPropagation {
 		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
 			return handler;
 		}
-		return (t, s) -> {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(actual.currentContext())) {
-				handler.accept(t, s);
-			}
-		};
+		return new ContextRestoreHandleConsumer<>(handler, ContextRegistry.getInstance(), actual.currentContext());
 	}
 
 	public static <T> SignalListener<T> contextRestoringSignalListener(final SignalListener<T> original,
@@ -273,6 +269,32 @@ final class ContextPropagation {
 		public Context addToContext(Context originalContext) {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				return original.addToContext(originalContext);
+			}
+		}
+	}
+
+	//the BiConsumer implementation can be tested independently with a test-specific ContextRegistry
+	static final class ContextRestoreHandleConsumer<T, R> implements BiConsumer<T, SynchronousSink<R>> {
+
+		private final BiConsumer<T, SynchronousSink<R>> originalHandler;
+		private final ContextRegistry registry;
+		private final ContextView reactorContext;
+
+		ContextRestoreHandleConsumer(BiConsumer<T, SynchronousSink<R>> originalHandler, ContextRegistry registry,
+									 ContextView reactorContext) {
+			this.originalHandler = originalHandler;
+			this.registry = registry;
+			this.reactorContext = reactorContext;
+		}
+
+		@Override
+		public void accept(T t, SynchronousSink<R> sink) {
+			//TODO for now ContextSnapshot static methods don't allow restoring _all_ TLs without an intermediate ContextSnapshot
+			final ContextSnapshot snapshot = ContextSnapshot.captureFrom(this.reactorContext, k -> true, this.registry);
+			try (ContextSnapshot.Scope ignored = snapshot.setThreadLocals(k -> {
+				return true;
+			})) {
+				originalHandler.accept(t, sink);
 			}
 		}
 	}

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
@@ -29,9 +29,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.observability.SignalListener;
@@ -415,4 +417,56 @@ class ContextPropagationTest {
 
 	}
 
+	@Nested
+	class ContextRestoreForHandle {
+
+		@ValueSource(booleans = {true, false})
+		@ParameterizedTestWithName
+		void publicMethodChecksForMarkerBeforeWrapping(boolean withMarker) {
+			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> { };
+			final Context context;
+			if (withMarker) {
+				context = Context.of(KEY1, "expected", ContextPropagation.CAPTURED_CONTEXT_MARKER, true);
+			}
+			else {
+				context = Context.of(KEY1, "expected");
+			}
+			CoreSubscriber<String> mockSubscriber = Mockito.mock(CoreSubscriber.class);
+			Mockito.when(mockSubscriber.currentContext()).thenReturn(context);
+
+			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagation.contextRestoreForHandle(originalHandler, mockSubscriber);
+
+			if (!withMarker) {
+				assertThat(decoratedHandler).as("no marker: same handler").isSameAs(originalHandler);
+			}
+			else {
+				assertThat(decoratedHandler).as("marker: decorated handler").isNotSameAs(originalHandler);
+			}
+		}
+
+		@ValueSource(booleans = {true, false})
+		@ParameterizedTestWithName
+		void classContextRestoreHandleConsumerRestoresWithOrWithoutMarker(boolean withMarker) {
+			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> {
+				if (v.equals("bar")) {
+					sink.next(v + "=" + REF1.get());
+				}
+			};
+
+			final String expected = "bar=expected";
+			final Context context;
+			if (withMarker) {
+				context = Context.of(KEY1, "expected", ContextPropagation.CAPTURED_CONTEXT_MARKER, true);
+			}
+			else {
+				context = Context.of(KEY1, "expected");
+			}
+
+			BiConsumer<String, SynchronousSink<String>> decoratedHandler = new ContextPropagation.ContextRestoreHandleConsumer<>(originalHandler, registry, context);
+
+			SynchronousSink<String> mockSink = Mockito.mock(SynchronousSink.class);
+			decoratedHandler.accept("bar", mockSink);
+			Mockito.verify(mockSink, Mockito.times(1)).next(expected);
+		}
+	}
 }
