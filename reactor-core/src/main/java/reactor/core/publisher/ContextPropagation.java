@@ -158,9 +158,10 @@ final class ContextPropagation {
 		}
 		
 		ContextSnapshot.Scope restoreThreadLocals() {
-			//FIXME use this.registry to directly restore all ThreadLocals without providing keyPredicate/keys, once that method becomes available
-			ContextSnapshot snapshot = ContextSnapshot.capture(this.context);
-			return snapshot.setThreadLocalValues();
+			//TODO for now ContextSnapshot static methods don't allow restoring _all_ TLs without an intermediate ContextSnapshot
+			return ContextSnapshot
+				.captureFrom(this.context, k -> true, this.registry)
+				.setThreadLocals();
 		}
 
 		@Override

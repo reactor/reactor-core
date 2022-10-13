@@ -52,8 +52,8 @@ class ContextPropagationTest {
 	private static final String KEY1 = "ContextPropagationTest.key1";
 	private static final String KEY2 = "ContextPropagationTest.key2";
 
-	private static final AtomicReference<String> REF1 = new AtomicReference<>();
-	private static final AtomicReference<String> REF2 = new AtomicReference<>();
+	private static final ThreadLocal<String> REF1 = ThreadLocal.withInitial(() -> "ref1_init");
+	private static final ThreadLocal<String> REF2 = ThreadLocal.withInitial(() -> "ref2_init");
 
 	//NOTE: no way to currently remove accessors from the ContextRegistry, so we recreate one on each test
 	private ContextRegistry registry;
@@ -62,22 +62,16 @@ class ContextPropagationTest {
 	void initializeThreadLocals() {
 		registry = new ContextRegistry().loadContextAccessors();
 
-		REF1.set("ref1_init");
-		REF2.set("ref2_init");
-
-		registry.registerThreadLocalAccessor(
-			KEY1, REF1::get, REF1::set, () -> REF1.set(null));
-
-		registry.registerThreadLocalAccessor(
-			KEY2, REF2::get, REF2::set, () -> REF2.set(null));
+		registry.registerThreadLocalAccessor(KEY1, REF1);
+		registry.registerThreadLocalAccessor(KEY2, REF2);
 	}
 
 	//the cleanup of "thread locals" could be especially important if one starts relying on
 	//the global registry in tests: it would ensure no TL pollution.
 	@AfterEach
 	void cleanupThreadLocals() {
-		REF1.set(null);
-		REF2.set(null);
+		REF1.remove();
+		REF2.remove();
 	}
 
 	@Test
@@ -139,13 +133,16 @@ class ContextPropagationTest {
 			ContextPropagation.ContextCaptureFunction test = new ContextPropagation.ContextCaptureFunction(
 				ContextPropagation.PREDICATE_TRUE, registry);
 
+			REF1.set("expected1");
+			REF2.set("expected2");
+
 			Context ctx = test.apply(Context.empty());
 			Map<Object, Object> asMap = new HashMap<>();
 			ctx.forEach(asMap::put); //easier to assert
 
 			assertThat(asMap)
-				.containsEntry(KEY1, "ref1_init")
-				.containsEntry(KEY2, "ref2_init")
+				.containsEntry(KEY1, "expected1")
+				.containsEntry(KEY2, "expected2")
 				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, true)
 				.hasSize(3);
 		}
@@ -155,12 +152,15 @@ class ContextPropagationTest {
 			ContextPropagation.ContextCaptureFunction test = new ContextPropagation.ContextCaptureFunction(
 				k -> k.toString().equals(KEY2), registry);
 
+			REF1.set("not_expected");
+			REF2.set("expected");
+
 			Context ctx = test.apply(Context.empty());
 			Map<Object, Object> asMap = new HashMap<>();
 			ctx.forEach(asMap::put); //easier to assert
 
 			assertThat(asMap)
-				.containsEntry(KEY2, "ref2_init")
+				.containsEntry(KEY2, "expected")
 				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, true)
 				.hasSize(2);
 		}
@@ -349,26 +349,17 @@ class ContextPropagationTest {
 
 		@Test
 		void threadLocalRestoredInSignalListener() throws InterruptedException {
-			//FIXME this pollutes the global registry, but for now ContextRestoreSignalListener can only work with said global registry
-			//this should be fine though because now we make sure to clean REF1 and REF2 at the end of each test.
-			ContextRegistry registryToUse = ContextRegistry.getInstance();
-			registryToUse.registerThreadLocalAccessor(
-				KEY1, REF1::get, REF1::set, () -> REF1.set(null));
-			registryToUse.registerThreadLocalAccessor(
-				KEY2, REF2::get, REF2::set, () -> REF2.set(null));
-
 			REF1.set(null);
 			Context context = Context.of(KEY1, "expected");
 			List<String> list = new ArrayList<>();
 
 			SignalListener<Object> tlReadingListener = Mockito.mock(SignalListener.class, invocation -> {
-				list.add(invocation.getMethod().getName() + ": " + REF1.getAndSet(null));
+				list.add(invocation.getMethod().getName() + ": " + REF1.get());
 				return null;
 			});
 
 			ContextPropagation.ContextRestoreSignalListener<Object> listener = new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context,
-				//FIXME use local test registry once ContextRegistry.getInstance isn't hardcoded in the Listener
-				null);
+				registry);
 
 			Thread t = new Thread(() -> {
 				try {
