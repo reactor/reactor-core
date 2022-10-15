@@ -396,7 +396,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			int prefetch,
 			Function<Object[], V> combinator) {
 
-		return onAssembly(new FluxCombineLatest<T, V>(sources,
+		return onAssembly(new FluxCombineLatest<>(sources,
 				combinator,
 				Queues.get(prefetch), prefetch));
 	}
@@ -3050,7 +3050,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	public final <V> Flux<List<T>> bufferUntilChanged() {
+	public final Flux<List<T>> bufferUntilChanged() {
 		return bufferUntilChanged(identityFunction());
 	}
 
@@ -10205,7 +10205,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
 	 */
-	public final <V> Flux<Flux<T>> windowUntilChanged() {
+	public final Flux<Flux<T>> windowUntilChanged() {
 		return windowUntilChanged(identityFunction());
 	}
 
