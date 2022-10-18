@@ -39,7 +39,12 @@ import reactor.test.AutoDisposingExtension;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * @author Stephane Maldini
