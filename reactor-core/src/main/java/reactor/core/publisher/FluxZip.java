@@ -507,6 +507,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, parent.currentContext());
+				Operators.onDiscard(t, parent.currentContext());
 				return;
 			}
 			done = true;

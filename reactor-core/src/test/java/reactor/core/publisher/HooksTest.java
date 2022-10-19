@@ -556,6 +556,17 @@ public class HooksTest {
 
 		assertThat(ref).hasValue("foobar");
 
+		Hooks.onDiscard(d -> {
+			ref.set(d.toString());
+		});
+		Hooks.onDiscard(d -> {
+			ref.set(ref.get()+"bar1");
+		});
+
+		Operators.onDiscard("foo", Context.empty());
+
+		assertThat(ref).hasValue("foobar1");
+
 		Hooks.onErrorDropped(d -> {
 			ref.set(d.getMessage());
 		});
@@ -750,7 +761,7 @@ public class HooksTest {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
 				//live evaluation, error hasn't been emitted everywhere so we only have one occurrence so far
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747)");
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:758)");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[0] = ae;
@@ -761,7 +772,7 @@ public class HooksTest {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
 				//live evaluation, error hasn't been emitted everywhere so we only have two occurrences so far
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747) (observed 2 times)");
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:758) (observed 2 times)");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[1] = ae;
@@ -772,7 +783,7 @@ public class HooksTest {
 			try {
 				//live evaluation, error has been emitted everywhere so we have the three occurrences now
 				// (note that the indentation has grown by 1 due to distinct operator getting in the mix)
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747) (observed 3 times)");
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:758) (observed 3 times)");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[2] = ae;
@@ -787,7 +798,7 @@ public class HooksTest {
 			.allMatch(Objects::nonNull)
 			.containsOnly(assemblyExceptions.get(0))
 			.first(InstanceOfAssertFactories.THROWABLE)
-			.hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747) (observed 3 times)")
+			.hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:758) (observed 3 times)")
 			.hasMessageNotContainingAny("(observed 2 times)");
 	}
 

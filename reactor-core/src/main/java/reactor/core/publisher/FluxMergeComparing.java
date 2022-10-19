@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -427,6 +427,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		public void onNext(T item) {
 			if (parent.done || done) {
 				Operators.onNextDropped(item, actual().currentContext());
+				Operators.onDiscard(item, actual().currentContext());
 				return;
 			}
 			queue.offer(item);

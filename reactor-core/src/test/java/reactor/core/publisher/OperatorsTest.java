@@ -362,6 +362,22 @@ public class OperatorsTest {
 	}
 
 	@Test
+	public void onDiscardLocal() {
+		try {
+			AtomicReference<Object> hookState = new AtomicReference<>();
+			Hooks.onDiscard((value) -> hookState.set(value + " is unexpected here."));
+			Consumer<Object> localHook = hookState::set;
+			Context c = Context.of(Hooks.KEY_ON_DISCARD, localHook);
+
+			Operators.onDiscard("foo", c);
+
+			assertThat(hookState).hasValue("foo");
+		} finally {
+			Hooks.resetOnDiscard();
+		}
+	}
+
+	@Test
 	public void onOperatorErrorLocal() {
 		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
 				new IllegalStateException("boom_" + v, e);

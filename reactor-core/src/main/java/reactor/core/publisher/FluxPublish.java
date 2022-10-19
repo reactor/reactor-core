@@ -261,6 +261,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (done) {
 				if (t != null) {
 					Operators.onNextDropped(t, currentContext());
+					Operators.onDiscard(t, currentContext());
 				}
 				return;
 			}

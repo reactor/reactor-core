@@ -186,6 +186,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		public void onNext(S resource) {
 			if (resourceProvided) {
 				Operators.onNextDropped(resource, actual.currentContext());
+				Operators.onDiscard(resource, actual.currentContext());
 				return;
 			}
 			resourceProvided = true;

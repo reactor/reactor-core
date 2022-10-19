@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 			try {
 				if (value != null) {
 					Operators.onNextDropped(value, context);
+					Operators.onDiscard(value, context);
 				}
 				Operators.onErrorDropped(error, context);
 				return null;

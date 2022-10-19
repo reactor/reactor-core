@@ -147,6 +147,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		public void onNext(T t) {
 			if (state == STATE_DONE) {
 				Operators.onNextDropped(t, cachedContext);
+				Operators.onDiscard(t, cachedContext);
 				return;
 			}
 			try {

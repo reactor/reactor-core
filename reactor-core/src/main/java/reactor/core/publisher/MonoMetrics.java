@@ -120,6 +120,7 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 			if (done) {
 				recordMalformed(sequenceName, commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 			done = true;

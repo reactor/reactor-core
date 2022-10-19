@@ -105,6 +105,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			else {
 				if (done) {
 					Operators.onNextDropped(t, actual.currentContext());
+					Operators.onDiscard(t, actual.currentContext());
 					return;
 				}
 				R v;
@@ -274,6 +275,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			else {
 				if (done) {
 					Operators.onNextDropped(t, actual.currentContext());
+					Operators.onDiscard(t, actual.currentContext());
 					return;
 				}
 
@@ -304,6 +306,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return true;
 			}
 

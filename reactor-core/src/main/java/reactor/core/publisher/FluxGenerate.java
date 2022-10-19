@@ -160,6 +160,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		public void next(T t) {
 			if (terminate) {
 				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 			if (hasValue) {

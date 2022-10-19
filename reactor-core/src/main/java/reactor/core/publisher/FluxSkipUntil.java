@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,7 @@ final class FluxSkipUntil<T> extends InternalFluxOperator<T, T> {
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, ctx);
+				Operators.onDiscard(t, ctx);
 				return;
 			}
 
@@ -114,6 +115,7 @@ final class FluxSkipUntil<T> extends InternalFluxOperator<T, T> {
 		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, ctx);
+				Operators.onDiscard(t, ctx);
 				return true;
 			}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -324,7 +324,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 				else {
 					//error during TTL generation, signal != updatedSignal, aka dropped
 					if (signal.isOnNext()) {
-						Operators.onNextDropped(signal.get(), currentContext());
+						T s = signal.get();
+						Operators.onNextDropped(s, currentContext());
+						Operators.onDiscard(s, currentContext());
 					}
 					//if signal.isOnError(), avoid dropping the error. it is not really dropped but already suppressed
 					//in all cases, unless nextDropped hook throws, immediate cache clear

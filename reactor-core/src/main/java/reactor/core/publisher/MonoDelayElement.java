@@ -118,6 +118,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 			this.done = true;

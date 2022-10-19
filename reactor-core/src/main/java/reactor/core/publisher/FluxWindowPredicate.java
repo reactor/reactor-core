@@ -211,6 +211,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, ctx);
+				Operators.onDiscard(t, ctx);
 				return;
 			}
 			WindowFlux<T> g = window;

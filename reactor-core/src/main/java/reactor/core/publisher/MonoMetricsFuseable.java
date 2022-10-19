@@ -122,6 +122,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 				if (done) {
 					FluxMetrics.recordMalformed(sequenceName, commonTags, registry);
 					Operators.onNextDropped(t, actual.currentContext());
+					Operators.onDiscard(t, actual.currentContext());
 					return;
 				}
 				done = true;

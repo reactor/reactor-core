@@ -130,14 +130,14 @@ public class OnDiscardShouldNotLeakTest {
 	@BeforeEach
 	void setUp() {
 		tracker = new MemoryUtils.OffHeapDetector();
-		Hooks.onNextDropped(Tracked::safeRelease);
+		Hooks.onDiscard(Tracked::safeRelease);
 		Hooks.onErrorDropped(e -> {});
 		Hooks.onOperatorError((e, v) -> null);
 	}
 
 	@AfterEach
 	void tearDown() {
-		Hooks.resetOnNextDropped();
+		Hooks.resetOnDiscard();
 		Hooks.resetOnErrorDropped();
 		Hooks.resetOnNextError();
 		Hooks.resetOnOperatorError();

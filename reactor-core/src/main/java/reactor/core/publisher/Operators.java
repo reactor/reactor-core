@@ -435,7 +435,7 @@ public abstract class Operators {
 	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
 	 */
 	public static <T> void onDiscard(@Nullable T element, Context context) {
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
 		if (element != null && hook != null) {
 			try {
 				hook.accept(element);
@@ -469,7 +469,7 @@ public abstract class Operators {
 			return;
 		}
 
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
 		if (hook == null) {
 			queue.clear();
 			return;
@@ -526,7 +526,7 @@ public abstract class Operators {
    * @see #onDiscardQueueWithClear(Queue, Context, Function)
    */
   public static void onDiscardMultiple(Stream<?> multiple, Context context) {
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
 		if (hook != null) {
 			try {
 				multiple.filter(Objects::nonNull)
@@ -558,7 +558,7 @@ public abstract class Operators {
    */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
 		if (multiple == null) return;
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
 		if (hook != null) {
 			try {
 				if (multiple.isEmpty()) {
@@ -598,7 +598,7 @@ public abstract class Operators {
 		if (multiple == null) return;
 		if (!knownToBeFinite) return;
 
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
 		if (hook != null) {
 			try {
 				multiple.forEachRemaining(o -> {
@@ -1396,6 +1396,7 @@ public abstract class Operators {
 		//TODO let this method go through multiple contexts and use their local handlers
 		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
 		onNextDropped(t, multiSubscribersContext(multicastInners));
+		onDiscard(t, multiSubscribersContext(multicastInners));
 	}
 
 	static <T> long producedCancellable(AtomicLongFieldUpdater<T> updater, T instance, long n) {

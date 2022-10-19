@@ -152,6 +152,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		public void onNext(T t) {
 			if (this.done) {
 				Operators.onNextDropped(t, this.actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 
@@ -383,6 +384,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		public void onNext(R t) {
 			if (this.done) {
 				Operators.onNextDropped(t, this.actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 

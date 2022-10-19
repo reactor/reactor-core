@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					return;
 				case FAIL_TERMINATED:
 					Operators.onNextDropped(value, currentContext());
+					Operators.onDiscard(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
 					throw new EmissionException(emitResult,

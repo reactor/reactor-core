@@ -160,6 +160,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 			else {
 				if (done) {
 					Operators.onNextDropped(t, actual.currentContext());
+					Operators.onDiscard(t, actual.currentContext());
 					return;
 				}
 				//implementation note: this operator doesn't expect the source to be anything but a Mono
@@ -197,6 +198,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onDiscard(t, actual.currentContext());
 				return false;
 			}
 			if (actualConditional == null) {

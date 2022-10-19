@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,6 +286,28 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Override global data discard strategy which by default is no-ops.
+	 * <p>
+	 * The hook is cumulative, so calling this method several times will set up the hook
+	 * for as many consumer invocations (even if called with the same consumer instance).
+	 *
+	 * @param c the {@link Consumer} to apply to data (onNext) that is discarded
+	 */
+	public static void onDiscard(Consumer<Object> c) {
+		Objects.requireNonNull(c, "onDiscardHook");
+		log.debug("Hooking new default : onDiscard");
+
+		synchronized(log) {
+			if (onDiscardHook != null) {
+				onDiscardHook = onDiscardHook.andThen(c);
+			}
+			else {
+				onDiscardHook = c;
+			}
+		}
+	}
+
+	/**
 	 * Override global data dropped strategy which by default logs at DEBUG level.
 	 * <p>
 	 * The hook is cumulative, so calling this method several times will set up the hook
@@ -471,6 +493,16 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Reset global data discard strategy to no-ops
+	 */
+	public static void resetOnDiscard() {
+		log.debug("Reset to factory defaults : onDiscard");
+		synchronized (log) {
+			onDiscardHook = null;
+		}
+	}
+
+	/**
 	 * Reset global data dropped strategy to throwing via {@link
 	 * reactor.core.Exceptions#failWithCancel()}
 	 */
@@ -551,6 +583,7 @@ public abstract class Hooks {
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
+	static volatile Consumer<Object>            onDiscardHook;
 
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;

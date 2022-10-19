@@ -259,6 +259,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t, currentContext());
+				Operators.onDiscard(t, currentContext());
 				return;
 			}
 			T v = value;
