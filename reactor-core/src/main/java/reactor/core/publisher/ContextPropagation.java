@@ -77,7 +77,7 @@ final class ContextPropagation {
 	 * provided {@link Context}, resulting in a new {@link Context} which includes entries
 	 * captured from threadLocals by the Context-Propagation API.
 	 * <p>
-	 * Additionally, a boolean marker is added to the returned {@link Context} which can
+	 * Additionally, a marker key is added to the returned {@link Context} which can
 	 * be detected upstream by a small subset of operators in order to restore thread locals
 	 * from the context transparently.
 	 * <p>
@@ -103,7 +103,7 @@ final class ContextPropagation {
 	 * by the Context-Propagation API to filter which entries should be captured in the
 	 * first place.
 	 * <p>
-	 * Additionally, a boolean marker is added to the returned {@link Context} which can
+	 * Additionally, a marker key is added to the returned {@link Context} which can
 	 * be detected upstream by a small subset of operators in order to restore thread locals
 	 * from the context transparently.
 	 * <p>
@@ -151,7 +151,7 @@ final class ContextPropagation {
 		public Context apply(Context target) {
 			return ContextSnapshot.captureAllUsing(capturePredicate, this.registry)
 				.updateContext(target)
-				.put(CAPTURED_CONTEXT_MARKER, true);
+				.put(CAPTURED_CONTEXT_MARKER, "");
 		}
 	}
 

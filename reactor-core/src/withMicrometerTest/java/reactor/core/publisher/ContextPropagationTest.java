@@ -150,7 +150,7 @@ class ContextPropagationTest {
 			assertThat(asMap)
 				.containsEntry(KEY1, "expected1")
 				.containsEntry(KEY2, "expected2")
-				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, true)
+				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, "")
 				.hasSize(3);
 		}
 
@@ -168,7 +168,7 @@ class ContextPropagationTest {
 
 			assertThat(asMap)
 				.containsEntry(KEY2, "expected")
-				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, true)
+				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, "")
 				.hasSize(2);
 		}
 
