@@ -185,6 +185,7 @@ public interface Scheduler extends Disposable {
 	 * or {@link #disposeGracefully()}.
 	 */
 	default void init() {
+		start();
 	}
 
 	/**

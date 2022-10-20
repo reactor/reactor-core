@@ -790,11 +790,6 @@ public class SchedulersTest {
 			public void start() {
 				throw new IllegalStateException("start");
 			}
-
-			@Override
-			public void init() {
-				throw new IllegalStateException("init");
-			}
 		};
 
 		Schedulers.CachedScheduler cached = new Schedulers.CachedScheduler("cached", mock);
@@ -826,7 +821,10 @@ public class SchedulersTest {
 
 		assertThatExceptionOfType(IllegalStateException.class)
 				.isThrownBy(cached::init)
-				.withMessage("init");
+//				.withMessage("init");
+				// TODO: in 3.6.x uncomment the above and add implementation to the mock.
+				//       To ease the transition, default init() delegates to start().
+				.withMessage("start");
 
 		assertThatExceptionOfType(IllegalStateException.class)
 				.isThrownBy(cached::createWorker)
