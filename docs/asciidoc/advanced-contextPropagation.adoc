@@ -65,8 +65,7 @@ Mono.delay(Duration.ofSeconds(1))
   .doOnNext(v -> System.out.println(TL.get()))
   //inside the handler however, TL _is_ restored
   .handle((v, sink) -> sink.next("handled delayed TL=" + TL.get()))
-)
-.contextCapture()
-.block(); // prints "null" and returns "handled delayed TL=HELLO"
+  .contextCapture()
+  .block(); // prints "null" and returns "handled delayed TL=HELLO"
 ----
 ====

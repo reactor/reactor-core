@@ -2230,16 +2230,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * If <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
 	 * is on the classpath, this is a convenience shortcut to capture thread local values during the
-	 * subscription phase and put them in the {@link Context} that is visible upstream of this operator.
+	 * subscription phase and put them in the {@link Context} that is visible upstream of this operator,
+	 * alongside a boolean marker indicating that context capture occurred.
 	 * <p>
 	 * As a result this operator should generally be used as close as possible to the end of
 	 * the chain / subscription point.
+	 * If the marker is encountered upstream, a small subset of operators will automatically restore the
+	 * context snapshot ({@link #handle(BiConsumer) handle}, {@link #tap(SignalListenerFactory) tap}).
 	 * <p>
 	 * If context-propagation is not available at runtime, this operator simply returns the current {@link Mono}
 	 * instance.
 	 *
 	 * @return a new {@link Flux} where context-propagation API has been used to capture entries and
 	 * inject them into the {@link Context}
+	 * @see #handle(BiConsumer)
+	 * @see #tap(SignalListenerFactory)
 	 */
 	public final Mono<T> contextCapture() {
 		if (!ContextPropagation.isContextPropagationAvailable()) {

@@ -76,6 +76,14 @@ final class ContextPropagation {
 	 * Create a support function that takes a snapshot of thread locals and merges them with the
 	 * provided {@link Context}, resulting in a new {@link Context} which includes entries
 	 * captured from threadLocals by the Context-Propagation API.
+	 * <p>
+	 * Additionally, a boolean marker is added to the returned {@link Context} which can
+	 * be detected upstream by a small subset of operators in order to restore thread locals
+	 * from the context transparently.
+	 * <p>
+	 * This variant uses the implicit global {@code ContextRegistry} and captures from all
+	 * available {@code ThreadLocalAccessors}. It is the same variant backing {@link Flux#contextCapture()}
+	 * and {@link Mono#contextCapture()}.
 	 *
 	 * @return the {@link Context} augmented with captured entries
 	 */
