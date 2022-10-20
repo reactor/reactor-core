@@ -87,7 +87,7 @@ final class ContextPropagation {
 	 *
 	 * @return the {@link Context} augmented with captured entries
 	 */
-	public static Function<Context, Context> contextCapture() {
+	static Function<Context, Context> contextCapture() {
 		if (!isContextPropagationAvailable) {
 			return NO_OP;
 		}
@@ -102,26 +102,33 @@ final class ContextPropagation {
 	 * The provided {@link Predicate} is used on keys associated to said thread locals
 	 * by the Context-Propagation API to filter which entries should be captured in the
 	 * first place.
+	 * <p>
+	 * Additionally, a boolean marker is added to the returned {@link Context} which can
+	 * be detected upstream by a small subset of operators in order to restore thread locals
+	 * from the context transparently.
+	 * <p>
+	 * This variant uses the implicit global {@code ContextRegistry} and captures only from
+	 * available {@code ThreadLocalAccessors} that match the {@link Predicate}.
 	 *
 	 * @param captureKeyPredicate a {@link Predicate} used on keys to determine if each entry
 	 * should be injected into the new {@link Context}
 	 * @return a {@link Function} augmenting {@link Context} with captured entries
 	 */
-	public static Function<Context, Context> contextCapture(Predicate<Object> captureKeyPredicate) {
+	static Function<Context, Context> contextCapture(Predicate<Object> captureKeyPredicate) {
 		if (!isContextPropagationAvailable) {
 			return NO_OP;
 		}
 		return new ContextCaptureFunction(captureKeyPredicate, null);
 	}
 
-	public static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, CoreSubscriber<? super R> actual) {
+	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, CoreSubscriber<? super R> actual) {
 		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
 			return handler;
 		}
 		return new ContextRestoreHandleConsumer<>(handler, ContextRegistry.getInstance(), actual.currentContext());
 	}
 
-	public static <T> SignalListener<T> contextRestoringSignalListener(final SignalListener<T> original,
+	static <T> SignalListener<T> contextRestoringSignalListener(final SignalListener<T> original,
 																	   CoreSubscriber<? super T> actual) {
 		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
 			return original;
