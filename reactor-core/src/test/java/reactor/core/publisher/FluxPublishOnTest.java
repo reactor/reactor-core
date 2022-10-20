@@ -974,15 +974,18 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			    .publishOn(fromExecutor(executor))
 			    .subscribe(assertSubscriber);
 
+			//force a hiccup so that the shutdown doesn't occur before any scheduling
+			Thread.sleep(10);
 			executor.shutdownNow();
 
 			assertSubscriber.assertNoValues()
-			                .assertNoError()
 			                .assertNotComplete();
 
 			hookLatch.await();
 
-			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
+			assertThat(throwableInOnOperatorError.get())
+				.isInstanceOf(RejectedExecutionException.class)
+				.hasMessage("Scheduler unavailable");
 			assertThat(dataInOnOperatorError).hasValue(0);
 		}
 		finally {
