@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.assertj.core.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -109,7 +110,7 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test
-	@org.junit.jupiter.api.Disabled("Should be enabled in 3.5.0")
+	@Disabled("Should be enabled in 3.5.0")
 	void nonInitializedIsNotDisposed() {
 		Scheduler s = freshScheduler();
 		assertThat(s.isDisposed()).isFalse();
