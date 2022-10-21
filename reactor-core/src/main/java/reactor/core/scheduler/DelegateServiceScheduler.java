@@ -73,7 +73,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	ScheduledExecutorService getOrCreate() {
 		SchedulerState<ScheduledExecutorService> s = state;
 		if (s == null) {
-			start();
+			init();
 			s = state;
 			if (s == null) {
 				throw new IllegalStateException("executor is null after implicit start()");
@@ -113,6 +113,18 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	public void start() {
 		STATE.compareAndSet(this, null,
 				SchedulerState.init(Schedulers.decorateExecutorService(this, original)));
+	}
+
+	@Override
+	public void init() {
+		if (!STATE.compareAndSet(this, null,
+				SchedulerState.init(Schedulers.decorateExecutorService(this, original)))) {
+			if (isDisposed()) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+		}
 	}
 
 	@Override

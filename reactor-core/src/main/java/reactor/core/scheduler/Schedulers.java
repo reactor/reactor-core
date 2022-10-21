@@ -63,7 +63,7 @@ import static reactor.core.Exceptions.unwrap;
  * <p>
  * Factories prefixed with {@code new} (eg. {@link #newBoundedElastic(int, int, String)} return a new instance of their flavor of {@link Scheduler},
  * while other factories like {@link #boundedElastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
- * All instances are returned in a {@link Scheduler#start() started} state.
+ * All instances are returned in a {@link Scheduler#init() initialized} state.
  *
  * @author Stephane Maldini
  */
@@ -140,7 +140,7 @@ public abstract class Schedulers {
 			return fromExecutorService((ExecutorService) executor);
 		}
 		final ExecutorScheduler scheduler = new ExecutorScheduler(executor, trampoline);
-		scheduler.start();
+		scheduler.init();
 		return scheduler;
 	}
 
@@ -170,7 +170,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler fromExecutorService(ExecutorService executorService, String executorName) {
 		final DelegateServiceScheduler scheduler = new DelegateServiceScheduler(executorName, executorService);
-		scheduler.start();
+		scheduler.init();
 		return scheduler;
 	}
 
@@ -183,7 +183,6 @@ public abstract class Schedulers {
 	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
 	 * factory to set a different value.
 	 * <p>
-	 * This scheduler is not restartable.
 	 *
 	 * @return default instance of a {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the threads, reusing them once the Workers have been shut
@@ -273,7 +272,6 @@ public abstract class Schedulers {
 	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
 	 * factory to set a different value.
 	 * <p>
-	 * This scheduler is not restartable.
 	 *
 	 * @param name Thread prefix
 	 *
@@ -293,7 +291,6 @@ public abstract class Schedulers {
 	 * <p>
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
-	 * This scheduler is not restartable.
 	 *
 	 * @param name Thread prefix
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
@@ -314,7 +311,6 @@ public abstract class Schedulers {
 	 * <p>
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
-	 * This scheduler is not restartable.
 	 *
 	 * @param name Thread prefix
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
@@ -339,7 +335,6 @@ public abstract class Schedulers {
 	 * <p>
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
-	 * This scheduler is not restartable.
 	 *
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
 	 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
@@ -352,7 +347,7 @@ public abstract class Schedulers {
 	@Deprecated
 	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 		final Scheduler fromFactory = factory.newElastic(ttlSeconds, threadFactory);
-		fromFactory.start();
+		fromFactory.init();
 		return fromFactory;
 	}
 
@@ -377,7 +372,7 @@ public abstract class Schedulers {
 	 * tasks could be delayed due to two workers sharing the same backing thread and submitting long-running tasks,
 	 * despite another backing thread becoming idle in the meantime.
 	 * <p>
-	 * This scheduler is restartable. Backing threads are user threads, so they will prevent the JVM
+	 * Threads backing this scheduler are user threads, so they will prevent the JVM
 	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
 	 * scheduler has been {@link Scheduler#dispose() disposed}.
 	 *
@@ -412,7 +407,7 @@ public abstract class Schedulers {
 	 * tasks could be delayed due to two workers sharing the same backing thread and submitting long-running tasks,
 	 * despite another backing thread becoming idle in the meantime.
 	 * <p>
-	 * This scheduler is restartable. Backing threads are user threads, so they will prevent the JVM
+	 * Threads backing this scheduler are user threads, so they will prevent the JVM
 	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
 	 * scheduler has been {@link Scheduler#dispose() disposed}.
 	 *
@@ -448,7 +443,7 @@ public abstract class Schedulers {
 	 * tasks could be delayed due to two workers sharing the same backing thread and submitting long-running tasks,
 	 * despite another backing thread becoming idle in the meantime.
 	 * <p>
-	 * This scheduler is restartable. Depending on the {@code daemon} parameter, backing threads can be
+	 * Depending on the {@code daemon} parameter, threads backing this scheduler can be
 	 * user threads or daemon threads. Note that user threads will prevent the JVM from exiting until their
 	 * worker has been disposed AND they've been evicted by TTL, or the whole scheduler has been
 	 * {@link Scheduler#dispose() disposed}.
@@ -489,7 +484,7 @@ public abstract class Schedulers {
 	 * tasks could be delayed due to two workers sharing the same backing thread and submitting long-running tasks,
 	 * despite another backing thread becoming idle in the meantime.
 	 * <p>
-	 * This scheduler is restartable. Backing threads are created by the provided {@link ThreadFactory},
+	 * Threads backing this scheduler are created by the provided {@link ThreadFactory},
 	 * which can decide whether to create user threads or daemon threads. Note that user threads
 	 * will prevent the JVM from exiting until their worker has been disposed AND they've been evicted by TTL,
 	 * or the whole scheduler has been {@link Scheduler#dispose() disposed}.
@@ -507,7 +502,7 @@ public abstract class Schedulers {
 				queuedTaskCap,
 				threadFactory,
 				ttlSeconds);
-		fromFactory.start();
+		fromFactory.init();
 		return fromFactory;
 	}
 
@@ -572,7 +567,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
 		final Scheduler fromFactory = factory.newParallel(parallelism, threadFactory);
-		fromFactory.start();
+		fromFactory.init();
 		return fromFactory;
 	}
 
@@ -616,7 +611,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newSingle(ThreadFactory threadFactory) {
 		final Scheduler fromFactory = factory.newSingle(threadFactory);
-		fromFactory.start();
+		fromFactory.init();
 		return fromFactory;
 	}
 
@@ -1063,8 +1058,8 @@ public abstract class Schedulers {
 	 * Wraps a single {@link reactor.core.scheduler.Scheduler.Worker} from some other
 	 * {@link Scheduler} and provides {@link reactor.core.scheduler.Scheduler.Worker}
 	 * services on top of it. Unlike with other factory methods in this class, the delegate
-	 * is assumed to be {@link Scheduler#start() started} and won't be implicitly started
-	 * by this method.
+	 * is assumed to be {@link Scheduler#init() initialized} and won't be implicitly
+	 * initialized by this method.
 	 * <p>
 	 * Use the {@link Scheduler#dispose()} to release the wrapped worker.
 	 *
@@ -1334,6 +1329,11 @@ public abstract class Schedulers {
 		@Override
 		public void start() {
 			cached.start();
+		}
+
+		@Override
+		public void init() {
+			cached.init();
 		}
 
 		@Override

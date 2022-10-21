@@ -66,15 +66,6 @@ public class SchedulersTest {
 		final Scheduler single         = Schedulers.Factory.super.newSingle(Thread::new);
 		final Scheduler parallel       = Schedulers.Factory.super.newParallel(1, Thread::new);
 
-		TestSchedulers(boolean disposeOnInit) {
-			if (disposeOnInit) {
-				elastic.dispose();
-				boundedElastic.dispose();
-				single.dispose();
-				parallel.dispose();
-			}
-		}
-
 		@Override
 		@SuppressWarnings("deprecation") // to be removed with newElastic() in 3.5
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
@@ -537,7 +528,7 @@ public class SchedulersTest {
 	@Test
 	public void testOverride() {
 
-		TestSchedulers ts = new TestSchedulers(true);
+		TestSchedulers ts = new TestSchedulers();
 		Schedulers.setFactory(ts);
 
 		assertThat(Schedulers.newSingle("unused")).isEqualTo(ts.single);
@@ -558,7 +549,7 @@ public class SchedulersTest {
 	@Test
 	public void testShutdownOldOnSetFactory() {
 		Schedulers.Factory ts1 = new Schedulers.Factory() { };
-		Schedulers.Factory ts2 = new TestSchedulers(false);
+		Schedulers.Factory ts2 = new TestSchedulers();
 		Schedulers.setFactory(ts1);
 		Scheduler cachedTimerOld = Schedulers.single();
 		Scheduler standaloneTimer = Schedulers.newSingle("standaloneTimer");
@@ -571,7 +562,6 @@ public class SchedulersTest {
 		Schedulers.setFactory(ts2);
 		Scheduler cachedTimerNew = Schedulers.newSingle("unused");
 
-		assertThat(Schedulers.newSingle("unused")).isEqualTo(cachedTimerNew);
 		assertThat(cachedTimerOld).isNotSameAs(cachedTimerNew);
 		//assert that the old factory"s cached scheduler was shut down
 		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> cachedTimerOld.schedule(() -> { }));
@@ -800,7 +790,6 @@ public class SchedulersTest {
 			public void start() {
 				throw new IllegalStateException("start");
 			}
-
 		};
 
 		Schedulers.CachedScheduler cached = new Schedulers.CachedScheduler("cached", mock);
@@ -829,6 +818,13 @@ public class SchedulersTest {
 		assertThatExceptionOfType(IllegalStateException.class)
 				.isThrownBy(cached::start)
 	            .withMessage("start");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(cached::init)
+//				.withMessage("init");
+				// TODO: in 3.6.x uncomment the above and add implementation to the mock.
+				//       To ease the transition, default init() delegates to start().
+				.withMessage("start");
 
 		assertThatExceptionOfType(IllegalStateException.class)
 				.isThrownBy(cached::createWorker)
@@ -1114,6 +1110,7 @@ public class SchedulersTest {
 		               .block();
 
 		s.dispose();
+		// TODO: in 3.6.x: remove restart capability and this validation
 		s.start();
 
 		Thread t2 = Mono.fromCallable(Thread::currentThread)

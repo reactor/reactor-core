@@ -33,6 +33,7 @@ public abstract class SchedulersStressTest {
 
 	private static void restart(Scheduler scheduler) {
 		scheduler.disposeGracefully().block(Duration.ofMillis(100));
+		// TODO: in 3.6.x: remove restart capability and this validation
 		scheduler.start();
 	}
 
@@ -58,7 +59,7 @@ public abstract class SchedulersStressTest {
 		private final SingleScheduler scheduler = new SingleScheduler(Thread::new);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -89,7 +90,7 @@ public abstract class SchedulersStressTest {
 				new ParallelScheduler(4, Thread::new);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -119,7 +120,7 @@ public abstract class SchedulersStressTest {
 		private final BoundedElasticScheduler scheduler =
 				new BoundedElasticScheduler(1, 1, Thread::new, 5);
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -151,7 +152,7 @@ public abstract class SchedulersStressTest {
 		private final SingleScheduler scheduler = new SingleScheduler(Thread::new);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -187,7 +188,7 @@ public abstract class SchedulersStressTest {
 				new ParallelScheduler(10, Thread::new);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -223,7 +224,7 @@ public abstract class SchedulersStressTest {
 				new BoundedElasticScheduler(4, 4, Thread::new, 5);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -258,7 +259,7 @@ public abstract class SchedulersStressTest {
 		private final SingleScheduler scheduler = new SingleScheduler(Thread::new);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -294,7 +295,7 @@ public abstract class SchedulersStressTest {
 				new ParallelScheduler(10, Thread::new);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor
@@ -331,7 +332,7 @@ public abstract class SchedulersStressTest {
 				new BoundedElasticScheduler(4, 4, Thread::new, 5);
 
 		{
-			scheduler.start();
+			scheduler.init();
 		}
 
 		@Actor

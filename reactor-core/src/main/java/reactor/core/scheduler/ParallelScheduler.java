@@ -90,6 +90,27 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	}
 
 	@Override
+	public void init() {
+		SchedulerState<ScheduledExecutorService[]> b =
+				SchedulerState.init(new ScheduledExecutorService[n]);
+
+		for (int i = 0; i < n; i++) {
+			b.currentResource[i] = Schedulers.decorateExecutorService(this, this.get());
+		}
+
+		if (!STATE.compareAndSet(this, null, b)) {
+			for (ScheduledExecutorService exec : b.currentResource) {
+				exec.shutdownNow();
+			}
+			if (isDisposed()) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+		}
+	}
+
+	@Override
 	public void start() {
 		SchedulerState<ScheduledExecutorService[]> a = this.state;
 
@@ -180,10 +201,10 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	ScheduledExecutorService pick() {
 		SchedulerState<ScheduledExecutorService[]> a = state;
 		if (a == null) {
-			start();
+			init();
 			a = state;
 			if (a == null) {
-				throw new IllegalStateException("executors uninitialized after implicit start()");
+				throw new IllegalStateException("executors uninitialized after implicit init()");
 			}
 		}
 		if (a.currentResource != SHUTDOWN) {

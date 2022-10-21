@@ -44,6 +44,14 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.factory.newSingle(new ReactorThreadFactory(
+				"SingleSchedulerTest", SingleScheduler.COUNTER, false, true,
+				Schedulers::defaultUncaughtException
+		));
+	}
+
+	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
 	}
@@ -211,6 +219,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		SchedulerState<ScheduledExecutorService> stateBefore = ((SingleScheduler) s).state;
 		assertThat(stateBefore.currentResource).as("SHUTDOWN").isSameAs(TERMINATED);
 
+		// TODO: in 3.6.x: remove restart capability and this validation
 		s.start();
 
 		assertThat(((SingleScheduler) s).state.currentResource)
