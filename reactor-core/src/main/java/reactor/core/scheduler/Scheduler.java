@@ -180,7 +180,7 @@ public interface Scheduler extends Disposable {
 	 * Instructs this Scheduler to prepare itself for running tasks
 	 * directly or through its {@link Worker}s.
 	 *
-	 * <p>Implementations can throw an exception if this method is called
+	 * <p>Implementations are encouraged to throw an exception if this method is called
 	 * after the scheduler has been disposed via {@link #dispose()}
 	 * or {@link #disposeGracefully()}.
 	 */
