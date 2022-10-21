@@ -49,6 +49,14 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.factory.newParallel(Schedulers.DEFAULT_POOL_SIZE,
+				new ReactorThreadFactory("ParallelSchedulerTest",
+						ParallelScheduler.COUNTER, false,
+				true, Schedulers::defaultUncaughtException));
+	}
+
+	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
 	}

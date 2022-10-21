@@ -70,6 +70,11 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 		return Schedulers.fromExecutor(Runnable::run);
 	}
 
+	@Override
+	protected Scheduler freshScheduler() {
+		return new ExecutorScheduler(Runnable::run, false);
+	}
+
 	@Test
 	public void directAndWorkerTimeSchedulingRejected() {
 		Scheduler scheduler = scheduler();

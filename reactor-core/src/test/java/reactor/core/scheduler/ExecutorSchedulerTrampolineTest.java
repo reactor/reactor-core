@@ -44,6 +44,11 @@ public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return new ExecutorScheduler(Runnable::run, true);
+	}
+
+	@Override
 	protected boolean shouldCheckDirectTimeScheduling() {
 		return false;
 	}

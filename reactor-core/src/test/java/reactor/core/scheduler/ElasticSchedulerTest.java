@@ -54,6 +54,16 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return new ElasticScheduler(
+				new ReactorThreadFactory("ElasticSchedulerTest",
+				ElasticScheduler.COUNTER, false, false,
+				Schedulers::defaultUncaughtException),
+				ElasticScheduler.DEFAULT_TTL_SECONDS
+		);
+	}
+
+	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
 	}

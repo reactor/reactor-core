@@ -39,6 +39,11 @@ public class ImmediateSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.immediate();
+	}
+
+	@Override
 	protected boolean shouldCheckInit() {
 		return false;
 	}

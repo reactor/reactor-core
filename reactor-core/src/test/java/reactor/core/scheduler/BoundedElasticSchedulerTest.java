@@ -143,12 +143,18 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 								false,
 								Schedulers::defaultUncaughtException),
 						10));
-		scheduler.init();
 		return scheduler;
 	}
 
 	@Override
 	protected BoundedElasticScheduler scheduler() {
+		BoundedElasticScheduler s = scheduler(4);
+		s.init();
+		return s;
+	}
+
+	@Override
+	protected Scheduler freshScheduler() {
 		return scheduler(4);
 	}
 

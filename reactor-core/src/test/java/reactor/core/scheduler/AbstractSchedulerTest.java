@@ -59,6 +59,12 @@ public abstract class AbstractSchedulerTest {
 	 */
 	protected abstract Scheduler scheduler();
 
+	/**
+	 * @return the {@link Scheduler} to be tested, not yet {@link Scheduler#init()
+	 * initialized}
+	 */
+	protected abstract Scheduler freshScheduler();
+
 	protected boolean shouldCheckInit() {
 		return true;
 	}
@@ -103,12 +109,16 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test
-	void cannotInitTwice() {
-		Assumptions.assumeThat(shouldCheckInit())
-		           .as("scheduler supports restart prevention").isTrue();
+	@org.junit.jupiter.api.Disabled("Should be enabled in 3.5.0")
+	void nonInitializedIsNotDisposed() {
+		Scheduler s = freshScheduler();
+		assertThat(s.isDisposed()).isFalse();
+	}
 
+	@Test
+	void canInitializeMultipleTimesNonDisposed() {
 		Scheduler s = scheduler();
-		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(s::init);
+		assertThatNoException().isThrownBy(s::init);
 	}
 
 	@ParameterizedTestWithName

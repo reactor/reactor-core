@@ -44,6 +44,14 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.factory.newSingle(new ReactorThreadFactory(
+				"SingleSchedulerTest", SingleScheduler.COUNTER, false, true,
+				Schedulers::defaultUncaughtException
+		));
+	}
+
+	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
 	}

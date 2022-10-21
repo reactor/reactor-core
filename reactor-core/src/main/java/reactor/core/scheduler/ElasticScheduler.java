@@ -105,9 +105,10 @@ final class ElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void init() {
-		if (evictor != null || !shutdown) {
-			throw new IllegalStateException("Failed to initialize Scheduler. " +
-					"Initialization is only possible on a fresh instance.");
+		if (evictor != null && isDisposed()) {
+			throw new IllegalStateException(
+					"Initializing a disposed scheduler is not permitted"
+			);
 		}
 
 		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);

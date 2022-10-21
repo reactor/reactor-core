@@ -44,6 +44,11 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
+		return freshScheduler();
+	}
+
+	@Override
+	protected Scheduler freshScheduler() {
 		return Schedulers.fromExecutor(Executors.newSingleThreadScheduledExecutor());
 	}
 

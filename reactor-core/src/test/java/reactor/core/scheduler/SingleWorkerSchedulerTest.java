@@ -32,6 +32,11 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.single(Schedulers.immediate());
+	}
+
+	@Override
 	protected boolean shouldCheckInit() {
 		return false;
 	}

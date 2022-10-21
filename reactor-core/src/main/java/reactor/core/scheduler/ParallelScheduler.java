@@ -102,8 +102,11 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 			for (ScheduledExecutorService exec : b.currentResource) {
 				exec.shutdownNow();
 			}
-			throw new IllegalStateException("Failed to initialize Scheduler. " +
-					"Initialization is only possible on a fresh instance.");
+			if (isDisposed()) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
 		}
 	}
 

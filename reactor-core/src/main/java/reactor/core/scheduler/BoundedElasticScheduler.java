@@ -164,8 +164,14 @@ final class BoundedElasticScheduler implements Scheduler,
 			}
 		} else {
 			b.currentResource.evictor.shutdownNow();
-			throw new IllegalStateException("Failed to initialize Scheduler. " +
-					"Initialization is only possible on a fresh instance.");
+			// Currently, isDisposed() is true for non-initialized state, but that will
+			// be fixed in 3.5.0. At this stage we know however that the state is no
+			// longer INIT, so isDisposed() actually means disposed state.
+			if (isDisposed()) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
 		}
 	}
 

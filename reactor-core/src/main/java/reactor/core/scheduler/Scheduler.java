@@ -170,6 +170,7 @@ public interface Scheduler extends Disposable {
 	 * Some implementations allowed restarting a Scheduler, while others did not. One
 	 * of the issues with restarting is that checking
 	 * {@link #isDisposed() the disposed state} is unreliable in concurrent scenarios.
+	 * @see #init()
 	 */
 	@Deprecated
 	default void start() {
@@ -179,9 +180,8 @@ public interface Scheduler extends Disposable {
 	 * Instructs this Scheduler to prepare itself for running tasks
 	 * directly or through its {@link Worker}s.
 	 *
-	 * <p><strong>It should be called only once</strong>. Implementations are free to
-	 * throw an exception if this method is called again either during the runtime of the
-	 * scheduler or after it has been disposed via {@link #dispose()}
+	 * <p>Implementations can throw an exception if this method is called
+	 * after the scheduler has been disposed via {@link #dispose()}
 	 * or {@link #disposeGracefully()}.
 	 */
 	default void init() {

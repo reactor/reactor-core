@@ -45,4 +45,12 @@ public class SingleWorkerAroundTimerSchedulerTest extends AbstractSchedulerTest 
 	protected Scheduler scheduler() {
 		return Schedulers.single(Schedulers.newSingle("singleWorkerTimer"));
 	}
+
+	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.single(Schedulers.factory.newSingle(new ReactorThreadFactory(
+				"SingleSchedulerTest", SingleScheduler.COUNTER, false, true,
+				Schedulers::defaultUncaughtException
+		)));
+	}
 }
