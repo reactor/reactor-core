@@ -144,7 +144,9 @@ final class BoundedElasticScheduler implements Scheduler,
 
 	@Override
 	public boolean isDisposed() {
-		return state.currentResource == SHUTDOWN;
+		// we only consider disposed as actually shutdown
+		SchedulerState<BoundedServices> current = this.state;
+		return current != INIT && current.currentResource == SHUTDOWN;
 	}
 
 	@Override

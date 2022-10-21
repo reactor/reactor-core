@@ -110,7 +110,6 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test
-	@Disabled("Should be enabled in 3.5.0")
 	void nonInitializedIsNotDisposed() {
 		Scheduler s = freshScheduler();
 		assertThat(s.isDisposed()).isFalse();
