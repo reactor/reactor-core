@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -56,6 +57,9 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 			Operators.error(actual, generatorError);
 			return null;
 		}
+		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
+		// (only if ContextPropagation.isContextPropagationAvailable() is true)
+		signalListener = ContextPropagation.contextRestoringSignalListener(signalListener, actual);
 
 		try {
 			signalListener.doFirst();

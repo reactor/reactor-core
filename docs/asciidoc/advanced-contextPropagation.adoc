@@ -9,7 +9,8 @@ This library is intended as a means to easily adapt between various implementati
 It implements the SPI and is loaded via `java.util.ServiceLoader`.
 No user action is required, other than having a dependency on both reactor-core and `io.micrometer:context-propagation`. The `ReactorContextAccessor` class is public but shouldn't generally be accessed by user code.
 
-On top of that, Reactor-Core 3.5.0 also introduces the `contextCapture` operator that transparently deals with `ContextSnapshot`s if the library is available at runtime, for users' convenience.
+On top of that, Reactor-Core 3.5.0 also modifies the behavior of a couple key operators as well as introduces the `contextCapture` operator
+to transparently deal with `ContextSnapshot`s if the library is available at runtime.
 
 == `contextCapture` Operator
 This operator can be used when one needs to capture `ThreadLocal` value(s) at subscription time and reflect these values in the Reactor `Context` for the benefit of upstream operators.
@@ -36,5 +37,35 @@ Mono.deferContextual(ctx ->
 )
 .contextCapture()
 .block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null"
+----
+====
+
+== Operators that transparently restore a snapshot: `handle` and `tap`
+When using `contextCapture()` a marker is added to the Reactor `Context` in which the snapshot has been captured.
+This is detected by `Flux` and `Mono` variants of `handle` and `tap`, which restore `ThreadLocal`s from that snapshot transparently.
+
+These operators will ensure restoration is performed around the user-provided code, respectively:
+ - `handle` will wrap the `BiConsumer` in one which restores `ThreadLocal`s
+ - `tap` variants will wrap the `SignalListener` into one that has the same kind of wrapping around each method (this includes the `addToContext` method)
+
+The intent is to have a minimalistic set of operators transparently perform restoration.
+As a result we chose operators with rather general and broad applications (one with transformative capabilities, one with side-effect capabilities)
+
+====
+[source,java]
+----
+//assuming TL is known to Context-Propagation.
+static final ThreadLocal<String> TL = new ThreadLocal<>();
+
+//in the main thread, TL is set to "HELLO"
+TL.set("HELLO");
+
+Mono.delay(Duration.ofSeconds(1))
+  //we're now in another thread, TL is not set yet
+  .doOnNext(v -> System.out.println(TL.get()))
+  //inside the handler however, TL _is_ restored
+  .handle((v, sink) -> sink.next("handled delayed TL=" + TL.get()))
+  .contextCapture()
+  .block(); // prints "null" and returns "handled delayed TL=HELLO"
 ----
 ====
