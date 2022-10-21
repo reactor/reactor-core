@@ -49,6 +49,14 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected Scheduler freshScheduler() {
+		return Schedulers.factory.newParallel(Schedulers.DEFAULT_POOL_SIZE,
+				new ReactorThreadFactory("ParallelSchedulerTest",
+						ParallelScheduler.COUNTER, false,
+				true, Schedulers::defaultUncaughtException));
+	}
+
+	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
 	}
@@ -259,6 +267,7 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		SchedulerState<ScheduledExecutorService[]> stateBefore = ((ParallelScheduler) s).state;
 		assertThat(stateBefore.currentResource).as("SHUTDOWN").isSameAs(ParallelScheduler.SHUTDOWN);
 
+		// TODO: in 3.6.x: remove restart capability and this validation
 		s.start();
 
 		assertThat(((ParallelScheduler) s).state.currentResource)

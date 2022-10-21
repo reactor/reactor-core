@@ -161,7 +161,6 @@ public class OnDiscardShouldNotLeakTest {
 
 	private void installScheduler(String description, int size) {
 		scheduler = Schedulers.newParallel(description + "DiscardScheduler", size);
-		scheduler.start();
 	}
 
 	@BeforeEach

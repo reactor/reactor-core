@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,11 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
+	protected boolean shouldCheckInit() {
+		return false;
+	}
+
+	@Override
 	protected boolean shouldCheckDisposeTask() {
 		return false;
 	}
@@ -63,6 +68,11 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected Scheduler scheduler() {
 		return Schedulers.fromExecutor(Runnable::run);
+	}
+
+	@Override
+	protected Scheduler freshScheduler() {
+		return new ExecutorScheduler(Runnable::run, false);
 	}
 
 	@Test

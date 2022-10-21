@@ -54,8 +54,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 					SingleScheduler.class, SchedulerState.class, "state"
 			);
 
+	private static final SchedulerState<ScheduledExecutorService> INIT =
+			SchedulerState.init(TERMINATED);
+
 	SingleScheduler(ThreadFactory factory) {
-		this.state = SchedulerState.init(TERMINATED);
+		this.state = INIT;
 		this.factory = factory;
 	}
 
@@ -76,6 +79,25 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		// we only consider disposed as actually shutdown
 		SchedulerState<ScheduledExecutorService> current = state;
 		return current != null && current.currentResource == TERMINATED;
+	}
+
+	@Override
+	public void init() {
+		SchedulerState<ScheduledExecutorService> b = SchedulerState.init(
+				Schedulers.decorateExecutorService(this, this.get())
+		);
+
+		if (!STATE.compareAndSet(this, INIT, b)) {
+			b.currentResource.shutdownNow();
+			// Currently, isDisposed() is true for non-initialized state, but that will
+			// be fixed in 3.5.0. At this stage we know however that the state is no
+			// longer INIT, so isDisposed() actually means disposed state.
+			if (isDisposed()) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+		}
 	}
 
 	@Override
