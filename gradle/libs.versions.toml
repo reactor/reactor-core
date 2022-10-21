@@ -6,7 +6,7 @@ baselinePerfExtra = "3.4.8"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.17"
+bytebuddy = "1.12.18"
 jmh = "1.35"
 junit = "5.9.1"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
@@ -40,7 +40,7 @@ micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator",
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
 micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-RC1"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
-mockito = "org.mockito:mockito-core:4.8.0"
+mockito = "org.mockito:mockito-core:4.8.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
