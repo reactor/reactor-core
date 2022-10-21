@@ -78,7 +78,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	public boolean isDisposed() {
 		// we only consider disposed as actually shutdown
 		SchedulerState<ScheduledExecutorService> current = state;
-		return current != null && current.currentResource == TERMINATED;
+		return current != INIT && current.currentResource == TERMINATED;
 	}
 
 	@Override
