@@ -1776,7 +1776,6 @@ public abstract class Operators {
 
 		@Override
 		public final void clear() {
-			STATE.lazySet(this, FUSED_ASYNC_CONSUMED);
 			this.value = null;
 		}
 
@@ -1790,18 +1789,6 @@ public abstract class Operators {
 		public final void complete(@Nullable O v) {
 			for (; ; ) {
 				int state = this.state;
-				if (state == FUSED_ASYNC_EMPTY) {
-					setValue(v);
-					//sync memory since setValue is non volatile
-					if (STATE.compareAndSet(this, FUSED_ASYNC_EMPTY, FUSED_ASYNC_READY)) {
-						Subscriber<? super O> a = actual;
-						a.onNext(null);
-						a.onComplete();
-						return;
-					}
-					//refresh state if race occurred so we test if cancelled in the next comparison
-					state = this.state;
-				}
 
 				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
 				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
@@ -1850,7 +1837,7 @@ public abstract class Operators {
 
 		@Override
 		public final boolean isEmpty() {
-			return this.state != FUSED_ASYNC_READY;
+			return true;
 		}
 
 		@Override
@@ -1877,11 +1864,6 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public final O poll() {
-			if (STATE.compareAndSet(this, FUSED_ASYNC_READY, FUSED_ASYNC_CONSUMED)) {
-				O v = value;
-				value = null;
-				return v;
-			}
 			return null;
 		}
 
@@ -1917,10 +1899,6 @@ public abstract class Operators {
 
 		@Override
 		public int requestFusion(int mode) {
-			if ((mode & ASYNC) != 0) {
-				STATE.lazySet(this, FUSED_ASYNC_EMPTY);
-				return ASYNC;
-			}
 			return NONE;
 		}
 
@@ -1964,18 +1942,7 @@ public abstract class Operators {
 		 * Indicates the Subscription has been cancelled.
 		 */
 		static final int CANCELLED         = 4;
-		/**
-		 * Indicates this Subscription is in ASYNC fusion mode and is currently empty.
-		 */
-		static final int FUSED_ASYNC_EMPTY = 8;
-		/**
-		 * Indicates this Subscription is in ASYNC fusion mode and has a value.
-		 */
-		static final int FUSED_ASYNC_READY    = 16;
-		/**
-		 * Indicates this Subscription is in ASYNC fusion mode and its value has been consumed.
-		 */
-		static final int FUSED_ASYNC_CONSUMED = 32;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MonoSubscriber> STATE                =
 				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");

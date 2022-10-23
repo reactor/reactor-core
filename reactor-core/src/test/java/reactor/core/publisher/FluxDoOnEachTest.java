@@ -58,15 +58,17 @@ public class FluxDoOnEachTest {
 	void doOnEachAsyncFusionDoesntTriggerOnNextTwice() {
 		List<String> signals = new ArrayList<>();
 		StepVerifier.create(Flux.just("a", "b", "c")
-				.collectList()
+				.limitRate(3)
 				.doOnEach(sig -> signals.add(sig.toString()))
 			)
 			.expectFusion(Fuseable.ASYNC)
-			.expectNext(Arrays.asList("a", "b", "c"))
+			.expectNext("a", "b", "c")
 			.verifyComplete();
 
 		assertThat(signals).containsExactly(
-			"doOnEach_onNext([a, b, c])",
+			"doOnEach_onNext(a)",
+			"doOnEach_onNext(b)",
+			"doOnEach_onNext(c)",
 			"onComplete()"
 		);
 	}

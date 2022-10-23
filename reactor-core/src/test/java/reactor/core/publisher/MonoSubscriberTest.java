@@ -43,6 +43,13 @@ public class MonoSubscriberTest {
 	}
 
 	@Test
+	public void queueSubscriptionAsyncRejected() {
+		MonoSubscriber<Integer, Integer> ds = new MonoSubscriber<>(new AssertSubscriber<>());
+
+		assertThat(ds.requestFusion(Fuseable.ASYNC)).isEqualTo(Fuseable.NONE);
+	}
+
+	@Test
 	public void clear() {
 		MonoSubscriber<Integer, Integer> ds = new MonoSubscriber<>(new AssertSubscriber<>());
 
@@ -50,7 +57,6 @@ public class MonoSubscriberTest {
 
 		ds.clear();
 
-		assertThat(ds.state).isEqualTo(MonoSubscriber.FUSED_ASYNC_CONSUMED);
 		assertThat(ds.value).isNull();
 	}
 
