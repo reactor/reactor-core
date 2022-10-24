@@ -19,10 +19,12 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
@@ -46,6 +48,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.function.Tuples;
 
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -72,6 +75,70 @@ public class OnDiscardShouldNotLeakTest {
 					               )
 					               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 					               .thenReturn(Tracked.RELEASED)),
+			DiscardScenario.allFluxSourceArray("zip", 4,
+					sources -> {
+						Publisher<Tracked>[] sources1 = sources.toArray(new Publisher[0]);
+						return Flux.zip(Tuples::fromArray, sources1)
+						           .doOnNext(l -> {
+							           for (Object o : (Iterable<Object>) l) {
+								           ((Tracked) o).release();
+							           }
+						           })
+						           .then(Mono.just(Tracked.RELEASED));
+					}),
+			DiscardScenario.allFluxSourceArray("zipFusedAll", 4,
+					sources -> {
+						Publisher<Tracked>[] sources1 = sources.stream().map(s -> s.publishOn(Schedulers.immediate())).toArray(Publisher[]::new);
+						return Flux.zip(Tuples::fromArray, sources1)
+						           .doOnNext(l -> {
+							           for (Object o : (Iterable<Object>) l) {
+								           ((Tracked) o).release();
+							           }
+						           })
+						           .then(Mono.just(Tracked.RELEASED));
+					}),
+			DiscardScenario.allFluxSourceArray("zipFusedRandom", 4,
+					sources -> {
+						Publisher<Tracked>[] sources1 = sources.stream()
+						                                       .map(s ->
+								                                       ThreadLocalRandom.current()
+								                                                        .nextBoolean() ?
+										                                       s.publishOn(
+												                                       Schedulers.immediate()) :
+										                                       s)
+						                                       .toArray(Publisher[]::new);
+						return Flux.zip(Tuples::fromArray, sources1)
+						           .doOnNext(l -> {
+							           for (Object o : (Iterable<Object>) l) {
+								           ((Tracked) o).release();
+							           }
+						           })
+						           .then(Mono.just(Tracked.RELEASED));
+					}),
+			DiscardScenario.allFluxSourceArray("zipScalar", 4,
+					sources -> {
+						Publisher<Tracked>[] sources1 =
+								Stream.concat(sources.stream(), Stream.of(Mono.just(Tracked.RELEASED))).toArray(Publisher[]::new);
+						return Flux.zip(Tuples::fromArray, sources1)
+						           .doOnNext(l -> {
+							           for (Object o : (Iterable<Object>) l) {
+								           ((Tracked) o).release();
+							           }
+						           })
+						           .then(Mono.just(Tracked.RELEASED));
+					}),
+			DiscardScenario.allFluxSourceArray("zipMono", 4,
+					sources -> {
+						Mono<Tracked>[] sources1 =
+								Stream.concat(sources.stream().map(f -> f.next()), Stream.of(Mono.just(Tracked.RELEASED))).toArray(Mono[]::new);
+						return Mono.zip(Tuples::fromArray, sources1)
+						           .doOnNext(l -> {
+							           for (Object o : (Iterable<Object>) l) {
+								           ((Tracked) o).release();
+							           }
+						           })
+						           .then(Mono.just(Tracked.RELEASED));
+					}),
 			DiscardScenario.fluxSource("onBackpressureBuffer", Flux::onBackpressureBuffer),
 			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", f -> f
 					.onBackpressureBuffer()

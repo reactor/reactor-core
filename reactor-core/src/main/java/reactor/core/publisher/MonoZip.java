@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -282,6 +283,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 							"zipper produced a null value");
 				}
 				catch (Throwable t) {
+					Operators.onDiscardMultiple(Arrays.asList(o), actual.currentContext());
 					actual.onError(Operators.onOperatorError(null,
 							t,
 							o,
