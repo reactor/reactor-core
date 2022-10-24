@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 class MonoCacheInvalidateWhenTest {
 
@@ -263,7 +264,8 @@ class MonoCacheInvalidateWhenTest {
 			if (sub2Seen == 1) lessInteresting++;
 		}
 		//smoke assertion: we caught more than 50% of interesting cases
-		assertThat(lessInteresting)
+		//however there is no guarantee we can't see more
+		assumeThat(lessInteresting)
 				.as("less interesting cases (got 1)")
 				.isBetween(0, loops * 50 / 100);
 	}

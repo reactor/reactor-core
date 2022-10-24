@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A default implementation of a {@link TestPublisher}.
@@ -397,8 +398,13 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 			Objects.requireNonNull(t, "emitted values must be non-null");
 		}
 
-		for (TestPublisherSubscription<T> s : subscribers) {
-			s.onNext(t);
+		TestPublisherSubscription<T>[] subscribers = this.subscribers;
+		if (subscribers.length > 0) {
+			for (TestPublisherSubscription<T> s : subscribers) {
+				s.onNext(t);
+			}
+		} else if (t != null) {
+			Operators.onNextDropped(t, Context.empty());
 		}
 
 		return this;

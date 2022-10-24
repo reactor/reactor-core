@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -188,11 +189,16 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@SuppressWarnings("unchecked")
-		void signal() {
+		boolean signal() {
 			ZipInner<R>[] a = subscribers;
 			int n = a.length;
-			if (DONE.incrementAndGet(this) != n) {
-				return;
+			final int state = DONE.incrementAndGet(this);
+			if (state <= 0) {
+				return false;
+			}
+
+			if (state != n) {
+				return true;
 			}
 
 			Object[] o = new Object[n];
@@ -242,23 +248,28 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 							"zipper produced a null value");
 				}
 				catch (Throwable t) {
+					Operators.onDiscardMultiple(Arrays.asList(o), actual.currentContext());
 					actual.onError(Operators.onOperatorError(null,
 							t,
 							o,
 							actual.currentContext()));
-					return;
+					return true;
 				}
 				complete(r);
 			}
+
+			return true;
 		}
 
 		@Override
 		public void cancel() {
-			if (!isCancelled()) {
-				super.cancel();
-				for (ZipInner<R> ms : subscribers) {
-					ms.cancel();
-				}
+			if (DONE.getAndSet(this, Integer.MIN_VALUE) < 0) {
+				return;
+			}
+
+			super.cancel();
+			for (ZipInner<R> ms : subscribers) {
+				ms.cancel();
 			}
 		}
 
@@ -333,7 +344,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		public void onNext(Object t) {
 			if (value == null) {
 				value = t;
-				parent.signal();
+				if (!parent.signal()) {
+					Operators.onDiscard(t, parent.actual.currentContext());
+				}
 			}
 		}
 
@@ -370,6 +383,10 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 		void cancel() {
 			Operators.terminate(S, this);
+			Object v = value;
+			if (v != null) {
+				Operators.onDiscard(v, currentContext());
+			}
 		}
 	}
 }
