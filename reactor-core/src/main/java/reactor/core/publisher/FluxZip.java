@@ -727,13 +727,12 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			int previousWork = addWork(this);
 			if (previousWork != 0) {
 				if (callerInner != null) {
-					if (cancelled || previousWork == Integer.MIN_VALUE) {
-						if (callerInner.sourceMode != ASYNC) {
-							// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
-							Operators.onDiscard(dataSignal, actual.currentContext());
-						} else if (previousWork == Integer.MIN_VALUE) {
-							callerInner.queue.clear();
-						}
+					if (callerInner.sourceMode == ASYNC && previousWork == Integer.MIN_VALUE) {
+						callerInner.queue.clear();
+					}
+					else if (dataSignal != null && cancelled) {
+						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+						Operators.onDiscard(dataSignal, actual.currentContext());
 					}
 				}
 				return;
