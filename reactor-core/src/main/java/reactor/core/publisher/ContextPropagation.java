@@ -48,7 +48,7 @@ final class ContextPropagation {
 	static {
 		boolean contextPropagation;
 		try {
-			Class.forName("io.micrometer.context.ContextRegistry", false, ContextPropagation.class.getClassLoader());
+			Class.forName("io.micrometer.context.ContextRegistry");
 			contextPropagation = true;
 		}
 		catch (Throwable t) {
