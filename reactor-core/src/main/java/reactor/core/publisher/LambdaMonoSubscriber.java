@@ -163,8 +163,8 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	public final void onNext(T x) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
-			Operators.onNextDropped(x, this.initialContext);
 			Operators.onDiscard(x, this.initialContext);
+			Operators.onNextDropped(x, this.initialContext);
 			return;
 		}
 		if (consumer != null) {

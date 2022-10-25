@@ -89,8 +89,8 @@ final class FluxFilter<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t,  this.ctx);
 				Operators.onDiscard(t, this.ctx);
+				Operators.onNextDropped(t,  this.ctx);
 				return;
 			}
 
@@ -122,8 +122,8 @@ final class FluxFilter<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t,  this.ctx);
 				Operators.onDiscard(t, this.ctx);
+				Operators.onNextDropped(t,  this.ctx);
 				return false;
 			}
 
@@ -225,8 +225,8 @@ final class FluxFilter<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t,  this.ctx);
 				Operators.onDiscard(t, this.ctx);
+				Operators.onNextDropped(t,  this.ctx);
 				return;
 			}
 
@@ -258,8 +258,8 @@ final class FluxFilter<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t,  this.ctx);
 				Operators.onDiscard(t, this.ctx);
+				Operators.onNextDropped(t,  this.ctx);
 				return false;
 			}
 

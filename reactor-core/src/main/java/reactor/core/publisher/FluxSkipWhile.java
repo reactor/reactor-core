@@ -82,8 +82,8 @@ final class FluxSkipWhile<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 
@@ -114,8 +114,8 @@ final class FluxSkipWhile<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return true;
 			}
 

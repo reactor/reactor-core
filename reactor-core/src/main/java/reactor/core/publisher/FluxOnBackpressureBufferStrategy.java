@@ -146,8 +146,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 

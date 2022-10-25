@@ -164,8 +164,8 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, currentContext());
 				Operators.onDiscard(t, currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 

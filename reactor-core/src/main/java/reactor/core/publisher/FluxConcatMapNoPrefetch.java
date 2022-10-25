@@ -173,8 +173,8 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 						Operators.onDiscard(t, currentContext());
 						break;
 					case TERMINATED:
-						Operators.onNextDropped(t, currentContext());
 						Operators.onDiscard(t, currentContext());
+						Operators.onNextDropped(t, currentContext());
 						break;
 				}
 				return;

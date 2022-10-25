@@ -172,8 +172,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				}
 			}
 
-			Operators.onNextDropped(t, this.ctx);
-			Operators.onDiscard(t, this.ctx);
+			Context ctx = this.ctx;
+			Operators.onDiscard(t, ctx);
+			Operators.onNextDropped(t, ctx);
 		}
 
 		@Override

@@ -186,8 +186,8 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
 					Operators.onDiscard(t, actual.currentContext());
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 
@@ -480,8 +480,8 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
 					Operators.onDiscard(t, actual.currentContext());
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 
@@ -509,8 +509,8 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return false;
 			}
 
@@ -833,8 +833,8 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -861,8 +861,8 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return false;
 			}
 

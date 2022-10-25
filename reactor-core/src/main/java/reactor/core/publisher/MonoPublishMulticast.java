@@ -184,8 +184,8 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, context);
 				Operators.onDiscard(t, context);
+				Operators.onNextDropped(t, context);
 				return;
 			}
 

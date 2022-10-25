@@ -108,8 +108,8 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -170,8 +170,8 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
 					Operators.onDiscard(t, actual.currentContext());
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				try {
@@ -481,8 +481,8 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 			}
 			else  {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
 					Operators.onDiscard(t, actual.currentContext());
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				try {
@@ -537,8 +537,8 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 

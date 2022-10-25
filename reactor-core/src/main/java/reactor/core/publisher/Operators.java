@@ -657,7 +657,12 @@ public abstract class Operators {
 			hook = Hooks.onNextDroppedHook;
 		}
 		if (hook != null) {
-			hook.accept(t);
+			try {
+				hook.accept(t);
+			}
+			catch (Throwable ex) {
+				log.warn("Error in onNextDropped hook", t);
+			}
 		}
 		else if (log.isDebugEnabled()) {
 			log.debug("onNextDropped: " + t);
@@ -1395,8 +1400,8 @@ public abstract class Operators {
 	static <T> void onNextDroppedMulticast(T t,	InnerProducer<?>[] multicastInners) {
 		//TODO let this method go through multiple contexts and use their local handlers
 		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
-		onNextDropped(t, multiSubscribersContext(multicastInners));
 		onDiscard(t, multiSubscribersContext(multicastInners));
+		onNextDropped(t, multiSubscribersContext(multicastInners));
 	}
 
 	static <T> long producedCancellable(AtomicLongFieldUpdater<T> updater, T instance, long n) {

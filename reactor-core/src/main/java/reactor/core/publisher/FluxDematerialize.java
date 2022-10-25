@@ -82,8 +82,8 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 		public void onNext(Signal<T> t) {
 			if (done) {
 				//TODO interpret the Signal and drop differently?
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 

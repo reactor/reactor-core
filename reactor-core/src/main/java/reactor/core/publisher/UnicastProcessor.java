@@ -451,9 +451,9 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 							actual.currentContext());
 				}
 				else if (done) {
-					Operators.onNextDropped(dataSignalOfferedBeforeDrain,
-							currentContext());
 					Operators.onDiscard(dataSignalOfferedBeforeDrain,
+							currentContext());
+					Operators.onNextDropped(dataSignalOfferedBeforeDrain,
 							currentContext());
 				}
 			}

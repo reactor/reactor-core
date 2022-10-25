@@ -1315,8 +1315,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		public void onNext(T t) {
 			ReplayBuffer<T> b = buffer;
 			if (b.isDone()) {
-				Operators.onNextDropped(t, currentContext());
 				Operators.onDiscard(t, currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 

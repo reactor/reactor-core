@@ -224,8 +224,8 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, currentContext());
 				Operators.onDiscard(t, currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 			if (sourceMode == Fuseable.NONE) {

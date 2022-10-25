@@ -205,8 +205,8 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 

@@ -168,14 +168,14 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
 				s.cancel();
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (!INDEX.compareAndSet(this, idx, idx + 1)) {
 				s.cancel();
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 

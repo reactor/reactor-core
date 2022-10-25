@@ -67,8 +67,8 @@ final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements C
 			}
 		}
 		else {
-			Operators.onNextDropped(t, currentContext());
 			Operators.onDiscard(t, currentContext());
+			Operators.onNextDropped(t, currentContext());
 		}
 	}
 

@@ -134,8 +134,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
-				Operators.onDiscard(t, actual.currentContext());
+				Context ctx = actual.currentContext();
+				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 
@@ -284,8 +285,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, this.ctx);
-				Operators.onDiscard(t, this.ctx);
+				Context ctx = this.ctx;
+				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 
@@ -475,8 +477,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
-				Operators.onDiscard(t, actual.currentContext());
+				Context ctx = actual.currentContext();
+				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 

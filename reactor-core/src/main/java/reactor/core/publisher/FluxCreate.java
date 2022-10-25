@@ -153,8 +153,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		public FluxSink<T> next(T t) {
 			Objects.requireNonNull(t, "t is null in sink.next(t)");
 			if (sink.isTerminated() || done) {
-				Operators.onNextDropped(t, sink.currentContext());
 				Operators.onDiscard(t, sink.currentContext());
+				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
@@ -629,8 +629,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public FluxSink<T> next(T t) {
 			if (isTerminated()) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return this;
 			}
 			if (isCancelled()) {
@@ -663,8 +663,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public final FluxSink<T> next(T t) {
 			if (isTerminated()) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return this;
 			}
 

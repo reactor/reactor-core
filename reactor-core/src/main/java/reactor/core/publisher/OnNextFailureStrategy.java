@@ -222,8 +222,8 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 			}
 			try {
 				if (value != null) {
-					Operators.onNextDropped(value, context);
 					Operators.onDiscard(value, context);
+					Operators.onNextDropped(value, context);
 				}
 				Operators.onErrorDropped(error, context);
 				return null;

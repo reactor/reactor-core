@@ -173,8 +173,8 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		@Override
 		public void onNext(S resource) {
 			if (resourceProvided) {
-				Operators.onNextDropped(resource, actual.currentContext());
 				Operators.onDiscard(resource, actual.currentContext());
+				Operators.onNextDropped(resource, actual.currentContext());
 				return;
 			}
 			resourceProvided = true;

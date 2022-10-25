@@ -56,8 +56,8 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 					Operators.onDiscard(value, currentContext());
 					return;
 				case FAIL_TERMINATED:
-					Operators.onNextDropped(value, currentContext());
 					Operators.onDiscard(value, currentContext());
+					Operators.onNextDropped(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
 					throw new EmissionException(emitResult,

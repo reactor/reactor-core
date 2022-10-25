@@ -95,8 +95,8 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, this.ctx);
 					Operators.onDiscard(t, this.currentContext());
+					Operators.onNextDropped(t, this.ctx);
 					return;
 				}
 				boolean b;
@@ -128,8 +128,8 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, this.ctx);
 				Operators.onDiscard(t, this.ctx);
+				Operators.onNextDropped(t, this.ctx);
 				return false;
 			}
 
@@ -316,8 +316,8 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, this.ctx);
 					Operators.onDiscard(t, this.ctx);
+					Operators.onNextDropped(t, this.ctx);
 					return;
 				}
 				boolean b;
@@ -349,8 +349,8 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, this.ctx);
 				Operators.onDiscard(t, this.ctx);
+				Operators.onNextDropped(t, this.ctx);
 				return false;
 			}
 

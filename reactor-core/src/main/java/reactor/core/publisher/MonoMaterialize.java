@@ -95,8 +95,8 @@ final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 		public void onNext(T t) {
 			if (alreadyReceivedSignalFromSource || !requested) {
 				//protocol error: there was an onNext, onComplete or onError before (which are all breaking RS or Mono contract)
-				Operators.onNextDropped(t, currentContext());
 				Operators.onDiscard(t, currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 			alreadyReceivedSignalFromSource = true;

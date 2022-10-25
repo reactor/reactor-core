@@ -124,8 +124,8 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T> {
 				return;
 			}
 			if (done) {
-				Operators.onNextDropped(t, actual().currentContext());
 				Operators.onDiscard(t, actual().currentContext());
+				Operators.onNextDropped(t, actual().currentContext());
 				return;
 			}
 			if (++count > 1) {

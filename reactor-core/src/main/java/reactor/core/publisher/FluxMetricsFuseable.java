@@ -108,8 +108,8 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 
 			if (done) {
 				recordMalformed(sequenceName, commonTags, registry);
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 

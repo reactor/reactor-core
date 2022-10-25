@@ -113,8 +113,8 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
 					Operators.onDiscard(t, actual.currentContext());
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 
@@ -252,8 +252,8 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -278,8 +278,8 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
 					Operators.onDiscard(t, actual.currentContext());
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 

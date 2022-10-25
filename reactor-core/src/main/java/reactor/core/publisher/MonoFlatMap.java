@@ -114,8 +114,8 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -243,8 +243,8 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		@Override
 		public void onNext(R t) {
 			if (done) {
-				Operators.onNextDropped(t, parent.currentContext());
 				Operators.onDiscard(t, parent.currentContext());
+				Operators.onNextDropped(t, parent.currentContext());
 				return;
 			}
 			done = true;

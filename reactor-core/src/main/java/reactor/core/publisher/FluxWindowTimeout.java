@@ -172,8 +172,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (this.done) {
-				Operators.onNextDropped(t, this.actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, this.actual.currentContext());
 				return;
 			}
 

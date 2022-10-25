@@ -166,8 +166,8 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 			if (cancelled) {

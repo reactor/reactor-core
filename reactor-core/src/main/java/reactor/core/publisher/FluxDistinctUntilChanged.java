@@ -107,8 +107,8 @@ final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return true;
 			}
 
@@ -244,8 +244,8 @@ final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
 				Operators.onDiscard(t, ctx);
+				Operators.onNextDropped(t, ctx);
 				return true;
 			}
 

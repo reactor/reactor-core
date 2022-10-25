@@ -325,8 +325,8 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 					//error during TTL generation, signal != updatedSignal, aka dropped
 					if (signal.isOnNext()) {
 						T s = signal.get();
-						Operators.onNextDropped(s, currentContext());
 						Operators.onDiscard(s, currentContext());
+						Operators.onNextDropped(s, currentContext());
 					}
 					//if signal.isOnError(), avoid dropping the error. it is not really dropped but already suppressed
 					//in all cases, unless nextDropped hook throws, immediate cache clear

@@ -308,8 +308,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (main.state != this || done) {
-				Operators.onNextDropped(t, currentContext());
 				Operators.onDiscard(t, currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 			done = true;

@@ -175,8 +175,8 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		@Override
 		public void onNext(T t) {
 			if(done){
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 

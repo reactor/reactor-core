@@ -77,8 +77,8 @@ final class FluxTakeUntil<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
 				Operators.onDiscard(t, actual.currentContext());
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 

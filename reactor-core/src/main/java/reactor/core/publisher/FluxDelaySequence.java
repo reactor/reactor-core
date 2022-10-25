@@ -94,8 +94,8 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(final T t) {
 			if (done || delayed < 0) {
-				Operators.onNextDropped(t, currentContext());
 				Operators.onDiscard(t, currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 			//keep track of the number of delayed onNext so that

@@ -107,8 +107,8 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
 		@Override
 		public void onNext(T ev) {
 			if(terminalSignal != null){
-				Operators.onNextDropped(ev, this.cachedContext);
 				Operators.onDiscard(ev, actual.currentContext());
+				Operators.onNextDropped(ev, this.cachedContext);
 				return;
 			}
 		    produced++;
