@@ -25,6 +25,8 @@ import io.micrometer.context.ContextSnapshot;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.observability.SignalListener;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -37,6 +39,8 @@ import reactor.util.context.ContextView;
  */
 final class ContextPropagation {
 
+	static final Logger LOGGER;
+
 	static final boolean isContextPropagationAvailable;
 
 	static final String CAPTURED_CONTEXT_MARKER = "reactor.core.contextSnapshotCaptured";
@@ -46,21 +50,29 @@ final class ContextPropagation {
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 
 	static {
+		LOGGER = Loggers.getLogger(ContextPropagation.class);
+
+		Function<Context, Context> contextCaptureFunction;
 		boolean contextPropagation;
 		try {
-			Class.forName("io.micrometer.context.ContextRegistry");
+			ContextRegistry registry = ContextRegistry.getInstance();
+			contextCaptureFunction = new ContextCaptureFunction(PREDICATE_TRUE, registry);
 			contextPropagation = true;
 		}
-		catch (Throwable t) {
+		catch (LinkageError t) {
+			// Context-Propagation library is not available
+			contextCaptureFunction = NO_OP;
 			contextPropagation = false;
 		}
+		catch (Throwable t) {
+			contextCaptureFunction = NO_OP;
+			contextPropagation = false;
+			LOGGER.error("Unexpected exception while detecting ContextPropagation feature." +
+					" The feature is considered disabled due to this:", t);
+		}
+
 		isContextPropagationAvailable = contextPropagation;
-		if (contextPropagation) {
-			WITH_GLOBAL_REGISTRY_NO_PREDICATE = new ContextCaptureFunction(PREDICATE_TRUE, ContextRegistry.getInstance());
-		}
-		else {
-			WITH_GLOBAL_REGISTRY_NO_PREDICATE = NO_OP;
-		}
+		WITH_GLOBAL_REGISTRY_NO_PREDICATE = contextCaptureFunction;
 	}
 
 	/**

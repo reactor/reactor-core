@@ -45,5 +45,10 @@ public final class ReactorBlockHoundIntegration implements BlockHoundIntegration
         builder.allowBlockingCallsInside(WorkerTask.class.getName(), "dispose");
 
         builder.allowBlockingCallsInside(ThreadPoolExecutor.class.getName(), "processWorkerExit");
+
+        // Most allowances are from the schedulers package but this one is from the publisher package.
+        // For now, let's not add a separate integration, but rather let's define the class name manually
+        // ContextRegistry reads files as part of the Service Loader aspect. If class is initialized in a non-blocking thread, BlockHound would complain
+        builder.allowBlockingCallsInside("reactor.core.publisher.ContextPropagation", "<clinit>");
     }
 }
