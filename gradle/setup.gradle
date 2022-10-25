@@ -51,17 +51,39 @@ static def qualifyVersion(String v) {
 	return "BAD"
 }
 
+static def outputToGha(String versionType, String fullVersion) {
+	def ghaFilename = System.getenv("GITHUB_OUTPUT")
+	if (ghaFilename == null) {
+		println "::set-output name=versionType::$versionType"
+		println "::set-output name=fullVersion::$fullVersion"
+	}
+	else {
+		println "using GITHUB_OUTPUT file"
+		def ghaFile = new File(ghaFilename)
+		ghaFile.withWriterAppend {
+			it.newLine()
+			it.append("versionType=$versionType")
+			it.newLine()
+			it.append("fullVersion=$fullVersion")
+		}
+	}
+}
+
 task qualifyVersionGha() {
 	doLast {
 		def versionType = qualifyVersion("$version")
-
-		println "::set-output name=versionType::$versionType"
-		println "::set-output name=fullVersion::$version"
+		//we ensure that if at least _one_ submodule version is BAD, we only output versionType=BAD + job fails
 		if (versionType == "BAD") {
+			outputToGha(versionType, version)
 			println "::error ::Unable to parse $version to a VersionNumber with recognizable qualifier"
 			throw new TaskExecutionException(tasks.getByName("qualifyVersionGha"), new IllegalArgumentException("Unable to parse $version to a VersionNumber with recognizable qualifier"))
 		}
 		println "Recognized $version as $versionType"
+
+		//only output the versionType and fullVersion for the main artifact
+		if (project.name == 'reactor-core') {
+			outputToGha(versionType, version)
+		}
 	}
 }
 
