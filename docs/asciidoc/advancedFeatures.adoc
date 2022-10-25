@@ -766,13 +766,13 @@ libraries that are responsible for the subscriptions.
 [[context.api]]
 === The `Context` API
 
-`Context` is an interface reminiscent of `Map`.It stores key-value pairs and lets you
+`Context` is an interface reminiscent of `Map`. It stores key-value pairs and lets you
 fetch a value you stored by its key. It has a simplified version that only exposes read
 methods, the `ContextView`. More specifically:
 
 * Both key and values are of type `Object`, so a `Context` (and `ContextView`) instance can contain any number of
 highly divergent values from different libraries and sources.
-* A `Context` is immutable. It expose write methods like `put` and `putAll` but they produce a new instance.
+* A `Context` is immutable. It exposes write methods like `put` and `putAll` but they produce a new instance.
 * For a read-only API that doesn't even expose such write methods, there's the `ContextView` superinterface since 3.4.0
 * You can check whether the key is present with `hasKey(Object key)`.
 * Use `getOrDefault(Object key, T defaultValue)` to retrieve a value (cast to a `T`) or
