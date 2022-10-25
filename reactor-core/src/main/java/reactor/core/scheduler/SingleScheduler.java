@@ -84,7 +84,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	@Override
 	public void init() {
 		SchedulerState<ScheduledExecutorService> a = this.state;
-		if (a != null) {
+		if (a != INIT) {
 			if (a.currentResource == TERMINATED) {
 				throw new IllegalStateException(
 						"Initializing a disposed scheduler is not permitted"

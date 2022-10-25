@@ -147,7 +147,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	@Override
 	public void init() {
 		SchedulerState<BoundedServices> a = this.state;
-		if (a != null) {
+		if (a != INIT) {
 			if (a.currentResource == SHUTDOWN) {
 				throw new IllegalStateException(
 						"Initializing a disposed scheduler is not permitted"
