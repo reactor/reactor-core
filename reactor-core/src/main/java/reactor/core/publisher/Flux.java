@@ -396,7 +396,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			int prefetch,
 			Function<Object[], V> combinator) {
 
-		return onAssembly(new FluxCombineLatest<T, V>(sources,
+		return onAssembly(new FluxCombineLatest<>(sources,
 				combinator,
 				Queues.get(prefetch), prefetch));
 	}
@@ -2397,10 +2397,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			int prefetch,
 			final Function<? super Object[], ? extends O> combinator) {
 
-		return onAssembly(new FluxZip<Object, O>(sources,
-				combinator,
-				Queues.get(prefetch),
-				prefetch));
+		return onAssembly(new FluxZip<>(sources,
+			combinator,
+			Queues.get(prefetch),
+			prefetch));
 	}
 
 	/**
@@ -3050,7 +3050,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	public final <V> Flux<List<T>> bufferUntilChanged() {
+	public final Flux<List<T>> bufferUntilChanged() {
 		return bufferUntilChanged(identityFunction());
 	}
 
@@ -3718,7 +3718,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> collectSortedList(@Nullable Comparator<? super T> comparator) {
 		return collectList().doOnNext(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
@@ -4021,7 +4020,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		if (this instanceof FluxConcatArray) {
-			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 
 			return fluxConcatArray.concatAdditionalSourceLast(other);
@@ -5997,7 +5995,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>)this;
 		    if(thiz instanceof Fuseable.ScalarCallable){
-		    	@SuppressWarnings("unchecked")
 			    Fuseable.ScalarCallable<T> c = (Fuseable.ScalarCallable<T>)thiz;
 			    T v;
 			    try {
@@ -9201,7 +9198,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
 		if (this instanceof FluxConcatArray) {
-			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalIgnoredLast(other);
 		}
@@ -9391,7 +9387,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return timeout(firstTimeout, nextTimeoutFactory, "first signal from a Publisher");
 	}
 
-	private final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
+	private <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
 			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory,
 			String timeoutDescription) {
 			return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory, timeoutDescription));
@@ -10224,7 +10220,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link Flux} windows.
 	 */
-	public final <V> Flux<Flux<T>> windowUntilChanged() {
+	public final Flux<Flux<T>> windowUntilChanged() {
 		return windowUntilChanged(identityFunction());
 	}
 
@@ -10489,7 +10485,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
 			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
 		if (this instanceof FluxZip) {
-			@SuppressWarnings("unchecked")
 			FluxZip<T, V> o = (FluxZip<T, V>) this;
 			Flux<V> result = o.zipAdditionalSource(source2, combinator);
 			if (result != null) {
@@ -10561,7 +10556,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a zipped {@link Flux}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
 		return zipWithIterable(iterable, tuple2Function());
 	}
@@ -10663,7 +10657,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
-	@SuppressWarnings("unchecked")
 	static <T> Flux<T> doOnSignal(Flux<T> source,
 			@Nullable Consumer<? super Subscription> onSubscribe,
 			@Nullable Consumer<? super T> onNext,
@@ -10866,6 +10859,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@SuppressWarnings("rawtypes")
 	static final Supplier        SET_SUPPLIER            = HashSet::new;
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
+	@SuppressWarnings("rawtypes")
 	static final BiPredicate     OBJECT_EQUAL            = Object::equals;
 	@SuppressWarnings("rawtypes")
 	static final Function        IDENTITY_FUNCTION       = Function.identity();

@@ -214,6 +214,6 @@ https://github.com/reactor/head-first-reactive-with-spring-and-reactor/
 -------------------------------------
 _Powered by [Reactive Streams Commons](https://github.com/reactor/reactive-streams-commons)_
 
-_Licensed under [Apache Software License 2.0](www.apache.org/licenses/LICENSE-2.0)_
+_Licensed under [Apache Software License 2.0](https://www.apache.org/licenses/LICENSE-2.0)_
 
 _Sponsored by [VMware](https://tanzu.vmware.com/)_
