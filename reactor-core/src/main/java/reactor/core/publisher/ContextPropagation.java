@@ -43,8 +43,6 @@ final class ContextPropagation {
 
 	static final boolean isContextPropagationAvailable;
 
-	static final String CAPTURED_CONTEXT_MARKER = "reactor.core.contextSnapshotCaptured";
-
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
 	static final Function<Context, Context> NO_OP = c -> c;
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
@@ -89,10 +87,6 @@ final class ContextPropagation {
 	 * provided {@link Context}, resulting in a new {@link Context} which includes entries
 	 * captured from threadLocals by the Context-Propagation API.
 	 * <p>
-	 * Additionally, a marker key is added to the returned {@link Context} which can
-	 * be detected upstream by a small subset of operators in order to restore thread locals
-	 * from the context transparently.
-	 * <p>
 	 * This variant uses the implicit global {@code ContextRegistry} and captures from all
 	 * available {@code ThreadLocalAccessors}. It is the same variant backing {@link Flux#contextCapture()}
 	 * and {@link Mono#contextCapture()}.
@@ -115,10 +109,6 @@ final class ContextPropagation {
 	 * by the Context-Propagation API to filter which entries should be captured in the
 	 * first place.
 	 * <p>
-	 * Additionally, a marker key is added to the returned {@link Context} which can
-	 * be detected upstream by a small subset of operators in order to restore thread locals
-	 * from the context transparently.
-	 * <p>
 	 * This variant uses the implicit global {@code ContextRegistry} and captures only from
 	 * available {@code ThreadLocalAccessors} that match the {@link Predicate}.
 	 *
@@ -134,7 +124,7 @@ final class ContextPropagation {
 	}
 
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, CoreSubscriber<? super R> actual) {
-		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
+		if (!ContextPropagation.isContextPropagationAvailable() || actual.currentContext().isEmpty()) {
 			return handler;
 		}
 		return new ContextRestoreHandleConsumer<>(handler, ContextRegistry.getInstance(), actual.currentContext());
@@ -142,7 +132,7 @@ final class ContextPropagation {
 
 	static <T> SignalListener<T> contextRestoringSignalListener(final SignalListener<T> original,
 																	   CoreSubscriber<? super T> actual) {
-		if (!ContextPropagation.isContextPropagationAvailable() || !actual.currentContext().hasKey(ContextPropagation.CAPTURED_CONTEXT_MARKER)) {
+		if (!ContextPropagation.isContextPropagationAvailable() || actual.currentContext().isEmpty()) {
 			return original;
 		}
 		return new ContextRestoreSignalListener<T>(original, actual.currentContext(), ContextRegistry.getInstance());
@@ -162,8 +152,7 @@ final class ContextPropagation {
 		@Override
 		public Context apply(Context target) {
 			return ContextSnapshot.captureAllUsing(capturePredicate, this.registry)
-				.updateContext(target)
-				.put(CAPTURED_CONTEXT_MARKER, "");
+				.updateContext(target);
 		}
 	}
 

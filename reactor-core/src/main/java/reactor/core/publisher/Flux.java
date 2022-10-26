@@ -4032,14 +4032,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * If <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
 	 * is on the classpath, this is a convenience shortcut to capture thread local values during the
-	 * subscription phase and put them in the {@link Context} that is visible upstream of this operator,
-	 * alongside a marker key indicating that context capture occurred.
+	 * subscription phase and put them in the {@link Context} that is visible upstream of this operator.
 	 * <p>
 	 * As a result this operator should generally be used as close as possible to the end of
 	 * the chain / subscription point.
-	 * If the marker key is encountered upstream, a small subset of operators will automatically restore the
-	 * context snapshot ({@link #handle(BiConsumer) handle}, {@link #tap(SignalListenerFactory) tap}).
 	 * <p>
+	 * If the {@link ContextView} visible upstream is not empty, a small subset of operators will automatically
+	 * restore the context snapshot ({@link #handle(BiConsumer) handle}, {@link #tap(SignalListenerFactory) tap}).
 	 * If context-propagation is not available at runtime, this operator simply returns the current {@link Flux}
 	 * instance.
 	 *
@@ -5801,9 +5800,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * fusion is enabled) when the {@link BiConsumer} throws an exception or if an error is signaled explicitly via
 	 * {@link SynchronousSink#error(Throwable)}.
 	 * <p>
-	 * When used in conjunction with {@link #contextCapture()} down the chain, thread locals
-	 * are restored from the Reactor {@link ContextView} within the handler {@link BiConsumer} using the
-	 * <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>.
+	 * When the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is available at runtime and the downstream {@link ContextView} is not empty, this operator implicitly uses the
+	 * library to restore thread locals around the handler {@link BiConsumer}. Typically, this would be done in conjunction
+	 * with the use of {@link #contextCapture()} operator down the chain.
 	 *
 	 * @param handler the handling {@link BiConsumer}
 	 * @param <R> the transformed type
@@ -9039,9 +9039,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This simplified variant assumes the state is purely initialized within the {@link Supplier},
 	 * as it is called for each incoming {@link Subscriber} without additional context.
 	 * <p>
-	 * When used in conjunction with {@link #contextCapture()} down the chain, thread locals
-	 * are restored from the downstream {@link ContextView} around all invocations of {@link SignalListener} methods
-	 * using the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>.
+	 * When the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is available at runtime and the downstream {@link ContextView} is not empty, this operator implicitly uses the library
+	 * to restore thread locals around all invocations of {@link SignalListener} methods. Typically, this would be done
+	 * in conjunction with the use of {@link #contextCapture()} operator down the chain.
 	 *
 	 * @param simpleListenerGenerator the {@link Supplier} to create a new {@link SignalListener} on each subscription
 	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
@@ -9075,9 +9076,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * This simplified variant allows the {@link SignalListener} to be constructed for each subscription
 	 * with access to the incoming {@link Subscriber}'s {@link ContextView}.
 	 * <p>
-	 * When used in conjunction with {@link #contextCapture()} down the chain, thread locals
-	 * are restored from the same {@link ContextView} around all invocations of {@link SignalListener} methods
-	 * using the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>.
+	 * When the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is available at runtime and the {@link ContextView} is not empty, this operator implicitly uses the library
+	 * to restore thread locals around all invocations of {@link SignalListener} methods. Typically, this would be done
+	 * in conjunction with the use of {@link #contextCapture()} operator down the chain.
 	 *
 	 * @param listenerGenerator the {@link Function} to create a new {@link SignalListener} on each subscription
 	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
@@ -9112,9 +9114,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * {@link SignalListener#doAfterError(Throwable)} instead just {@link Operators#onErrorDropped(Throwable, Context) drop}
 	 * the exception.
 	 * <p>
-	 * When used in conjunction with {@link #contextCapture()} down the chain, thread locals
-	 * are restored from the downstream {@link ContextView} around all invocations of {@link SignalListener} methods
-	 * using the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>.
+	 * When the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is available at runtime and the downstream {@link ContextView} is not empty, this operator implicitly uses the library
+	 * to restore thread locals around all invocations of {@link SignalListener} methods. Typically, this would be done
+	 * in conjunction with the use of {@link #contextCapture()} operator down the chain.
 	 *
 	 * @param listenerFactory the {@link SignalListenerFactory} to create a new {@link SignalListener} on each subscription
 	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
