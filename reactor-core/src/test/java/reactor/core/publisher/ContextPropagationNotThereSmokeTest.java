@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Predicate;
-
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

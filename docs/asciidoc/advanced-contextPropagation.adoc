@@ -41,8 +41,12 @@ Mono.deferContextual(ctx ->
 ====
 
 == Operators that transparently restore a snapshot: `handle` and `tap`
-When using `contextCapture()` a marker is added to the Reactor `Context` in which the snapshot has been captured.
-This is detected by `Flux` and `Mono` variants of `handle` and `tap`, which restore `ThreadLocal`s from that snapshot transparently.
+Both `Flux` and `Mono` variants of `handle` and `tap` will have their behavior slightly modified
+if the Context-Propagation library is available at runtime.
+
+Namely, if their downstream `ContextView` is not empty they will assume a context capture has occurred
+(either manually or via the `contextCapture()` operator) and will attempt to restore `ThreadLocal`s from
+that snapshot transparently.
 
 These operators will ensure restoration is performed around the user-provided code, respectively:
  - `handle` will wrap the `BiConsumer` in one which restores `ThreadLocal`s

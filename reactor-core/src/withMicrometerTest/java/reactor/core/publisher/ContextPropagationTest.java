@@ -150,8 +150,7 @@ class ContextPropagationTest {
 			assertThat(asMap)
 				.containsEntry(KEY1, "expected1")
 				.containsEntry(KEY2, "expected2")
-				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, "")
-				.hasSize(3);
+				.hasSize(2);
 		}
 
 		@Test
@@ -168,8 +167,7 @@ class ContextPropagationTest {
 
 			assertThat(asMap)
 				.containsEntry(KEY2, "expected")
-				.containsEntry(ContextPropagation.CAPTURED_CONTEXT_MARKER, "")
-				.hasSize(2);
+				.hasSize(1);
 		}
 
 		@Test
@@ -181,23 +179,23 @@ class ContextPropagationTest {
 	}
 
 	static private enum Cases {
-		NORMAL_NO_MARKER(false, false, false),
-		NORMAL_WITH_MARKER(false, false, true),
-		CONDITIONAL_NO_MARKER(false, true, false),
-		CONDITIONAL_WITH_MARKER(false, true, true),
-		FUSED_NO_MARKER(true, false, false),
-		FUSED_WITH_MARKER(true, false, true),
-		FUSED_CONDITIONAL_NO_MARKER(true, true, false),
-		FUSED_CONDITIONAL_WITH_MARKER(true, true, true);
+		NORMAL_NO_CONTEXT(false, false, false),
+		NORMAL_WITH_CONTEXT(false, false, true),
+		CONDITIONAL_NO_CONTEXT(false, true, false),
+		CONDITIONAL_WITH_CONTEXT(false, true, true),
+		FUSED_NO_CONTEXT(true, false, false),
+		FUSED_WITH_CONTEXT(true, false, true),
+		FUSED_CONDITIONAL_NO_CONTEXT(true, true, false),
+		FUSED_CONDITIONAL_WITH_CONTEXT(true, true, true);
 
 		final boolean fusion;
 		final boolean conditional;
-		final boolean marker;
+		final boolean withContext;
 
-		Cases(boolean fusion, boolean conditional, boolean marker) {
+		Cases(boolean fusion, boolean conditional, boolean withContext) {
 			this.fusion = fusion;
 			this.conditional = conditional;
-			this.marker = marker;
+			this.withContext = withContext;
 		}
 	}
 
@@ -232,8 +230,8 @@ class ContextPropagationTest {
 				builder = builder.requireNotFuseable();
 			}
 
-			if (characteristics.marker) {
-				builder = builder.contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true);
+			if (characteristics.withContext) {
+				builder = builder.contextPut("properWrappingForFluxTap", true);
 			}
 
 			TestSubscriber<String> testSubscriber;
@@ -250,7 +248,7 @@ class ContextPropagationTest {
 			if (!characteristics.fusion) {
 				assertThat(parent).isInstanceOfSatisfying(FluxTap.TapSubscriber.class,
 					tapSubscriber -> {
-						if (characteristics.marker) {
+						if (characteristics.withContext) {
 							assertThat(tapSubscriber.listener).as("listener wrapped")
 								.isNotSameAs(originalListener)
 								.isInstanceOf(ContextPropagation.ContextRestoreSignalListener.class);
@@ -265,7 +263,7 @@ class ContextPropagationTest {
 			else {
 				assertThat(parent).isInstanceOfSatisfying(FluxTapFuseable.TapFuseableSubscriber.class,
 					tapSubscriber -> {
-						if (characteristics.marker) {
+						if (characteristics.withContext) {
 							assertThat(tapSubscriber.listener)
 								.as("listener wrapped")
 								.isNotSameAs(originalListener)
@@ -308,8 +306,8 @@ class ContextPropagationTest {
 				builder = builder.requireNotFuseable();
 			}
 
-			if (characteristics.marker) {
-				builder = builder.contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true);
+			if (characteristics.withContext) {
+				builder = builder.contextPut("properWrappingForMonoTap", true);
 			}
 
 			TestSubscriber<String> testSubscriber;
@@ -326,7 +324,7 @@ class ContextPropagationTest {
 			if (!characteristics.fusion) {
 				assertThat(parent).isInstanceOfSatisfying(FluxTap.TapSubscriber.class,
 					tapSubscriber -> {
-						if (characteristics.marker) {
+						if (characteristics.withContext) {
 							assertThat(tapSubscriber.listener)
 								.as("listener wrapped")
 								.isNotSameAs(originalListener)
@@ -341,7 +339,7 @@ class ContextPropagationTest {
 			else {
 				assertThat(parent).isInstanceOfSatisfying(FluxTapFuseable.TapFuseableSubscriber.class,
 					tapSubscriber -> {
-						if (characteristics.marker) {
+						if (characteristics.withContext) {
 							assertThat(tapSubscriber.listener)
 								.as("listener wrapped")
 								.isNotSameAs(originalListener)
@@ -427,31 +425,30 @@ class ContextPropagationTest {
 
 		@ValueSource(booleans = {true, false})
 		@ParameterizedTestWithName
-		void publicMethodChecksForMarkerBeforeWrapping(boolean withMarker) {
+		void publicMethodChecksForContextNotEmptyBeforeWrapping(boolean withContext) {
 			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> { };
 			final Context context;
-			if (withMarker) {
-				context = Context.of(KEY1, "expected", ContextPropagation.CAPTURED_CONTEXT_MARKER, true);
+			if (withContext) {
+				context = Context.of(KEY1, "expected");
 			}
 			else {
-				context = Context.of(KEY1, "expected");
+				context = Context.empty();
 			}
 			CoreSubscriber<String> mockSubscriber = Mockito.mock(CoreSubscriber.class);
 			Mockito.when(mockSubscriber.currentContext()).thenReturn(context);
 
 			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagation.contextRestoreForHandle(originalHandler, mockSubscriber);
 
-			if (!withMarker) {
-				assertThat(decoratedHandler).as("no marker: same handler").isSameAs(originalHandler);
+			if (withContext) {
+				assertThat(decoratedHandler).as("context not empty: decorated handler").isNotSameAs(originalHandler);
 			}
 			else {
-				assertThat(decoratedHandler).as("marker: decorated handler").isNotSameAs(originalHandler);
+				assertThat(decoratedHandler).as("empty context: same handler").isSameAs(originalHandler);
 			}
 		}
 
-		@ValueSource(booleans = {true, false})
-		@ParameterizedTestWithName
-		void classContextRestoreHandleConsumerRestoresWithOrWithoutMarker(boolean withMarker) {
+		@Test
+		void classContextRestoreHandleConsumerRestoresThreadLocal() {
 			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> {
 				if (v.equals("bar")) {
 					sink.next(v + "=" + REF1.get());
@@ -459,13 +456,7 @@ class ContextPropagationTest {
 			};
 
 			final String expected = "bar=expected";
-			final Context context;
-			if (withMarker) {
-				context = Context.of(KEY1, "expected", ContextPropagation.CAPTURED_CONTEXT_MARKER, true);
-			}
-			else {
-				context = Context.of(KEY1, "expected");
-			}
+			final Context context = Context.of(KEY1, "expected");
 
 			BiConsumer<String, SynchronousSink<String>> decoratedHandler = new ContextPropagation.ContextRestoreHandleConsumer<>(originalHandler, registry, context);
 
@@ -482,8 +473,8 @@ class ContextPropagationTest {
 			FluxHandle<String, String> publisher = new FluxHandle<>(Flux.empty(), originalHandler);
 			FluxHandleFuseable<String, String> publisherFuseable = new FluxHandleFuseable<>(Flux.empty(), originalHandler);
 
-			CoreSubscriber<Object> actual = TestSubscriber.builder().contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true).build();
-			Fuseable.ConditionalSubscriber<Object> actualCondi = TestSubscriber.builder().contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true).buildConditional(v -> true);
+			CoreSubscriber<Object> actual = TestSubscriber.builder().contextPut("fluxHandleVariantsCallTheWrapper", true).build();
+			Fuseable.ConditionalSubscriber<Object> actualCondi = TestSubscriber.builder().contextPut("fluxHandleVariantsCallTheWrapper", true).buildConditional(v -> true);
 
 			HandleSubscriber sub = (HandleSubscriber) publisher.subscribeOrReturn(actual);
 			HandleConditionalSubscriber subCondi = (HandleConditionalSubscriber) publisher.subscribeOrReturn(actualCondi);
@@ -521,7 +512,7 @@ class ContextPropagationTest {
 			MonoHandle<String, String> publisher = new MonoHandle<>(Mono.empty(), originalHandler);
 			MonoHandleFuseable<String, String> publisherFuseable = new MonoHandleFuseable<>(Mono.empty(), originalHandler);
 
-			CoreSubscriber<Object> actual = TestSubscriber.builder().contextPut(ContextPropagation.CAPTURED_CONTEXT_MARKER, true).build();
+			CoreSubscriber<Object> actual = TestSubscriber.builder().contextPut("monoHandleVariantsCallTheWrapper", true).build();
 
 			HandleSubscriber sub = (HandleSubscriber) publisher.subscribeOrReturn(actual);
 			HandleFuseableSubscriber subFused = (HandleFuseableSubscriber) publisherFuseable.subscribeOrReturn(actual);
