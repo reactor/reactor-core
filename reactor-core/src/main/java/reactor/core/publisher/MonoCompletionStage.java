@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
@@ -40,9 +41,16 @@ final class MonoCompletionStage<T> extends Mono<T>
         implements Fuseable, Scannable {
 
     final CompletionStage<? extends T> future;
+    final boolean cancel;
 
     MonoCompletionStage(CompletionStage<? extends T> future) {
         this.future = Objects.requireNonNull(future, "future");
+        this.cancel = false;
+    }
+
+    MonoCompletionStage(CompletableFuture<? extends T> future, boolean cancel) {
+        this.future = Objects.requireNonNull(future, "future");
+        this.cancel = cancel;
     }
 
     @Override
@@ -52,7 +60,7 @@ final class MonoCompletionStage<T> extends Mono<T>
             @Override
             public void cancel() {
                 super.cancel();
-                if (future instanceof Future) {
+                if (cancel) {
                     ((Future<?>) future).cancel(true);
                 }
             }

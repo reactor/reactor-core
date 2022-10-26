@@ -39,7 +39,7 @@ MonoCompletionStageTest {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 
 		Mono<Integer> mono = Mono
-				.fromFuture(future);
+				.fromFuture(future, true);
 
 		StepVerifier.create(mono)
 		            .expectSubscription()
@@ -50,12 +50,33 @@ MonoCompletionStageTest {
 	}
 
 	@Test
-	public void cancelThenFutureFails() {
+	public void cancelThenFutureFailsWithDroppedError() {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
 		Mono<Integer> mono = Mono
 				.fromFuture(future)
+				.doOnSubscribe(subRef::set);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .then(() -> {
+			            subRef.get().cancel();
+			            future.completeExceptionally(new IllegalStateException("boom"));
+			            future.complete(1);
+		            })
+		            .thenCancel()//already cancelled but need to get to verification
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void cancelThenFutureFails() {
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+
+		Mono<Integer> mono = Mono
+				.fromFuture(future, true)
 				.doOnSubscribe(subRef::set);
 
 		StepVerifier.create(mono)
