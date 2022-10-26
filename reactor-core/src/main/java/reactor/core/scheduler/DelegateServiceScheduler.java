@@ -117,6 +117,17 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 
 	@Override
 	public void init() {
+		SchedulerState<ScheduledExecutorService> a = this.state;
+		if (a != null) {
+			if (a.currentResource == TERMINATED) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+			// return early - scheduler already initialized
+			return;
+		}
+
 		if (!STATE.compareAndSet(this, null,
 				SchedulerState.init(Schedulers.decorateExecutorService(this, original)))) {
 			if (isDisposed()) {

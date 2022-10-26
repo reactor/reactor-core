@@ -113,7 +113,6 @@ final class BoundedElasticScheduler implements Scheduler,
 		this.clock = Objects.requireNonNull(clock, "A Clock must be provided");
 		this.ttlMillis = ttlMillis;
 
-		// initially disposed
 		STATE.lazySet(this, INIT);
 	}
 
@@ -147,6 +146,17 @@ final class BoundedElasticScheduler implements Scheduler,
 
 	@Override
 	public void init() {
+		SchedulerState<BoundedServices> a = this.state;
+		if (a != INIT) {
+			if (a.currentResource == SHUTDOWN) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+			// return early - scheduler already initialized
+			return;
+		}
+
 		SchedulerState<BoundedServices> b =
 				SchedulerState.init(new BoundedServices(this));
 		if (STATE.compareAndSet(this, INIT, b)) {
@@ -160,7 +170,11 @@ final class BoundedElasticScheduler implements Scheduler,
 				// The executor was most likely shut down in parallel.
 				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
 				// If it's running - the other thread did a restart and will run its own schedule.
-				// In both cases we ignore it.
+				// In both cases we throw an exception, as the caller of init() should
+				// expect the scheduler to be running when this method returns.
+				throw new IllegalStateException(
+						"Scheduler disposed during initialization"
+				);
 			}
 		} else {
 			b.currentResource.evictor.shutdownNow();
