@@ -91,6 +91,17 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
 	@Override
 	public void init() {
+		SchedulerState<ScheduledExecutorService[]> a = this.state;
+		if (a != null) {
+			if (a.currentResource == SHUTDOWN) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+			// return early - scheduler already initialized
+			return;
+		}
+
 		SchedulerState<ScheduledExecutorService[]> b =
 				SchedulerState.init(new ScheduledExecutorService[n]);
 

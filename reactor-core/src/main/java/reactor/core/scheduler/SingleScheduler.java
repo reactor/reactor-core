@@ -58,8 +58,8 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			SchedulerState.init(TERMINATED);
 
 	SingleScheduler(ThreadFactory factory) {
-		this.state = INIT;
 		this.factory = factory;
+		STATE.lazySet(this, INIT);
 	}
 
 	/**
@@ -83,6 +83,17 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public void init() {
+		SchedulerState<ScheduledExecutorService> a = this.state;
+		if (a != INIT) {
+			if (a.currentResource == TERMINATED) {
+				throw new IllegalStateException(
+						"Initializing a disposed scheduler is not permitted"
+				);
+			}
+			// return early - scheduler already initialized
+			return;
+		}
+
 		SchedulerState<ScheduledExecutorService> b = SchedulerState.init(
 				Schedulers.decorateExecutorService(this, this.get())
 		);
