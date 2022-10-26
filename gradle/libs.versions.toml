@@ -6,7 +6,7 @@ baselinePerfExtra = "3.4.8"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.17"
+bytebuddy = "1.12.18"
 jmh = "1.35"
 junit = "5.9.1"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
@@ -40,7 +40,7 @@ micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator",
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
 micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0-RC1"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
-mockito = "org.mockito:mockito-core:4.8.0"
+mockito = "org.mockito:mockito-core:4.8.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
@@ -50,11 +50,11 @@ testNg = "org.testng:testng:7.5" # since 7.6 JDK8 is unsupported, don't bump
 throwingFunction = "com.pivovarit:throwing-function:1.5.1"
 
 [plugins]
-artifactory = { id = "com.jfrog.artifactory", version = "4.29.1" }
+artifactory = { id = "com.jfrog.artifactory", version = "4.29.2" }
 asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" }
 asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.3.1" }
-download = { id = "de.undercouch.download", version = "5.2.1" }
+download = { id = "de.undercouch.download", version = "5.3.0" }
 japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.1" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.14" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.10" }
