@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxTap.TapSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.core.publisher.FluxTap.TapSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * A generic per-Subscription side effect {@link Mono} that notifies a {@link SignalListener} of most events.
@@ -55,7 +55,7 @@ final class MonoTap<T, STATE> extends InternalMonoOperator<T, T> {
 		}
 		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
 		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoringSignalListener(signalListener, actual);
+		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
 
 		try {
 			signalListener.doFirst();

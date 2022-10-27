@@ -21,9 +21,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.util.annotation.Nullable;
 
 /**
  * A {@link reactor.core.Fuseable} generic per-Subscription side effect {@link Flux} that notifies a
@@ -58,7 +58,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		}
 		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
 		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoringSignalListener(signalListener, actual);
+		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
 
 		try {
 			signalListener.doFirst();
