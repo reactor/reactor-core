@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
@@ -41,30 +40,27 @@ final class MonoCompletionStage<T> extends Mono<T>
         implements Fuseable, Scannable {
 
     final CompletionStage<? extends T> future;
-    final boolean cancel;
+    final boolean suppressCancellation;
 
-    MonoCompletionStage(CompletionStage<? extends T> future) {
+    MonoCompletionStage(CompletionStage<? extends T> future, boolean suppressCancellation) {
         this.future = Objects.requireNonNull(future, "future");
-        this.cancel = false;
-    }
-
-    MonoCompletionStage(CompletableFuture<? extends T> future, boolean cancel) {
-        this.future = Objects.requireNonNull(future, "future");
-        this.cancel = cancel;
+        this.suppressCancellation = suppressCancellation;
     }
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
         Operators.MonoSubscriber<T, T>
-                sds = new Operators.MonoSubscriber<T, T>(actual) {
-            @Override
-            public void cancel() {
-                super.cancel();
-                if (cancel) {
-                    ((Future<?>) future).cancel(true);
-                }
-            }
-        };
+                sds = suppressCancellation
+                ? new Operators.MonoSubscriber<>(actual)
+                : new Operators.MonoSubscriber<T, T>(actual) {
+                    @Override
+                    public void cancel() {
+                        super.cancel();
+                        if (future instanceof Future) {
+                            ((Future<?>) future).cancel(true);
+                        }
+                    }
+                };
 
         actual.onSubscribe(sds);
 

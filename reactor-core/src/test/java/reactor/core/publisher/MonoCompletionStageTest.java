@@ -39,7 +39,7 @@ MonoCompletionStageTest {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 
 		Mono<Integer> mono = Mono
-				.fromFuture(future, true);
+				.fromFuture(future);
 
 		StepVerifier.create(mono)
 		            .expectSubscription()
@@ -55,7 +55,7 @@ MonoCompletionStageTest {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
 		Mono<Integer> mono = Mono
-				.fromFuture(future)
+				.fromFuture(future, true)
 				.doOnSubscribe(subRef::set);
 
 		StepVerifier.create(mono)
@@ -76,7 +76,7 @@ MonoCompletionStageTest {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
 		Mono<Integer> mono = Mono
-				.fromFuture(future, true)
+				.fromFuture(future)
 				.doOnSubscribe(subRef::set);
 
 		StepVerifier.create(mono)
@@ -96,10 +96,7 @@ MonoCompletionStageTest {
 		for (int i = 0; i < 10000; i++) {
 			CompletableFuture<Integer> future = new CompletableFuture<>();
 			Mono<Integer> mono = Mono
-					.fromFuture(future)
-					.doFinally(sig -> {
-						if (sig == SignalType.CANCEL) future.cancel(false);
-					});
+					.fromFuture(future);
 
 			StepVerifier.create(mono)
 			            .expectSubscription()
@@ -117,10 +114,7 @@ MonoCompletionStageTest {
 		for (int i = 0; i < 500; i++) {
 			CompletableFuture<Integer> future = new CompletableFuture<>();
 			Mono<Integer> mono = Mono
-					.fromFuture(future)
-					.doFinally(sig -> {
-						if (sig == SignalType.CANCEL) future.cancel(false);
-					});
+					.fromFuture(future);
 
 			StepVerifier.create(mono)
 			            .expectSubscription()
@@ -139,10 +133,7 @@ MonoCompletionStageTest {
 		for (int i = 0; i < 500; i++) {
 			CompletableFuture<Integer> future = new CompletableFuture<>();
 			Mono<Integer> mono = Mono
-					.fromFuture(future)
-					.doFinally(sig -> {
-						if (sig == SignalType.CANCEL) future.cancel(false);
-					});
+					.fromFuture(future);
 
 			StepVerifier.create(mono.timeout(Duration.ofMillis(10)))
 			            .expectSubscription()
@@ -192,7 +183,7 @@ MonoCompletionStageTest {
 	@Test
 	public void scanOperator(){
 		CompletionStage<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
-		MonoCompletionStage<String> test = new MonoCompletionStage<>(completionStage);
+		MonoCompletionStage<String> test = new MonoCompletionStage<>(completionStage, false);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
