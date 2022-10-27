@@ -222,23 +222,6 @@ public class MonoCollectTest {
 	}
 
 	@Test
-	public void discardElementAndBufferOnAccumulatorLateFailure_fused() {
-		Flux.just(1, 2, 3, 4)
-		    .collect(ArrayList::new, (l, t) -> {
-			    if (t == 3) {
-				    throw new IllegalStateException("accumulator: boom");
-			    }
-			    l.add(t);
-		    })
-		    .as(StepVerifier::create)
-		    //WARNING: we need to request fusion so this expectFusion is important
-		    .expectFusion(Fuseable.ASYNC)
-		    .expectErrorMessage("accumulator: boom")
-		    .verifyThenAssertThat()
-		    .hasDiscardedExactly(1, 2, 3);
-	}
-
-	@Test
 	public void discardListElementsOnError() {
 		Mono<List<Integer>> test =
 				Flux.range(1, 10)

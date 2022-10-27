@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,12 +41,12 @@ class MonoPublishMulticastTest {
 		                      .publish(o -> o.flatMap(s -> Mono.just(2)));
 
 		StepVerifier.create(m)
-		            .expectFusion()
+		            .expectNoFusionSupport()
 		            .expectNext(2)
 		            .verifyComplete();
 
 		StepVerifier.create(m)
-		            .expectFusion()
+		            .expectNoFusionSupport()
 		            .expectNext(2)
 		            .verifyComplete();
 	}
@@ -137,24 +137,6 @@ class MonoPublishMulticastTest {
 	@Test
 	void normalCancelBeforeComplete() {
 		assertThat(Mono.just(Mono.just(1).hide().publish(v -> v)).flatMapMany(v -> v).blockLast()).isEqualTo(1);
-	}
-
-	//see https://github.com/reactor/reactor-core/issues/2600
-	@Test
-	void errorFused() {
-		final String errorMessage = "Error in Mono";
-		final Mono<Object> source = Mono.error(new RuntimeException(errorMessage));
-		final Mono<Object> published = source.publish(coordinator -> coordinator.flatMap(Mono::just));
-
-		StepVerifier.create(published)
-		            .expectFusion()
-		            .expectErrorMessage(errorMessage)
-		            .verify();
-
-		StepVerifier.create(published, StepVerifierOptions.create().scenarioName("second shared invocation"))
-		            .expectFusion()
-		            .expectErrorMessage(errorMessage)
-		            .verify();
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/2600

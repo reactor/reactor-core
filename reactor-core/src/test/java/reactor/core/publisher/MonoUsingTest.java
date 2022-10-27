@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -338,25 +338,6 @@ public class MonoUsingTest {
 	}
 
 	@Test
-	public void smokeTestMapReduceGuardedByCleanup_fusedEager() {
-		AtomicBoolean cleaned = new AtomicBoolean();
-		Mono.using(() -> cleaned,
-				ab -> Flux.just("foo", "bar", "baz")
-				          .delayElements(Duration.ofMillis(100))
-				          .count()
-				          .map(i -> "" + i + ab.get()),
-				ab -> ab.set(true),
-				true)
-		    .as(StepVerifier::create)
-		    .expectFusion()
-		    .expectNext("3false")
-		    .expectComplete()
-		    .verify();
-
-		assertThat(cleaned).isTrue();
-	}
-
-	@Test
 	public void smokeTestMapReduceGuardedByCleanup_normalNotEager() {
 		AtomicBoolean cleaned = new AtomicBoolean();
 		Mono.using(() -> cleaned,
@@ -369,28 +350,6 @@ public class MonoUsingTest {
 				false)
 		    .as(StepVerifier::create)
 		    .expectNoFusionSupport()
-		    .expectNext("3false")
-		    .expectComplete()
-		    .verify();
-
-		//since the handler is executed after onComplete, we allow some delay
-		await().atMost(100, TimeUnit.MILLISECONDS)
-		       .with().pollInterval(10, TimeUnit.MILLISECONDS)
-		       .untilAsserted(assertThat(cleaned)::isTrue);
-	}
-
-	@Test
-	public void smokeTestMapReduceGuardedByCleanup_fusedNotEager() {
-		AtomicBoolean cleaned = new AtomicBoolean();
-		Mono.using(() -> cleaned,
-				ab -> Flux.just("foo", "bar", "baz")
-				          .delayElements(Duration.ofMillis(100))
-				          .count()
-				          .map(i -> "" + i + ab.get()),
-				ab -> ab.set(true),
-				false)
-		    .as(StepVerifier::create)
-		    .expectFusion()
 		    .expectNext("3false")
 		    .expectComplete()
 		    .verify();
