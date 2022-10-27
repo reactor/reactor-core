@@ -614,6 +614,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
 	 * <p>
+	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
+	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
+	 * propagation
 	 *
 	 * @param future {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately)
@@ -634,8 +637,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param future {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately)
-	 * @param suppressCancel specifies whether future should have cancellation signall
-	 *                          suppressed
+	 * @param suppressCancel specifies whether future should have cancellation signal
+	 *                          to be suppressed
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
@@ -651,9 +654,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
 	 * <p>
-	 * Note that the future is not cancelled when that Mono is cancelled, but that behavior
-	 * can be obtained by using a {@link #fromFuture(Supplier, boolean)}
-	 * overload with the {@code cancel} parameter set to {@code true}.
 	 *
 	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of future-based APIs.
@@ -662,7 +662,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
 	 */
 	public static <T> Mono<T> fromFuture(Supplier<? extends CompletableFuture<? extends T>> futureSupplier) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(futureSupplier.get(), false)));
+		return fromFuture(futureSupplier, false);
 	}
 
 	/**
@@ -675,8 +675,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of future-based APIs.
-	 * @param cancel specifies whether future should be cancelled or not via the
-	 * {@link CompletableFuture#cancel(boolean)} call
+	 * @param suppressCancel specifies whether future should have cancellation signal
+	 *                          to be suppressed
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
