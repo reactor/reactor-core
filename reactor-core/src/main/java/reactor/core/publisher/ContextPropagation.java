@@ -170,10 +170,7 @@ final class ContextPropagation {
 		}
 		
 		ContextSnapshot.Scope restoreThreadLocals() {
-			//TODO for now ContextSnapshot static methods don't allow restoring _all_ TLs without an intermediate ContextSnapshot
-			return ContextSnapshot
-				.captureFrom(this.context, k -> true, this.registry)
-				.setThreadLocals();
+			return ContextSnapshot.setAllThreadLocalsFrom(this.context, this.registry);
 		}
 
 		@Override
@@ -305,11 +302,7 @@ final class ContextPropagation {
 
 		@Override
 		public void accept(T t, SynchronousSink<R> sink) {
-			//TODO for now ContextSnapshot static methods don't allow restoring _all_ TLs without an intermediate ContextSnapshot
-			final ContextSnapshot snapshot = ContextSnapshot.captureFrom(this.reactorContext, k -> true, this.registry);
-			try (ContextSnapshot.Scope ignored = snapshot.setThreadLocals(k -> {
-				return true;
-			})) {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(this.reactorContext, this.registry)) {
 				originalHandler.accept(t, sink);
 			}
 		}
