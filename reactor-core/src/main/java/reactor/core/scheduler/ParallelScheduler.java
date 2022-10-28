@@ -145,15 +145,25 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 		}
 	}
 
-    @Override
-    public boolean await(ScheduledExecutorService[] resource, long timeout, TimeUnit timeUnit) throws InterruptedException {
-        for (ScheduledExecutorService executor : resource) {
-            if (!executor.awaitTermination(timeout, timeUnit)) {
-                return false;
-            }
-        }
-        return true;
-    }
+	@Override
+	public boolean await(ScheduledExecutorService[] resource, long timeout, TimeUnit timeUnit) throws InterruptedException {
+		for (ScheduledExecutorService executor : resource) {
+			if (!executor.awaitTermination(timeout, timeUnit)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public boolean tryAwait(ScheduledExecutorService[] resource) {
+		for (ScheduledExecutorService executor : resource) {
+			if (!executor.isTerminated()) {
+				return false;
+			}
+		}
+		return true;
+	}
 
     @Override
 	public void dispose() {

@@ -32,7 +32,7 @@ import org.openjdk.jcstress.infra.results.Z_Result;
 public abstract class SchedulersStressTest {
 
 	private static void restart(Scheduler scheduler) {
-		scheduler.disposeGracefully().block(Duration.ofMillis(100));
+		scheduler.disposeGracefully().block(Duration.ofMillis(500));
 		// TODO: in 3.6.x: remove restart capability and this validation
 		scheduler.start();
 	}
@@ -174,6 +174,11 @@ public abstract class SchedulersStressTest {
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
 			r.r3 = consistentState && scheduler.isDisposed();
+			if (consistentState) {
+				//when that condition is true, we erase the r1/r2 state. that should greatly limit
+				//the output of "interesting acceptable state" in the dump should and error occur
+				r.r1 = r.r2 = 0;
+			}
 		}
 	}
 
@@ -210,6 +215,11 @@ public abstract class SchedulersStressTest {
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
 			r.r3 = consistentState && scheduler.isDisposed();
+			if (consistentState) {
+				//when that condition is true, we erase the r1/r2 state. that should greatly limit
+				//the output of "interesting acceptable state" in the dump should and error occur
+				r.r1 = r.r2 = 0;
+			}
 		}
 	}
 
@@ -246,6 +256,11 @@ public abstract class SchedulersStressTest {
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
 			r.r3 = consistentState && scheduler.isDisposed();
+			if (consistentState) {
+				//when that condition is true, we erase the r1/r2 state. that should greatly limit
+				//the output of "interesting acceptable state" in the dump should and error occur
+				r.r1 = r.r2 = 0;
+			}
 		}
 	}
 
@@ -281,6 +296,11 @@ public abstract class SchedulersStressTest {
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
 			r.r3 = consistentState && scheduler.isDisposed();
+			if (consistentState) {
+				//when that condition is true, we erase the r1/r2 state. that should greatly limit
+				//the output of "interesting acceptable state" in the dump should and error occur
+				r.r1 = r.r2 = 0;
+			}
 		}
 	}
 
@@ -317,6 +337,11 @@ public abstract class SchedulersStressTest {
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
 			r.r3 = consistentState && scheduler.isDisposed();
+			if (consistentState) {
+				//when that condition is true, we erase the r1/r2 state. that should greatly limit
+				//the output of "interesting acceptable state" in the dump should and error occur
+				r.r1 = r.r2 = 0;
+			}
 		}
 	}
 
@@ -354,6 +379,11 @@ public abstract class SchedulersStressTest {
 			// by r.r1 and r.r2, which should be equal.
 			boolean consistentState = r.r1 == r.r2;
 			r.r3 = consistentState && scheduler.isDisposed();
+			if (consistentState) {
+				//when that condition is true, we erase the r1/r2 state. that should greatly limit
+				//the output of "interesting acceptable state" in the dump should and error occur
+				r.r1 = r.r2 = 0;
+			}
 		}
 	}
 }

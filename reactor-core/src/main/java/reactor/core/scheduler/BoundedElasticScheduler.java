@@ -220,12 +220,25 @@ final class BoundedElasticScheduler implements Scheduler,
 
 	@Override
 	public boolean await(BoundedServices boundedServices, long timeout, TimeUnit timeUnit)
-			throws InterruptedException {
+		throws InterruptedException {
 		if (!boundedServices.evictor.awaitTermination(timeout, timeUnit)) {
 			return false;
 		}
 		for (BoundedState bs : boundedServices.busyStates.array) {
 			if (!bs.executor.awaitTermination(timeout, timeUnit)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public boolean tryAwait(BoundedServices boundedServices) {
+		if (!boundedServices.evictor.isTerminated()) {
+			return false;
+		}
+		for (BoundedState bs : boundedServices.busyStates.array) {
+			if (!bs.executor.isTerminated()) {
 				return false;
 			}
 		}
