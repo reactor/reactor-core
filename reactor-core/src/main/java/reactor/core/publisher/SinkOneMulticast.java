@@ -25,58 +25,51 @@ import reactor.util.annotation.Nullable;
 
 final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements InternalOneSink<O> {
 
+	@SuppressWarnings("rawtypes")
+	static final Inner[] TERMINATED_VALUE = new Inner[0];
+
+	static final int STATE_VALUE = 1;
+
 	@Nullable
 	O value;
 
 	@Override
-	public EmitResult tryEmitEmpty() {
-		return tryEmitValue(null);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public EmitResult tryEmitError(Throwable cause) {
-		Objects.requireNonNull(cause, "onError cannot be null");
-
-		Inner<O>[] prevSubscribers = SUBSCRIBERS.getAndSet(this, TERMINATED);
-		if (prevSubscribers == TERMINATED) {
-			return EmitResult.FAIL_TERMINATED;
-		}
-
-		error = cause;
-		value = null;
-
-		for (Inner<O> as : prevSubscribers) {
-			as.error(cause);
-		}
-		return EmitResult.OK;
+	boolean isTerminated(Inner<?>[] array) {
+		return array == TERMINATED_VALUE || super.isTerminated(array);
 	}
 
 	@Override
 	public EmitResult tryEmitValue(@Nullable O value) {
-		@SuppressWarnings("unchecked") Inner<O>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
-		if (array == TERMINATED) {
+		Inner<O>[] prevSubscribers = this.subscribers;
+
+		if (isTerminated(prevSubscribers)) {
 			return EmitResult.FAIL_TERMINATED;
 		}
 
 		this.value = value;
-		if (value == null) {
-			for (Inner<O> as : array) {
-				as.complete();
+
+		for (;;) {
+			if (SUBSCRIBERS.compareAndSet(this, prevSubscribers, TERMINATED_VALUE)) {
+				break;
+			}
+
+			prevSubscribers = this.subscribers;
+			if (isTerminated(prevSubscribers)) {
+				return EmitResult.FAIL_TERMINATED;
 			}
 		}
-		else {
-			for (Inner<O> as : array) {
-				as.complete(value);
-			}
+
+		for (Inner<O> as : prevSubscribers) {
+			as.complete(value);
 		}
+
 		return EmitResult.OK;
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
-		if (key == Attr.ERROR) return error;
+		if (key == Attr.TERMINATED) return isTerminated(subscribers);
+		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
@@ -86,24 +79,47 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 	public void subscribe(final CoreSubscriber<? super O> actual) {
 		NextInner<O> as = new NextInner<>(actual, this);
 		actual.onSubscribe(as);
-		if (add(as)) {
+		final int addState = add(as);
+		if (addState == STATE_ADDED) {
 			if (as.isCancelled()) {
 				remove(as);
 			}
 		}
+		else if (addState == STATE_ERROR) {
+			actual.onError(error);
+		}
+		else if (addState == STATE_EMPTY) {
+			as.complete();
+		}
 		else {
-			Throwable ex = error;
-			if (ex != null) {
-				actual.onError(ex);
+			as.complete(value);
+		}
+	}
+
+	@Override
+	int add(Inner<O> ps) {
+		for (; ; ) {
+			Inner<O>[] a = subscribers;
+
+			if (a == TERMINATED_EMPTY) {
+				return STATE_EMPTY;
 			}
-			else {
-				O v = value;
-				if (v != null) {
-					as.complete(v);
-				}
-				else {
-					as.complete();
-				}
+
+			if (a == TERMINATED_ERROR) {
+				return STATE_ERROR;
+			}
+
+			if (a == TERMINATED_VALUE) {
+				return STATE_VALUE;
+			}
+
+			int n = a.length;
+			@SuppressWarnings("unchecked") Inner<O>[] b = new Inner[n + 1];
+			System.arraycopy(a, 0, b, 0, n);
+			b[n] = ps;
+
+			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				return STATE_ADDED;
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,14 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final Inner[] EMPTY = new Inner[0];
-
 	@SuppressWarnings("rawtypes")
-	static final Inner[] TERMINATED = new Inner[0];
+	static final Inner[] TERMINATED_EMPTY = new Inner[0];
+	@SuppressWarnings("rawtypes")
+	static final Inner[] TERMINATED_ERROR = new Inner[0];
+
+	static final int STATE_ADDED = 0;
+	static final int STATE_ERROR = -1;
+	static final int STATE_EMPTY = -2;
 
 	@Nullable
 	Throwable error;
@@ -58,12 +63,23 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 		return this;
 	}
 
+	boolean isTerminated(Inner<?>[] array) {
+		return array == TERMINATED_EMPTY || array == TERMINATED_ERROR;
+	}
+
 	@Override
 	public EmitResult tryEmitEmpty() {
-		Inner<?>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		Inner<T>[] array;
+		for (;;) {
+			array = this.subscribers;
 
-		if (array == TERMINATED) {
-			return Sinks.EmitResult.FAIL_TERMINATED;
+			if (isTerminated(array)) {
+				return EmitResult.FAIL_TERMINATED;
+			}
+
+			if (SUBSCRIBERS.compareAndSet(this, array, TERMINATED_EMPTY)) {
+				break;
+			}
 		}
 
 		for (Inner<?> as : array) {
@@ -77,23 +93,36 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 	public EmitResult tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
-		Inner<T>[] prevSubscribers = SUBSCRIBERS.getAndSet(this, TERMINATED);
-		if (prevSubscribers == TERMINATED) {
+		Inner<T>[] prevSubscribers = this.subscribers;
+
+		if (isTerminated(prevSubscribers)) {
 			return EmitResult.FAIL_TERMINATED;
 		}
 
 		error = cause;
 
+		for (;;) {
+			if (SUBSCRIBERS.compareAndSet(this, prevSubscribers, TERMINATED_ERROR)) {
+				break;
+			}
+
+			prevSubscribers = this.subscribers;
+			if (isTerminated(prevSubscribers)) {
+				return EmitResult.FAIL_TERMINATED;
+			}
+		}
+
 		for (Inner<T> as : prevSubscribers) {
 			as.error(cause);
 		}
+
 		return EmitResult.OK;
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
-		if (key == Attr.ERROR) return error;
+		if (key == Attr.TERMINATED) return isTerminated(subscribers);
+		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
@@ -104,12 +133,16 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 		return Operators.multiSubscribersContext(subscribers);
 	}
 
-	boolean add(Inner<T> ps) {
+	int add(Inner<T> ps) {
 		for (; ; ) {
 			Inner<T>[] a = subscribers;
 
-			if (a == TERMINATED) {
-				return false;
+			if (a == TERMINATED_EMPTY) {
+				return STATE_EMPTY;
+			}
+
+			if (a == TERMINATED_ERROR) {
+				return STATE_ERROR;
 			}
 
 			int n = a.length;
@@ -118,7 +151,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 			b[n] = ps;
 
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-				return true;
+				return STATE_ADDED;
 			}
 		}
 	}
@@ -165,20 +198,21 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 	public void subscribe(final CoreSubscriber<? super T> actual) {
 		Inner<T> as = new VoidInner<>(actual, this);
 		actual.onSubscribe(as);
-		if (add(as)) {
+		final int addedState = add(as);
+		if (addedState == STATE_ADDED) {
 			if (as.isCancelled()) {
 				remove(as);
 			}
 		}
-		else {
+		else if (addedState == STATE_ERROR) {
 			Throwable ex = error;
-			if (ex != null) {
-				actual.onError(ex);
-			}
-			else {
-				as.complete();
-			}
+
+			actual.onError(ex);
 		}
+		else {
+			as.complete();
+		}
+
 	}
 
 	@Override
