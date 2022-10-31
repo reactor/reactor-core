@@ -1732,14 +1732,13 @@ public abstract class Operators {
 	/**
 	 * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
 	 * resulting from concurrent request or cancel and onXXX signals.
-	 * Publisher Operators using this Subscriber can be fused (implement Fuseable).
 	 *
 	 * @param <I> The upstream sequence type
 	 * @param <O> The downstream sequence type
 	 */
 	public static class MonoSubscriber<I, O>
 			implements InnerOperator<I, O>,
-			           Fuseable, //for constants only
+			           Fuseable,
 			           QueueSubscription<O> {
 
 		protected final CoreSubscriber<? super O> actual;
@@ -1875,8 +1874,7 @@ public abstract class Operators {
 					if (s == CANCELLED) {
 						return;
 					}
-					// if the any bits 1-31 are set, we are either in fusion mode (FUSED_*)
-					// or request has been called (HAS_REQUEST_*)
+					// if any bits 1-31 are set, request(n) has been called (HAS_REQUEST_*)
 					if ((s & ~NO_REQUEST_HAS_VALUE) != 0) {
 						return;
 					}
