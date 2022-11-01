@@ -19,7 +19,7 @@ package reactor.util;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
-import reactor.ReactorTestExecutionListener;
+import reactor.ReactorLauncherSessionListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,8 +27,8 @@ class LoggersTest {
 
 	@AfterAll
 	static void resetLoggerFactory() {
-		//delegate to ReactorTestExecutionListener to centralize the logic
-		ReactorTestExecutionListener.resetLoggersFactory();
+		//delegate to ReactorLauncherSessionListener to centralize the logic
+		ReactorLauncherSessionListener.resetLoggersFactory();
 	}
 
 	@Test
