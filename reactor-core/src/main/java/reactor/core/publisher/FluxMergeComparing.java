@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,11 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 	final Comparator<? super T>    valueComparator;
 	final Publisher<? extends T>[] sources;
 	final boolean delayError;
+	final boolean waitForAllSources;
 
 	@SafeVarargs
-	FluxMergeComparing(int prefetch, Comparator<? super T> valueComparator, boolean delayError, Publisher<? extends T>... sources) {
+	FluxMergeComparing(int prefetch, Comparator<? super T> valueComparator, boolean delayError,
+					   boolean waitForAllSources, Publisher<? extends T>... sources) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -68,6 +70,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		this.prefetch = prefetch;
 		this.valueComparator = valueComparator;
 		this.delayError = delayError;
+		this.waitForAllSources = waitForAllSources;
 	}
 
 	/**
@@ -91,9 +94,9 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 			@SuppressWarnings("unchecked")
 			Comparator<T> currentComparator = (Comparator<T>) this.valueComparator;
 			final Comparator<T> newComparator = currentComparator.thenComparing(otherComparator);
-			return new FluxMergeComparing<>(prefetch, newComparator, delayError, newArray);
+			return new FluxMergeComparing<>(prefetch, newComparator, delayError, waitForAllSources, newArray);
 		}
-		return new FluxMergeComparing<>(prefetch, valueComparator, delayError, newArray);
+		return new FluxMergeComparing<>(prefetch, valueComparator, delayError, waitForAllSources, newArray);
 	}
 
 	@Override
@@ -114,7 +117,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MergeOrderedMainProducer<T> main = new MergeOrderedMainProducer<>(actual, valueComparator, prefetch, sources.length, delayError);
+		MergeOrderedMainProducer<T> main = new MergeOrderedMainProducer<>(actual, valueComparator, prefetch, sources.length, delayError, waitForAllSources);
 		actual.onSubscribe(main);
 		main.subscribe(sources);
 	}
@@ -129,6 +132,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		final Comparator<? super T> comparator;
 		final Object[] values;
 		final boolean delayError;
+		final boolean waitForAllSources;
 
 		boolean done;
 
@@ -154,10 +158,11 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 				AtomicIntegerFieldUpdater.newUpdater(MergeOrderedMainProducer.class, "wip");
 
 		MergeOrderedMainProducer(CoreSubscriber<? super T> actual,
-				Comparator<? super T> comparator, int prefetch, int n, boolean delayError) {
+				Comparator<? super T> comparator, int prefetch, int n, boolean delayError, boolean waitForAllSources) {
 			this.actual = actual;
 			this.comparator = comparator;
 			this.delayError = delayError;
+			this.waitForAllSources = waitForAllSources;
 
 			@SuppressWarnings("unchecked")
 			MergeOrderedInnerSubscriber<T>[] mergeOrderedInnerSub =
@@ -285,7 +290,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 						return;
 					}
 
-					if (nonEmpty != n || e >= r) {
+					if ((waitForAllSources && nonEmpty != n) || (!waitForAllSources && (nonEmpty == 0 || nonEmpty == innerDoneCount)) || e >= r) {
 						break;
 					}
 
@@ -294,7 +299,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 
 					int i = 0;
 					for (Object o : values) {
-						if (o != DONE) {
+						if (o != DONE && o != null) {
 							boolean smaller;
 							try {
 								@SuppressWarnings("unchecked")
@@ -316,12 +321,14 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 						i++;
 					}
 
-					values[minIndex] = null;
+					if (minIndex >= 0) {
+						values[minIndex] = null;
 
-					actual.onNext(min);
+						actual.onNext(min);
 
-					e++;
-					subscribers[minIndex].request(1);
+						e++;
+						subscribers[minIndex].request(1);
+					}
 				}
 
 				this.emitted = e;
