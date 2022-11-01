@@ -31,6 +31,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
@@ -539,69 +540,73 @@ public final class RetryBackoffSpec extends Retry {
 	@Override
 	public Flux<Long> generateCompanion(Flux<RetrySignal> t) {
 		validateArguments();
-		return t.concatMap(retryWhenState -> {
-			//capture the state immediately
-			RetrySignal copy = retryWhenState.copy();
-			Throwable currentFailure = copy.failure();
-			long iteration = isTransientErrors ? copy.totalRetriesInARow() : copy.totalRetries();
+		return Flux.deferContextual(cv ->
+		   t.contextWrite(cv)
+			.concatMap(retryWhenState -> {
+				//capture the state immediately
+				RetrySignal copy = retryWhenState.copy();
+				Throwable currentFailure = copy.failure();
+				long iteration = isTransientErrors ? copy.totalRetriesInARow() : copy.totalRetries();
 
-			if (currentFailure == null) {
-				return Mono.error(new IllegalStateException("Retry.RetrySignal#failure() not expected to be null"));
-			}
+				if (currentFailure == null) {
+					return Mono.error(new IllegalStateException("Retry.RetrySignal#failure() not expected to be null"));
+				}
 
-			if (!errorFilter.test(currentFailure)) {
-				return Mono.error(currentFailure);
-			}
+				if (!errorFilter.test(currentFailure)) {
+					return Mono.error(currentFailure);
+				}
 
-			if (iteration >= maxAttempts) {
-				return Mono.error(retryExhaustedGenerator.apply(this, copy));
-			}
+				if (iteration >= maxAttempts) {
+					return Mono.error(retryExhaustedGenerator.apply(this, copy));
+				}
 
-			Duration nextBackoff;
-			try {
-				nextBackoff = minBackoff.multipliedBy((long) Math.pow(2, iteration));
-				if (nextBackoff.compareTo(maxBackoff) > 0) {
+				Duration nextBackoff;
+				try {
+					nextBackoff = minBackoff.multipliedBy((long) Math.pow(2, iteration));
+					if (nextBackoff.compareTo(maxBackoff) > 0) {
+						nextBackoff = maxBackoff;
+					}
+				}
+				catch (ArithmeticException overflow) {
 					nextBackoff = maxBackoff;
 				}
-			}
-			catch (ArithmeticException overflow) {
-				nextBackoff = maxBackoff;
-			}
 
-			//short-circuit delay == 0 case
-			if (nextBackoff.isZero()) {
-				return RetrySpec.applyHooks(copy, Mono.just(iteration),
+				//short-circuit delay == 0 case
+				if (nextBackoff.isZero()) {
+					return RetrySpec.applyHooks(copy, Mono.just(iteration),
+							syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
+				}
+
+				ThreadLocalRandom random = ThreadLocalRandom.current();
+
+				long jitterOffset;
+				try {
+					jitterOffset = nextBackoff.multipliedBy((long) (100 * jitterFactor))
+							.dividedBy(100)
+							.toMillis();
+				}
+				catch (ArithmeticException ae) {
+					jitterOffset = Math.round(Long.MAX_VALUE * jitterFactor);
+				}
+				long lowBound = Math.max(minBackoff.minus(nextBackoff)
+						.toMillis(), -jitterOffset);
+				long highBound = Math.min(maxBackoff.minus(nextBackoff)
+						.toMillis(), jitterOffset);
+
+				long jitter;
+				if (highBound == lowBound) {
+					if (highBound == 0) jitter = 0;
+					else jitter = random.nextLong(highBound);
+				}
+				else {
+					jitter = random.nextLong(lowBound, highBound);
+				}
+				Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
+				return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff,
+								backoffSchedulerSupplier.get()),
 						syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
-			}
-
-			ThreadLocalRandom random = ThreadLocalRandom.current();
-
-			long jitterOffset;
-			try {
-				jitterOffset = nextBackoff.multipliedBy((long) (100 * jitterFactor))
-				                          .dividedBy(100)
-				                          .toMillis();
-			}
-			catch (ArithmeticException ae) {
-				jitterOffset = Math.round(Long.MAX_VALUE * jitterFactor);
-			}
-			long lowBound = Math.max(minBackoff.minus(nextBackoff)
-			                                     .toMillis(), -jitterOffset);
-			long highBound = Math.min(maxBackoff.minus(nextBackoff)
-			                                    .toMillis(), jitterOffset);
-
-			long jitter;
-			if (highBound == lowBound) {
-				if (highBound == 0) jitter = 0;
-				else jitter = random.nextLong(highBound);
-			}
-			else {
-				jitter = random.nextLong(lowBound, highBound);
-			}
-			Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
-			return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff,
-					backoffSchedulerSupplier.get()),
-					syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
-		});
+			})
+		    .contextWrite(c -> Context.empty())
+		);
 	}
 }

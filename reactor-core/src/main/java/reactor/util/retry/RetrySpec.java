@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
@@ -353,25 +354,30 @@ public final class RetrySpec extends Retry {
 
 	@Override
 	public Flux<Long> generateCompanion(Flux<RetrySignal> flux) {
-		return flux.concatMap(retryWhenState -> {
-			//capture the state immediately
-			RetrySignal copy = retryWhenState.copy();
-			Throwable currentFailure = copy.failure();
-			long iteration = isTransientErrors ? copy.totalRetriesInARow() : copy.totalRetries();
+		return Flux.deferContextual(cv ->
+			flux
+					.contextWrite(cv)
+					.concatMap(retryWhenState -> {
+						//capture the state immediately
+						RetrySignal copy = retryWhenState.copy();
+						Throwable currentFailure = copy.failure();
+						long iteration = isTransientErrors ? copy.totalRetriesInARow() : copy.totalRetries();
 
-			if (currentFailure == null) {
-				return Mono.error(new IllegalStateException("RetryWhenState#failure() not expected to be null"));
-			}
-			else if (!errorFilter.test(currentFailure)) {
-				return Mono.error(currentFailure);
-			}
-			else if (iteration >= maxAttempts) {
-				return Mono.error(retryExhaustedGenerator.apply(this, copy));
-			}
-			else {
-				return applyHooks(copy, Mono.just(iteration), doPreRetry, doPostRetry, asyncPreRetry, asyncPostRetry);
-			}
-		});
+						if (currentFailure == null) {
+							return Mono.error(new IllegalStateException("RetryWhenState#failure() not expected to be null"));
+						}
+						else if (!errorFilter.test(currentFailure)) {
+							return Mono.error(currentFailure);
+						}
+						else if (iteration >= maxAttempts) {
+							return Mono.error(retryExhaustedGenerator.apply(this, copy));
+						}
+						else {
+							return applyHooks(copy, Mono.just(iteration), doPreRetry, doPostRetry, asyncPreRetry, asyncPostRetry);
+						}
+					})
+					.contextWrite(c -> Context.empty())
+		);
 	}
 
 	//===================
