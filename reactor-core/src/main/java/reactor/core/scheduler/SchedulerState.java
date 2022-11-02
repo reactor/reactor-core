@@ -65,7 +65,7 @@ final class SchedulerState<T> {
 		static final ScheduledExecutorService TRANSITION_AWAIT_POOL;
 
 		static {
-			ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+			ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(0);
 			executor.setKeepAliveTime(10, TimeUnit.SECONDS);
 			executor.allowCoreThreadTimeOut(true);
 			executor.setMaximumPoolSize(Schedulers.DEFAULT_POOL_SIZE);
