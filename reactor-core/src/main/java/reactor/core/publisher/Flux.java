@@ -1526,7 +1526,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingNaturalOrder.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/mergePriorityNaturalOrder.svg" alt="">
 	 *
 	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
 	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
@@ -1549,7 +1549,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/mergePriority.svg" alt="">
 	 *
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
@@ -1573,7 +1573,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/mergePriority.svg" alt="">
 	 *
 	 * @param prefetch the number of elements to prefetch from each source (avoiding too
 	 * many small requests to the source when picking)
@@ -1607,7 +1607,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Note that it is delaying errors until all data is consumed.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/mergePriority.svg" alt="">
 	 *
 	 * @param prefetch the number of elements to prefetch from each source (avoiding too
 	 * many small requests to the source when picking)
