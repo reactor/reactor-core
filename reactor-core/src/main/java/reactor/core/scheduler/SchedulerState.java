@@ -73,8 +73,6 @@ final class SchedulerState<T> {
 			executor.setKeepAliveTime(10, TimeUnit.SECONDS);
 			executor.allowCoreThreadTimeOut(true);
 			executor.setMaximumPoolSize(Schedulers.DEFAULT_POOL_SIZE);
-
-			System.out.println("CREATED POOL");
 			TRANSITION_AWAIT_POOL = executor;
 		}
 
