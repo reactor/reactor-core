@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
 
-import reactor.core.CoreSubscriber;
 import reactor.core.observability.SignalListener;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -53,8 +53,9 @@ final class ContextPropagation {
 		Function<Context, Context> contextCaptureFunction;
 		boolean contextPropagation;
 		try {
-			ContextRegistry registry = ContextRegistry.getInstance();
-			contextCaptureFunction = new ContextCaptureFunction(PREDICATE_TRUE, registry);
+			ContextRegistry globalRegistry = ContextRegistry.getInstance();
+			contextCaptureFunction = target -> ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
+				.updateContext(target);
 			contextPropagation = true;
 		}
 		catch (LinkageError t) {
@@ -120,40 +121,34 @@ final class ContextPropagation {
 		if (!isContextPropagationAvailable) {
 			return NO_OP;
 		}
-		return new ContextCaptureFunction(captureKeyPredicate, null);
+		return target -> ContextSnapshot.captureAllUsing(captureKeyPredicate, ContextRegistry.getInstance())
+			.updateContext(target);
 	}
 
-	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, CoreSubscriber<? super R> actual) {
-		if (!ContextPropagation.isContextPropagationAvailable() || actual.currentContext().isEmpty()) {
+	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
 			return handler;
 		}
-		return new ContextRestoreHandleConsumer<>(handler, ContextRegistry.getInstance(), actual.currentContext());
+		final Context ctx = contextSupplier.get();
+		if (ctx.isEmpty()) {
+			return handler;
+		}
+		return (v, sink) -> {
+			try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
+				handler.accept(v, sink);
+			}
+		};
 	}
 
-	static <T> SignalListener<T> contextRestoringSignalListener(final SignalListener<T> original,
-																	   CoreSubscriber<? super T> actual) {
-		if (!ContextPropagation.isContextPropagationAvailable() || actual.currentContext().isEmpty()) {
+	static <T> SignalListener<T> contextRestoreForTap(final SignalListener<T> original, Supplier<Context> contextSupplier) {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
 			return original;
 		}
-		return new ContextRestoreSignalListener<T>(original, actual.currentContext(), ContextRegistry.getInstance());
-	}
-
-	//the Function indirection allows tests to directly assert code in this class rather than static methods
-	static final class ContextCaptureFunction implements Function<Context, Context> {
-
-		final Predicate<Object> capturePredicate;
-		final ContextRegistry registry;
-
-		ContextCaptureFunction(Predicate<Object> capturePredicate, @Nullable ContextRegistry registry) {
-			this.capturePredicate = capturePredicate;
-			this.registry = registry != null ? registry : ContextRegistry.getInstance();
+		final Context ctx = contextSupplier.get();
+		if (ctx.isEmpty()) {
+			return original;
 		}
-
-		@Override
-		public Context apply(Context target) {
-			return ContextSnapshot.captureAllUsing(capturePredicate, this.registry)
-				.updateContext(target);
-		}
+		return new ContextRestoreSignalListener<T>(original, ctx, null);
 	}
 
 	//the SignalListener implementation can be tested independently with a test-specific ContextRegistry
@@ -170,10 +165,7 @@ final class ContextPropagation {
 		}
 		
 		ContextSnapshot.Scope restoreThreadLocals() {
-			//TODO for now ContextSnapshot static methods don't allow restoring _all_ TLs without an intermediate ContextSnapshot
-			return ContextSnapshot
-				.captureFrom(this.context, k -> true, this.registry)
-				.setThreadLocals();
+			return ContextSnapshot.setAllThreadLocalsFrom(this.context, this.registry);
 		}
 
 		@Override
@@ -285,32 +277,6 @@ final class ContextPropagation {
 		public Context addToContext(Context originalContext) {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				return original.addToContext(originalContext);
-			}
-		}
-	}
-
-	//the BiConsumer implementation can be tested independently with a test-specific ContextRegistry
-	static final class ContextRestoreHandleConsumer<T, R> implements BiConsumer<T, SynchronousSink<R>> {
-
-		private final BiConsumer<T, SynchronousSink<R>> originalHandler;
-		private final ContextRegistry registry;
-		private final ContextView reactorContext;
-
-		ContextRestoreHandleConsumer(BiConsumer<T, SynchronousSink<R>> originalHandler, ContextRegistry registry,
-									 ContextView reactorContext) {
-			this.originalHandler = originalHandler;
-			this.registry = registry;
-			this.reactorContext = reactorContext;
-		}
-
-		@Override
-		public void accept(T t, SynchronousSink<R> sink) {
-			//TODO for now ContextSnapshot static methods don't allow restoring _all_ TLs without an intermediate ContextSnapshot
-			final ContextSnapshot snapshot = ContextSnapshot.captureFrom(this.reactorContext, k -> true, this.registry);
-			try (ContextSnapshot.Scope ignored = snapshot.setThreadLocals(k -> {
-				return true;
-			})) {
-				originalHandler.accept(t, sink);
 			}
 		}
 	}

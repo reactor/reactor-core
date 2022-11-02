@@ -25,8 +25,9 @@ import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -62,15 +63,12 @@ class ContextPropagationTest {
 	private static final ThreadLocal<String> REF1 = ThreadLocal.withInitial(() -> "ref1_init");
 	private static final ThreadLocal<String> REF2 = ThreadLocal.withInitial(() -> "ref2_init");
 
-	//NOTE: no way to currently remove accessors from the ContextRegistry, so we recreate one on each test
-	private ContextRegistry registry;
+	@BeforeAll
+	static void initializeThreadLocalAccessors() {
+		ContextRegistry globalRegistry = ContextRegistry.getInstance();
 
-	@BeforeEach
-	void initializeThreadLocals() {
-		registry = new ContextRegistry().loadContextAccessors();
-
-		registry.registerThreadLocalAccessor(KEY1, REF1);
-		registry.registerThreadLocalAccessor(KEY2, REF2);
+		globalRegistry.registerThreadLocalAccessor(KEY1, REF1);
+		globalRegistry.registerThreadLocalAccessor(KEY2, REF2);
 	}
 
 	//the cleanup of "thread locals" could be especially important if one starts relying on
@@ -81,18 +79,25 @@ class ContextPropagationTest {
 		REF2.remove();
 	}
 
+	@AfterAll
+	static void removeThreadLocalAccessors() {
+		ContextRegistry globalRegistry = ContextRegistry.getInstance();
+
+		globalRegistry.removeThreadLocalAccessor(KEY1);
+		globalRegistry.removeThreadLocalAccessor(KEY2);
+
+	}
+
 	@Test
 	void isContextPropagationAvailable() {
 		assertThat(ContextPropagation.isContextPropagationAvailable()).isTrue();
 	}
 
-
 	@Test
 	void contextCaptureWithNoPredicateReturnsTheConstantFunction() {
 		assertThat(ContextPropagation.contextCapture())
 			.as("no predicate nor registry")
-			.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
-			.hasFieldOrPropertyWithValue("registry", ContextRegistry.getInstance());
+			.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE);
 	}
 
 	@Test
@@ -105,9 +110,7 @@ class ContextPropagationTest {
 			.isNotSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
 			.isNotSameAs(ContextPropagation.NO_OP)
 			// as long as a predicate is supplied, the method creates new instances of the Function
-			.isNotSameAs(ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE))
-			.isInstanceOfSatisfying(ContextPropagation.ContextCaptureFunction.class, f ->
-				assertThat(f.registry).as("function default registry").isSameAs(ContextRegistry.getInstance()));
+			.isNotSameAs(ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE));
 	}
 
 	@Test
@@ -137,8 +140,7 @@ class ContextPropagationTest {
 
 		@Test
 		void contextCaptureFunctionWithoutFiltering() {
-			ContextPropagation.ContextCaptureFunction test = new ContextPropagation.ContextCaptureFunction(
-				ContextPropagation.PREDICATE_TRUE, registry);
+			Function<Context, Context> test = ContextPropagation.contextCapture();
 
 			REF1.set("expected1");
 			REF2.set("expected2");
@@ -155,8 +157,7 @@ class ContextPropagationTest {
 
 		@Test
 		void captureWithFiltering() {
-			ContextPropagation.ContextCaptureFunction test = new ContextPropagation.ContextCaptureFunction(
-				k -> k.toString().equals(KEY2), registry);
+			Function<Context, Context> test = ContextPropagation.contextCapture(k -> k.toString().equals(KEY2));
 
 			REF1.set("not_expected");
 			REF2.set("expected");
@@ -168,13 +169,6 @@ class ContextPropagationTest {
 			assertThat(asMap)
 				.containsEntry(KEY2, "expected")
 				.hasSize(1);
-		}
-
-		@Test
-		void captureFunctionWithNullRegistryUsesGlobalRegistry() {
-			ContextPropagation.ContextCaptureFunction test = new ContextPropagation.ContextCaptureFunction(v -> true, null);
-
-			assertThat(test.registry).as("default registry").isSameAs(ContextRegistry.getInstance());
 		}
 	}
 
@@ -363,8 +357,9 @@ class ContextPropagationTest {
 				return null;
 			});
 
-			ContextPropagation.ContextRestoreSignalListener<Object> listener = new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context,
-				registry);
+			ContextPropagation.ContextRestoreSignalListener<Object> listener =
+				new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context,
+				null);
 
 			Thread t = new Thread(() -> {
 				try {
@@ -434,10 +429,9 @@ class ContextPropagationTest {
 			else {
 				context = Context.empty();
 			}
-			CoreSubscriber<String> mockSubscriber = Mockito.mock(CoreSubscriber.class);
-			Mockito.when(mockSubscriber.currentContext()).thenReturn(context);
 
-			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagation.contextRestoreForHandle(originalHandler, mockSubscriber);
+			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagation.contextRestoreForHandle(originalHandler,
+				() -> context);
 
 			if (withContext) {
 				assertThat(decoratedHandler).as("context not empty: decorated handler").isNotSameAs(originalHandler);
@@ -458,7 +452,8 @@ class ContextPropagationTest {
 			final String expected = "bar=expected";
 			final Context context = Context.of(KEY1, "expected");
 
-			BiConsumer<String, SynchronousSink<String>> decoratedHandler = new ContextPropagation.ContextRestoreHandleConsumer<>(originalHandler, registry, context);
+			BiConsumer<String, SynchronousSink<String>> decoratedHandler =
+				ContextPropagation.contextRestoreForHandle(originalHandler, () -> context);
 
 			SynchronousSink<String> mockSink = Mockito.mock(SynchronousSink.class);
 			decoratedHandler.accept("bar", mockSink);
@@ -487,20 +482,16 @@ class ContextPropagationTest {
 
 				softly.assertThat(sub.handler)
 					.as("sub.handler")
-					.isNotSameAs(originalHandler)
-					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+					.isNotSameAs(originalHandler);
 				softly.assertThat(subCondi.handler)
 					.as("subCondi.handler")
-					.isNotSameAs(originalHandler)
-					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+					.isNotSameAs(originalHandler);
 				softly.assertThat(subFused.handler)
 					.as("subFused.handler")
-					.isNotSameAs(originalHandler)
-					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+					.isNotSameAs(originalHandler);
 				softly.assertThat(subFusedCondi.handler)
 					.as("subFusedCondi.handler")
-					.isNotSameAs(originalHandler)
-					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+					.isNotSameAs(originalHandler);
 			});
 		}
 
@@ -524,12 +515,10 @@ class ContextPropagationTest {
 
 				softly.assertThat(sub.handler)
 					.as("sub.handler")
-					.isNotSameAs(originalHandler)
-					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+					.isNotSameAs(originalHandler);
 				softly.assertThat(subFused.handler)
 					.as("subFused.handler")
-					.isNotSameAs(originalHandler)
-					.isInstanceOf(ContextPropagation.ContextRestoreHandleConsumer.class);
+					.isNotSameAs(originalHandler);
 			});
 		}
 	}
