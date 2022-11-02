@@ -16,11 +16,9 @@
 
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -51,7 +49,7 @@ final class SchedulerState<T> {
 			initial,
 			next,
 			initial == null ? Mono.empty() :
-				Flux.<Void>create(sink -> awaitInPool(awaiter, initial, sink, 1000, 100))
+				Flux.<Void>create(sink -> awaitInPool(awaiter, initial, sink, 100))
 					.replay()
 					.refCount()
 					.next());
@@ -60,8 +58,6 @@ final class SchedulerState<T> {
 	interface DisposeAwaiter<T> {
 
 		boolean await(T resource, long timeout, TimeUnit timeUnit) throws InterruptedException;
-
-		boolean tryAwait(T resource);
 	}
 
 	static class DisposeAwaiterRunnable<T> implements Runnable {
@@ -76,71 +72,51 @@ final class SchedulerState<T> {
 			TRANSITION_AWAIT_POOL = executor;
 		}
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<DisposeAwaiterRunnable> STATE =
-			AtomicIntegerFieldUpdater.newUpdater(DisposeAwaiterRunnable.class, "state");
-
 		private final DisposeAwaiter<T> awaiter;
 		private final T                 initial;
-		private final int               initialAwaitMs;
-		private final int               retryDelay;
+		private final int               awaitMs;
 		private final FluxSink<Void>    sink;
 
-		volatile int state;
+		volatile boolean cancelled;
 
-		static <R> void awaitInPool(DisposeAwaiter<R> awaiter, R initial, FluxSink<Void> sink, int initialAwaitMs, int retryDelayMs) {
-			DisposeAwaiterRunnable<R> poller = new DisposeAwaiterRunnable<>(awaiter, initial, sink, initialAwaitMs, retryDelayMs);
+		static <R> void awaitInPool(DisposeAwaiter<R> awaiter, R initial, FluxSink<Void> sink, int awaitMs) {
+			DisposeAwaiterRunnable<R> poller = new DisposeAwaiterRunnable<>(awaiter, initial, sink, awaitMs);
 			TRANSITION_AWAIT_POOL.submit(poller);
 		}
 
-		DisposeAwaiterRunnable(DisposeAwaiter<T> awaiter, T initial, FluxSink<Void> sink, int initialAwaitMs, int retryDelayMs) {
+		DisposeAwaiterRunnable(DisposeAwaiter<T> awaiter, T initial, FluxSink<Void> sink, int awaitMs) {
 			this.awaiter = awaiter;
 			this.initial = initial;
 			this.sink = sink;
-			this.initialAwaitMs = initialAwaitMs;
-			this.retryDelay = retryDelayMs;
+			this.awaitMs = awaitMs;
 			//can only call onCancel once so we rely on DisposeAwaiterRunnable#cancel
 			sink.onCancel(this::cancel);
 		}
 
 		void cancel() {
-			STATE.set(this, 2);
+			cancelled = true;
 			//we don't really care about the future. next round we'll abandon the task
 		}
 
 		@Override
 		public void run() {
-			if (state == 2) {
+			if (cancelled) {
 				return;
 			}
-			boolean awaitDone = false;
-			// should be called at the beginning when STATE == 0:
-			// we give the Scheduler a chance to terminate faster than the delay.
-			// after that, we'll poll regularly (which means the sink can't be completed faster than increments of the delay)
-			if (STATE.compareAndSet(this, 0, 1)) {
-				try {
-					awaitDone = awaiter.await(initial, initialAwaitMs, TimeUnit.MILLISECONDS);
+			try {
+				if (awaiter.await(initial, awaitMs, TimeUnit.MILLISECONDS)) {
+					sink.complete();
 				}
-				catch (InterruptedException e) {
-					return;
+				else {
+					if (cancelled) {
+						return;
+					}
+					// trampoline
+					TRANSITION_AWAIT_POOL.submit(this);
 				}
 			}
-			else if (state == 1) {
-				awaitDone = awaiter.tryAwait(initial);
-			}
-			else {
-				return;
-			}
-
-			if (awaitDone) {
-				sink.complete();
-			}
-			else {
-				if (state == 2) {
-					return;
-				}
-				// trampoline / retry in 100ms
-				TRANSITION_AWAIT_POOL.schedule(this, this.retryDelay, TimeUnit.MILLISECONDS);
+			catch (InterruptedException e) {
+				//NO-OP
 			}
 		}
 	}

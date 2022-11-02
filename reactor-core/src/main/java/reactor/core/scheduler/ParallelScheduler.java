@@ -155,16 +155,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 		return true;
 	}
 
-	@Override
-	public boolean tryAwait(ScheduledExecutorService[] resource) {
-		for (ScheduledExecutorService executor : resource) {
-			if (!executor.isTerminated()) {
-				return false;
-			}
-		}
-		return true;
-	}
-
     @Override
 	public void dispose() {
         SchedulerState<ScheduledExecutorService[]> previous = state;

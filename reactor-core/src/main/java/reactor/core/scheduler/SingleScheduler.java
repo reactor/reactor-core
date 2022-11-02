@@ -137,11 +137,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
-	public boolean tryAwait(ScheduledExecutorService resource) {
-		return resource.isTerminated();
-	}
-
-	@Override
 	public void dispose() {
 		SchedulerState<ScheduledExecutorService> previous = state;
 

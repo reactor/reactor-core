@@ -233,19 +233,6 @@ final class BoundedElasticScheduler implements Scheduler,
 	}
 
 	@Override
-	public boolean tryAwait(BoundedServices boundedServices) {
-		if (!boundedServices.evictor.isTerminated()) {
-			return false;
-		}
-		for (BoundedState bs : boundedServices.busyStates.array) {
-			if (!bs.executor.isTerminated()) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	@Override
 	public void dispose() {
 		SchedulerState<BoundedServices> previous = state;
 
