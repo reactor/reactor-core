@@ -547,7 +547,30 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
-		return onAssembly(new MonoCompletionStage<>(completionStage, false));
+		return fromCompletionStage(completionStage, false);
+	}
+
+	/**
+	 * Create a {@link Mono}, producing its value using the provided {@link CompletionStage}.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
+	 * <p>
+	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
+	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
+	 * propagation
+	 *
+	 * @param completionStage {@link CompletionStage} that will produce a value (or a null to
+	 * complete immediately)
+	 * @param suppressCancel specifies whether {@link CompletionStage} should have
+	 * cancellation signal to be suppressed
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromCompletionStage(
+			CompletionStage<? extends T> completionStage, boolean suppressCancel
+	) {
+		return onAssembly(new MonoCompletionStage<>(completionStage, suppressCancel));
 	}
 
 	/**
@@ -567,7 +590,34 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(Supplier<? extends CompletionStage<? extends T>> stageSupplier) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get(), false)));
+		return fromCompletionStage(stageSupplier, false);
+	}
+
+	/**
+	 * Create a {@link Mono} that wraps a {@link CompletionStage} on subscription,
+	 * emitting the value produced by the {@link CompletionStage}.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
+	 * <p>
+	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
+	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
+	 * propagation
+	 *
+	 * @param stageSupplier The {@link Supplier} of a {@link CompletionStage} that will produce a value (or a null to
+	 * complete immediately). This allows lazy triggering of CompletionStage-based APIs.
+	 * @param suppressCancel specifies whether {@link CompletionStage} should have
+	 * cancellation signal to be suppressed
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromCompletionStage(
+			Supplier<? extends CompletionStage<? extends T>> stageSupplier,
+			boolean suppressCancel
+	) {
+		return defer(() -> onAssembly(
+				new MonoCompletionStage<>(stageSupplier.get(), suppressCancel)
+		));
 	}
 
 	/**

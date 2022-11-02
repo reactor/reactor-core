@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Tag;
@@ -68,6 +69,57 @@ MonoCompletionStageTest {
 		            .thenCancel()//already cancelled but need to get to verification
 		            .verifyThenAssertThat()
 		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void cancelThenCompletionStageFailsWithDroppedError() {
+		CompletionStage<String> completionStage = new CompletableFuture<>();
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+
+		Mono<String> mono = Mono.fromCompletionStage(completionStage, true)
+		                        .doOnSubscribe(subRef::set);
+
+		StepVerifier.create(mono)
+				.expectSubscription()
+				.then(() -> {
+					subRef.get().cancel();
+					((CompletableFuture<?>) completionStage).completeExceptionally(new IllegalStateException("boom"));
+				})
+				.thenCancel()
+				.verifyThenAssertThat()
+				.hasDroppedErrorWithMessage("boom");
+
+		assertThat(((Future<?>) completionStage).isCancelled()).isFalse();
+	}
+
+	@Test
+	public void propagateCancellationToCompletionStage() {
+		CompletionStage<String> completionStage = new CompletableFuture<>();
+
+		Mono<String> mono = Mono.fromCompletionStage(completionStage);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedErrors();
+
+		assertThat(((Future<?>) completionStage).isCancelled()).isTrue();
+	}
+
+	@Test
+	public void suppressPropagateCancellationToCompletionStage() {
+		CompletionStage<String> completionStage = new CompletableFuture<>();
+
+		Mono<String> mono = Mono.fromCompletionStage(completionStage, true);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedErrors();
+
+		assertThat(((Future<?>) completionStage).isCancelled()).isFalse();
 	}
 
 	@Test
