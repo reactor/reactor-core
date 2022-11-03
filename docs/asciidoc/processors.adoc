@@ -48,14 +48,28 @@ Multiple producer threads may concurrently generate data on the sink by doing th
 [source,java]
 ----
 //thread1
-replaySink.emitNext(1, FAIL_FAST);
+replaySink.emitNext(1, EmitFailureHandler.FAIL_FAST);
 
 //thread2, later
-replaySink.emitNext(2, FAIL_FAST);
+replaySink.emitNext(2, EmitFailureHandler.FAIL_FAST);
 
 //thread3, concurrently with thread 2
-EmitResult result = replaySink.tryEmitNext(3); //would return FAIL_NON_SERIALIZED
+//would retry emitting for 2 seconds and fail with EmissionException if unsuccessful
+replaySink.emitNext(3, EmitFailureHandler.busyLooping(Duration.ofSeconds(2)));
+
+//thread3, concurrently with thread 2
+//would return FAIL_NON_SERIALIZED
+EmitResult result = replaySink.tryEmitNext(4);
+
+
 ----
+====
+
+[NOTE]
+====
+When using the `busyLooping`, be aware that returned instances of `EmitFailureHandler` can not be reused, e.g.,
+it should be one call of `busyLooping` per `emitNext`.
+Also, it is recommended to use a timeout above 100ms since smaller values don’t make practical sense.
 ====
 
 The `Sinks.Many` can be presented to downstream consumers as a `Flux`, like in the below example:
