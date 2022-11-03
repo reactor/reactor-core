@@ -117,8 +117,7 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 				return;
 			}
 			once = true;
-			main.cancelMain();
-			main.onComplete();
+			main.cancelMainAndComplete();
 		}
 	}
 
@@ -173,6 +172,23 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		@Override
 		public void request(long n) {
 			main.request(n);
+		}
+
+		void cancelMainAndComplete() {
+			Subscription s = main;
+			if (s != Operators.cancelledSubscription()) {
+				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
+					s.cancel();
+				}
+
+				if (s == null) {
+					Operators.complete(actual);
+				}
+				else {
+					actual.onComplete();
+				}
+			}
 		}
 
 		void cancelMain() {
