@@ -59,6 +59,33 @@ public class FluxRetryWhenTest {
 			Flux.error(new RuntimeException("forced failure 0")));
 
 	@Test
+	//https://github.com/reactor/reactor-core/issues/3253
+	public void shouldFailWhenOnErrorContinueEnabled() {
+		Mono.create(sink -> {
+					throw new RuntimeException("blah");
+				})
+				.retryWhen(Retry.indefinitely().filter(t -> false))
+				.onErrorContinue((e, o) -> {})
+				.as(StepVerifier::create)
+				.expectError()
+				.verify(Duration.ofSeconds(10));
+	}
+
+	@Test
+	//https://github.com/reactor/reactor-core/issues/3253
+	public void shouldWorkAsExpected() {
+		Mono.just(1)
+			.map(v -> { // ensure original context is propagated
+				throw new RuntimeException("boom");
+			})
+			.retryWhen(Retry.indefinitely().filter(t -> false))
+			.onErrorContinue((e, o) -> {})
+			.as(StepVerifier::create)
+			.expectComplete()
+			.verify(Duration.ofSeconds(10));
+	}
+
+	@Test
 	public void dontRepeat() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
