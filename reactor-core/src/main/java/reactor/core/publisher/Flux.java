@@ -1520,11 +1520,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
 	 * by picking the smallest values from each source (as defined by their natural order) <strong>as they arrive</strong>.
 	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences. Unlike mergeComparing,
-	 * this operator does <em>not</em> wait for a value from each source to arrive. It is best suited for asynchronous
-	 * sources where you do not want to wait for a value from each source before emitting a value downstream.
+	 * this operator does <em>not</em> wait for a value from each source to arrive either.
 	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * While this operator does retrieve at most one value from each source, it only compares values when two or more
+	 * sources emit at the same time. In that case it picks the smallest of these competing values and continues doing so
+	 * as long as there is demand. It is therefore best suited for asynchronous sources where you do not want to wait
+	 * for a value from each source before emitting a value downstream.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergePriorityNaturalOrder.svg" alt="">
 	 *
@@ -1543,11 +1544,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * by picking the smallest values from each source (as defined by the provided
 	 * {@link Comparator}) <strong>as they arrive</strong>. This is not a {@link #sort(Comparator)}, as it doesn't consider
 	 * the whole of each sequences. Unlike mergeComparing, this operator does <em>not</em> wait for a value from each
-	 * source to arrive. It is best suited for asynchronous sources where you do not want to wait for a value from
-	 * each source before emitting a value downstream.
+	 * source to arrive either.
 	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * While this operator does retrieve at most one value from each source, it only compares values when two or more
+	 * sources emit at the same time. In that case it picks the smallest of these competing values and continues doing so
+	 * as long as there is demand. It is therefore best suited for asynchronous sources where you do not want to wait
+	 * for a value from each source before emitting a value downstream.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergePriority.svg" alt="">
 	 *
@@ -1567,11 +1569,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * by picking the smallest values from each source (as defined by the provided
 	 * {@link Comparator}) <strong>as they arrive</strong>. This is not a {@link #sort(Comparator)}, as it doesn't consider
 	 * the whole of each sequences. Unlike mergeComparing, this operator does <em>not</em> wait for a value from each
-	 * source to arrive. It is best suited for asynchronous sources where you do not want to wait for a value from each
-	 * source before emitting a value downstream.
+	 * source to arrive either.
 	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * While this operator does retrieve at most one value from each source, it only compares values when two or more
+	 * sources emit at the same time. In that case it picks the smallest of these competing values and continues doing so
+	 * as long as there is demand. It is therefore best suited for asynchronous sources where you do not want to wait
+	 * for a value from each source before emitting a value downstream.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergePriority.svg" alt="">
 	 *
@@ -1599,11 +1602,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * by picking the smallest values from each source (as defined by the provided
 	 * {@link Comparator}) <strong>as they arrive</strong>. This is not a {@link #sort(Comparator)}, as it doesn't consider
 	 * the whole of each sequences. Unlike mergeComparing, this operator does <em>not</em> wait for a value from each
-	 * source to arrive. It is best suited for asynchronous sources where you do not want to wait for a value from each
-	 * source before emitting a value downstream.
+	 * source to arrive either.
 	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * While this operator does retrieve at most one value from each source, it only compares values when two or more
+	 * sources emit at the same time. In that case it picks the smallest of these competing values and continues doing so
+	 * as long as there is demand. It is therefore best suited for asynchronous sources where you do not want to wait
+	 * for a value from each source before emitting a value downstream.
 	 * <p>
 	 * Note that it is delaying errors until all data is consumed.
 	 * <p>
