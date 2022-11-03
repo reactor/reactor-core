@@ -47,11 +47,11 @@ public class FluxTakeUntilOtherTest {
 	}
 
 	//https://github.com/reactor/reactor-core/issues/3268
-@Test
-void whenOtherAlreadyCompleted() {
-	StepVerifier.create(Flux.just(1, 2, 3).takeUntilOther(Flux.empty()))
-		.verifyComplete();
-}
+	@Test
+	void whenOtherAlreadyCompleted() {
+		StepVerifier.create(Flux.just(1, 2, 3).takeUntilOther(Flux.empty()))
+			.verifyComplete();
+	}
 
 	@Test
 	public void takeAll() {
