@@ -46,6 +46,13 @@ public class FluxTakeUntilOtherTest {
 		});
 	}
 
+	//https://github.com/reactor/reactor-core/issues/3268
+@Test
+void whenOtherAlreadyCompleted() {
+	StepVerifier.create(Flux.just(1, 2, 3).takeUntilOther(Flux.empty()))
+		.verifyComplete();
+}
+
 	@Test
 	public void takeAll() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -105,7 +112,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertComplete()
-		  .assertNoError();
+		  .assertNoError()
+		  .assertSubscribed();
 		Assertions.assertThat(mainCancelled).isTrue();
 		Assertions.assertThat(otherCancelled).isTrue();
 	}
@@ -120,7 +128,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertNoError()
-		  .assertComplete();
+		  .assertComplete()
+		  .assertSubscribed();
 	}
 
 	@Test
@@ -139,7 +148,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertComplete()
-		  .assertNoError();
+		  .assertNoError()
+		  .assertSubscribed();
 
 		Assertions.assertThat(mainCancelled).isTrue();
 		Assertions.assertThat(otherCancelled).isTrue();
@@ -155,7 +165,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertNoError()
-		  .assertComplete();
+		  .assertComplete()
+		  .assertSubscribed();
 	}
 
 	@Test
