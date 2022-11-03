@@ -99,7 +99,14 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onNext(U t) {
-			onComplete();
+			if (once) {
+				return;
+			}
+			once = true;
+			//in case more values are coming, cancel main.other (which is basically this one's upstream, see main.setOther)
+ 			main.cancelOther();
+			 //now cancel main.main, and ensure that if this happens early an empty Subscription is passed down
+ 			main.cancelMainAndComplete();
 		}
 
 		@Override
@@ -117,8 +124,8 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 				return;
 			}
 			once = true;
-			main.cancelMain();
-			main.onComplete();
+			//cancel main.main, and ensure that if this happens early an empty Subscription is passed down
+			main.cancelMainAndComplete();
 		}
 	}
 
@@ -175,12 +182,22 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 			main.request(n);
 		}
 
-		void cancelMain() {
+		void cancelMainAndComplete() {
 			Subscription s = main;
 			if (s != Operators.cancelledSubscription()) {
 				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
 				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
+				}
+
+				if (s == null) {
+					// this indicates the Other completed early, even before `main` was set.
+					// let's pass an empty Subscription down and complete immediately
+					Operators.complete(actual);
+				}
+				else {
+					// if s wasn't null then Main Subscription was set and actual.onSubscribe already called
+					actual.onComplete();
 				}
 			}
 		}
@@ -197,7 +214,15 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void cancel() {
-			cancelMain();
+			//similar to cancelMainAndComplete() but at this stage we only care about cancellation upstream
+			Subscription s = main;
+			if (s != Operators.cancelledSubscription()) {
+				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
+					s.cancel();
+				}
+			}
+			//we do cancel the other subscriber too
 			cancelOther();
 		}
 
