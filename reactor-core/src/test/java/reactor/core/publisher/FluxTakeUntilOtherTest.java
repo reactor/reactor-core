@@ -46,6 +46,13 @@ public class FluxTakeUntilOtherTest {
 		});
 	}
 
+	//https://github.com/reactor/reactor-core/issues/3268
+	@Test
+	void whenOtherAlreadyCompleted() {
+		StepVerifier.create(Flux.just(1, 2, 3).takeUntilOther(Flux.empty()))
+			.verifyComplete();
+	}
+
 	@Test
 	public void takeAll() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -90,7 +97,29 @@ public class FluxTakeUntilOtherTest {
 	}
 
 	@Test
-	public void takeNone() {
+	void takeNone() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AtomicBoolean mainCancelled = new AtomicBoolean(false);
+		AtomicBoolean otherCancelled = new AtomicBoolean(false);
+
+		Flux<Integer> other =
+				Flux.just(1) //note: just rather than empty triggers onNext, which triggers other.cancel()
+				    .doOnCancel(() -> otherCancelled.set(true));
+		Flux.range(1, 10)
+		    .doOnCancel(() -> mainCancelled.set(true))
+		    .takeUntilOther(other)
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertComplete()
+		  .assertNoError()
+		  .assertSubscribed();
+		Assertions.assertThat(mainCancelled).isTrue();
+		Assertions.assertThat(otherCancelled).isTrue();
+	}
+
+	@Test
+	void takeNoneWithCompleteOnlyDoesntTriggerOtherCancel() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		AtomicBoolean mainCancelled = new AtomicBoolean(false);
 		AtomicBoolean otherCancelled = new AtomicBoolean(false);
@@ -105,9 +134,12 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertComplete()
-		  .assertNoError();
+		  .assertNoError()
+		  .assertSubscribed();
 		Assertions.assertThat(mainCancelled).isTrue();
-		Assertions.assertThat(otherCancelled).isTrue();
+		Assertions.assertThat(otherCancelled)
+			.as("other not cancelled when completed empty")
+			.isFalse();
 	}
 
 	@Test
@@ -120,7 +152,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertNoError()
-		  .assertComplete();
+		  .assertComplete()
+		  .assertSubscribed();
 	}
 
 	@Test
@@ -139,7 +172,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertComplete()
-		  .assertNoError();
+		  .assertNoError()
+		  .assertSubscribed();
 
 		Assertions.assertThat(mainCancelled).isTrue();
 		Assertions.assertThat(otherCancelled).isTrue();
@@ -155,7 +189,8 @@ public class FluxTakeUntilOtherTest {
 
 		ts.assertNoValues()
 		  .assertNoError()
-		  .assertComplete();
+		  .assertComplete()
+		  .assertSubscribed();
 	}
 
 	@Test
