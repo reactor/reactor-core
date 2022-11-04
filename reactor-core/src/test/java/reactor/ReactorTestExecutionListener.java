@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,7 @@ import org.junit.platform.launcher.TestPlan;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AssertionsUtils;
-import reactor.test.util.LoggerUtils;
 import reactor.util.Logger;
-import reactor.util.Loggers;
 
 /**
  * A custom TestExecutionListener that helps with tests in reactor:<ul>
@@ -61,23 +59,8 @@ public class ReactorTestExecutionListener implements TestExecutionListener {
 		// TODO capture non-default schedulers and shutdown them
 	}
 
-	/**
-	 * Reset the {@link Loggers} factory to defaults suitable for reactor-core tests.
-	 * Notably, it installs an indirection via {@link LoggerUtils#useCurrentLoggersWithCapture()}.
-	 */
-	public static void resetLoggersFactory() {
-		Loggers.resetLoggerFactory();
-		LoggerUtils.useCurrentLoggersWithCapture();
-	}
-
 	@Override
 	public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
 		resetHooksAndSchedulers();
-	}
-
-	@Override
-	public void testPlanExecutionStarted(TestPlan testPlan) {
-		AssertionsUtils.installAssertJTestRepresentation();
-		resetLoggersFactory();
 	}
 }
