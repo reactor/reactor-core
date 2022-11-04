@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package reactor.util;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
-import reactor.ReactorTestExecutionListener;
+import reactor.ReactorLauncherSessionListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,8 +27,8 @@ class LoggersTest {
 
 	@AfterAll
 	static void resetLoggerFactory() {
-		//delegate to ReactorTestExecutionListener to centralize the logic
-		ReactorTestExecutionListener.resetLoggersFactory();
+		//delegate to ReactorLauncherSessionListener to centralize the logic
+		ReactorLauncherSessionListener.resetLoggersFactory();
 	}
 
 	@Test
