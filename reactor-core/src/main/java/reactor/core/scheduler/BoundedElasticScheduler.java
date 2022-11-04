@@ -508,7 +508,7 @@ final class BoundedElasticScheduler implements Scheduler,
 			this.clock = parent.clock;
 			this.idleQueue = new ConcurrentLinkedDeque<>();
 			this.busyStates = ALL_IDLE;
-			this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
+			this.evictor = Executors.newSingleThreadScheduledExecutor(EVICTOR_FACTORY);
 		}
 
 		/**
