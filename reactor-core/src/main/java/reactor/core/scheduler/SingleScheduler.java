@@ -132,8 +132,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
-	public boolean await(ScheduledExecutorService resource, long timeout, TimeUnit timeUnit)
-			throws InterruptedException {
+	public boolean await(ScheduledExecutorService resource, long timeout, TimeUnit timeUnit) throws InterruptedException {
 		return resource.awaitTermination(timeout, timeUnit);
 	}
 

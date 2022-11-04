@@ -111,7 +111,7 @@ final class ElasticScheduler implements Scheduler, Scannable {
 			);
 		}
 
-		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
+		this.evictor = Executors.newSingleThreadScheduledExecutor(EVICTOR_FACTORY);
 		this.evictor.scheduleAtFixedRate(this::eviction,
 				ttlSeconds,
 				ttlSeconds,
@@ -124,7 +124,7 @@ final class ElasticScheduler implements Scheduler, Scannable {
 		if (!shutdown) {
 			return;
 		}
-		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
+		this.evictor = Executors.newSingleThreadScheduledExecutor(EVICTOR_FACTORY);
 		this.evictor.scheduleAtFixedRate(this::eviction,
 				ttlSeconds,
 				ttlSeconds,
