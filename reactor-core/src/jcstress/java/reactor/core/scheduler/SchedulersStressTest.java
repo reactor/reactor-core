@@ -157,13 +157,13 @@ public abstract class SchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully1(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Actor
 		public void disposeGracefully2(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r2 = scheduler.state.initialResource.hashCode();
 		}
 
@@ -198,13 +198,13 @@ public abstract class SchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully1(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Actor
 		public void disposeGracefully2(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r2 = scheduler.state.initialResource.hashCode();
 		}
 
@@ -239,13 +239,13 @@ public abstract class SchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully1(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Actor
 		public void disposeGracefully2(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r2 = scheduler.state.initialResource.hashCode();
 		}
 
@@ -279,7 +279,7 @@ public abstract class SchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
@@ -320,7 +320,7 @@ public abstract class SchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
@@ -362,7 +362,7 @@ public abstract class SchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully(IIZ_Result r) {
-			scheduler.disposeGracefully().subscribe();
+			scheduler.disposeGracefully().block();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
