@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
@@ -119,6 +120,7 @@ public abstract class BasicSchedulersStressTest {
 	@State
 	public static class SingleSchedulerDisposeGracefullyStressTest {
 
+		private final CountDownLatch latch = new CountDownLatch(2);
 		private final SingleScheduler scheduler = new SingleScheduler(Thread::new);
 
 		{
@@ -127,18 +129,24 @@ public abstract class BasicSchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully1(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
+			scheduler.disposeGracefully().doFinally(sig -> latch.countDown()).subscribe();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Actor
 		public void disposeGracefully2(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
+			scheduler.disposeGracefully().doFinally(sig -> latch.countDown()).subscribe();
 			r.r2 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Arbiter
 		public void arbiter(IIZ_Result r) {
+			try {
+				latch.await(5, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 			// Validate both disposals left the Scheduler in consistent state,
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
@@ -159,6 +167,7 @@ public abstract class BasicSchedulersStressTest {
 	@State
 	public static class ParallelSchedulerDisposeGracefullyStressTest {
 
+		private final CountDownLatch latch = new CountDownLatch(2);
 		private final ParallelScheduler scheduler =
 				new ParallelScheduler(10, Thread::new);
 
@@ -168,18 +177,24 @@ public abstract class BasicSchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully1(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
+			scheduler.disposeGracefully().doFinally(sig -> latch.countDown()).subscribe();
 			r.r1 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Actor
 		public void disposeGracefully2(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
+			scheduler.disposeGracefully().doFinally(sig -> latch.countDown()).subscribe();
 			r.r2 = scheduler.state.initialResource.hashCode();
 		}
 
 		@Arbiter
 		public void arbiter(IIZ_Result r) {
+			try {
+				latch.await(5, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 			// Validate both disposals left the Scheduler in consistent state,
 			// assuming the await process coordinates on the resources as identified
 			// by r.r1 and r.r2, which should be equal.
@@ -208,8 +223,15 @@ public abstract class BasicSchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
+			final CountDownLatch latch = new CountDownLatch(1);
+			scheduler.disposeGracefully().doFinally(sig -> latch.countDown()).subscribe();
 			r.r1 = scheduler.state.initialResource.hashCode();
+			try {
+				latch.await(5, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
 		@Actor
@@ -249,8 +271,15 @@ public abstract class BasicSchedulersStressTest {
 
 		@Actor
 		public void disposeGracefully(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
+			final CountDownLatch latch = new CountDownLatch(1);
+			scheduler.disposeGracefully().doFinally(sig -> latch.countDown()).subscribe();
 			r.r1 = scheduler.state.initialResource.hashCode();
+			try {
+				latch.await(5, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
 		@Actor
