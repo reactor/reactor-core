@@ -17,6 +17,7 @@
 package reactor.util.concurrent;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -47,29 +48,29 @@ public final class Queues {
 	 * implementations not recognized by this method or not providing this kind of
 	 * information, {@link #CAPACITY_UNSURE} ({@code Integer.MIN_VALUE}) is returned.
 	 *
-	 * @param q the {@link Queue} to try to get a capacity for
+	 * @param queue the {@link Queue} to try to get a capacity for
 	 * @return the capacity of the queue, if discoverable with confidence, or {@link #CAPACITY_UNSURE} negative constant.
 	 */
-	public static final int capacity(Queue q) {
-		if (q instanceof ZeroQueue) {
+	public static int capacity(final Queue queue) {
+		if (queue instanceof Queues.ZeroQueue) {
 			return 0;
 		}
-		if (q instanceof OneQueue) {
+		if (queue instanceof Queues.OneQueue) {
 			return 1;
 		}
-		if (q instanceof SpscLinkedArrayQueue) {
+		if (queue instanceof SpscLinkedArrayQueue) {
 			return Integer.MAX_VALUE;
 		}
-		else if (q instanceof SpscArrayQueue) {
-			return ((SpscArrayQueue) q).length();
+		else if (queue instanceof SpscArrayQueue) {
+			return ((SpscArrayQueue) queue).length();
 		}
-		else if(q instanceof MpscLinkedQueue) {
+		else if(queue instanceof MpscLinkedQueue) {
 			return Integer.MAX_VALUE;
 		}
-		else if (q instanceof BlockingQueue) {
-			return ((BlockingQueue) q).remainingCapacity();
+		else if (queue instanceof BlockingQueue) {
+			return ((BlockingQueue) queue).remainingCapacity();
 		}
-		else if (q instanceof ConcurrentLinkedQueue) {
+		else if (queue instanceof ConcurrentLinkedQueue) {
 			return Integer.MAX_VALUE;
 		}
 		else {
@@ -99,7 +100,7 @@ public final class Queues {
 	 * @return The next power of 2 from x inclusive
 	 */
 	public static int ceilingNextPowerOfTwo(final int x) {
-		return 1 << (32 - Integer.numberOfLeadingZeros(x - 1));
+		return 1 << 32 - Integer.numberOfLeadingZeros(x - 1);
 	}
 
 	/**
@@ -109,7 +110,7 @@ public final class Queues {
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> get(int batchSize) {
+	public static <T> Supplier<Queue<T>> get(final int batchSize) {
 		if (batchSize == Integer.MAX_VALUE) {
 			return SMALL_UNBOUNDED;
 		}
@@ -125,7 +126,6 @@ public final class Queues {
 		if (batchSize == 0) {
 			return ZERO_SUPPLIER;
 		}
-
 		final int adjustedBatchSize = Math.max(8, batchSize);
 		if (adjustedBatchSize > 10_000_000) {
 			return SMALL_UNBOUNDED;
@@ -195,7 +195,7 @@ public final class Queues {
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
+	public static <T> Supplier<Queue<T>> unbounded(final int linkSize) {
 		if (linkSize == XS_BUFFER_SIZE) {
 			return XS_UNBOUNDED;
 		}
@@ -232,101 +232,99 @@ public final class Queues {
 
 	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
         @Override
-		public boolean add(T t) {
-
-		    while (!offer(t));
-
+		public boolean add(final T t) {
+		    while (!this.offer(t));
 		    return true;
 		}
 
 		@Override
-		public boolean addAll(Collection<? extends T> c) {
+		public boolean addAll(final Collection<? extends T> c) {
 			return false;
 		}
 
 		@Override
 		public void clear() {
-			set(null);
+			this.set(null);
 		}
 
 		@Override
-		public boolean contains(Object o) {
-			return Objects.equals(get(), o);
+		public boolean contains(final Object o) {
+			return Objects.equals(this.get(), o);
 		}
 
 		@Override
-		public boolean containsAll(Collection<?> c) {
+		public boolean containsAll(final Collection<?> c) {
 			return false;
 		}
 
 		@Override
 		public T element() {
-			return get();
+			return this.get();
 		}
 
 		@Override
 		public boolean isEmpty() {
-			return get() == null;
+			return this.get() == null;
 		}
 
 		@Override
 		public Iterator<T> iterator() {
-			return new QueueIterator<>(this);
+			return new Queues.QueueIterator<>(this);
 		}
 
 		@Override
-		public boolean offer(T t) {
-			if (get() != null) {
+		public boolean offer(final T t) {
+			if (this.get() != null) {
 			    return false;
 			}
-			lazySet(t);
+			this.lazySet(t);
 			return true;
 		}
 
 		@Override
 		@Nullable
 		public T peek() {
-			return get();
+			return this.get();
 		}
 
 		@Override
 		@Nullable
 		public T poll() {
-			T v = get();
+			final T v = this.get();
 			if (v != null) {
-			    lazySet(null);
+				this.lazySet(null);
 			}
 			return v;
 		}
 
 		@Override
 		public T remove() {
-			return getAndSet(null);
+			return this.getAndSet(null);
 		}
 
 		@Override
-		public boolean remove(Object o) {
+		public boolean remove(final Object o) {
 			return false;
 		}
 
 		@Override
-		public boolean removeAll(Collection<?> c) {
+		public boolean removeAll(final Collection<?> c) {
 			return false;
 		}
 
 		@Override
-		public boolean retainAll(Collection<?> c) {
+		public boolean retainAll(final Collection<?> c) {
 			return false;
 		}
 
 		@Override
 		public int size() {
-			return get() == null ? 0 : 1;
+			return this.get() == null ? 0 : 1;
 		}
 
 		@Override
 		public Object[] toArray() {
-			T t = get();
+			final T t = this.get();
 			if (t == null) {
 				return new Object[0];
 			}
@@ -336,13 +334,13 @@ public final class Queues {
 		@Override
 		@SuppressWarnings("unchecked")
 		public <T1> T1[] toArray(T1[] a) {
-			int size = size();
+			final int size = this.size();
 			if (a.length < size) {
-				a = (T1[]) java.lang.reflect.Array.newInstance(
+				a = (T1[]) Array.newInstance(
 						a.getClass().getComponentType(), size);
 			}
 			if (size == 1) {
-				a[0] = (T1) get();
+				a[0] = (T1) this.get();
 			}
 			if (a.length > size) {
 				a[size] = null;
@@ -356,12 +354,12 @@ public final class Queues {
 	static final class ZeroQueue<T> implements Queue<T>, Serializable {
 
 		@Override
-		public boolean add(T t) {
+		public boolean add(final T t) {
 			return false;
 		}
 
 		@Override
-		public boolean addAll(Collection<? extends T> c) {
+		public boolean addAll(final Collection<? extends T> c) {
 			return false;
 		}
 
@@ -371,12 +369,12 @@ public final class Queues {
 		}
 
 		@Override
-		public boolean contains(Object o) {
+		public boolean contains(final Object o) {
 			return false;
 		}
 
 		@Override
-		public boolean containsAll(Collection<?> c) {
+		public boolean containsAll(final Collection<?> c) {
 			return false;
 		}
 
@@ -396,7 +394,7 @@ public final class Queues {
 		}
 
 		@Override
-		public boolean offer(T t) {
+		public boolean offer(final T t) {
 			return false;
 		}
 
@@ -418,17 +416,17 @@ public final class Queues {
 		}
 
 		@Override
-		public boolean remove(Object o) {
+		public boolean remove(final Object o) {
 			return false;
 		}
 
 		@Override
-		public boolean removeAll(Collection<?> c) {
+		public boolean removeAll(final Collection<?> c) {
 			return false;
 		}
 
 		@Override
-		public boolean retainAll(Collection<?> c) {
+		public boolean retainAll(final Collection<?> c) {
 			return false;
 		}
 
@@ -444,7 +442,7 @@ public final class Queues {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T1> T1[] toArray(T1[] a) {
+		public <T1> T1[] toArray(final T1[] a) {
 			if (a.length > 0) {
 				a[0] = null;
 			}
@@ -458,30 +456,30 @@ public final class Queues {
 
 		final Queue<T> queue;
 
-		public QueueIterator(Queue<T> queue) {
+		public QueueIterator(final Queue<T> queue) {
 			this.queue = queue;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return !queue.isEmpty();
+			return !this.queue.isEmpty();
 		}
 
 		@Override
 		public T next() {
-			return queue.poll();
+			return this.queue.poll();
 		}
 
 		@Override
 		public void remove() {
-			queue.remove();
+			this.queue.remove();
 		}
 	}
 
     @SuppressWarnings("rawtypes")
-    static final Supplier ZERO_SUPPLIER  = () -> Hooks.wrapQueue(new ZeroQueue<>());
+    static final Supplier ZERO_SUPPLIER  = () -> Hooks.wrapQueue(new Queues.ZeroQueue<>());
     @SuppressWarnings("rawtypes")
-    static final Supplier ONE_SUPPLIER   = () -> Hooks.wrapQueue(new OneQueue<>());
+    static final Supplier ONE_SUPPLIER   = () -> Hooks.wrapQueue(new Queues.OneQueue<>());
 	@SuppressWarnings("rawtypes")
     static final Supplier XS_SUPPLIER    = () -> Hooks.wrapQueue(new SpscArrayQueue<>(XS_BUFFER_SIZE));
 	@SuppressWarnings("rawtypes")

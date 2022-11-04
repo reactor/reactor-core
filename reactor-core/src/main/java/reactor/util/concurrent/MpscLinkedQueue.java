@@ -33,17 +33,18 @@ import reactor.util.annotation.Nullable;
  * @param <E> the contained value type
  */
 final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E, E> {
-	private volatile LinkedQueueNode<E> producerNode;
 
-	private final static AtomicReferenceFieldUpdater<MpscLinkedQueue, LinkedQueueNode> PRODUCER_NODE_UPDATER
-			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, LinkedQueueNode.class, "producerNode");
+	private volatile MpscLinkedQueue.LinkedQueueNode<E> producerNode;
 
-	private volatile LinkedQueueNode<E> consumerNode;
-	private final static AtomicReferenceFieldUpdater<MpscLinkedQueue, LinkedQueueNode> CONSUMER_NODE_UPDATER
-			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, LinkedQueueNode.class, "consumerNode");
+	private static final AtomicReferenceFieldUpdater<MpscLinkedQueue, MpscLinkedQueue.LinkedQueueNode> PRODUCER_NODE_UPDATER
+			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, MpscLinkedQueue.LinkedQueueNode.class, "producerNode");
+
+	private volatile MpscLinkedQueue.LinkedQueueNode<E> consumerNode;
+	private static final AtomicReferenceFieldUpdater<MpscLinkedQueue, MpscLinkedQueue.LinkedQueueNode> CONSUMER_NODE_UPDATER
+			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, MpscLinkedQueue.LinkedQueueNode.class, "consumerNode");
 
 	public MpscLinkedQueue() {
-		LinkedQueueNode<E> node = new LinkedQueueNode<>();
+		final MpscLinkedQueue.LinkedQueueNode<E> node = new MpscLinkedQueue.LinkedQueueNode<>();
 		CONSUMER_NODE_UPDATER.lazySet(this, node);
 		PRODUCER_NODE_UPDATER.getAndSet(this, node);// this ensures correct construction:
 		// StoreLoad
@@ -63,15 +64,15 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	 * This works because each producer is guaranteed to 'plant' a new node and link the old node. No 2
 	 * producers can get the same producer node as part of XCHG guarantee.
 	 *
-	 * @see java.util.Queue#offer(java.lang.Object)
+	 * @see java.util.Queue#offer(Object)
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public final boolean offer(final E e) {
+	public boolean offer(final E e) {
 		Objects.requireNonNull(e, "The offered value 'e' must be non-null");
 
-		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
-		final LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNode);
+		final MpscLinkedQueue.LinkedQueueNode<E> nextNode = new MpscLinkedQueue.LinkedQueueNode<>(e);
+		final MpscLinkedQueue.LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNode);
 		// Should a producer thread get interrupted here the chain WILL be broken until that thread is resumed
 		// and completes the store in prev.next.
 		prevProducerNode.soNext(nextNode); // StoreStore
@@ -92,7 +93,7 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	 * This works because each producer is guaranteed to 'plant' a new node and link the old node. No 2
 	 * producers can get the same producer node as part of XCHG guarantee.
 	 *
-	 * @see java.util.Queue#offer(java.lang.Object)
+	 * @see java.util.Queue#offer(Object)
 	 *
 	 * @param e1 first element to offer
 	 * @param e2 second element to offer
@@ -101,19 +102,17 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean test(E e1, E e2) {
+	public boolean test(final E e1, final E e2) {
 		Objects.requireNonNull(e1, "The offered value 'e1' must be non-null");
 		Objects.requireNonNull(e2, "The offered value 'e2' must be non-null");
 
-		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e1);
-		final LinkedQueueNode<E> nextNextNode = new LinkedQueueNode<>(e2);
-
-		final LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNextNode);
+		final MpscLinkedQueue.LinkedQueueNode<E> nextNode = new MpscLinkedQueue.LinkedQueueNode<>(e1);
+		final MpscLinkedQueue.LinkedQueueNode<E> nextNextNode = new MpscLinkedQueue.LinkedQueueNode<>(e2);
+		final MpscLinkedQueue.LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNextNode);
 		// Should a producer thread get interrupted here the chain WILL be broken until that thread is resumed
 		// and completes the store in prev.next.
 		nextNode.soNext(nextNextNode);
 		prevProducerNode.soNext(nextNode); // StoreStore
-
 		return true;
 	}
 
@@ -136,14 +135,11 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	@Nullable
 	@Override
 	public E poll() {
-		LinkedQueueNode<E> currConsumerNode = consumerNode; // don't load twice, it's alright
-		LinkedQueueNode<E> nextNode = currConsumerNode.lvNext();
-
-		if (nextNode != null)
-		{
+		final MpscLinkedQueue.LinkedQueueNode<E> currConsumerNode = this.consumerNode; // don't load twice, it's alright
+		MpscLinkedQueue.LinkedQueueNode<E> nextNode = currConsumerNode.lvNext();
+		if (nextNode != null) {
 			// we have to null out the value because we are going to hang on to the node
 			final E nextValue = nextNode.getAndNullValue();
-
 			// Fix up the next ref of currConsumerNode to prevent promoted nodes from keeping new ones alive.
 			// We use a reference to self instead of null because null is already a meaningful value (the next of
 			// producer node is null).
@@ -151,14 +147,11 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 			CONSUMER_NODE_UPDATER.lazySet(this, nextNode);
 			// currConsumerNode is now no longer referenced and can be collected
 			return nextValue;
-		}
-		else if (currConsumerNode != producerNode)
-		{
+		} else if (currConsumerNode != this.producerNode) {
 			while ((nextNode = currConsumerNode.lvNext()) == null) { }
 			// got the next node...
 			// we have to null out the value because we are going to hang on to the node
 			final E nextValue = nextNode.getAndNullValue();
-
 			// Fix up the next ref of currConsumerNode to prevent promoted nodes from keeping new ones alive.
 			// We use a reference to self instead of null because null is already a meaningful value (the next of
 			// producer node is null).
@@ -173,47 +166,42 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	@Nullable
 	@Override
 	public E peek() {
-		LinkedQueueNode<E> currConsumerNode = consumerNode; // don't load twice, it's alright
-		LinkedQueueNode<E> nextNode = currConsumerNode.lvNext();
-
-		if (nextNode != null)
-		{
+		final MpscLinkedQueue.LinkedQueueNode<E> currConsumerNode = this.consumerNode; // don't load twice, it's alright
+		MpscLinkedQueue.LinkedQueueNode<E> nextNode = currConsumerNode.lvNext();
+		if (nextNode != null) {
 			return nextNode.lpValue();
-		}
-		else if (currConsumerNode != producerNode)
-		{
+		} else if (currConsumerNode != this.producerNode) {
 			while ((nextNode = currConsumerNode.lvNext()) == null) { }
 			// got the next node...
 			return nextNode.lpValue();
 		}
-
 		return null;
 	}
 
 	@Override
-	public boolean remove(Object o) {
-		throw new UnsupportedOperationException();
+	public boolean remove(final Object o) {
+		throw new UnsupportedOperationException("MpscLinkedQueue#remove is not supported");
 	}
 
 
 	@Override
 	public void clear() {
-		while (poll() != null && !isEmpty()) { } // NOPMD
+		while (this.poll() != null && !this.isEmpty()) { } // NOPMD
 	}
 
 	@Override
 	public int size() {
 		// Read consumer first, this is important because if the producer is node is 'older' than the consumer
 		// the consumer may overtake it (consume past it) invalidating the 'snapshot' notion of size.
-		LinkedQueueNode<E> chaserNode = consumerNode;
-		LinkedQueueNode<E> producerNode = this.producerNode;
+		MpscLinkedQueue.LinkedQueueNode<E> chaserNode = this.consumerNode;
+		final MpscLinkedQueue.LinkedQueueNode<E> producerNode = this.producerNode;
 		int size = 0;
 		// must chase the nodes all the way to the producer node, but there's no need to count beyond expected head.
 		while (chaserNode != producerNode && // don't go passed producer node
 				chaserNode != null && // stop at last node
 				size < Integer.MAX_VALUE) // stop at max int
 		{
-			LinkedQueueNode<E> next;
+			final MpscLinkedQueue.LinkedQueueNode<E> next;
 			next = chaserNode.lvNext();
 			// check if this node has been consumed, if so return what we have
 			if (next == chaserNode)
@@ -228,31 +216,28 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 
 	@Override
 	public boolean isEmpty() {
-		return consumerNode == producerNode;
+		return this.consumerNode == this.producerNode;
 	}
 
 	@Override
 	public Iterator<E> iterator() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("MpscLinkedQueue#iterator is not supported");
 	}
 
 	static final class LinkedQueueNode<E>
 	{
-		private volatile LinkedQueueNode<E> next;
-		private final static AtomicReferenceFieldUpdater<LinkedQueueNode, LinkedQueueNode> NEXT_UPDATER
-				= AtomicReferenceFieldUpdater.newUpdater(LinkedQueueNode.class, LinkedQueueNode.class, "next");
+		private volatile MpscLinkedQueue.LinkedQueueNode<E> next;
+		private static final AtomicReferenceFieldUpdater<MpscLinkedQueue.LinkedQueueNode, MpscLinkedQueue.LinkedQueueNode> NEXT_UPDATER
+				= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.LinkedQueueNode.class, MpscLinkedQueue.LinkedQueueNode.class, "next");
 
 		private E value;
-
 		LinkedQueueNode()
 		{
 			this(null);
 		}
-
-
-		LinkedQueueNode(@Nullable E val)
+		LinkedQueueNode(@Nullable final E val)
 		{
-			spValue(val);
+      this.spValue(val);
 		}
 
 		/**
@@ -263,31 +248,31 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 		@Nullable
 		public E getAndNullValue()
 		{
-			E temp = lpValue();
-			spValue(null);
+			final E temp = this.lpValue();
+      this.spValue(null);
 			return temp;
 		}
 
 		@Nullable
 		public E lpValue()
 		{
-			return value;
+			return this.value;
 		}
 
-		public void spValue(@Nullable E newValue)
+		public void spValue(@Nullable final E newValue)
 		{
-			value = newValue;
+      this.value = newValue;
 		}
 
-		public void soNext(@Nullable LinkedQueueNode<E> n)
+		public void soNext(@Nullable final MpscLinkedQueue.LinkedQueueNode<E> next)
 		{
-			NEXT_UPDATER.lazySet(this, n);
+			NEXT_UPDATER.lazySet(this, next);
 		}
 
 		@Nullable
-		public LinkedQueueNode<E> lvNext()
+		public MpscLinkedQueue.LinkedQueueNode<E> lvNext()
 		{
-			return next;
+			return this.next;
 		}
 	}
 }
