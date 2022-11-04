@@ -28,6 +28,7 @@ import java.util.Spliterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -537,9 +538,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
 	 * <p>
-	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
-	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
-	 * propagation
+	 * If the completionStage is also a {@link Future}, cancelling the Mono will cancel the future.
+	 * Use {@link #fromFuture(CompletableFuture, boolean)} with {@code suppressCancellation} set to
+	 * {@code true} if you need to suppress cancellation propagation.
 	 *
 	 * @param completionStage {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately)
@@ -551,15 +552,15 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono} that wraps a {@link CompletionStage} on subscription,
+	 * Create a {@link Mono} that wraps a lazily-supplied {@link CompletionStage} on subscription,
 	 * emitting the value produced by the {@link CompletionStage}.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
 	 * <p>
-	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
-	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
-	 * propagation
+	 * If the completionStage is also a {@link Future}, cancelling the Mono will cancel the future.
+	 * Use {@link #fromFuture(CompletableFuture, boolean)} with {@code suppressCancellation} set to
+	 * {@code true} if you need to suppress cancellation propagation.
 	 *
 	 * @param stageSupplier The {@link Supplier} of a {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of CompletionStage-based APIs.
@@ -609,14 +610,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono}, producing its value using the provided {@link CompletableFuture}.
+	 * Create a {@link Mono}, producing its value using the provided {@link CompletableFuture}
+	 * and cancelling the future if the Mono gets cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
 	 * <p>
-	 * Note, use {@link #fromFuture(CompletableFuture, boolean)} with {@code
-	 * suppressCancellation} set to {@code true} if you need to suppress cancellation
-	 * propagation
+	 * Use {@link #fromFuture(CompletableFuture, boolean)} with {@code suppressCancellation} set to
+	 * {@code true} if you need to suppress cancellation propagation.
 	 *
 	 * @param future {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately)
@@ -629,34 +630,33 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono}, producing its value using the provided {@link CompletableFuture}.
+	 * Create a {@link Mono}, producing its value using the provided {@link CompletableFuture}
+	 * and optionally cancelling the future if the Mono gets cancelled (if {@code suppressCancel == false}).
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFuture.svg" alt="">
 	 * <p>
 	 *
-	 * @param future {@link CompletableFuture} that will produce a value (or a null to
-	 * complete immediately)
-	 * @param suppressCancel specifies whether future should have cancellation signal
-	 *                          to be suppressed
+	 * @param future {@link CompletableFuture} that will produce a value (or a null to complete immediately)
+	 * @param suppressCancel {@code true} to prevent cancellation of the future when the Mono is cancelled,
+	 * {@code false} otherwise (the default)
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
-	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
 	 */
 	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future, boolean suppressCancel) {
 		return onAssembly(new MonoCompletionStage<>(future, suppressCancel));
 	}
 
 	/**
-	 * Create a {@link Mono} that wraps a {@link CompletableFuture} on subscription,
-	 * emitting the value produced by the Future.
+	 * Create a {@link Mono} that wraps a lazily-supplied {@link CompletableFuture} on subscription,
+	 * emitting the value produced by the future and cancelling the future if the Mono gets cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
 	 * <p>
 	 *
-	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
-	 * complete immediately). This allows lazy triggering of future-based APIs.
+	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value
+	 * (or a null to complete immediately). This allows lazy triggering of future-based APIs.
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
@@ -666,17 +666,18 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono} that wraps a {@link CompletableFuture} on subscription,
-	 * emitting the value produced by the Future.
+	 * Create a {@link Mono} that wraps a lazily-supplied  {@link CompletableFuture} on subscription,
+	 * emitting the value produced by the future and optionally cancelling the future if the Mono gets cancelled
+	 * (if {@code suppressCancel == false}).
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromFutureSupplier.svg" alt="">
 	 * <p>
 	 *
-	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
-	 * complete immediately). This allows lazy triggering of future-based APIs.
-	 * @param suppressCancel specifies whether future should have cancellation signal
-	 *                          to be suppressed
+	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value
+	 * (or a null to complete immediately). This allows lazy triggering of future-based APIs.
+	 * @param suppressCancel {@code true} to prevent cancellation of the future when the Mono is cancelled,
+	 * {@code false} otherwise (the default)
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
