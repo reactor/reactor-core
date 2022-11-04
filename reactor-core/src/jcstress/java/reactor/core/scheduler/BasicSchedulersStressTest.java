@@ -29,7 +29,7 @@ import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.IIZ_Result;
 import org.openjdk.jcstress.infra.results.Z_Result;
 
-public abstract class SchedulersStressTest {
+public abstract class BasicSchedulersStressTest {
 
 	private static void restart(Scheduler scheduler) {
 		scheduler.disposeGracefully().block(Duration.ofMillis(500));
@@ -89,36 +89,6 @@ public abstract class SchedulersStressTest {
 		private final ParallelScheduler scheduler =
 				new ParallelScheduler(4, Thread::new);
 
-		{
-			scheduler.init();
-		}
-
-		@Actor
-		public void restart1() {
-			restart(scheduler);
-		}
-
-		@Actor
-		public void restart2() {
-			restart(scheduler);
-		}
-
-		@Arbiter
-		public void arbiter(Z_Result r) {
-			// At this stage, at least one actor called scheduler.start(),
-			// so we should be able to execute a task.
-			r.r1 = canScheduleTask(scheduler);
-			scheduler.dispose();
-		}
-	}
-
-	@JCStressTest
-	@Outcome(id = {"true"}, expect = Expect.ACCEPTABLE, desc = "Task scheduled after racing restart")
-	@State
-	public static class BoundedElasticSchedulerStartDisposeStressTest {
-
-		private final BoundedElasticScheduler scheduler =
-				new BoundedElasticScheduler(1, 1, Thread::new, 5);
 		{
 			scheduler.init();
 		}
@@ -226,47 +196,6 @@ public abstract class SchedulersStressTest {
 	@JCStressTest
 	@Outcome(id = {".*, true"}, expect = Expect.ACCEPTABLE,
 			desc = "Scheduler in consistent state upon concurrent dispose and " +
-					"eventually disposed.")
-	@State
-	public static class BoundedElasticSchedulerDisposeGracefullyStressTest {
-
-		private final BoundedElasticScheduler scheduler =
-				new BoundedElasticScheduler(4, 4, Thread::new, 5);
-
-		{
-			scheduler.init();
-		}
-
-		@Actor
-		public void disposeGracefully1(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
-			r.r1 = scheduler.state.initialResource.hashCode();
-		}
-
-		@Actor
-		public void disposeGracefully2(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
-			r.r2 = scheduler.state.initialResource.hashCode();
-		}
-
-		@Arbiter
-		public void arbiter(IIZ_Result r) {
-			// Validate both disposals left the Scheduler in consistent state,
-			// assuming the await process coordinates on the resources as identified
-			// by r.r1 and r.r2, which should be equal.
-			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState && scheduler.isDisposed();
-			if (consistentState) {
-				//when that condition is true, we erase the r1/r2 state. that should greatly limit
-				//the output of "interesting acceptable state" in the dump should and error occur
-				r.r1 = r.r2 = 0;
-			}
-		}
-	}
-
-	@JCStressTest
-	@Outcome(id = {".*, true"}, expect = Expect.ACCEPTABLE,
-			desc = "Scheduler in consistent state upon concurrent dispose and " +
 					"disposeGracefully, eventually disposed.")
 	@State
 	public static class SingleSchedulerDisposeGracefullyAndDisposeStressTest {
@@ -313,48 +242,6 @@ public abstract class SchedulersStressTest {
 
 		private final ParallelScheduler scheduler =
 				new ParallelScheduler(10, Thread::new);
-
-		{
-			scheduler.init();
-		}
-
-		@Actor
-		public void disposeGracefully(IIZ_Result r) {
-			scheduler.disposeGracefully().block();
-			r.r1 = scheduler.state.initialResource.hashCode();
-		}
-
-		@Actor
-		public void dispose(IIZ_Result r) {
-			scheduler.dispose();
-			r.r2 = scheduler.state.initialResource.hashCode();
-		}
-
-		@Arbiter
-		public void arbiter(IIZ_Result r) {
-			// Validate both disposals left the Scheduler in consistent state,
-			// assuming the await process coordinates on the resources as identified
-			// by r.r1 and r.r2, which should be equal.
-			boolean consistentState = r.r1 == r.r2;
-			r.r3 = consistentState && scheduler.isDisposed();
-			if (consistentState) {
-				//when that condition is true, we erase the r1/r2 state. that should greatly limit
-				//the output of "interesting acceptable state" in the dump should and error occur
-				r.r1 = r.r2 = 0;
-			}
-		}
-	}
-
-	@JCStressTest
-	@Outcome(id = {".*, true"}, expect = Expect.ACCEPTABLE,
-			desc = "Scheduler in consistent state upon concurrent dispose and " +
-					"disposeGracefully, eventually disposed.")
-	@State
-	public static class BoundedElasticSchedulerDisposeGracefullyAndDisposeStressTest {
-
-
-		private final BoundedElasticScheduler scheduler =
-				new BoundedElasticScheduler(4, 4, Thread::new, 5);
 
 		{
 			scheduler.init();
