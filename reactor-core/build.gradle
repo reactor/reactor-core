@@ -298,6 +298,7 @@ blockHoundTest {
 jcstress {
 	mode = 'quick' //quick, default, tough
     jcstressDependency 'org.openjdk.jcstress:jcstress-core:0.15'
+	heapPerFork = 512
 }
 
 // inherit basic test task + common configuration in root

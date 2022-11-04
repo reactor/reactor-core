@@ -146,7 +146,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 
 	@Override
 	public boolean await(ScheduledExecutorService resource, long timeout, TimeUnit timeUnit)
-			throws InterruptedException {
+		throws InterruptedException {
 		return resource.awaitTermination(timeout, timeUnit);
 	}
 
