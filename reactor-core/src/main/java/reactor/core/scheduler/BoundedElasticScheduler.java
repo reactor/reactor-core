@@ -219,8 +219,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	}
 
 	@Override
-	public boolean await(BoundedServices boundedServices, long timeout, TimeUnit timeUnit)
-		throws InterruptedException {
+	public boolean await(BoundedServices boundedServices, long timeout, TimeUnit timeUnit) throws InterruptedException {
 		if (!boundedServices.evictor.awaitTermination(timeout, timeUnit)) {
 			return false;
 		}
