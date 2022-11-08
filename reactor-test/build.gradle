@@ -111,7 +111,7 @@ task japicmp(type: JapicmpTask) {
 	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
 	// TODO after a .0 release, remove the reactor-test exclusions below if any
-	classExcludes = [ "reactor.test.StepVerifierExtensionsKt" ]
+	classExcludes = [ ]
 	methodExcludes = [ ]
 }
 

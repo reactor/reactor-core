@@ -193,39 +193,8 @@ task japicmp(type: JapicmpTask) {
 	// TODO after a .0 release, bump the gradle.properties baseline
 	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [
-		"reactor.core.publisher.FluxExtensionsKt",
-		"reactor.core.publisher.MonoExtensionsKt",
-		"reactor.core.publisher.MonoWhenFunctionsKt",
-		"reactor.util.function.TupleExtensionsKt",
-		"reactor.core.publisher.DirectProcessor",
-		"reactor.core.publisher.DirectInnerContainer",
-		"reactor.core.publisher.FluxProcessor",
-		"reactor.core.publisher.EmitterProcessor",
-		"reactor.core.publisher.MonoProcessor",
-		"reactor.core.publisher.ReplayProcessor",
-		"reactor.core.publisher.UnicastProcessor"
 	]
 	methodExcludes = [
-		'reactor.core.publisher.Mono#doAfterSuccessOrError(java.util.function.BiConsumer)',
-		'reactor.core.publisher.Mono#doOnSuccessOrError(java.util.function.BiConsumer)',
-		'reactor.core.publisher.Flux#deferWithContext(java.util.function.Function)',
-		'reactor.core.publisher.Flux#subscriberContext(reactor.util.context.Context)',
-		'reactor.core.publisher.Flux#subscriberContext(java.util.function.Function)',
-		'reactor.core.publisher.Mono#deferWithContext(java.util.function.Function)',
-		'reactor.core.publisher.Mono#subscriberContext()',
-		'reactor.core.publisher.Mono#subscriberContext(reactor.util.context.Context)',
-		'reactor.core.publisher.Mono#subscriberContext(java.util.function.Function)',
-		'reactor.core.publisher.Signal#getContext()',
-		'reactor.util.context.Context#putAll(reactor.util.context.Context)',
-		'reactor.core.scheduler.Schedulers#elastic()',
-		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String)',
-		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int)',
-		'reactor.core.scheduler.Schedulers#newElastic(java.lang.String, int, boolean)',
-		'reactor.core.scheduler.Schedulers#newElastic(int, java.util.concurrent.ThreadFactory)',
-		'reactor.core.scheduler.Schedulers$Factory#newElastic(int, java.util.concurrent.ThreadFactory)',
-		'reactor.core.Scannable#tagsDeduplicated()',
-		"reactor.core.publisher.Mono#toProcessor()",
-		"reactor.core.scheduler.Scheduler#disposeGracefully()"
 	]
 }
 
