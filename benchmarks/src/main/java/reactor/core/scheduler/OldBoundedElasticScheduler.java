@@ -148,6 +148,7 @@ final class OldBoundedElasticScheduler implements Scheduler, Scannable {
 		return BOUNDED_SERVICES.get(this) == SHUTDOWN;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void start() {
 		for (;;) {
