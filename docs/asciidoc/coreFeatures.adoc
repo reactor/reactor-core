@@ -958,18 +958,18 @@ AtomicInteger transientHelper = new AtomicInteger();
 Consumer<SynchronousSink<Integer>> mySink = sink -> {
     int i = transientHelper.getAndIncrement();
     if (i == 10) { // <2>
-	sink.next(i);
-	sink.complete();
+        sink.next(i);
+        sink.complete();
     }
     else if (i % 3 == 0) { // <3>
-	sink.next(i);
+        sink.next(i);
     }
     else {
-	sink.error(new IllegalStateException("Transient error at " + i)); // <4>
+        sink.error(new IllegalStateException("Transient error at " + i)); // <4>
     }
 };
 Flux<Integer> transientFlux = Flux.<Integer>generate(mySink)
-		.doOnError(e -> errorCount.incrementAndGet());
+        .doOnError(e -> errorCount.incrementAndGet());
 
 transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <5>
              .blockLast();
@@ -1034,11 +1034,11 @@ still have to deal with those exceptions in a `try-catch` block. You have severa
 options, though:
 
 . Catch the exception and recover from it. The sequence continues normally.
+. If you need to return a `Flux` (for example, you are in a `flatMap`), wrap the
+exception in an error-producing `Flux`, as follows: `return Flux.error(checkedException)`
+(the sequence also terminates).
 . Catch the exception, wrap it into an _unchecked_ exception, and then throw it
 (interrupting the sequence). The `Exceptions` utility class can help you with that.
-. If you need to return a `Flux` (for example, you are in a `flatMap`), wrap the
-exception in an error-producing `Flux`, as follows: `return Flux.error(checkedException)` (The
-sequence also terminates.
 
 Reactor has an `Exceptions` utility class that you can use to ensure that exceptions are
 wrapped only if they are checked exceptions:
@@ -1073,7 +1073,7 @@ map's `onError` method as a `RuntimeException`, as follows:
 Flux<String> converted = Flux
     .range(1, 10)
     .map(i -> {
-	try {
+        try {
             return convert(i);
         } catch (IOException e) {
             throw Exceptions.propagate(e);
