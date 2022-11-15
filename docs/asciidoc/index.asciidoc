@@ -93,6 +93,11 @@ https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/apdx-reactorExtr
 to "<<reactor-extra>>"
 endif::[]
 
+[appendix]
+= Migration Notes
+include::migrationNotes/migrate-34x-35.adoc[leveloffset=2]
+// TODO add migration notes in the migrationNotes folder and include them here
+
 //TODO later add appendices about internals, writing operators, fusion
 //[appendix]
 //include::apdx-implem.adoc[]
