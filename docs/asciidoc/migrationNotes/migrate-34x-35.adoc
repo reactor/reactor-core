@@ -6,7 +6,7 @@ As with every release cycle, APIs that have been marked as `@Deprecated` in the 
 
 Users should already have taken these deprecations into consideration, but they are listed here again just in case:
 
-* **Kotlin extensions**: these now live in the `reactor-kotlin-extensions`` library
+* **Kotlin extensions**: these now live in the `reactor-kotlin-extensions` library
  
  * **Mono _SuccessOrError_ side effects**
  ** The `Mono.doOnSuccessOrError` recommended alternatives include `doOnNext(Consumer)`, `doOnError(Consumer)`, `doOnTerminate(Runnable)` and `doOnSuccess(Consumer)`.
