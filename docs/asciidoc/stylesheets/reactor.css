@@ -439,6 +439,7 @@ h4 {
 
 h5 {
     font-size: 1.125em;
+    text-decoration-line: underline;
 }
 
 h6 {

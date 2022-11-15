@@ -119,6 +119,7 @@ listenToEvents()
 Please note that depending on the monitoring system you're using, using a name can be considered mandatory when using tags, since it would otherwise result in a different set of tags between two default-named sequences.
 Some systems like Prometheus might also require to have the exact same set of tags for each metric with the same name.
 
+[[metrics-observation]]
 === Observation
 In addition to full metrics, the `reactor-core-micrometer` module offers an alternative based on Micrometer's `Observation`.
 Depending on the configuration and runtime classpath, an `Observation` could translate to timers, spans, logging statements or any combination.
