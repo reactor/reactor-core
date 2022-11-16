@@ -70,7 +70,7 @@ public interface FluxSink<T> {
 	 *   operator or directly by a child subscriber overriding
 	 *   {@link CoreSubscriber#currentContext()}
 	 *
-	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #getContextView() instead.
+	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #contextView() instead.
 	 */
 	@Deprecated
 	Context currentContext();
