@@ -132,7 +132,8 @@ public final class Micrometer {
 	}
 
     /**
-     * Install a {@link Schedulers.Factory} with metrics support.
+     * Install a {@link Schedulers.Factory} with metrics support. All new schedulers will be instrumented with
+	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
      *
      * @param metricsPrefix the prefix to use in meter names. Must not end with a dot, which is automatically added.
      * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
