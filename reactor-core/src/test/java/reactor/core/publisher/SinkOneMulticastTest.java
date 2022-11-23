@@ -31,6 +31,7 @@ import reactor.core.Scannable;
 import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.Sinks.EmitResult;
 import reactor.test.StepVerifier;
+import reactor.test.subscriber.TestSubscriber;
 import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 
@@ -199,8 +200,10 @@ class SinkOneMulticastTest {
 	}
 
 	@Test
-	void nullFulfill() {
+	void nullTryEmitNextIsTurnedToTryEmitComplete() {
 		SinkOneMulticast<String> sink = new SinkOneMulticast<>();
+		TestSubscriber<String> ts = TestSubscriber.create();
+		sink.subscribe(ts); //we need to check no onNext(null) is propagated
 
 		EmitResult emitResult = sink.tryEmitValue(null);
 
@@ -208,6 +211,8 @@ class SinkOneMulticastTest {
 
 		assertThat(sink.scan(Scannable.Attr.ERROR)).isNull();
 		assertThat(sink.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(ts.getReceivedOnNext()).as("received onNext").isEmpty();
+		assertThat(ts.isTerminatedComplete());
 	}
 
 	@Test

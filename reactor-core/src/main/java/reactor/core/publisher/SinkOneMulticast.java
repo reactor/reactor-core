@@ -46,6 +46,10 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 			return EmitResult.FAIL_TERMINATED;
 		}
 
+		if (value == null) {
+			return tryEmitEmpty();
+		}
+
 		this.value = value;
 
 		for (;;) {
