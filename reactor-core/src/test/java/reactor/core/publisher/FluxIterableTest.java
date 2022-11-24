@@ -334,8 +334,9 @@ public class FluxIterableTest {
 
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> testSubscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Mockito.when(testSubscriber.currentContext()).thenReturn(discardingContext);
 
-		Spliterator<Integer> iterator = Spliterators.spliterator(new Iterator<Integer>() {
+		Spliterator<Integer> iterator = Spliterators.spliteratorUnknownSize(new Iterator<Integer>() {
 			@Override
 			public boolean hasNext() {
 				//approximate infinite source with a large upper bound instead
@@ -346,7 +347,7 @@ public class FluxIterableTest {
 			public Integer next() {
 				return backingAtomic.incrementAndGet();
 			}
-		}, 10_000, 0);
+		}, 0);
 
 
 		FluxIterable.IterableSubscriptionConditional<Integer> subscription = new FluxIterable.IterableSubscriptionConditional<>(
