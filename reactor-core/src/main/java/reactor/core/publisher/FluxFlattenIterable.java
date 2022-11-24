@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -81,12 +80,12 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 				return null;
 			}
 
-			Iterator<? extends R> it;
+			Spliterator<? extends R> sp;
 			boolean knownToBeFinite;
 			try {
 				Iterable<? extends R> iter = mapper.apply(v);
-				it = iter.iterator();
-				knownToBeFinite = FluxIterable.checkFinite(iter);
+				sp = iter.spliterator();
+				knownToBeFinite = FluxIterable.checkFinite(sp);
 			}
 			catch (Throwable ex) {
 				Context ctx = actual.currentContext();
@@ -102,7 +101,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			}
 
 			// TODO return subscriber (tail-call optimization)?
-			FluxIterable.subscribe(actual, it, knownToBeFinite);
+			FluxIterable.subscribe(actual, sp, knownToBeFinite);
 			return null;
 		}
 		return new FlattenIterableSubscriber<>(actual,
@@ -118,7 +117,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 	}
 
 	static final class FlattenIterableSubscriber<T, R>
-			implements InnerOperator<T, R>, QueueSubscription<R> {
+			implements InnerOperator<T, R>, QueueSubscription<R>, Consumer<R> {
 
 		final CoreSubscriber<? super R> actual;
 
@@ -159,8 +158,12 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						"error");
 
 		@Nullable
-		Iterator<? extends R> current;
+		Spliterator<? extends R> current;
 		boolean currentKnownToBeFinite;
+
+		boolean valueReady = false;
+
+		R nextElement;
 
 		int consumed;
 
@@ -268,6 +271,29 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		}
 
 		@Override
+		public void accept(R t) {
+			valueReady = true;
+			nextElement = t;
+		}
+
+		boolean hasNext(Spliterator<? extends R> spliterator) {
+			if (!valueReady)
+				spliterator.tryAdvance(this);
+			return valueReady;
+		}
+
+		R next(Spliterator<? extends R> spliterator) {
+			if (!valueReady && !hasNext(spliterator))
+				throw new NoSuchElementException();
+			else {
+				valueReady = false;
+				R t = nextElement;
+				nextElement = null;
+				return t;
+			}
+		}
+
+		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
@@ -285,6 +311,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 				if (WIP.getAndIncrement(this) == 0) {
 					Context context = actual.currentContext();
 					Operators.onDiscardQueueWithClear(queue, context, null);
+					Operators.onDiscard(nextElement, context);
 					Operators.onDiscardMultiple(current, currentKnownToBeFinite, context);
 				}
 			}
@@ -301,12 +328,12 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			final Queue<T> q = queue;
 
 			int missed = 1;
-			Iterator<? extends R> it = current;
+			Spliterator<? extends R> sp = current;
 			boolean itFinite = currentKnownToBeFinite;
 
 			for (; ; ) {
 
-				if (it == null) {
+				if (sp == null) {
 
 					if (cancelled) {
 						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
@@ -345,17 +372,17 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					if (!empty) {
 						Iterable<? extends R> iterable;
 
-						boolean b;
+						long size;
 
 						try {
 							iterable = mapper.apply(t);
-							it = iterable.iterator();
-							itFinite = FluxIterable.checkFinite(iterable);
+							sp = iterable.spliterator();
+							itFinite = FluxIterable.checkFinite(sp);
 
-							b = it.hasNext();
+							size = itFinite ? sp.estimateSize() : -1;
 						}
 						catch (Throwable exc) {
-							it = null;
+							sp = null;
 							itFinite = false; //reset explicitly
 							Context ctx = actual.currentContext();
 							Throwable e_ = Operators.onNextError(t, exc, ctx, s);
@@ -366,8 +393,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							continue;
 						}
 
-						if (!b) {
-							it = null;
+						if (size == 0) {
+							sp = null;
 							itFinite = false; //reset explicitly
 							int c = consumed + 1;
 							if (c == limit) {
@@ -382,7 +409,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					}
 				}
 
-				if (it != null) {
+				if (sp != null) {
 					long r = requested;
 					long e = 0L;
 
@@ -391,7 +418,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(q, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							return;
 						}
 
@@ -401,7 +429,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(q, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							a.onError(ex);
 							return;
 						}
@@ -409,7 +438,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						R v;
 
 						try {
-							v = Objects.requireNonNull(it.next(),
+							v = Objects.requireNonNull(next(sp),
 									"iterator returned null");
 						}
 						catch (Throwable exc) {
@@ -424,7 +453,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(q, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							return;
 						}
 
@@ -433,7 +463,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						boolean b;
 
 						try {
-							b = it.hasNext();
+							b = hasNext(sp);
 						}
 						catch (Throwable exc) {
 							onError(Operators.onOperatorError(s, exc,
@@ -450,7 +480,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							else {
 								consumed = c;
 							}
-							it = null;
+							sp = null;
 							itFinite = false;
 							resetCurrent();
 							break;
@@ -462,7 +492,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(q, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							return;
 						}
 
@@ -472,13 +503,14 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(q, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							a.onError(ex);
 							return;
 						}
 
 						boolean d = done;
-						boolean empty = q.isEmpty() && it == null;
+						boolean empty = q.isEmpty() && sp == null;
 
 						if (d && empty) {
 							resetCurrent();
@@ -493,12 +525,12 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						}
 					}
 
-					if (it == null) {
+					if (sp == null) {
 						continue;
 					}
 				}
 
-				current = it;
+				current = sp;
 				currentKnownToBeFinite = itFinite;
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
@@ -511,11 +543,11 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			final Subscriber<? super R> a = actual;
 
 			int missed = 1;
-			Iterator<? extends R> it = current;
+			Spliterator<? extends R> sp = current;
 			boolean itFinite = currentKnownToBeFinite;
 
 			for (; ; ) {
-				if (it == null) {
+				if (sp == null) {
 
 					if (cancelled) {
 						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
@@ -546,14 +578,14 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					if (!empty) {
 						Iterable<? extends R> iterable;
 
-						boolean b;
+						long size;
 
 						try {
 							iterable = mapper.apply(t);
-							it = iterable.iterator();
-							itFinite = FluxIterable.checkFinite(iterable);
+							sp = iterable.spliterator();
+							itFinite = FluxIterable.checkFinite(sp);
 
-							b = it.hasNext();
+							size = itFinite ? sp.estimateSize() : -1;
 						}
 						catch (Throwable exc) {
 							resetCurrent();
@@ -569,15 +601,15 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							continue;
 						}
 
-						if (!b) {
-							it = null;
+						if (size == 0) {
+							sp = null;
 							itFinite = false;
 							continue;
 						}
 					}
 				}
 
-				if (it != null) {
+				if (sp != null) {
 					long r = requested;
 					long e = 0L;
 
@@ -586,14 +618,15 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(queue, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							return;
 						}
 
 						R v;
 
 						try {
-							v = Objects.requireNonNull(it.next(), "iterator returned null");
+							v = Objects.requireNonNull(next(sp), "iterator returned null");
 						}
 						catch (Throwable exc) {
 							resetCurrent();
@@ -607,7 +640,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(queue, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							return;
 						}
 
@@ -616,7 +650,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						boolean b;
 
 						try {
-							b = it.hasNext();
+							b = hasNext(sp);
 						}
 						catch (Throwable exc) {
 							resetCurrent();
@@ -625,7 +659,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						}
 
 						if (!b) {
-							it = null;
+							sp = null;
 							itFinite = false;
 							resetCurrent();
 							break;
@@ -637,12 +671,13 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							resetCurrent();
 							final Context context = actual.currentContext();
 							Operators.onDiscardQueueWithClear(queue, context, null);
-							Operators.onDiscardMultiple(it, itFinite, context);
+							Operators.onDiscard(nextElement, context);
+							Operators.onDiscardMultiple(sp, itFinite, context);
 							return;
 						}
 
 						boolean d = done;
-						boolean empty = queue.isEmpty() && it == null;
+						boolean empty = queue.isEmpty() && sp == null;
 
 						if (d && empty) {
 							resetCurrent();
@@ -657,12 +692,12 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						}
 					}
 
-					if (it == null) {
+					if (sp == null) {
 						continue;
 					}
 				}
 
-				current = it;
+				current = sp;
 				currentKnownToBeFinite = itFinite;
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
@@ -690,6 +725,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		@Override
 		public void clear() {
 			final Context context = actual.currentContext();
+			Operators.onDiscard(nextElement, context);
 			Operators.onDiscardMultiple(current, currentKnownToBeFinite, context);
 			resetCurrent();
 			Operators.onDiscardQueueWithClear(queue, context, null);
@@ -697,9 +733,9 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 
 		@Override
 		public boolean isEmpty() {
-			Iterator<? extends R> it = current;
-			if (it != null) {
-				return !it.hasNext();
+			Spliterator<? extends R> sp = current;
+			if (sp != null) {
+				return !hasNext(sp);
 			}
 			return queue.isEmpty(); // estimate
 		}
@@ -707,10 +743,10 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		@Override
 		@Nullable
 		public R poll() {
-			Iterator<? extends R> it = current;
+			Spliterator<? extends R> sp = current;
 			boolean itFinite;
 			for (; ; ) {
-				if (it == null) {
+				if (sp == null) {
 					T v = queue.poll();
 					if (v == null) {
 						return null;
@@ -719,28 +755,28 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					Iterable<? extends R> iterable;
 					try {
 						iterable = mapper.apply(v);
-						it = iterable.iterator();
-						itFinite = FluxIterable.checkFinite(iterable);
+						sp = iterable.spliterator();
+						itFinite = FluxIterable.checkFinite(sp);
 					}
 					catch (Throwable error) {
 						Operators.onDiscard(v, actual.currentContext());
 						throw error;
 					}
 
-					if (!it.hasNext()) {
+					if (!hasNext(sp)) {
 						continue;
 					}
-					current = it;
+					current = sp;
 					currentKnownToBeFinite = itFinite;
 				}
-				else if (!it.hasNext()) {
-					it = null;
+				else if (!hasNext(sp)) {
+					sp = null;
 					continue;
 				}
 
-				R r = Objects.requireNonNull(it.next(), "iterator returned null");
+				R r = Objects.requireNonNull(next(sp), "iterator returned null");
 
-				if (!it.hasNext()) {
+				if (!hasNext(sp)) {
 					resetCurrent();
 				}
 

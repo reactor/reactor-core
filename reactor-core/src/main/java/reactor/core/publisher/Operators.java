@@ -618,6 +618,30 @@ public abstract class Operators {
 		}
 	}
 
+	public static void onDiscardMultiple(@Nullable Spliterator<?> multiple, boolean knownToBeFinite, Context context) {
+		if (multiple == null) return;
+		if (!knownToBeFinite) return;
+
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (hook != null) {
+			try {
+				multiple.forEachRemaining(o -> {
+					if (o != null) {
+						try {
+							hook.accept(o);
+						}
+						catch (Throwable t) {
+							log.warn("Error while discarding element from an Iterator, continuing with next element", t);
+						}
+					}
+				});
+			}
+			catch (Throwable t) {
+				log.warn("Error while discarding Iterator, stopping", t);
+			}
+		}
+	}
+
 	/**
 	 * An unexpected exception is about to be dropped.
 	 * <p>
