@@ -74,7 +74,7 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 
 			Iterable<? extends R> iter = mapper.apply(v);
 			Spliterator<? extends R> sp = iter.spliterator();
-			boolean itFinite = FluxIterable.checkFinite(iter, sp);
+			boolean itFinite = FluxIterable.checkFinite(sp);
 
 			FluxIterable.subscribe(actual, sp, itFinite);
 

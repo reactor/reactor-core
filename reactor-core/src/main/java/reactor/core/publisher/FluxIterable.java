@@ -47,17 +47,14 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	 * finite, which implies forEachRemaining type of iteration can be done to discard unemitted
 	 * values (in case of cancellation or error).
 	 * <p>
-	 * A {@link Collection} is assumed to be finite, and for other iterables the {@link Spliterator}
-	 * {@link Spliterator#SIZED} characteristic is looked for.
+	 * The {@link Spliterator#SIZED} characteristic is looked for.
 	 *
-	 * @param source of the {@link Spliterator} to check. Used to do a shortcut for size checks.
 	 * @param spliterator the {@link Spliterator} to check.
 	 * @param <T> values type
 	 * @return true if the {@link Spliterator} can confidently classified as finite, false if not finite/unsure
 	 */
-	static <T> boolean checkFinite(Iterable<? extends T> source, Spliterator<? extends T> spliterator) {
-		// FIXME: instanceof check should be more expensive than spliterator.hasCharacteristics(Spliterator.SIZED). Need to measure on different JVMs
-		return source instanceof Collection || spliterator.hasCharacteristics(Spliterator.SIZED);
+	static <T> boolean checkFinite(Spliterator<? extends T> spliterator) {
+		return spliterator.hasCharacteristics(Spliterator.SIZED);
 	}
 
 	final Iterable<? extends T> iterable;
@@ -79,9 +76,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		Spliterator<? extends T> sp;
 
 		try {
-			Iterable<? extends T> iterable = this.iterable;
-			sp = iterable.spliterator();
-			knownToBeFinite = FluxIterable.checkFinite(iterable, sp);
+			sp = this.iterable.spliterator();
+			knownToBeFinite = FluxIterable.checkFinite(sp);
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
