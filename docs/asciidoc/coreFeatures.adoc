@@ -857,7 +857,7 @@ indicates, lets you retry an error-producing sequence.
 The thing to keep in mind is that it works by *re-subscribing* to the upstream `Flux`.
 This is really a different sequence, and the original one is still terminated.
 To verify that, we can re-use the previous example and append a `retry(1)` to
-retry once instead of using `onErrorReturn`. The following example shows how to do sl:
+retry once instead of using `onErrorReturn`. The following example shows how to do so:
 
 ====
 [source,java]
