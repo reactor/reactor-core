@@ -372,14 +372,14 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					if (!empty) {
 						Iterable<? extends R> iterable;
 
-						long size;
+						boolean isEmpty;
 
 						try {
 							iterable = mapper.apply(t);
 							sp = iterable.spliterator();
 							itFinite = FluxIterable.checkFinite(iterable, sp);
 
-							size = itFinite ? sp.estimateSize() : -1;
+							isEmpty = itFinite && sp.estimateSize() == 0;
 						}
 						catch (Throwable exc) {
 							sp = null;
@@ -393,7 +393,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							continue;
 						}
 
-						if (size == 0) {
+						if (isEmpty) {
 							sp = null;
 							itFinite = false; //reset explicitly
 							int c = consumed + 1;
@@ -578,14 +578,14 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					if (!empty) {
 						Iterable<? extends R> iterable;
 
-						long size;
+						boolean isEmpty;
 
 						try {
 							iterable = mapper.apply(t);
 							sp = iterable.spliterator();
 							itFinite = FluxIterable.checkFinite(iterable, sp);
 
-							size = itFinite ? sp.estimateSize() : -1;
+							isEmpty = itFinite && sp.estimateSize() == 0;
 						}
 						catch (Throwable exc) {
 							resetCurrent();
@@ -601,7 +601,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							continue;
 						}
 
-						if (size == 0) {
+						if (isEmpty) {
 							sp = null;
 							itFinite = false;
 							continue;

@@ -128,10 +128,10 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			return;
 		}
 
-		long size;
+		boolean isEmpty;
 
 		try {
-			size = knownToBeFinite ? sp.estimateSize() : -1;
+			isEmpty = knownToBeFinite && sp.estimateSize() == 0;
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
@@ -145,7 +145,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			}
 			return;
 		}
-		if (size == 0) {
+		if (isEmpty) {
 			Operators.complete(s);
 			if (onClose != null) {
 				try {
