@@ -85,7 +85,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			try {
 				Iterable<? extends R> iter = mapper.apply(v);
 				sp = iter.spliterator();
-				knownToBeFinite = FluxIterable.checkFinite(sp);
+				knownToBeFinite = FluxIterable.checkFinite(iter, sp);
 			}
 			catch (Throwable ex) {
 				Context ctx = actual.currentContext();
@@ -377,7 +377,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						try {
 							iterable = mapper.apply(t);
 							sp = iterable.spliterator();
-							itFinite = FluxIterable.checkFinite(sp);
+							itFinite = FluxIterable.checkFinite(iterable, sp);
 
 							size = itFinite ? sp.estimateSize() : -1;
 						}
@@ -583,7 +583,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						try {
 							iterable = mapper.apply(t);
 							sp = iterable.spliterator();
-							itFinite = FluxIterable.checkFinite(sp);
+							itFinite = FluxIterable.checkFinite(iterable, sp);
 
 							size = itFinite ? sp.estimateSize() : -1;
 						}
@@ -756,7 +756,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 					try {
 						iterable = mapper.apply(v);
 						sp = iterable.spliterator();
-						itFinite = FluxIterable.checkFinite(sp);
+						itFinite = FluxIterable.checkFinite(iterable, sp);
 					}
 					catch (Throwable error) {
 						Operators.onDiscard(v, actual.currentContext());

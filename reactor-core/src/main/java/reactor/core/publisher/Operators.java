@@ -618,6 +618,19 @@ public abstract class Operators {
 		}
 	}
 
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Spliterator}.
+	 * Since spliterators can be infinite, this method requires that you explicitly ensure the spliterator is
+	 * {@code knownToBeFinite}. Typically, one can get such a guarantee by looking at the {@link Spliterator#getExactSizeIfKnown()}.
+	 *
+	 * @param multiple the {@link Spliterator} whose remainder to discard
+	 * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
+	 * @param context the {@link Context} in which to look for local hook
+	 * @see #onDiscard(Object, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
 	public static void onDiscardMultiple(@Nullable Spliterator<?> multiple, boolean knownToBeFinite, Context context) {
 		if (multiple == null) return;
 		if (!knownToBeFinite) return;
@@ -631,13 +644,13 @@ public abstract class Operators {
 							hook.accept(o);
 						}
 						catch (Throwable t) {
-							log.warn("Error while discarding element from an Iterator, continuing with next element", t);
+							log.warn("Error while discarding element from an Spliterator, continuing with next element", t);
 						}
 					}
 				});
 			}
 			catch (Throwable t) {
-				log.warn("Error while discarding Iterator, stopping", t);
+				log.warn("Error while discarding Spliterator, stopping", t);
 			}
 		}
 	}

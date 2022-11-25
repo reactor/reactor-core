@@ -29,8 +29,8 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
- * Emits the contents of an Iterable source. Attempt to discard remainder of a source
- * in case of error / cancellation, but uses the {@link Spliterator} API to try and detect
+ * Emits the contents of an Iterable source via its {@link Spliterator} successor. Attempt to discard remainder of a source
+ * in case of error / cancellation, uses the {@link Spliterator#characteristics()} API to determine
  * infinite sources (so that said discarding doesn't loop infinitely).
  *
  * @param <T> the value type
@@ -47,12 +47,14 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	 * A {@link Collection} is assumed to be finite, and for other iterables the {@link Spliterator}
 	 * {@link Spliterator#SIZED} characteristic is looked for.
 	 *
-	 * @param spliterator the {@link Iterable} to check.
-	 * @param <T>
-	 * @return true if the {@link Iterable} can confidently classified as finite, false if not finite/unsure
+	 * @param source of the {@link Spliterator} to check. Used to do a shortcut for size checks.
+	 * @param spliterator the {@link Spliterator} to check.
+	 * @param <T> values type
+	 * @return true if the {@link Spliterator} can confidently classified as finite, false if not finite/unsure
 	 */
-	static <T> boolean checkFinite(Spliterator<T> spliterator) {
-		return spliterator.hasCharacteristics(Spliterator.SIZED);
+	static <T> boolean checkFinite(Iterable<? extends T> source, Spliterator<? extends T> spliterator) {
+		// FIXME: instanceof check should be more expensive than spliterator.hasCharacteristics(Spliterator.SIZED). Need to measure on different JVMs
+		return source instanceof Collection || spliterator.hasCharacteristics(Spliterator.SIZED);
 	}
 
 	final Iterable<? extends T> iterable;
@@ -74,8 +76,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		Spliterator<? extends T> sp;
 
 		try {
+			Iterable<? extends T> iterable = this.iterable;
 			sp = iterable.spliterator();
-			knownToBeFinite = FluxIterable.checkFinite(sp);
+			knownToBeFinite = FluxIterable.checkFinite(iterable, sp);
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
@@ -98,29 +101,29 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	}
 
 	/**
-	 * Common method to take an {@link Iterator} as a source of values.
+	 * Common method to take an {@link Spliterator} as a source of values.
 	 *
 	 * @param s the subscriber to feed this iterator to
-	 * @param sp the {@link Iterator} to use as a predictable source of values
+	 * @param sp the {@link Spliterator} to use as a predictable source of values
 	 */
 	static <T> void subscribe(CoreSubscriber<? super T> s, Spliterator<? extends T> sp, boolean knownToBeFinite) {
 		subscribe(s, sp, knownToBeFinite, null);
 	}
 
 	/**
-	 * Common method to take an {@link Iterator} as a source of values.
+	 * Common method to take an {@link Spliterator} as a source of values.
 	 *
 	 * @param s the subscriber to feed this iterator to
-	 * @param it the {@link Iterator} to use as a source of values
+	 * @param sp the {@link Spliterator} to use as a source of values
 	 * @param onClose close handler to call once we're done with the iterator (provided it
 	 * is not null, this includes when the iteration errors or complete or the subscriber
 	 * is cancelled). Null to ignore.
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> void subscribe(CoreSubscriber<? super T> s, Spliterator<? extends T> it,
+	static <T> void subscribe(CoreSubscriber<? super T> s, Spliterator<? extends T> sp,
 			boolean knownToBeFinite, @Nullable Runnable onClose) {
 		//noinspection ConstantConditions
-		if (it == null) {
+		if (sp == null) {
 			Operators.error(s, new NullPointerException("The iterator is null"));
 			return;
 		}
@@ -128,7 +131,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		long size;
 
 		try {
-			size = knownToBeFinite ? it.estimateSize() : -1;
+			size = knownToBeFinite ? sp.estimateSize() : -1;
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
@@ -157,10 +160,10 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		if (s instanceof ConditionalSubscriber) {
 			s.onSubscribe(new IterableSubscriptionConditional<>((ConditionalSubscriber<? super T>) s,
-					it, knownToBeFinite, onClose));
+					sp, knownToBeFinite, onClose));
 		}
 		else {
-			s.onSubscribe(new IterableSubscription<>(s, it, knownToBeFinite, onClose));
+			s.onSubscribe(new IterableSubscription<>(s, sp, knownToBeFinite, onClose));
 		}
 	}
 
