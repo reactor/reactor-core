@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Spliterator;
