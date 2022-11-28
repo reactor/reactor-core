@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,13 +53,13 @@ final class FluxStream<T> extends Flux<T> implements Fuseable, SourceProducer<T>
 			return;
 		}
 
-		Iterator<? extends T> it;
+		Spliterator<? extends T> sp;
 		boolean knownToBeFinite;
 		try {
 			Spliterator<? extends T> spliterator = Objects.requireNonNull(stream.spliterator(),
 					"The stream returned a null Spliterator");
 			knownToBeFinite = spliterator.hasCharacteristics(Spliterator.SIZED);
-			it = Spliterators.iterator(spliterator); //this is the default for BaseStream#iterator() anyway
+			sp = spliterator; //this is the default for BaseStream#iterator() anyway
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
@@ -68,7 +68,7 @@ final class FluxStream<T> extends Flux<T> implements Fuseable, SourceProducer<T>
 
 		//although not required by AutoCloseable, Stream::close SHOULD be idempotent
 		//(at least the default AbstractPipeline implementation is)
-		FluxIterable.subscribe(actual, it, knownToBeFinite, stream::close);
+		FluxIterable.subscribe(actual, sp, knownToBeFinite, stream::close);
 	}
 
 	@Override
