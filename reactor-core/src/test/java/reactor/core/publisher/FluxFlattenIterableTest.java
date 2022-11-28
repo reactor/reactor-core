@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -137,6 +140,27 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		return Arrays.asList(
 				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, s + s)))
 		);
+	}
+
+	@Test
+	//https://github.com/reactor/reactor-core/issues/3295
+	public void useIterableOncePerSubscriber() {
+		AtomicInteger calls = new AtomicInteger();
+
+		Flux.range(1, 5)
+				.concatMapIterable(v -> new Iterable<String>() {
+					@NotNull
+					@Override
+					public Iterator<String> iterator() {
+						calls.incrementAndGet();
+						return Arrays.asList("hello " + v).iterator();
+					}
+				})
+				.as(StepVerifier::create)
+				.expectNext("hello 1", "hello 2", "hello 3", "hello 4", "hello 5")
+				.verifyComplete();
+
+		Assertions.assertThat(calls).hasValue(5);
 	}
 
 	@Test

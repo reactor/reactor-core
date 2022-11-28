@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Spliterator;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -73,10 +73,10 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 			}
 
 			Iterable<? extends R> iter = mapper.apply(v);
-			Iterator<? extends R>  it = iter.iterator();
-			boolean itFinite = FluxIterable.checkFinite(iter);
+			Spliterator<? extends R> sp = iter.spliterator();
+			boolean itFinite = FluxIterable.checkFinite(sp);
 
-			FluxIterable.subscribe(actual, it, itFinite);
+			FluxIterable.subscribe(actual, sp, itFinite);
 
 			return null;
 		}

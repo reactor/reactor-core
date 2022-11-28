@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,15 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
@@ -52,6 +49,25 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class FluxIterableTest {
 
 	final Iterable<Integer> source = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+	@Test
+	//https://github.com/reactor/reactor-core/issues/3295
+	public void useIterableOncePerSubscriber() {
+		AtomicInteger calls = new AtomicInteger();
+		Iterable<String> strings = new Iterable<String>() {
+			@NotNull
+			@Override
+			public Iterator<String> iterator() {
+				calls.incrementAndGet();
+				return Arrays.asList("hello").iterator();
+			}
+		};
+		StepVerifier.create(Flux.fromIterable(strings))
+				.expectNext("hello")
+				.verifyComplete();
+
+		Assertions.assertThat(calls).hasValue(1);
+	}
 
 	@Test
 	public void emptyIterable() {
@@ -223,7 +239,7 @@ public class FluxIterableTest {
 	public void scanSubscription() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxIterable.IterableSubscription<String> test =
-				new FluxIterable.IterableSubscription<>(actual, Collections.singleton("test").iterator(), true);
+				new FluxIterable.IterableSubscription<>(actual, Collections.singleton("test").spliterator(), true);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
@@ -245,7 +261,7 @@ public class FluxIterableTest {
 		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 		Mockito.when(actual.currentContext()).thenReturn(Context.empty());
         FluxIterable.IterableSubscriptionConditional<String> test =
-				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").iterator(), true);
+				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").spliterator(), true);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
@@ -318,8 +334,9 @@ public class FluxIterableTest {
 
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> testSubscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Mockito.when(testSubscriber.currentContext()).thenReturn(discardingContext);
 
-		Iterator<Integer> iterator = new Iterator<Integer>() {
+		Spliterator<Integer> iterator = Spliterators.spliteratorUnknownSize(new Iterator<Integer>() {
 			@Override
 			public boolean hasNext() {
 				//approximate infinite source with a large upper bound instead
@@ -330,7 +347,8 @@ public class FluxIterableTest {
 			public Integer next() {
 				return backingAtomic.incrementAndGet();
 			}
-		};
+		}, 0);
+
 
 		FluxIterable.IterableSubscriptionConditional<Integer> subscription = new FluxIterable.IterableSubscriptionConditional<>(
 				testSubscriber,
