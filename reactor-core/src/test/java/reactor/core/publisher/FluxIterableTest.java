@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
@@ -54,13 +53,9 @@ public class FluxIterableTest {
 	//https://github.com/reactor/reactor-core/issues/3295
 	public void useIterableOncePerSubscriber() {
 		AtomicInteger calls = new AtomicInteger();
-		Iterable<String> strings = new Iterable<String>() {
-			@NotNull
-			@Override
-			public Iterator<String> iterator() {
-				calls.incrementAndGet();
-				return Arrays.asList("hello").iterator();
-			}
+		Iterable<String> strings = () -> {
+			calls.incrementAndGet();
+			return Arrays.asList("hello").iterator();
 		};
 		StepVerifier.create(Flux.fromIterable(strings))
 				.expectNext("hello")
