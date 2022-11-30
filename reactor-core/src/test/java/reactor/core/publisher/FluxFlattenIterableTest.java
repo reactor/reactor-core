@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -148,13 +147,9 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		AtomicInteger calls = new AtomicInteger();
 
 		Flux.range(1, 5)
-				.concatMapIterable(v -> new Iterable<String>() {
-					@NotNull
-					@Override
-					public Iterator<String> iterator() {
-						calls.incrementAndGet();
-						return Arrays.asList("hello " + v).iterator();
-					}
+				.concatMapIterable(v -> (Iterable<String>) () -> {
+					calls.incrementAndGet();
+					return Arrays.asList("hello " + v).iterator();
 				})
 				.as(StepVerifier::create)
 				.expectNext("hello 1", "hello 2", "hello 3", "hello 4", "hello 5")
