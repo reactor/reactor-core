@@ -142,13 +142,6 @@ public class FluxIterableTest {
 	}
 
 	@Test
-	public void testFluxIterableSlowPath() {
-		Iterable<String> iterable = mock(Iterable.class);
-		Mockito.when(iterable.spliterator()).thenReturn(mock(Spliterator.class));
-		Flux.fromIterable(iterable).limitRate(1).next().block();
-	}
-
-	@Test
 	//https://github.com/reactor/reactor-core/issues/3295
 	public void useIterableOncePerSubscriber() {
 		AtomicInteger calls = new AtomicInteger();
