@@ -23,19 +23,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -43,6 +48,7 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.mock;
 
 public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
@@ -676,6 +682,94 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		assertThat(test.current).as("current nulled out")
 		                        .isNull();
 		assertThat(test.currentKnownToBeFinite).as("knownFinite reset").isFalse();
+	}
+
+
+	static Stream<Function<Flux, Flux>> factory() {
+		return Stream.of(new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux;
+			}
+
+			@Override
+			public String toString() {
+				return "normal fast-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.filter(__ -> true);
+			}
+
+			@Override
+			public String toString() {
+				return "conditional fast-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "fused";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.hide()
+				           .limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "normal slow-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.filter(__ -> true)
+				           .hide()
+				           .limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "conditional slow-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.filter(__ -> true)
+				           .limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "conditional-fused";
+			}
+		});
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("factory")
+	public void testFluxIterableEmptyCase(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock(Spliterator.class));
+
+		StepVerifier.create(
+				            Flux.just(1)
+					            .hide()
+				                .flatMapIterable(__ -> iterable)
+				                .as(fn)
+				                .next()
+		            )
+		            .expectSubscription()
+		            .expectComplete()
+		            .verify();
 	}
 
 	static class ReferenceCounted {

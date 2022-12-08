@@ -183,7 +183,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 				AtomicLongFieldUpdater.newUpdater(IterableSubscription.class,
 						"requested");
 
-		int state;
+		int state = STATE_CALL_HAS_NEXT;
 
 		/**
 		 * Indicates that the iterator's hasNext returned true before but the value is not
@@ -280,24 +280,6 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			for (; ; ) {
 
 				while (e != n) {
-					T t;
-
-					try {
-						t = Objects.requireNonNull(next(),
-								"The iterator returned a null value");
-					}
-					catch (Throwable ex) {
-						s.onError(ex);
-						onCloseWithDropError();
-						return;
-					}
-
-					if (cancelled) {
-						return;
-					}
-
-					s.onNext(t);
-
 					if (cancelled) {
 						return;
 					}
@@ -323,6 +305,24 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 						return;
 					}
 
+					T t;
+
+					try {
+						t = Objects.requireNonNull(next(),
+								"The iterator returned a null value");
+					}
+					catch (Throwable ex) {
+						s.onError(ex);
+						onCloseWithDropError();
+						return;
+					}
+
+					if (cancelled) {
+						return;
+					}
+
+					s.onNext(t);
+
 					e++;
 				}
 
@@ -342,28 +342,6 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			final Subscriber<? super T> s = actual;
 
 			for (; ; ) {
-
-				if (cancelled) {
-					return;
-				}
-
-				T t;
-
-				try {
-					t = Objects.requireNonNull(next(),
-							"The iterator returned a null value");
-				}
-				catch (Exception ex) {
-					s.onError(ex);
-					onCloseWithDropError();
-					return;
-				}
-
-				if (cancelled) {
-					return;
-				}
-
-				s.onNext(t);
 
 				if (cancelled) {
 					return;
@@ -389,6 +367,25 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					onCloseWithDropError();
 					return;
 				}
+
+				T t;
+
+				try {
+					t = Objects.requireNonNull(next(),
+							"The iterator returned a null value");
+				}
+				catch (Exception ex) {
+					s.onError(ex);
+					onCloseWithDropError();
+					return;
+				}
+
+				if (cancelled) {
+					return;
+				}
+
+				s.onNext(t);
+
 			}
 		}
 
@@ -512,7 +509,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 				AtomicLongFieldUpdater.newUpdater(IterableSubscriptionConditional.class,
 						"requested");
 
-		int state;
+		int state = STATE_CALL_HAS_NEXT;
 
 		/**
 		 * Indicates that the iterator's hasNext returned true before but the value is not
@@ -609,24 +606,6 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			for (; ; ) {
 
 				while (e != n) {
-					T t;
-
-					try {
-						t = Objects.requireNonNull(next(),
-								"The iterator returned a null value");
-					}
-					catch (Throwable ex) {
-						s.onError(ex);
-						onCloseWithDropError();
-						return;
-					}
-
-					if (cancelled) {
-						return;
-					}
-
-					boolean consumed = s.tryOnNext(t);
-
 					if (cancelled) {
 						return;
 					}
@@ -652,6 +631,24 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 						return;
 					}
 
+					T t;
+
+					try {
+						t = Objects.requireNonNull(next(),
+								"The iterator returned a null value");
+					}
+					catch (Throwable ex) {
+						s.onError(ex);
+						onCloseWithDropError();
+						return;
+					}
+
+					if (cancelled) {
+						return;
+					}
+
+					boolean consumed = s.tryOnNext(t);
+
 					if (consumed) {
 						e++;
 					}
@@ -673,29 +670,6 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			final ConditionalSubscriber<? super T> s = actual;
 
 			for (; ; ) {
-
-				if (cancelled) {
-					return;
-				}
-
-				T t;
-
-				try {
-					t = Objects.requireNonNull(next(),
-							"The iterator returned a null value");
-				}
-				catch (Exception ex) {
-					s.onError(ex);
-					onCloseWithDropError();
-					return;
-				}
-
-				if (cancelled) {
-					return;
-				}
-
-				s.tryOnNext(t);
-
 				if (cancelled) {
 					return;
 				}
@@ -720,6 +694,24 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					onCloseWithDropError();
 					return;
 				}
+
+				T t;
+
+				try {
+					t = Objects.requireNonNull(next(),
+							"The iterator returned a null value");
+				}
+				catch (Exception ex) {
+					s.onError(ex);
+					onCloseWithDropError();
+					return;
+				}
+
+				if (cancelled) {
+					return;
+				}
+
+				s.tryOnNext(t);
 			}
 		}
 
