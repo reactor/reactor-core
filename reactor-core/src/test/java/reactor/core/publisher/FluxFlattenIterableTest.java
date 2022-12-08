@@ -684,77 +684,8 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		assertThat(test.currentKnownToBeFinite).as("knownFinite reset").isFalse();
 	}
 
-
-	static Stream<Function<Flux, Flux>> factory() {
-		return Stream.of(new Function<Flux, Flux>() {
-			@Override
-			public Flux apply(Flux flux) {
-				return flux;
-			}
-
-			@Override
-			public String toString() {
-				return "normal fast-path";
-			}
-		}, new Function<Flux, Flux>() {
-			@Override
-			public Flux apply(Flux flux) {
-				return flux.filter(__ -> true);
-			}
-
-			@Override
-			public String toString() {
-				return "conditional fast-path";
-			}
-		}, new Function<Flux, Flux>() {
-			@Override
-			public Flux apply(Flux flux) {
-				return flux.limitRate(1);
-			}
-
-			@Override
-			public String toString() {
-				return "fused";
-			}
-		}, new Function<Flux, Flux>() {
-			@Override
-			public Flux apply(Flux flux) {
-				return flux.hide()
-				           .limitRate(1);
-			}
-
-			@Override
-			public String toString() {
-				return "normal slow-path";
-			}
-		}, new Function<Flux, Flux>() {
-			@Override
-			public Flux apply(Flux flux) {
-				return flux.filter(__ -> true)
-				           .hide()
-				           .limitRate(1);
-			}
-
-			@Override
-			public String toString() {
-				return "conditional slow-path";
-			}
-		}, new Function<Flux, Flux>() {
-			@Override
-			public Flux apply(Flux flux) {
-				return flux.filter(__ -> true)
-				           .limitRate(1);
-			}
-
-			@Override
-			public String toString() {
-				return "conditional-fused";
-			}
-		});
-	}
-
 	@ParameterizedTestWithName
-	@MethodSource("factory")
+	@MethodSource("reactor.core.publisher.FluxIterableTest#factory")
 	public void testFluxIterableEmptyCase(Function<Flux, Flux> fn) {
 		Iterable<String> iterable = mock(Iterable.class);
 		Mockito.when(iterable.spliterator())
