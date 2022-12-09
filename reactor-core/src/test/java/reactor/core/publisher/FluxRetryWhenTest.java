@@ -64,7 +64,8 @@ public class FluxRetryWhenTest {
 			Flux.error(new RuntimeException("forced failure 0")));
 
 	@Test
-	void doBusinessLogic() {
+	// https://github.com/reactor/reactor-core/issues/3314
+	void ensuresContextIsRestoredInRetryFunctions() {
 		PublisherProbe<Void> doBeforeRetryProbe = PublisherProbe.empty();
 		AtomicReference<ContextView> capturedContext = new AtomicReference<>();
 
