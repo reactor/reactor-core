@@ -8236,6 +8236,37 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Expect a single item from this {@link Flux} source, and emit it wrapped into an Optional.
+	 * Emit an empty Optional for an empty source but signal an {@link IndexOutOfBoundsException} for a source
+	 * with more than one element.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/singleOrEmpty.svg" alt="">
+	 *
+	 * @return a {@link Mono} with an Optional containing the expected single item, an empty optional or an error
+	 */
+	public final Mono<Optional<T>> singleOptional() {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(Exceptions.unwrap(e));
+				}
+				return Mono.just(Optional.ofNullable(v));
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoSingleOptionalCallable<>(thiz));
+		}
+		return Mono.onAssembly(new MonoSingleOptional<>(this));
+	}
+
+	/**
 	 * Skip the specified number of elements from the beginning of this {@link Flux} then
 	 * emit the remaining elements.
 	 *

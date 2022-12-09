@@ -4246,6 +4246,37 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Wrap the item produced by this {@link Mono} source into an Optional
+	 * or emit an empty Optional for an empty source.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/singleForMono.svg" alt="">
+	 * <p>
+	 *
+	 * @return a {@link Mono} with an Optional containing the item, an empty optional or an error
+	 */
+	public final Mono<Optional<T>> singleOptional() {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(Exceptions.unwrap(e));
+				}
+				return Mono.just(Optional.ofNullable(v));
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoSingleOptionalCallable<>(thiz));
+		}
+		return Mono.onAssembly(new MonoSingleOptionalMono<>(this));
+	}
+
+	/**
 	 * Subscribe to this {@link Mono} and request unbounded demand.
 	 * <p>
 	 * This version doesn't specify any consumption behavior for the events from the
