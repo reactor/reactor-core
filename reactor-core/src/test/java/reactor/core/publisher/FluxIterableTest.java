@@ -22,11 +22,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -36,6 +41,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.NonNull;
@@ -44,10 +50,118 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FluxIterableTest {
 
 	final Iterable<Integer> source = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+	static Stream<Function<Flux, Flux>> factory() {
+		return Stream.of(new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux;
+			}
+
+			@Override
+			public String toString() {
+				return "normal fast-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.filter(__ -> true);
+			}
+
+			@Override
+			public String toString() {
+				return "conditional fast-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "fused";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.hide()
+				           .limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "normal slow-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.filter(__ -> true)
+				           .hide()
+				           .limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "conditional slow-path";
+			}
+		}, new Function<Flux, Flux>() {
+			@Override
+			public Flux apply(Flux flux) {
+				return flux.filter(__ -> true)
+				           .limitRate(1);
+			}
+
+			@Override
+			public String toString() {
+				return "conditional-fused";
+			}
+		});
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("factory")
+	public void testFluxIterableEmptyCase(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock(Spliterator.class));
+
+		StepVerifier.create(
+				Flux.fromIterable(iterable)
+					.as(fn)
+				    .next()
+            )
+		    .expectSubscription()
+		    .expectComplete()
+		    .verify();
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("factory")
+	public void testFluxIterableErrorHasNext(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Spliterator mock = mock(Spliterator.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock);
+
+		when(mock.tryAdvance(any())).thenThrow();
+
+		StepVerifier.create(
+				            Flux.fromIterable(iterable)
+				                .as(fn)
+				                .next()
+		            )
+		            .expectSubscription()
+		            .expectError()
+		            .verify();
+	}
 
 	@Test
 	//https://github.com/reactor/reactor-core/issues/3295
@@ -253,7 +367,7 @@ public class FluxIterableTest {
 	@Test
 	public void scanConditionalSubscription() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<? super String> actual = mock(MockUtils.TestScannableConditionalSubscriber.class);
 		Mockito.when(actual.currentContext()).thenReturn(Context.empty());
         FluxIterable.IterableSubscriptionConditional<String> test =
 				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").spliterator(), true);
@@ -328,7 +442,7 @@ public class FluxIterableTest {
 		Context discardingContext = Operators.enableOnDiscard(Context.empty(), v -> { });
 
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<Integer> testSubscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<Integer> testSubscriber = mock(Fuseable.ConditionalSubscriber.class);
 		Mockito.when(testSubscriber.currentContext()).thenReturn(discardingContext);
 
 		Spliterator<Integer> iterator = Spliterators.spliteratorUnknownSize(new Iterator<Integer>() {
