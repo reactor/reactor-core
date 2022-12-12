@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
@@ -39,6 +41,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
@@ -46,9 +49,11 @@ import reactor.util.context.ContextView;
 import reactor.util.function.Tuple2;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
+import reactor.util.retry.RetrySpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.BDDMockito.given;
 
 public class FluxRetryWhenTest {
 
@@ -57,6 +62,45 @@ public class FluxRetryWhenTest {
 
 	Flux<Integer> rangeError = Flux.concat(Flux.range(1, 2),
 			Flux.error(new RuntimeException("forced failure 0")));
+
+	@Test
+	// https://github.com/reactor/reactor-core/issues/3314
+	void ensuresContextIsRestoredInRetryFunctions() {
+		PublisherProbe<Void> doBeforeRetryProbe = PublisherProbe.empty();
+		AtomicReference<ContextView> capturedContext = new AtomicReference<>();
+
+		RetrySpec spec = Retry.max(1)
+		                      .doBeforeRetryAsync(
+				                      retrySignal ->
+						                      Mono.deferContextual(cv -> {
+							                      capturedContext.set(cv);
+												  return doBeforeRetryProbe.mono();
+						                      })
+		                      );
+
+		Context context = Context.of("test", "test");
+
+        Mono.defer(new Supplier<Mono<?>>() {
+				int index = 0;
+
+                @Override
+                public Mono<?> get() {
+					if (index++ == 0) {
+						return Mono.error(new RuntimeException());
+					} else {
+						return Mono.just("someValue");
+					}
+                }
+            })
+            .retryWhen(spec)
+            .contextWrite(context)
+            .as(StepVerifier::create)
+            .expectNext("someValue")
+            .verifyComplete();
+
+		doBeforeRetryProbe.assertWasSubscribed();
+		assertThat(capturedContext).hasValueMatching(c -> c.hasKey("test"));
+	}
 
 	@Test
 	//https://github.com/reactor/reactor-core/issues/3253
