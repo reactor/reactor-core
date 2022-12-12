@@ -48,7 +48,9 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
@@ -700,6 +702,28 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		            )
 		            .expectSubscription()
 		            .expectComplete()
+		            .verify();
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("reactor.core.publisher.FluxIterableTest#factory")
+	public void testFluxIterableErrorHasNext(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Spliterator mock = mock(Spliterator.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock);
+
+		when(mock.tryAdvance(any())).thenThrow();
+
+		StepVerifier.create(
+				            Flux.just(1)
+				                .hide()
+				                .flatMapIterable(__ -> iterable)
+				                .as(fn)
+				                .next()
+		            )
+		            .expectSubscription()
+		            .expectError()
 		            .verify();
 	}
 

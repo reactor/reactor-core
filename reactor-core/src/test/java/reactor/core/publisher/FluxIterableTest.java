@@ -50,7 +50,9 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FluxIterableTest {
 
@@ -139,6 +141,26 @@ public class FluxIterableTest {
 		    .expectSubscription()
 		    .expectComplete()
 		    .verify();
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("factory")
+	public void testFluxIterableErrorHasNext(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Spliterator mock = mock(Spliterator.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock);
+
+		when(mock.tryAdvance(any())).thenThrow();
+
+		StepVerifier.create(
+				            Flux.fromIterable(iterable)
+				                .as(fn)
+				                .next()
+		            )
+		            .expectSubscription()
+		            .expectError()
+		            .verify();
 	}
 
 	@Test
