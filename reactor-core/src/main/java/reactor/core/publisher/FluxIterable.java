@@ -326,6 +326,27 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					e++;
 				}
 
+				boolean b;
+
+				try {
+					b = hasNext();
+				}
+				catch (Throwable ex) {
+					s.onError(ex);
+					onCloseWithDropError();
+					return;
+				}
+
+				if (!b) {
+					if (cancelled) {
+						return;
+					}
+
+					s.onComplete();
+					onCloseWithDropError();
+					return;
+				}
+
 				n = requested;
 
 				if (n == e) {
@@ -652,6 +673,27 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					if (consumed) {
 						e++;
 					}
+				}
+
+				boolean b;
+
+				try {
+					b = hasNext();
+				}
+				catch (Throwable ex) {
+					s.onError(ex);
+					onCloseWithDropError();
+					return;
+				}
+
+				if (!b) {
+					if (cancelled) {
+						return;
+					}
+
+					s.onComplete();
+					onCloseWithDropError();
+					return;
 				}
 
 				n = requested;
