@@ -574,7 +574,7 @@ public final class RetryBackoffSpec extends Retry {
 				//short-circuit delay == 0 case
 				if (nextBackoff.isZero()) {
 					return RetrySpec.applyHooks(copy, Mono.just(iteration),
-							syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
+							syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry, cv);
 				}
 
 				ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -602,9 +602,8 @@ public final class RetryBackoffSpec extends Retry {
 					jitter = random.nextLong(lowBound, highBound);
 				}
 				Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
-				return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff,
-								backoffSchedulerSupplier.get()),
-						syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
+				return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff, backoffSchedulerSupplier.get()),
+						syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry, cv);
 			})
 		    .contextWrite(c -> Context.empty())
 		);

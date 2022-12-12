@@ -373,7 +373,7 @@ public final class RetrySpec extends Retry {
 							return Mono.error(retryExhaustedGenerator.apply(this, copy));
 						}
 						else {
-							return applyHooks(copy, Mono.just(iteration), doPreRetry, doPostRetry, asyncPreRetry, asyncPostRetry);
+							return applyHooks(copy, Mono.just(iteration), doPreRetry, doPostRetry, asyncPreRetry, asyncPostRetry, cv);
 						}
 					})
 					.contextWrite(c -> Context.empty())
@@ -389,7 +389,8 @@ public final class RetrySpec extends Retry {
 			final Consumer<RetrySignal> doPreRetry,
 			final Consumer<RetrySignal> doPostRetry,
 			final BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPreRetry,
-			final BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPostRetry) {
+			final BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPostRetry,
+			final ContextView cv) {
 		if (doPreRetry != NO_OP_CONSUMER) {
 			try {
 				doPreRetry.accept(copyOfSignal);
@@ -410,6 +411,6 @@ public final class RetrySpec extends Retry {
 		Mono<Void> preRetryMono = asyncPreRetry == NO_OP_BIFUNCTION ? Mono.empty() : asyncPreRetry.apply(copyOfSignal, Mono.empty());
 		Mono<Void> postRetryMono = asyncPostRetry != NO_OP_BIFUNCTION ? asyncPostRetry.apply(copyOfSignal, postRetrySyncMono) : postRetrySyncMono;
 
-		return preRetryMono.then(originalCompanion).flatMap(postRetryMono::thenReturn);
+		return preRetryMono.then(originalCompanion).flatMap(postRetryMono::thenReturn).contextWrite(cv);
 	}
 }
