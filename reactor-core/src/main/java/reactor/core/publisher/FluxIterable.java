@@ -61,13 +61,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	@Nullable
 	private final Runnable      onClose;
 
-	FluxIterable(Iterable<? extends T> iterable, @Nullable Runnable onClose) {
-		this.iterable = Objects.requireNonNull(iterable, "iterable");
-		this.onClose = onClose;
-	}
-
 	FluxIterable(Iterable<? extends T> iterable) {
-		this(iterable, null);
+		this.iterable = Objects.requireNonNull(iterable, "iterable");
+		this.onClose = null;
 	}
 
 	@Override
