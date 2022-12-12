@@ -61,13 +61,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	@Nullable
 	private final Runnable      onClose;
 
-	FluxIterable(Iterable<? extends T> iterable, @Nullable Runnable onClose) {
-		this.iterable = Objects.requireNonNull(iterable, "iterable");
-		this.onClose = onClose;
-	}
-
 	FluxIterable(Iterable<? extends T> iterable) {
-		this(iterable, null);
+		this.iterable = Objects.requireNonNull(iterable, "iterable");
+		this.onClose = null;
 	}
 
 	@Override
@@ -158,11 +154,51 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		if (s instanceof ConditionalSubscriber) {
-			s.onSubscribe(new IterableSubscriptionConditional<>((ConditionalSubscriber<? super T>) s,
-					sp, knownToBeFinite, onClose));
+			IterableSubscriptionConditional<? extends T> isc =
+					new IterableSubscriptionConditional<>((ConditionalSubscriber<? super T>) s,
+							sp,
+							knownToBeFinite,
+							onClose);
+
+			boolean hasNext;
+			try {
+				hasNext = isc.hasNext();
+			}
+			catch (Throwable ex) {
+				Operators.error(s, ex);
+				isc.onCloseWithDropError();
+				return;
+			}
+
+			if (!hasNext) {
+				Operators.complete(s);
+				isc.onCloseWithDropError();
+				return;
+			}
+
+			s.onSubscribe(isc);
 		}
 		else {
-			s.onSubscribe(new IterableSubscription<>(s, sp, knownToBeFinite, onClose));
+			IterableSubscription<? extends T> is =
+					new IterableSubscription<>(s, sp, knownToBeFinite, onClose);
+
+			boolean hasNext;
+			try {
+				hasNext = is.hasNext();
+			}
+			catch (Throwable ex) {
+				Operators.error(s, ex);
+				is.onCloseWithDropError();
+				return;
+			}
+
+			if (!hasNext) {
+				Operators.complete(s);
+				is.onCloseWithDropError();
+				return;
+			}
+
+			s.onSubscribe(is);
 		}
 	}
 
