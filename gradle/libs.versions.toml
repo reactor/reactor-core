@@ -1,8 +1,8 @@
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.4.25"
-baselinePerfCore = "3.4.25"
-baselinePerfExtra = "3.4.8"
+baseline-core-api = "3.4.26"
+baselinePerfCore = "3.4.26"
+baselinePerfExtra = "3.4.9"
 
 # Other shared versions
 asciidoctor = "3.3.2"
