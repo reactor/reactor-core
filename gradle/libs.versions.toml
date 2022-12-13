@@ -10,7 +10,7 @@ bytebuddy = "1.12.18"
 jmh = "1.35"
 junit = "5.9.1"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.10.0"
+micrometer = "1.10.2"
 reactiveStreams = "1.0.4"
 
 [libraries]
