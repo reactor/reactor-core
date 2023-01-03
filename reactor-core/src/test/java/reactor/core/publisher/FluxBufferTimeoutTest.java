@@ -724,6 +724,7 @@ public class FluxBufferTimeoutTest {
 
 		assertThat(seen.size()).isEqualTo(500);
 	}
+
 	//see https://github.com/reactor/reactor-core/issues/1247
 	@Test
 	public void backpressuredRejectedOnNextLeadsToOnError() {

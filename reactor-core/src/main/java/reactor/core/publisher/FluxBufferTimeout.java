@@ -389,6 +389,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			if (WIP.getAndIncrement(this) == 0) {
 				System.out.println("DRAIN ENTER");
 				for (;;) {
+					int wip = this.wip;
 					if (terminated == NOT_TERMINATED) {
 						// is there demand?
 						while (flushABuffer()) {
@@ -421,9 +422,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 							}
 						}
 					}
-					// TODO: don't decrement, but instead compare against read value and
-					// set to 0 - if failed, retry
-					if (WIP.decrementAndGet(this) == 0) {
+					if (WIP.compareAndSet(this, wip, 0)) {
 						break;
 					}
 				}
