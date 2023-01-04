@@ -1,0 +1,38 @@
+[
+  {
+    "condition": {
+      "typeReachable": "reactor.core.publisher.Traces"
+    },
+    "name": "reactor.core.publisher.Traces$StackWalkerCallSiteSupplierFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "condition": {
+      "typeReachable": "reactor.core.publisher.Traces"
+    },
+    "name": "reactor.core.publisher.Traces$SharedSecretsCallSiteSupplierFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "condition": {
+      "typeReachable": "reactor.core.publisher.Traces"
+    },
+    "name": "reactor.core.publisher.Traces$ExceptionCallSiteSupplierFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  }
+]
