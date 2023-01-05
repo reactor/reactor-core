@@ -31,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -40,13 +41,12 @@ import reactor.util.context.Context;
  */
 final class FluxBufferTimeout<T, C extends Collection<? super T>> extends InternalFluxOperator<T, C> {
 
-	final int            batchSize;
-	final Supplier<C>    bufferSupplier;
-	final Scheduler      timer;
-	final long           timespan;
-	final TimeUnit		 unit;
-
-	final boolean fairBackpressure;
+	final int         batchSize;
+	final Supplier<C> bufferSupplier;
+	final Scheduler   timer;
+	final long        timespan;
+	final TimeUnit    unit;
+	final boolean     fairBackpressure;
 
 	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
@@ -100,11 +100,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		return super.scanUnsafe(key);
 	}
 
-	final static class BufferTimeoutWithBackpressureSubscriber<T, C extends Collection<
-			? super T>> implements InnerOperator<T, C> {
+	final static class BufferTimeoutWithBackpressureSubscriber<T, C extends Collection<? super T>>
+			implements InnerOperator<T, C> {
 
 		@Nullable
-		final StateLogger logger;
+		final Logger                    logger;
 		final CoreSubscriber<? super C> actual;
 		final int batchSize;
 		final int prefetch;
@@ -167,7 +167,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				TimeUnit unit,
 				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier,
-				@Nullable StateLogger logger) {
+				@Nullable Logger logger) {
 			this.actual = actual;
 			this.batchSize = batchSize;
 			this.timeSpan = timeSpan;
@@ -176,6 +176,15 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.bufferSupplier = bufferSupplier;
 			this.logger = logger;
 			this.prefetch = batchSize << 2;
+		}
+
+		private void log(String msg) {
+			if (logger != null) {
+				logger.trace(String.format("[%s][%s]",
+						Thread.currentThread()
+						      .getId(),
+						msg));
+			}
 		}
 
 		@Override
@@ -190,7 +199,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		@Override
 		public void onNext(T t) {
-			System.out.println("ON NEXT: " + t);
+			log("onNext: " + t);
+			// System.out.println("ON NEXT: " + t);
 			// check if terminated (cancelled / error / completed) -> discard value if so
 
 			// increment index
@@ -219,9 +229,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					int index = this.index;
 					if (INDEX.compareAndSet(this, index, index + 1)) {
 						if (index == 0) {
-							System.out.println("ON NEXT: STARTING TIMER");
+							// System.out.println("ON NEXT: STARTING TIMER");
 
 							try {
+								log("timerStart");
 								currentTimeoutTask = timer.schedule(this::bufferTimedOut,
 										timeSpan,
 										unit);
@@ -326,6 +337,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				} else {
 					long requestLimit = prefetch;
 					if (requestLimit > outstanding) {
+						log("requestMore: " + (requestLimit - outstanding) + ", outstanding: " + outstanding);
 						requestMore(requestLimit - outstanding);
 					}
 				}
@@ -333,7 +345,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		private void requestMore(long n) {
-			System.out.println("REQUESTING " + n + " MORE FROM SOURCE");
+//			 System.out.println(
+//					"REQUESTING " + (n == Long.MAX_VALUE ? "Long.MAX_VALUE" : n) + " " +
+//					"MORE FROM SOURCE (outstanding=" + outstanding + ", requested=" + requested + ")"
+//			);
 			Subscription s = this.subscription;
 			if (s != null) {
 				Operators.addCap(OUTSTANDING, this, n);
@@ -348,6 +363,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// dispose timer
 			// drain for proper cleanup
 
+			log("cancel");
 			if (currentTimeoutTask != null) {
 				currentTimeoutTask.dispose();
 			}
@@ -370,7 +386,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// TODO: try comparing against current reference and see if it was not
 			//  cancelled -> to do this, replace Disposable timeoutTask with volatile
 			//  and use CAS.
-			System.out.println("TIMER FIRED");
+			// System.out.println("TIMER FIRED");
+			log("timerFire");
 			this.index = 0; // if currently being drained, it means the buffer is
 			// delivered due to reaching the batchSize
 			drain();
@@ -384,12 +401,13 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// loop:
 			//   if terminated -> check error -> deliver; else complete downstream
 			//   if cancelled
-			System.out.println("DRAIN TRY");
+			// System.out.println("DRAIN TRY");
 
 			if (WIP.getAndIncrement(this) == 0) {
-				System.out.println("DRAIN ENTER");
+				// System.out.println("DRAIN ENTER");
 				for (;;) {
 					int wip = this.wip;
+					log("drain. wip: " + wip);
 					if (terminated == NOT_TERMINATED) {
 						// is there demand?
 						while (flushABuffer()) {
@@ -426,9 +444,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						break;
 					}
 				}
-				System.out.println("DRAIN EXIT");
+				// System.out.println("DRAIN EXIT");
 			} else {
-				System.out.println("DRAIN FAILED, ANOTHER ACTIVE");
+				// System.out.println("DRAIN FAILED, ANOTHER ACTIVE");
 			}
 		}
 
@@ -449,21 +467,30 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					buffer.add(element);
 				} while ((++i < batchSize) && ((element = queue.poll()) != null));
 
-				requested = REQUESTED.decrementAndGet(this);
-				System.out.println("DELIVERING " + buffer);
+				if (requested != Long.MAX_VALUE) {
+					requested = REQUESTED.decrementAndGet(this);
+				}
+				log("flush: " + buffer + ", now requested: " + requested);
+
+				// System.out.println("DELIVERING " + buffer);
+
 				actual.onNext(buffer);
 
-				System.out.println("DECREMENTING OUTSTANDING (" + outstanding + ") BY " + i);
-				long remaining = OUTSTANDING.addAndGet(this, -i);
-				if (terminated == NOT_TERMINATED) {
-					int replenishMark = prefetch >> 1;
-					if (remaining < replenishMark) {
-						requestMore(prefetch - remaining);
+				if (requested != Long.MAX_VALUE) {
+					// System.out.println("DECREMENTING OUTSTANDING (" + outstanding + ") BY " + i);
+					log("outstanding(" + outstanding + ") -= " + i);
+					long remaining = OUTSTANDING.addAndGet(this, -i);
+					if (terminated == NOT_TERMINATED) {
+						int replenishMark = prefetch >> 1; // TODO: create field limit instead
+						if (remaining < replenishMark) {
+							log("replenish: " + (prefetch - remaining) + ", outstanding: " + outstanding);
+							requestMore(prefetch - remaining);
+						}
 					}
-				}
 
-				if (requested <= 0) {
-					return false;
+					if (requested <= 0) {
+						return false;
+					}
 				}
 				// continue to see if there's more
 				return true;

@@ -44,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -10236,6 +10237,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
+
+		HashSet<Integer> set = new HashSet<>();
+		Flux.fromStream(IntStream.range(0, 10_000_000).boxed()).hide().bufferTimeout(1000, Duration.ofSeconds(1), true)
+				.doOnNext(set::addAll)
+				.blockLast();
+
+		if (set.size() != 10_000_000) {
+			throw new RuntimeException("Not all numbers delivered!");
+		}
+
+		System.exit(0);
 		Flux.<Integer>create(s -> {
 			    for (int i = 0; i < 10; i++) {
 				    try {
