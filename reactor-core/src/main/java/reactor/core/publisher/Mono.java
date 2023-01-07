@@ -4252,7 +4252,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/singleForMono.svg" alt="">
 	 * <p>
 	 *
-	 * @return a {@link Mono} with an Optional containing the item, an empty optional or an error
+	 * @return a {@link Mono} with an Optional containing the item, an empty optional or an error signal
 	 */
 	public final Mono<Optional<T>> singleOptional() {
 		if (this instanceof Callable) {
@@ -4273,7 +4273,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Callable<T> thiz = (Callable<T>)this;
 			return Mono.onAssembly(new MonoSingleOptionalCallable<>(thiz));
 		}
-		return Mono.onAssembly(new MonoSingleOptionalMono<>(this));
+		return Mono.onAssembly(new MonoSingleOptional<>(this));
 	}
 
 	/**

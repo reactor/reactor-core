@@ -16,11 +16,10 @@
 
 package reactor.core.publisher;
 
-import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -33,22 +32,30 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSingleOptional<T> extends MonoFromFluxOperator<T, Optional<T>> {
+/**
+ * Wraps the item from the source into an Optional, emits
+ * an empty Optional instead for empty source or signals
+ * IndexOutOfBoundsException for a multi-item source.
+ *
+ * @param <T> the value type
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ */
+final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 
-	MonoSingleOptional(Flux<? extends T> source) {
-		super(source);
-	}
+    MonoSingleOptional(Mono<? extends T> source) {
+        super(source);
+    }
 
-	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Optional<T>> actual) {
-		return new SingleOptionalSubscriber<>(actual);
-	}
+    @Override
+    public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Optional<T>> actual) {
+        return new MonoSingleOptional.SingleOptionalSubscriber<>(actual);
+    }
 
-	@Override
-	public Object scanUnsafe(Attr key) {
-		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return super.scanUnsafe(key);
-	}
+    @Override
+    public Object scanUnsafe(Attr key) {
+        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        return super.scanUnsafe(key);
+    }
 
 	static final class SingleOptionalSubscriber<T> extends Operators.MonoInnerProducerBase<Optional<T>> implements InnerConsumer<T> {
 
