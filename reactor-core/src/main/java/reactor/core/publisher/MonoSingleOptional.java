@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,6 @@ import reactor.util.context.Context;
 
 /**
  * Expects and emits a single item from the source wrapped into an Optional, emits
- * an empty Optional instead for empty source or signals
- * IndexOutOfBoundsException for a multi-item source.
- *
- * @param <T> the value type
- * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
- */
-/**
- * Wraps the item from the source into an Optional, emits
  * an empty Optional instead for empty source or signals
  * IndexOutOfBoundsException for a multi-item source.
  *
@@ -145,7 +137,6 @@ final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 
 			int c = count;
 			if (c == 0) {
-
 				complete(Optional.empty());
 			}
 			else if (c == 1) {
