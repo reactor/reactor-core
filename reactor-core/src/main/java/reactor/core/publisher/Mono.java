@@ -4249,6 +4249,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Wrap the item produced by this {@link Mono} source into an Optional
 	 * or emit an empty Optional for an empty source.
 	 * <p>
+	 * <img class="marble" src="doc-files/marbles/singleOptional.svg" alt="">
+	 * <p>
 	 *
 	 * @return a {@link Mono} with an Optional containing the item, an empty optional or an error signal
 	 */
