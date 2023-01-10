@@ -208,8 +208,16 @@ public class OnDiscardShouldNotLeakTest {
 	};
 
 	public static List<Arguments> data() {
-		List<Arguments> parameters = new ArrayList<>(CONDITIONAL_AND_FUSED.length * SCENARIOS.length);
-		for (DiscardScenario scenario : SCENARIOS) {
+//		List<Arguments> parameters = new ArrayList<>(CONDITIONAL_AND_FUSED.length * SCENARIOS.length);
+//		for (DiscardScenario scenario : SCENARIOS) {
+		List<Arguments> parameters = new ArrayList<>(CONDITIONAL_AND_FUSED.length);// * SCENARIOS.length);
+		for (DiscardScenario scenario :
+				new DiscardScenario[] {
+						DiscardScenario.fluxSource("bufferTimeout",
+								f -> f.bufferTimeout(2, Duration.ofMillis(1), true)
+								      .flatMapIterable(Function.identity()))
+				}
+		) {
 			for (boolean[] booleans : CONDITIONAL_AND_FUSED) {
 				StringBuilder desc = new StringBuilder("for ").append(scenario.description);
 				if (booleans[0]) {
@@ -301,6 +309,7 @@ public class OnDiscardShouldNotLeakTest {
 			values.forEach(Tracked::release);
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 
@@ -359,6 +368,7 @@ public class OnDiscardShouldNotLeakTest {
 			values.forEach(Tracked::release);
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 
@@ -414,6 +424,7 @@ public class OnDiscardShouldNotLeakTest {
 			values.forEach(Tracked::release);
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 
@@ -466,6 +477,7 @@ public class OnDiscardShouldNotLeakTest {
 			values.forEach(Tracked::release);
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 
@@ -522,6 +534,7 @@ public class OnDiscardShouldNotLeakTest {
 			}
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 
@@ -584,6 +597,7 @@ public class OnDiscardShouldNotLeakTest {
 			}
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 
@@ -636,6 +650,7 @@ public class OnDiscardShouldNotLeakTest {
 			values.forEach(Tracked::release);
 
 			tracker.assertNoLeaks();
+			System.out.println("------------------------" + "\n");
 		}
 	}
 

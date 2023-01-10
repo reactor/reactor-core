@@ -73,14 +73,119 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
 		if (fairBackpressure) {
-			return new BufferTimeoutWithBackpressureSubscriber<>(
-					actual,
+			return new BufferTimeoutWithBackpressureSubscriber<>(actual,
 					batchSize,
 					timespan,
 					unit,
 					timer.createWorker(),
 					bufferSupplier,
-					null);
+					new Logger() {
+						@Override
+						public String getName() {
+							return "bufferTimeoutSubscriber";
+						}
+
+						@Override
+						public boolean isTraceEnabled() {
+							return true;
+						}
+
+						@Override
+						public void trace(String msg) {
+							System.out.println(msg);
+						}
+
+						@Override
+						public void trace(String format, Object... arguments) {
+							System.out.printf(format, arguments);
+						}
+
+						@Override
+						public void trace(String msg, Throwable t) {
+							System.out.println(msg + "\n" + t);
+						}
+
+						@Override
+						public boolean isDebugEnabled() {
+							return true;
+						}
+
+						@Override
+						public void debug(String msg) {
+							System.out.println(msg);
+						}
+
+						@Override
+						public void debug(String format, Object... arguments) {
+							System.out.printf(format, arguments);
+						}
+
+						@Override
+						public void debug(String msg, Throwable t) {
+							System.out.println(msg + "\n" + t);
+						}
+
+						@Override
+						public boolean isInfoEnabled() {
+							return true;
+						}
+
+						@Override
+						public void info(String msg) {
+							System.out.println(msg);
+						}
+
+						@Override
+						public void info(String format, Object... arguments) {
+							System.out.printf(format, arguments);
+						}
+
+						@Override
+						public void info(String msg, Throwable t) {
+							System.out.println(msg + "\n" + t);
+						}
+
+						@Override
+						public boolean isWarnEnabled() {
+							return true;
+						}
+
+						@Override
+						public void warn(String msg) {
+							System.out.println(msg);
+						}
+
+						@Override
+						public void warn(String format, Object... arguments) {
+							System.out.printf(format, arguments);
+						}
+
+						@Override
+						public void warn(String msg, Throwable t) {
+							System.out.println(msg + "\n" + t);
+						}
+
+						@Override
+						public boolean isErrorEnabled() {
+							return true;
+						}
+
+						@Override
+						public void error(String msg) {
+							System.out.println(msg);
+						}
+
+						@Override
+						public void error(String format, Object... arguments) {
+							System.out.printf(format, arguments);
+						}
+
+						@Override
+						public void error(String msg, Throwable t) {
+							System.out.println(msg + "\n" + t);
+						}
+					});
+//					null);
 		}
 		return new BufferTimeoutSubscriber<>(
 				Operators.serialize(actual),
@@ -229,21 +334,22 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					int index = this.index;
 					if (INDEX.compareAndSet(this, index, index + 1)) {
 						if (index == 0) {
-							// System.out.println("ON NEXT: STARTING TIMER");
-
 							try {
 								log("timerStart");
 								currentTimeoutTask = timer.schedule(this::bufferTimedOut,
 										timeSpan,
 										unit);
 							} catch (RejectedExecutionException ree) {
+								log("Timer rejected for " + t);
 								Context ctx = actual.currentContext();
 								Throwable error = Operators.onRejectedExecution(ree, subscription, null, t, ctx);
 								this.error = error;
 								if (!TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
+									Operators.onDiscard(t, ctx);
 									Operators.onErrorDropped(error, ctx);
 									return;
 								}
+								log("Discarding upon timer rejection" + t);
 								Operators.onDiscard(t, ctx);
 								drain();
 								return;
@@ -270,6 +376,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					drain();
 				}
 			} else {
+				log("Discarding onNext: " + t);
 				Operators.onDiscard(t, currentContext());
 			}
 		}
@@ -364,16 +471,15 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// drain for proper cleanup
 
 			log("cancel");
-			if (currentTimeoutTask != null) {
-				currentTimeoutTask.dispose();
-			}
-			timer.dispose();
-
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
 				if (this.subscription != null) {
 					this.subscription.cancel();
 				}
 			}
+			if (currentTimeoutTask != null) {
+				currentTimeoutTask.dispose();
+			}
+			timer.dispose();
 			drain();
 		}
 
@@ -417,12 +523,14 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					} else {
 						if (completed) {
 							// if queue is empty, the discard is ignored
+							log("Discarding entire queue of " + queue.size());
 							Operators.onDiscardQueueWithClear(queue, currentContext(),
 									null);
 							return;
 						}
 						// TODO: potentially the below can be executed twice?
 						if (terminated == TERMINATED_WITH_CANCEL) {
+							log("Discarding entire queue of " + queue.size());
 							Operators.onDiscardQueueWithClear(queue, currentContext(),
 									null);
 							return;
@@ -438,6 +546,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 							else {
 								actual.onComplete();
 							}
+						} else {
+							log("Queue not empty after termination");
 						}
 					}
 					if (WIP.compareAndSet(this, wip, 0)) {
