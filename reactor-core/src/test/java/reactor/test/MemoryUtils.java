@@ -18,6 +18,7 @@ package reactor.test;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -174,9 +175,16 @@ public class MemoryUtils {
 		 *
 		 * @param t the arbitrary object
 		 */
+		@SuppressWarnings("rawtypes")
 	    public static void safeRelease(Object t) {
 	        if (t instanceof Tracked) {
 	            ((Tracked) t).release();
+	        } else if (t instanceof Collection) {
+				for (Object o : (Collection) t) {
+					if (o instanceof Tracked) {
+						((Tracked) o).release();
+					}
+				}
 	        }
 	    }
 
