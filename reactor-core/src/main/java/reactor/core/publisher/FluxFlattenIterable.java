@@ -588,7 +588,8 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 							sp = iterable.spliterator();
 							itFinite = FluxIterable.checkFinite(sp);
 
-							isEmpty = itFinite && sp.estimateSize() == 0;
+
+							isEmpty = itFinite ? sp.estimateSize() == 0 : !hasNext(sp);
 						}
 						catch (Throwable exc) {
 							resetCurrent();

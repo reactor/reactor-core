@@ -707,6 +707,24 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
 	@ParameterizedTestWithName
 	@MethodSource("reactor.core.publisher.FluxIterableTest#factory")
+	public void testFluxIterableSyncFusionEmptyCase(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock(Spliterator.class));
+
+		StepVerifier.create(
+				            Flux.just(1, 2)
+				                .flatMapIterable(__ -> iterable)
+				                .as(fn)
+				                .next()
+		            )
+		            .expectSubscription()
+		            .expectComplete()
+		            .verify();
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("reactor.core.publisher.FluxIterableTest#factory")
 	public void testFluxIterableErrorHasNext(Function<Flux, Flux> fn) {
 		Iterable<String> iterable = mock(Iterable.class);
 		Spliterator mock = mock(Spliterator.class);
