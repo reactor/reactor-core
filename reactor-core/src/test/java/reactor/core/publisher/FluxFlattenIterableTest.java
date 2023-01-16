@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -696,6 +696,24 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(
 				            Flux.just(1)
 					            .hide()
+				                .flatMapIterable(__ -> iterable)
+				                .as(fn)
+				                .next()
+		            )
+		            .expectSubscription()
+		            .expectComplete()
+		            .verify();
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("reactor.core.publisher.FluxIterableTest#factory")
+	public void testFluxIterableSyncFusionEmptyCase(Function<Flux, Flux> fn) {
+		Iterable<String> iterable = mock(Iterable.class);
+		Mockito.when(iterable.spliterator())
+		       .thenReturn(mock(Spliterator.class));
+
+		StepVerifier.create(
+				            Flux.just(1, 2)
 				                .flatMapIterable(__ -> iterable)
 				                .as(fn)
 				                .next()
