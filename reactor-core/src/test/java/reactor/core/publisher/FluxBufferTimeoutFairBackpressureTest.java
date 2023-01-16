@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -210,6 +212,18 @@ public class FluxBufferTimeoutFairBackpressureTest {
 		            .verify();
 
 		assertThat(requestPattern).allSatisfy(r -> assertThat(r).isPositive());
+	}
+
+	@Test
+	void processesLargeDataset() {
+		TreeSet<Integer> set = new TreeSet<>();
+		Flux.fromStream(IntStream.range(0, 1_000_000).boxed())
+		    .hide()
+		    .bufferTimeout(1000, Duration.ofSeconds(1), true)
+		    .doOnNext(set::addAll)
+		    .blockLast();
+
+		assertThat(set.size()).isEqualTo(1_000_000);
 	}
 
 	@Test
