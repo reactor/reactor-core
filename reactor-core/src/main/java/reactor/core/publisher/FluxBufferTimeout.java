@@ -281,6 +281,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.bufferSupplier = bufferSupplier;
 			this.logger = logger;
 			this.prefetch = batchSize << 2;
+			this.queue = Queues.<T>get(prefetch).get();
 		}
 
 		private void log(String msg) {
@@ -296,8 +297,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.subscription, s)) {
 				this.subscription = s;
-				// prepare the queue
-				this.queue = Queues.<T>get(prefetch).get();
 				this.actual.onSubscribe(this);
 			}
 		}
