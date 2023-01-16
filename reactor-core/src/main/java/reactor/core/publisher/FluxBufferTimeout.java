@@ -79,113 +79,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					unit,
 					timer.createWorker(),
 					bufferSupplier,
-					new Logger() {
-						@Override
-						public String getName() {
-							return "bufferTimeoutSubscriber";
-						}
-
-						@Override
-						public boolean isTraceEnabled() {
-							return true;
-						}
-
-						@Override
-						public void trace(String msg) {
-							System.out.println(msg);
-						}
-
-						@Override
-						public void trace(String format, Object... arguments) {
-							System.out.printf(format, arguments);
-						}
-
-						@Override
-						public void trace(String msg, Throwable t) {
-							System.out.println(msg + "\n" + t);
-						}
-
-						@Override
-						public boolean isDebugEnabled() {
-							return true;
-						}
-
-						@Override
-						public void debug(String msg) {
-							System.out.println(msg);
-						}
-
-						@Override
-						public void debug(String format, Object... arguments) {
-							System.out.printf(format, arguments);
-						}
-
-						@Override
-						public void debug(String msg, Throwable t) {
-							System.out.println(msg + "\n" + t);
-						}
-
-						@Override
-						public boolean isInfoEnabled() {
-							return true;
-						}
-
-						@Override
-						public void info(String msg) {
-							System.out.println(msg);
-						}
-
-						@Override
-						public void info(String format, Object... arguments) {
-							System.out.printf(format, arguments);
-						}
-
-						@Override
-						public void info(String msg, Throwable t) {
-							System.out.println(msg + "\n" + t);
-						}
-
-						@Override
-						public boolean isWarnEnabled() {
-							return true;
-						}
-
-						@Override
-						public void warn(String msg) {
-							System.out.println(msg);
-						}
-
-						@Override
-						public void warn(String format, Object... arguments) {
-							System.out.printf(format, arguments);
-						}
-
-						@Override
-						public void warn(String msg, Throwable t) {
-							System.out.println(msg + "\n" + t);
-						}
-
-						@Override
-						public boolean isErrorEnabled() {
-							return true;
-						}
-
-						@Override
-						public void error(String msg) {
-							System.out.println(msg);
-						}
-
-						@Override
-						public void error(String format, Object... arguments) {
-							System.out.printf(format, arguments);
-						}
-
-						@Override
-						public void error(String msg, Throwable t) {
-							System.out.println(msg + "\n" + t);
-						}
-					});
-//					null);
+					null);
 		}
 		return new BufferTimeoutSubscriber<>(
 				Operators.serialize(actual),
@@ -304,7 +198,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		@Override
 		public void onNext(T t) {
 			log("onNext: " + t);
-			// System.out.println("ON NEXT: " + t);
 			// check if terminated (cancelled / error / completed) -> discard value if so
 
 			// increment index
@@ -451,10 +344,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		private void requestMore(long n) {
-//			 System.out.println(
-//					"REQUESTING " + (n == Long.MAX_VALUE ? "Long.MAX_VALUE" : n) + " " +
-//					"MORE FROM SOURCE (outstanding=" + outstanding + ", requested=" + requested + ")"
-//			);
 			Subscription s = this.subscription;
 			if (s != null) {
 				Operators.addCap(OUTSTANDING, this, n);
@@ -491,7 +380,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// TODO: try comparing against current reference and see if it was not
 			//  cancelled -> to do this, replace Disposable timeoutTask with volatile
 			//  and use CAS.
-			// System.out.println("TIMER FIRED");
 			log("timerFire");
 			this.index = 0; // if currently being drained, it means the buffer is
 			// delivered due to reaching the batchSize
@@ -506,10 +394,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// loop:
 			//   if terminated -> check error -> deliver; else complete downstream
 			//   if cancelled
-			// System.out.println("DRAIN TRY");
 
 			if (WIP.getAndIncrement(this) == 0) {
-				// System.out.println("DRAIN ENTER");
 				for (;;) {
 					int wip = this.wip;
 					log("drain. wip: " + wip);
@@ -553,9 +439,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						break;
 					}
 				}
-				// System.out.println("DRAIN EXIT");
-			} else {
-				// System.out.println("DRAIN FAILED, ANOTHER ACTIVE");
 			}
 		}
 
@@ -579,14 +462,12 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				if (requested != Long.MAX_VALUE) {
 					requested = REQUESTED.decrementAndGet(this);
 				}
-				log("flush: " + buffer + ", now requested: " + requested);
 
-				// System.out.println("DELIVERING " + buffer);
+				log("flush: " + buffer + ", now requested: " + requested);
 
 				actual.onNext(buffer);
 
 				if (requested != Long.MAX_VALUE) {
-					// System.out.println("DECREMENTING OUTSTANDING (" + outstanding + ") BY " + i);
 					log("outstanding(" + outstanding + ") -= " + i);
 					long remaining = OUTSTANDING.addAndGet(this, -i);
 					if (terminated == NOT_TERMINATED) {
