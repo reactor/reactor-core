@@ -224,6 +224,181 @@ public class FluxBufferTimeoutStressTest {
 		}
 	}
 
+	@JCStressTest
+	@Outcome(id = "1, 1, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "0, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "1, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@State
+	public static class FluxBufferTimeoutStressTestRaceDeliveryAndCancel {
+
+		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
+
+		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>();
+
+		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), null);
+
+		final StressSubscription<Long> subscription = new StressSubscription<>(bufferTimeoutSubscriber);
+
+		{
+			bufferTimeoutSubscriber.onSubscribe(subscription);
+		}
+
+		@Actor
+		public void next() {
+			bufferTimeoutSubscriber.onNext(0L);
+			bufferTimeoutSubscriber.onNext(1L);
+			bufferTimeoutSubscriber.onComplete();
+		}
+
+		@Actor
+		public void cancel() {
+			bufferTimeoutSubscriber.cancel();
+		}
+
+		@Arbiter
+		public void arbiter(LLL_Result result) {
+			result.r1 = subscriber.onNextCalls.get();
+			result.r2 = subscriber.onCompleteCalls.get();
+			result.r3 = subscription.requestsCount.get();
+
+			if (subscriber.onCompleteCalls.get() > 1) {
+				throw new IllegalStateException("unexpected completion " + subscriber.onCompleteCalls.get());
+			}
+			if (subscriber.concurrentOnComplete.get()) {
+				throw new IllegalStateException("subscriber concurrent onComplete");
+			}
+			if (subscriber.concurrentOnNext.get()) {
+				throw new IllegalStateException("subscriber concurrent onNext");
+			}
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = "0, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "1, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "1, 0, 2", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "2, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "2, 0, 2", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "2, 1, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "2, 1, 2", expect = Expect.ACCEPTABLE, desc = "")
+	@State
+	public static class FluxBufferTimeoutStressTestRaceDeliveryAndCancelWithBackpressure {
+
+		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
+
+		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>(1);
+
+		final FastLogger fastLogger = new FastLogger(getClass().getName());
+		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+
+		Sinks.Many<Long> proxy = Sinks.unsafe().many().unicast().onBackpressureBuffer();
+		final AtomicLong requested = new AtomicLong();
+		{
+			proxy.asFlux()
+			     .doOnRequest(r -> requested.incrementAndGet())
+			     .subscribe(bufferTimeoutSubscriber);
+		}
+
+		@Actor
+		public void next() {
+			proxy.tryEmitNext(0L);
+			proxy.tryEmitNext(1L);
+
+			proxy.tryEmitNext(2L);
+			proxy.tryEmitNext(3L);
+			proxy.tryEmitComplete();
+		}
+
+		@Actor
+		public void request() {
+			subscriber.request(1);
+		}
+
+		@Actor
+		public void cancel() {
+			subscriber.cancel();
+		}
+
+		@Arbiter
+		public void arbiter(LLL_Result result) {
+			result.r1 = subscriber.onNextCalls.get();
+			result.r2 = subscriber.onCompleteCalls.get();
+			result.r3 = requested.get();
+
+			if (subscriber.onCompleteCalls.get() > 1) {
+				throw new IllegalStateException("unexpected completion " + subscriber.onCompleteCalls.get());
+			}
+			if (subscriber.concurrentOnComplete.get()) {
+				throw new IllegalStateException("subscriber concurrent onComplete");
+			}
+			if (subscriber.concurrentOnNext.get()) {
+				throw new IllegalStateException("subscriber concurrent onNext");
+			}
+			if (subscriber.receivedValues.stream().anyMatch(List::isEmpty)) {
+				throw new IllegalStateException("received an empty buffer: " + subscriber.receivedValues + "; result=" + result + "\n" + fastLogger);
+			}
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = "1, 1, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "2, 1, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "0, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "1, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "2, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@State
+	public static class FluxBufferTimeoutStressTestRaceDeliveryAndCancelAndTimeout {
+
+		final VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
+
+		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>();
+
+		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), null);
+
+		final StressSubscription<Long> subscription = new StressSubscription<>(bufferTimeoutSubscriber);
+
+		{
+			bufferTimeoutSubscriber.onSubscribe(subscription);
+		}
+
+		@Actor
+		public void next() {
+			bufferTimeoutSubscriber.onNext(0L);
+			bufferTimeoutSubscriber.onNext(1L);
+			bufferTimeoutSubscriber.onComplete();
+		}
+
+		@Actor
+		public void cancel() {
+			bufferTimeoutSubscriber.cancel();
+		}
+
+		@Actor
+		public void timeout() {
+			virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+		}
+
+		@Arbiter
+		public void arbiter(LLL_Result result) {
+			result.r1 = subscriber.onNextCalls.get();
+			result.r2 = subscriber.onCompleteCalls.get();
+			result.r3 = subscription.requestsCount.get();
+
+			if (subscriber.onCompleteCalls.get() > 1) {
+				throw new IllegalStateException("unexpected completion " + subscriber.onCompleteCalls.get());
+			}
+			if (subscriber.concurrentOnComplete.get()) {
+				throw new IllegalStateException("subscriber concurrent onComplete");
+			}
+			if (subscriber.concurrentOnNext.get()) {
+				throw new IllegalStateException("subscriber concurrent onNext");
+			}
+		}
+	}
+
 	private static Supplier<List<Long>> bufferSupplier() {
 		return ArrayList::new;
 	}
