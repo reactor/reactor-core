@@ -25,9 +25,8 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * Expects and emits a single item from the source wrapped into an Optional, emits
- * an empty Optional instead for empty source or signals
- * IndexOutOfBoundsException for a multi-item source.
+ * Emits a single item from the source wrapped into an Optional, emits
+ * an empty Optional instead for empty source.
  *
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -52,8 +51,6 @@ final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 	static final class SingleOptionalSubscriber<T> extends Operators.MonoInnerProducerBase<Optional<T>> implements InnerConsumer<T> {
 
 		Subscription s;
-
-		int count;
 
 		boolean done;
 
@@ -96,24 +93,12 @@ final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 
 		@Override
 		public void onNext(T t) {
-			if (isCancelled()) {
-				//this helps differentiating a duplicate malformed signal "done" from a count > 1 "done"
-				Operators.onDiscard(t, actual().currentContext());
-				return;
-			}
 			if (done) {
 				Operators.onNextDropped(t, actual().currentContext());
 				return;
 			}
-			if (++count > 1) {
-				Operators.onDiscard(t, actual().currentContext());
-				//mark as both cancelled and done
-				cancel();
-				onError(new IndexOutOfBoundsException("Source emitted more than one item"));
-			}
-			else {
-				setValue(Optional.of(t));
-			}
+			done = true;
+			complete(Optional.of(t));
 		}
 
 		@Override
@@ -134,14 +119,7 @@ final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 				return;
 			}
 			done = true;
-
-			int c = count;
-			if (c == 0) {
-				complete(Optional.empty());
-			}
-			else if (c == 1) {
-				complete();
-			}
+			complete(Optional.empty());
 		}
 
 	}
