@@ -108,8 +108,6 @@ final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 				return;
 			}
 			done = true;
-			discardTheValue();
-
 			actual().onError(t);
 		}
 
