@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4243,6 +4243,37 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			return Mono.onAssembly(new MonoSingleCallable<>(thiz));
 		}
 		return Mono.onAssembly(new MonoSingleMono<>(this));
+	}
+
+	/**
+	 * Wrap the item produced by this {@link Mono} source into an Optional
+	 * or emit an empty Optional for an empty source.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/singleOptional.svg" alt="">
+	 * <p>
+	 *
+	 * @return a {@link Mono} with an Optional containing the item, an empty optional or an error signal
+	 */
+	public final Mono<Optional<T>> singleOptional() {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(Exceptions.unwrap(e));
+				}
+				return Mono.just(Optional.ofNullable(v));
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoSingleOptionalCallable<>(thiz));
+		}
+		return Mono.onAssembly(new MonoSingleOptional<>(this));
 	}
 
 	/**
