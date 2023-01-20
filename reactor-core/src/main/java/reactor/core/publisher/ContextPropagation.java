@@ -16,6 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.util.AbstractQueue;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,6 +34,8 @@ import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+
+import static reactor.core.Fuseable.QueueSubscription.NOT_SUPPORTED_MESSAGE;
 
 /**
  * Utility private class to detect if the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a> is on the classpath and to offer
@@ -279,5 +285,156 @@ final class ContextPropagation {
 				return original.addToContext(originalContext);
 			}
 		}
+	}
+
+	static final class ContextQueue<T> extends AbstractQueue<T> {
+
+		final Queue<Envelope<T>> envelopeQueue;
+		final Context reactorContext;
+
+		boolean cleanOnNull;
+
+		boolean hasPrevious = false;
+
+		Thread lastReader;
+
+		ContextSnapshot.Scope scope;
+
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		ContextQueue(Queue<Object> queue, Context reactorContext) {
+			this.envelopeQueue = (Queue) queue;
+			this.reactorContext = reactorContext;
+		}
+
+		@Override
+		public int size() {
+			return envelopeQueue.size();
+		}
+
+		@Override
+		public boolean offer(T o) {
+			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			return envelopeQueue.offer(new Envelope<>(o, contextSnapshot));
+		}
+
+		@Override
+		public T poll() {
+			Envelope<T> envelope = envelopeQueue.poll();
+			if (envelope == null) {
+				if (cleanOnNull) {
+					// to clear thread-local if was just restored
+					scope.close();
+				}
+				cleanOnNull = true;
+				lastReader = Thread.currentThread();
+				hasPrevious = false;
+				return null;
+			}
+
+
+			restoreTheContext(envelope);
+			hasPrevious = true;
+			return envelope.body;
+		}
+
+		private void restoreTheContext(Envelope<T> envelope) {
+			ContextSnapshot contextSnapshot = envelope.contextSnapshot;
+			// tries to read existing Thread for existing ThreadLocals
+			ContextSnapshot currentContextSnapshot = ContextSnapshot.captureAll();
+			if (!contextSnapshot.equals(currentContextSnapshot)) {
+				if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
+					// means context was restored form the envelope, thus it has
+					// to be cleared
+					cleanOnNull = true;
+					lastReader = Thread.currentThread();
+				}
+				scope = contextSnapshot.setThreadLocals();
+			}
+			else if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
+				// means same context was already available, no need to clean
+				// anything
+				cleanOnNull = false;
+				lastReader = Thread.currentThread();
+			}
+		}
+
+		@Override
+		@Nullable
+		public T peek() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean add(@Nullable T t) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public T remove() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public T element() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public  boolean contains(@Nullable Object o) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public Object[] toArray() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public <T1> T1[] toArray(T1[] a) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean remove(@Nullable Object o) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends T> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+	}
+
+	static class Envelope<T> {
+
+		final T body;
+
+		final ContextSnapshot contextSnapshot;
+
+		Envelope(T body, ContextSnapshot contextSnapshot) {
+			this.body = body;
+			this.contextSnapshot = contextSnapshot;
+		}
+
 	}
 }

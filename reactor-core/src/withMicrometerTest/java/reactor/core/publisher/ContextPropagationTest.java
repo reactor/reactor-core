@@ -20,10 +20,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
+import io.micrometer.context.ContextSnapshot;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +46,7 @@ import reactor.core.publisher.FluxHandle.HandleConditionalSubscriber;
 import reactor.core.publisher.FluxHandle.HandleSubscriber;
 import reactor.core.publisher.FluxHandleFuseable.HandleFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxHandleFuseable.HandleFuseableSubscriber;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.test.subscriber.TestSubscriberBuilder;
@@ -85,6 +88,37 @@ class ContextPropagationTest {
 
 		globalRegistry.removeThreadLocalAccessor(KEY1);
 		globalRegistry.removeThreadLocalAccessor(KEY2);
+
+	}
+
+	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
+		return delegate -> {
+			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			return contextSnapshot.wrap(delegate);
+		};
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void checkThreadLocalsArePropagatedThroughTheWholeStack() {
+		Hooks.addQueueWrapper("test", q -> new ContextPropagation.ContextQueue<>((Queue<Object>) q, null));
+		Schedulers.onScheduleHook("boo", scopePassingOnScheduleHook());
+
+
+		REF1.set("expected1");
+		REF2.set("expected2");
+
+		Flux.range(0, 10)
+		    .doOnNext(i -> {
+			    System.out.println("BEFORE " + i + " " + REF1.get());
+		    })
+			.doOnNext(e -> REF1.set(REF1.get() + e))
+			.publishOn(Schedulers.parallel())
+			.doOnNext(i -> {
+				System.out.println("AFTER " + i + " " + REF1.get());
+			})
+			.subscribeOn(Schedulers.boundedElastic())
+			.blockLast();
 
 	}
 
