@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,33 +45,40 @@ final class ContextPropagation {
 
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
 	static final Function<Context, Context> NO_OP = c -> c;
-	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 
 	static {
 		LOGGER = Loggers.getLogger(ContextPropagation.class);
-
-		Function<Context, Context> contextCaptureFunction;
-		boolean contextPropagation;
+		boolean contextPropagation = false;
 		try {
-			ContextRegistry globalRegistry = ContextRegistry.getInstance();
-			contextCaptureFunction = target -> ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
-				.updateContext(target);
+			Class.forName("io.micrometer.context.ContextRegistry");
 			contextPropagation = true;
 		}
-		catch (LinkageError t) {
-			// Context-Propagation library is not available
-			contextCaptureFunction = NO_OP;
-			contextPropagation = false;
+		catch (ClassNotFoundException notFound) {
 		}
-		catch (Throwable t) {
-			contextCaptureFunction = NO_OP;
-			contextPropagation = false;
+		catch (LinkageError linkageErr) {
+		}
+		catch (Throwable err) {
 			LOGGER.error("Unexpected exception while detecting ContextPropagation feature." +
-					" The feature is considered disabled due to this:", t);
+					" The feature is considered disabled due to this:", err);
 		}
-
 		isContextPropagationAvailable = contextPropagation;
-		WITH_GLOBAL_REGISTRY_NO_PREDICATE = contextCaptureFunction;
+	}
+
+	static final class Holder {
+		static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
+
+		static {
+			Function<Context, Context> contextCaptureFunction;
+			if (isContextPropagationAvailable) {
+				ContextRegistry globalRegistry = ContextRegistry.getInstance();
+				contextCaptureFunction = target -> ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
+						.updateContext(target);
+			}
+			else {
+				contextCaptureFunction = NO_OP;
+			}
+			WITH_GLOBAL_REGISTRY_NO_PREDICATE = contextCaptureFunction;
+		}
 	}
 
 	/**
@@ -98,7 +105,7 @@ final class ContextPropagation {
 		if (!isContextPropagationAvailable) {
 			return NO_OP;
 		}
-		return WITH_GLOBAL_REGISTRY_NO_PREDICATE;
+		return Holder.WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 	}
 
 	/**
