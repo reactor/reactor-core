@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,10 +48,12 @@ final class ContextPropagation {
 	static final Logger LOGGER;
 
 	static final boolean isContextPropagationAvailable;
+	static boolean propagateContextToThreadLocals = false;
 
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
 	static final Function<Context, Context> NO_OP = c -> c;
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
+
 
 	static {
 		LOGGER = Loggers.getLogger(ContextPropagation.class);
@@ -87,6 +89,17 @@ final class ContextPropagation {
 	 */
 	static boolean isContextPropagationAvailable() {
 		return isContextPropagationAvailable;
+	}
+
+	static boolean shouldPropagateContextToThreadLocals() {
+		return isContextPropagationAvailable && propagateContextToThreadLocals;
+	}
+
+	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
+		return delegate -> {
+			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			return contextSnapshot.wrap(delegate);
+		};
 	}
 
 	/**
@@ -132,7 +145,7 @@ final class ContextPropagation {
 	}
 
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
 			return handler;
 		}
 		final Context ctx = contextSupplier.get();
@@ -147,7 +160,7 @@ final class ContextPropagation {
 	}
 
 	static <T> SignalListener<T> contextRestoreForTap(final SignalListener<T> original, Supplier<Context> contextSupplier) {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
 			return original;
 		}
 		final Context ctx = contextSupplier.get();
@@ -301,7 +314,7 @@ final class ContextPropagation {
 		ContextSnapshot.Scope scope;
 
 		@SuppressWarnings({"unchecked", "rawtypes"})
-		ContextQueue(Queue<Object> queue, Context reactorContext) {
+		ContextQueue(Queue<?> queue, Context reactorContext) {
 			this.envelopeQueue = (Queue) queue;
 			this.reactorContext = reactorContext;
 		}
@@ -321,7 +334,7 @@ final class ContextPropagation {
 		public T poll() {
 			Envelope<T> envelope = envelopeQueue.poll();
 			if (envelope == null) {
-				if (cleanOnNull) {
+				if (cleanOnNull && scope != null) {
 					// to clear thread-local if was just restored
 					scope.close();
 				}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.publisher.FluxOnAssembly.MethodReturnSnapshot;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -512,6 +513,12 @@ public abstract class Hooks {
 		DETECT_CONTEXT_LOSS = false;
 	}
 
+	public static void automaticContextPropagation() {
+		Hooks.addQueueWrapper("CONTEXT_IN_THREAD_LOCALS", q -> new ContextPropagation.ContextQueue<>(q,	null));
+		Schedulers.onScheduleHook("CONTEXT_IN_THREAD_LOCALS", ContextPropagation.scopePassingOnScheduleHook());
+		ContextPropagation.propagateContextToThreadLocals = true;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -612,6 +619,8 @@ public abstract class Hooks {
 
 
 	static boolean DETECT_CONTEXT_LOSS = false;
+
+	static boolean PROPAGATE_CONTEXT_TO_THREAD_LOCALS = false;
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);

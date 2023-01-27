@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -4165,6 +4166,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (!ContextPropagation.isContextPropagationAvailable()) {
 			return this;
 		}
+		if (ContextPropagation.propagateContextToThreadLocals) {
+			return onAssembly(new FluxContextWriteRestoringThreadLocals<>(
+					this, ContextPropagation.contextCapture()
+			));
+		}
 		return onAssembly(new FluxContextWrite<>(this, ContextPropagation.contextCapture()));
 	}
 
@@ -4211,6 +4217,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Flux<T> contextWrite(Function<Context, Context> contextModifier) {
+		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+			return onAssembly(new FluxContextWriteRestoringThreadLocals<>(
+					this, contextModifier
+			));
+		}
 		return onAssembly(new FluxContextWrite<>(this, contextModifier));
 	}
 

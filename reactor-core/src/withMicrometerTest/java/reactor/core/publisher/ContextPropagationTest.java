@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,18 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
@@ -91,35 +96,92 @@ class ContextPropagationTest {
 
 	}
 
-	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
-		return delegate -> {
-			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
-			return contextSnapshot.wrap(delegate);
-		};
-	}
+
 
 	@Test
 	@SuppressWarnings("unchecked")
 	void checkThreadLocalsArePropagatedThroughTheWholeStack() {
-		Hooks.addQueueWrapper("test", q -> new ContextPropagation.ContextQueue<>((Queue<Object>) q, null));
-		Schedulers.onScheduleHook("boo", scopePassingOnScheduleHook());
+		Hooks.automaticContextPropagation();
 
 
-		REF1.set("expected1");
+		REF1.set("expectedX");
 		REF2.set("expected2");
 
-		Flux.range(0, 10)
-		    .doOnNext(i -> {
-			    System.out.println("BEFORE " + i + " " + REF1.get());
-		    })
-			.doOnNext(e -> REF1.set(REF1.get() + e))
-			.publishOn(Schedulers.parallel())
-			.doOnNext(i -> {
-				System.out.println("AFTER " + i + " " + REF1.get());
-			})
-			.subscribeOn(Schedulers.boundedElastic())
-			.blockLast();
+		Flux<Integer> flux = Flux.range(0, 10)
+		                         .doOnRequest(r -> System.out.println("Requesting: " + REF1.get()))
+		                         .doOnNext(i -> {
+			                         System.out.println("BEFORE " + i + ": " + REF1.get());
+		                         })
+		                         .doOnNext(e -> REF1.set(REF1.get()
+		                                                     .substring(0,
+				                                                     REF1.get()
+				                                                         .length() - 1) + e))
+		                         .delayElements(Duration.ofMillis(100),
+				                         Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()))
+		                         .publishOn(Schedulers.parallel())
+		                         .doOnNext(i -> {
+			                         System.out.println("AFTER  " + i + ": " + REF1.get());
+		                         })
+		                         .contextWrite(ctx -> ctx.put(KEY1, "blabla"))
+		                         .subscribeOn(Schedulers.boundedElastic());
+//		                         .contextCapture();
 
+		Flux.defer(() -> flux).subscribeOn(Schedulers.parallel()).blockLast();
+//		flux.blockLast();
+	}
+
+	@Test
+	void checkThreadLocalsRestoredInEveryOperator() {
+		Hooks.automaticContextPropagation();
+
+		Flux<Integer> flux =
+				Flux.range(0, 10)
+//					.filter(i -> i < 5)
+//					.doOnRequest(r -> System.out.println("Requested " + r + ": " + REF1.get()))
+//				    .doOnNext(i -> System.out.println(i + ": " + REF1.get()))
+//					.flatMap(i -> Mono.just(i).doOnNext(j -> System.out.println(("inside j: " + REF1.get()))))
+					.flatMap(i -> {
+						System.out.println(i + ": " + REF1.get());
+						return Mono.just(i)
+						           .doOnNext(j -> System.out.println("inside: " + REF1.get()))
+						           .contextWrite(ctx -> ctx.put(KEY1, "expectedY"))
+						           .doOnNext(x -> System.out.println("outside: " + REF1.get()));
+					})
+				    .contextWrite(ctx -> ctx.put(KEY1, "expectedX"))
+					.doOnNext(i -> System.out.println("After contextWrite: " + REF1.get()))
+				    .subscribeOn(Schedulers.boundedElastic());
+
+		flux.blockLast();
+		System.out.println("After: " + REF1.get());
+	}
+
+	@Test
+	void fuseableContextPropagation() {
+		Hooks.automaticContextPropagation();
+		Flux<Integer> source1 = Flux.fromIterable(
+				Stream.of(1, 2, 3).collect(Collectors.toList())
+		);
+		Flux<Integer> source2 = Flux.create(s -> {
+			for (int i = 0; i < 3000; i++) {
+				s.next(i);
+			}
+			s.complete();
+		});
+
+		Flux<String> flux = source2
+		                        .publishOn(Schedulers.boundedElastic())
+		                        .flatMap(i ->
+				                        Mono.just(i)
+				                            .delayElement(Duration.ofMillis(1))
+				                            .doOnNext(
+													j -> System.out.println("Inside flatMap: " + REF1.get())
+				                            ))
+		                        .map(String::valueOf)
+		                        .contextWrite(ctx -> ctx.put(KEY1, "present"))
+		                        .publishOn(Schedulers.parallel())
+		                        .doOnNext(i -> System.out.println("After contextWrite: " + REF1.get()));
+
+		System.out.println(flux.blockLast());
 	}
 
 	@Test
