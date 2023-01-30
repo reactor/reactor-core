@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ class ContextPropagationTest {
 	void contextCaptureWithNoPredicateReturnsTheConstantFunction() {
 		assertThat(ContextPropagation.contextCapture())
 			.as("no predicate nor registry")
-			.isSameAs(ContextPropagation.Holder.WITH_GLOBAL_REGISTRY_NO_PREDICATE);
+			.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE);
 	}
 
 	@Test
@@ -107,7 +107,7 @@ class ContextPropagationTest {
 		assertThat(test)
 			.as("predicate, no registry")
 			.isNotNull()
-			.isNotSameAs(ContextPropagation.Holder.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
+			.isNotSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
 			.isNotSameAs(ContextPropagation.NO_OP)
 			// as long as a predicate is supplied, the method creates new instances of the Function
 			.isNotSameAs(ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE));
@@ -120,7 +120,7 @@ class ContextPropagationTest {
 			.isInstanceOfSatisfying(FluxContextWrite.class, fcw ->
 				assertThat(fcw.doOnContext)
 					.as("flux's capture function")
-					.isSameAs(ContextPropagation.Holder.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
+					.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
 			);
 	}
 
@@ -131,7 +131,7 @@ class ContextPropagationTest {
 			.isInstanceOfSatisfying(MonoContextWrite.class, fcw ->
 				assertThat(fcw.doOnContext)
 					.as("mono's capture function")
-					.isSameAs(ContextPropagation.Holder.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
+					.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
 			);
 	}
 
