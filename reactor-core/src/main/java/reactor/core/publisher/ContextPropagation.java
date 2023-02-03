@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,9 @@ final class ContextPropagation {
 		Function<Context, Context> contextCaptureFunction;
 		boolean contextPropagation;
 		try {
+			// The following line will throw a LinkageError (NoClassDefFoundError) in case context propagation is not available
 			ContextRegistry globalRegistry = ContextRegistry.getInstance();
-			contextCaptureFunction = target -> ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
-				.updateContext(target);
+			contextCaptureFunction = new ContextCaptureNoPredicate(globalRegistry);
 			contextPropagation = true;
 		}
 		catch (LinkageError t) {
@@ -278,6 +278,19 @@ final class ContextPropagation {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				return original.addToContext(originalContext);
 			}
+		}
+	}
+
+	static final class ContextCaptureNoPredicate implements Function<Context, Context> {
+		final ContextRegistry globalRegistry;
+
+		ContextCaptureNoPredicate(ContextRegistry globalRegistry) {
+			this.globalRegistry = globalRegistry;
+		}
+		@Override
+		public Context apply(Context context) {
+			return ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
+					.updateContext(context);
 		}
 	}
 }
