@@ -6,7 +6,7 @@ baselinePerfExtra = "3.4.9"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.22"
+bytebuddy = "1.12.20"
 jmh = "1.35"
 junit = "5.9.2"
 kotlin = "1.5.32"
