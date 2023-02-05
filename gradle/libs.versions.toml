@@ -6,18 +6,18 @@ baselinePerfExtra = "3.5.0"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.18"
+bytebuddy = "1.12.23"
 jmh = "1.35"
-junit = "5.9.1"
+junit = "5.9.2"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.10.2"
+micrometer = "1.10.3"
 reactiveStreams = "1.0.4"
 
 [libraries]
 archUnit = "com.tngtech.archunit:archunit:0.23.1"
 assertj = "org.assertj:assertj-core:3.23.1"
 awaitility = "org.awaitility:awaitility:4.2.0"
-blockhound = "io.projectreactor.tools:blockhound:1.0.6.RELEASE"
+blockhound = "io.projectreactor.tools:blockhound:1.0.7.RELEASE"
 byteBuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
 byteBuddy-api = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 cglib = "cglib:cglib:3.3.0"
@@ -36,9 +36,9 @@ micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micro
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.0"
-micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.0"}
+micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.1"}
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
-micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.0"
+micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.1"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
 mockito = "org.mockito:mockito-core:4.8.1"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
