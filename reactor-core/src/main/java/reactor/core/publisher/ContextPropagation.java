@@ -61,9 +61,9 @@ final class ContextPropagation {
 		Function<Context, Context> contextCaptureFunction;
 		boolean contextPropagation;
 		try {
+			// The following line will throw a LinkageError (NoClassDefFoundError) in case context propagation is not available
 			ContextRegistry globalRegistry = ContextRegistry.getInstance();
-			contextCaptureFunction = target -> ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
-				.updateContext(target);
+			contextCaptureFunction = new ContextCaptureNoPredicate(globalRegistry);
 			contextPropagation = true;
 		}
 		catch (LinkageError t) {
@@ -449,5 +449,18 @@ final class ContextPropagation {
 			this.contextSnapshot = contextSnapshot;
 		}
 
+	}
+
+	static final class ContextCaptureNoPredicate implements Function<Context, Context> {
+		final ContextRegistry globalRegistry;
+
+		ContextCaptureNoPredicate(ContextRegistry globalRegistry) {
+			this.globalRegistry = globalRegistry;
+		}
+		@Override
+		public Context apply(Context context) {
+			return ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
+					.updateContext(context);
+		}
 	}
 }
