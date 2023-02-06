@@ -513,10 +513,23 @@ public abstract class Hooks {
 		DETECT_CONTEXT_LOSS = false;
 	}
 
-	public static void automaticContextPropagation() {
-		Hooks.addQueueWrapper("CONTEXT_IN_THREAD_LOCALS", q -> new ContextPropagation.ContextQueue<>(q,	null));
-		Schedulers.onScheduleHook("CONTEXT_IN_THREAD_LOCALS", ContextPropagation.scopePassingOnScheduleHook());
-		ContextPropagation.propagateContextToThreadLocals = true;
+	private static final String CONTEXT_IN_THREAD_LOCALS_KEY = "CONTEXT_IN_THREAD_LOCALS";
+
+	public static void enableAutomaticContextPropagation() {
+		if (ContextPropagation.isContextPropagationAvailable) {
+			Hooks.addQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY,
+					q -> new ContextPropagation.ContextQueue<>(q, null));
+			Schedulers.onScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.scopePassingOnScheduleHook());
+			ContextPropagation.propagateContextToThreadLocals = true;
+		}
+	}
+
+	public static void disableAutomaticContextPropagation() {
+		if (ContextPropagation.isContextPropagationAvailable) {
+			Hooks.removeQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY);
+			Schedulers.resetOnScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY);
+			ContextPropagation.propagateContextToThreadLocals = false;
+		}
 	}
 
 	@Nullable
@@ -619,8 +632,6 @@ public abstract class Hooks {
 
 
 	static boolean DETECT_CONTEXT_LOSS = false;
-
-	static boolean PROPAGATE_CONTEXT_TO_THREAD_LOCALS = false;
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);

@@ -18,19 +18,17 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import io.micrometer.context.ContextRegistry;
-import io.micrometer.context.ContextSnapshot;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -41,7 +39,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -55,6 +52,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.test.subscriber.TestSubscriberBuilder;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -96,92 +94,185 @@ class ContextPropagationTest {
 
 	}
 
+	@Test
+	void threadLocalsPresentAfterSubscribeOn() {
+		Hooks.enableAutomaticContextPropagation();
 
+		AtomicReference<String> tlValue = new AtomicReference<>();
+
+		Flux.just(1)
+		    .subscribeOn(Schedulers.boundedElastic())
+		    .doOnNext(i -> tlValue.set(REF1.get()))
+		    .contextWrite(Context.of(KEY1, "present"))
+		    .blockLast();
+
+		assertThat(tlValue.get()).isEqualTo("present");
+	}
+
+	@Test
+	void threadLocalsPresentAfterPublishOn() {
+		Hooks.enableAutomaticContextPropagation();
+
+		AtomicReference<String> tlValue = new AtomicReference<>();
+
+		Flux.just(1)
+		    .publishOn(Schedulers.boundedElastic())
+		    .doOnNext(i -> tlValue.set(REF1.get()))
+		    .contextWrite(Context.of(KEY1, "present"))
+		    .blockLast();
+
+		assertThat(tlValue.get()).isEqualTo("present");
+	}
+
+	@Test
+	void threadLocalsPresentInFlatMap() {
+		Hooks.enableAutomaticContextPropagation();
+
+		AtomicReference<String> tlValue = new AtomicReference<>();
+
+		Flux.just(1)
+		    .flatMap(i -> Mono.just(i)
+		                      .doOnNext(j -> tlValue.set(REF1.get())))
+		    .contextWrite(Context.of(KEY1, "present"))
+		    .blockLast();
+
+		assertThat(tlValue.get()).isEqualTo("present");
+	}
+
+	@Test
+	void threadLocalsPresentAfterDelay() {
+		Hooks.enableAutomaticContextPropagation();
+
+		AtomicReference<String> tlValue = new AtomicReference<>();
+
+		Flux.just(1)
+		    .delayElements(Duration.ofMillis(1))
+		    .doOnNext(i -> tlValue.set(REF1.get()))
+		    .contextWrite(Context.of(KEY1, "present"))
+		    .blockLast();
+
+		assertThat(tlValue.get()).isEqualTo("present");
+	}
+
+	@Test
+	void threadLocalsRestoredAfterPollution() {
+		// this test validates Queue wrapping takes place
+		Hooks.enableAutomaticContextPropagation();
+		ArrayBlockingQueue<String> modifiedThreadLocals = new ArrayBlockingQueue<>(10);
+		ArrayBlockingQueue<String> restoredThreadLocals = new ArrayBlockingQueue<>(10);
+
+		Flux.range(0, 10)
+				.doOnNext(i -> {
+					REF1.set("i: " + i);
+				})
+				.publishOn(Schedulers.parallel())
+		        // the validation below shows that modifications to TLs are propagated
+		        // across thread boundaries via queue wrapping, so explicit control
+		        // is required from users to clean up after such modifications
+				.doOnNext(i -> modifiedThreadLocals.add(REF1.get()))
+				.contextWrite(Function.identity())
+                // the contextWrite above creates a barrier that ensures the downstream
+		        // operator sees TLs from the subscriber context
+				.doOnNext(i -> restoredThreadLocals.add(REF1.get()))
+				.contextWrite(Context.of(KEY1, "present"))
+				.blockLast();
+
+		assertThat(modifiedThreadLocals).containsExactly(
+				"i: 0", "i: 1", "i: 2", "i: 3", "i: 4",
+				"i: 5", "i: 6", "i: 7", "i: 8", "i: 9"
+		);
+		assertThat(restoredThreadLocals).containsExactly(
+				Collections.nCopies(10, "present").toArray(new String[] {})
+		);
+	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void checkThreadLocalsArePropagatedThroughTheWholeStack() {
-		Hooks.automaticContextPropagation();
+	void contextCapturePropagatedAutomaticallyToAllSignals() throws InterruptedException {
+		Hooks.enableAutomaticContextPropagation();
 
+		AtomicReference<String> requestTlValue = new AtomicReference<>();
+		AtomicReference<String> subscribeTlValue = new AtomicReference<>();
+		AtomicReference<String> firstNextTlValue = new AtomicReference<>();
+		AtomicReference<String> secondNextTlValue = new AtomicReference<>();
+		AtomicReference<String> cancelTlValue = new AtomicReference<>();
 
-		REF1.set("expectedX");
-		REF2.set("expected2");
+		CountDownLatch itemDelivered = new CountDownLatch(1);
+		CountDownLatch cancelled = new CountDownLatch(1);
 
-		Flux<Integer> flux = Flux.range(0, 10)
-		                         .doOnRequest(r -> System.out.println("Requesting: " + REF1.get()))
-		                         .doOnNext(i -> {
-			                         System.out.println("BEFORE " + i + ": " + REF1.get());
-		                         })
-		                         .doOnNext(e -> REF1.set(REF1.get()
-		                                                     .substring(0,
-				                                                     REF1.get()
-				                                                         .length() - 1) + e))
-		                         .delayElements(Duration.ofMillis(100),
-				                         Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()))
-		                         .publishOn(Schedulers.parallel())
-		                         .doOnNext(i -> {
-			                         System.out.println("AFTER  " + i + ": " + REF1.get());
-		                         })
-		                         .contextWrite(ctx -> ctx.put(KEY1, "blabla"))
-		                         .subscribeOn(Schedulers.boundedElastic());
-//		                         .contextCapture();
+		TestSubscriber<Integer> subscriber =
+				TestSubscriber.builder().initialRequest(1).build();
 
-		Flux.defer(() -> flux).subscribeOn(Schedulers.parallel()).blockLast();
-//		flux.blockLast();
+		REF1.set("downstreamContext");
+
+		Flux.just(1, 2)
+		    .hide()
+		    .doOnRequest(r -> requestTlValue.set(REF1.get()))
+		    .doOnNext(i -> firstNextTlValue.set(REF1.get()))
+		    .doOnSubscribe(s -> subscribeTlValue.set(REF1.get()))
+		    .doOnCancel(() -> {
+			    cancelTlValue.set(REF1.get());
+			    cancelled.countDown();
+		    })
+		    .delayElements(Duration.ofMillis(1))
+		    .contextWrite(Context.of(KEY1, "upstreamContext"))
+		    // disabling prefetching to observe cancellation
+		    .publishOn(Schedulers.parallel(), 1)
+		    .doOnNext(i -> {
+			    System.out.println(REF1.get());
+				secondNextTlValue.set(REF1.get());
+				itemDelivered.countDown();
+		    })
+		    .subscribeOn(Schedulers.boundedElastic())
+		    .contextCapture()
+		    .subscribe(subscriber);
+
+		itemDelivered.await();
+
+		subscriber.cancel();
+
+		cancelled.await();
+
+		assertThat(requestTlValue.get()).isEqualTo("upstreamContext");
+		assertThat(subscribeTlValue.get()).isEqualTo("upstreamContext");
+		assertThat(firstNextTlValue.get()).isEqualTo("upstreamContext");
+		assertThat(cancelTlValue.get()).isEqualTo("upstreamContext");
+		assertThat(secondNextTlValue.get()).isEqualTo("downstreamContext");
 	}
 
 	@Test
-	void checkThreadLocalsRestoredInEveryOperator() {
-		Hooks.automaticContextPropagation();
+	void prefetchingShouldMaintainThreadLocals() {
+		Hooks.enableAutomaticContextPropagation();
 
-		Flux<Integer> flux =
-				Flux.range(0, 10)
-//					.filter(i -> i < 5)
-//					.doOnRequest(r -> System.out.println("Requested " + r + ": " + REF1.get()))
-//				    .doOnNext(i -> System.out.println(i + ": " + REF1.get()))
-//					.flatMap(i -> Mono.just(i).doOnNext(j -> System.out.println(("inside j: " + REF1.get()))))
-					.flatMap(i -> {
-						System.out.println(i + ": " + REF1.get());
-						return Mono.just(i)
-						           .doOnNext(j -> System.out.println("inside: " + REF1.get()))
-						           .contextWrite(ctx -> ctx.put(KEY1, "expectedY"))
-						           .doOnNext(x -> System.out.println("outside: " + REF1.get()));
-					})
-				    .contextWrite(ctx -> ctx.put(KEY1, "expectedX"))
-					.doOnNext(i -> System.out.println("After contextWrite: " + REF1.get()))
-				    .subscribeOn(Schedulers.boundedElastic());
+		// We validate streams of items above default prefetch size
+		// (max concurrency of flatMap == Queues.SMALL_BUFFER_SIZE == 256)
+		// are able to maintain the context propagation to ThreadLocals
+		// in the presence of prefetching
+		int size = Queues.SMALL_BUFFER_SIZE * 10;
 
-		flux.blockLast();
-		System.out.println("After: " + REF1.get());
-	}
-
-	@Test
-	void fuseableContextPropagation() {
-		Hooks.automaticContextPropagation();
-		Flux<Integer> source1 = Flux.fromIterable(
-				Stream.of(1, 2, 3).collect(Collectors.toList())
-		);
-		Flux<Integer> source2 = Flux.create(s -> {
-			for (int i = 0; i < 3000; i++) {
+		Flux<Integer> source = Flux.create(s -> {
+			for (int i = 0; i < size; i++) {
 				s.next(i);
 			}
 			s.complete();
 		});
 
-		Flux<String> flux = source2
-		                        .publishOn(Schedulers.boundedElastic())
-		                        .flatMap(i ->
-				                        Mono.just(i)
-				                            .delayElement(Duration.ofMillis(1))
-				                            .doOnNext(
-													j -> System.out.println("Inside flatMap: " + REF1.get())
-				                            ))
-		                        .map(String::valueOf)
-		                        .contextWrite(ctx -> ctx.put(KEY1, "present"))
-		                        .publishOn(Schedulers.parallel())
-		                        .doOnNext(i -> System.out.println("After contextWrite: " + REF1.get()));
+		assertThat(REF1.get()).isEqualTo("ref1_init");
 
-		System.out.println(flux.blockLast());
+		ArrayBlockingQueue<String> innerThreadLocals = new ArrayBlockingQueue<>(size);
+		ArrayBlockingQueue<String> outerThreadLocals = new ArrayBlockingQueue<>(size);
+
+		source.publishOn(Schedulers.boundedElastic())
+		      .flatMap(i -> Mono.just(i)
+		                        .delayElement(Duration.ofMillis(1))
+		                        .doOnNext(j -> innerThreadLocals.add(REF1.get())))
+		      .contextWrite(ctx -> ctx.put(KEY1, "present"))
+		      .publishOn(Schedulers.parallel())
+		      .doOnNext(i -> outerThreadLocals.add(REF1.get()))
+		      .blockLast();
+
+		assertThat(innerThreadLocals).containsOnly("present").hasSize(size);
+		assertThat(outerThreadLocals).containsOnly("ref1_init").hasSize(size);
 	}
 
 	@Test
@@ -231,6 +322,29 @@ class ContextPropagationTest {
 			);
 	}
 
+	@Test
+	void fluxApiUsesContextPropagationConstantFunctionWhenAutomaticPropagationEnabled() {
+		Hooks.enableAutomaticContextPropagation();
+		Flux<Integer> source = Flux.empty();
+		assertThat(source.contextCapture())
+				.isInstanceOfSatisfying(FluxContextWriteRestoringThreadLocals.class,
+						fcw -> assertThat(fcw.doOnContext)
+								.as("flux's capture function")
+								.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
+				);
+	}
+
+	@Test
+	void monoApiUsesContextPropagationConstantFunctionWhenAutomaticPropagationEnabled() {
+		Hooks.enableAutomaticContextPropagation();
+		Mono<Integer> source = Mono.empty();
+		assertThat(source.contextCapture())
+				.isInstanceOfSatisfying(MonoContextWriteRestoringThreadLocals.class,
+						fcw -> assertThat(fcw.doOnContext)
+								.as("mono's capture function")
+								.isSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE));
+	}
+
 	@Nested
 	class ContextCaptureFunctionTest {
 
@@ -263,8 +377,8 @@ class ContextPropagationTest {
 			ctx.forEach(asMap::put); //easier to assert
 
 			assertThat(asMap)
-				.containsEntry(KEY2, "expected")
-				.hasSize(1);
+					.containsEntry(KEY2, "expected")
+					.hasSize(1);
 		}
 	}
 
@@ -610,11 +724,11 @@ class ContextPropagationTest {
 				softly.assertThat(publisherFuseable.handler).as("publisherFuseable.handler").isSameAs(originalHandler);
 
 				softly.assertThat(sub.handler)
-					.as("sub.handler")
-					.isNotSameAs(originalHandler);
+				      .as("sub.handler")
+				      .isNotSameAs(originalHandler);
 				softly.assertThat(subFused.handler)
-					.as("subFused.handler")
-					.isNotSameAs(originalHandler);
+				      .as("subFused.handler")
+				      .isNotSameAs(originalHandler);
 			});
 		}
 	}

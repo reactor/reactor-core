@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
-import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
