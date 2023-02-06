@@ -15,7 +15,7 @@ reactiveStreams = "1.0.4"
 
 [libraries]
 archUnit = "com.tngtech.archunit:archunit:0.23.1"
-assertj = "org.assertj:assertj-core:3.23.1"
+assertj = "org.assertj:assertj-core:3.24.2"
 awaitility = "org.awaitility:awaitility:4.2.0"
 blockhound = "io.projectreactor.tools:blockhound:1.0.7.RELEASE"
 byteBuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
