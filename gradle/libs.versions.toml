@@ -6,9 +6,9 @@ baselinePerfExtra = "3.4.9"
 
 # Other shared versions
 asciidoctor = "3.3.2"
-bytebuddy = "1.12.18"
+bytebuddy = "1.12.23"
 jmh = "1.35"
-junit = "5.9.1"
+junit = "5.9.2"
 kotlin = "1.5.32"
 reactiveStreams = "1.0.4"
 
@@ -16,7 +16,7 @@ reactiveStreams = "1.0.4"
 archUnit = "com.tngtech.archunit:archunit:0.23.1"
 assertj = "org.assertj:assertj-core:3.23.1"
 awaitility = "org.awaitility:awaitility:4.2.0"
-blockhound = "io.projectreactor.tools:blockhound:1.0.6.RELEASE"
+blockhound = "io.projectreactor.tools:blockhound:1.0.7.RELEASE"
 byteBuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
 byteBuddy-api = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 cglib = "cglib:cglib:3.3.0"
@@ -29,7 +29,7 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 logback = "ch.qos.logback:logback-classic:1.2.11"
 micrometer = "io.micrometer:micrometer-core:1.3.0"
-mockito = "org.mockito:mockito-core:4.8.1"
+mockito = "org.mockito:mockito-core:4.11.0"
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
