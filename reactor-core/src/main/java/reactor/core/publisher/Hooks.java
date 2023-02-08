@@ -536,9 +536,13 @@ public abstract class Hooks {
 	 */
 	public static void enableAutomaticContextPropagation() {
 		if (ContextPropagation.isContextPropagationAvailable) {
-			Hooks.addQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY,
-					q -> new ContextPropagation.ContextQueue<>(q, null));
-			Schedulers.onScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.scopePassingOnScheduleHook());
+			Hooks.addQueueWrapper(
+					CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new
+			);
+			Schedulers.onScheduleHook(
+					CONTEXT_IN_THREAD_LOCALS_KEY,
+					ContextPropagation.scopePassingOnScheduleHook()
+			);
 			ContextPropagation.propagateContextToThreadLocals = true;
 		}
 	}

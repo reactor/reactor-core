@@ -303,20 +303,16 @@ final class ContextPropagation {
 	static final class ContextQueue<T> extends AbstractQueue<T> {
 
 		final Queue<Envelope<T>> envelopeQueue;
-		final Context reactorContext;
 
 		boolean cleanOnNull;
-
 		boolean hasPrevious = false;
 
-		Thread lastReader;
-
+		Thread                lastReader;
 		ContextSnapshot.Scope scope;
 
 		@SuppressWarnings({"unchecked", "rawtypes"})
-		ContextQueue(Queue<?> queue, Context reactorContext) {
+		ContextQueue(Queue<?> queue) {
 			this.envelopeQueue = (Queue) queue;
-			this.reactorContext = reactorContext;
 		}
 
 		@Override
@@ -335,7 +331,7 @@ final class ContextPropagation {
 			Envelope<T> envelope = envelopeQueue.poll();
 			if (envelope == null) {
 				if (cleanOnNull && scope != null) {
-					// to clear thread-local if was just restored
+					// clear thread-locals if they were just restored
 					scope.close();
 				}
 				cleanOnNull = true;
@@ -356,16 +352,15 @@ final class ContextPropagation {
 			ContextSnapshot currentContextSnapshot = ContextSnapshot.captureAll();
 			if (!contextSnapshot.equals(currentContextSnapshot)) {
 				if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
-					// means context was restored form the envelope, thus it has
-					// to be cleared
+					// means context was restored form the envelope,
+					// thus it has to be cleared
 					cleanOnNull = true;
 					lastReader = Thread.currentThread();
 				}
 				scope = contextSnapshot.setThreadLocals();
 			}
 			else if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
-				// means same context was already available, no need to clean
-				// anything
+				// means same context was already available, no need to clean anything
 				cleanOnNull = false;
 				lastReader = Thread.currentThread();
 			}
@@ -440,8 +435,7 @@ final class ContextPropagation {
 
 	static class Envelope<T> {
 
-		final T body;
-
+		final T               body;
 		final ContextSnapshot contextSnapshot;
 
 		Envelope(T body, ContextSnapshot contextSnapshot) {
