@@ -39,9 +39,19 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Context c = doOnContext.apply(actual.currentContext());
+
+		final ContextWriteRestoringThreadLocalsSubscriber<T> threadLocalsSubscriber =
+				new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c);
+
 		try (ContextSnapshot.Scope __ = ContextSnapshot.setAllThreadLocalsFrom(c)) {
-			source.subscribe(new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c));
+			source.subscribe(threadLocalsSubscriber);
 		}
+
+		// The onSubscribe signal is delivered outside the ThreadLocal scope
+		// associated with the augmented Context. The corresponding onSubscribe
+		// in ContextWriteRestoringThreadLocalsSubscriber implementation doesn't deliver
+		// the signal, but we do it here to avoid unnecessary restoration.
+		actual.onSubscribe(threadLocalsSubscriber);
 	}
 
 	@Override
@@ -92,16 +102,12 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			// This is needed, as the downstream can then switch threads,
-			// continue the subscription using different primitives and omit this operator
-			try (ContextSnapshot.Scope __ =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
-				if (Operators.validate(this.s, s)) {
-					this.s = s;
-					if (s instanceof QueueSubscription) {
-						this.qs = (QueueSubscription<T>) s;
-					}
-					actual.onSubscribe(this);
+			// The signal to downstream subscriber is delivered by the operator's
+			// subscribe method to prevent additional ThreadLocal context restoration.
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				if (s instanceof QueueSubscription) {
+					this.qs = (QueueSubscription<T>) s;
 				}
 			}
 		}
@@ -112,11 +118,6 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 			// current context, but we need to clean up and restore thread locals for
 			// the actual subscriber downstream, as it can expect TLs to match the
 			// different context.
-			// FIXME: setThreadLocalsFrom should clear TL value in case its key is
-			//  missing in the given context when running for a particular Accessor
-			//  This implementation assumes https://github.com/micrometer-metrics/context-propagation/pull/67/
-			//  to be merged -> consider an alternative.
-
 			try (ContextSnapshot.Scope __ =
 					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
 				actual.onNext(t);

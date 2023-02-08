@@ -20,8 +20,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextSnapshot;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> {
@@ -36,18 +38,157 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Context c = doOnContext.apply(actual.currentContext());
+		final Context c = doOnContext.apply(actual.currentContext());
+
+		final ContextWriteRestoringThreadLocalsSubscriber<T> threadLocalsSubscriber =
+				new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c);
+
 		try (ContextSnapshot.Scope __ = ContextSnapshot.setAllThreadLocalsFrom(c)) {
-			source.subscribe(
-					new FluxContextWriteRestoringThreadLocals
-							.ContextWriteRestoringThreadLocalsSubscriber<>(actual, c)
-			);
+			source.subscribe(threadLocalsSubscriber);
 		}
+
+		// The onSubscribe signal is delivered outside the ThreadLocal scope
+		// associated with the augmented Context. The corresponding onSubscribe
+		// in ContextWriteRestoringThreadLocalsSubscriber implementation doesn't deliver
+		// the signal, but we do it here to avoid unnecessary restoration.
+		actual.onSubscribe(threadLocalsSubscriber);
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
+	}
+
+	static final class ContextWriteRestoringThreadLocalsSubscriber<T>
+			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
+
+		final CoreSubscriber<? super T> actual;
+		final Context                   context;
+
+		Subscription s;
+		boolean      done;
+
+		@SuppressWarnings("unchecked")
+		ContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
+			this.actual = actual;
+			this.context = context;
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
+			}
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public Context currentContext() {
+			return this.context;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			// The signal to downstream subscriber is delivered by the operator's
+			// subscribe method to prevent additional ThreadLocal context restoration.
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			this.done = true;
+			// We probably ended up here from a request, which set thread locals to
+			// current context, but we need to clean up and restore thread locals for
+			// the actual subscriber downstream, as it can expect TLs to match the
+			// different context.
+			try (ContextSnapshot.Scope __ =
+					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+				actual.onNext(t);
+				actual.onComplete();
+			}
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (this.done) {
+				Operators.onErrorDropped(t, context);
+				return;
+			}
+
+			this.done = true;
+
+			try (ContextSnapshot.Scope __ =
+					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+				actual.onError(t);
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			if (this.done) {
+				return;
+			}
+
+			this.done = true;
+
+			try (ContextSnapshot.Scope __ =
+					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+				actual.onComplete();
+			}
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public void request(long n) {
+			try (ContextSnapshot.Scope __ =
+					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
+				s.request(n);
+			}
+		}
+
+		@Override
+		public void cancel() {
+			try (ContextSnapshot.Scope __ =
+					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
+				s.cancel();
+			}
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			throw new UnsupportedOperationException("Operator does not support fusion");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			throw new UnsupportedOperationException("Operator does not support fusion");
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedOperationException("Operator does not support fusion");
+		}
+
+		@Override
+		public int size() {
+			throw new UnsupportedOperationException("Operator does not support fusion");
+		}
 	}
 }
