@@ -36,6 +36,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
 	}
 
+	@SuppressWarnings("try")
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		final Context c = doOnContext.apply(actual.currentContext());
@@ -43,7 +44,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		final ContextWriteRestoringThreadLocalsSubscriber<T> threadLocalsSubscriber =
 				new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c);
 
-		try (ContextSnapshot.Scope __ = ContextSnapshot.setAllThreadLocalsFrom(c)) {
+		try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(c)) {
 			source.subscribe(threadLocalsSubscriber);
 		}
 
@@ -69,7 +70,6 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		Subscription s;
 		boolean      done;
 
-		@SuppressWarnings("unchecked")
 		ContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
 			this.actual = actual;
 			this.context = context;
@@ -101,6 +101,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 			}
 		}
 
+		@SuppressWarnings("try")
 		@Override
 		public void onNext(T t) {
 			this.done = true;
@@ -108,13 +109,14 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 			// current context, but we need to clean up and restore thread locals for
 			// the actual subscriber downstream, as it can expect TLs to match the
 			// different context.
-			try (ContextSnapshot.Scope __ =
+			try (ContextSnapshot.Scope ignored =
 					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
 				actual.onNext(t);
 				actual.onComplete();
 			}
 		}
 
+		@SuppressWarnings("try")
 		@Override
 		public void onError(Throwable t) {
 			if (this.done) {
@@ -124,12 +126,13 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 
 			this.done = true;
 
-			try (ContextSnapshot.Scope __ =
+			try (ContextSnapshot.Scope ignored =
 					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
 				actual.onError(t);
 			}
 		}
 
+		@SuppressWarnings("try")
 		@Override
 		public void onComplete() {
 			if (this.done) {
@@ -138,7 +141,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 
 			this.done = true;
 
-			try (ContextSnapshot.Scope __ =
+			try (ContextSnapshot.Scope ignored =
 					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
 				actual.onComplete();
 			}
@@ -149,17 +152,19 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 			return actual;
 		}
 
+		@SuppressWarnings("try")
 		@Override
 		public void request(long n) {
-			try (ContextSnapshot.Scope __ =
+			try (ContextSnapshot.Scope ignored =
 					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
 				s.request(n);
 			}
 		}
 
+		@SuppressWarnings("try")
 		@Override
 		public void cancel() {
-			try (ContextSnapshot.Scope __ =
+			try (ContextSnapshot.Scope ignored =
 					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
 				s.cancel();
 			}
