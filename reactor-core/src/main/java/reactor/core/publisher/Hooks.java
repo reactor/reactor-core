@@ -32,6 +32,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * A set of overridable lifecycle hooks that can be used for cross-cutting
@@ -515,6 +516,24 @@ public abstract class Hooks {
 
 	private static final String CONTEXT_IN_THREAD_LOCALS_KEY = "CONTEXT_IN_THREAD_LOCALS";
 
+	/**
+	 * Globally enables automatic context propagation to {@link ThreadLocal}s.
+	 * <p>
+	 * It requires the
+	 * <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * to be on the classpath to have an effect.
+	 * Using the implicit global {@code ContextRegistry} it reads entries present in
+	 * the modified {@link Context} using
+	 * {@link Flux#contextWrite(ContextView)} (or {@link Mono#contextWrite(ContextView)})
+	 * and {@link Flux#contextWrite(Function)} (or {@link Mono#contextWrite(Function)})
+	 * and restores all {@link ThreadLocal}s associated via same keys for which
+	 * {@code ThreadLocalAccessor}s are registered.
+	 * <p>
+	 * The {@link ThreadLocal}s are present in the upstream operators from the
+	 * {@code contextWrite(...)} call and the unmodified (downstream) {@link Context} is
+	 * used when signals are delivered downstream, making the {@code contextWrite(...)}
+	 * a logical boundary for the context propagation mechanism.
+	 */
 	public static void enableAutomaticContextPropagation() {
 		if (ContextPropagation.isContextPropagationAvailable) {
 			Hooks.addQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY,
@@ -524,6 +543,10 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * Globally disables automatic context propagation to {@link ThreadLocal}s.
+	 * @see #enableAutomaticContextPropagation()
+	 */
 	public static void disableAutomaticContextPropagation() {
 		if (ContextPropagation.isContextPropagationAvailable) {
 			Hooks.removeQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY);
