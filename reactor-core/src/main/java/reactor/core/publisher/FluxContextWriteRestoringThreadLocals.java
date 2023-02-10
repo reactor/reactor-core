@@ -44,7 +44,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		final ContextWriteRestoringThreadLocalsSubscriber<T> threadLocalsSubscriber =
 				new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c);
 
-		try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(c)) {
+		try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocals(c)) {
 			source.subscribe(threadLocalsSubscriber);
 		}
 
@@ -117,7 +117,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 			// the actual subscriber downstream, as it can expect TLs to match the
 			// different context.
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				actual.onNext(t);
 			}
 		}
@@ -126,7 +126,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		@Override
 		public boolean tryOnNext(T t) {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				if (actualConditional != null) {
 					return actualConditional.tryOnNext(t);
 				}
@@ -139,7 +139,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		@Override
 		public void onError(Throwable t) {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				actual.onError(t);
 			}
 		}
@@ -148,7 +148,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		@Override
 		public void onComplete() {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				actual.onComplete();
 			}
 		}
@@ -162,7 +162,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		@Override
 		public void request(long n) {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
+					     ContextSnapshot.setThreadLocals(context)) {
 				s.request(n);
 			}
 		}
@@ -171,7 +171,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		@Override
 		public void cancel() {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
+					     ContextSnapshot.setThreadLocals(context)) {
 				s.cancel();
 			}
 		}

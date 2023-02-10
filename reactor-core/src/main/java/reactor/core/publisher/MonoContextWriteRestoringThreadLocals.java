@@ -44,7 +44,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		final ContextWriteRestoringThreadLocalsSubscriber<T> threadLocalsSubscriber =
 				new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c);
 
-		try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(c)) {
+		try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocals(c)) {
 			source.subscribe(threadLocalsSubscriber);
 		}
 
@@ -110,7 +110,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 			// the actual subscriber downstream, as it can expect TLs to match the
 			// different context.
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				actual.onNext(t);
 				actual.onComplete();
 			}
@@ -127,7 +127,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 			this.done = true;
 
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				actual.onError(t);
 			}
 		}
@@ -142,7 +142,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 			this.done = true;
 
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(actual.currentContext())) {
+					     ContextSnapshot.setThreadLocals(actual.currentContext())) {
 				actual.onComplete();
 			}
 		}
@@ -156,7 +156,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		@Override
 		public void request(long n) {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
+					     ContextSnapshot.setThreadLocals(context)) {
 				s.request(n);
 			}
 		}
@@ -165,7 +165,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		@Override
 		public void cancel() {
 			try (ContextSnapshot.Scope ignored =
-					     ContextSnapshot.setAllThreadLocalsFrom(context)) {
+					     ContextSnapshot.setThreadLocals(context)) {
 				s.cancel();
 			}
 		}
