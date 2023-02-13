@@ -41,18 +41,9 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Context c = doOnContext.apply(actual.currentContext());
 
-		final ContextWriteRestoringThreadLocalsSubscriber<T> threadLocalsSubscriber =
-				new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c);
-
 		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(c)) {
-			source.subscribe(threadLocalsSubscriber);
+			source.subscribe(new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c));
 		}
-
-		// The onSubscribe signal is delivered outside the ThreadLocal scope
-		// associated with the augmented Context. The corresponding onSubscribe
-		// in ContextWriteRestoringThreadLocalsSubscriber implementation doesn't deliver
-		// the signal, but we do it here to avoid unnecessary restoration.
-		actual.onSubscribe(threadLocalsSubscriber);
 	}
 
 	@Override
@@ -100,12 +91,17 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 			return this.context;
 		}
 
+		@SuppressWarnings("try")
 		@Override
 		public void onSubscribe(Subscription s) {
-			// The signal to downstream subscriber is delivered by the operator's
-			// subscribe method to prevent additional ThreadLocal context restoration.
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
+			// This is needed, as the downstream can then switch threads,
+			// continue the subscription using different primitives and omit this operator
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				if (Operators.validate(this.s, s)) {
+					this.s = s;
+					actual.onSubscribe(this);
+				}
 			}
 		}
 
