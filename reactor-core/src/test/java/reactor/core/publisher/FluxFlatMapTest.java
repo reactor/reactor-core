@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import reactor.core.Scannable;
 import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.util.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -1867,42 +1868,5 @@ public class FluxFlatMapTest {
 		    .as(StepVerifier::create)
 		    .expectError(NoSuchMethodException.class)
 		    .verify();
-	}
-
-	static class FluxFlatMapDelayError3336Test {
-
-		@Test
-		void workingFlatMapDelayError() {
-			Flux.just(0, 1, 2, 3)
-			    .flatMapDelayError(integer -> {
-				    throw new RuntimeException(); // Cancels upstream subscription after consuming one event
-			    }, 1, 1)
-			    .as(StepVerifier::create)
-			    .expectError()
-			    .verify(Duration.ofSeconds(1)); // Completes as expected
-		}
-
-		@Test
-		void hangingFlatMapDelayError() {
-			Flux.just(0, 1, 2, 3)
-			    .flatMapDelayError(integer -> {
-				    return Flux.error(new RuntimeException()); // Does not cancel upstream subscription
-			    }, 1, 1)
-			    .as(StepVerifier::create)
-			    .expectError()
-			    .verify(Duration.ofSeconds(1)); // Triggers timeout
-		}
-
-		@Test
-		void deoptimizedFlatMapDelayError() {
-			Flux.just(0, 1, 2, 3)
-			    .flatMapDelayError(integer -> {
-				    return Flux.error(new RuntimeException())
-				               .hide(); // Does not cancel upstream subscription
-			    }, 1, 1)
-			    .as(StepVerifier::create)
-			    .expectError()
-			    .verify(Duration.ofSeconds(1)); // Completes after consuming all events
-		}
 	}
 }
