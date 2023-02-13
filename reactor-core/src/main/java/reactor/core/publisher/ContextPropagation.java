@@ -18,16 +18,20 @@ package reactor.core.publisher;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import io.micrometer.context.ContextAccessor;
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
 
+import io.micrometer.context.ThreadLocalAccessor;
 import reactor.core.observability.SignalListener;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -455,6 +459,78 @@ final class ContextPropagation {
 		public Context apply(Context context) {
 			return ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
 					.updateContext(context);
+		}
+	}
+
+	/*
+	 * Temporary methods not present in context-propagation library that allow
+	 * clearing ThreadLocals not present in Reactor Context. Once context-propagation
+	 * library adds the ability to do this, they can be removed from reactor-core.
+	 */
+
+	@SuppressWarnings("unchecked")
+	static <C> ContextSnapshot.Scope setThreadLocals(Object context) {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		ContextAccessor<?, ?> contextAccessor = registry.getContextAccessorForRead(context);
+		Map<Object, Object> previousValues = null;
+		for (ThreadLocalAccessor<?> threadLocalAccessor : registry.getThreadLocalAccessors()) {
+			Object key = threadLocalAccessor.key();
+			Object value = ((ContextAccessor<C, ?>) contextAccessor).readValue((C) context, key);
+			previousValues = setThreadLocal(key, value, threadLocalAccessor, previousValues);
+		}
+		return ReactorScopeImpl.from(previousValues, registry);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <V> Map<Object, Object> setThreadLocal(Object key, @Nullable V value,
+			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, Object> previousValues) {
+
+		previousValues = (previousValues != null ? previousValues : new HashMap<>());
+		previousValues.put(key, accessor.getValue());
+		if (value != null) {
+			((ThreadLocalAccessor<V>) accessor).setValue(value);
+		}
+		else {
+			accessor.reset();
+		}
+		return previousValues;
+	}
+
+	private static class ReactorScopeImpl implements ContextSnapshot.Scope {
+
+		private final Map<Object, Object> previousValues;
+
+		private final ContextRegistry contextRegistry;
+
+		private ReactorScopeImpl(Map<Object, Object> previousValues,
+				ContextRegistry contextRegistry) {
+			this.previousValues = previousValues;
+			this.contextRegistry = contextRegistry;
+		}
+
+		@Override
+		public void close() {
+			for (ThreadLocalAccessor<?> accessor : this.contextRegistry.getThreadLocalAccessors()) {
+				if (this.previousValues.containsKey(accessor.key())) {
+					Object previousValue = this.previousValues.get(accessor.key());
+					resetThreadLocalValue(accessor, previousValue);
+				}
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
+			if (previousValue != null) {
+				((ThreadLocalAccessor<V>) accessor).restore(previousValue);
+			}
+			else {
+				accessor.reset();
+			}
+		}
+
+		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
+			return (previousValues != null ? new ReactorScopeImpl(previousValues, registry) : () -> {
+			});
 		}
 	}
 }
