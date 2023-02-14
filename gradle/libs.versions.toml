@@ -1,7 +1,7 @@
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.4.26"
-baselinePerfCore = "3.4.26"
+baseline-core-api = "3.4.27"
+baselinePerfCore = "3.4.27"
 baselinePerfExtra = "3.4.9"
 
 # Other shared versions
