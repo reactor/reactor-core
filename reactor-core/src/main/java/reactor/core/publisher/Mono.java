@@ -2284,6 +2284,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		if (!ContextPropagation.isContextPropagationAvailable()) {
 			return this;
 		}
+		if (ContextPropagation.propagateContextToThreadLocals) {
+			return onAssembly(new MonoContextWriteRestoringThreadLocals<>(
+					this, ContextPropagation.contextCapture()
+			));
+		}
 		return onAssembly(new MonoContextWrite<>(this, ContextPropagation.contextCapture()));
 	}
 
@@ -2330,6 +2335,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Mono<T> contextWrite(Function<Context, Context> contextModifier) {
+		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+			return onAssembly(new MonoContextWriteRestoringThreadLocals<>(
+					this, contextModifier
+			));
+		}
 		return onAssembly(new MonoContextWrite<>(this, contextModifier));
 	}
 

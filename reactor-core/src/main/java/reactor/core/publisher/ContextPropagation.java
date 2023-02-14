@@ -16,20 +16,30 @@
 
 package reactor.core.publisher;
 
+import java.util.AbstractQueue;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import io.micrometer.context.ContextAccessor;
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
 
+import io.micrometer.context.ThreadLocalAccessor;
 import reactor.core.observability.SignalListener;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+
+import static reactor.core.Fuseable.QueueSubscription.NOT_SUPPORTED_MESSAGE;
 
 /**
  * Utility private class to detect if the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a> is on the classpath and to offer
@@ -42,10 +52,12 @@ final class ContextPropagation {
 	static final Logger LOGGER;
 
 	static final boolean isContextPropagationAvailable;
+	static boolean propagateContextToThreadLocals = false;
 
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
 	static final Function<Context, Context> NO_OP = c -> c;
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
+
 
 	static {
 		LOGGER = Loggers.getLogger(ContextPropagation.class);
@@ -81,6 +93,17 @@ final class ContextPropagation {
 	 */
 	static boolean isContextPropagationAvailable() {
 		return isContextPropagationAvailable;
+	}
+
+	static boolean shouldPropagateContextToThreadLocals() {
+		return isContextPropagationAvailable && propagateContextToThreadLocals;
+	}
+
+	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
+		return delegate -> {
+			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			return contextSnapshot.wrap(delegate);
+		};
 	}
 
 	/**
@@ -126,7 +149,7 @@ final class ContextPropagation {
 	}
 
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
 			return handler;
 		}
 		final Context ctx = contextSupplier.get();
@@ -141,7 +164,7 @@ final class ContextPropagation {
 	}
 
 	static <T> SignalListener<T> contextRestoreForTap(final SignalListener<T> original, Supplier<Context> contextSupplier) {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
 			return original;
 		}
 		final Context ctx = contextSupplier.get();
@@ -281,6 +304,151 @@ final class ContextPropagation {
 		}
 	}
 
+	static final class ContextQueue<T> extends AbstractQueue<T> {
+
+		final Queue<Envelope<T>> envelopeQueue;
+
+		boolean cleanOnNull;
+		boolean hasPrevious = false;
+
+		Thread                lastReader;
+		ContextSnapshot.Scope scope;
+
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		ContextQueue(Queue<?> queue) {
+			this.envelopeQueue = (Queue) queue;
+		}
+
+		@Override
+		public int size() {
+			return envelopeQueue.size();
+		}
+
+		@Override
+		public boolean offer(T o) {
+			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			return envelopeQueue.offer(new Envelope<>(o, contextSnapshot));
+		}
+
+		@Override
+		public T poll() {
+			Envelope<T> envelope = envelopeQueue.poll();
+			if (envelope == null) {
+				if (cleanOnNull && scope != null) {
+					// clear thread-locals if they were just restored
+					scope.close();
+				}
+				cleanOnNull = true;
+				lastReader = Thread.currentThread();
+				hasPrevious = false;
+				return null;
+			}
+
+
+			restoreTheContext(envelope);
+			hasPrevious = true;
+			return envelope.body;
+		}
+
+		private void restoreTheContext(Envelope<T> envelope) {
+			ContextSnapshot contextSnapshot = envelope.contextSnapshot;
+			// tries to read existing Thread for existing ThreadLocals
+			ContextSnapshot currentContextSnapshot = ContextSnapshot.captureAll();
+			if (!contextSnapshot.equals(currentContextSnapshot)) {
+				if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
+					// means context was restored form the envelope,
+					// thus it has to be cleared
+					cleanOnNull = true;
+					lastReader = Thread.currentThread();
+				}
+				scope = contextSnapshot.setThreadLocals();
+			}
+			else if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
+				// means same context was already available, no need to clean anything
+				cleanOnNull = false;
+				lastReader = Thread.currentThread();
+			}
+		}
+
+		@Override
+		@Nullable
+		public T peek() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean add(@Nullable T t) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public T remove() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public T element() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public  boolean contains(@Nullable Object o) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public Object[] toArray() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public <T1> T1[] toArray(T1[] a) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean remove(@Nullable Object o) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends T> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+	}
+
+	static class Envelope<T> {
+
+		final T               body;
+		final ContextSnapshot contextSnapshot;
+
+		Envelope(T body, ContextSnapshot contextSnapshot) {
+			this.body = body;
+			this.contextSnapshot = contextSnapshot;
+		}
+
+	}
+
 	static final class ContextCaptureNoPredicate implements Function<Context, Context> {
 		final ContextRegistry globalRegistry;
 
@@ -291,6 +459,78 @@ final class ContextPropagation {
 		public Context apply(Context context) {
 			return ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
 					.updateContext(context);
+		}
+	}
+
+	/*
+	 * Temporary methods not present in context-propagation library that allow
+	 * clearing ThreadLocals not present in Reactor Context. Once context-propagation
+	 * library adds the ability to do this, they can be removed from reactor-core.
+	 */
+
+	@SuppressWarnings("unchecked")
+	static <C> ContextSnapshot.Scope setThreadLocals(Object context) {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		ContextAccessor<?, ?> contextAccessor = registry.getContextAccessorForRead(context);
+		Map<Object, Object> previousValues = null;
+		for (ThreadLocalAccessor<?> threadLocalAccessor : registry.getThreadLocalAccessors()) {
+			Object key = threadLocalAccessor.key();
+			Object value = ((ContextAccessor<C, ?>) contextAccessor).readValue((C) context, key);
+			previousValues = setThreadLocal(key, value, threadLocalAccessor, previousValues);
+		}
+		return ReactorScopeImpl.from(previousValues, registry);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <V> Map<Object, Object> setThreadLocal(Object key, @Nullable V value,
+			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, Object> previousValues) {
+
+		previousValues = (previousValues != null ? previousValues : new HashMap<>());
+		previousValues.put(key, accessor.getValue());
+		if (value != null) {
+			((ThreadLocalAccessor<V>) accessor).setValue(value);
+		}
+		else {
+			accessor.reset();
+		}
+		return previousValues;
+	}
+
+	private static class ReactorScopeImpl implements ContextSnapshot.Scope {
+
+		private final Map<Object, Object> previousValues;
+
+		private final ContextRegistry contextRegistry;
+
+		private ReactorScopeImpl(Map<Object, Object> previousValues,
+				ContextRegistry contextRegistry) {
+			this.previousValues = previousValues;
+			this.contextRegistry = contextRegistry;
+		}
+
+		@Override
+		public void close() {
+			for (ThreadLocalAccessor<?> accessor : this.contextRegistry.getThreadLocalAccessors()) {
+				if (this.previousValues.containsKey(accessor.key())) {
+					Object previousValue = this.previousValues.get(accessor.key());
+					resetThreadLocalValue(accessor, previousValue);
+				}
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
+			if (previousValue != null) {
+				((ThreadLocalAccessor<V>) accessor).restore(previousValue);
+			}
+			else {
+				accessor.reset();
+			}
+		}
+
+		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
+			return (previousValues != null ? new ReactorScopeImpl(previousValues, registry) : () -> {
+			});
 		}
 	}
 }
