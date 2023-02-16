@@ -231,7 +231,7 @@ final class ExecutorScheduler implements Scheduler, Scannable {
 
 		ExecutorSchedulerWorker(Executor executor) {
 			this.executor = executor;
-			this.wrapSchedule = executor instanceof Scheduler;
+			this.wrapSchedule = !(executor instanceof Scheduler);
 			this.tasks = Disposables.composite();
 		}
 
@@ -311,7 +311,7 @@ final class ExecutorScheduler implements Scheduler, Scannable {
 
 		ExecutorSchedulerTrampolineWorker(Executor executor) {
 			this.executor = executor;
-			this.wrapSchedule = executor instanceof Scheduler;
+			this.wrapSchedule = !(executor instanceof Scheduler);
 			this.queue = new ConcurrentLinkedQueue<>();
 		}
 

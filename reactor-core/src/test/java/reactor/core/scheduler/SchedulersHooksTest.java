@@ -266,11 +266,11 @@ public class SchedulersHooksTest {
 		assertThat(tracker).hasValue(100);
 	}
 
-	private static class TrackingDecorator implements Function<Runnable, Runnable> {
+	static class TrackingDecorator implements Function<Runnable, Runnable> {
 		final AtomicInteger tracker;
 		final int dx;
 
-		private TrackingDecorator(AtomicInteger tracker, int dx) {
+		TrackingDecorator(AtomicInteger tracker, int dx) {
 			this.tracker = tracker;
 			this.dx = dx;
 		}
@@ -284,7 +284,7 @@ public class SchedulersHooksTest {
 		}
 	}
 
-	private static class ApplicationOrderRecordingDecorator
+	static class ApplicationOrderRecordingDecorator
 			implements Function<Runnable, Runnable> {
 
 		final List<String> items;
