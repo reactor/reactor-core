@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,28 @@ package reactor.core.scheduler;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import reactor.test.AutoDisposingExtension;
+import reactor.test.ParameterizedTestWithName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class SchedulersHooksTest {
 
@@ -44,46 +53,60 @@ public class SchedulersHooksTest {
 		Schedulers.resetOnHandleError();
 	}
 
-	@Test
+	static Stream<Arguments> schedulers() {
+		return Stream.of(
+				arguments(Named.named("PARALLEL", (Supplier<Scheduler>) () -> Schedulers.newParallel("A", 1))),
+				arguments(Named.named("BOUNDED_ELASTIC", (Supplier<Scheduler>) () -> Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "A"))),
+				arguments(Named.named("SINGLE", (Supplier<Scheduler>) () -> Schedulers.newSingle("A"))),
+				arguments(Named.named("EXECUTOR_SERVICE", (Supplier<Scheduler>) () -> Schedulers.fromExecutorService(Executors.newCachedThreadPool(), "A"))),
+				arguments(Named.named("EXECUTOR", (Supplier<Scheduler>) () -> Schedulers.fromExecutor(task -> {
+					Thread thread = new Thread(task);
+					thread.setDaemon(true);
+					thread.start();
+				})))
+		);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
 	@Tag("slow")
-	public void onScheduleIsAdditive() throws Exception {
+	public void onScheduleIsAdditive(Supplier<Scheduler> schedulerType) throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
 		Schedulers.onScheduleHook("k2", new TrackingDecorator(tracker, 10));
 		Schedulers.onScheduleHook("k3", new TrackingDecorator(tracker, 100));
 
 		CountDownLatch latch = new CountDownLatch(3);
-		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
-		         .schedule(latch::countDown);
+		afterTest.autoDispose(schedulerType.get()).schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).as("3 decorators invoked").hasValue(111);
 	}
 
-	@Test
-	public void onScheduleReplaces() throws Exception {
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
+	public void onScheduleReplaces(Supplier<Scheduler> schedulerType) throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 10));
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 100));
 
 		CountDownLatch latch = new CountDownLatch(1);
-		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
-		         .schedule(latch::countDown);
+		afterTest.autoDispose(schedulerType.get()).schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(100);
 	}
 
-	@Test
-	public void onScheduleWorksWhenEmpty() throws Exception {
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
+	public void onScheduleWorksWhenEmpty(Supplier<Scheduler> schedulerType) throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
 		Schedulers.resetOnScheduleHook("k1");
 
 		CountDownLatch latch = new CountDownLatch(1);
-		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
-		         .schedule(latch::countDown);
+		afterTest.autoDispose(schedulerType.get()).schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(0);
@@ -95,9 +118,10 @@ public class SchedulersHooksTest {
 				.doesNotThrowAnyException();
 	}
 
-	@Test
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
 	@Tag("slow")
-	public void onScheduleResetOne() throws InterruptedException {
+	public void onScheduleResetOne(Supplier<Scheduler> schedulerType) throws InterruptedException {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
 		Schedulers.onScheduleHook("k2", new TrackingDecorator(tracker, 10));
@@ -105,15 +129,15 @@ public class SchedulersHooksTest {
 		Schedulers.resetOnScheduleHook("k2");
 
 		CountDownLatch latch = new CountDownLatch(3);
-		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
-		         .schedule(latch::countDown);
+		afterTest.autoDispose(schedulerType.get()).schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(101);
 	}
 
-	@Test
-	public void onScheduleResetAll() throws InterruptedException {
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
+	public void onScheduleResetAll(Supplier<Scheduler> schedulerType) throws InterruptedException {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
 		Schedulers.onScheduleHook("k2", new TrackingDecorator(tracker, 10));
@@ -121,23 +145,22 @@ public class SchedulersHooksTest {
 		Schedulers.resetOnScheduleHooks();
 
 		CountDownLatch latch = new CountDownLatch(1);
-		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
-		         .schedule(latch::countDown);
+		afterTest.autoDispose(schedulerType.get()).schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(0);
 	}
 
-	@Test
-	public void onSchedulesAreOrdered() throws Exception {
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
+	public void onSchedulesAreOrdered(Supplier<Scheduler> schedulerType) throws Exception {
 		CopyOnWriteArrayList<String> items = new CopyOnWriteArrayList<>();
 		Schedulers.onScheduleHook("k1", new ApplicationOrderRecordingDecorator(items, "k1"));
 		Schedulers.onScheduleHook("k2", new ApplicationOrderRecordingDecorator(items, "k2"));
 		Schedulers.onScheduleHook("k3", new ApplicationOrderRecordingDecorator(items, "k3"));
 
 		CountDownLatch latch = new CountDownLatch(1);
-		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
-		         .schedule(latch::countDown);
+		afterTest.autoDispose(schedulerType.get()).schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(items).containsExactly(
