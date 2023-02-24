@@ -496,6 +496,223 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 	}
 
+	static final class SingletonReplayBuffer<T> implements ReplayBuffer<T> {
+		volatile T value = null;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SingletonReplayBuffer, Object> ACTUAL =
+				AtomicReferenceFieldUpdater.newUpdater(SingletonReplayBuffer.class, Object.class, "value");
+
+		private Throwable error;
+		private volatile boolean done;
+
+		@Override
+		public void add(T value) {
+			ACTUAL.set(this, value);
+		}
+
+		@Override
+		public void onError(Throwable ex) {
+			error = ex;
+			done = true;
+		}
+
+		@Override
+		public void onComplete() {
+			done = true;
+		}
+
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		void replayFused(ReplaySubscription<T> rs) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rs.actual();
+
+			for (; ; ) {
+
+				if (rs.isCancelled()) {
+					rs.node(null);
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
+				return;
+			}
+
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
+			}
+			else {
+				replayFused(rs);
+			}
+		}
+
+
+		void replayNormal(ReplaySubscription<T> rs) {
+			final Subscriber<? super T> a = rs.actual();
+
+			int missed = 1;
+
+			for (; ; ) {
+
+				long r = rs.requested();
+
+				@SuppressWarnings("unchecked") T node = (T) rs.node();
+				boolean produced = false;
+
+				if (rs.isCancelled()) {
+					rs.node(null);
+					return;
+				}
+
+				boolean d = done;
+				T next = value;
+				boolean empty = next == null;
+
+				if (d && empty || d && node == next) {
+					rs.node(null);
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				if (!empty && node != next) {
+					a.onNext(next);
+					rs.requestMore(rs.index() + 1);
+					produced = true;
+					node = next;
+				}
+
+				if (r==1) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					if (done && value == null) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+				}
+
+				if (produced && r != Long.MAX_VALUE) {
+					rs.produced(1);
+				}
+
+				rs.node(node);
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+
+		@Override
+		public boolean isDone() {
+			return done;
+		}
+
+		@Override
+		public T poll(ReplaySubscription<T> rs) {
+			@SuppressWarnings("unchecked") T node = (T) rs.node();
+			T next = value;
+			if (node == null) {
+				node = next;
+				rs.node(node);
+			}
+
+			if (next == null) {
+				return null;
+			}
+			rs.node(next);
+			rs.requestMore(rs.index() + 1);
+
+			return next;
+		}
+
+		@Override
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
+		}
+
+		@Override
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			@SuppressWarnings("unchecked") T node = (T) rs.node();
+			if (node == null) {
+				node = value;
+				rs.node(node);
+			}
+			return node == null;
+		}
+
+		@Override
+		public int size(ReplaySubscription<T> rs) {
+			T val =  value;
+			return rs.node() == val ? 0 : sizeOf(val);
+		}
+
+		@Override
+		public int size() {
+			return sizeOf(value);
+		}
+
+		private int sizeOf(T value) {
+			return value == null ? 0 : 1;
+		}
+
+		@Override
+		public int capacity() {
+			return 1;
+		}
+
+		@Override
+		public boolean isExpired() {
+			return false;
+		}
+	}
+
 	static final class UnboundedReplayBuffer<T> implements ReplayBuffer<T> {
 
 		final int batchSize;
@@ -1107,7 +1324,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					scheduler), this, history);
 		}
 		if (history != Integer.MAX_VALUE) {
-			return new ReplaySubscriber<>(new SizeBoundReplayBuffer<>(history),
+			ReplayBuffer<T> buffer = history == 1 ? new SingletonReplayBuffer<>() : new SizeBoundReplayBuffer<>(history);
+			return new ReplaySubscriber<>(buffer,
 					this,
 					history);
 		}
