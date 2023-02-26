@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.data.Offset;
@@ -331,7 +333,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@ParameterizedTestWithName
-	@CsvSource(value = {"1", "2", "3", "4"})
+	@CsvSource(value = {"1", "2", "3", "4", "0x7fffffff"})
 	@Tag("VirtualTime")
 	public void cacheFluxFused(int history) {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
@@ -869,4 +871,47 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		}
 	}
 
+	static final int UNSET = -1;
+	enum SizeAndCapacityTestData {
+		singleton( i ->
+				new FluxReplay.SingletonReplayBuffer<>(),
+				1, 1),
+		sizeandtime( i ->
+				new FluxReplay.SizeAndTimeBoundReplayBuffer<>(i,Long.MAX_VALUE, Schedulers.single()),
+				UNSET, UNSET),
+		size( i ->
+				new FluxReplay.SizeBoundReplayBuffer<>(i),
+				UNSET, UNSET),
+		unbounded( i ->
+				new FluxReplay.UnboundedReplayBuffer<>(2),
+				Integer.MAX_VALUE, Integer.MAX_VALUE);
+		final Function<Integer, FluxReplay.ReplayBuffer<Integer>> bufferClass;
+		final int maxSize;
+		final int capacity;
+		SizeAndCapacityTestData(Function<Integer, FluxReplay.ReplayBuffer<Integer>> bufferClass, int maxSize, int capacity) {
+			this.bufferClass = bufferClass;
+			this.maxSize = maxSize;
+			this.capacity = capacity;
+		}
+	}
+
+	@ParameterizedTestWithName
+	@EnumSource(SizeAndCapacityTestData.class)
+	public void sizeAndCapacityTest(SizeAndCapacityTestData testData) {
+		for (int input : new Integer[]{1, 2, 3, 10}) {
+			FluxReplay.ReplaySubscription<Integer> rs = new FluxReplay.ReplayInner<>(null, null);
+			FluxReplay.ReplayBuffer<Integer> buffer = testData.bufferClass.apply(input);
+			assertThat(buffer.capacity()).isEqualTo(testData.capacity == UNSET ? input : testData.capacity);
+
+			assertThat(buffer.size()).isEqualTo(0); // no data added
+			assertThat(buffer.size(rs)).isEqualTo(0); // no data added
+			for (int i = 1; i < input; i++){
+				buffer.add(0);
+				int expectedSize = testData.maxSize != UNSET ? testData.maxSize : i;
+				assertThat(buffer.size()).isEqualTo(Math.min(expectedSize, i));
+				assertThat(buffer.size(rs)).isEqualTo(Math.min(expectedSize, i));
+			}
+		}
+
+	}
 }
