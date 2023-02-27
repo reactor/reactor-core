@@ -497,17 +497,31 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	static final class SingletonReplayBuffer<T> implements ReplayBuffer<T> {
-		volatile T value = null;
+
+		/**
+		 * provides uniqueness to the value.
+		 */
+		private static final class Wrapper<T> {
+			final T actual;
+
+			private Wrapper(T actual) {
+				this.actual = actual;
+			}
+		}
+		@SuppressWarnings({"unchecked", "rawtypes", "ConstantConditions"})
+		static final Wrapper<?> EMPTY = new Wrapper(null);
+		@SuppressWarnings("unchecked")
+		volatile Wrapper<T> value = (Wrapper<T>) EMPTY;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SingletonReplayBuffer, Object> ACTUAL =
-				AtomicReferenceFieldUpdater.newUpdater(SingletonReplayBuffer.class, Object.class, "value");
+		static final AtomicReferenceFieldUpdater<SingletonReplayBuffer, Wrapper> ACTUAL =
+				AtomicReferenceFieldUpdater.newUpdater(SingletonReplayBuffer.class, Wrapper.class, "value");
 
 		private Throwable error;
 		private volatile boolean done;
 
 		@Override
 		public void add(T value) {
-			ACTUAL.set(this, value);
+			ACTUAL.set(this, new Wrapper<>(value));
 		}
 
 		@Override
@@ -585,7 +599,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 				long r = rs.requested();
 
-				@SuppressWarnings("unchecked") T node = (T) rs.node();
+				@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
 				boolean produced = false;
 
 				if (rs.isCancelled()) {
@@ -594,8 +608,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				}
 
 				boolean d = done;
-				T next = value;
-				boolean empty = next == null;
+				Wrapper<T> next = value;
+				boolean empty = next == EMPTY;
 
 				if (d && empty || d && node == next) {
 					rs.node(null);
@@ -610,7 +624,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				}
 
 				if (!empty && node != next) {
-					a.onNext(next);
+					a.onNext(next.actual);
 					rs.requestMore(rs.index() + 1);
 					produced = true;
 					node = next;
@@ -656,20 +670,20 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public T poll(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") T node = (T) rs.node();
-			T next = value;
+			@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
+			Wrapper<T> next = value;
 			if (node == null) {
 				node = next;
 				rs.node(node);
 			}
 
-			if (next == null) {
+			if (next == EMPTY) {
 				return null;
 			}
 			rs.node(next);
 			rs.requestMore(rs.index() + 1);
 
-			return next;
+			return next.actual;
 		}
 
 		@Override
@@ -679,7 +693,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public boolean isEmpty(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") T node = (T) rs.node();
+			@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
 			if (node == null) {
 				node = value;
 				rs.node(node);
@@ -689,7 +703,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public int size(ReplaySubscription<T> rs) {
-			T val =  value;
+			Wrapper<T> val =  value;
 			return rs.node() == val ? 0 : sizeOf(val);
 		}
 
@@ -698,8 +712,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			return sizeOf(value);
 		}
 
-		private int sizeOf(T value) {
-			return value == null ? 0 : 1;
+		private int sizeOf(Wrapper<T> value) {
+			return value == EMPTY ? 0 : 1;
 		}
 
 		@Override
