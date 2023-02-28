@@ -18,10 +18,12 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,6 +59,7 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Simon Baslé
@@ -273,6 +276,44 @@ class ContextPropagationTest {
 
 		assertThat(innerThreadLocals).containsOnly("present").hasSize(size);
 		assertThat(outerThreadLocals).containsOnly("ref1_init").hasSize(size);
+	}
+
+	@Test
+	void queueWrapperWorksWithQueues() {
+		Hooks.enableAutomaticContextPropagation();
+		Queue<Object> queue = Queues.small()
+		                              .get();
+
+		assertThat(queue.offer("1")).isTrue();
+		assertThat(queue.poll()).isSameAs("1");
+		assertThat(queue.add("2")).isTrue();
+		assertThat(queue.remove()).isSameAs("2");
+		assertThat(queue.isEmpty()).isTrue();
+		assertThat(queue.addAll(Arrays.asList("3", "4", "5"))).isTrue();
+		assertThat(queue.peek()).isSameAs("3");
+		assertThat(queue.isEmpty()).isFalse();
+		assertThat(queue.element()).isSameAs("3");
+		assertThat(queue.size()).isEqualTo(3);
+		queue.clear();
+		assertThat(queue.offer("0")).isTrue();
+		assertThat(queue.size()).isEqualTo(1);
+
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(queue::iterator);
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(() -> queue.contains("0"));
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(queue::toArray);
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(() -> queue.toArray(new Object[] {}));
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(() -> queue.remove("0"));
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(() -> queue.containsAll(Collections.singletonList("0")));
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(() -> queue.retainAll(Collections.singletonList("5")));
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(() -> queue.removeAll(Collections.singletonList("0")));
 	}
 
 	@Test

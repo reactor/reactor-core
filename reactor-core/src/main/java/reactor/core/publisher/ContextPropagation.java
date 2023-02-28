@@ -39,8 +39,6 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
-import static reactor.core.Fuseable.QueueSubscription.NOT_SUPPORTED_MESSAGE;
-
 /**
  * Utility private class to detect if the <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a> is on the classpath and to offer
  * ContextSnapshot support to {@link Flux} and {@link Mono}.
@@ -306,6 +304,10 @@ final class ContextPropagation {
 
 	static final class ContextQueue<T> extends AbstractQueue<T> {
 
+		static final String NOT_SUPPORTED_MESSAGE = "ContextQueue wrapper is intended " +
+				"for use with instances returned by Queues class. Iterator based " +
+				"methods are usually unsupported.";
+
 		final Queue<Envelope<T>> envelopeQueue;
 
 		boolean cleanOnNull;
@@ -373,27 +375,8 @@ final class ContextPropagation {
 		@Override
 		@Nullable
 		public T peek() {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public boolean add(@Nullable T t) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public T remove() {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public T element() {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public  boolean contains(@Nullable Object o) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+			Envelope<T> envelope = envelopeQueue.peek();
+			return envelope == null ? null : envelope.body;
 		}
 
 		@Override
@@ -401,40 +384,6 @@ final class ContextPropagation {
 			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
-		@Override
-		public Object[] toArray() {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public <T1> T1[] toArray(T1[] a) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public boolean remove(@Nullable Object o) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public boolean containsAll(Collection<?> c) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public boolean addAll(Collection<? extends T> c) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public boolean removeAll(Collection<?> c) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
-
-		@Override
-		public boolean retainAll(Collection<?> c) {
-			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
-		}
 	}
 
 	static class Envelope<T> {
