@@ -376,7 +376,7 @@ public final class RetrySpec extends Retry {
 							return applyHooks(copy, Mono.just(iteration), doPreRetry, doPostRetry, asyncPreRetry, asyncPostRetry, cv);
 						}
 					})
-					.contextWrite(c -> Context.empty())
+					.onErrorStop()
 		);
 	}
 

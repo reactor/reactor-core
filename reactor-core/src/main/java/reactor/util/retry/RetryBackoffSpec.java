@@ -605,7 +605,7 @@ public final class RetryBackoffSpec extends Retry {
 				return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff, backoffSchedulerSupplier.get()),
 						syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry, cv);
 			})
-		    .contextWrite(c -> Context.empty())
+		    .onErrorStop()
 		);
 	}
 }
