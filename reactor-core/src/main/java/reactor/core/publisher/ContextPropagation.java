@@ -49,7 +49,10 @@ final class ContextPropagation {
 
 	static final Logger LOGGER;
 
-	// Note: If a reflection is used for this field, then the name of the field should end with 'Available'
+	// Note: If reflection is used for this field, then the name of the field should end with 'Available'.
+	// The preprocessing for native-image support is Spring Framework, and is a short term solution.
+	// The field should end with 'Available'. See org.springframework.aot.nativex.feature.PreComputeFieldFeature.
+	// Ultimately the long term solution should be provided by Reactor Core.
 	static final boolean isContextPropagationOnClasspath;
 	static boolean propagateContextToThreadLocals = false;
 
