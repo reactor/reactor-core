@@ -49,7 +49,11 @@ final class ContextPropagation {
 
 	static final Logger LOGGER;
 
-	static final boolean isContextPropagationAvailable;
+	// Note: If reflection is used for this field, then the name of the field should end with 'Available'.
+	// The preprocessing for native-image support is Spring Framework, and is a short term solution.
+	// The field should end with 'Available'. See org.springframework.aot.nativex.feature.PreComputeFieldFeature.
+	// Ultimately the long term solution should be provided by Reactor Core.
+	static final boolean isContextPropagationOnClasspath;
 	static boolean propagateContextToThreadLocals = false;
 
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
@@ -80,7 +84,7 @@ final class ContextPropagation {
 					" The feature is considered disabled due to this:", t);
 		}
 
-		isContextPropagationAvailable = contextPropagation;
+		isContextPropagationOnClasspath = contextPropagation;
 		WITH_GLOBAL_REGISTRY_NO_PREDICATE = contextCaptureFunction;
 	}
 
@@ -90,11 +94,11 @@ final class ContextPropagation {
 	 * @return true if context-propagation is available at runtime, false otherwise
 	 */
 	static boolean isContextPropagationAvailable() {
-		return isContextPropagationAvailable;
+		return isContextPropagationOnClasspath;
 	}
 
 	static boolean shouldPropagateContextToThreadLocals() {
-		return isContextPropagationAvailable && propagateContextToThreadLocals;
+		return isContextPropagationOnClasspath && propagateContextToThreadLocals;
 	}
 
 	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
@@ -116,7 +120,7 @@ final class ContextPropagation {
 	 * @return the {@link Context} augmented with captured entries
 	 */
 	static Function<Context, Context> contextCapture() {
-		if (!isContextPropagationAvailable) {
+		if (!isContextPropagationOnClasspath) {
 			return NO_OP;
 		}
 		return WITH_GLOBAL_REGISTRY_NO_PREDICATE;
@@ -139,7 +143,7 @@ final class ContextPropagation {
 	 * @return a {@link Function} augmenting {@link Context} with captured entries
 	 */
 	static Function<Context, Context> contextCapture(Predicate<Object> captureKeyPredicate) {
-		if (!isContextPropagationAvailable) {
+		if (!isContextPropagationOnClasspath) {
 			return NO_OP;
 		}
 		return target -> ContextSnapshot.captureAllUsing(captureKeyPredicate, ContextRegistry.getInstance())
