@@ -535,7 +535,7 @@ public abstract class Hooks {
 	 * a logical boundary for the context propagation mechanism.
 	 */
 	public static void enableAutomaticContextPropagation() {
-		if (ContextPropagation.isContextPropagationAvailable) {
+		if (ContextPropagation.isContextPropagationOnClasspath) {
 			Hooks.addQueueWrapper(
 					CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new
 			);
@@ -552,7 +552,7 @@ public abstract class Hooks {
 	 * @see #enableAutomaticContextPropagation()
 	 */
 	public static void disableAutomaticContextPropagation() {
-		if (ContextPropagation.isContextPropagationAvailable) {
+		if (ContextPropagation.isContextPropagationOnClasspath) {
 			Hooks.removeQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY);
 			Schedulers.resetOnScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY);
 			ContextPropagation.propagateContextToThreadLocals = false;
