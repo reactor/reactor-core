@@ -177,8 +177,8 @@ task generateMockGradle(type: Copy) {
       CORE: coreJar,
       AGENT: agentJar,
       REACTIVE_STREAMS_VERSION: libs.versions.reactiveStreams.get(),
-      JUNIT_BOM_VERSION: "$junitVersion",
-      BYTE_BUDDY_VERSION: "$byteBuddyVersion"
+      JUNIT_BOM_VERSION: "$junitVersion".toString(),
+      BYTE_BUDDY_VERSION: "$byteBuddyVersion".toString()
     ])
 }
 
