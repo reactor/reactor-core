@@ -31,7 +31,7 @@ updates:
         versions: ["7.6.x"]
       # Mockito: don't upgrade to v5 (requires JDK11+)
       - dependency-name: "org.mockito:mockito-core"
-        version: ["5.x"]
+        versions: ["5.x"]
   - package-ecosystem: "github-actions"
     directory: ".github/workflows"
     schedule:
