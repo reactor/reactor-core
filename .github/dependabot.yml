@@ -19,19 +19,24 @@ updates:
       - dependency-name: "io.micrometer:*"
       # Kotlin: stay on 1.5
       - dependency-name: "org.jetbrains.kotlin*"
-        versions: ["1.6.x"]
+        versions:
+        - ">= 1.6.a"
       # SLF4J: don't upgrade to v2
       - dependency-name: "org.slf4j:slf4j-api"
-        versions: ["2.x"]
-      # logback: don't upgrade to v1.3 or v1.4 (require slf4j v2, 1.4.x also requires JDK11+)
+        versions:
+        - ">= 2.a"
+      # logback: don't upgrade to v1.3 or later (require slf4j v2, 1.4.x also requires JDK11+)
       - dependency-name: "ch.qos.logback:logback-classic"
-        versions: ["1.3.x", "1.4.x"]
+        versions:
+        - ">= 1.3.a"
       # TestNG: 7.6+ doesn't support JDK8 anymore
       - dependency-name: "org.testng:testng"
-        versions: ["7.6.x"]
+        versions:
+        - ">= 7.6.a"
       # Mockito: don't upgrade to v5 (requires JDK11+)
       - dependency-name: "org.mockito:mockito-core"
-        versions: ["5.x"]
+        versions:
+        - ">= 5.0.a"
   - package-ecosystem: "github-actions"
     directory: ".github/workflows"
     schedule:
