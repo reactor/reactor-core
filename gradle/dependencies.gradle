@@ -13,6 +13,6 @@ ext {
     logbackVersion = "1.2.11"
     mockitoVersion = "4.11.0"
     slf4jVersion = "1.7.36"
-    testngVersion = "7.5" // since 7.6 JDK8 is unsupported, don't bump
+    testngVersion = "7.7.1" // since 7.6 JDK8 is unsupported, don't bump
     throwingFunctionVersion = "1.5.1"
 }
