@@ -15,11 +15,11 @@ dependencies {
   compileOnly libs.reactor.perfBaseline.core
   compileOnly libs.jsr305
 
-  implementation libs.jmh.core
+  implementation "org.openjdk.jmh:jmh-core:$jmhVersion"
   implementation libs.reactor.perfBaseline.extra, {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
-  annotationProcessor libs.jmh.annotations.processor
+  annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion"
 
   current project(':reactor-core')
   baseline libs.reactor.perfBaseline.core, {

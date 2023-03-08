@@ -40,14 +40,14 @@ dependencies {
 	api project(":reactor-core")
 	compileOnly libs.jsr305
 
-	testImplementation platform(libs.junit.bom)
+	testImplementation platform("org.junit:junit-bom:$junitVersion")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
-	testRuntimeOnly libs.logback
-	testImplementation libs.assertj
-	testImplementation libs.mockito
+	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
+	testImplementation "org.assertj:assertj-core:$assertjVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }
 
 task downloadBaseline(type: Download) {

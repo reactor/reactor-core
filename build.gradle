@@ -141,6 +141,7 @@ configure(subprojects) { p ->
 	apply plugin: 'java'
 	apply plugin: 'jacoco'
 	apply from: "${rootDir}/gradle/setup.gradle"
+	apply from: "${rootDir}/gradle/dependencies.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
 	group = 'io.projectreactor'

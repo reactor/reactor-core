@@ -1,0 +1,18 @@
+ext {
+    // Library versions that Dependabot will monitor (in alphabetical order)
+    // See also gradle/libs.versions.toml for manually maintained dependencies and Gradle plugins
+    archUnitVersion = "0.23.1"
+    assertjVersion = "3.23.1"
+    awaitilityVersion = "4.2.0"
+    blockhoundVersion = "1.0.7.RELEASE"
+    byteBuddyVersion = "1.12.23"
+    cglibVersion = "3.3.0"
+    javaObjectLayoutVersion = "0.16"
+    jmhVersion = "1.35"
+    junitVersion = "5.9.2"
+    logbackVersion = "1.2.11"
+    mockitoVersion = "4.11.0"
+    slf4jVersion = "1.7.36"
+    testngVersion = "7.5" // since 7.6 JDK8 is unsupported, don't bump
+    throwingFunctionVersion = "1.5.1"
+}
