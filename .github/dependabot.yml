@@ -37,6 +37,10 @@ updates:
       - dependency-name: "org.mockito:mockito-core"
         versions:
         - ">= 5.0.a"
+      # ArchUnit: don't upgrade to v1 (requires slf4j v2)
+      - dependency-name: "com.tngtech.archunit:archunit"
+        versions:
+        - ">= 1.0.a"
   - package-ecosystem: "github-actions"
     directory: ".github/workflows"
     schedule:
