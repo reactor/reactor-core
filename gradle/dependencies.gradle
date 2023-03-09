@@ -7,7 +7,7 @@ ext {
     blockhoundVersion = "1.0.7.RELEASE"
     byteBuddyVersion = "1.14.1"
     cglibVersion = "3.3.0"
-    javaObjectLayoutVersion = "0.16"
+    javaObjectLayoutVersion = "0.17"
     jmhVersion = "1.36"
     junitVersion = "5.9.2"
     logbackVersion = "1.2.11"
