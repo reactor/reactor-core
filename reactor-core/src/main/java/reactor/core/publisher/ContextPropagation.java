@@ -166,7 +166,8 @@ final class ContextPropagation {
 	}
 
 	static <T> SignalListener<T> contextRestoreForTap(final SignalListener<T> original, Supplier<Context> contextSupplier) {
-		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
+//		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
+		if (!ContextPropagation.isContextPropagationAvailable()) {
 			return original;
 		}
 		final Context ctx = contextSupplier.get();

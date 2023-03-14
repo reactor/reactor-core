@@ -28,6 +28,7 @@ import io.micrometer.tracing.test.simple.SpansAssert;
 import org.junit.jupiter.api.Tag;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -53,6 +54,7 @@ public class MicrometerObservationIntegrationTest extends SampleTestRunner {
 
 	@Override
 	public SampleTestRunnerConsumer yourCode() throws Exception {
+		Hooks.enableAutomaticContextPropagation();
 		final Scheduler delayScheduler = Schedulers.newSingle("test");
 		final IllegalStateException EXCEPTION = new IllegalStateException("expected error");
 		return (bb, meterRegistry) -> {

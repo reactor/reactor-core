@@ -16,7 +16,9 @@
 
 package reactor.core.observability.micrometer;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -421,6 +424,32 @@ class MicrometerObservationListenerTest {
 		assertThat(registry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
+	}
+
+	@Test
+	void observationHierarchyCreatedInMonoCase() {
+		Hooks.enableAutomaticContextPropagation();
+		Observation parent = Observation.start("testParent", registry);
+		Context contextWithAParent = Context.of(subscriberContext).put(ObservationThreadLocalAccessor.KEY, parent);
+
+		AtomicReference<Observation> inner = new AtomicReference<>();
+		AtomicReference<Observation> outer = new AtomicReference<>();
+
+		Mono.just("hello")
+				.delayElement(Duration.ofMillis(1))
+				.handle((v, s) -> {
+					inner.set(registry.getCurrentObservation());
+					s.next(v);
+				})
+				.tap(Micrometer.observation(registry))
+				.handle((v, s) -> {
+					outer.set(registry.getCurrentObservation());
+					s.next(v);
+				})
+				.contextWrite(contextWithAParent)
+				.block();
+
+		assertThat(inner.get().getContext().getParentObservation()).isEqualTo(outer.get());
 	}
 
 	@Test
