@@ -41,7 +41,7 @@ final class MonoTapRestoringThreadLocals<T, STATE> extends MonoOperator<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		//if the SequenceObserver cannot be created, all we can do is error the subscriber.
+		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
 		SignalListener<T> signalListener;
@@ -53,8 +53,6 @@ final class MonoTapRestoringThreadLocals<T, STATE> extends MonoOperator<T, T> {
 			Operators.error(actual, generatorError);
 			return;
 		}
-		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
-		// (only if ContextPropagation.isContextPropagationAvailable() is true)
 
 		try {
 			signalListener.doFirst();

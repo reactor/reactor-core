@@ -44,7 +44,7 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
-		//if the SequenceObserver cannot be created, all we can do is error the subscriber.
+		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
 		SignalListener<T> signalListener;
