@@ -261,17 +261,17 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 			done = true;
 
 			try {
-				try (ContextSnapshot.Scope ignored =
-							 ContextPropagation.setThreadLocals(actual.currentContext())) {
-					listener.doOnError(t);
-				}
+				listener.doOnError(t);
 			} catch (Throwable observerError) {
 				//any error in the hooks interrupts other hooks, including doFinally
 				handleListenerErrorMultipleAndTerminate(observerError, t);
 				return;
 			}
 
-			actual.onError(t); //RS: onError MUST terminate normally and not throw
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onError(t); //RS: onError MUST terminate normally and not throw
+			}
 
 			try {
 				listener.doAfterError(t);
