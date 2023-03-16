@@ -25,7 +25,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
