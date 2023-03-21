@@ -22,11 +22,11 @@ import java.util.function.Function;
 import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
+import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> {
 
 	final Function<Context, Context> doOnContext;
 
@@ -53,8 +53,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 	}
 
 	static final class ContextWriteRestoringThreadLocalsSubscriber<T>
-			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
-			           QueueSubscription<T> {
+			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T>        actual;
 		final ConditionalSubscriber<? super T> actualConditional;
@@ -170,32 +169,6 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 					     ContextPropagation.setThreadLocals(context)) {
 				s.cancel();
 			}
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
-		}
-
-		@Override
-		public boolean isEmpty() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
-		}
-
-		@Override
-		public void clear() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
-		}
-
-		@Override
-		public int size() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
 		}
 	}
 }
