@@ -22,7 +22,6 @@ import java.util.function.Function;
 import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -53,7 +52,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 	}
 
 	static final class ContextWriteRestoringThreadLocalsSubscriber<T>
-			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
+			implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Context                   context;
@@ -164,32 +163,6 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 					     ContextPropagation.setThreadLocals(context)) {
 				s.cancel();
 			}
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
-		}
-
-		@Override
-		public boolean isEmpty() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
-		}
-
-		@Override
-		public void clear() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
-		}
-
-		@Override
-		public int size() {
-			throw new UnsupportedOperationException("Operator does not support fusion");
 		}
 	}
 }
