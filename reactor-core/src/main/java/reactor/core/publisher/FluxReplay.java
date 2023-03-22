@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -497,31 +498,14 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	static final class SingletonReplayBuffer<T> implements ReplayBuffer<T> {
-
-		/**
-		 * provides uniqueness to the value.
-		 */
-		private static final class Wrapper<T> {
-			final T actual;
-
-			private Wrapper(T actual) {
-				this.actual = actual;
-			}
-		}
-		@SuppressWarnings({"unchecked", "rawtypes", "ConstantConditions"})
-		static final Wrapper<?> EMPTY = new Wrapper(null);
-		@SuppressWarnings("unchecked")
-		volatile Wrapper<T> value = (Wrapper<T>) EMPTY;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SingletonReplayBuffer, Wrapper> ACTUAL =
-				AtomicReferenceFieldUpdater.newUpdater(SingletonReplayBuffer.class, Wrapper.class, "value");
-
+		final AtomicStampedReference<T> val = new AtomicStampedReference<>(null, 0);
 		private Throwable error;
 		private volatile boolean done;
 
 		@Override
 		public void add(T value) {
-			ACTUAL.set(this, new Wrapper<>(value));
+			int stamp = val.getStamp();
+			val.set(value, stamp + 1);
 		}
 
 		@Override
@@ -549,7 +533,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			for (; ; ) {
 
 				if (rs.isCancelled()) {
-					rs.node(null);
 					return;
 				}
 
@@ -599,20 +582,19 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 				long r = rs.requested();
 
-				@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
+				int idx = rs.index();
 				boolean produced = false;
 
 				if (rs.isCancelled()) {
-					rs.node(null);
 					return;
 				}
 
 				boolean d = done;
-				Wrapper<T> next = value;
-				boolean empty = next == EMPTY;
+				int[] stamp = new int[1];
+				T next = val.get(stamp);
+				boolean empty = isEmpty(rs);
 
-				if (d && empty || d && node == next) {
-					rs.node(null);
+				if (d && empty) {
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
@@ -623,21 +605,18 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					return;
 				}
 
-				if (!empty && node != next) {
-					a.onNext(next.actual);
-					rs.requestMore(rs.index() + 1);
+				if (!empty && idx != stamp[0]) {
+					a.onNext(next);
+					rs.requestMore(stamp[0]);
 					produced = true;
-					node = next;
 				}
 
 				if (r==1) {
 					if (rs.isCancelled()) {
-						rs.node(null);
 						return;
 					}
 
-					if (done && value == null) {
-						rs.node(null);
+					if (done && isEmpty(rs)) {
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -652,8 +631,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				if (produced && r != Long.MAX_VALUE) {
 					rs.produced(1);
 				}
-
-				rs.node(node);
 
 				missed = rs.leave(missed);
 				if (missed == 0) {
@@ -670,20 +647,16 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public T poll(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
-			Wrapper<T> next = value;
-			if (node == null || node == EMPTY) {
-				node = next;
-				rs.node(node);
-			}
+			int idx = rs.index();
+			int[] stamp = new int[1];
+			T stampedVal = val.get(stamp);
 
-			if (next == EMPTY) {
+			if (idx == stamp[0] || stamp[0] == 0) {
 				return null;
 			}
-			rs.node(next);
-			rs.requestMore(rs.index() + 1);
+			rs.requestMore(stamp[0]);
 
-			return next.actual;
+			return stampedVal;
 		}
 
 		@Override
@@ -693,27 +666,24 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public boolean isEmpty(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
-			if (node == null) {
-				node = value;
-				rs.node(node);
-			}
-			return node == EMPTY && value == EMPTY;
+			int idx = rs.index();
+			int stamp = val.getStamp();
+			return stamp == 0 || idx == stamp;
 		}
 
 		@Override
 		public int size(ReplaySubscription<T> rs) {
-			Wrapper<T> val = value;
-			return rs.node() == val ? 0 : sizeOf(val);
+			int valIdx = val.getStamp();
+			return rs.index() == valIdx ? 0 : sizeOf(valIdx);
 		}
 
 		@Override
 		public int size() {
-			return sizeOf(value);
+			return sizeOf(val.getStamp());
 		}
 
-		private int sizeOf(Wrapper<T> value) {
-			return value == EMPTY ? 0 : 1;
+		private int sizeOf(int value) {
+			return value == 0 ? 0 : 1;
 		}
 
 		@Override

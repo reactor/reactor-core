@@ -154,6 +154,9 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		if (unbounded) {
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
 		}
+		else if(historySize == 1) {
+			buffer = new FluxReplay.SingletonReplayBuffer<>();
+		}
 		else {
 			buffer = new FluxReplay.SizeBoundReplayBuffer<>(historySize);
 		}
