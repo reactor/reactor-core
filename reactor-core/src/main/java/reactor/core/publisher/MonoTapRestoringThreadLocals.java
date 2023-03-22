@@ -50,10 +50,7 @@ final class MonoTapRestoringThreadLocals<T, STATE> extends MonoOperator<T, T> {
 			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				Operators.error(actual, generatorError);
-			}
+			Operators.error(actual, generatorError);
 			return;
 		}
 
@@ -73,10 +70,7 @@ final class MonoTapRestoringThreadLocals<T, STATE> extends MonoOperator<T, T> {
 		}
 		catch (Throwable e) {
 			signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				alteredContext = actual.currentContext();
-			}
+			alteredContext = actual.currentContext();
 		}
 
 		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(alteredContext)) {

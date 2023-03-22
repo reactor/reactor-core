@@ -53,10 +53,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				Operators.error(actual, generatorError);
-			}
+			Operators.error(actual, generatorError);
 			return;
 		}
 
@@ -65,10 +62,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 		catch (Throwable listenerError) {
 			signalListener.handleListenerError(listenerError);
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				Operators.error(actual, listenerError);
-			}
+			Operators.error(actual, listenerError);
 			return;
 		}
 
