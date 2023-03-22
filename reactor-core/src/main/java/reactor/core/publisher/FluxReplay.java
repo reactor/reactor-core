@@ -155,7 +155,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		final Scheduler scheduler;
 		int size;
 
-		volatile TimedNode<T> head;
+		final TimedNode<T> head;
 
 		TimedNode<T> tail;
 
@@ -439,7 +439,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			this.tail = valueNode;
 			int s = size;
 			if (s == limit) {
-				head = head.get();
+				head.set(head.get().get());
 			}
 			else {
 				size = s + 1;
@@ -450,7 +450,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			//we still want to keep the newly added value in order for the immediately following replay
 			//to propagate it to currently registered subscribers.
 			if (maxAge == 0) {
-				head = valueNode;
+				head.set(valueNode);
 				return;
 			}
 
@@ -470,7 +470,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					//otherwise we'd skip removal and re-walk the whole linked list on next add, retaining outdated values for nothing.
 					if (removed != 0) {
 						size = size - removed;
-						head = h;
+						head.set(h.get());
 					}
 					break;
 				}
@@ -776,7 +776,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		final int limit;
 		final int indexUpdateLimit;
 
-		volatile Node<T> head;
+		final Node<T> head;
 
 		Node<T> tail;
 
@@ -815,7 +815,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			this.tail = n;
 			int s = size;
 			if (s == limit) {
-				head = head.get();
+				head.set(head.get().get());
 			}
 			else {
 				size = s + 1;
