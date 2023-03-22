@@ -53,7 +53,10 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 			signalListener = tapFactory.createListener(source, actual.currentContext().readOnly(), commonTapState);
 		}
 		catch (Throwable generatorError) {
-			Operators.error(actual, generatorError);
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				Operators.error(actual, generatorError);
+			}
 			return;
 		}
 
@@ -62,7 +65,10 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 		catch (Throwable listenerError) {
 			signalListener.handleListenerError(listenerError);
-			Operators.error(actual, listenerError);
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				Operators.error(actual, listenerError);
+			}
 			return;
 		}
 
@@ -141,7 +147,10 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		protected void handleListenerErrorPreSubscription(Throwable listenerError, Subscription toCancel) {
 			toCancel.cancel();
 			listener.handleListenerError(listenerError);
-			Operators.error(actual, listenerError);
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				Operators.error(actual, listenerError);
+			}
 		}
 
 		/**
@@ -153,7 +162,10 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		protected void handleListenerErrorAndTerminate(Throwable listenerError) {
 			s.cancel();
 			listener.handleListenerError(listenerError);
-			actual.onError(listenerError); //TODO wrap ? hooks ?
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onError(listenerError); //TODO hooks ?
+			}
 		}
 
 		/**
@@ -168,7 +180,10 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 			s.cancel();
 			listener.handleListenerError(listenerError);
 			RuntimeException multiple = Exceptions.multiple(listenerError, originalError);
-			actual.onError(multiple); //TODO wrap ? hooks ?
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onError(multiple); //TODO hooks ?
+			}
 		}
 
 		/**

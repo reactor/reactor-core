@@ -150,6 +150,17 @@ final class ContextPropagation {
 			.updateContext(target);
 	}
 
+	/**
+	 * When <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is available on the classpath, the provided {@link BiConsumer handler} will be
+	 * called with {@link ThreadLocal} values restored from the provided {@link Context}.
+	 * @param handler user provided handler
+	 * @param contextSupplier supplies the potentially modified {@link Context} to
+	 *                           restore {@link ThreadLocal} values from
+	 * @return potentially wrapped {@link BiConsumer} or the original
+	 * @param <T> type of handled values
+	 * @param <R> the transformed type
+	 */
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
 		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
 			return handler;
@@ -165,6 +176,21 @@ final class ContextPropagation {
 		};
 	}
 
+	/**
+	 * When <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
+	 * is available on the classpath, the provided {@link SignalListener} will be wrapped
+	 * with another one that restores {@link ThreadLocal} values from the provided
+	 * {@link Context}.
+	 * <p><strong>Note, this is only applied to {@link FluxTap}, {@link FluxTapFuseable},
+	 * {@link MonoTap}, and {@link MonoTapFuseable}.</strong> The automatic propagation
+	 * variants: {@link FluxTapRestoringThreadLocals} and
+	 * {@link MonoTapRestoringThreadLocals} do not use this method.
+	 * @param original the original {@link SignalListener} from the user
+	 * @param contextSupplier supplies the potentially modified {@link Context} to
+	 *                           restore {@link ThreadLocal} values from
+	 * @return potentially wrapped {@link SignalListener} or the original
+	 * @param <T> type of handled values
+	 */
 	static <T> SignalListener<T> contextRestoreForTap(final SignalListener<T> original, Supplier<Context> contextSupplier) {
 		if (!ContextPropagation.isContextPropagationAvailable()) {
 			return original;
