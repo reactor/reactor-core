@@ -806,4 +806,19 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		}
 	}
 
+	@Test
+	public void testReplayCacheDoesNotLeak() {
+		FluxReplay.SizeBoundReplayBuffer<Integer> buffer = new FluxReplay.SizeBoundReplayBuffer<>(1);
+		buffer.add(1);
+		assertThat(buffer.head.value).isNull();
+		assertThat(buffer.head.get()).isSameAs(buffer.tail);
+		assertThat(buffer.tail.value).isEqualTo(1);
+		assertThat(buffer.tail.get()).isNull();
+		buffer.add(2);
+		assertThat(buffer.head.value).isNull();
+		assertThat(buffer.head.get()).isSameAs(buffer.tail);
+		assertThat(buffer.tail.value).isEqualTo(2);
+		assertThat(buffer.tail.get()).isNull();
+	}
+
 }
