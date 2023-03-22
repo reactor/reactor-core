@@ -672,7 +672,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		public T poll(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked") Wrapper<T> node = (Wrapper<T>) rs.node();
 			Wrapper<T> next = value;
-			if (node == null) {
+			if (node == null || node == EMPTY) {
 				node = next;
 				rs.node(node);
 			}
@@ -698,12 +698,12 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				node = value;
 				rs.node(node);
 			}
-			return node == null;
+			return node == EMPTY && value == EMPTY;
 		}
 
 		@Override
 		public int size(ReplaySubscription<T> rs) {
-			Wrapper<T> val =  value;
+			Wrapper<T> val = value;
 			return rs.node() == val ? 0 : sizeOf(val);
 		}
 
