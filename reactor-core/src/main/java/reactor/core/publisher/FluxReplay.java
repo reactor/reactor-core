@@ -605,7 +605,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					return;
 				}
 
-				if (!empty && idx != stamp[0]) {
+				if (!empty && idx != stamp[0] && r != 0) {
 					a.onNext(next);
 					rs.requestMore(stamp[0]);
 					produced = true;

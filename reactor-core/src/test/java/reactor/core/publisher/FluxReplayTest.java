@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.assertj.core.api.DoublePredicateAssert;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -912,5 +913,16 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 			}
 		}
 
+	}
+
+	@ParameterizedTestWithName
+	@EnumSource(SizeAndCapacityTestData.class)
+	void testNoEmitOnRequestNone(SizeAndCapacityTestData cache) {
+		AtomicInteger outcome = new AtomicInteger();
+		FluxReplay.ReplaySubscription<Integer> rs = new FluxReplay.ReplayInner<>(null, null);
+		assertThat(rs.requested()).isEqualTo(0);
+		FluxReplay.ReplayBuffer<Integer> buffer = cache.bufferClass.apply(1);
+		buffer.add(123);
+		buffer.replay(rs);
 	}
 }
