@@ -25,7 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Flow;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -40,7 +43,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
+import org.reactivestreams.FlowAdapters;
 import org.reactivestreams.Publisher;
+import reactor.adapter.JdkFlowAdapter;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -52,6 +57,7 @@ import reactor.core.publisher.FluxHandleFuseable.HandleFuseableConditionalSubscr
 import reactor.core.publisher.FluxHandleFuseable.HandleFuseableSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.ParameterizedTestWithName;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.test.subscriber.TestSubscriberBuilder;
 import reactor.util.concurrent.Queues;
@@ -422,6 +428,118 @@ class ContextPropagationTest {
 					.hasSize(1);
 		}
 	}
+
+	@Nested
+	class NonReactorSources {
+		@Test
+		void fluxFromPublisher() throws InterruptedException {
+			Hooks.enableAutomaticContextPropagation();
+			TestPublisher<String> testPublisher = TestPublisher.create();
+			Publisher<String> nonReactorPublisher = testPublisher;
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			Flux.from(nonReactorPublisher)
+			    .doOnNext(s -> value.set(REF1.get()))
+			    .contextWrite(Context.of(KEY1, "present"))
+			    .subscribe();
+
+			Thread t = new Thread(() -> testPublisher.emit("test").complete());
+			t.start();
+			t.join();
+
+			testPublisher.assertWasSubscribed();
+			testPublisher.assertWasNotCancelled();
+			testPublisher.assertWasRequested();
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void monoFromPublisher() throws InterruptedException {
+			Hooks.enableAutomaticContextPropagation();
+			TestPublisher<String> testPublisher = TestPublisher.create();
+			Publisher<String> nonReactorPublisher = testPublisher;
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			Mono.from(nonReactorPublisher)
+			    .doOnNext(s -> value.set(REF1.get()))
+			    .contextWrite(Context.of(KEY1, "present"))
+			    .subscribe();
+
+			Thread t = new Thread(() -> testPublisher.emit("test").complete());
+			t.start();
+			t.join();
+
+			testPublisher.assertWasSubscribed();
+			testPublisher.assertCancelled();
+			testPublisher.assertWasRequested();
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void monoFromPublisherIgnoringContract() throws InterruptedException {
+			Hooks.enableAutomaticContextPropagation();
+			TestPublisher<String> testPublisher = TestPublisher.create();
+			Publisher<String> nonReactorPublisher = testPublisher;
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			Mono.fromDirect(nonReactorPublisher)
+			    .doOnNext(s -> value.set(REF1.get()))
+			    .contextWrite(Context.of(KEY1, "present"))
+			    .subscribe();
+
+			Thread t = new Thread(() -> testPublisher.emit("test").complete());
+			t.start();
+			t.join();
+
+			testPublisher.assertWasSubscribed();
+			testPublisher.assertWasNotCancelled();
+			testPublisher.assertWasRequested();
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void monoFromCompletionStage() {
+			Hooks.enableAutomaticContextPropagation();
+			AtomicReference<String> value = new AtomicReference<>();
+
+			// we need to delay delivery just a bit to ensure a Thread hop happens
+			Runnable sleepTask = () -> {
+				try {
+					Thread.sleep(10);
+				}
+				catch (InterruptedException e) {
+					// ignore
+				}
+			};
+
+			Mono.fromCompletionStage(
+					CompletableFuture.runAsync(sleepTask, ForkJoinPool.commonPool())
+					                 .thenApply(ignored -> "test"))
+			    .doOnNext(s -> value.set(REF1.get()))
+			    .contextWrite(Context.of(KEY1, "present"))
+			    .block();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void monoFromFuture() {
+			Hooks.enableAutomaticContextPropagation();
+			AtomicReference<String> value = new AtomicReference<>();
+
+			Mono.fromFuture(CompletableFuture.supplyAsync(() -> "test"))
+			    .doOnNext(s -> value.set(REF1.get()))
+			    .contextWrite(Context.of(KEY1, "present"))
+			    .block();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+	}
+
+	// TAP AND HANDLE OPERATOR TESTS
 
 	static private enum Cases {
 		NORMAL_NO_CONTEXT(false, false, false),

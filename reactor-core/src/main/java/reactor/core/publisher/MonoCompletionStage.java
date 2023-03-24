@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  */
 final class MonoCompletionStage<T> extends Mono<T>
-        implements Fuseable, Scannable {
+        implements Scannable {
 
     final CompletionStage<? extends T> future;
     final boolean suppressCancellation;
@@ -52,6 +52,12 @@ final class MonoCompletionStage<T> extends Mono<T>
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
+        if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+            actual = new MonoContextWriteRestoringThreadLocals
+                    .ContextWriteRestoringThreadLocalsSubscriber<>(
+                            actual, actual.currentContext());
+        }
+
         actual.onSubscribe(new MonoCompletionStageSubscription<>(actual, future, suppressCancellation));
     }
 
@@ -62,8 +68,6 @@ final class MonoCompletionStage<T> extends Mono<T>
     }
 
     static class MonoCompletionStageSubscription<T> implements InnerProducer<T>,
-                                                               Fuseable,
-                                                               QueueSubscription<T>,
                                                                BiFunction<T, Throwable, Void> {
 
         final CoreSubscriber<? super T>    actual;
@@ -153,30 +157,6 @@ final class MonoCompletionStage<T> extends Mono<T>
                 //noinspection unchecked
                 ((Future<? extends T>) future).cancel(true);
             }
-        }
-
-        @Override
-        public int requestFusion(int requestedMode) {
-            return NONE;
-        }
-
-        @Override
-        public T poll() {
-           return null;
-        }
-
-        @Override
-        public int size() {
-            return 0;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return true;
-        }
-
-        @Override
-        public void clear() {
         }
     }
 }
