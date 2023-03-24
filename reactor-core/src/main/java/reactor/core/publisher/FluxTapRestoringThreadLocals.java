@@ -16,8 +16,8 @@
 
 package reactor.core.publisher;
 
+import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
@@ -31,19 +31,19 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
+final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 
 	final SignalListenerFactory<T, STATE> tapFactory;
 	final STATE                           commonTapState;
 
-	FluxTap(Flux<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
+	FluxTapRestoringThreadLocals(Flux<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
 		super(source);
 		this.tapFactory = tapFactory;
 		this.commonTapState = tapFactory.initializePublisherState(source);
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
@@ -54,11 +54,8 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		}
 		catch (Throwable generatorError) {
 			Operators.error(actual, generatorError);
-			return null;
+			return;
 		}
-		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
-		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
 
 		try {
 			signalListener.doFirst();
@@ -66,14 +63,22 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		catch (Throwable listenerError) {
 			signalListener.handleListenerError(listenerError);
 			Operators.error(actual, listenerError);
-			return null;
+			return;
 		}
 
-		if (actual instanceof ConditionalSubscriber) {
-			//noinspection unchecked
-			return new TapConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+		// invoked AFTER doFirst
+		Context alteredContext;
+		try {
+			alteredContext = signalListener.addToContext(actual.currentContext());
 		}
-		return new TapSubscriber<>(actual, signalListener);
+		catch (Throwable e) {
+			signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
+			alteredContext = actual.currentContext();
+		}
+
+		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(alteredContext)) {
+			source.subscribe(new TapSubscriber<>(actual, signalListener, alteredContext));
+		}
 	}
 
 	@Nullable
@@ -85,28 +90,25 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 	}
 
 	//TODO support onErrorContinue around listener errors
-	static class TapSubscriber<T> implements InnerOperator<T, T> {
+	static class TapSubscriber<T> implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
-		final Context                   context;
-		final SignalListener<T>         listener;
+		final ConditionalSubscriber<? super T> actualConditional;
+		final Context context;
+		final SignalListener<T> listener;
 
 		boolean done;
 		Subscription s;
 
-		TapSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
+		TapSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener, Context ctx) {
 			this.actual = actual;
 			this.listener = signalListener;
-			//note that since we're in the subscriber, this is technically invoked AFTER doFirst
-			Context ctx;
-			try {
-				ctx = signalListener.addToContext(actual.currentContext());
-			}
-			catch (Throwable e) {
-				signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
-				ctx = actual.currentContext();
-			}
 			this.context = ctx;
+			if (actual instanceof ConditionalSubscriber) {
+				this.actualConditional = (ConditionalSubscriber<? super T>) actual;
+			} else {
+				this.actualConditional = null;
+			}
 		}
 
 		@Override
@@ -134,12 +136,15 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		 * and then terminate the downstream directly with same error (without invoking any other handler).
 		 *
 		 * @param listenerError the exception thrown from a handler method before the subscription was set
-		 * @param toCancel the {@link Subscription} that was prepared but not sent downstream
+		 * @param toCancel      the {@link Subscription} that was prepared but not sent downstream
 		 */
 		protected void handleListenerErrorPreSubscription(Throwable listenerError, Subscription toCancel) {
 			toCancel.cancel();
 			listener.handleListenerError(listenerError);
-			Operators.error(actual, listenerError);
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				Operators.error(actual, listenerError);
+			}
 		}
 
 		/**
@@ -151,7 +156,10 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		protected void handleListenerErrorAndTerminate(Throwable listenerError) {
 			s.cancel();
 			listener.handleListenerError(listenerError);
-			actual.onError(listenerError); //TODO wrap ? hooks ?
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onError(listenerError); //TODO hooks ?
+			}
 		}
 
 		/**
@@ -166,7 +174,10 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 			s.cancel();
 			listener.handleListenerError(listenerError);
 			RuntimeException multiple = Exceptions.multiple(listenerError, originalError);
-			actual.onError(multiple); //TODO wrap ? hooks ?
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onError(multiple); //TODO hooks ?
+			}
 		}
 
 		/**
@@ -187,12 +198,14 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 
 				try {
 					listener.doOnSubscription();
-				}
-				catch (Throwable observerError) {
+				} catch (Throwable observerError) {
 					handleListenerErrorPreSubscription(observerError, s);
 					return;
 				}
-				actual.onSubscribe(this);
+				try (ContextSnapshot.Scope ignored =
+							 ContextPropagation.setThreadLocals(actual.currentContext())) {
+					actual.onSubscribe(this);
+				}
 			}
 		}
 
@@ -201,23 +214,43 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 			if (done) {
 				try {
 					listener.doOnMalformedOnNext(t);
-				}
-				catch (Throwable observerError) {
+				} catch (Throwable observerError) {
 					handleListenerErrorPostTermination(observerError);
-				}
-				finally {
+				} finally {
 					Operators.onNextDropped(t, currentContext());
 				}
 				return;
 			}
 			try {
 				listener.doOnNext(t);
-			}
-			catch (Throwable observerError) {
+			} catch (Throwable observerError) {
 				handleListenerErrorAndTerminate(observerError);
 				return;
 			}
-			actual.onNext(t);
+			try (ContextSnapshot.Scope ignored =
+						 ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onNext(t);
+			}
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			try (ContextSnapshot.Scope ignored =
+						 ContextPropagation.setThreadLocals(actual.currentContext())) {
+				if (actualConditional != null) {
+					if (!actualConditional.tryOnNext(t)) {
+						return false;
+					}
+				} else {
+					actual.onNext(t);
+				}
+			}
+			try {
+				listener.doOnNext(t);
+			} catch (Throwable listenerError) {
+				handleListenerErrorAndTerminate(listenerError);
+			}
+			return true;
 		}
 
 		@Override
@@ -225,11 +258,9 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 			if (done) {
 				try {
 					listener.doOnMalformedOnError(t);
-				}
-				catch (Throwable observerError) {
+				} catch (Throwable observerError) {
 					handleListenerErrorPostTermination(observerError);
-				}
-				finally {
+				} finally {
 					Operators.onErrorDropped(t, currentContext());
 				}
 				return;
@@ -238,20 +269,21 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 
 			try {
 				listener.doOnError(t);
-			}
-			catch (Throwable observerError) {
+			} catch (Throwable observerError) {
 				//any error in the hooks interrupts other hooks, including doFinally
 				handleListenerErrorMultipleAndTerminate(observerError, t);
 				return;
 			}
 
-			actual.onError(t); //RS: onError MUST terminate normally and not throw
+			try (ContextSnapshot.Scope ignored =
+					     ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onError(t); //RS: onError MUST terminate normally and not throw
+			}
 
 			try {
 				listener.doAfterError(t);
 				listener.doFinally(SignalType.ON_ERROR);
-			}
-			catch (Throwable observerError) {
+			} catch (Throwable observerError) {
 				handleListenerErrorPostTermination(observerError);
 			}
 		}
@@ -261,8 +293,7 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 			if (done) {
 				try {
 					listener.doOnMalformedOnComplete();
-				}
-				catch (Throwable observerError) {
+				} catch (Throwable observerError) {
 					handleListenerErrorPostTermination(observerError);
 				}
 				return;
@@ -271,82 +302,61 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 
 			try {
 				listener.doOnComplete();
-			}
-			catch (Throwable observerError) {
+			} catch (Throwable observerError) {
 				handleListenerErrorAndTerminate(observerError);
 				return;
 			}
 
-			actual.onComplete(); //RS: onComplete MUST terminate normally and not throw
+			try (ContextSnapshot.Scope ignored =
+						 ContextPropagation.setThreadLocals(actual.currentContext())) {
+				actual.onComplete(); //RS: onComplete MUST terminate normally and not throw
+			}
 
 			try {
 				listener.doAfterComplete();
 				listener.doFinally(SignalType.ON_COMPLETE);
-			}
-			catch (Throwable observerError) {
+			} catch (Throwable observerError) {
 				handleListenerErrorPostTermination(observerError);
 			}
 		}
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n)) {
-				try {
-					listener.doOnRequest(n);
+			try (ContextSnapshot.Scope ignored =
+						 ContextPropagation.setThreadLocals(this.context)) {
+				if (Operators.validate(n)) {
+					try {
+						listener.doOnRequest(n);
+					} catch (Throwable observerError) {
+						handleListenerErrorAndTerminate(observerError);
+						return;
+					}
+					s.request(n);
 				}
-				catch (Throwable observerError) {
-					handleListenerErrorAndTerminate(observerError);
-					return;
-				}
-				s.request(n);
 			}
 		}
 
 		@Override
 		public void cancel() {
-			try {
-				listener.doOnCancel();
-			}
-			catch (Throwable observerError) {
-				handleListenerErrorAndTerminate(observerError);
-				return;
-			}
-
-			try {
-				s.cancel();
-			}
-			finally {
+			try (ContextSnapshot.Scope ignored =
+						 ContextPropagation.setThreadLocals(this.context)) {
 				try {
-					listener.doFinally(SignalType.CANCEL);
+					listener.doOnCancel();
+				} catch (Throwable observerError) {
+					handleListenerErrorAndTerminate(observerError);
+					return;
 				}
-				catch (Throwable observerError) {
-					handleListenerErrorAndTerminate(observerError); //redundant s.cancel
-				}
-			}
-		}
-	}
 
-	static final class TapConditionalSubscriber<T> extends TapSubscriber<T> implements ConditionalSubscriber<T> {
-
-		final ConditionalSubscriber<? super T> actualConditional;
-
-		public TapConditionalSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
-			super(actual, signalListener);
-			this.actualConditional = actual;
-		}
-
-		@Override
-		public boolean tryOnNext(T t) {
-			if (actualConditional.tryOnNext(t)) {
 				try {
-					listener.doOnNext(t);
+					s.cancel();
+				} finally {
+					try {
+						listener.doFinally(SignalType.CANCEL);
+					} catch (Throwable observerError) {
+						handleListenerErrorAndTerminate(observerError); //redundant s.cancel
+					}
 				}
-				catch (Throwable listenerError) {
-					handleListenerErrorAndTerminate(listenerError);
-				}
-				return true;
 			}
-			return false;
 		}
 	}
 }

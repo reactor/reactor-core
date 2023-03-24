@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package reactor.core.observability.micrometer;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
@@ -24,10 +26,12 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+import reactor.test.ParameterizedTestWithName;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -68,8 +72,12 @@ class MicrometerObservationListenerTest {
 		subscriberContext = Context.of("contextKey", "contextValue");
 	}
 
-	@Test
-	void whenStartedFluxWithDefaultName() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void whenStartedFluxWithDefaultName(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
@@ -97,8 +105,12 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2");
 	}
 
-	@Test
-	void whenStartedFluxWithCustomName() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void whenStartedFluxWithCustomName(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"testName",
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
@@ -127,8 +139,12 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2");
 	}
 
-	@Test
-	void whenStartedMono() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void whenStartedMono(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromMono (which is tested separately)
@@ -157,8 +173,12 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("testTag2", "testTagValue2");
 	}
 
-	@Test
-	void tapFromFluxWithTags() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromFluxWithTags(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		Flux<Integer> flux = Flux.just(1)
 			.name("testFlux")
 			.tag("testTag1", "testTagValue1")
@@ -183,8 +203,12 @@ class MicrometerObservationListenerTest {
 			.hasKeyValuesCount(4);
 	}
 
-	@Test
-	void tapFromMonoWithTags() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithTags(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		Mono<Integer> mono = Mono.just(1)
 			.name("testMono")
 			.tag("testTag1", "testTagValue1")
@@ -209,8 +233,12 @@ class MicrometerObservationListenerTest {
 			.hasKeyValuesCount(4);
 	}
 
-	@Test
-	void observationStoppedByCancellation() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationStoppedByCancellation(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"flux",
 			KeyValues.of("forcedType", "Flux"),
@@ -234,8 +262,12 @@ class MicrometerObservationListenerTest {
 			.doesNotHaveError();
 	}
 
-	@Test
-	void observationStoppedByCompleteEmpty() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationStoppedByCompleteEmpty(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"emptyFlux",
 			KeyValues.of("forcedType", "Flux"),
@@ -259,8 +291,12 @@ class MicrometerObservationListenerTest {
 			.doesNotHaveError();
 	}
 
-	@Test
-	void observationStoppedByCompleteWithValues() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationStoppedByCompleteWithValues(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"flux",
 			KeyValues.of("forcedType", "Flux"),
@@ -285,8 +321,12 @@ class MicrometerObservationListenerTest {
 			.doesNotHaveError();
 	}
 
-	@Test
-	void observationMonoStoppedByOnNext() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationMonoStoppedByOnNext(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"valuedMono",
 			KeyValues.of("forcedType", "Mono"),
@@ -320,8 +360,12 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("reactor.status",  expectedStatus);
 	}
 
-	@Test
-	void observationEmptyMonoStoppedByOnComplete() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationEmptyMonoStoppedByOnComplete(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"emptyMono",
 			KeyValues.of("forcedType", "Mono"),
@@ -344,8 +388,12 @@ class MicrometerObservationListenerTest {
 			.doesNotHaveError();
 	}
 
-	@Test
-	void observationStoppedByError() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationStoppedByError(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			"errorFlux",
 			KeyValues.of("forcedType", "Flux"),
@@ -370,8 +418,12 @@ class MicrometerObservationListenerTest {
 			.hasError(exception);
 	}
 
-	@Test
-	void observationGetsParentFromContext() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationGetsParentFromContext(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
@@ -423,8 +475,70 @@ class MicrometerObservationListenerTest {
 			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 
-	@Test
-	void observationWithEmptyContextHasNoParent() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationHierarchyCreatedInMonoCase(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Observation parent = Observation.start("testParent", registry);
+		Context contextWithAParent = Context.of(subscriberContext).put(ObservationThreadLocalAccessor.KEY, parent);
+
+		AtomicReference<Observation> inner = new AtomicReference<>();
+		AtomicReference<Observation> outer = new AtomicReference<>();
+
+		Mono.just("hello")
+				.delayElement(Duration.ofMillis(1))
+				.handle((v, s) -> {
+					inner.set(registry.getCurrentObservation());
+					s.next(v);
+				})
+				.tap(Micrometer.observation(registry))
+				.handle((v, s) -> {
+					outer.set(registry.getCurrentObservation());
+					s.next(v);
+				})
+				.contextWrite(contextWithAParent)
+				.block();
+
+		assertThat(inner.get().getContext().getParentObservation()).isEqualTo(outer.get());
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationHierarchyCreatedInFluxCase(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Observation parent = Observation.start("testParent", registry);
+		Context contextWithAParent = Context.of(subscriberContext).put(ObservationThreadLocalAccessor.KEY, parent);
+
+		AtomicReference<Observation> inner = new AtomicReference<>();
+		AtomicReference<Observation> outer = new AtomicReference<>();
+
+		Flux.just("hello")
+				.delayElements(Duration.ofMillis(1))
+				.handle((v, s) -> {
+					inner.set(registry.getCurrentObservation());
+					s.next(v);
+				})
+				.tap(Micrometer.observation(registry))
+				.handle((v, s) -> {
+					outer.set(registry.getCurrentObservation());
+					s.next(v);
+				})
+				.contextWrite(contextWithAParent)
+				.blockLast();
+
+		assertThat(inner.get().getContext().getParentObservation()).isEqualTo(outer.get());
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationWithEmptyContextHasNoParent(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
@@ -464,8 +578,12 @@ class MicrometerObservationListenerTest {
 			.satisfies(r -> assertThat(r.getCurrentObservationScope()).as("no leftover currentObservationScope()").isNull());
 	}
 
-	@Test
-	void observationWithEmptyContextHasParentWhenExternalScopeOpened() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void observationWithEmptyContextHasParentWhenExternalScopeOpened(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)

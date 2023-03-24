@@ -4740,6 +4740,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #tap(Function)
 	 */
 	public final Mono<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
+		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+			return onAssembly(new MonoTapRestoringThreadLocals<>(this, listenerFactory));
+		}
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoTapFuseable<>(this, listenerFactory));
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ final class MonoTap<T, STATE> extends InternalMonoOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
-		//if the SequenceObserver cannot be created, all we can do is error the subscriber.
+		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
 		SignalListener<T> signalListener;

@@ -16,30 +16,31 @@
 
 package reactor.core.publisher;
 
+import io.micrometer.context.ContextSnapshot;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
- * A {@link Fuseable} generic per-Subscription side effect {@link Mono} that notifies a {@link SignalListener} of most events.
+ * A generic per-Subscription side effect {@link Mono} that notifies a {@link SignalListener} of most events.
  *
  * @author Simon Baslé
  */
-final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> implements Fuseable {
+final class MonoTapRestoringThreadLocals<T, STATE> extends MonoOperator<T, T> {
 
 	final SignalListenerFactory<T, STATE> tapFactory;
 	final STATE                           commonTapState;
 
-	MonoTapFuseable(Mono<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
+	MonoTapRestoringThreadLocals(Mono<? extends T> source, SignalListenerFactory<T, STATE> tapFactory) {
 		super(source);
 		this.tapFactory = tapFactory;
 		this.commonTapState = tapFactory.initializePublisherState(source);
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
@@ -50,11 +51,8 @@ final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> impleme
 		}
 		catch (Throwable generatorError) {
 			Operators.error(actual, generatorError);
-			return null;
+			return;
 		}
-		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
-		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
 
 		try {
 			signalListener.doFirst();
@@ -62,14 +60,22 @@ final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> impleme
 		catch (Throwable listenerError) {
 			signalListener.handleListenerError(listenerError);
 			Operators.error(actual, listenerError);
-			return null;
+			return;
 		}
 
-		if (actual instanceof ConditionalSubscriber) {
-			//noinspection unchecked
-			return new FluxTapFuseable.TapConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+		// invoked AFTER doFirst
+		Context alteredContext;
+		try {
+			alteredContext = signalListener.addToContext(actual.currentContext());
 		}
-		return new FluxTapFuseable.TapFuseableSubscriber<>(actual, signalListener);
+		catch (Throwable e) {
+			signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
+			alteredContext = actual.currentContext();
+		}
+
+		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(alteredContext)) {
+			source.subscribe(new FluxTapRestoringThreadLocals.TapSubscriber<>(actual, signalListener, alteredContext));
+		}
 	}
 
 	@Nullable

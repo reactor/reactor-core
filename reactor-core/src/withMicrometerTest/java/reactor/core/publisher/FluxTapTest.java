@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -35,6 +36,7 @@ import reactor.core.Scannable.Attr.RunStyle;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
+import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
@@ -162,8 +164,12 @@ class FluxTapTest {
 		}
 	}
 
-	@Test
-	void scenarioTerminatingOnComplete() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void scenarioTerminatingOnComplete(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		TestSignalListener<Integer> testSignalListener = new TestSignalListener<>();
 
 		Flux<Integer> fullFlux = Flux.just(1, 2, 3).hide();
@@ -187,8 +193,12 @@ class FluxTapTest {
 			);
 	}
 
-	@Test
-	void scenarioTerminatingOnError() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void scenarioTerminatingOnError(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		TestSignalListener<Integer> testSignalListener = new TestSignalListener<>();
 		RuntimeException expectedError = new RuntimeException("expected");
 
@@ -213,8 +223,12 @@ class FluxTapTest {
 			);
 	}
 
-	@Test
-	void multipleRequests() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void multipleRequests(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		TestSignalListener<Integer> testSignalListener = new TestSignalListener<>();
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().initialRequest(0L).build();
 
@@ -268,8 +282,12 @@ class FluxTapTest {
 			);
 	}
 
-	@Test
-	void withCancellation() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void withCancellation(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		TestSignalListener<Integer> testSignalListener = new TestSignalListener<>();
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().initialRequest(0L).build();
 
@@ -308,8 +326,16 @@ class FluxTapTest {
 	}
 
 	@ParameterizedTestWithName
-	@ValueSource(strings = {"ON_COMPLETE", "ON_ERROR"})
-	void malformedOnNext(SignalType termination) {
+	@CsvSource({
+			"ON_COMPLETE, true",
+			"ON_COMPLETE, false",
+			"ON_ERROR, true",
+			"ON_ERROR, false",
+	})
+	void malformedOnNext(SignalType termination, boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		AtomicReference<Object> dropped = new AtomicReference<>();
 		Hooks.onNextDropped(dropped::set);
 
@@ -367,8 +393,16 @@ class FluxTapTest {
 	}
 
 	@ParameterizedTestWithName
-	@ValueSource(strings = {"ON_COMPLETE", "ON_ERROR"})
-	void malformedOnComplete(SignalType termination) {
+	@CsvSource({
+			"ON_COMPLETE, true",
+			"ON_COMPLETE, false",
+			"ON_ERROR, true",
+			"ON_ERROR, false",
+	})
+	void malformedOnComplete(SignalType termination, boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		TestSignalListener<Integer> testSignalListener = new TestSignalListener<>();
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		TestSubscriber<Integer> ignored = TestSubscriber.create();
@@ -421,8 +455,16 @@ class FluxTapTest {
 	}
 
 	@ParameterizedTestWithName
-	@ValueSource(strings = {"ON_COMPLETE", "ON_ERROR"})
-	void malformedOnError(SignalType termination) {
+	@CsvSource({
+			"ON_COMPLETE, true",
+			"ON_COMPLETE, false",
+			"ON_ERROR, true",
+			"ON_ERROR, false",
+	})
+	void malformedOnError(SignalType termination, boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		AtomicReference<Throwable> dropped = new AtomicReference<>();
 		Hooks.onErrorDropped(dropped::set);
 
@@ -479,26 +521,36 @@ class FluxTapTest {
 		assertThat(dropped).as("malformed error was dropped").hasValue(malformedError);
 	}
 
-
-	@Test
-	void throwingCreateListener() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void throwingCreateListener(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
-		FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1),
-			new SignalListenerFactory<Integer, Void>() {
-				@Override
-				public Void initializePublisherState(Publisher<? extends Integer> source) {
-					return null;
-				}
+		SignalListenerFactory<Integer, Void> listenerFactory = new SignalListenerFactory<Integer, Void>() {
+			@Override
+			public Void initializePublisherState(Publisher<? extends Integer> source) {
+				return null;
+			}
 
-				@Override
-				public SignalListener<Integer> createListener(Publisher<? extends Integer> source,
-															  ContextView listenerContext, Void publisherContext) {
-					throw new IllegalStateException("expected");
-				}
-			});
+			@Override
+			public SignalListener<Integer> createListener(Publisher<? extends Integer> source,
+														  ContextView listenerContext, Void publisherContext) {
+				throw new IllegalStateException("expected");
+			}
+		};
 
-		assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
-			.doesNotThrowAnyException();
+		if (automatic) {
+			FluxTapRestoringThreadLocals<Integer, Void> test =
+					new FluxTapRestoringThreadLocals<>(Flux.just(1), listenerFactory);
+			assertThatCode(() -> test.subscribe(testSubscriber))
+					.doesNotThrowAnyException();
+		} else {
+			FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1), listenerFactory);
+			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
+					.doesNotThrowAnyException();
+		}
 
 		assertThat(testSubscriber.expectTerminalError())
 			.as("downstream error")
@@ -506,8 +558,12 @@ class FluxTapTest {
 			.hasMessage("expected");
 	}
 
-	@Test
-	void doFirstListenerError() {
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
+	void doFirstListenerError(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
 		Throwable listenerError = new IllegalStateException("expected from doFirst");
 
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
@@ -518,10 +574,18 @@ class FluxTapTest {
 			}
 		};
 
-		FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1), factoryOf(listener));
+		if (automatic) {
+			FluxTapRestoringThreadLocals<Integer, Void> test =
+					new FluxTapRestoringThreadLocals<>(Flux.just(1), factoryOf(listener));
 
-		assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
-			.doesNotThrowAnyException();
+			assertThatCode(() -> test.subscribe(testSubscriber))
+					.doesNotThrowAnyException();
+		} else {
+			FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1), factoryOf(listener));
+
+			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
+					.doesNotThrowAnyException();
+		}
 
 		assertThat(listener.listenerErrors)
 			.as("listenerErrors")
@@ -898,6 +962,21 @@ class FluxTapTest {
 		}
 
 		@Test
+		void scanFluxTapRestoringThreadLocals() {
+			Flux<Integer> source = Flux.just(1);
+			FluxTapRestoringThreadLocals<Integer, Void> testPublisher =
+					new FluxTapRestoringThreadLocals<>(source, ignoredFactory());
+
+			Scannable test = Scannable.from(testPublisher);
+			assertThat(test).isSameAs(testPublisher)
+			                .matches(Scannable::isScanAvailable, "isScanAvailable");
+
+			assertThat(test.scan(Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
+			assertThat(test.scan(Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(RunStyle.SYNC);
+			assertThat(test.scanUnsafe(Attr.PARENT)).as("PARENT").isSameAs(source);
+		}
+
+		@Test
 		void scanFluxTapFuseable() {
 			Flux<Integer> source = Flux.just(1);
 			FluxTapFuseable<Integer, Void> testPublisher = new FluxTapFuseable<>(source, ignoredFactory());
@@ -926,6 +1005,21 @@ class FluxTapTest {
 		}
 
 		@Test
+		void scanMonoListenRestoringThreadLocals() {
+			Mono<Integer> source = Mono.just(1);
+			MonoTapRestoringThreadLocals<Integer, Void> testPublisher =
+					new MonoTapRestoringThreadLocals<>(source, ignoredFactory());
+
+			Scannable test = Scannable.from(testPublisher);
+			assertThat(test).isSameAs(testPublisher)
+			                .matches(Scannable::isScanAvailable, "isScanAvailable");
+
+			assertThat(test.scan(Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
+			assertThat(test.scan(Attr.RUN_STYLE)).as("RUN_STYLE").isEqualTo(RunStyle.SYNC);
+			assertThat(test.scanUnsafe(Attr.PARENT)).as("PARENT").isSameAs(source);
+		}
+
+		@Test
 		void scanMonoListenFuseable() {
 			Mono<Integer> source = Mono.just(1);
 			MonoTapFuseable<Integer, Void> testPublisher = new MonoTapFuseable<>(source, ignoredFactory());
@@ -946,6 +1040,29 @@ class FluxTapTest {
 
 			FluxTap.TapSubscriber<?> subscriber = new FluxTap.TapSubscriber<>(
 				actual, new TestSignalListener<>());
+
+			subscriber.onSubscribe(subscription);
+
+			Scannable test = Scannable.from(subscriber);
+			assertThat(test.isScanAvailable()).as("isScanAvailable").isTrue();
+			assertThat(test).isSameAs(subscriber);
+
+			assertThat(test.scanUnsafe(Attr.ACTUAL)).as("ACTUAL").isSameAs(actual);
+			assertThat(test.scanUnsafe(Attr.PARENT)).as("PARENT").isSameAs(subscription);
+			assertThat(test.scan(Attr.RUN_STYLE)).as("RUN_STYLE").isSameAs(RunStyle.SYNC);
+
+			subscriber.onComplete();
+			assertThat(test.scan(Attr.TERMINATED)).as("TERMINATED").isTrue();
+		}
+
+		@Test
+		void scanListenSubscriberRestoringThreadLocals() {
+			CoreSubscriber<Integer> actual = Operators.drainSubscriber();
+			Subscription subscription = Operators.emptySubscription();
+
+			FluxTapRestoringThreadLocals.TapSubscriber<?> subscriber =
+					new FluxTapRestoringThreadLocals.TapSubscriber<>(actual,
+							new TestSignalListener<>(), Context.empty());
 
 			subscriber.onSubscribe(subscription);
 

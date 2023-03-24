@@ -9249,6 +9249,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #tap(Function)
 	 */
 	public final Flux<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
+		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+			return onAssembly(new FluxTapRestoringThreadLocals<>(this, listenerFactory));
+		}
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxTapFuseable<>(this, listenerFactory));
 		}
