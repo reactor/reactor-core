@@ -72,8 +72,11 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 			alteredContext = signalListener.addToContext(actual.currentContext());
 		}
 		catch (Throwable e) {
-			signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
-			alteredContext = actual.currentContext();
+			IllegalStateException listenerError = new IllegalStateException(
+					"Unable to augment tap Context at subscription via addToContext", e);
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
+			return;
 		}
 
 		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(alteredContext)) {

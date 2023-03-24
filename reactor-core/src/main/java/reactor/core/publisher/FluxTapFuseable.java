@@ -24,6 +24,7 @@ import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A {@link reactor.core.Fuseable} generic per-Subscription side effect {@link Flux} that notifies a
@@ -69,11 +70,25 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 			return null;
 		}
 
+		// Invoked AFTER doFirst
+		Context ctx;
+		try {
+			ctx = signalListener.addToContext(actual.currentContext());
+		}
+		catch (Throwable e) {
+			IllegalStateException listenerError = new IllegalStateException(
+					"Unable to augment tap Context at subscription via addToContext", e);
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
+			return null;
+		}
+
 		if (actual instanceof ConditionalSubscriber) {
 			//noinspection unchecked
-			return new TapConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+			return new TapConditionalFuseableSubscriber<>(
+					(ConditionalSubscriber<? super T>) actual, signalListener, ctx);
 		}
-		return new TapFuseableSubscriber<>(actual, signalListener);
+		return new TapFuseableSubscriber<>(actual, signalListener, ctx);
 	}
 
 	@Nullable
@@ -90,8 +105,9 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		int mode;
 		QueueSubscription<T> qs;
 
-		TapFuseableSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
-			super(actual, signalListener);
+		TapFuseableSubscriber(CoreSubscriber<? super T> actual,
+				SignalListener<T> signalListener, Context ctx) {
+			super(actual, signalListener, ctx);
 		}
 
 		/**
@@ -268,8 +284,9 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 
 		final ConditionalSubscriber<? super T> actualConditional;
 
-		public TapConditionalFuseableSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
-			super(actual, signalListener);
+		public TapConditionalFuseableSubscriber(ConditionalSubscriber<? super T> actual,
+				SignalListener<T> signalListener, Context ctx) {
+			super(actual, signalListener, ctx);
 			this.actualConditional = actual;
 		}
 
