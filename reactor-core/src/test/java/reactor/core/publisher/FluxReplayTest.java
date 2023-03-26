@@ -58,6 +58,7 @@ import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
@@ -918,11 +919,17 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@ParameterizedTestWithName
 	@EnumSource(SizeAndCapacityTestData.class)
 	void testNoEmitOnRequestNone(SizeAndCapacityTestData cache) {
-		AtomicInteger outcome = new AtomicInteger();
 		FluxReplay.ReplaySubscription<Integer> rs = new FluxReplay.ReplayInner<>(null, null);
 		assertThat(rs.requested()).isEqualTo(0);
 		FluxReplay.ReplayBuffer<Integer> buffer = cache.bufferClass.apply(1);
 		buffer.add(123);
-		buffer.replay(rs);
+		try {
+			buffer.replay(rs);
+		} catch (NullPointerException interaction) {
+			// this failure may become incorrect,
+			// as it relies on the ReplaySubscription implementation
+			fail("we did not expect an interaction with neither " +
+					"the parent nor the actual subscription");
+		}
 	}
 }
