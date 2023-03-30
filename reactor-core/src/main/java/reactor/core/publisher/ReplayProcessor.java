@@ -155,7 +155,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
 		}
 		else {
-			buffer = new FluxReplay.SizeBoundReplayBuffer<>(historySize);
+			buffer = new FluxReplay.ArraySizeBoundReplayBuffer<>(historySize);
 		}
 		return new ReplayProcessor<>(buffer);
 	}

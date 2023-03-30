@@ -137,7 +137,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
 		}
 		else {
-			buffer = new FluxReplay.SizeBoundReplayBuffer<>(historySize);
+			buffer = new FluxReplay.ArraySizeBoundReplayBuffer<>(historySize);
 		}
 		return new SinkManyReplayProcessor<>(buffer);
 	}

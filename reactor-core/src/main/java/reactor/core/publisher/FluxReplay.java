@@ -771,61 +771,40 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	}
 
-	static final class SizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
+	static final class ArraySizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
 
-		final int limit;
+		final Object[] buffer;
+		volatile int head;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ArraySizeBoundReplayBuffer> HEAD =
+				AtomicIntegerFieldUpdater.newUpdater(ArraySizeBoundReplayBuffer.class, "head");
+
 		final int indexUpdateLimit;
-
-		volatile Node<T> head;
-
-		Node<T> tail;
-
-		int size;
 
 		volatile boolean done;
 		Throwable error;
 
-		SizeBoundReplayBuffer(int limit) {
-			if (limit < 0) {
-				throw new IllegalArgumentException("Limit cannot be negative");
-			}
-			this.limit = limit;
-			this.indexUpdateLimit = Operators.unboundedOrLimit(limit);
-
-			Node<T> n = new Node<>(-1, null);
-			this.tail = n;
-			this.head = n;
+		ArraySizeBoundReplayBuffer(int size) {
+			this.buffer = new Object[size];
+			this.indexUpdateLimit = Operators.unboundedOrLimit(size);
 		}
 
-		@Override
-		public boolean isExpired() {
-			return false;
-		}
-
-		@Override
-		public int capacity() {
-			return limit;
-		}
 
 		@Override
 		public void add(T value) {
-			final Node<T> tail = this.tail;
-			final Node<T> n = new Node<>(tail.index + 1, value);
-			tail.set(n);
-			this.tail = n;
-			int s = size;
-			if (s == limit) {
-				head = head.get();
-			}
-			else {
-				size = s + 1;
-			}
+			buffer[HEAD.getAndIncrement(this) % capacity()] = value;
 		}
 
 		@Override
 		public void onError(Throwable ex) {
 			error = ex;
 			done = true;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
 		}
 
 		@Override
@@ -837,69 +816,64 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			final Subscriber<? super T> a = rs.actual();
 
 			int missed = 1;
-
+			Object[] curr = new Object[capacity()];
 			for (; ; ) {
 
 				long r = rs.requested();
 				long e = 0L;
 
-				@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
-				if (node == null) {
-					node = head;
-				}
+				int max = head;
+				System.arraycopy(buffer, 0, curr, 0, capacity());
 
-				while (e != r) {
+				for (
+						int idx = minIndex(rs.index(), max);
+						idx < max;
+						idx++
+				) {
 					if (rs.isCancelled()) {
-						rs.node(null);
+						rs.index(0);
 						return;
 					}
 
-					boolean d = done;
-					Node<T> next = node.get();
-					boolean empty = next == null;
-
-					if (d && empty) {
-						rs.node(null);
-						Throwable ex = error;
-						if (ex != null) {
-							a.onError(ex);
-						}
-						else {
-							a.onComplete();
-						}
-						return;
+					if (e == r) {
+						break; // lack of request
 					}
 
-					if (empty) {
-						break;
-					}
+					@SuppressWarnings("unchecked") T next = (T) curr[idx % capacity()];
 
-					a.onNext(next.value);
+					a.onNext(next);
 
 					e++;
-					node = next;
+					rs.index(idx + 1);
 
-					if ((next.index + 1) % indexUpdateLimit == 0) {
-						rs.requestMore(next.index + 1);
+					if ((idx + 1) % indexUpdateLimit == 0) {
+						rs.requestMore(idx + 1);
 					}
+				}
+
+				if (done && isEmpty(rs)) {
+					rs.index(0);
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					} else {
+						a.onComplete();
+					}
+					return;
 				}
 
 				if (e == r) {
 					if (rs.isCancelled()) {
-						rs.node(null);
+						rs.index(0);
 						return;
 					}
 
-					boolean d = done;
-					boolean empty = node.get() == null;
-
-					if (d && empty) {
-						rs.node(null);
+					if (done && isEmpty(rs)) {
+						rs.index(0);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						}
-						else {
+						} else {
 							a.onComplete();
 						}
 						return;
@@ -912,13 +886,21 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					}
 				}
 
-				rs.node(node);
-
 				missed = rs.leave(missed);
 				if (missed == 0) {
 					break;
 				}
 			}
+		}
+
+		private int minIndex(int rsIdx, int max) {
+			if (rsIdx <= max && rsIdx > max - capacity()) {
+				return rsIdx;
+			}
+			if (max < capacity()) {
+				return Math.min(rsIdx, max);
+			}
+			return Math.max(rsIdx, max - capacity());
 		}
 
 		void replayFused(ReplaySubscription<T> rs) {
@@ -929,7 +911,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			for (; ; ) {
 
 				if (rs.isCancelled()) {
-					rs.node(null);
+					rs.index(0);
 					return;
 				}
 
@@ -941,8 +923,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					}
-					else {
+					} else {
 						a.onComplete();
 					}
 					return;
@@ -963,16 +944,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 			if (rs.fusionMode() == NONE) {
 				replayNormal(rs);
-			}
-			else {
+			} else {
 				replayFused(rs);
 			}
-		}
-
-		@Override
-		@Nullable
-		public Throwable getError() {
-			return error;
 		}
 
 		@Override
@@ -980,91 +954,54 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			return done;
 		}
 
-		static final class Node<T> extends AtomicReference<Node<T>> {
-
-			/** */
-			private static final long serialVersionUID = 3713592843205853725L;
-
-			final int index;
-			final T   value;
-
-			Node(int index, @Nullable T value) {
-				this.index = index;
-				this.value = value;
-			}
-
-			@Override
-			public String toString() {
-				return "Node(" + value + ")";
-			}
-		}
-
 		@Override
-		@Nullable
 		public T poll(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
-			if (node == null) {
-				node = head;
-				rs.node(node);
-			}
+			int idx = minIndex(rs.index(), head);
+			@SuppressWarnings("unchecked") T next = (T) buffer[idx % capacity()];
 
-			Node<T> next = node.get();
 			if (next == null) {
 				return null;
 			}
-			rs.node(next);
+			rs.index(idx + 1);
 
-			if ((next.index + 1) % indexUpdateLimit == 0) {
-				rs.requestMore(next.index + 1);
+			if ((idx + 1) % indexUpdateLimit == 0) {
+				rs.requestMore(idx + 1);
 			}
 
-			return next.value;
+			return next;
 		}
 
 		@Override
 		public void clear(ReplaySubscription<T> rs) {
-			rs.node(null);
+			rs.index(0);
 		}
 
 		@Override
 		public boolean isEmpty(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
-			if (node == null) {
-				node = head;
-				rs.node(node);
-			}
-			return node.get() == null;
+			int idx = minIndex(rs.index(), head);
+			rs.index(idx);
+			int hd = head;
+			return hd == idx;
 		}
 
 		@Override
 		public int size(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
-			if (node == null) {
-				node = head;
-			}
-			int count = 0;
-
-			Node<T> next;
-			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
-				count++;
-				node = next;
-			}
-
-			return count;
+			return Math.min(capacity(), head - rs.index());
 		}
 
 		@Override
 		public int size() {
-			Node<T> node = head;
-			int count = 0;
+			return Math.min(capacity(), head);
+		}
 
-			Node<T> next;
-			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
-				count++;
-				node = next;
-			}
+		@Override
+		public int capacity() {
+			return buffer.length;
+		}
 
-			return count;
+		@Override
+		public boolean isExpired() {
+			return false;
 		}
 	}
 
@@ -1107,7 +1044,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					scheduler), this, history);
 		}
 		if (history != Integer.MAX_VALUE) {
-			return new ReplaySubscriber<>(new SizeBoundReplayBuffer<>(history),
+			return new ReplaySubscriber<>(new ArraySizeBoundReplayBuffer<>(history),
 					this,
 					history);
 		}
