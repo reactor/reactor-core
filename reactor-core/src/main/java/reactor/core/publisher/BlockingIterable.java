@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,6 +130,8 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 		final Condition condition;
 
+		final Context context;
+
 		long produced;
 
 		volatile Subscription s;
@@ -148,11 +150,18 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 			this.limit = Operators.unboundedOrLimit(batchSize);
 			this.lock = new ReentrantLock();
 			this.condition = lock.newCondition();
+			 Context emptyContext = Context.empty();
+			 if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+				 this.context = ContextPropagation.contextCapture()
+				                                  .apply(emptyContext);
+			 } else {
+				 this.context = emptyContext;
+			 }
 		}
 
 		@Override
 		public Context currentContext() {
-			return Context.empty();
+			return this.context;
 		}
 
 		@Override
