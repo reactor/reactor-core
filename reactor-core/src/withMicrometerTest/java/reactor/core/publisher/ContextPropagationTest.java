@@ -26,7 +26,11 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -432,110 +436,200 @@ class ContextPropagationTest {
 	@Nested
 	class NonReactorSources {
 		@Test
-		void fluxFromPublisher() throws InterruptedException {
+		void fluxFromPublisher() throws InterruptedException, ExecutionException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
 			Hooks.enableAutomaticContextPropagation();
+			AtomicReference<String> value = new AtomicReference<>();
+
 			TestPublisher<String> testPublisher = TestPublisher.create();
 			Publisher<String> nonReactorPublisher = testPublisher;
-
-			AtomicReference<String> value = new AtomicReference<>();
 
 			Flux.from(nonReactorPublisher)
 			    .doOnNext(s -> value.set(REF1.get()))
 			    .contextWrite(Context.of(KEY1, "present"))
 			    .subscribe();
 
-			Thread t = new Thread(() -> testPublisher.emit("test").complete());
-			t.start();
-			t.join();
+			executorService
+					.submit(() -> testPublisher.emit("test").complete())
+					.get();
 
 			testPublisher.assertWasSubscribed();
 			testPublisher.assertWasNotCancelled();
 			testPublisher.assertWasRequested();
 			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF1.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref1_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF1.get()).isEqualTo("ref1_init");
+
+			executorService.shutdownNow();
 		}
 
 		@Test
-		void monoFromPublisher() throws InterruptedException {
+		void monoFromPublisher() throws InterruptedException, ExecutionException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
 			Hooks.enableAutomaticContextPropagation();
+			AtomicReference<String> value = new AtomicReference<>();
+
 			TestPublisher<String> testPublisher = TestPublisher.create();
 			Publisher<String> nonReactorPublisher = testPublisher;
-
-			AtomicReference<String> value = new AtomicReference<>();
 
 			Mono.from(nonReactorPublisher)
 			    .doOnNext(s -> value.set(REF1.get()))
 			    .contextWrite(Context.of(KEY1, "present"))
 			    .subscribe();
 
-			Thread t = new Thread(() -> testPublisher.emit("test").complete());
-			t.start();
-			t.join();
+			executorService
+					.submit(() -> testPublisher.emit("test").complete())
+					.get();
 
 			testPublisher.assertWasSubscribed();
 			testPublisher.assertCancelled();
 			testPublisher.assertWasRequested();
 			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF1.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref1_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF1.get()).isEqualTo("ref1_init");
+
+			executorService.shutdownNow();
 		}
 
 		@Test
-		void monoFromPublisherIgnoringContract() throws InterruptedException {
+		void monoFromPublisherIgnoringContract()
+				throws InterruptedException, ExecutionException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
 			Hooks.enableAutomaticContextPropagation();
+			AtomicReference<String> value = new AtomicReference<>();
+
 			TestPublisher<String> testPublisher = TestPublisher.create();
 			Publisher<String> nonReactorPublisher = testPublisher;
-
-			AtomicReference<String> value = new AtomicReference<>();
 
 			Mono.fromDirect(nonReactorPublisher)
 			    .doOnNext(s -> value.set(REF1.get()))
 			    .contextWrite(Context.of(KEY1, "present"))
 			    .subscribe();
 
-			Thread t = new Thread(() -> testPublisher.emit("test").complete());
-			t.start();
-			t.join();
+			executorService
+					.submit(() -> testPublisher.emit("test").complete())
+					.get();
 
 			testPublisher.assertWasSubscribed();
 			testPublisher.assertWasNotCancelled();
 			testPublisher.assertWasRequested();
 			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF1.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref1_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF1.get()).isEqualTo("ref1_init");
+
+			executorService.shutdownNow();
 		}
 
 		@Test
-		void monoFromCompletionStage() {
+		void monoFromCompletionStage() throws ExecutionException, InterruptedException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
+
 			Hooks.enableAutomaticContextPropagation();
+			CountDownLatch latch = new CountDownLatch(1);
 			AtomicReference<String> value = new AtomicReference<>();
 
-			// we need to delay delivery just a bit to ensure a Thread hop happens
-			Runnable sleepTask = () -> {
+			// we need to delay delivery to ensure the completion signal is delivered
+			// on a Thread from executorService
+			CompletionStage<String> completionStage = CompletableFuture.supplyAsync(() -> {
 				try {
-					Thread.sleep(10);
+					latch.await();
 				}
 				catch (InterruptedException e) {
 					// ignore
 				}
-			};
+				return "test";
+			}, executorService);
 
-			Mono.fromCompletionStage(
-					CompletableFuture.runAsync(sleepTask, ForkJoinPool.commonPool())
-					                 .thenApply(ignored -> "test"))
+			TestSubscriber<String> testSubscriber = TestSubscriber.create();
+
+			Mono.fromCompletionStage(completionStage)
 			    .doOnNext(s -> value.set(REF1.get()))
 			    .contextWrite(Context.of(KEY1, "present"))
-			    .block();
+			    .subscribe(testSubscriber);
+
+			latch.countDown();
+			testSubscriber.block();
 
 			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF1.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref1_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF1.get()).isEqualTo("ref1_init");
+
+			executorService.shutdownNow();
 		}
 
 		@Test
-		void monoFromFuture() {
+		void monoFromFuture() throws ExecutionException, InterruptedException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
+
 			Hooks.enableAutomaticContextPropagation();
+			CountDownLatch latch = new CountDownLatch(1);
 			AtomicReference<String> value = new AtomicReference<>();
 
-			Mono.fromFuture(CompletableFuture.supplyAsync(() -> "test"))
-			    .doOnNext(s -> value.set(REF1.get()))
+			// we need to delay delivery to ensure the completion signal is delivered
+			// on a Thread from executorService
+			CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					// ignore
+				}
+				return "test";
+			}, executorService);
+
+			TestSubscriber<String> testSubscriber = TestSubscriber.create();
+
+			Mono.fromFuture(future)
+			    .doOnNext(s -> {
+				    System.out.println("Called from " + Thread.currentThread().getName());
+					value.set(REF1.get());
+			    })
 			    .contextWrite(Context.of(KEY1, "present"))
-			    .block();
+			    .subscribe(testSubscriber);
+
+			latch.countDown();
+			testSubscriber.block();
 
 			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF1.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref1_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF1.get()).isEqualTo("ref1_init");
+
+			executorService.shutdownNow();
 		}
 	}
 
