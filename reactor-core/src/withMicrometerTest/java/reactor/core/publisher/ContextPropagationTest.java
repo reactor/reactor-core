@@ -608,10 +608,7 @@ class ContextPropagationTest {
 			TestSubscriber<String> testSubscriber = TestSubscriber.create();
 
 			Mono.fromFuture(future)
-			    .doOnNext(s -> {
-				    System.out.println("Called from " + Thread.currentThread().getName());
-					value.set(REF1.get());
-			    })
+			    .doOnNext(s -> value.set(REF1.get()))
 			    .contextWrite(Context.of(KEY1, "present"))
 			    .subscribe(testSubscriber);
 

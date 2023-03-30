@@ -24,9 +24,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 
+import io.micrometer.context.ContextSnapshot;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -53,12 +53,13 @@ final class MonoCompletionStage<T> extends Mono<T>
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
         if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
-            actual = new MonoContextWriteRestoringThreadLocals
-                    .ContextWriteRestoringThreadLocalsSubscriber<>(
-                            actual, actual.currentContext());
+            actual.onSubscribe(
+                    new MonoCompletionStageRestoringThreadLocalsSubscription<>(
+                            actual, future, suppressCancellation));
+        } else {
+            actual.onSubscribe(new MonoCompletionStageSubscription<>(
+                    actual, future, suppressCancellation));
         }
-
-        actual.onSubscribe(new MonoCompletionStageSubscription<>(actual, future, suppressCancellation));
     }
 
     @Override
@@ -133,6 +134,105 @@ final class MonoCompletionStage<T> extends Mono<T>
                 throw Exceptions.bubble(e1);
             }
             return null;
+        }
+
+        @Override
+        public void request(long n) {
+            if (this.cancelled) {
+                return;
+            }
+
+            if (this.requestedOnce == 1 || !REQUESTED_ONCE.compareAndSet(this, 0 , 1)) {
+                return;
+            }
+
+            future.handle(this);
+        }
+
+        @Override
+        public void cancel() {
+            this.cancelled = true;
+
+            final CompletionStage<? extends T> future = this.future;
+            if (!suppressCancellation && future instanceof Future) {
+                //noinspection unchecked
+                ((Future<? extends T>) future).cancel(true);
+            }
+        }
+    }
+
+    static class MonoCompletionStageRestoringThreadLocalsSubscription<T>
+            implements InnerProducer<T>, BiFunction<T, Throwable, Void> {
+
+        final CoreSubscriber<? super T>    actual;
+        final CompletionStage<? extends T> future;
+        final boolean                      suppressCancellation;
+
+        volatile int requestedOnce;
+        @SuppressWarnings("rawtypes")
+        static final AtomicIntegerFieldUpdater<MonoCompletionStageRestoringThreadLocalsSubscription> REQUESTED_ONCE =
+                AtomicIntegerFieldUpdater.newUpdater(MonoCompletionStageRestoringThreadLocalsSubscription.class, "requestedOnce");
+
+        volatile boolean cancelled;
+
+        MonoCompletionStageRestoringThreadLocalsSubscription(
+                CoreSubscriber<? super T> actual,
+                CompletionStage<? extends T> future,
+                boolean suppressCancellation) {
+            this.actual = actual;
+            this.future = future;
+            this.suppressCancellation = suppressCancellation;
+        }
+
+        @Override
+        public CoreSubscriber<? super T> actual() {
+            return this.actual;
+        }
+
+        @Override
+        public Void apply(@Nullable T value, @Nullable Throwable e) {
+            final CoreSubscriber<? super T> actual = this.actual;
+
+            try (ContextSnapshot.Scope ignored =
+                         ContextPropagation.setThreadLocals(actual.currentContext())) {
+                if (this.cancelled) {
+                    //nobody is interested in the Mono anymore, don't risk dropping errors
+                    final Context ctx = actual.currentContext();
+                    if (e == null || e instanceof CancellationException) {
+                        //we discard any potential value and ignore Future cancellations
+                        Operators.onDiscard(value, ctx);
+                    }
+                    else {
+                        //we make sure we keep _some_ track of a Future failure AFTER the Mono cancellation
+                        Operators.onErrorDropped(e, ctx);
+                        //and we discard any potential value just in case both e and v are not null
+                        Operators.onDiscard(value, ctx);
+                    }
+
+                    return null;
+                }
+
+                try {
+                    if (e instanceof CompletionException) {
+                        actual.onError(e.getCause());
+                    }
+                    else if (e != null) {
+                        actual.onError(e);
+                    }
+                    else if (value != null) {
+                        actual.onNext(value);
+                        actual.onComplete();
+                    }
+                    else {
+                        actual.onComplete();
+                    }
+                }
+                catch (Throwable e1) {
+                    Operators.onErrorDropped(e1, actual.currentContext());
+                    throw Exceptions.bubble(e1);
+                }
+                return null;
+            }
         }
 
         @Override
