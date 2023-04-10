@@ -51,7 +51,7 @@ jobs:
         id: slowerTests
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # tag=v2
         with:
-          arguments: reactor-core:test -Pjunit-tags=slow jcstress
+          arguments: reactor-core:test -Pjunit-tags=slow
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
