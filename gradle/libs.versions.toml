@@ -14,7 +14,7 @@ baselinePerfExtra = "3.5.1"
 # Other shared versions
 asciidoctor = "3.3.2"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.10.5"
+micrometer = "1.10.6"
 kotlin = "1.5.32"
 reactiveStreams = "1.0.4"
 
