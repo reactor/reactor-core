@@ -69,11 +69,24 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 			return null;
 		}
 
+		// Invoked AFTER doFirst
+		Context ctx;
+		try {
+			ctx = signalListener.addToContext(actual.currentContext());
+		}
+		catch (Throwable e) {
+			IllegalStateException listenerError = new IllegalStateException(
+					"Unable to augment tap Context at subscription via addToContext", e);
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
+			return null;
+		}
+
 		if (actual instanceof ConditionalSubscriber) {
 			//noinspection unchecked
-			return new TapConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+			return new TapConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener, ctx);
 		}
-		return new TapSubscriber<>(actual, signalListener);
+		return new TapSubscriber<>(actual, signalListener, ctx);
 	}
 
 	@Nullable
@@ -94,18 +107,10 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		boolean done;
 		Subscription s;
 
-		TapSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener) {
+		TapSubscriber(CoreSubscriber<? super T> actual,
+				SignalListener<T> signalListener, Context ctx) {
 			this.actual = actual;
 			this.listener = signalListener;
-			//note that since we're in the subscriber, this is technically invoked AFTER doFirst
-			Context ctx;
-			try {
-				ctx = signalListener.addToContext(actual.currentContext());
-			}
-			catch (Throwable e) {
-				signalListener.handleListenerError(new IllegalStateException("Unable to augment tap Context at construction via addToContext", e));
-				ctx = actual.currentContext();
-			}
 			this.context = ctx;
 		}
 
@@ -330,8 +335,9 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actualConditional;
 
-		public TapConditionalSubscriber(ConditionalSubscriber<? super T> actual, SignalListener<T> signalListener) {
-			super(actual, signalListener);
+		public TapConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				SignalListener<T> signalListener, Context ctx) {
+			super(actual, signalListener, ctx);
 			this.actualConditional = actual;
 		}
 

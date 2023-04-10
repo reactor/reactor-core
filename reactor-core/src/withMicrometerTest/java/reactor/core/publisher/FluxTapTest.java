@@ -560,6 +560,57 @@ class FluxTapTest {
 
 	@ParameterizedTestWithName
 	@ValueSource(booleans = {true, false})
+	void throwingAlterContext(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+		TestSignalListener<Integer> testSignalListener =
+				new TestSignalListener<Integer>() {
+					@Override
+					public Context addToContext(Context originalContext) {
+						throw new IllegalStateException("expected");
+					}
+				};
+
+		if (automatic) {
+			FluxTapRestoringThreadLocals<Integer, Void> test =
+					new FluxTapRestoringThreadLocals<>(Flux.just(1), factoryOf(testSignalListener));
+			assertThatCode(() -> test.subscribe(testSubscriber))
+					.doesNotThrowAnyException();
+		} else {
+			FluxTap<Integer, Void> test = new FluxTap<>(Flux.just(1), factoryOf(testSignalListener));
+			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
+					.doesNotThrowAnyException();
+		}
+
+		assertThat(testSubscriber.expectTerminalError())
+				.as("downstream error")
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Unable to augment tap Context at subscription via addToContext")
+				.extracting(Throwable::getCause)
+				.satisfies(t -> assertThat(t)
+						.isInstanceOf(IllegalStateException.class)
+						.hasMessage("expected"));
+
+		assertThat(testSignalListener.listenerErrors)
+				.as("listenerErrors")
+				.satisfies(errors -> {
+					assertThat(errors.size()).isEqualTo(1);
+					assertThat(errors.stream().findFirst().get())
+							.isInstanceOf(IllegalStateException.class)
+							.hasMessage("Unable to augment tap Context at subscription via addToContext")
+							.extracting(Throwable::getCause)
+							.satisfies(t -> assertThat(t)
+									.isInstanceOf(IllegalStateException.class)
+									.hasMessage("expected"));
+				});
+		assertThat(testSignalListener.events)
+				.containsExactly("doFirst");
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans = {true, false})
 	void doFirstListenerError(boolean automatic) {
 		if (automatic) {
 			Hooks.enableAutomaticContextPropagation();
@@ -659,6 +710,47 @@ class FluxTapTest {
 				.containsExactly(
 					"doFirst"
 				);
+		}
+
+		@Test
+		void throwingAlterContext() {
+			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+			TestSignalListener<Integer> testSignalListener =
+					new TestSignalListener<Integer>() {
+						@Override
+						public Context addToContext(Context originalContext) {
+							throw new IllegalStateException("expected");
+						}
+					};
+
+			FluxTapFuseable<Integer, Void> test = new FluxTapFuseable<>(
+					Flux.just(1), factoryOf(testSignalListener));
+			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
+					.doesNotThrowAnyException();
+
+			assertThat(testSubscriber.expectTerminalError())
+					.as("downstream error")
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessage("Unable to augment tap Context at subscription via addToContext")
+					.extracting(Throwable::getCause)
+					.satisfies(t -> assertThat(t)
+							.isInstanceOf(IllegalStateException.class)
+							.hasMessage("expected"));
+
+			assertThat(testSignalListener.listenerErrors)
+					.as("listenerErrors")
+					.satisfies(errors -> {
+						assertThat(errors.size()).isEqualTo(1);
+						assertThat(errors.stream().findFirst().get())
+								.isInstanceOf(IllegalStateException.class)
+								.hasMessage("Unable to augment tap Context at subscription via addToContext")
+								.extracting(Throwable::getCause)
+								.satisfies(t -> assertThat(t)
+										.isInstanceOf(IllegalStateException.class)
+										.hasMessage("expected"));
+					});
+			assertThat(testSignalListener.events)
+					.containsExactly("doFirst");
 		}
 
 		@Test
@@ -817,6 +909,47 @@ class FluxTapTest {
 		}
 
 		@Test
+		void throwingAlterContext() {
+			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+			TestSignalListener<Integer> testSignalListener =
+					new TestSignalListener<Integer>() {
+						@Override
+						public Context addToContext(Context originalContext) {
+							throw new IllegalStateException("expected");
+						}
+					};
+
+			MonoTap<Integer, Void> test = new MonoTap<>(
+					Mono.just(1), factoryOf(testSignalListener));
+			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
+					.doesNotThrowAnyException();
+
+			assertThat(testSubscriber.expectTerminalError())
+					.as("downstream error")
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessage("Unable to augment tap Context at subscription via addToContext")
+					.extracting(Throwable::getCause)
+					.satisfies(t -> assertThat(t)
+							.isInstanceOf(IllegalStateException.class)
+							.hasMessage("expected"));
+
+			assertThat(testSignalListener.listenerErrors)
+					.as("listenerErrors")
+					.satisfies(errors -> {
+						assertThat(errors.size()).isEqualTo(1);
+						assertThat(errors.stream().findFirst().get())
+								.isInstanceOf(IllegalStateException.class)
+								.hasMessage("Unable to augment tap Context at subscription via addToContext")
+								.extracting(Throwable::getCause)
+								.satisfies(t -> assertThat(t)
+										.isInstanceOf(IllegalStateException.class)
+										.hasMessage("expected"));
+					});
+			assertThat(testSignalListener.events)
+					.containsExactly("doFirst");
+		}
+
+		@Test
 		void doFirstListenerError() {
 			Throwable listenerError = new IllegalStateException("expected from doFirst");
 
@@ -915,6 +1048,47 @@ class FluxTapTest {
 				.containsExactly(
 					"doFirst"
 				);
+		}
+
+		@Test
+		void throwingAlterContext() {
+			TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+			TestSignalListener<Integer> testSignalListener =
+					new TestSignalListener<Integer>() {
+						@Override
+						public Context addToContext(Context originalContext) {
+							throw new IllegalStateException("expected");
+						}
+					};
+
+			MonoTapFuseable<Integer, Void> test = new MonoTapFuseable<>(
+					Mono.just(1), factoryOf(testSignalListener));
+			assertThatCode(() -> test.subscribeOrReturn(testSubscriber))
+					.doesNotThrowAnyException();
+
+			assertThat(testSubscriber.expectTerminalError())
+					.as("downstream error")
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessage("Unable to augment tap Context at subscription via addToContext")
+					.extracting(Throwable::getCause)
+					.satisfies(t -> assertThat(t)
+							.isInstanceOf(IllegalStateException.class)
+							.hasMessage("expected"));
+
+			assertThat(testSignalListener.listenerErrors)
+					.as("listenerErrors")
+					.satisfies(errors -> {
+						assertThat(errors.size()).isEqualTo(1);
+						assertThat(errors.stream().findFirst().get())
+								.isInstanceOf(IllegalStateException.class)
+								.hasMessage("Unable to augment tap Context at subscription via addToContext")
+								.extracting(Throwable::getCause)
+								.satisfies(t -> assertThat(t)
+										.isInstanceOf(IllegalStateException.class)
+										.hasMessage("expected"));
+					});
+			assertThat(testSignalListener.events)
+					.containsExactly("doFirst");
 		}
 
 		@Test
@@ -1039,7 +1213,7 @@ class FluxTapTest {
 			Subscription subscription = Operators.emptySubscription();
 
 			FluxTap.TapSubscriber<?> subscriber = new FluxTap.TapSubscriber<>(
-				actual, new TestSignalListener<>());
+				actual, new TestSignalListener<>(), actual.currentContext());
 
 			subscriber.onSubscribe(subscription);
 
@@ -1084,7 +1258,7 @@ class FluxTapTest {
 			Subscription subscription = Operators.emptySubscription();
 
 			FluxTap.TapConditionalSubscriber<?> subscriber = new FluxTap.TapConditionalSubscriber<>(
-				actual, new TestSignalListener<>());
+				actual, new TestSignalListener<>(), actual.currentContext());
 
 			subscriber.onSubscribe(subscription);
 
@@ -1106,7 +1280,7 @@ class FluxTapTest {
 			Subscription subscription = Operators.emptySubscription();
 
 			FluxTapFuseable.TapFuseableSubscriber<?> subscriber = new FluxTapFuseable.TapFuseableSubscriber<>(
-				actual, new TestSignalListener<>());
+				actual, new TestSignalListener<>(), actual.currentContext());
 
 			subscriber.onSubscribe(subscription);
 
@@ -1127,9 +1301,9 @@ class FluxTapTest {
 			ConditionalSubscriber<? super Integer> actual = Operators.toConditionalSubscriber(Operators.drainSubscriber());
 			Subscription subscription = Operators.emptySubscription();
 
-			FluxTapFuseable.TapConditionalFuseableSubscriber<?>
-				subscriber = new FluxTapFuseable.TapConditionalFuseableSubscriber<>(
-				actual, new TestSignalListener<>());
+			FluxTapFuseable.TapConditionalFuseableSubscriber<?> subscriber =
+					new FluxTapFuseable.TapConditionalFuseableSubscriber<>(
+							actual, new TestSignalListener<>(), actual.currentContext());
 
 			subscriber.onSubscribe(subscription);
 
