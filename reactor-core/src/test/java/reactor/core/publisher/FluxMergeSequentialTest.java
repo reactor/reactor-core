@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
@@ -373,6 +374,24 @@ public class FluxMergeSequentialTest {
 		ts.assertNoValues();
 		ts.assertError(RuntimeException.class);
 		ts.assertNotComplete();
+	}
+
+	@Test
+	public void testInnerErrorWithDroppedError() {
+		final AtomicInteger count = new AtomicInteger();
+
+		Flux.range(0, 3)
+			.flatMapSequential(i -> Mono.defer(() -> {
+				throw new RuntimeException("forced failure");
+			}))
+			.onErrorContinue((t, v) -> {
+				if (t.getMessage().contains("forced failure")) {
+					count.incrementAndGet();
+				}
+			})
+			.subscribe();
+
+		Assertions.assertEquals(3, count.get());
 	}
 
 	@SuppressWarnings("unchecked")
