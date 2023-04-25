@@ -155,9 +155,10 @@ final class ContextN extends LinkedHashMap<Object, Object>
 			return newContext;
 		}
 
-		Context[] holder = new Context[]{base};
-		forEach((k, v) -> holder[0] = holder[0].put(k, v));
-		return holder[0];
+		final ContextN newContext = new ContextN(base.size() + this.size());
+		newContext.putAll((Map<Object, Object>) this);
+		base.forEach((k, v) -> newContext.accept(k, v));
+		return newContext;
 	}
 
 	@Override
