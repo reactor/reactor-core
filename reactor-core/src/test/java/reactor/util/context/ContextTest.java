@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package reactor.util.context;
 
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -465,6 +466,61 @@ class ContextTest {
 	}
 
 	@Test
+	void defaultPutAllHasSameKey() {
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(1, "A");
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(1, "A");
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+
+		ContextN left = new ContextN(leftMap);
+		ContextN right = new ContextN(rightMap);
+
+		final Context combined = left.putAll(right.readOnly());
+		assertThat(combined).isInstanceOf(ContextN.class);
+		ContextN combinedN = (ContextN) combined;
+		// If they have the same key, they are merged for the same key.
+		assertThat(combinedN).hasSize(9);
+	}
+
+	@Test
+	void defaultPutAllIntoCheckValue() {
+		int key = 1;
+		String oldValue = "A";
+		String newValue = "B";
+
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(key, oldValue);
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(key, newValue);
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+
+		ContextN left = new ContextN(leftMap);
+		ContextN right1 = new ContextN(rightMap);
+		Context1 right2 = new Context1(key, newValue);
+
+		final Context combined1 = left.putAllInto(right2);
+		final Context combined2 = left.putAllInto(right1);
+
+		// The result is to have the value of the key included as an argument, if the same key exists.
+		Assertions.assertEquals((String) combined1.get(key), (String) combined2.get(key));
+	}
+
+	@Test
 	void defaultPutAllOtherIsAbstractContext() {
 		Map<Object, Object> leftMap = new HashMap<>();
 		leftMap.put(1, "A");
@@ -482,10 +538,10 @@ class ContextTest {
 		right.accept(6, "F");
 
 		Context combined = left.putAll(right.readOnly());
-		assertThat(combined).isInstanceOf(ForeignContext.class);
-		ForeignContext combinedN = (ForeignContext) combined;
+		assertThat(combined).isInstanceOf(ContextN.class);
+		ContextN combinedN = (ContextN) combined;
 
-		assertThat(combinedN.delegate)
+		assertThat(combinedN)
 				.containsKeys(1, 2, 3, 4, 5, 6, 10, 11, 12, 13)
 				.containsValues("A", "B", "C", "D", "E", "F", "A10", "A11", "A12", "A13");
 	}
