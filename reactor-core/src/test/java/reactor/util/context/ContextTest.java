@@ -538,10 +538,10 @@ class ContextTest {
 		right.accept(6, "F");
 
 		Context combined = left.putAll(right.readOnly());
-		assertThat(combined).isInstanceOf(ContextN.class);
-		ContextN combinedN = (ContextN) combined;
+		assertThat(combined).isInstanceOf(ForeignContext.class);
+		ForeignContext combinedN = (ForeignContext) combined;
 
-		assertThat(combinedN)
+		assertThat(combinedN.delegate)
 				.containsKeys(1, 2, 3, 4, 5, 6, 10, 11, 12, 13)
 				.containsValues("A", "B", "C", "D", "E", "F", "A10", "A11", "A12", "A13");
 	}

@@ -148,17 +148,16 @@ final class ContextN extends LinkedHashMap<Object, Object>
 
 	@Override
 	public Context putAllInto(Context base) {
-		if (base instanceof ContextN) {
+		if (base instanceof CoreContext) {
 			ContextN newContext = new ContextN(base.size() + this.size());
-			newContext.putAll((Map<Object, Object>) base);
+			newContext.putAll(base.readOnly());
 			newContext.putAll((Map<Object, Object>) this);
 			return newContext;
 		}
 
-		final ContextN newContext = new ContextN(base.size() + this.size());
-		base.forEach((k, v) -> newContext.accept(k, v));
-		newContext.putAll((Map<Object, Object>) this);
-		return newContext;
+		Context[] holder = new Context[]{base};
+		forEach((k, v) -> holder[0] = holder[0].put(k, v));
+		return holder[0];
 	}
 
 	@Override
