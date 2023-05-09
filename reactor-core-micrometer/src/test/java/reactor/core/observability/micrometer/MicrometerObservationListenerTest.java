@@ -336,7 +336,7 @@ class MicrometerObservationListenerTest {
 		final String expectedStatus = "completedOnNext";
 
 		//we use a test-oriented constructor to force the onNext completion case to have a different tag value
-		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, expectedStatus);
+		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, expectedStatus, null);
 
 		listener.doFirst(); // forces observation start
 		listener.doOnNext(1); // emulates onNext, should stop observation

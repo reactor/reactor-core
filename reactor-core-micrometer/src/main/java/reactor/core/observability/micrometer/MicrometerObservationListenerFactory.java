@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.observability.micrometer;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.reactivestreams.Publisher;
 
@@ -23,7 +24,10 @@ import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.ContextView;
+
+import java.util.function.Function;
 
 /**
  * A {@link SignalListenerFactory} for {@link MicrometerObservationListener}.
@@ -33,9 +37,16 @@ import reactor.util.context.ContextView;
 class MicrometerObservationListenerFactory<T> implements SignalListenerFactory<T, MicrometerObservationListenerConfiguration> {
 
 	final ObservationRegistry registry;
+	@Nullable final Function<ObservationRegistry, Observation> observationSupplier;
 
 	public MicrometerObservationListenerFactory(ObservationRegistry registry) {
+		this(registry, null);
+	}
+
+	public MicrometerObservationListenerFactory(ObservationRegistry registry,
+			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
 		this.registry = registry;
+		this.observationSupplier = observationSupplier;
 	}
 
 	@Override
@@ -54,6 +65,6 @@ class MicrometerObservationListenerFactory<T> implements SignalListenerFactory<T
 	@Override
 	public SignalListener<T> createListener(Publisher<? extends T> source, ContextView listenerContext,
 											MicrometerObservationListenerConfiguration publisherContext) {
-		return new MicrometerObservationListener<>(listenerContext, publisherContext);
+		return new MicrometerObservationListener<>(listenerContext, publisherContext, observationSupplier);
 	}
 }
