@@ -68,7 +68,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super I> actual) {
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			source.subscribe(new FluxSourceRestoringThreadLocalsSubscriber<>(actual));
 		} else {
 			source.subscribe(actual);

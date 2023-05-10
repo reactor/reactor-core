@@ -328,7 +328,7 @@ class ContextPropagationTest {
 
 	@Test
 	void isContextPropagationAvailable() {
-		assertThat(ContextPropagation.isContextPropagationAvailable()).isTrue();
+		assertThat(ContextPropagationSupport.isContextPropagationAvailable()).isTrue();
 	}
 
 	@Test
@@ -890,8 +890,8 @@ class ContextPropagationTest {
 				context = Context.empty();
 			}
 
-			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagation.contextRestoreForHandle(originalHandler,
-				() -> context);
+			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagationSupport.dontRestoreContextForHandle() ?
+					originalHandler : ContextPropagation.contextRestoreForHandle(originalHandler, () -> context);
 
 			if (withContext) {
 				assertThat(decoratedHandler).as("context not empty: decorated handler").isNotSameAs(originalHandler);
@@ -912,8 +912,8 @@ class ContextPropagationTest {
 			final String expected = "bar=expected";
 			final Context context = Context.of(KEY1, "expected");
 
-			BiConsumer<String, SynchronousSink<String>> decoratedHandler =
-				ContextPropagation.contextRestoreForHandle(originalHandler, () -> context);
+			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagationSupport.dontRestoreContextForHandle() ?
+					originalHandler : ContextPropagation.contextRestoreForHandle(originalHandler, () -> context);
 
 			SynchronousSink<String> mockSink = Mockito.mock(SynchronousSink.class);
 			decoratedHandler.accept("bar", mockSink);

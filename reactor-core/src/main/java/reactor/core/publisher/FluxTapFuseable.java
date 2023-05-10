@@ -59,7 +59,8 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		}
 		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
 		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
+		signalListener = ContextPropagationSupport.isContextPropagationAvailable() ?
+				ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext) : signalListener;
 
 		try {
 			signalListener.doFirst();

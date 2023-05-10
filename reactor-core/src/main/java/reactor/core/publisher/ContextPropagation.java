@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.AbstractQueue;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,8 +32,6 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ThreadLocalAccessor;
 import reactor.core.observability.SignalListener;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -47,58 +44,13 @@ import reactor.util.context.ContextView;
  */
 final class ContextPropagation {
 
-	static final Logger LOGGER;
-
-	// Note: If reflection is used for this field, then the name of the field should end with 'Available'.
-	// The preprocessing for native-image support is in Spring Framework, and is a short term solution.
-	// The field should end with 'Available'. See org.springframework.aot.nativex.feature.PreComputeFieldFeature.
-	// Ultimately the long term solution should be provided by Reactor Core.
-	static final boolean isContextPropagationOnClasspath;
-	static boolean propagateContextToThreadLocals = false;
-
 	static final Predicate<Object> PREDICATE_TRUE = v -> true;
 	static final Function<Context, Context> NO_OP = c -> c;
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 
-
 	static {
-		LOGGER = Loggers.getLogger(ContextPropagation.class);
-
-		Function<Context, Context> contextCaptureFunction;
-		boolean contextPropagation;
-		try {
-			// The following line will throw a LinkageError (NoClassDefFoundError) in case context propagation is not available
-			ContextRegistry globalRegistry = ContextRegistry.getInstance();
-			contextCaptureFunction = new ContextCaptureNoPredicate(globalRegistry);
-			contextPropagation = true;
-		}
-		catch (LinkageError t) {
-			// Context-Propagation library is not available
-			contextCaptureFunction = NO_OP;
-			contextPropagation = false;
-		}
-		catch (Throwable t) {
-			contextCaptureFunction = NO_OP;
-			contextPropagation = false;
-			LOGGER.error("Unexpected exception while detecting ContextPropagation feature." +
-					" The feature is considered disabled due to this:", t);
-		}
-
-		isContextPropagationOnClasspath = contextPropagation;
-		WITH_GLOBAL_REGISTRY_NO_PREDICATE = contextCaptureFunction;
-	}
-
-	/**
-	 * Is Micrometer {@code context-propagation} API on the classpath?
-	 *
-	 * @return true if context-propagation is available at runtime, false otherwise
-	 */
-	static boolean isContextPropagationAvailable() {
-		return isContextPropagationOnClasspath;
-	}
-
-	static boolean shouldPropagateContextToThreadLocals() {
-		return isContextPropagationOnClasspath && propagateContextToThreadLocals;
+		WITH_GLOBAL_REGISTRY_NO_PREDICATE = ContextPropagationSupport.isContextPropagationAvailable() ?
+				new ContextCaptureNoPredicate(ContextRegistry.getInstance()) : NO_OP;
 	}
 
 	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
@@ -120,7 +72,7 @@ final class ContextPropagation {
 	 * @return the {@link Context} augmented with captured entries
 	 */
 	static Function<Context, Context> contextCapture() {
-		if (!isContextPropagationOnClasspath) {
+		if (!ContextPropagationSupport.isContextPropagationOnClasspath) {
 			return NO_OP;
 		}
 		return WITH_GLOBAL_REGISTRY_NO_PREDICATE;
@@ -143,7 +95,7 @@ final class ContextPropagation {
 	 * @return a {@link Function} augmenting {@link Context} with captured entries
 	 */
 	static Function<Context, Context> contextCapture(Predicate<Object> captureKeyPredicate) {
-		if (!isContextPropagationOnClasspath) {
+		if (!ContextPropagationSupport.isContextPropagationOnClasspath) {
 			return NO_OP;
 		}
 		return target -> ContextSnapshot.captureAllUsing(captureKeyPredicate, ContextRegistry.getInstance())
@@ -162,7 +114,7 @@ final class ContextPropagation {
 	 * @param <R> the transformed type
 	 */
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
-		if (propagateContextToThreadLocals || !ContextPropagation.isContextPropagationAvailable()) {
+		if (ContextPropagationSupport.propagateContextToThreadLocals || !ContextPropagationSupport.isContextPropagationAvailable()) {
 			return handler;
 		}
 		final Context ctx = contextSupplier.get();
@@ -192,7 +144,7 @@ final class ContextPropagation {
 	 * @param <T> type of handled values
 	 */
 	static <T> SignalListener<T> contextRestoreForTap(final SignalListener<T> original, Supplier<Context> contextSupplier) {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (!ContextPropagationSupport.isContextPropagationAvailable()) {
 			return original;
 		}
 		final Context ctx = contextSupplier.get();

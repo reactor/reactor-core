@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,8 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagation.contextRestoreForHandle(this.handler, actual::currentContext);
+		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagationSupport.dontRestoreContextForHandle() ?
+				this.handler : ContextPropagation.contextRestoreForHandle(this.handler, actual::currentContext);
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			@SuppressWarnings("unchecked")
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) actual;
@@ -270,7 +271,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -471,12 +472,12 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 			}
 			data = Objects.requireNonNull(o, "data");
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
