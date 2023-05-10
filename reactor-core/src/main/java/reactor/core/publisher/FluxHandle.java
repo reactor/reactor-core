@@ -271,7 +271,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		public void request(long n) {
 			s.request(n);
 		}
-
+		
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -472,12 +472,12 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 			}
 			data = Objects.requireNonNull(o, "data");
 		}
-
+		
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-
+		
 		@Override
 		public void cancel() {
 			s.cancel();
