@@ -417,12 +417,7 @@ final class ContextPropagation {
 
 		previousValues = (previousValues != null ? previousValues : new HashMap<>());
 		previousValues.put(key, accessor.getValue());
-		if (value != null) {
-			((ThreadLocalAccessor<V>) accessor).setValue(value);
-		}
-		else {
-			accessor.reset();
-		}
+		((ThreadLocalAccessor<V>) accessor).setValue(value);
 		return previousValues;
 	}
 
