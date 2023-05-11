@@ -72,9 +72,6 @@ final class ContextPropagation {
 	 * @return the {@link Context} augmented with captured entries
 	 */
 	static Function<Context, Context> contextCapture() {
-		if (!ContextPropagationSupport.isContextPropagationOnClasspath) {
-			return NO_OP;
-		}
 		return WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 	}
 
