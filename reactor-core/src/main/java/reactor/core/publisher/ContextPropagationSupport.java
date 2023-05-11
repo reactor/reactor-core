@@ -56,7 +56,7 @@ final class ContextPropagationSupport {
         return isContextPropagationOnClasspath && propagateContextToThreadLocals;
     }
 
-    static boolean dontRestoreContextForHandle() {
-        return propagateContextToThreadLocals || !isContextPropagationOnClasspath;
+    static boolean shouldRestoreThreadLocalsInSomeOperators() {
+        return isContextPropagationOnClasspath && !propagateContextToThreadLocals;
     }
 }

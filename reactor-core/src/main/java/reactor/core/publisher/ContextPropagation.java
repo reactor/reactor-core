@@ -111,18 +111,20 @@ final class ContextPropagation {
 	 * @param <R> the transformed type
 	 */
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
-		if (ContextPropagationSupport.propagateContextToThreadLocals || !ContextPropagationSupport.isContextPropagationAvailable()) {
-			return handler;
-		}
-		final Context ctx = contextSupplier.get();
-		if (ctx.isEmpty()) {
-			return handler;
-		}
-		return (v, sink) -> {
-			try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
-				handler.accept(v, sink);
+		if (ContextPropagationSupport.shouldRestoreThreadLocalsInSomeOperators()) {
+			final Context ctx = contextSupplier.get();
+			if (ctx.isEmpty()) {
+				return handler;
 			}
-		};
+			return (v, sink) -> {
+				try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
+					handler.accept(v, sink);
+				}
+			};
+		}
+		else {
+			return handler;
+		}
 	}
 
 	/**

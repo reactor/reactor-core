@@ -45,8 +45,8 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagationSupport.dontRestoreContextForHandle() ?
-				this.handler : ContextPropagation.contextRestoreForHandle(this.handler, actual::currentContext);
+		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagationSupport.shouldRestoreThreadLocalsInSomeOperators() ?
+				ContextPropagation.contextRestoreForHandle(this.handler, actual::currentContext) : this.handler;
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			@SuppressWarnings("unchecked")
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) actual;

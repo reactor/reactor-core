@@ -41,8 +41,8 @@ final class MonoHandle<T, R> extends InternalMonoOperator<T, R> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagationSupport.dontRestoreContextForHandle() ?
-				this.handler : ContextPropagation.contextRestoreForHandle(this.handler, actual::currentContext);
+		BiConsumer<? super T, SynchronousSink<R>> handler2 = ContextPropagationSupport.shouldRestoreThreadLocalsInSomeOperators() ?
+				ContextPropagation.contextRestoreForHandle(this.handler, actual::currentContext) : this.handler;
 		return new FluxHandle.HandleSubscriber<>(actual, handler2);
 	}
 
