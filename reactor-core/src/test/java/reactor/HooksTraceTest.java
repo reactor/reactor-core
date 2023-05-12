@@ -16,10 +16,14 @@
 
 package reactor;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,7 @@ import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
@@ -42,7 +47,36 @@ import static org.assertj.core.api.Assertions.*;
  * @author Stephane Maldini
  */
 public class HooksTraceTest {
+	@Test
+	void test() {
+		AtomicLong upstream = new AtomicLong(0L);
+		AtomicLong downstream = new AtomicLong(0L);
 
+		Flux.fromStream(Stream.iterate(0L, (last) -> ++last))
+		    .flatMap(number -> Flux.concat(
+				    Mono.just(number),
+				    Mono.just(number)))
+		    .take(768)
+		    .doOnNext(next -> {
+			    upstream.incrementAndGet();
+		    })
+		    .publishOn(Schedulers.boundedElastic())
+		    .groupBy(Function.identity())
+		    .flatMap(groupFlux -> {
+				groupFlux.subscribe();
+			    return Flux.just(1L)
+			               .collectList();
+		    })
+//		    .doOnNext(batch -> {
+//			    long startNano = System.nanoTime();
+//			    while (System.nanoTime() - startNano < 1_000_000) ;
+//		    })
+		    .map(List::size)
+		    .doOnNext(downstream::addAndGet)
+		    .count()
+		    .timeout(Duration.ofSeconds(30))
+		    .block();
+	}
 	@Test
 	public void testTrace() {
 		Hooks.onOperatorDebug();

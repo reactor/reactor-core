@@ -42,7 +42,7 @@ interface CoreContext extends Context {
 
 		ContextN newContext = new ContextN(this.size() + other.size());
 		this.unsafePutAllInto(newContext);
-		other.stream().sequential().forEach(newContext);
+		other.forEach(newContext);
 		if (newContext.size() <= 5) {
 			// make it return Context{1-5}
 			return Context.of((Map<?, ?>) newContext);

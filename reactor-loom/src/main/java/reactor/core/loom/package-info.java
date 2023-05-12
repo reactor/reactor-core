@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-	id "com.gradle.enterprise" version "3.12.4"
-}
 
-rootProject.name = 'reactor'
+/**
+ * Support of Micrometer 1.10+ instrumentation on reactor-core classes.
+ */
+@NonNullApi
+package reactor.core.loom;
 
-include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools',
-		'reactor-core-micrometer'
-
-if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
-  include "reactor-loom"
-}
-
-//libs catalog is declared in ./gradle/libs.versions.toml
-//TODO remove once Version Catalogs are stabilized. It is also activated in buildSrc
-enableFeaturePreview("VERSION_CATALOGS")
+import reactor.util.annotation.NonNullApi;

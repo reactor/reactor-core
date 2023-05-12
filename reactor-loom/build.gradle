@@ -1,0 +1,92 @@
+/*
+ * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'biz.aQute.bnd.builder'
+apply plugin: 'java-library'
+
+description = 'Reactor-Core Loom support'
+
+version = "$metricsMicrometerVersion"
+group = "io.projectreactor"
+
+ext {
+	def osgiVersion = osgiVersion("$metricsMicrometerVersion")
+
+	bndOptions = [
+		"Export-Package": [
+			"!*internal*",
+			"reactor.core.observability.micrometer*;version=$osgiVersion;-noimport:=true"
+		].join(","),
+		"Import-Package": [
+			"!javax.annotation",
+			"*"
+		].join(","),
+		"Bundle-Name" : "reactor-core-micrometer",
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-core-micrometer",
+		"Bundle-Version" : "$osgiVersion"
+	]
+}
+
+dependencies {
+	api project(":reactor-core")
+	compileOnly libs.jsr305
+
+	implementation platform(libs.micrometer.bom)
+	api libs.micrometer.core
+
+	testImplementation platform("org.junit:junit-bom:$junitVersion")
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testImplementation "org.junit.platform:junit-platform-launcher"
+	testImplementation "org.junit.jupiter:junit-jupiter-params"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+
+	testImplementation platform(libs.micrometer.bom)
+	testImplementation libs.micrometer.core
+	testImplementation libs.micrometer.test
+	testImplementation libs.micrometer.observation.test
+	testImplementation libs.micrometer.contextPropagation
+	testImplementation(libs.micrometer.tracing.test) { //brings in context-propagation
+		exclude group: "io.micrometer", module: "context-propagation"
+	}
+
+	testImplementation(project(":reactor-test")) {
+		exclude module: 'reactor-core'
+	}
+	// Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
+	testImplementation project(":reactor-core").sourceSets.test.output
+
+	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion" //need to access API to decrease some tests verbosity
+	testImplementation "org.assertj:assertj-core:$assertjVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
+}
+
+tasks.withType(Test).all {
+  useJUnitPlatform()
+}
+
+// javadoc is configured in gradle/javadoc.gradle
+
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'reactor-core-micrometer',
+			'Implementation-Version': project.version,
+			'Automatic-Module-Name': 'reactor.core.micrometer'
+	}
+	bnd(bndOptions)
+}
+
+//TODO once 1.0.0 is released, introduce JAPICMP checks
