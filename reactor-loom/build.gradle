@@ -21,6 +21,8 @@ description = 'Reactor-Core Loom support'
 
 version = "$metricsMicrometerVersion"
 group = "io.projectreactor"
+sourceCompatibility = '19'
+targetCompatibility = '19'
 
 ext {
 	def osgiVersion = osgiVersion("$metricsMicrometerVersion")

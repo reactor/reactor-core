@@ -4,6 +4,7 @@ import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.concurrent.Queues;
 
 public class LoomSupport {
@@ -14,6 +15,6 @@ public class LoomSupport {
 
 	 static <T, R> Function<Flux<T>, Flux<R>> mapAsync(Function<T, R> mapper, int concurrency) {
 		 return f -> f.flatMap((v) -> Mono.fromCallable(() -> mapper.apply(v))
-		                                  .subscribeOn(VirtualThreadsScheduler.instance()), concurrency);
+		                                  .subscribeOn(Schedulers.boundedElastic()), concurrency);
 	 }
 }

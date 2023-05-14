@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -1073,8 +1074,42 @@ public abstract class Schedulers {
 	static AtomicReference<CachedScheduler> CACHED_SINGLE          = new AtomicReference<>();
 
 	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER =
-			() -> newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE, DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
-					BOUNDED_ELASTIC, BoundedElasticScheduler.DEFAULT_TTL_SECONDS, true);
+			() -> {
+				ThreadFactory threadFactory;
+				try {
+					Class<Thread> aClass = Thread.class;
+					Method virtual = aClass.getMethod("ofVirtual");
+					Class<?> builderCl = virtual.invoke(null).getClass();
+
+					Method nameMethod = builderCl.getMethod("name", String.class);
+					nameMethod.setAccessible(true);
+					Method unstartedMethod = builderCl.getMethod("unstarted", Runnable.class);
+					unstartedMethod.setAccessible(true);
+
+					threadFactory = new LoomThreadFactory(BOUNDED_ELASTIC,
+							BoundedElasticScheduler.COUNTER, (name, runnable) -> {
+								try {
+									Object builder = virtual.invoke(null);
+									builder = nameMethod.invoke(builder, name);
+									return (Thread) unstartedMethod.invoke(builder, runnable);
+								}
+								catch (Throwable e) {
+									throw new RuntimeException(e);
+								}
+							},
+							Schedulers::defaultUncaughtException);
+				} catch (Throwable t) {
+					threadFactory = new ReactorThreadFactory(BOUNDED_ELASTIC,
+							BoundedElasticScheduler.COUNTER,
+							true,
+							false,
+							Schedulers::defaultUncaughtException);
+				}
+				return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
+						DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
+						threadFactory,
+						BoundedElasticScheduler.DEFAULT_TTL_SECONDS);
+			};
 
 	static final Supplier<Scheduler> PARALLEL_SUPPLIER =
 			() -> newParallel(PARALLEL, DEFAULT_POOL_SIZE, true);

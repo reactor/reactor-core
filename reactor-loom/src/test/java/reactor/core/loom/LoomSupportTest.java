@@ -15,14 +15,13 @@ class LoomSupportTest {
 
 	@Test
 	public void testWithVirtualThreads() throws InterruptedException {
-		ScheduledExecutorService service = Executors.newScheduledThreadPool(1,
-				Thread.ofVirtual()
-				      .factory());
-
-		service.scheduleAtFixedRate(() -> System.out.println("hello world" + Thread.currentThread()),
+		Scheduler scheduler = Schedulers.boundedElastic();
+		scheduler.schedulePeriodically(() -> System.out.println("hello world" + Thread.currentThread()),
 				100,
 				100,
 				TimeUnit.MILLISECONDS);
+
+		Thread.sleep(10000);
 		// 1 tweak bounded elastic at runtime and decide whether to run on loom
 		// thread or on
 		// kernel threads
