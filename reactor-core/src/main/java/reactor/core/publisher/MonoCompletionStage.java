@@ -52,7 +52,7 @@ final class MonoCompletionStage<T> extends Mono<T>
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+        if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
             actual.onSubscribe(
                     new MonoCompletionStageRestoringThreadLocalsSubscription<>(
                             actual, future, suppressCancellation));

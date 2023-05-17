@@ -65,7 +65,7 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	 */
 	@Override
 	public void subscribe(CoreSubscriber<? super I> actual) {
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			source.subscribe(new MonoSourceRestoringThreadLocalsSubscriber<>(actual));
 		} else {
 			source.subscribe(actual);
