@@ -306,16 +306,16 @@ The print happens on the latest execution context, which is the one from `publis
 
 === The `subscribeOn` Method
 
-`subscribeOn` applies to the subscription process, when that backward chain is
-constructed. As a consequence, no matter where you place the `subscribeOn` in the chain,
-*it always affects the context of the source emission*. However, this does not affect the
+`subscribeOn` applies to the subscription process, when the backward chain is being
+constructed. It is usually recommended to place it immediately after the source of data,
+as intermediate operators can affect the context of the execution.
+
+However, this does not affect the
 behavior of subsequent calls to `publishOn` -- they still switch the execution context for
 the part of the chain after them.
 
 * Changes the `Thread` from which the *whole chain* of operators subscribes
 * Picks one thread from the `Scheduler`
-
-NOTE: Only the earliest `subscribeOn` call in the chain is actually taken into account.
 
 The following example uses the `subscribeOn` method:
 
