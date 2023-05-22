@@ -178,13 +178,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.queue = Queues.<T>get(prefetch).get();
 		}
 
-		private void log(String msg) {
-			if (logger != null) {
-				logger.trace(String.format("[%s][%s]",
-						Thread.currentThread()
-						      .getId(),
-						msg));
-			}
+		// TODO: wrap all calls to logger.trace with if:
+		private void trace(Logger logger, String msg) {
+			logger.trace(String.format("[%s][%s]", Thread.currentThread().getId(), msg));
 		}
 
 		@Override
@@ -197,7 +193,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		@Override
 		public void onNext(T t) {
-			log("onNext: " + t);
+			if (logger != null) {
+				trace(logger, "onNext: " + t);
+			}
 			// check if terminated (cancelled / error / completed) -> discard value if so
 
 			// increment index
@@ -227,12 +225,16 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					if (INDEX.compareAndSet(this, index, index + 1)) {
 						if (index == 0) {
 							try {
-								log("timerStart");
+								if (logger != null) {
+									trace(logger, "timerStart");
+								}
 								currentTimeoutTask = timer.schedule(this::bufferTimedOut,
 										timeSpan,
 										unit);
 							} catch (RejectedExecutionException ree) {
-								log("Timer rejected for " + t);
+								if (logger != null) {
+									trace(logger, "Timer rejected for " + t);
+								}
 								Context ctx = actual.currentContext();
 								Throwable error = Operators.onRejectedExecution(ree, subscription, null, t, ctx);
 								this.error = error;
@@ -241,7 +243,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 									Operators.onErrorDropped(error, ctx);
 									return;
 								}
-								log("Discarding upon timer rejection" + t);
+								if (logger != null) {
+									trace(logger, "Discarding upon timer rejection" + t);
+								}
 								Operators.onDiscard(t, ctx);
 								drain();
 								return;
@@ -268,7 +272,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					drain();
 				}
 			} else {
-				log("Discarding onNext: " + t);
+				if (logger != null) {
+					trace(logger, "Discarding onNext: " + t);
+				}
 				Operators.onDiscard(t, currentContext());
 			}
 		}
@@ -336,7 +342,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				} else {
 					long requestLimit = prefetch;
 					if (requestLimit > outstanding) {
-						log("requestMore: " + (requestLimit - outstanding) + ", outstanding: " + outstanding);
+						if (logger != null) {
+							trace(logger, "requestMore: " + (requestLimit - outstanding) + ", outstanding: " + outstanding);
+						}
 						requestMore(requestLimit - outstanding);
 					}
 				}
@@ -358,7 +366,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// dispose timer
 			// drain for proper cleanup
 
-			log("cancel");
+			if (logger != null) {
+				trace(logger, "cancel");
+			}
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
 				if (this.subscription != null) {
 					this.subscription.cancel();
@@ -380,7 +390,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			// TODO: try comparing against current reference and see if it was not
 			//  cancelled -> to do this, replace Disposable timeoutTask with volatile
 			//  and use CAS.
-			log("timerFire");
+			if (logger != null) {
+				trace(logger, "timerFire");
+			}
 			this.index = 0; // if currently being drained, it means the buffer is
 			// delivered due to reaching the batchSize
 			drain();
@@ -398,7 +410,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			if (WIP.getAndIncrement(this) == 0) {
 				for (;;) {
 					int wip = this.wip;
-					log("drain. wip: " + wip);
+					if (logger != null) {
+						trace(logger, "drain. wip: " + wip);
+					}
 					if (terminated == NOT_TERMINATED) {
 						// is there demand?
 						while (flushABuffer()) {
@@ -408,14 +422,18 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					} else {
 						if (completed) {
 							// if queue is empty, the discard is ignored
-							log("Discarding entire queue of " + queue.size());
+							if (logger != null) {
+								trace(logger, "Discarding entire queue of " + queue.size());
+							}
 							Operators.onDiscardQueueWithClear(queue, currentContext(),
 									null);
 							return;
 						}
 						// TODO: potentially the below can be executed twice?
 						if (terminated == TERMINATED_WITH_CANCEL) {
-							log("Discarding entire queue of " + queue.size());
+							if (logger != null) {
+								trace(logger, "Discarding entire queue of " + queue.size());
+							}
 							Operators.onDiscardQueueWithClear(queue, currentContext(),
 									null);
 							return;
@@ -432,7 +450,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 								actual.onComplete();
 							}
 						} else {
-							log("Queue not empty after termination");
+							if (logger != null) {
+								trace(logger, "Queue not empty after termination");
+							}
 						}
 					}
 					if (WIP.compareAndSet(this, wip, 0)) {
@@ -463,17 +483,23 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					requested = REQUESTED.decrementAndGet(this);
 				}
 
-				log("flush: " + buffer + ", now requested: " + requested);
+				if (logger != null) {
+					trace(logger, "flush: " + buffer + ", now requested: " + requested);
+				}
 
 				actual.onNext(buffer);
 
 				if (requested != Long.MAX_VALUE) {
-					log("outstanding(" + outstanding + ") -= " + i);
+					if (logger != null) {
+						trace(logger, "outstanding(" + outstanding + ") -= " + i);
+					}
 					long remaining = OUTSTANDING.addAndGet(this, -i);
 					if (terminated == NOT_TERMINATED) {
 						int replenishMark = prefetch >> 1; // TODO: create field limit instead
 						if (remaining < replenishMark) {
-							log("replenish: " + (prefetch - remaining) + ", outstanding: " + outstanding);
+							if (logger != null) {
+								trace(logger, "replenish: " + (prefetch - remaining) + ", outstanding: " + outstanding);
+							}
 							requestMore(prefetch - remaining);
 						}
 					}
