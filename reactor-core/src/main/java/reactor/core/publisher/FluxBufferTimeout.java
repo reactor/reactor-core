@@ -178,7 +178,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.queue = Queues.<T>get(prefetch).get();
 		}
 
-		// TODO: wrap all calls to logger.trace with if:
 		private void trace(Logger logger, String msg) {
 			logger.trace(String.format("[%s][%s]", Thread.currentThread().getId(), msg));
 		}
