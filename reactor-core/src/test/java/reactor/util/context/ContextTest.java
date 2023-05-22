@@ -20,7 +20,9 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Proxy;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -518,6 +520,49 @@ class ContextTest {
 
 		// The result is to have the value of the key included as an argument, if the same key exists.
 		Assertions.assertEquals((String) combined1.get(key), (String) combined2.get(key));
+	}
+
+	@Test
+	public void defaultPutAllIntoCheckCreatingObject() {
+		// This test verifies that if the argument to puAllInto() is a CoreContext, it is created Context efficiently. (Note that it has to be created only once.)
+
+		for (int i = 0; i <= 6; i++) {
+			AtomicReference<ContextN> capturedArgument = new AtomicReference<>();
+			final CoreContext coreContext = createCoreContext(i);
+			CoreContext proxyCoreContext = (CoreContext) Proxy.newProxyInstance(CoreContext.class.getClassLoader(), new Class[]{CoreContext.class},
+					(proxy, method, args) -> {
+						if ("unsafePutAllInto".equals(method.getName())) {
+							if (args != null && args.length == 1) {
+								if (args[0] instanceof ContextN) {
+									capturedArgument.set((ContextN) args[0]);
+								}
+							}
+							return method.invoke(coreContext, args);
+						} else {
+							return method.invoke(coreContext, args);
+						}
+					}
+			);
+
+			ContextN self = new ContextN("A", 1, "B", 2, "C", 3, "D", 4, "E", 5, "F", 6);
+			Context result = self.putAllInto(proxyCoreContext);
+
+			assertThat(result).isSameAs(capturedArgument.get());
+			assertThat(result.size()).isSameAs(6 + i);
+		}
+	}
+
+	private CoreContext createCoreContext(int size) {
+		switch (size) {
+			case 0 : return new Context0();
+			case 1 : return new Context1(1, 1);
+			case 2 : return new Context2(1, 1, 2, 2);
+			case 3 : return new Context3(1, 1, 2, 2, 3, 3);
+			case 4 : return new Context4(1, 1, 2, 2, 3, 3, 4, 4);
+			case 5 : return new Context5(1, 1, 2, 2, 3, 3, 4, 4, 5, 5);
+			case 6 : return new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+			default: throw new IllegalArgumentException("size must be ' <= 6");
+		}
 	}
 
 	@Test

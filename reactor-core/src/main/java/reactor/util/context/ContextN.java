@@ -150,7 +150,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	public Context putAllInto(Context base) {
 		if (base instanceof CoreContext) {
 			ContextN newContext = new ContextN(base.size() + this.size());
-			newContext.putAll(base.readOnly());
+			((CoreContext) base).unsafePutAllInto(newContext);
 			newContext.putAll((Map<Object, Object>) this);
 			return newContext;
 		}
