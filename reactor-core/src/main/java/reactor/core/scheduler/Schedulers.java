@@ -1075,7 +1075,7 @@ public abstract class Schedulers {
 
 	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER =
 			() -> {
-				ThreadFactory threadFactory;
+
 				try {
 					Class<Thread> aClass = Thread.class;
 					Method virtual = aClass.getMethod("ofVirtual");
@@ -1086,7 +1086,7 @@ public abstract class Schedulers {
 					Method unstartedMethod = builderCl.getMethod("unstarted", Runnable.class);
 					unstartedMethod.setAccessible(true);
 
-					threadFactory = new LoomThreadFactory(BOUNDED_ELASTIC,
+					ThreadFactory threadFactory = new LoomThreadFactory(BOUNDED_ELASTIC,
 							BoundedElasticScheduler.COUNTER, (name, runnable) -> {
 								try {
 									Object builder = virtual.invoke(null);
@@ -1098,17 +1098,23 @@ public abstract class Schedulers {
 								}
 							},
 							Schedulers::defaultUncaughtException);
+					return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE * 10,
+							DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
+							threadFactory,
+							BoundedElasticScheduler.DEFAULT_TTL_SECONDS);
 				} catch (Throwable t) {
-					threadFactory = new ReactorThreadFactory(BOUNDED_ELASTIC,
+					ThreadFactory threadFactory =
+							new ReactorThreadFactory(BOUNDED_ELASTIC,
 							BoundedElasticScheduler.COUNTER,
 							true,
 							false,
 							Schedulers::defaultUncaughtException);
+					return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
+							DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
+							threadFactory,
+							BoundedElasticScheduler.DEFAULT_TTL_SECONDS);
 				}
-				return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
-						DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
-						threadFactory,
-						BoundedElasticScheduler.DEFAULT_TTL_SECONDS);
+
 			};
 
 	static final Supplier<Scheduler> PARALLEL_SUPPLIER =

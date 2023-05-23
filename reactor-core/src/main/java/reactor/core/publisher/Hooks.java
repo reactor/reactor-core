@@ -536,9 +536,18 @@ public abstract class Hooks {
 	 */
 	public static void enableAutomaticContextPropagation() {
 		if (ContextPropagation.isContextPropagationOnClasspath) {
-			Hooks.addQueueWrapper(
-					CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new
-			);
+//			Hooks.addQueueWrapper(
+//					CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new
+//			);
+//			Hooks.onEachOperator(
+//				CONTEXT_IN_THREAD_LOCALS_KEY,
+//				Operators.lift(
+//					s -> {
+//						return true;
+//					},
+//					(s, actual) -> new FluxSource.FluxSourceRestoringThreadLocalsSubscriber<>(actual)
+//				)
+//			);
 			Schedulers.onScheduleHook(
 					CONTEXT_IN_THREAD_LOCALS_KEY,
 					ContextPropagation.scopePassingOnScheduleHook()

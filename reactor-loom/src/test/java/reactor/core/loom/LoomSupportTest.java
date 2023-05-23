@@ -15,11 +15,11 @@ class LoomSupportTest {
 
 	@Test
 	public void testWithVirtualThreads() throws InterruptedException {
-		Scheduler scheduler = Schedulers.boundedElastic();
-		scheduler.schedulePeriodically(() -> System.out.println("hello world" + Thread.currentThread()),
-				100,
-				100,
-				TimeUnit.MILLISECONDS);
+//		Scheduler scheduler = Schedulers.boundedElastic();
+//		scheduler.schedulePeriodically(() -> System.out.println("hello world" + Thread.currentThread()),
+//				100,
+//				100,
+//				TimeUnit.MILLISECONDS);
 
 		Thread.sleep(10000);
 		// 1 tweak bounded elastic at runtime and decide whether to run on loom
@@ -35,7 +35,7 @@ class LoomSupportTest {
 //		// used instead for blocking tasks
 		Flux.range(0, 1000)
 			.log("before")
-			.transform(LoomSupport.mapAsync(a -> {
+			.mapBlocking(a -> {
 				try {
 					Thread.sleep(1000);
 				}
@@ -44,10 +44,11 @@ class LoomSupportTest {
 				}
 
 				return a + 1;
-			}, 256))
+			})
 			.log("after")
+			.doOnNext(__ -> System.out.println(Thread.currentThread()))
+			.take(50)
 			.blockLast();
 
-		Thread.sleep(10000);
 	}
 }

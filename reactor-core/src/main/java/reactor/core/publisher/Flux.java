@@ -6414,6 +6414,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxMap<>(this, mapper));
 	}
 
+	public final <V> Flux<V> mapBlocking(Function<? super T, ? extends V> mapper) {
+		return mapBlocking(mapper, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	public final <V> Flux<V> mapBlocking(Function<? super T, ? extends V> mapper, int concurrency) {
+		return mapBlocking(mapper, concurrency, Schedulers.boundedElastic());
+	}
+
+	public final <V> Flux<V> mapBlocking(Function<? super T, ? extends V> mapper, int concurrency, Scheduler scheduler) {
+		return new FluxMapBlocking<>(this, mapper, false, concurrency, scheduler);
+	}
+
 	/**
 	 * Transform the items emitted by this {@link Flux} by applying a synchronous function
 	 * to each item, which may produce {@code null} values. In that case, no value is emitted.

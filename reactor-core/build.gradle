@@ -338,4 +338,10 @@ else {
 	}
 }
 
+if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_19)) {
+  testSets {
+	loomTest
+  }
+}
+
 // docs.zip is added in afterEvaluate block in setup.gradle

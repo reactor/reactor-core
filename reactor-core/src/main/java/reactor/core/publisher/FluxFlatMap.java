@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -1040,7 +1041,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 	}
 }
 
-abstract class FlatMapTracker<T> {
+abstract class FlatMapTracker<T> extends ReentrantLock {
 
 	volatile T[] array = empty();
 
@@ -1070,7 +1071,8 @@ abstract class FlatMapTracker<T> {
 	final void unsubscribe() {
 		T[] a;
 		T[] t = terminated();
-		synchronized (this) {
+		this.lock();
+		try {
 			a = array;
 			if (a == t) {
 				return;
@@ -1078,7 +1080,9 @@ abstract class FlatMapTracker<T> {
 			SIZE.lazySet(this, 0);
 			free = null;
 			array = t;
-		}
+		} finally {
+		    this.unlock();
+	    }
 		for (T e : a) {
 			if (e != null) {
 				unsubscribeEntry(e);
@@ -1095,7 +1099,9 @@ abstract class FlatMapTracker<T> {
 		if (a == terminated()) {
 			return false;
 		}
-		synchronized (this) {
+
+		this.lock();
+		try {
 			a = array;
 			if (a == terminated()) {
 				return false;
@@ -1125,18 +1131,23 @@ abstract class FlatMapTracker<T> {
 			SIZE.lazySet(this, size); // make sure entry is released
 			a[idx] = entry;
 			SIZE.lazySet(this, size + 1);
+		} finally {
+			this.unlock();
 		}
 		return true;
 	}
 
 	final void remove(int index) {
-		synchronized (this) {
+		this.lock();
+		try {
 			T[] a = array;
 			if (a != terminated()) {
 				a[index] = null;
 				offerFree(index);
 				SIZE.lazySet(this, size - 1);
 			}
+		} finally {
+			this.unlock();
 		}
 	}
 

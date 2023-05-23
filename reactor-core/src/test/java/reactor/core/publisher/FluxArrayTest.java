@@ -29,6 +29,42 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxArrayTest {
 
+@Test
+public void interruptStateTest() throws InterruptedException {
+	final Object lock = new Object();
+	final Thread thread = new Thread(() -> {
+		try {
+			Mono.create(sink -> {
+				try {
+					Thread.sleep(1000);
+					sink.success();
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+//					assertThat(Thread.interrupted()).isTrue();
+//					sink.error(e);
+				}
+			}).blockOptional();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			assertThat(Thread.interrupted()).isTrue();
+		}
+		finally {
+			synchronized (lock) {
+				lock.notify();
+			}
+		}
+	});
+
+	thread.start();
+	thread.interrupt();
+
+	synchronized (lock) {
+		lock.wait();
+	}
+}
+
 	@Test
 	public void arrayNull() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
