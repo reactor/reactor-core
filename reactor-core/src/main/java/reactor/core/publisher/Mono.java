@@ -2281,10 +2281,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #tap(SignalListenerFactory)
 	 */
 	public final Mono<T> contextCapture() {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (!ContextPropagationSupport.isContextPropagationAvailable()) {
 			return this;
 		}
-		if (ContextPropagation.propagateContextToThreadLocals) {
+		if (ContextPropagationSupport.propagateContextToThreadLocals) {
 			return onAssembly(new MonoContextWriteRestoringThreadLocals<>(
 					this, ContextPropagation.contextCapture()
 			));
@@ -2335,7 +2335,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Mono<T> contextWrite(Function<Context, Context> contextModifier) {
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			return onAssembly(new MonoContextWriteRestoringThreadLocals<>(
 					this, contextModifier
 			));
@@ -4740,7 +4740,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #tap(Function)
 	 */
 	public final Mono<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			return onAssembly(new MonoTapRestoringThreadLocals<>(this, listenerFactory));
 		}
 		if (this instanceof Fuseable) {

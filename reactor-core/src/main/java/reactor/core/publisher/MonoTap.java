@@ -22,6 +22,7 @@ import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.core.publisher.FluxTap.TapSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A generic per-Subscription side effect {@link Mono} that notifies a {@link SignalListener} of most events.
@@ -55,7 +56,8 @@ final class MonoTap<T, STATE> extends InternalMonoOperator<T, T> {
 		}
 		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
 		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
+		signalListener = ContextPropagationSupport.isContextPropagationAvailable() ?
+				ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext) : signalListener;
 
 		try {
 			signalListener.doFirst();
@@ -66,11 +68,24 @@ final class MonoTap<T, STATE> extends InternalMonoOperator<T, T> {
 			return null;
 		}
 
+		// Invoked AFTER doFirst
+		Context ctx;
+		try {
+			ctx = signalListener.addToContext(actual.currentContext());
+		}
+		catch (Throwable e) {
+			IllegalStateException listenerError = new IllegalStateException(
+					"Unable to augment tap Context at subscription via addToContext", e);
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
+			return null;
+		}
+
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			//noinspection unchecked
-			return new FluxTap.TapConditionalSubscriber<>((Fuseable.ConditionalSubscriber<? super T>) actual, signalListener);
+			return new FluxTap.TapConditionalSubscriber<>((Fuseable.ConditionalSubscriber<? super T>) actual, signalListener, ctx);
 		}
-		return new TapSubscriber<>(actual, signalListener);
+		return new TapSubscriber<>(actual, signalListener, ctx);
 	}
 
 	@Nullable

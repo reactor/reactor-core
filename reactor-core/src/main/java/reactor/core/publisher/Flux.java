@@ -44,7 +44,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -4163,10 +4162,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #tap(SignalListenerFactory)
 	 */
 	public final Flux<T> contextCapture() {
-		if (!ContextPropagation.isContextPropagationAvailable()) {
+		if (!ContextPropagationSupport.isContextPropagationAvailable()) {
 			return this;
 		}
-		if (ContextPropagation.propagateContextToThreadLocals) {
+		if (ContextPropagationSupport.propagateContextToThreadLocals) {
 			return onAssembly(new FluxContextWriteRestoringThreadLocals<>(
 					this, ContextPropagation.contextCapture()
 			));
@@ -4217,7 +4216,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Flux<T> contextWrite(Function<Context, Context> contextModifier) {
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			return onAssembly(new FluxContextWriteRestoringThreadLocals<>(
 					this, contextModifier
 			));
@@ -9249,7 +9248,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #tap(Function)
 	 */
 	public final Flux<T> tap(SignalListenerFactory<T, ?> listenerFactory) {
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			return onAssembly(new FluxTapRestoringThreadLocals<>(this, listenerFactory));
 		}
 		if (this instanceof Fuseable) {

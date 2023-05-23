@@ -21,6 +21,7 @@ import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A {@link Fuseable} generic per-Subscription side effect {@link Mono} that notifies a {@link SignalListener} of most events.
@@ -54,7 +55,8 @@ final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> impleme
 		}
 		// Attempt to wrap the SignalListener with one that restores ThreadLocals from Context on each listener methods
 		// (only if ContextPropagation.isContextPropagationAvailable() is true)
-		signalListener = ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext);
+		signalListener = ContextPropagationSupport.isContextPropagationAvailable() ?
+				ContextPropagation.contextRestoreForTap(signalListener, actual::currentContext) : signalListener;
 
 		try {
 			signalListener.doFirst();
@@ -65,11 +67,25 @@ final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> impleme
 			return null;
 		}
 
+		// Invoked AFTER doFirst
+		Context ctx;
+		try {
+			ctx = signalListener.addToContext(actual.currentContext());
+		}
+		catch (Throwable e) {
+			IllegalStateException listenerError = new IllegalStateException(
+					"Unable to augment tap Context at subscription via addToContext", e);
+			signalListener.handleListenerError(listenerError);
+			Operators.error(actual, listenerError);
+			return null;
+		}
+
 		if (actual instanceof ConditionalSubscriber) {
 			//noinspection unchecked
-			return new FluxTapFuseable.TapConditionalFuseableSubscriber<>((ConditionalSubscriber<? super T>) actual, signalListener);
+			return new FluxTapFuseable.TapConditionalFuseableSubscriber<>(
+					(ConditionalSubscriber<? super T>) actual, signalListener, ctx);
 		}
-		return new FluxTapFuseable.TapFuseableSubscriber<>(actual, signalListener);
+		return new FluxTapFuseable.TapFuseableSubscriber<>(actual, signalListener, ctx);
 	}
 
 	@Nullable

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,10 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			actual = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(actual);
+		}
+
 		try {
 			CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
 			if (subscriber == null) {
