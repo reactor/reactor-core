@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -528,10 +529,12 @@ class ContextTest {
 
 		for (int i = 0; i <= 6; i++) {
 			AtomicReference<ContextN> capturedArgument = new AtomicReference<>();
+			AtomicInteger unsafePutAllIntoCalledCount = new AtomicInteger();
 			final CoreContext coreContext = createCoreContext(i);
 			CoreContext proxyCoreContext = (CoreContext) Proxy.newProxyInstance(CoreContext.class.getClassLoader(), new Class[]{CoreContext.class},
 					(proxy, method, args) -> {
 						if ("unsafePutAllInto".equals(method.getName())) {
+							unsafePutAllIntoCalledCount.incrementAndGet();
 							if (args != null && args.length == 1) {
 								if (args[0] instanceof ContextN) {
 									capturedArgument.set((ContextN) args[0]);
@@ -547,6 +550,7 @@ class ContextTest {
 			ContextN self = new ContextN("A", 1, "B", 2, "C", 3, "D", 4, "E", 5, "F", 6);
 			Context result = self.putAllInto(proxyCoreContext);
 
+			assertThat(1).isSameAs(unsafePutAllIntoCalledCount.get());
 			assertThat(result).isSameAs(capturedArgument.get());
 			assertThat(result.size()).isSameAs(6 + i);
 		}
