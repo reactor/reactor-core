@@ -151,9 +151,9 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 			this.lock = new ReentrantLock();
 			this.condition = lock.newCondition();
 			 Context emptyContext = Context.empty();
-			 if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
-				 this.context = ContextPropagation.contextCapture()
-				                                  .apply(emptyContext);
+			 if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()
+					 && ContextPropagationSupport.captureInBlockOperator) {
+				 this.context = ContextPropagation.contextCapture().apply(emptyContext);
 			 } else {
 				 this.context = emptyContext;
 			 }

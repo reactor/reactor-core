@@ -28,6 +28,7 @@ final class ContextPropagationSupport {
     // Ultimately the long term solution should be provided by Reactor Core.
     static final boolean isContextPropagationOnClasspath;
     static boolean propagateContextToThreadLocals = false;
+    static boolean captureInBlockOperator = false;
 
     static {
         boolean contextPropagation = false;

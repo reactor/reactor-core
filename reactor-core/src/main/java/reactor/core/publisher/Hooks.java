@@ -533,8 +533,28 @@ public abstract class Hooks {
 	 * {@code contextWrite(...)} call and the unmodified (downstream) {@link Context} is
 	 * used when signals are delivered downstream, making the {@code contextWrite(...)}
 	 * a logical boundary for the context propagation mechanism.
+	 * <p>
+	 * By default, this mechanism automatically performs {@link Flux#contextCapture()}
+	 * and {@link Mono#contextCapture()} in {@link Flux#blockFirst()},
+	 * {@link Flux#blockLast()}, {@link Flux#toIterable()}, and {@link Mono#block()} (and
+	 * their overloads). Use {@link #enableAutomaticContextPropagation(boolean)} with
+	 * {@code false} as argument to disable this feature.
+	 * @since 3.5.3
 	 */
 	public static void enableAutomaticContextPropagation() {
+		enableAutomaticContextPropagation(true);
+	}
+
+	/**
+	 * A variant of {@link #enableAutomaticContextPropagation()} which allows
+	 * controlling the automatic capture of blocking operators.
+	 * @param autoCaptureInBlock if {@code true}, blocking operators, such as
+	 * {@link Flux#blockFirst()}, {@link Flux#blockLast()}, {@link Flux#toIterable()},
+	 * {@link Mono#block()} (and their overloads) automatically perform
+	 * {@link Flux#contextCapture()}, or {@link Mono#contextCapture()}, respectively.
+	 * @since 3.5.7
+	 */
+	public static void enableAutomaticContextPropagation(boolean autoCaptureInBlock) {
 		if (ContextPropagationSupport.isContextPropagationOnClasspath) {
 			Hooks.addQueueWrapper(
 					CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new
@@ -544,6 +564,7 @@ public abstract class Hooks {
 					ContextPropagation.scopePassingOnScheduleHook()
 			);
 			ContextPropagationSupport.propagateContextToThreadLocals = true;
+			ContextPropagationSupport.captureInBlockOperator = autoCaptureInBlock;
 		}
 	}
 

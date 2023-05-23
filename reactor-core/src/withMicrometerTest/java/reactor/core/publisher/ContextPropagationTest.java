@@ -984,7 +984,133 @@ class ContextPropagationTest {
 	}
 
 	@Nested
-	class BlockingOperators {
+	class BlockingOperatorsNoCapture {
+
+		@Test
+		void monoBlock() {
+			Hooks.enableAutomaticContextPropagation(false);
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Mono.just("test")
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block did automatically capture,
+			    // it should have captured the existing ThreadLocal into the Context.
+                .contextWrite(Context.empty())
+                .doOnNext(ignored -> value.set(REF1.get()))
+                .block();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was NOT automatically transferred.
+			assertThat(value.get()).isEqualTo("ref1_init");
+		}
+
+		@Test
+		void monoBlockOptional() {
+			Hooks.enableAutomaticContextPropagation(false);
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Mono.empty()
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block did automatically capture,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnTerminate(() -> value.set(REF1.get()))
+				.blockOptional();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was NOT automatically transferred.
+			assertThat(value.get()).isEqualTo("ref1_init");
+		}
+
+		@Test
+		void fluxBlockFirst() {
+			Hooks.enableAutomaticContextPropagation(false);
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Flux.range(0, 10)
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block did automatically capture,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnNext(ignored -> value.set(REF1.get()))
+			    .blockFirst();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was NOT automatically transferred.
+			assertThat(value.get()).isEqualTo("ref1_init");
+		}
+
+		@Test
+		void fluxBlockLast() {
+			Hooks.enableAutomaticContextPropagation(false);
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Flux.range(0, 10)
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block did automatically capture,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnTerminate(() -> value.set(REF1.get()))
+			    .blockLast();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was NOT automatically transferred.
+			assertThat(value.get()).isEqualTo("ref1_init");
+		}
+
+		@Test
+		void fluxToIterable() {
+			Hooks.enableAutomaticContextPropagation(false);
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Iterable<Integer> integers = Flux.range(0, 10)
+			                                 // Introduce an artificial barrier to clear ThreadLocals if no Context
+			                                 // is defined in the downstream chain. If block did automatically capture,
+			                                 // it should have captured the existing ThreadLocal into the Context.
+			                                 .contextWrite(Context.empty())
+			                                 .doOnTerminate(() -> value.set(REF1.get()))
+			                                 .toIterable();
+
+			assertThat(REF1.get()).isEqualTo("present");
+
+			assertThat(integers).hasSize(10);
+
+			// Unfortunately, without automatic capture, the ThreadLocal is cleared
+			// when acting upon the returned Iterable, as the Context associated with the
+			// SubscriberIterator is empty and iterating it does not necessarily capture
+			// the surrounding ThreadLocal values.
+			// assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was NOT automatically transferred.
+			assertThat(value.get()).isEqualTo("ref1_init");
+		}
+	}
+
+	@Nested
+	class BlockingOperatorsAutoCapture {
 
 		@Test
 		void monoBlock() {
@@ -998,9 +1124,9 @@ class ContextPropagationTest {
 			    // Introduce an artificial barrier to clear ThreadLocals if no Context
 			    // is defined in the downstream chain. If block does the job well,
 			    // it should have captured the existing ThreadLocal into the Context.
-                .contextWrite(Context.empty())
-                .doOnNext(ignored -> value.set(REF1.get()))
-                .block();
+			    .contextWrite(Context.empty())
+			    .doOnNext(ignored -> value.set(REF1.get()))
+			    .block();
 
 			// First, assert the existing ThreadLocal was not cleared.
 			assertThat(REF1.get()).isEqualTo("present");
@@ -1023,7 +1149,7 @@ class ContextPropagationTest {
 			    // it should have captured the existing ThreadLocal into the Context.
 			    .contextWrite(Context.empty())
 			    .doOnTerminate(() -> value.set(REF1.get()))
-				.blockOptional();
+			    .blockOptional();
 
 			// First, assert the existing ThreadLocal was not cleared.
 			assertThat(REF1.get()).isEqualTo("present");

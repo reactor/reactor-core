@@ -44,9 +44,9 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	BlockingSingleSubscriber() {
 		super(1);
 		Context emptyContext = Context.empty();
-		if (ContextPropagation.shouldPropagateContextToThreadLocals()) {
-			this.context = ContextPropagation.contextCapture()
-			                                 .apply(emptyContext);
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()
+				&& ContextPropagationSupport.captureInBlockOperator) {
+			this.context = ContextPropagation.contextCapture().apply(emptyContext);
 		} else {
 			this.context = emptyContext;
 		}
