@@ -32,9 +32,11 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
@@ -93,6 +95,7 @@ public class FluxMergeSequentialTest {
 
 		ts.assertComplete().assertValues(1, 2, 2, 3, 3, 4, 4, 5, 5, 6);
 	}
+
 
 	@Test
 	public void normalDelayEnd() {
