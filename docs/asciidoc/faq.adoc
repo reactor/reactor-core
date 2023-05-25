@@ -41,6 +41,9 @@ that can be enqueued and deferred during a spike.
 Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what
 kind of `Scheduler` to use when a subscribe call happens.
 
+Also, note that `subscribeOn` operator should immediately follow the source and any
+further operators are defined after the `subscribeOn` wrapper.
+
 [[faq.chain]]
 == I Used an Operator on my `Flux` but it Doesn't Seem to Apply. What Gives?
 
