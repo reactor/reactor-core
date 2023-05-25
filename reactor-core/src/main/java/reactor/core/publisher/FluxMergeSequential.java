@@ -311,11 +311,10 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		void innerError(MergeSequentialInner<R> inner, Throwable e) {
-			inner.setDone();
-
 			e = Operators.onNextInnerError(e, currentContext(), s);
 			if (e != null) {
 				if (Exceptions.addThrowable(ERROR, this, e)) {
+					inner.setDone();
 					if (errorMode != ErrorMode.END) {
 						s.cancel();
 					}
@@ -326,6 +325,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 				}
 			}
 			else {
+				inner.setDone();
 				drain();
 			}
 		}
