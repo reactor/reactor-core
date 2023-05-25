@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,9 +148,9 @@ final class ContextN extends LinkedHashMap<Object, Object>
 
 	@Override
 	public Context putAllInto(Context base) {
-		if (base instanceof ContextN) {
+		if (base instanceof CoreContext) {
 			ContextN newContext = new ContextN(base.size() + this.size());
-			newContext.putAll((Map<Object, Object>) base);
+			((CoreContext) base).unsafePutAllInto(newContext);
 			newContext.putAll((Map<Object, Object>) this);
 			return newContext;
 		}

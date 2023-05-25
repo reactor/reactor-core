@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,13 @@
 package reactor.util.context;
 
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Proxy;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -462,6 +466,107 @@ class ContextTest {
 				.containsEntry(11, "A11")
 				.containsEntry(12, "A12")
 				.containsEntry(13, "A13");
+	}
+
+	@Test
+	void defaultPutAllHasSameKey() {
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(1, "A");
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(1, "A");
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+
+		ContextN left = new ContextN(leftMap);
+		ContextN right = new ContextN(rightMap);
+
+		final Context combined = left.putAll(right.readOnly());
+		assertThat(combined).isInstanceOf(ContextN.class);
+		ContextN combinedN = (ContextN) combined;
+		// If they have the same key, they are merged for the same key.
+		assertThat(combinedN).hasSize(9);
+	}
+
+	@Test
+	void defaultPutAllIntoCheckValue() {
+		int key = 1;
+		String oldValue = "A";
+		String newValue = "B";
+
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(key, oldValue);
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(key, newValue);
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+
+		ContextN left = new ContextN(leftMap);
+		ContextN right1 = new ContextN(rightMap);
+		Context1 right2 = new Context1(key, newValue);
+
+		final Context combined1 = left.putAllInto(right2);
+		final Context combined2 = left.putAllInto(right1);
+
+		// The result is to have the value of the key included as an argument, if the same key exists.
+		Assertions.assertEquals((String) combined1.get(key), (String) combined2.get(key));
+	}
+
+	@Test
+	public void defaultPutAllIntoCheckCreatingObject() {
+		// This test verifies that if the argument to puAllInto() is a CoreContext, it is created Context efficiently. (Note that it has to be created only once.)
+
+		for (int i = 0; i <= 6; i++) {
+			AtomicReference<ContextN> capturedArgument = new AtomicReference<>();
+			AtomicInteger unsafePutAllIntoCalledCount = new AtomicInteger();
+			final CoreContext coreContext = createCoreContext(i);
+			CoreContext proxyCoreContext = (CoreContext) Proxy.newProxyInstance(CoreContext.class.getClassLoader(), new Class[]{CoreContext.class},
+					(proxy, method, args) -> {
+						if ("unsafePutAllInto".equals(method.getName())) {
+							unsafePutAllIntoCalledCount.incrementAndGet();
+							if (args != null && args.length == 1) {
+								if (args[0] instanceof ContextN) {
+									capturedArgument.set((ContextN) args[0]);
+								}
+							}
+							return method.invoke(coreContext, args);
+						} else {
+							return method.invoke(coreContext, args);
+						}
+					}
+			);
+
+			ContextN self = new ContextN("A", 1, "B", 2, "C", 3, "D", 4, "E", 5, "F", 6);
+			Context result = self.putAllInto(proxyCoreContext);
+
+			assertThat(1).isSameAs(unsafePutAllIntoCalledCount.get());
+			assertThat(result).isSameAs(capturedArgument.get());
+			assertThat(result.size()).isSameAs(6 + i);
+		}
+	}
+
+	private CoreContext createCoreContext(int size) {
+		switch (size) {
+			case 0 : return new Context0();
+			case 1 : return new Context1(1, 1);
+			case 2 : return new Context2(1, 1, 2, 2);
+			case 3 : return new Context3(1, 1, 2, 2, 3, 3);
+			case 4 : return new Context4(1, 1, 2, 2, 3, 3, 4, 4);
+			case 5 : return new Context5(1, 1, 2, 2, 3, 3, 4, 4, 5, 5);
+			case 6 : return new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+			default: throw new IllegalArgumentException("size must be ' <= 6");
+		}
 	}
 
 	@Test
