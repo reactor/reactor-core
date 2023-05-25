@@ -22,21 +22,23 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
@@ -47,6 +49,7 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxMergeSequentialTest {
@@ -95,6 +98,51 @@ public class FluxMergeSequentialTest {
 
 		ts.assertComplete().assertValues(1, 2, 2, 3, 3, 4, 4, 5, 5, 6);
 	}
+
+	@Test
+	@DisplayName("throws an exception if one flux element fails")
+	@RepeatedTest(100)
+	void throwsAnExceptionIfOneFluxElementFails() {
+		// given
+		Supplier<String> successfulSupplier = () -> {
+			System.out.println("success1");
+			return "success1";
+		};
+		Supplier<String> successfulSupplier2 = () -> {
+			System.out.println("success2");
+			return "success2";
+		};
+		Supplier<String> successfulSupplier3 = () -> {
+			System.out.println("success3");
+			return "success3";
+		};
+		Supplier<String> failingSupplier = () -> {
+			System.out.println("failing");
+			throw new RuntimeException("Failed.");
+		};
+		Stream<Supplier<String>> suppliers = Stream.of(successfulSupplier,
+				successfulSupplier2,
+				successfulSupplier3, failingSupplier);
+
+		// when / then
+		assertThrows(RuntimeException.class, () -> {
+			List<String> strings = runAsync(suppliers, Schedulers.boundedElastic());
+			System.out.println(strings);
+		});
+	}
+
+
+	public static <T> List<T> runAsync(Stream<Supplier<T>> suppliers, Scheduler scheduler) {
+		return Flux.fromStream(suppliers)
+		           .flatMapSequential(supplier ->
+				           Mono.fromCallable(() -> Optional.ofNullable(supplier.get())).subscribeOn(scheduler)
+		           )
+		           .filter(Optional::isPresent)
+		           .map(Optional::get)
+		           .collectList()
+		           .block();
+	}
+
 
 
 	@Test
