@@ -318,9 +318,9 @@ the part of the chain after them.
 * Picks one thread from the `Scheduler`
 
 - NOTE: Only the closest `subscribeOn` call in the downstream chain effectively
- schedules subscription and request signals to upstream operators that can intercept them
- (`doFirst`, `doOnRequest`). Using multiple `subscribeOn` calls will introduce unnecessary
- Thread switches that have no value.
+ schedules subscription and request signals to the source or operators that can
+ intercept them (`doFirst`, `doOnRequest`). Using multiple `subscribeOn` calls will
+ introduce unnecessary Thread switches that have no value.
 
 The following example uses the `subscribeOn` method:
 
