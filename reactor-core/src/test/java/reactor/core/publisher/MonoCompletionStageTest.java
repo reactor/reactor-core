@@ -16,22 +16,57 @@
 
 package reactor.core.publisher;
 
+import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class
 MonoCompletionStageTest {
+
+	//https://github.com/reactor/reactor-core/issues/3464
+	@Test
+	@SuppressWarnings("unchecked")
+	public void ensuresNoReferenceToCompletableFutureIsKeptIfNoCancellation() {
+		WeakReference<CompletableFuture<Void>>[] futureRef = new WeakReference[1];
+
+		AssertSubscriber<Void> subscriber = Mono.fromFuture(() -> {
+			                                        CompletableFuture<Void> future =
+					                                        new CompletableFuture<>();
+													futureRef[0] = new WeakReference<>(future);
+													return future;
+		                                        }, false)
+		                                        .subscribeWith(AssertSubscriber.create());
+		subscriber.assertNotComplete();
+
+		// ensures reference has value
+		Assertions.assertThat(futureRef[0].get()).isNotNull();
+		futureRef[0].get().complete(null);
+
+		// cause gc to collect garbage
+		for (int i = 0; i < 10; i++) {
+			Object x = new Object();
+			System.out.println(x);
+			System.gc();
+			System.out.println(x);
+		}
+
+		Assertions.assertThat(futureRef[0].get()).isNull();
+
+		subscriber.assertComplete();
+	}
 
 	//https://github.com/reactor/reactor-core/issues/3138
 	@Test
@@ -183,7 +218,7 @@ MonoCompletionStageTest {
 	@Test
 	public void scanOperator(){
 		CompletionStage<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
-		MonoCompletionStage<String> test = new MonoCompletionStage<>(completionStage, false);
+		MonoCompletionStage<String> test = new MonoCompletionStage<>(completionStage);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();

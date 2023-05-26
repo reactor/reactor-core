@@ -548,7 +548,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
-		return onAssembly(new MonoCompletionStage<>(completionStage, false));
+		return onAssembly(new MonoCompletionStage<>(completionStage));
 	}
 
 	/**
@@ -568,7 +568,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(Supplier<? extends CompletionStage<? extends T>> stageSupplier) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get(), false)));
+		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get())));
 	}
 
 	/**
@@ -644,7 +644,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future, boolean suppressCancel) {
-		return onAssembly(new MonoCompletionStage<>(future, suppressCancel));
+		return onAssembly(suppressCancel ? new MonoCompletableFuture<>(future) : new MonoCompletionStage<>(future));
 	}
 
 	/**
@@ -683,7 +683,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
 	 */
 	public static <T> Mono<T> fromFuture(Supplier<? extends CompletableFuture<? extends T>> futureSupplier, boolean suppressCancel) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(futureSupplier.get(), suppressCancel)));
+		return defer(() -> onAssembly(suppressCancel ? new MonoCompletableFuture<>(futureSupplier.get()) : new MonoCompletionStage<>(futureSupplier.get())));
 	}
 
 	/**
