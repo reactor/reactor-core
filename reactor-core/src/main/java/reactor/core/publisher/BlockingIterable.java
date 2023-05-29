@@ -54,9 +54,13 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 	final Supplier<Queue<T>> queueSupplier;
 
+	final Supplier<Context> contextSupplier;
+
 	BlockingIterable(CorePublisher<? extends T> source,
 			int batchSize,
-			Supplier<Queue<T>> queueSupplier) {
+			Supplier<Queue<T>> queueSupplier,
+			Supplier<Context> contextSupplier) {
+		this.contextSupplier = contextSupplier;
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException("batchSize > 0 required but it was " + batchSize);
 		}
@@ -114,7 +118,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 			throw Exceptions.propagate(e);
 		}
 
-		return new SubscriberIterator<>(q, batchSize);
+		return new SubscriberIterator<>(q, contextSupplier.get(), batchSize);
 	}
 
 	static final class SubscriberIterator<T>
@@ -144,19 +148,13 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		volatile boolean done;
 		Throwable error;
 
-		 SubscriberIterator(Queue<T> queue, int batchSize) {
+		 SubscriberIterator(Queue<T> queue, Context context, int batchSize) {
 			this.queue = queue;
 			this.batchSize = batchSize;
 			this.limit = Operators.unboundedOrLimit(batchSize);
 			this.lock = new ReentrantLock();
 			this.condition = lock.newCondition();
-			 Context emptyContext = Context.empty();
-			 if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()
-					 && ContextPropagationSupport.captureInBlockOperator) {
-				 this.context = ContextPropagation.contextCapture().apply(emptyContext);
-			 } else {
-				 this.context = emptyContext;
-			 }
+			this.context = context;
 		}
 
 		@Override

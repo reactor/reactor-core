@@ -60,4 +60,9 @@ final class ContextPropagationSupport {
     static boolean shouldRestoreThreadLocalsInSomeOperators() {
         return isContextPropagationOnClasspath && !propagateContextToThreadLocals;
     }
+
+    static boolean shouldCaptureInBlockingOperators() {
+        return isContextPropagationOnClasspath && propagateContextToThreadLocals
+                && captureInBlockOperator;
+    }
 }

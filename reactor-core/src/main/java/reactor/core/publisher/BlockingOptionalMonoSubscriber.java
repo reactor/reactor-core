@@ -47,15 +47,9 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 
 	final Context context;
 
-	BlockingOptionalMonoSubscriber() {
+	BlockingOptionalMonoSubscriber(Context context) {
 		super(1);
-		Context emptyContext = Context.empty();
-		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()
-				&& ContextPropagationSupport.captureInBlockOperator) {
-			this.context = ContextPropagation.contextCapture().apply(emptyContext);
-		} else {
-			this.context = emptyContext;
-		}
+		this.context = context;
 	}
 
 	@Override

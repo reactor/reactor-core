@@ -1705,7 +1705,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public T block() {
-		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
@@ -1729,7 +1731,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public T block(Duration timeout) {
-		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}
@@ -1750,7 +1754,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return T the result
 	 */
 	public Optional<T> blockOptional() {
-		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingOptionalMonoSubscriber<T> subscriber =
+				new BlockingOptionalMonoSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
@@ -1775,7 +1782,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return T the result
 	 */
 	public Optional<T> blockOptional(Duration timeout) {
-		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingOptionalMonoSubscriber<T> subscriber =
+				new BlockingOptionalMonoSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}

@@ -41,15 +41,9 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 
 	volatile boolean cancelled;
 
-	BlockingSingleSubscriber() {
+	BlockingSingleSubscriber(Context context) {
 		super(1);
-		Context emptyContext = Context.empty();
-		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()
-				&& ContextPropagationSupport.captureInBlockOperator) {
-			this.context = ContextPropagation.contextCapture().apply(emptyContext);
-		} else {
-			this.context = emptyContext;
-		}
+		this.context = context;
 	}
 
 	@Override

@@ -2696,7 +2696,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public final T blockFirst() {
-		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
@@ -2719,7 +2721,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public final T blockFirst(Duration timeout) {
-		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}
@@ -2741,7 +2745,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public final T blockLast() {
-		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
@@ -2765,7 +2771,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public final T blockLast(Duration timeout) {
-		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
+		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
+		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}
@@ -9652,7 +9660,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		else{
 			provider = () -> Hooks.wrapQueue(queueProvider.get());
 		}
-		return new BlockingIterable<>(this, batchSize, provider);
+		Supplier<Context> contextSupplier =
+				ContextPropagationSupport.shouldCaptureInBlockingOperators() ?
+						ContextPropagation::contextCaptureToEmpty : Context::empty;
+		return new BlockingIterable<>(this, batchSize, provider, contextSupplier);
 	}
 
 	/**
@@ -9690,7 +9701,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final Stream<T> toStream(int batchSize) {
 		final Supplier<Queue<T>> provider;
 		provider = Queues.get(batchSize);
-		return new BlockingIterable<>(this, batchSize, provider).stream();
+		Supplier<Context> contextSupplier =
+				ContextPropagationSupport.shouldCaptureInBlockingOperators() ?
+						ContextPropagation::contextCaptureToEmpty : Context::empty;
+		return new BlockingIterable<>(this, batchSize, provider, contextSupplier).stream();
 	}
 
 	/**
