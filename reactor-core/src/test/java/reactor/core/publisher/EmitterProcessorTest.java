@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -65,6 +67,21 @@ public class EmitterProcessorTest {
 
 	@RegisterExtension
 	AutoDisposingExtension afterTest = new AutoDisposingExtension();
+	//https://github.com/reactor/reactor-core/issues/3359
+	@Test
+	void shouldClearBufferOnCancellation() {
+		MemoryUtils.OffHeapDetector tracker = new MemoryUtils.OffHeapDetector();
+		EmitterProcessor<MemoryUtils.Tracked> source = EmitterProcessor.create(32, true, MemoryUtils.Tracked::release);
+
+		Assertions.assertThat(source.tryEmitNext(tracker.track(1))).isEqualTo(Sinks.EmitResult.OK);
+		Assertions.assertThat(source.tryEmitNext(tracker.track(2))).isEqualTo(Sinks.EmitResult.OK);
+		Assertions.assertThat(source.tryEmitNext(tracker.track(3))).isEqualTo(Sinks.EmitResult.OK);
+
+		source.take(0).blockLast();
+
+		tracker.assertNoLeaks();
+	}
+
 
 	@Test
 	void smokeTestManyWithUpstream() {
@@ -1012,7 +1029,7 @@ public class EmitterProcessorTest {
 		AssertSubscriber<Object> testSubscriber1 = new AssertSubscriber<>(Context.of("key", "value1"));
 		AssertSubscriber<Object> testSubscriber2 = new AssertSubscriber<>(Context.of("key", "value2"));
 
-		EmitterProcessor<Object> emitterProcessor = new EmitterProcessor<>(false, 1);
+		EmitterProcessor<Object> emitterProcessor = new EmitterProcessor<>(false, 1, null);
 		emitterProcessor.subscribe(testSubscriber1);
 		emitterProcessor.subscribe(testSubscriber2);
 

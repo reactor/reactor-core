@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -530,9 +530,9 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 			this.actual = actual;
 			if (cancelled) {
 				this.hasDownstream = false;
-			} else {
-				drain(null);
 			}
+
+			drain(null);
 		} else {
 			Operators.error(actual, new IllegalStateException("UnicastProcessor " +
 					"allows only a single Subscriber"));
@@ -556,7 +556,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 
 		doTerminate();
 
-		if (WIP.getAndIncrement(this) == 0) {
+		if (actual != null && WIP.getAndIncrement(this) == 0) {
 			if (!outputFused) {
 				// discard MUST be happening only and only if there is no racing on elements consumption
 				// which is guaranteed by the WIP guard here in case non-fused output

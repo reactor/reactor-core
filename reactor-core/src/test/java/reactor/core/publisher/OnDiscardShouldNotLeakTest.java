@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,6 +151,12 @@ public class OnDiscardShouldNotLeakTest {
 					.publishOn(Schedulers.immediate())),
 			DiscardScenario.sinkSource("unicastSink",  Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn",  Sinks.unsafe().many().unicast()::onBackpressureBuffer,
+					f -> f.publishOn(Schedulers.immediate())),
+			DiscardScenario.sinkSource("multicastBufferSink",
+					() -> Sinks.unsafe().many().multicast().onBackpressureBuffer(32, true, Tracked::release),
+					null),
+			DiscardScenario.sinkSource("multicastBufferSinkAndPublishOn",
+					() -> Sinks.unsafe().many().multicast().onBackpressureBuffer(32, true, Tracked::release),
 					f -> f.publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
@@ -617,7 +623,11 @@ public class OnDiscardShouldNotLeakTest {
 				Sinks.Many<Tracked> sink = sinksManySupplier.get();
 				//noinspection CallingSubscribeInNonBlockingScope
 				main.flux().subscribe(
-						v -> sink.emitNext(v, FAIL_FAST),
+						v -> {
+							if (sink.tryEmitNext(v) != Sinks.EmitResult.OK) {
+								v.release();
+							}
+						},
 						e -> sink.emitError(e, FAIL_FAST),
 						() -> sink.emitComplete(FAIL_FAST));
 				Flux<Tracked> finalFlux = sink.asFlux();
