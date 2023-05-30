@@ -172,6 +172,12 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.sinkSource("unicastSink",  Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn",  Sinks.unsafe().many().unicast()::onBackpressureBuffer,
 					f -> f.publishOn(Schedulers.immediate())),
+			DiscardScenario.sinkSource("multicastBufferSink",
+					() -> Sinks.unsafe().many().multicast().onBackpressureBuffer(32, true, Tracked::release),
+					null),
+			DiscardScenario.sinkSource("multicastBufferSinkAndPublishOn",
+					() -> Sinks.unsafe().many().multicast().onBackpressureBuffer(32, true, Tracked::release),
+					f -> f.publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("singleOrEmpty", f -> f.singleOrEmpty().onErrorReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
@@ -656,7 +662,11 @@ public class OnDiscardShouldNotLeakTest {
 				Sinks.Many<Tracked> sink = sinksManySupplier.get();
 				//noinspection CallingSubscribeInNonBlockingScope
 				main.flux().subscribe(
-						v -> sink.emitNext(v, FAIL_FAST),
+						v -> {
+							if (sink.tryEmitNext(v) != Sinks.EmitResult.OK) {
+								v.release();
+							}
+						},
 						e -> sink.emitError(e, FAIL_FAST),
 						() -> sink.emitComplete(FAIL_FAST));
 				Flux<Tracked> finalFlux = sink.asFlux();
