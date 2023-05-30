@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -990,6 +990,64 @@ public abstract class Operators {
 			return new CorePublisherAdapter<>(publisher);
 		}
 	}
+
+	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
+			Publisher<?> publisher, CoreSubscriber<T> subscriber) {
+
+		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()
+				// TODO: consider Scannable.from(subscriber).scanOrDefault(Scannable.Attr.TL_RESTORING_SUBSCRIBER, false) instead
+				|| subscriber instanceof MonoSource.MonoSourceRestoringThreadLocalsSubscriber
+				|| subscriber instanceof FluxSource.FluxSourceRestoringThreadLocalsSubscriber) {
+			return subscriber;
+		}
+
+		Scannable scannable = Scannable.from(publisher);
+		// TODO: REPORT AS INTERNAL EVERYWHERE IN reactor-core
+		boolean internal = scannable.isScanAvailable()
+				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+		if (!internal) {
+			if (publisher instanceof Mono) {
+				subscriber = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(subscriber);
+			} else {
+				subscriber = new FluxSource.FluxSourceRestoringThreadLocalsSubscriber<>(subscriber);
+			}
+		}
+		return subscriber;
+	}
+
+//	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
+//			Mono<?> mono, CoreSubscriber<T> subscriber) {
+//
+//		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+//			return subscriber;
+//		}
+//
+//		Scannable scannable = Scannable.from(mono);
+//		// TODO: REPORT AS INTERNAL EVERYWHERE IN reactor-core
+//		boolean internal = scannable.isScanAvailable()
+//				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+//		if (!internal) {
+//			subscriber = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(subscriber);
+//		}
+//		return subscriber;
+//	}
+//
+//	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
+//			Flux<?> flux, CoreSubscriber<T> subscriber) {
+//
+//		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+//			return subscriber;
+//		}
+//
+//		Scannable scannable = Scannable.from(flux);
+//		// TODO: REPORT AS INTERNAL EVERYWHERE IN reactor-core
+//		boolean internal = scannable.isScanAvailable()
+//				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+//		if (!internal) {
+//			subscriber = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(subscriber);
+//		}
+//		return subscriber;
+//	}
 
 	private static Throwable unwrapOnNextError(Throwable error) {
 		return Exceptions.isBubbling(error) ? error : Exceptions.unwrap(error);

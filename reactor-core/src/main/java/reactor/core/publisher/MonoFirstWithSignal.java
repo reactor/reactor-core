@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 								actual.currentContext()));
 			}
 			else {
-				p.subscribe(actual);
+				p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, actual));
 			}
 			return;
 		}
@@ -150,7 +150,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
     @Override
     public Object scanUnsafe(Attr key) {
         if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        if (key == Attr.INTERNAL_PRODUCER) return true;
         return null;
     }
     
@@ -237,7 +238,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         }
                         onComplete();
                     } else {
-                        m.subscribe(this);
+                        m.subscribe(Operators.restoreContextOnSubscriberIfNecessary(m, this));
                     }
                     return;
                 } else {
@@ -260,7 +261,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         continue;
                     }
 
-                    m.subscribe((CoreSubscriber) this);
+                    m.subscribe((CoreSubscriber) Operators.restoreContextOnSubscriberIfNecessary(m, this));
                     return;
                 }
             }

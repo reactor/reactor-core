@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	private static <RESOURCE, T> Publisher<? extends T> deriveFluxFromResource(

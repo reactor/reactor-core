@@ -196,11 +196,14 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				}
 			}
 			else {
+				// TODO: wrap Subscriber only or wrap the Publisher? What about
+				//  assembly hooks?
+				CoreSubscriber<? super R> sub = Operators.restoreContextOnSubscriberIfNecessary(p, s);
 				if (!fuseableExpected || p instanceof Fuseable) {
-					p.subscribe(s);
+					p.subscribe(sub);
 				}
 				else {
-					p.subscribe(new FluxHide.SuppressFuseableSubscriber<>(s));
+					p.subscribe(new FluxHide.SuppressFuseableSubscriber<>(sub));
 				}
 			}
 
@@ -424,7 +427,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
 				if (add(inner)) {
-					p.subscribe(inner);
+					p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, inner));
 				} else {
 					Operators.onDiscard(t, actual.currentContext());
 				}

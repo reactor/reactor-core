@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	@Override
@@ -396,7 +395,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested - emitted;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return null;
+			return InnerProducer.super.scanUnsafe(key);
 		}
 	}
 
@@ -492,7 +491,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.BUFFERED) return queue.size();
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return null;
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 }

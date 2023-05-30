@@ -68,6 +68,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super I> actual) {
+		// TODO: can we actually call Operators.restoreContextOnSubscriberIfNecessary ?
 		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			source.subscribe(new FluxSourceRestoringThreadLocalsSubscriber<>(actual));
 		} else {
@@ -96,7 +97,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class FluxSourceRestoringThreadLocalsSubscriber<T>

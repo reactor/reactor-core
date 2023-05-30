@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,12 +54,18 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 			while (true) {
 				subscriber = operator.subscribeOrReturn(subscriber);
 				if (subscriber == null) {
+					// if internally subscribed, it means the optimized operator is
+					// already within the internals and subscribing up the chain will
+					// at some point need to consider the source and wrap it
+
 					// null means "I will subscribe myself", returning...
 					return;
 				}
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
-					operator.source().subscribe(subscriber);
+					CorePublisher operatorSource = operator.source();
+					subscriber = Operators.restoreContextOnSubscriberIfNecessary(operatorSource, subscriber);
+					operatorSource.subscribe(subscriber);
 					return;
 				}
 				operator = newSource;

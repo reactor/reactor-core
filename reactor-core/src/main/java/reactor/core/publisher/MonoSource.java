@@ -96,7 +96,7 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 		if (key == Attr.RUN_STYLE) {
 			return Scannable.from(source).scanUnsafe(key);
 		}
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class MonoSourceRestoringThreadLocalsSubscriber<T>

@@ -4492,6 +4492,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 				}
 			}
 
+			// TODO: Consider: no need to wrap when subscriber is already wrapped and
+			//  actually we should always wrap if we do the right job, as w can't intercept
+			//  subscribe(CoreSubscriber), so this would be the last resort when the user
+			//  directly subscribes.
+			subscriber = Operators.restoreContextOnSubscriberIfNecessary(publisher, subscriber);
+
 			publisher.subscribe(subscriber);
 		}
 		catch (Throwable e) {

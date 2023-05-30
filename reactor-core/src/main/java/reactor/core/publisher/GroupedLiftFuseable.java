@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,9 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 		}
 		if (key == Attr.LIFTER) {
 			return liftFunction.name;
+		}
+		if (key == Attr.INTERNAL_PRODUCER) {
+			return true;
 		}
 
 		return null;

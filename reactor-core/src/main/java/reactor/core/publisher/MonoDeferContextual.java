@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,12 +52,12 @@ final class MonoDeferContextual<T> extends Mono<T> implements SourceProducer<T> 
 			return;
 		}
 
-		p.subscribe(actual);
+		p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, actual));
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null; //no particular key to be represented, still useful in hooks
+		return SourceProducer.super.scanUnsafe(key);
 	}
 }

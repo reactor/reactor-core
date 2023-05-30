@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.io.File;
+import java.lang.reflect.ParameterizedType;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +46,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -1060,6 +1063,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		//duplicated in wrap, but necessary to detect early and thus avoid applying assembly
+		// TODO: Consider checking for INTERNAL_PRODUCER here and potentially lift
 		if (source instanceof Flux) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
@@ -8769,6 +8773,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 					operator = newSource;
 				}
 			}
+
+			// TODO: Consider: no need to wrap when subscriber is already wrapped and
+			//  actually we should always wrap if we do the right job, as w can't intercept
+			//  subscribe(CoreSubscriber), so this would be the last resort when the user
+			//  directly subscribes.
+			subscriber = Operators.restoreContextOnSubscriberIfNecessary(publisher, subscriber);
 
 			publisher.subscribe(subscriber);
 		}

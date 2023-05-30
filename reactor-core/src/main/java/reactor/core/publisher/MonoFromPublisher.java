@@ -96,6 +96,9 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 		if (key == Scannable.Attr.RUN_STYLE) {
 		    return Attr.RunStyle.SYNC;
 		}
+		if (key == Attr.INTERNAL_PRODUCER) {
+			return true;
+		}
 		return null;
 	}
 }

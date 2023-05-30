@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,13 +54,18 @@ final class FluxDeferContextual<T> extends Flux<T> implements SourceProducer<T> 
 			return;
 		}
 
-		from(p).subscribe(actual);
+		// TODO: Here assembly hooks were applied, while in Mono's implementation, not
+		//  even wrap (which skips assembly hooks) was called.
+		//  We need to decide whether from/wrap perform the Subscriber wrapping instead
+		//  of the below construct!
+		Flux<? extends T> flux = from(p);
+		flux.subscribe(Operators.restoreContextOnSubscriberIfNecessary(flux, actual));
 	}
 
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 }
