@@ -24,7 +24,7 @@ jsr305 = "com.google.code.findbugs:jsr305:3.0.1"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
-micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.2"
+micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.3-SNAPSHOT"
 micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.1"}
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
 micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.4"
