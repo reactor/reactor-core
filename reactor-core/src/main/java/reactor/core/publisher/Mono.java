@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -548,7 +548,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
-		return onAssembly(new MonoCompletionStage<>(completionStage, false));
+		return onAssembly(new MonoCompletionStage<>(completionStage, () -> {
+			if (completionStage instanceof Future) {
+				((Future<?>) completionStage).cancel(true);
+			}
+		}));
 	}
 
 	/**
@@ -568,7 +572,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCompletionStage(Supplier<? extends CompletionStage<? extends T>> stageSupplier) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get(), false)));
+		return defer(() -> {
+			CompletionStage<? extends T> stage = stageSupplier.get();
+			return onAssembly(new MonoCompletionStage<>(stage, () -> {
+				if (stage instanceof Future) {
+					((Future<?>) stage).cancel(true);
+				}
+			}));
+		});
 	}
 
 	/**
@@ -644,7 +655,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future, boolean suppressCancel) {
-		return onAssembly(new MonoCompletionStage<>(future, suppressCancel));
+		return onAssembly(new MonoCompletableFuture<>(future, suppressCancel));
 	}
 
 	/**
@@ -683,7 +694,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
 	 */
 	public static <T> Mono<T> fromFuture(Supplier<? extends CompletableFuture<? extends T>> futureSupplier, boolean suppressCancel) {
-		return defer(() -> onAssembly(new MonoCompletionStage<>(futureSupplier.get(), suppressCancel)));
+		return defer(() -> onAssembly(new MonoCompletableFuture<>(futureSupplier.get(), suppressCancel)));
 	}
 
 	/**

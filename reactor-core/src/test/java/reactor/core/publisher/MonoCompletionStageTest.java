@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -32,6 +34,65 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class
 MonoCompletionStageTest {
+
+	//https://github.com/reactor/reactor-core/issues/3417
+	@Test
+	public void propagateCancellationToCompletionStageWithNoCancellationSupport() {
+		ArrayList<Throwable> droppedErrors = new ArrayList<>();
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			UnsupportedOperationException error = new UnsupportedOperationException("boom");
+			CompletableFuture<Integer> future = new CompletableFuture<Integer>() {
+				@Override
+				public boolean cancel(boolean mayInterruptIfRunning) {
+					throw error;
+				}
+			};
+
+			Mono<Integer> mono = Mono.fromCompletionStage(future);
+
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .thenCancel()
+			            .verify();
+
+			assertThat(future).isNotCancelled();
+			Assertions.assertThat(droppedErrors)
+			          .containsExactly(error);
+		} finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+
+	//https://github.com/reactor/reactor-core/issues/3417
+	@Test
+	public void propagateCancellationToCompletionFutureWithNoCancellationSupport() {
+		ArrayList<Throwable> droppedErrors = new ArrayList<>();
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			UnsupportedOperationException error = new UnsupportedOperationException("boom");
+			CompletableFuture<Integer> future = new CompletableFuture<Integer>() {
+				@Override
+				public boolean cancel(boolean mayInterruptIfRunning) {
+					throw error;
+				}
+			};
+
+			Mono<Integer> mono = Mono.fromFuture(future);
+
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .thenCancel()
+			            .verify();
+
+			assertThat(future).isNotCancelled();
+			Assertions.assertThat(droppedErrors)
+			          .containsExactly(error);
+		} finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
 
 	//https://github.com/reactor/reactor-core/issues/3138
 	@Test
@@ -181,9 +242,18 @@ MonoCompletionStageTest {
 	}
 
 	@Test
-	public void scanOperator(){
-		CompletionStage<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
-		MonoCompletionStage<String> test = new MonoCompletionStage<>(completionStage, false);
+	public void scanOperatorFuture(){
+		CompletableFuture<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
+		MonoCompletableFuture<String> test = new MonoCompletableFuture<>(completionStage, false);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+	}
+
+	@Test
+	public void scanOperatorStage(){
+		CompletableFuture<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
+		MonoCompletableFuture<String> test = new MonoCompletableFuture<>(completionStage, false);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();

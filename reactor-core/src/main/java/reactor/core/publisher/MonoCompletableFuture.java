@@ -18,8 +18,8 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
 import reactor.core.CoreSubscriber;
@@ -30,34 +30,22 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * Emits the value or error produced by the wrapped CompletionStage.
+ * Emits the value or error produced by the wrapped CompletableFuture.
+ * <p>
+ * Note that if Subscribers cancel their subscriptions, the CompletableFuture
+ * is cancelled if specified.
  *
  * @param <T> the value type
  */
-final class MonoCompletionStage<T> extends Mono<T>
+final class MonoCompletableFuture<T> extends Mono<T>
         implements Fuseable, Scannable {
 
-    final CompletionStage<? extends T> stage;
-    @Nullable
-    final Runnable cancellationHandler;
+    final CompletableFuture<? extends T> future;
+    final boolean suppressCancellation;
 
-    MonoCompletionStage(CompletionStage<? extends T> stage, @Nullable Runnable cancellationHandler) {
-        this.stage = Objects.requireNonNull(stage, "future");
-        this.cancellationHandler = cancellationHandler;
-    }
-
-    @Override
-    public void subscribe(CoreSubscriber<? super T> actual) {
-        MonoCompletionStageSubscription<T> s =
-                new MonoCompletionStageSubscription<>(actual, cancellationHandler);
-
-        actual.onSubscribe(s);
-
-        if (s.isCancelled()) {
-            return;
-        }
-
-        stage.handle(s);
+    MonoCompletableFuture(CompletableFuture<? extends T> future, boolean suppressCancellation) {
+        this.future = Objects.requireNonNull(future, "future");
+        this.suppressCancellation = suppressCancellation;
     }
 
     @Override
@@ -66,20 +54,30 @@ final class MonoCompletionStage<T> extends Mono<T>
         return null;
     }
 
+    @Override
+    public void subscribe(CoreSubscriber<? super T> actual) {
+        MonoCompletableFutureSubscription<T> s = suppressCancellation
+                ? new MonoCompletableFutureSubscription<>(actual)
+                : new CancellingMonoCompletableFutureSubscription<>(actual, future);
 
-    static final class MonoCompletionStageSubscription<T> extends Operators.MonoSubscriber<T, T>
+        actual.onSubscribe(s);
+
+        if (s.isCancelled()) {
+            return;
+        }
+
+        future.handle(s);
+    }
+
+    static class MonoCompletableFutureSubscription<T> extends Operators.MonoSubscriber<T, T>
             implements BiFunction<T, Throwable, Void> {
 
-        @Nullable
-        final Runnable handler;
-
-        public MonoCompletionStageSubscription(CoreSubscriber<? super T> actual, @Nullable Runnable handler) {
+        public MonoCompletableFutureSubscription(CoreSubscriber<? super T> actual) {
             super(actual);
-            this.handler = handler;
         }
 
         @Override
-        public Void apply(@Nullable T v, @Nullable Throwable e) {
+        public final Void apply(@Nullable T v, @Nullable Throwable e) {
             if (this.isCancelled()) {
                 //nobody is interested in the Mono anymore, don't risk dropping errors
                 Context ctx = this.currentContext();
@@ -117,16 +115,24 @@ final class MonoCompletionStage<T> extends Mono<T>
             return null;
         }
 
+    }
+
+    static final class CancellingMonoCompletableFutureSubscription<T>
+            extends MonoCompletableFutureSubscription<T> {
+        final CompletableFuture<? extends T> future;
+
+        CancellingMonoCompletableFutureSubscription(CoreSubscriber<? super T> actual, CompletableFuture<? extends T> future) {
+            super(actual);
+            this.future = future;
+        }
+
         @Override
         public void cancel() {
             super.cancel();
-            if (handler != null) {
-                try {
-                    this.handler.run();
-                }
-                catch (Throwable t) {
-                    Operators.onErrorDropped(t, this.currentContext());
-                }
+            try {
+                this.future.cancel(true);
+            } catch (Throwable t) {
+                Operators.onErrorDropped(t, this.currentContext());
             }
         }
     }
