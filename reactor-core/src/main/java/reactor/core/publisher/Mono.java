@@ -1705,7 +1705,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public T block() {
-		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
@@ -1731,7 +1731,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	@Nullable
 	public T block(Duration timeout) {
-		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
@@ -1754,7 +1754,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return T the result
 	 */
 	public Optional<T> blockOptional() {
-		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingOptionalMonoSubscriber<T> subscriber =
 				new BlockingOptionalMonoSubscriber<>(context);
@@ -1782,7 +1782,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return T the result
 	 */
 	public Optional<T> blockOptional(Duration timeout) {
-		Context context = ContextPropagationSupport.shouldCaptureInBlockingOperators()
+		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingOptionalMonoSubscriber<T> subscriber =
 				new BlockingOptionalMonoSubscriber<>(context);
