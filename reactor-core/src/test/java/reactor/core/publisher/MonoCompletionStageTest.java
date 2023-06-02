@@ -67,7 +67,7 @@ MonoCompletionStageTest {
 
 	//https://github.com/reactor/reactor-core/issues/3417
 	@Test
-	public void propagateCancellationToCompletionFutureWithNoCancellationSupport() {
+	public void propagateCancellationToCompletableFutureWithNoCancellationSupport() {
 		ArrayList<Throwable> droppedErrors = new ArrayList<>();
 		Hooks.onErrorDropped(droppedErrors::add);
 		try {
