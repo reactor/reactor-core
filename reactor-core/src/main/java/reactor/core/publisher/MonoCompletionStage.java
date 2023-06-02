@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,11 @@ final class MonoCompletionStage<T> extends Mono<T>
                     public void cancel() {
                         super.cancel();
                         if (future instanceof Future) {
-                            ((Future<?>) future).cancel(true);
+                            try {
+                                ((Future<?>) future).cancel(true);
+                            } catch (Throwable t) {
+                                Operators.onErrorDropped(t, currentContext());
+                            }
                         }
                     }
                 };
