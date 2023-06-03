@@ -17,13 +17,24 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -482,5 +493,106 @@ public class FluxRefCountTest {
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel+onComplete").isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel+onComplete").isFalse();
+	}
+
+	@Test
+	public void splitDelayMerge_expectAllElements() {
+		List<Integer> input = IntStream.range(0,10).boxed().collect(Collectors.toList());
+		Set<Integer> inputAsSet = new HashSet<>(input);
+		Map<String, Integer> errorStats = performTestReportStats(() ->
+				splitDelayMerge_tryReproduce(
+						input,
+						result -> new HashSet<>(result).equals(inputAsSet)
+				)
+		);
+		assertThat(errorStats).isEmpty();
+	}
+
+    @Test
+    public void splitConsumeAsync_expectAllElementsSequence() {
+		ExecutorService executorService = Executors.newCachedThreadPool();
+		try{
+			List<Integer> input = IntStream.range(0,10).boxed().collect(Collectors.toList());
+			Map<String, Integer> errorStats = performTestReportStats(() ->
+					splitConsumeAsync_tryReproduce(
+							executorService,
+							input,
+							result -> result.equals(input)
+					)
+			);
+			assertThat(errorStats).isEmpty();
+		}finally {
+			executorService.shutdownNow();
+		}
+    }
+
+    /**
+	 * Flux.just(1,2) -> refCount(2) -> Flux.merge(odd,even)
+	 */
+	private void splitDelayMerge_tryReproduce(List<Integer> inputList, Predicate<List<Integer>> expect) {
+        LongAdder inputOnNextCounter = new LongAdder();
+
+		Flux<Integer> refCount = Flux.fromIterable(inputList).doOnNext(unused -> inputOnNextCounter.increment()).publish().refCount(2);
+
+		//Mono<Long> delay = Mono.fromCompletionStage(CompletableFuture.supplyAsync(() -> 1L));
+		Mono<Long> delay = Mono.delay(Duration.ofNanos(1));
+
+		Flux<Integer> odd = delay.flatMapMany(unused -> refCount.filter(v -> v % 2 == 1)); //this will make subscribe from another thread
+		Flux<Integer> even = refCount.filter(v -> v % 2 == 0);
+
+		Flux<Integer> merged = Flux.merge(odd, even);
+
+		Mono<List<Integer>> output = merged.collectList();
+
+		StepVerifier.Step<List<Integer>> step = output.as(StepVerifier::create);
+		step.expectNextMatches(expect).expectComplete().verify(Duration.ofSeconds(5));
+
+		assertThat(inputOnNextCounter.sum()).isEqualTo(inputList.size());
+	}
+
+	private void splitConsumeAsync_tryReproduce(ExecutorService executorService, List<Integer> inputList, Predicate<List<Integer>> expect) {
+		final int sharedCount = 4;
+		Phaser phaser = new Phaser(sharedCount);
+
+		LongAdder inputOnNextCounter = new LongAdder();
+
+		Mono<List<Integer>> refCount = Flux.fromIterable(inputList).doOnNext(unused -> inputOnNextCounter.increment()).publish().refCount(sharedCount).collectList();
+
+		Runnable consumeAsync = () -> {
+			phaser.arriveAndAwaitAdvance();
+			refCount.as(StepVerifier::create).expectNextMatches(expect).expectComplete().verify(Duration.ofSeconds(5));
+		};
+
+		//generate futures and await them
+		IntStream.range(0, sharedCount).mapToObj(unused -> CompletableFuture.runAsync(consumeAsync, executorService)).collect(Collectors.toList()).stream().map(CompletableFuture::join).collect(Collectors.toList());
+		assertThat(inputOnNextCounter.sum()).isEqualTo(inputList.size());
+	}
+
+	private Map<String, Integer> performTestReportStats(Runnable tryReproduce) {
+		Map<String, Integer> errors = new HashMap<>();
+
+		//calling tryReproduce several times and collecting errors. however, if timeout happens, exit early
+		for (int i = 0; i < 100_000; i++) {
+			try {
+				tryReproduce.run();
+			} catch (AssertionError | java.util.concurrent.CompletionException e) {
+				Throwable t = e instanceof java.util.concurrent.CompletionException ? e.getCause() : e;
+
+				String message = t.getMessage();
+				boolean timeout = message.contains("VerifySubscriber timed out on ");
+				if (timeout) {
+					message = "VerifySubscriber timed out on";
+				}
+
+				errors.compute(message, (k, v) -> v == null ? 1 : v + 1);
+
+				if (timeout) {
+					//if there was timeout no need to wait for another one
+					break;
+				}
+			}
+		}
+
+		return errors;
 	}
 }

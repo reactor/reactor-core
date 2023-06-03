@@ -77,9 +77,9 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				connect = true;
 				conn.connected = true;
 			}
-		}
 
-		source.subscribe(new RefCountInner<>(actual, conn));
+			source.subscribe(new RefCountInner<>(actual, conn));
+		}
 
 		if (connect) {
 			source.connect(conn);
