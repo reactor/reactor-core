@@ -47,8 +47,7 @@ apply from: "gradle/releaser.gradle"
 apply from: "gradle/dependencies.gradle"
 
 repositories { //needed at root for asciidoctor and nohttp-checkstyle
-  mavenLocal()
-  mavenCentral()
+	mavenCentral()
 }
 
 def osgiVersion(String v) {
