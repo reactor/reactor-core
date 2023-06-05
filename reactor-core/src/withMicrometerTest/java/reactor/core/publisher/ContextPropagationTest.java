@@ -982,4 +982,125 @@ class ContextPropagationTest {
 			});
 		}
 	}
+
+	@Nested
+	class BlockingOperatorsAutoCapture {
+
+		@Test
+		void monoBlock() {
+			Hooks.enableAutomaticContextPropagation();
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Mono.just("test")
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block does the job well,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnNext(ignored -> value.set(REF1.get()))
+			    .block();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was automatically transferred.
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void monoBlockOptional() {
+			Hooks.enableAutomaticContextPropagation();
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Mono.empty()
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block does the job well,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnTerminate(() -> value.set(REF1.get()))
+			    .blockOptional();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was automatically transferred.
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void fluxBlockFirst() {
+			Hooks.enableAutomaticContextPropagation();
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Flux.range(0, 10)
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block does the job well,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnNext(ignored -> value.set(REF1.get()))
+			    .blockFirst();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was automatically transferred.
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void fluxBlockLast() {
+			Hooks.enableAutomaticContextPropagation();
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Flux.range(0, 10)
+			    // Introduce an artificial barrier to clear ThreadLocals if no Context
+			    // is defined in the downstream chain. If block does the job well,
+			    // it should have captured the existing ThreadLocal into the Context.
+			    .contextWrite(Context.empty())
+			    .doOnTerminate(() -> value.set(REF1.get()))
+			    .blockLast();
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was automatically transferred.
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void fluxToIterable() {
+			Hooks.enableAutomaticContextPropagation();
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			REF1.set("present");
+
+			Iterable<Integer> integers = Flux.range(0, 10)
+			                                 // Introduce an artificial barrier to clear ThreadLocals if no Context
+			                                 // is defined in the downstream chain. If block does the job well,
+			                                 // it should have captured the existing ThreadLocal into the Context.
+			                                 .contextWrite(Context.empty())
+			                                 .doOnTerminate(() -> value.set(REF1.get()))
+			                                 .toIterable();
+
+			assertThat(integers).hasSize(10);
+
+			// First, assert the existing ThreadLocal was not cleared.
+			assertThat(REF1.get()).isEqualTo("present");
+
+			// Now let's find out that it was automatically transferred.
+			assertThat(value.get()).isEqualTo("present");
+		}
+	}
 }

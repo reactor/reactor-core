@@ -533,16 +533,18 @@ public abstract class Hooks {
 	 * {@code contextWrite(...)} call and the unmodified (downstream) {@link Context} is
 	 * used when signals are delivered downstream, making the {@code contextWrite(...)}
 	 * a logical boundary for the context propagation mechanism.
+	 * <p>
+	 * This mechanism automatically performs {@link Flux#contextCapture()}
+	 * and {@link Mono#contextCapture()} in {@link Flux#blockFirst()},
+	 * {@link Flux#blockLast()}, {@link Flux#toIterable()}, and {@link Mono#block()} (and
+	 * their overloads).
+	 * @since 3.5.3
 	 */
 	public static void enableAutomaticContextPropagation() {
 		if (ContextPropagationSupport.isContextPropagationOnClasspath) {
-			Hooks.addQueueWrapper(
-					CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new
-			);
-			Schedulers.onScheduleHook(
-					CONTEXT_IN_THREAD_LOCALS_KEY,
-					ContextPropagation.scopePassingOnScheduleHook()
-			);
+			Hooks.addQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new);
+			Schedulers.onScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY,
+					ContextPropagation.scopePassingOnScheduleHook());
 			ContextPropagationSupport.propagateContextToThreadLocals = true;
 		}
 	}

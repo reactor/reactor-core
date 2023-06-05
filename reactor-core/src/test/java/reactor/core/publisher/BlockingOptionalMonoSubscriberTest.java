@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -107,7 +108,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void isDisposedBecauseCancelled() {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 
 		assertThat(test.isDisposed()).isFalse();
 
@@ -118,7 +120,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void isDisposedBecauseValued() {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 
 		assertThat(test.isDisposed()).isFalse();
 
@@ -129,7 +132,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void isDisposedBecauseComplete() {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 
 		assertThat(test.isDisposed()).isFalse();
 
@@ -140,7 +144,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void isDisposedBecauseError() {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 
 		assertThat(test.isDisposed()).isFalse();
 
@@ -151,7 +156,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void scanOperator() {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -178,7 +184,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void interruptBlock() throws InterruptedException {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 		AtomicReference<Throwable> errorHandler = new AtomicReference<>();
 
 		Thread t = new Thread(test::blockingGet);
@@ -197,7 +204,8 @@ public class BlockingOptionalMonoSubscriberTest {
 
 	@Test
 	public void interruptBlockTimeout() throws InterruptedException {
-		BlockingOptionalMonoSubscriber<String> test = new BlockingOptionalMonoSubscriber<>();
+		BlockingOptionalMonoSubscriber<String> test =
+				new BlockingOptionalMonoSubscriber<>(Context.empty());
 		AtomicReference<Throwable> errorHandler = new AtomicReference<>();
 
 		Thread t = new Thread(() -> test.blockingGet(2, TimeUnit.SECONDS));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +33,7 @@ import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 import reactor.test.StepVerifier;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -146,7 +146,8 @@ public class BlockingIterableTest {
 	@Test
 	public void scanOperator() {
 		Flux<Integer> source = Flux.range(1, 10);
-		BlockingIterable<Integer> test = new BlockingIterable<>(source, 35, Queues.one());
+		BlockingIterable<Integer> test = new BlockingIterable<>(
+				source, 35, Queues.one(), Context::empty);
 
 		assertThat(test.scanUnsafe(Scannable.Attr.PARENT)).describedAs("PARENT").isSameAs(source);
 		assertThat(test.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
@@ -159,9 +160,8 @@ public class BlockingIterableTest {
 	@Test
 	public void scanOperatorLargePrefetchIsLimitedToIntMax() {
 		Flux<Integer> source = Flux.range(1, 10);
-		BlockingIterable<Integer> test = new BlockingIterable<>(source,
-				Integer.MAX_VALUE,
-				Queues.one());
+		BlockingIterable<Integer> test = new BlockingIterable<>(
+				source, Integer.MAX_VALUE, Queues.one(), Context::empty);
 
 		assertThat(test.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 	}
@@ -169,7 +169,8 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriber() {
 		BlockingIterable.SubscriberIterator<String> subscriberIterator =
-				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(), 123);
+				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(),
+						Context.empty(), 123);
 		Subscription s = Operators.emptySubscription();
 		subscriberIterator.onSubscribe(s);
 
@@ -187,7 +188,7 @@ public class BlockingIterableTest {
 	public void scanSubscriberLargePrefetchIsLimitedToIntMax() {
 		BlockingIterable.SubscriberIterator<String> subscriberIterator =
 				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(),
-						Integer.MAX_VALUE);
+						Context.empty(), Integer.MAX_VALUE);
 
 		assertThat(subscriberIterator.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
 	}
@@ -195,7 +196,8 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriberTerminated() {
 		BlockingIterable.SubscriberIterator<String> test =
-				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(), 123);
+				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(),
+						Context.empty(), 123);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).describedAs("before TERMINATED").isFalse();
 
@@ -207,8 +209,7 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriberError() {
 		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(
-				Queues.<String>one().get(),
-				123);
+				Queues.<String>one().get(), Context.empty(), 123);
 		IllegalStateException error = new IllegalStateException("boom");
 
 		assertThat(test.scan(Scannable.Attr.ERROR)).describedAs("before ERROR")
@@ -224,8 +225,7 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriberCancelled() {
 		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(
-				Queues.<String>one().get(),
-				123);
+				Queues.<String>one().get(), Context.empty(), 123);
 
 		//simulate cancellation by offering two elements
 		test.onNext("a");

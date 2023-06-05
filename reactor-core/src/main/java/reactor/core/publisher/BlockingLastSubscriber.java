@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import reactor.util.context.Context;
+
 /**
  * Blocks until the upstream signals its last value or completes.
  *
@@ -23,6 +25,10 @@ package reactor.core.publisher;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class BlockingLastSubscriber<T> extends BlockingSingleSubscriber<T> {
+
+	public BlockingLastSubscriber(Context context) {
+		super(context);
+	}
 
 	@Override
 	public void onNext(T t) {
