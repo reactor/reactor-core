@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import reactor.util.context.Context;
+
 /**
  * Blocks assuming the upstream is a Mono, until it signals its value or completes.
  * Compared to {@link BlockingFirstSubscriber}, this variant doesn't cancel the upstream
@@ -25,6 +27,10 @@ package reactor.core.publisher;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class BlockingMonoSubscriber<T> extends BlockingSingleSubscriber<T> {
+
+	public BlockingMonoSubscriber(Context context) {
+		super(context);
+	}
 
 	@Override
 	public void onNext(T t) {

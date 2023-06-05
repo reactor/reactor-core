@@ -89,6 +89,10 @@ final class ContextPropagation {
 		return WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 	}
 
+	static Context contextCaptureToEmpty() {
+		return contextCapture().apply(Context.empty());
+	}
+
 	/**
 	 * Create a support function that takes a snapshot of thread locals and merges them with the
 	 * provided {@link Context}, resulting in a new {@link Context} which includes entries

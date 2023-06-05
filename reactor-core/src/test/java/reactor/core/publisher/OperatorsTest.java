@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1000,7 +1000,7 @@ public class OperatorsTest {
 
 	@Test
 	void meaningfulScalarSubscriptionStepName() {
-		assertThat(Scannable.from(Operators.scalarSubscription(new BlockingFirstSubscriber<>(), "foo")).stepName()).isEqualTo("scalarSubscription(foo)");
+		assertThat(Scannable.from(Operators.scalarSubscription(new BlockingFirstSubscriber<>(Context.empty()), "foo")).stepName()).isEqualTo("scalarSubscription(foo)");
 	}
 
 	@Test
