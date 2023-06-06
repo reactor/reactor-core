@@ -3134,8 +3134,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Supplier<C> bufferSupplier, boolean fairBackpressure) {
-		// TODO: if maxSize == Integer.MAX_VALUE -> return plain buffer() with timeout
-		//  as parameter for time.
 		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toNanos(), TimeUnit.NANOSECONDS, timer, bufferSupplier,
 				fairBackpressure));
 	}
