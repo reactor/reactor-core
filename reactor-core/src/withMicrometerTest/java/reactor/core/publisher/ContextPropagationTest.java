@@ -36,6 +36,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
+import io.micrometer.context.ContextSnapshotFactory;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -785,8 +786,11 @@ class ContextPropagationTest {
 			});
 
 			ContextPropagation.ContextRestoreSignalListener<Object> listener =
-				new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context,
-				null);
+				new ContextPropagation.ContextRestoreSignalListener<>(
+						tlReadingListener, context,
+						ContextSnapshotFactory.builder()
+						                      .contextRegistry(ContextRegistry.getInstance())
+						                      .build());
 
 			Thread t = new Thread(() -> {
 				try {

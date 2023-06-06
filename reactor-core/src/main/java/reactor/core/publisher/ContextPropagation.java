@@ -144,7 +144,7 @@ final class ContextPropagation {
 		if (ctx.isEmpty()) {
 			return original;
 		}
-		return new ContextRestoreSignalListener<T>(original, ctx, null);
+		return new ContextRestoreSignalListener<T>(original, ctx, globalContextSnapshotFactory);
 	}
 
 	//the SignalListener implementation can be tested independently with a test-specific ContextRegistry
@@ -152,18 +152,13 @@ final class ContextPropagation {
 
 		final SignalListener<T> original;
 		final ContextView context;
-		private final ContextSnapshotFactory contextSnapshotFactory;
+		final ContextSnapshotFactory contextSnapshotFactory;
 
-		public ContextRestoreSignalListener(SignalListener<T> original, ContextView context, @Nullable ContextRegistry registry) {
+		public ContextRestoreSignalListener(SignalListener<T> original,
+				ContextView context, ContextSnapshotFactory contextSnapshotFactory) {
 			this.original = original;
 			this.context = context;
-			if (registry != null) {
-				this.contextSnapshotFactory =
-						ContextSnapshotFactory.builder().contextRegistry(registry).build();
-			}
-			else {
-				this.contextSnapshotFactory = globalContextSnapshotFactory;
-			}
+			this.contextSnapshotFactory = contextSnapshotFactory;
 		}
 
 		ContextSnapshot.Scope restoreThreadLocals() {
