@@ -94,36 +94,6 @@ final class ContextPropagation {
 	}
 
 	/**
-	 * Create a support function that takes a snapshot of thread locals and merges them with the
-	 * provided {@link Context}, resulting in a new {@link Context} which includes entries
-	 * captured from threadLocals by the Context-Propagation API.
-	 * <p>
-	 * The provided {@link Predicate} is used on keys associated to said thread locals
-	 * by the Context-Propagation API to filter which entries should be captured in the
-	 * first place.
-	 * <p>
-	 * This variant uses the implicit global {@code ContextRegistry} and captures only from
-	 * available {@code ThreadLocalAccessors} that match the {@link Predicate}.
-	 *
-	 * @param captureKeyPredicate a {@link Predicate} used on keys to determine if each entry
-	 * should be injected into the new {@link Context}
-	 * @return a {@link Function} augmenting {@link Context} with captured entries
-	 */
-	static Function<Context, Context> contextCapture(Predicate<Object> captureKeyPredicate) {
-		if (!ContextPropagationSupport.isContextPropagationOnClasspath) {
-			return NO_OP;
-		}
-		// This method is actually used only in tests, so creating a new instance for
-		// each call is not an issue. If it's used in production code, a better
-		// strategy for configuring the Predicate needs to be chosen.
-		ContextSnapshotFactory factory = ContextSnapshotFactory
-				.builder()
-				.captureKeyPredicate(captureKeyPredicate)
-				.build();
-		return target -> factory.captureAll().updateContext(target);
-	}
-
-	/**
 	 * When <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
 	 * is available on the classpath, the provided {@link BiConsumer handler} will be
 	 * called with {@link ThreadLocal} values restored from the provided {@link Context}.

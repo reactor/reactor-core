@@ -335,19 +335,6 @@ class ContextPropagationTest {
 	}
 
 	@Test
-	void contextCaptureWithPredicateReturnsNewFunctionWithGlobalRegistry() {
-		Function<Context, Context> test = ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE);
-
-		assertThat(test)
-			.as("predicate, no registry")
-			.isNotNull()
-			.isNotSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
-			.isNotSameAs(ContextPropagation.NO_OP)
-			// as long as a predicate is supplied, the method creates new instances of the Function
-			.isNotSameAs(ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE));
-	}
-
-	@Test
 	void fluxApiUsesContextPropagationConstantFunction() {
 		Flux<Integer> source = Flux.empty();
 		assertThat(source.contextCapture())
@@ -410,22 +397,6 @@ class ContextPropagationTest {
 				.containsEntry(KEY1, "expected1")
 				.containsEntry(KEY2, "expected2")
 				.hasSize(2);
-		}
-
-		@Test
-		void captureWithFiltering() {
-			Function<Context, Context> test = ContextPropagation.contextCapture(k -> k.toString().equals(KEY2));
-
-			REF1.set("not_expected");
-			REF2.set("expected");
-
-			Context ctx = test.apply(Context.empty());
-			Map<Object, Object> asMap = new HashMap<>();
-			ctx.forEach(asMap::put); //easier to assert
-
-			assertThat(asMap)
-					.containsEntry(KEY2, "expected")
-					.hasSize(1);
 		}
 	}
 
