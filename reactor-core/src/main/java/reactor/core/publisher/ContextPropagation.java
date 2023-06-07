@@ -17,20 +17,17 @@
 package reactor.core.publisher;
 
 import java.util.AbstractQueue;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import io.micrometer.context.ContextAccessor;
 import io.micrometer.context.ContextRegistry;
 import io.micrometer.context.ContextSnapshot;
 
-import io.micrometer.context.ThreadLocalAccessor;
+import io.micrometer.context.ContextSnapshotFactory;
 import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -48,14 +45,31 @@ final class ContextPropagation {
 	static final Function<Context, Context> NO_OP = c -> c;
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 
+	static ContextSnapshotFactory globalContextSnapshotFactory = null;
+
 	static {
 		WITH_GLOBAL_REGISTRY_NO_PREDICATE = ContextPropagationSupport.isContextPropagationAvailable() ?
-				new ContextCaptureNoPredicate(ContextRegistry.getInstance()) : NO_OP;
+				new ContextCaptureNoPredicate() : NO_OP;
+
+		if (ContextPropagationSupport.isContextPropagationAvailable()) {
+			globalContextSnapshotFactory = ContextSnapshotFactory.builder()
+			                                                     .clearMissing(false)
+			                                                     .build();
+		}
+	}
+
+	static void configureContextSnapshotFactory(boolean clearMissing) {
+		globalContextSnapshotFactory =
+				ContextSnapshotFactory.builder().clearMissing(clearMissing).build();
+	}
+
+	static <C> ContextSnapshot.Scope setThreadLocals(Object context) {
+		return globalContextSnapshotFactory.setThreadLocalsFrom(context);
 	}
 
 	public static Function<Runnable, Runnable> scopePassingOnScheduleHook() {
 		return delegate -> {
-			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			ContextSnapshot contextSnapshot = globalContextSnapshotFactory.captureAll();
 			return contextSnapshot.wrap(delegate);
 		};
 	}
@@ -80,30 +94,6 @@ final class ContextPropagation {
 	}
 
 	/**
-	 * Create a support function that takes a snapshot of thread locals and merges them with the
-	 * provided {@link Context}, resulting in a new {@link Context} which includes entries
-	 * captured from threadLocals by the Context-Propagation API.
-	 * <p>
-	 * The provided {@link Predicate} is used on keys associated to said thread locals
-	 * by the Context-Propagation API to filter which entries should be captured in the
-	 * first place.
-	 * <p>
-	 * This variant uses the implicit global {@code ContextRegistry} and captures only from
-	 * available {@code ThreadLocalAccessors} that match the {@link Predicate}.
-	 *
-	 * @param captureKeyPredicate a {@link Predicate} used on keys to determine if each entry
-	 * should be injected into the new {@link Context}
-	 * @return a {@link Function} augmenting {@link Context} with captured entries
-	 */
-	static Function<Context, Context> contextCapture(Predicate<Object> captureKeyPredicate) {
-		if (!ContextPropagationSupport.isContextPropagationOnClasspath) {
-			return NO_OP;
-		}
-		return target -> ContextSnapshot.captureAllUsing(captureKeyPredicate, ContextRegistry.getInstance())
-			.updateContext(target);
-	}
-
-	/**
 	 * When <a href="https://github.com/micrometer-metrics/context-propagation">context-propagation library</a>
 	 * is available on the classpath, the provided {@link BiConsumer handler} will be
 	 * called with {@link ThreadLocal} values restored from the provided {@link Context}.
@@ -121,7 +111,7 @@ final class ContextPropagation {
 				return handler;
 			}
 			return (v, sink) -> {
-				try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
+				try (ContextSnapshot.Scope ignored = globalContextSnapshotFactory.setThreadLocalsFrom(ctx)) {
 					handler.accept(v, sink);
 				}
 			};
@@ -154,7 +144,7 @@ final class ContextPropagation {
 		if (ctx.isEmpty()) {
 			return original;
 		}
-		return new ContextRestoreSignalListener<T>(original, ctx, null);
+		return new ContextRestoreSignalListener<T>(original, ctx, globalContextSnapshotFactory);
 	}
 
 	//the SignalListener implementation can be tested independently with a test-specific ContextRegistry
@@ -162,16 +152,17 @@ final class ContextPropagation {
 
 		final SignalListener<T> original;
 		final ContextView context;
-		final ContextRegistry registry;
+		final ContextSnapshotFactory contextSnapshotFactory;
 
-		public ContextRestoreSignalListener(SignalListener<T> original, ContextView context, @Nullable ContextRegistry registry) {
+		public ContextRestoreSignalListener(SignalListener<T> original,
+				ContextView context, ContextSnapshotFactory contextSnapshotFactory) {
 			this.original = original;
 			this.context = context;
-			this.registry = registry == null ? ContextRegistry.getInstance() : registry;
+			this.contextSnapshotFactory = contextSnapshotFactory;
 		}
-		
+
 		ContextSnapshot.Scope restoreThreadLocals() {
-			return ContextSnapshot.setAllThreadLocalsFrom(this.context, this.registry);
+			return contextSnapshotFactory.setThreadLocalsFrom(this.context);
 		}
 
 		@Override
@@ -287,6 +278,14 @@ final class ContextPropagation {
 		}
 	}
 
+	static final class ContextCaptureNoPredicate implements Function<Context, Context> {
+
+		@Override
+		public Context apply(Context context) {
+			return globalContextSnapshotFactory.captureAll().updateContext(context);
+		}
+	}
+
 	static final class ContextQueue<T> extends AbstractQueue<T> {
 
 		static final String NOT_SUPPORTED_MESSAGE = "ContextQueue wrapper is intended " +
@@ -313,7 +312,7 @@ final class ContextPropagation {
 
 		@Override
 		public boolean offer(T o) {
-			ContextSnapshot contextSnapshot = ContextSnapshot.captureAll();
+			ContextSnapshot contextSnapshot = globalContextSnapshotFactory.captureAll();
 			return envelopeQueue.offer(new Envelope<>(o, contextSnapshot));
 		}
 
@@ -340,7 +339,7 @@ final class ContextPropagation {
 		private void restoreTheContext(Envelope<T> envelope) {
 			ContextSnapshot contextSnapshot = envelope.contextSnapshot;
 			// tries to read existing Thread for existing ThreadLocals
-			ContextSnapshot currentContextSnapshot = ContextSnapshot.captureAll();
+			ContextSnapshot currentContextSnapshot = globalContextSnapshotFactory.captureAll();
 			if (!contextSnapshot.equals(currentContextSnapshot)) {
 				if (!hasPrevious || !Thread.currentThread().equals(this.lastReader)) {
 					// means context was restored form the envelope,
@@ -379,91 +378,6 @@ final class ContextPropagation {
 		Envelope(T body, ContextSnapshot contextSnapshot) {
 			this.body = body;
 			this.contextSnapshot = contextSnapshot;
-		}
-
-	}
-
-	static final class ContextCaptureNoPredicate implements Function<Context, Context> {
-		final ContextRegistry globalRegistry;
-
-		ContextCaptureNoPredicate(ContextRegistry globalRegistry) {
-			this.globalRegistry = globalRegistry;
-		}
-		@Override
-		public Context apply(Context context) {
-			return ContextSnapshot.captureAllUsing(PREDICATE_TRUE, globalRegistry)
-					.updateContext(context);
-		}
-	}
-
-	/*
-	 * Temporary methods not present in context-propagation library that allow
-	 * clearing ThreadLocals not present in Reactor Context. Once context-propagation
-	 * library adds the ability to do this, they can be removed from reactor-core.
-	 */
-
-	@SuppressWarnings("unchecked")
-	static <C> ContextSnapshot.Scope setThreadLocals(Object context) {
-		ContextRegistry registry = ContextRegistry.getInstance();
-		ContextAccessor<?, ?> contextAccessor = registry.getContextAccessorForRead(context);
-		Map<Object, Object> previousValues = null;
-		for (ThreadLocalAccessor<?> threadLocalAccessor : registry.getThreadLocalAccessors()) {
-			Object key = threadLocalAccessor.key();
-			Object value = ((ContextAccessor<C, ?>) contextAccessor).readValue((C) context, key);
-			previousValues = setThreadLocal(key, value, threadLocalAccessor, previousValues);
-		}
-		return ReactorScopeImpl.from(previousValues, registry);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <V> Map<Object, Object> setThreadLocal(Object key, @Nullable V value,
-			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, Object> previousValues) {
-
-		previousValues = (previousValues != null ? previousValues : new HashMap<>());
-		previousValues.put(key, accessor.getValue());
-		if (value != null) {
-			((ThreadLocalAccessor<V>) accessor).setValue(value);
-		} else {
-			accessor.setValue();
-		}
-		return previousValues;
-	}
-
-	private static class ReactorScopeImpl implements ContextSnapshot.Scope {
-
-		private final Map<Object, Object> previousValues;
-
-		private final ContextRegistry contextRegistry;
-
-		private ReactorScopeImpl(Map<Object, Object> previousValues,
-				ContextRegistry contextRegistry) {
-			this.previousValues = previousValues;
-			this.contextRegistry = contextRegistry;
-		}
-
-		@Override
-		public void close() {
-			for (ThreadLocalAccessor<?> accessor : this.contextRegistry.getThreadLocalAccessors()) {
-				if (this.previousValues.containsKey(accessor.key())) {
-					Object previousValue = this.previousValues.get(accessor.key());
-					resetThreadLocalValue(accessor, previousValue);
-				}
-			}
-		}
-
-		@SuppressWarnings("unchecked")
-		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
-			if (previousValue != null) {
-				((ThreadLocalAccessor<V>) accessor).restore(previousValue);
-			}
-			else {
-				accessor.restore();
-			}
-		}
-
-		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
-			return (previousValues != null ? new ReactorScopeImpl(previousValues, registry) : () -> {
-			});
 		}
 	}
 }

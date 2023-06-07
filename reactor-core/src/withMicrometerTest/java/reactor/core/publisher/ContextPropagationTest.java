@@ -31,13 +31,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
+import io.micrometer.context.ContextSnapshotFactory;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -47,9 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-import org.reactivestreams.FlowAdapters;
 import org.reactivestreams.Publisher;
-import reactor.adapter.JdkFlowAdapter;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -339,19 +336,6 @@ class ContextPropagationTest {
 	}
 
 	@Test
-	void contextCaptureWithPredicateReturnsNewFunctionWithGlobalRegistry() {
-		Function<Context, Context> test = ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE);
-
-		assertThat(test)
-			.as("predicate, no registry")
-			.isNotNull()
-			.isNotSameAs(ContextPropagation.WITH_GLOBAL_REGISTRY_NO_PREDICATE)
-			.isNotSameAs(ContextPropagation.NO_OP)
-			// as long as a predicate is supplied, the method creates new instances of the Function
-			.isNotSameAs(ContextPropagation.contextCapture(ContextPropagation.PREDICATE_TRUE));
-	}
-
-	@Test
 	void fluxApiUsesContextPropagationConstantFunction() {
 		Flux<Integer> source = Flux.empty();
 		assertThat(source.contextCapture())
@@ -414,22 +398,6 @@ class ContextPropagationTest {
 				.containsEntry(KEY1, "expected1")
 				.containsEntry(KEY2, "expected2")
 				.hasSize(2);
-		}
-
-		@Test
-		void captureWithFiltering() {
-			Function<Context, Context> test = ContextPropagation.contextCapture(k -> k.toString().equals(KEY2));
-
-			REF1.set("not_expected");
-			REF2.set("expected");
-
-			Context ctx = test.apply(Context.empty());
-			Map<Object, Object> asMap = new HashMap<>();
-			ctx.forEach(asMap::put); //easier to assert
-
-			assertThat(asMap)
-					.containsEntry(KEY2, "expected")
-					.hasSize(1);
 		}
 	}
 
@@ -818,8 +786,11 @@ class ContextPropagationTest {
 			});
 
 			ContextPropagation.ContextRestoreSignalListener<Object> listener =
-				new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context,
-				null);
+				new ContextPropagation.ContextRestoreSignalListener<>(
+						tlReadingListener, context,
+						ContextSnapshotFactory.builder()
+						                      .contextRegistry(ContextRegistry.getInstance())
+						                      .build());
 
 			Thread t = new Thread(() -> {
 				try {
