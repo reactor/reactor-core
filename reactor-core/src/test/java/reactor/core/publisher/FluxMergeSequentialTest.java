@@ -41,8 +41,10 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -871,4 +873,40 @@ public class FluxMergeSequentialTest {
         inner.cancel();
         assertThat(inner.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	void discardsPrefetched() {
+		Hooks.onNextDropped(MemoryUtils.Tracked::safeRelease);
+		Hooks.onErrorDropped(e -> {});
+		Hooks.onOperatorError((e, v) -> null);
+
+		AssertSubscriber<MemoryUtils.Tracked> assertSubscriber = new AssertSubscriber<>(
+				Operators.enableOnDiscard(null, MemoryUtils.Tracked::safeRelease), 0
+		);
+
+		AtomicInteger prefetched = new AtomicInteger();
+		MemoryUtils.Tracked tracked1 = new MemoryUtils.Tracked("1", false);
+		MemoryUtils.Tracked tracked2 = new MemoryUtils.Tracked("2", false);
+		Flux<MemoryUtils.Tracked> flux = Flux
+				.just(tracked1, tracked2)
+				.map(Collections::singletonList)
+				.hide()
+				.doOnNext(t -> prefetched.incrementAndGet())
+				.flatMapIterable(Function.identity());
+//				.flatMapSequential(Mono::just);
+
+		flux.subscribe(assertSubscriber);
+
+		assertSubscriber.cancel();
+
+		assertThat(assertSubscriber.values()).isEmpty();
+		assertThat(prefetched.get()).isEqualTo(2);
+		assertThat(tracked1.isReleased()).isTrue();
+		assertThat(tracked2.isReleased()).isTrue();
+
+		Hooks.resetOnNextDropped();
+		Hooks.resetOnErrorDropped();
+		Hooks.resetOnNextError();
+		Hooks.resetOnOperatorError();
+	}
 }
