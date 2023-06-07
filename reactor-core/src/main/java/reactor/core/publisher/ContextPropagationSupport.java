@@ -33,6 +33,7 @@ final class ContextPropagationSupport {
         boolean contextPropagation = false;
         try {
             Class.forName("io.micrometer.context.ContextRegistry");
+            Class.forName("io.micrometer.context.ContextSnapshotFactory");
             contextPropagation = true;
         } catch (ClassNotFoundException notFound) {
         } catch (LinkageError linkageErr) {
