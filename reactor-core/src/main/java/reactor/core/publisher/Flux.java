@@ -3115,23 +3115,93 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				false));
 	}
 
+	/**
+	 * Collect incoming values into multiple {@link List} buffers that will be emitted
+	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
+	 * maxTime {@link Duration} elapses.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param fairBackpressure If {@code true}, prefetches {@code maxSize * 4} from upstream and replenishes the buffer when the downstream demand is satisfactory.
+	 *                         When {@code false}, no prefetching takes place and a single buffer is always ready to be pushed downstream.
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 */
 	public final Flux<List<T>> bufferTimeout(int maxSize,
 			Duration maxTime, boolean fairBackpressure) {
 		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(),
 				listSupplier(), fairBackpressure);
 	}
 
+	/**
+	 * Collect incoming values into multiple {@link List} buffers that will be emitted
+	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
+	 * maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 * @param fairBackpressure If {@code true}, prefetches {@code maxSize * 4} from upstream and replenishes the buffer when the downstream demand is satisfactory.
+	 *                         When {@code false}, no prefetching takes place and a single buffer is always ready to be pushed downstream.
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 */
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, boolean fairBackpressure) {
 		return bufferTimeout(maxSize, maxTime, timer, listSupplier(), fairBackpressure);
 	}
 
+	/**
+	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
+	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
+	 * size OR the maxTime {@link Duration} elapses.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
+	 * @param <C> the {@link Collection} buffer type
+	 * @param fairBackpressure If {@code true}, prefetches {@code maxSize * 4} from upstream and replenishes the buffer when the downstream demand is satisfactory.
+	 *                         When {@code false}, no prefetching takes place and a single buffer is always ready to be pushed downstream.
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 */
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Supplier<C> bufferSupplier, boolean fairBackpressure) {
 		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(), bufferSupplier,
 				fairBackpressure);
 	}
 
+	/**
+	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
+	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
+	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
+	 * @param <C> the {@link Collection} buffer type
+	 * @param fairBackpressure If {@code true}, prefetches {@code maxSize * 4} from upstream and replenishes the buffer when the downstream demand is satisfactory.
+	 *                         When {@code false}, no prefetching takes place and a single buffer is always ready to be pushed downstream.
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 */
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Supplier<C> bufferSupplier, boolean fairBackpressure) {
 		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toNanos(), TimeUnit.NANOSECONDS, timer, bufferSupplier,
