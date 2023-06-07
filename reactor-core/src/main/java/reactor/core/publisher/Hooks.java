@@ -546,6 +546,7 @@ public abstract class Hooks {
 			Schedulers.onScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY,
 					ContextPropagation.scopePassingOnScheduleHook());
 			ContextPropagationSupport.propagateContextToThreadLocals = true;
+			ContextPropagation.configureContextSnapshotFactory(true);
 		}
 	}
 

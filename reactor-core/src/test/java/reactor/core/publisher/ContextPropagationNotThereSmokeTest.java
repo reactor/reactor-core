@@ -33,12 +33,6 @@ class ContextPropagationNotThereSmokeTest {
 	}
 
 	@Test
-	void contextCaptureIsNoOp() {
-		assertThat(ContextPropagation.contextCapture()).as("without predicate").isSameAs(ContextPropagation.NO_OP);
-		assertThat(ContextPropagation.contextCapture(v -> true)).as("with predicate").isSameAs(ContextPropagation.NO_OP);
-	}
-
-	@Test
 	void contextCaptureFluxApiIsNoOp() {
 		Flux<Integer> source = Flux.empty();
 		assertThat(source.contextCapture()).isSameAs(source);
