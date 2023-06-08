@@ -125,12 +125,11 @@ dependencies {
 	withMicrometerTestImplementation libs.micrometer.contextPropagation
 	withMicrometerTestImplementation sourceSets.test.output
 
-
-  	withContextPropagation102TestImplementation platform(libs.micrometer.bom)
-    withContextPropagation102TestImplementation libs.micrometer.commons
-  	withContextPropagation102TestImplementation libs.micrometer.core
-  	withContextPropagation102TestImplementation libs.micrometer.contextPropagation102
-  	withContextPropagation102TestImplementation sourceSets.test.output
+	withContextPropagation102TestImplementation platform(libs.micrometer.bom)
+	withContextPropagation102TestImplementation libs.micrometer.commons
+	withContextPropagation102TestImplementation libs.micrometer.core
+	withContextPropagation102TestImplementation libs.micrometer.contextPropagation102
+	withContextPropagation102TestImplementation sourceSets.test.output
 
 	jcstressImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
