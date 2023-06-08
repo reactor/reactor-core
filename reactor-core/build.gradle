@@ -47,6 +47,7 @@ testSets {
 	blockHoundTest
 	//TODO once can probably be removed in 3.6.0, but MUST keep the ReactorContextAccessorTest in that case
 	withMicrometerTest
+	withContextPropagation102Test
 	tckTest
 }
 
@@ -123,6 +124,13 @@ dependencies {
 	withMicrometerTestImplementation libs.micrometer.core
 	withMicrometerTestImplementation libs.micrometer.contextPropagation
 	withMicrometerTestImplementation sourceSets.test.output
+
+
+  	withContextPropagation102TestImplementation platform(libs.micrometer.bom)
+    withContextPropagation102TestImplementation libs.micrometer.commons
+  	withContextPropagation102TestImplementation libs.micrometer.core
+  	withContextPropagation102TestImplementation libs.micrometer.contextPropagation102
+  	withContextPropagation102TestImplementation sourceSets.test.output
 
 	jcstressImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
@@ -274,6 +282,7 @@ jcstress {
 // always depend on withMicrometerTest, blockHoundTest and tckTest, skip loops when not releasing
 // note that this way the tasks can be run individually
 check {
+	dependsOn withContextPropagation102Test
 	dependsOn withMicrometerTest
 	dependsOn blockHoundTest
 	dependsOn tckTest

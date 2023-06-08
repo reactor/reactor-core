@@ -36,7 +36,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextRegistry;
-import io.micrometer.context.ContextSnapshotFactory;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -197,6 +196,7 @@ class ContextPropagationTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void contextCapturePropagatedAutomaticallyToAllSignals() throws InterruptedException {
 		Hooks.enableAutomaticContextPropagation();
 
@@ -672,7 +672,7 @@ class ContextPropagationTest {
 						if (characteristics.withContext) {
 							assertThat(tapSubscriber.listener).as("listener wrapped")
 								.isNotSameAs(originalListener)
-								.isInstanceOf(ContextPropagation.ContextRestore103SignalListener.class);
+								.isExactlyInstanceOf(ContextPropagation.ContextRestoreSignalListener.class);
 						}
 						else {
 							assertThat(tapSubscriber.listener)
@@ -688,7 +688,7 @@ class ContextPropagationTest {
 							assertThat(tapSubscriber.listener)
 								.as("listener wrapped")
 								.isNotSameAs(originalListener)
-								.isInstanceOf(ContextPropagation.ContextRestore103SignalListener.class);
+								.isExactlyInstanceOf(ContextPropagation.ContextRestoreSignalListener.class);
 						}
 						else {
 							assertThat(tapSubscriber.listener)
@@ -749,7 +749,7 @@ class ContextPropagationTest {
 							assertThat(tapSubscriber.listener)
 								.as("listener wrapped")
 								.isNotSameAs(originalListener)
-								.isInstanceOf(ContextPropagation.ContextRestore103SignalListener.class);
+								.isExactlyInstanceOf(ContextPropagation.ContextRestoreSignalListener.class);
 
 						}
 						else {
@@ -764,7 +764,7 @@ class ContextPropagationTest {
 							assertThat(tapSubscriber.listener)
 								.as("listener wrapped")
 								.isNotSameAs(originalListener)
-								.isInstanceOf(ContextPropagation.ContextRestore103SignalListener.class);
+								.isExactlyInstanceOf(ContextPropagation.ContextRestoreSignalListener.class);
 						}
 						else {
 							assertThat(tapSubscriber.listener).as("listener not wrapped").isSameAs(originalListener);
@@ -784,12 +784,8 @@ class ContextPropagationTest {
 				return null;
 			});
 
-			ContextPropagation.ContextRestore103SignalListener<Object> listener =
-				new ContextPropagation.ContextRestore103SignalListener<>(
-						tlReadingListener, context,
-						ContextSnapshotFactory.builder()
-						                      .contextRegistry(ContextRegistry.getInstance())
-						                      .build());
+			ContextPropagation.ContextRestoreSignalListener<Object> listener =
+				new ContextPropagation.ContextRestoreSignalListener<>(tlReadingListener, context);
 
 			Thread t = new Thread(() -> {
 				try {
