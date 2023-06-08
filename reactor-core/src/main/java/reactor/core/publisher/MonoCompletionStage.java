@@ -155,8 +155,13 @@ final class MonoCompletionStage<T> extends Mono<T>
 
             final CompletionStage<? extends T> future = this.future;
             if (!suppressCancellation && future instanceof Future) {
-                //noinspection unchecked
-                ((Future<? extends T>) future).cancel(true);
+	            try {
+                    //noinspection unchecked
+		            ((Future<?>) future).cancel(true);
+	            }
+				catch (Throwable t) {
+		            Operators.onErrorDropped(t, this.actual.currentContext());
+	            }
             }
         }
     }
@@ -254,8 +259,13 @@ final class MonoCompletionStage<T> extends Mono<T>
 
             final CompletionStage<? extends T> future = this.future;
             if (!suppressCancellation && future instanceof Future) {
-                //noinspection unchecked
-                ((Future<? extends T>) future).cancel(true);
+	            try {
+                    //noinspection unchecked
+		            ((Future<?>) future).cancel(true);
+	            }
+				catch (Throwable t) {
+		            Operators.onErrorDropped(t, this.actual.currentContext());
+	            }
             }
         }
     }
