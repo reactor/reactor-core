@@ -209,7 +209,7 @@ final class ContextPropagation {
 		}
 
 		ContextSnapshot.Scope restoreThreadLocals() {
-			return setThreadLocals(this.context);
+			return ContextSnapshot.setAllThreadLocalsFrom(this.context, ContextRegistry.getInstance());
 		}
 
 		@Override
