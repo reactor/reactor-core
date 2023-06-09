@@ -163,7 +163,7 @@ final class ContextPropagation {
 			}
 			else {
 				return (v, sink) -> {
-					try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(ctx)) {
+					try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
 						handler.accept(v, sink);
 					}
 				};
@@ -219,7 +219,7 @@ final class ContextPropagation {
 		}
 
 		ContextSnapshot.Scope restoreThreadLocals() {
-			return ContextSnapshot.setAllThreadLocalsFrom(this.context, ContextRegistry.getInstance());
+			return ContextSnapshot.setAllThreadLocalsFrom(this.context);
 		}
 
 		@Override
