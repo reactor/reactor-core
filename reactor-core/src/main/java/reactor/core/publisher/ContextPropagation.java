@@ -456,7 +456,6 @@ final class ContextPropagation {
 
 	private static class ReactorScopeImpl implements ContextSnapshot.Scope {
 
-
 		private final Map<Object, Object> previousValues;
 
 		private final ContextRegistry contextRegistry;
