@@ -153,11 +153,21 @@ final class ContextPropagation {
 			if (ctx.isEmpty()) {
 				return handler;
 			}
-			return (v, sink) -> {
-				try (ContextSnapshot.Scope ignored = setThreadLocals(ctx)) {
-					handler.accept(v, sink);
-				}
-			};
+
+			if (ContextPropagationSupport.isContextPropagation103OnClasspath) {
+				return (v, sink) -> {
+					try (ContextSnapshot.Scope ignored = globalContextSnapshotFactory.setThreadLocalsFrom(ctx)) {
+						handler.accept(v, sink);
+					}
+				};
+			}
+			else {
+				return (v, sink) -> {
+					try (ContextSnapshot.Scope ignored = ContextSnapshot.setThreadLocalsFrom(ctx)) {
+						handler.accept(v, sink);
+					}
+				};
+			}
 		}
 		else {
 			return handler;
