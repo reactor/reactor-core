@@ -27,14 +27,17 @@ final class ContextPropagationSupport {
     // The field should end with 'Available'. See org.springframework.aot.nativex.feature.PreComputeFieldFeature.
     // Ultimately the long term solution should be provided by Reactor Core.
     static final boolean isContextPropagationOnClasspath;
-    static boolean propagateContextToThreadLocals = false;
+    static final boolean isContextPropagation103OnClasspath;
+    static boolean       propagateContextToThreadLocals = false;
 
     static {
         boolean contextPropagation = false;
+        boolean contextPropagation103 = false;
         try {
             Class.forName("io.micrometer.context.ContextRegistry");
-            Class.forName("io.micrometer.context.ContextSnapshotFactory");
             contextPropagation = true;
+            Class.forName("io.micrometer.context.ContextSnapshotFactory");
+            contextPropagation103 = true;
         } catch (ClassNotFoundException notFound) {
         } catch (LinkageError linkageErr) {
         } catch (Throwable err) {
@@ -42,6 +45,7 @@ final class ContextPropagationSupport {
                     " The feature is considered disabled due to this:", err);
         }
         isContextPropagationOnClasspath = contextPropagation;
+        isContextPropagation103OnClasspath = contextPropagation103;
     }
 
     /**
@@ -51,6 +55,10 @@ final class ContextPropagationSupport {
      */
     static boolean isContextPropagationAvailable() {
         return isContextPropagationOnClasspath;
+    }
+
+    static boolean isContextPropagation103Available() {
+        return isContextPropagation103OnClasspath;
     }
 
     static boolean shouldPropagateContextToThreadLocals() {
