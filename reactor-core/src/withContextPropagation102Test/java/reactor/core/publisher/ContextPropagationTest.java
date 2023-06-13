@@ -40,6 +40,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -164,6 +165,7 @@ class ContextPropagationTest {
 	}
 
 	@Test
+	@Disabled("queue wrapping is removed starting from 3.5.7")
 	void threadLocalsRestoredAfterPollution() {
 		// this test validates Queue wrapping takes place
 		Hooks.enableAutomaticContextPropagation();
@@ -285,6 +287,7 @@ class ContextPropagationTest {
 	}
 
 	@Test
+	@Disabled("queue wrapping is removed starting from 3.5.7")
 	void queueWrapperWorksWithQueues() {
 		Hooks.enableAutomaticContextPropagation();
 		Queue<Object> queue = Queues.small()

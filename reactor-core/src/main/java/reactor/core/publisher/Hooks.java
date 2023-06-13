@@ -542,7 +542,6 @@ public abstract class Hooks {
 	 */
 	public static void enableAutomaticContextPropagation() {
 		if (ContextPropagationSupport.isContextPropagationOnClasspath) {
-			Hooks.addQueueWrapper(CONTEXT_IN_THREAD_LOCALS_KEY, ContextPropagation.ContextQueue::new);
 			Schedulers.onScheduleHook(CONTEXT_IN_THREAD_LOCALS_KEY,
 					ContextPropagation.scopePassingOnScheduleHook());
 			ContextPropagationSupport.propagateContextToThreadLocals = true;
