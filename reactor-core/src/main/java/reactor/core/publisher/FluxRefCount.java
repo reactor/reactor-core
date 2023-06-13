@@ -233,6 +233,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			}
 		}
 
+		void setRefCountMonitor(RefCountMonitor<T> connection) {
+			this.connection = connection;
+			this.actual.onSubscribe(this);
+		}
+
 		@Override
 		public void onNext(T t) {
 			actual.onNext(t);
