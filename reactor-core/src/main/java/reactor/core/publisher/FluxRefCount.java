@@ -62,6 +62,9 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		RefCountMonitor<T> conn;
+		RefCountInner<T> inner = new RefCountInner<>(actual);
+
+		source.subscribe(inner);
 
 		boolean connect = false;
 		synchronized (this) {
@@ -79,7 +82,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			}
 		}
 
-		source.subscribe(new RefCountInner<>(actual, conn));
+		inner.setRefCountMonitor(conn);
 
 		if (connect) {
 			source.connect(conn);
@@ -162,8 +165,8 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			implements QueueSubscription<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
-		final RefCountMonitor<T> connection;
 
+		RefCountMonitor<T> connection;
 		Subscription s;
 		QueueSubscription<T> qs;
 
@@ -171,15 +174,14 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		static final AtomicIntegerFieldUpdater<RefCountInner> PARENT_DONE =
 				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "parentDone");
 
-		RefCountInner(CoreSubscriber<? super T> actual, RefCountMonitor<T> connection) {
+		RefCountInner(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
-			this.connection = connection;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr. PARENT) return s;
+			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return parentDone == 1;
 			if (key == Attr.CANCELLED) return parentDone == 2;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -191,8 +193,12 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				actual.onSubscribe(this);
 			}
+		}
+
+		void setRefCountMonitor(RefCountMonitor<T> connection) {
+			this.connection = connection;
+			this.actual.onSubscribe(this);
 		}
 
 		@Override
