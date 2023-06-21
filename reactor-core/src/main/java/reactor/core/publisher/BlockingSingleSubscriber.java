@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 			}
 			catch (InterruptedException ex) {
 				dispose();
+				Thread.currentThread().interrupt();
 				throw Exceptions.propagate(ex);
 			}
 		}
@@ -128,6 +129,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 				RuntimeException re = Exceptions.propagate(ex);
 				//this is ok, as re is always a new non-singleton instance
 				re.addSuppressed(new Exception("#block has been interrupted"));
+				Thread.currentThread().interrupt();
 				throw re;
 			}
 		}
