@@ -51,7 +51,7 @@ public interface SynchronousSink<T> {
 	 *   {@link CoreSubscriber#currentContext()}
 	 *
 	 * @return the current subscriber {@link Context}.
-	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #getContextView() instead.
+	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #contextView() instead.
 	 */
 	@Deprecated
 	Context currentContext();
