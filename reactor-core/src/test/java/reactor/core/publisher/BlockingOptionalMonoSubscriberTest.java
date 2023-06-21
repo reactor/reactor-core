@@ -186,39 +186,48 @@ public class BlockingOptionalMonoSubscriberTest {
 	public void interruptBlock() throws InterruptedException {
 		BlockingOptionalMonoSubscriber<String> test =
 				new BlockingOptionalMonoSubscriber<>(Context.empty());
-		AtomicReference<Throwable> errorHandler = new AtomicReference<>();
+		Thread t = new Thread(() -> {
+			try {
+				test.blockingGet();
+			}
+			catch (Exception e) {
+				assertThat(Thread.currentThread().isInterrupted()).as("check thread interrupted").isTrue();
+				assertThat(e)
+						.isInstanceOf(RuntimeException.class)
+						.hasCauseInstanceOf(InterruptedException.class)
+						.hasSuppressedException(new Exception("#blockOptional() has been interrupted"));
+			}
+		});
 
-		Thread t = new Thread(test::blockingGet);
-		t.setUncaughtExceptionHandler((t1, e) -> errorHandler.set(e));
 		t.start();
 		t.interrupt();
 		t.join();
 
 		assertThat(test.isDisposed()).as("interrupt disposes").isTrue();
-		assertThat(errorHandler.get())
-				.isNotNull()
-				.isInstanceOf(RuntimeException.class)
-				.hasCauseInstanceOf(InterruptedException.class)
-				.hasSuppressedException(new Exception("#blockOptional() has been interrupted"));
 	}
 
 	@Test
 	public void interruptBlockTimeout() throws InterruptedException {
 		BlockingOptionalMonoSubscriber<String> test =
 				new BlockingOptionalMonoSubscriber<>(Context.empty());
-		AtomicReference<Throwable> errorHandler = new AtomicReference<>();
 
-		Thread t = new Thread(() -> test.blockingGet(2, TimeUnit.SECONDS));
-		t.setUncaughtExceptionHandler((t1, e) -> errorHandler.set(e));
+		Thread t = new Thread(() -> {
+			try {
+				test.blockingGet(2, TimeUnit.SECONDS);
+			}
+			catch (RuntimeException e) {
+				assertThat(Thread.interrupted()).as("check thread interrupted").isTrue();
+				assertThat(e)
+						.isInstanceOf(RuntimeException.class)
+						.hasCauseInstanceOf(InterruptedException.class)
+						.hasSuppressedException(new Exception("#blockOptional(timeout) has been interrupted"));
+			}
+		});
+
 		t.start();
 		t.interrupt();
 		t.join();
 
 		assertThat(test.isDisposed()).as("interrupt disposes").isTrue();
-		assertThat(errorHandler.get())
-				.isNotNull()
-				.isInstanceOf(RuntimeException.class)
-				.hasCauseInstanceOf(InterruptedException.class)
-				.hasSuppressedException(new Exception("#blockOptional(timeout) has been interrupted"));
 	}
 }

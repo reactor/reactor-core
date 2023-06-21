@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -135,6 +136,28 @@ public class BlockingTests {
 					.blockFirst(Duration.ofSeconds(1));
 		});
 	}
+	
+	@Test
+	@Timeout(1)
+	public void blockingFirstInterrupted() throws Exception {
+		Flux<Object> test = Flux.never();
+
+		Thread t = new Thread(() -> {
+			try {
+				test.blockFirst();
+			}
+			catch (Exception e) {
+				assertThat(Thread.currentThread().isInterrupted()).as("check thread interrupted").isTrue();
+				assertThat(e)
+						.isInstanceOf(RuntimeException.class)
+						.hasCauseInstanceOf(InterruptedException.class);
+			}
+		});
+
+		t.start();
+		t.interrupt();
+		t.join();
+	}
 
 	@Test
 	public void blockingLastError() {
@@ -155,25 +178,25 @@ public class BlockingTests {
 	}
 
 	@Test
+	@Timeout(1)
 	public void blockingLastInterrupted() throws Exception {
-		CountDownLatch latch = new CountDownLatch(1);
+		Flux<Object> test = Flux.never();
+
 		Thread t = new Thread(() -> {
 			try {
-				Flux.never()
-				    .blockLast();
+				test.blockLast();
 			}
 			catch (Exception e) {
-				if (Exceptions.unwrap(e) instanceof InterruptedException) {
-					latch.countDown();
-				}
+				assertThat(Thread.currentThread().isInterrupted()).as("check thread interrupted").isTrue();
+				assertThat(e)
+						.isInstanceOf(RuntimeException.class)
+						.hasCauseInstanceOf(InterruptedException.class);
 			}
 		});
 
 		t.start();
-		Thread.sleep(1000);
 		t.interrupt();
-
-		assertThat(latch.await(3, SECONDS)).as("Not interrupted ?").isTrue();
+		t.join();
 	}
 
 	/*@Test

@@ -115,6 +115,8 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 				RuntimeException re = Exceptions.propagate(ex);
 				//this is ok, as re is always a new non-singleton instance
 				re.addSuppressed(new Exception("#blockOptional() has been interrupted"));
+				
+				Thread.currentThread().interrupt();
 				throw re;
 			}
 		}
@@ -154,6 +156,8 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 				RuntimeException re = Exceptions.propagate(ex);
 				//this is ok, as re is always a new non-singleton instance
 				re.addSuppressed(new Exception("#blockOptional(timeout) has been interrupted"));
+				
+				Thread.currentThread().interrupt();
 				throw re;
 			}
 		}

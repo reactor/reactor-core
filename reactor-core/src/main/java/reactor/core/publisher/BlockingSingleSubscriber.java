@@ -91,6 +91,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 			}
 			catch (InterruptedException ex) {
 				dispose();
+				Thread.currentThread().interrupt();
 				throw Exceptions.propagate(ex);
 			}
 		}
@@ -131,6 +132,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 				RuntimeException re = Exceptions.propagate(ex);
 				//this is ok, as re is always a new non-singleton instance
 				re.addSuppressed(new Exception("#block has been interrupted"));
+				Thread.currentThread().interrupt();
 				throw re;
 			}
 		}

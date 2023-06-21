@@ -188,6 +188,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 					}
 					catch (InterruptedException ex) {
 						run();
+						Thread.currentThread().interrupt();
 						throw Exceptions.propagate(ex);
 					}
 					finally {
