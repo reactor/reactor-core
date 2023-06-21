@@ -240,6 +240,7 @@ public class BlockingIterableTest {
 	public void hasNextInterrupt() throws InterruptedException {
 		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(
 				Queues.<String>one().get(),
+				Context.empty(),
 				123
 		);
 		
