@@ -7843,7 +7843,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <blockquote><pre>
 	 * {@code
 	 * Retry customStrategy = Retry.from(companion -> companion.handle((retrySignal, sink) -> {
-	 * 	    Context ctx = sink.currentContext();
+	 * 	    ContextView ctx = sink.contextView();
 	 * 	    int rl = ctx.getOrDefault("retriesLeft", 0);
 	 * 	    if (rl > 0) {
 	 *		    sink.next(Context.of(
