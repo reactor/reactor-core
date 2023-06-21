@@ -237,7 +237,8 @@ Consider the following example:
 ====
 [source,java]
 ----
-Flux<Integer> source = Sinks.many().unicast().onBackpressureBuffer().asFlux();
+Sinks.Many<Integer> dataSinks = Sinks.many().unicast().onBackpressureBuffer();
+Flux<Integer> source = dataSinks.asFlux();
 source.publishOn(scheduler1)
 	  .map(i -> transform(i))
 	  .publishOn(scheduler2)
