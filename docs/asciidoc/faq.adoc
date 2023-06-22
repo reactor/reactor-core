@@ -157,6 +157,95 @@ myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
 ----
 ====
 
+[[faq.monoZipVoid]]
+== Using `zip` along with `Mono<Void>`
+
+Consider the following test case:
+
+====
+[source,java]
+----
+Function<Object[], Void> voidCombinator = objects -> Void.TYPE.cast(Void.class);
+
+    @Test
+    public void testZipVoidNonEmptyCompletion() {
+        AtomicInteger cnt = new AtomicInteger();
+        Mono<Void> mono1 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Void> mono2 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Void> zippedMono = Mono.zip(List.of(mono1, mono2), voidCombinator);
+        zippedMono.subscribe();
+        assertEquals(2, cnt.get());
+    }
+----
+====
+
+While in this case the resulting `zippedMono` does not complete immediately upon completion of `mono1`, such behaviour is not guaranteed for all cases. For instance, consider the following test case:
+
+====
+[source,java]
+----
+Function<Object[], Void> voidCombinator = objects -> Void.TYPE.cast(Void.class);
+
+    @Test
+    public void testZipVoidEmptyCompletion() {
+        AtomicInteger cnt = new AtomicInteger();
+        Mono<Void> mono1 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Void> mono2 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Void> mono3 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Void> zippedMono = Mono.zip(List.of(mono1, Mono.zip(List.of(mono2, mono3), voidCombinator)), voidCombinator);
+        zippedMono.subscribe();
+        assertEquals(1, cnt.get());
+    }
+----
+====
+In this case upon empty completion of `mono1`, `zippedMono` completes immediately.
+
+It is therefore important to note that `zip` operator when used with `Mono<Void>` does not guarantee that all the publishers to be zipped will be completed (while in some cases this behaviour might be different).
+
+If it is necessary to keep the semantics as shown in the second test case, consider using Mono<Optional<Void>> instead of Mono<Void>, as demonstrated in the test case below:
+
+====
+[source,java]
+----
+Function<Object[], Optional<Void>> optionalVoidCombinator = objects -> Optional.empty();
+
+    @Test
+    public void testZipVoidAlternative() {
+        AtomicInteger cnt = new AtomicInteger();
+        Mono<Optional<Void>> mono1 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success(Optional.empty());
+        });
+        Mono<Optional<Void>> mono2 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success(Optional.empty());
+        });
+        Mono<Optional<Void>> mono3 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success(Optional.empty());
+        });
+        Mono<Optional<Void>> zippedMono = Mono.zip(List.of(mono1, Mono.zip(List.of(mono2, mono3), optionalVoidCombinator)), optionalVoidCombinator);
+        zippedMono.subscribe();
+        assertEquals(3, cnt.get());
+    }
+----
+====
+
 [[faq.retryWhen]]
 == How to Use `retryWhen` to Emulate `retry(3)`?
 
