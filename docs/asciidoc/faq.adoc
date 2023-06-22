@@ -294,7 +294,7 @@ The following is an example of such a helper function around a single MDC variab
 public static <T> Consumer<Signal<T>> logOnNext(Consumer<T> logStatement) {
 	return signal -> {
 		if (!signal.isOnNext()) return; <1>
-		Optional<String> toPutInMdc = signal.getContext().getOrEmpty("CONTEXT_KEY"); <2>
+		Optional<String> toPutInMdc = signal.getContextView().getOrEmpty("CONTEXT_KEY"); <2>
 
 		toPutInMdc.ifPresentOrElse(tpim -> {
 			try (MDC.MDCCloseable cMdc = MDC.putCloseable("MDC_KEY", tpim)) { <3>
@@ -348,7 +348,7 @@ For completeness, we can also see what an error-logging helper could look like:
 public static Consumer<Signal<?>> logOnError(Consumer<Throwable> errorLogStatement) {
 	return signal -> {
 		if (!signal.isOnError()) return;
-		Optional<String> toPutInMdc = signal.getContext().getOrEmpty("CONTEXT_KEY");
+		Optional<String> toPutInMdc = signal.getContextView().getOrEmpty("CONTEXT_KEY");
 
 		toPutInMdc.ifPresentOrElse(tpim -> {
 			try (MDC.MDCCloseable cMdc = MDC.putCloseable("MDC_KEY", tpim)) {
