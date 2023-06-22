@@ -36,6 +36,8 @@ public class ReactorBlockHoundIntegrationTest {
 		// Use the builder to load only our integration to avoid false positives
 		BlockHound.builder()
 		          .with(new ReactorBlockHoundIntegration())
+		          .allowBlockingCallsInside("java.util.concurrent.FutureTask",
+				          "handlePossibleCancellationInterrupt")
 		          .install();
 	}
 
