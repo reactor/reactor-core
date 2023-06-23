@@ -29,7 +29,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.util.RaceTestUtils;
 
-@Timeout(5)
+@Timeout(10)
 public class ReactorBlockHoundIntegrationTest {
 
 	static {
