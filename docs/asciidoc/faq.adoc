@@ -157,57 +157,55 @@ myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
 ----
 ====
 
-[[faq.monoZipVoid]]
-== Using `zip` along with `Mono<Void>`
+[[faq.monoZipEmptyCompletion]]
+== Using `zip` along with empty-completed publishers
+
+When using the `zip` operator along with empty-completed publishers, it is important to be aware of the following behavior.
 
 Consider the following test case:
 
 ====
 [source,java]
 ----
-Function<Object[], Void> voidCombinator = objects -> Void.TYPE.cast(Void.class);
-
     @Test
-    public void testZipVoidNonEmptyCompletion() {
+    public void testZipEmptyCompletionAllSubscribed() {
         AtomicInteger cnt = new AtomicInteger();
-        Mono<Void> mono1 = Mono.create(sink -> {
+        Mono<Integer> mono1 = Mono.create(sink -> {
             cnt.incrementAndGet();
             sink.success();
         });
-        Mono<Void> mono2 = Mono.create(sink -> {
+        Mono<Integer> mono2 = Mono.create(sink -> {
             cnt.incrementAndGet();
             sink.success();
         });
-        Mono<Void> zippedMono = Mono.zip(List.of(mono1, mono2), voidCombinator);
+        Mono<Integer> zippedMono = Mono.zip(mono1, mono2, (v1, v2) -> v1);
         zippedMono.subscribe();
         assertEquals(2, cnt.get());
     }
 ----
 ====
 
-While in this case the resulting `zippedMono` does not complete immediately upon completion of `mono1`, such behaviour is not guaranteed for all cases. For instance, consider the following test case:
+While in this case the resulting `zippedMono` does not complete immediately upon empty completion of `mono1`, such behaviour is not guaranteed for all cases. For instance, consider the following test case:
 
 ====
 [source,java]
 ----
-Function<Object[], Void> voidCombinator = objects -> Void.TYPE.cast(Void.class);
-
     @Test
-    public void testZipVoidEmptyCompletion() {
+    public void testZipEmptyCompletionOneSubscribed() {
         AtomicInteger cnt = new AtomicInteger();
-        Mono<Void> mono1 = Mono.create(sink -> {
+        Mono<Integer> mono1 = Mono.create(sink -> {
             cnt.incrementAndGet();
             sink.success();
         });
-        Mono<Void> mono2 = Mono.create(sink -> {
+        Mono<Integer> mono2 = Mono.create(sink -> {
             cnt.incrementAndGet();
             sink.success();
         });
-        Mono<Void> mono3 = Mono.create(sink -> {
+        Mono<Integer> mono3 = Mono.create(sink -> {
             cnt.incrementAndGet();
             sink.success();
         });
-        Mono<Void> zippedMono = Mono.zip(List.of(mono1, Mono.zip(List.of(mono2, mono3), voidCombinator)), voidCombinator);
+        Mono<Integer> zippedMono = Mono.zip(mono1, Mono.zip(mono2, mono3, (v1, v2) -> v1), (v1, v2) -> v1);
         zippedMono.subscribe();
         assertEquals(1, cnt.get());
     }
@@ -215,34 +213,37 @@ Function<Object[], Void> voidCombinator = objects -> Void.TYPE.cast(Void.class);
 ====
 In this case upon empty completion of `mono1`, `zippedMono` completes immediately.
 
-It is therefore important to note that `zip` operator when used with `Mono<Void>` does not guarantee that all the publishers to be zipped will be completed (while in some cases this behaviour might be different).
+In cases where `zip` operator is used to combine empty-completed publishers, it is therefore not guaranteed that the resulting publisher will complete only upon completion of all publishers to be combined. In other words, while in some cases this behaviour might be different, it is not guaranteed that the resulting publisher will not complete immediately upon empty completion of the first publisher to be zipped.
 
-If it is necessary to keep the semantics as shown in the second test case, consider using Mono<Optional<Void>> instead of Mono<Void>, as demonstrated in the test case below:
+If it is necessary to keep the semantics as shown in the second test case, consider using `singleOptional` operator, as demonstrated in the test case below:
 
 ====
 [source,java]
 ----
-Function<Object[], Optional<Void>> optionalVoidCombinator = objects -> Optional.empty();
 
-    @Test
-    public void testZipVoidAlternative() {
-        AtomicInteger cnt = new AtomicInteger();
-        Mono<Optional<Void>> mono1 = Mono.create(sink -> {
-            cnt.incrementAndGet();
-            sink.success(Optional.empty());
-        });
-        Mono<Optional<Void>> mono2 = Mono.create(sink -> {
-            cnt.incrementAndGet();
-            sink.success(Optional.empty());
-        });
-        Mono<Optional<Void>> mono3 = Mono.create(sink -> {
-            cnt.incrementAndGet();
-            sink.success(Optional.empty());
-        });
-        Mono<Optional<Void>> zippedMono = Mono.zip(List.of(mono1, Mono.zip(List.of(mono2, mono3), optionalVoidCombinator)), optionalVoidCombinator);
-        zippedMono.subscribe();
-        assertEquals(3, cnt.get());
-    }
+@Test
+public void testZipOptionalAllSubscribed() {
+	AtomicInteger cnt = new AtomicInteger();
+	Mono<Integer> mono1 = Mono.create(sink -> {
+		cnt.incrementAndGet();
+		sink.success();
+	});
+	Mono<Integer> mono2 = Mono.create(sink -> {
+		cnt.incrementAndGet();
+		sink.success();
+	});
+	Mono<Integer> mono3 = Mono.create(sink -> {
+		cnt.incrementAndGet();
+		sink.success();
+	});
+	Mono<Optional<Integer>> zippedMono =
+			Mono.zip(
+					mono1.singleOptional(),
+					Mono.zip(mono2.singleOptional(), mono3.singleOptional(), (v1, v2) -> v1),
+					(v1, v2) -> v1);
+	zippedMono.subscribe();
+	assertEquals(3, cnt.get());
+}
 ----
 ====
 
