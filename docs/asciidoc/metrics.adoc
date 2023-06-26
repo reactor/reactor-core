@@ -142,3 +142,32 @@ listenToEvents()
 ====
 
 The detail of the observation and its tags is provided in <<micrometer-details-observation>>.
+
+You can also fully customize Micrometer's Observation via
+`Micrometer.observation(ObservationRegistry registry, Function<ObservationRegistry, Observation> observationSupplier)`
+with your own Observation supplier, as follows:
+====
+[source,java]
+----
+listenToEvents()
+    .name("events") // <1>
+    .tap(Micrometer.observation( // <2>
+    	applicationDefinedRegistry, // <3>
+    	registry -> Observation.createNotStarted( // <4>
+    		myConvention, // <5>
+            myContextSupplier, // <6>
+            registry)))
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> The `Observation` for this pipeline will be identified with the "events" prefix.
+<2> We use the `tap` operator with the `observation` utility.
+<3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
+<4> We provide our own function to create the Observation
+<5> with a custom `ObservationConvention`
+<6> and a custom `Supplier<Context>`.
+====
+
+

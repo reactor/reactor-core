@@ -30,4 +30,8 @@ Below is the list of meters used by the observation tap listener feature, as exp
 
 This is the ANONYMOUS observation, but you can create a similar Observation with a custom name by using the `name(String)` operator.
 
+NOTE: You can also fully customize Micrometer's Observation via
+`Micrometer.observation(ObservationRegistry registry, Function<ObservationRegistry, Observation> observationSupplier)`
+with your own Observation supplier, allowing to fully customize its attributes (name, contextual name, low and high cardinality keys, ...).
+
 include::{root-target}observation_metrics.adoc[leveloffset=4]

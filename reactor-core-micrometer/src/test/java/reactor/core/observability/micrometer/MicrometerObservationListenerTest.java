@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -231,6 +232,58 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("reactor.type", "Mono")
 			.hasLowCardinalityKeyValue("reactor.status",  "completed")
 			.hasKeyValuesCount(4);
+	}
+
+	private static class CustomConvention implements ObservationConvention<Observation.Context> {
+
+		@Override
+		public KeyValues getLowCardinalityKeyValues(Observation.Context context) {
+			return KeyValues.of("testTag1", "testTagValue1");
+		}
+
+		@Override
+		public boolean supportsContext(Observation.Context context) {
+			return true;
+		}
+
+		@Override
+		public String getName() {
+			return "myName";
+		}
+
+		@Override
+		public String getContextualName(Observation.Context context) {
+			return "myContextualName";
+		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithCustomConvention(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Mono<Integer> mono = Mono.just(1)
+		    .name("testMono")
+		    .tap(Micrometer.observation(
+					registry,
+				    observationRegistry -> Observation.createNotStarted(new CustomConvention(), observationRegistry)));
+
+		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
+
+		mono.block();
+
+		assertThat(registry)
+				.hasSingleObservationThat()
+				.hasNameEqualTo("myName")
+				.hasContextualNameEqualTo("myContextualName")
+				.as("subscribeToTerminalObservation")
+				.hasBeenStarted()
+				.hasBeenStopped()
+				.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
+				.hasLowCardinalityKeyValue("reactor.type", "Mono")
+				.hasLowCardinalityKeyValue("reactor.status",  "completed")
+				.hasKeyValuesCount(3);
 	}
 
 	@ParameterizedTestWithName
