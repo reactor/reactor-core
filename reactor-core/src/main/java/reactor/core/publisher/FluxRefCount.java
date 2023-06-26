@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,9 +170,17 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		Subscription s;
 		QueueSubscription<T> qs;
 
-		volatile     int parentDone; //used to guard against doubly terminating subscribers (eg. double cancel)
-		static final AtomicIntegerFieldUpdater<RefCountInner> PARENT_DONE =
-				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "parentDone");
+		Throwable error;
+
+
+		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
+		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;
+		static final int CANCELLED_FLAG   = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+
+		volatile int state; //used to guard against doubly terminating subscribers (e.g. double cancel)
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<RefCountInner> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "state");
 
 		RefCountInner(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
@@ -182,8 +190,8 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return parentDone == 1;
-			if (key == Attr.CANCELLED) return parentDone == 2;
+			if (key == Attr.TERMINATED) return isTerminated(state);
+			if (key == Attr.CANCELLED) return isCancelled(state);
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -199,6 +207,30 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		void setRefCountMonitor(RefCountMonitor<T> connection) {
 			this.connection = connection;
 			this.actual.onSubscribe(this);
+
+			for (;;) {
+				int previousState = this.state;
+
+				if (isCancelled(previousState)) {
+					return;
+				}
+
+				if (isTerminated(previousState)) {
+					connection.upstreamFinished();
+					Throwable e = this.error;
+					if (e != null) {
+						this.actual.onError(e);
+					}
+					else {
+						this.actual.onComplete();
+					}
+					return;
+				}
+
+				if (STATE.compareAndSet(this, previousState, previousState | MONITOR_SET_FLAG)) {
+					return;
+				}
+			}
 		}
 
 		@Override
@@ -208,20 +240,41 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		@Override
 		public void onError(Throwable t) {
-			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
-				connection.upstreamFinished();
-				actual.onError(t);
-			}
-			else {
-				Operators.onErrorDropped(t, actual.currentContext());
+			this.error = t;
+			for (;;) {
+				int previousState = this.state;
+
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					Operators.onErrorDropped(t, actual.currentContext());
+					return;
+				}
+
+				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
+					if (isMonitorSet(previousState)) {
+						connection.upstreamFinished();
+						actual.onError(t);
+					}
+					return;
+				}
 			}
 		}
 
 		@Override
 		public void onComplete() {
-			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
-				connection.upstreamFinished();
-				actual.onComplete();
+			for (;;) {
+				int previousState = this.state;
+
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
+					if (isMonitorSet(previousState)) {
+						connection.upstreamFinished();
+						actual.onComplete();
+					}
+					return;
+				}
 			}
 		}
 
@@ -233,7 +286,14 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		@Override
 		public void cancel() {
 			s.cancel();
-			if (PARENT_DONE.compareAndSet(this, 0, 2)) {
+
+			int previousState = this.state;
+
+			if (isTerminated(previousState) || isCancelled(previousState)) {
+				return;
+			}
+
+			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
 				connection.innerCancelled();
 			}
 		}
@@ -272,6 +332,19 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		@Override
 		public void clear() {
 			qs.clear();
+		}
+
+
+		static boolean isTerminated(int state) {
+			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
+		}
+
+		static boolean isCancelled(int state) {
+			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
+		}
+
+		static boolean isMonitorSet(int state) {
+			return (state & MONITOR_SET_FLAG) == MONITOR_SET_FLAG;
 		}
 	}
 }
