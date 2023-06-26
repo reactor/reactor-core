@@ -61,6 +61,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	 */
 	final boolean resetUponSourceTermination;
 
+	final @Nullable Consumer<? super T> onDiscardHook;
+
 	volatile PublishSubscriber<T> connection;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<FluxPublish, PublishSubscriber> CONNECTION =
@@ -71,7 +73,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	FluxPublish(Flux<? extends T> source,
 			int prefetch,
 			Supplier<? extends Queue<T>> queueSupplier,
-			boolean resetUponSourceTermination) {
+			boolean resetUponSourceTermination,
+			@Nullable Consumer<? super T> onDiscardHook) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("bufferSize > 0 required but it was " + prefetch);
 		}
@@ -79,6 +82,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.resetUponSourceTermination = resetUponSourceTermination;
+		this.onDiscardHook = onDiscardHook;
 	}
 
 	@Override
