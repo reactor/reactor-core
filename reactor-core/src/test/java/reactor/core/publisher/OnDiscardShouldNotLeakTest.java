@@ -169,6 +169,10 @@ public class OnDiscardShouldNotLeakTest {
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
+			DiscardScenario.fluxSource("publishOnAndPublish", main -> main
+					.publishOn(Schedulers.immediate())
+					.publish()
+					.refCount()),
 			DiscardScenario.sinkSource("unicastSink",  Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
 			DiscardScenario.sinkSource("unicastSinkAndPublishOn",  Sinks.unsafe().many().unicast()::onBackpressureBuffer,
 					f -> f.publishOn(Schedulers.immediate())),

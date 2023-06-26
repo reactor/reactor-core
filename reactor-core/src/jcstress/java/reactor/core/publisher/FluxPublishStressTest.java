@@ -26,6 +26,8 @@ import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.IIIIII_Result;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
+import org.openjdk.jcstress.infra.results.III_Result;
+import reactor.core.Disposable;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
@@ -443,6 +445,49 @@ public abstract class FluxPublishStressTest {
 			r.r4 = subscriber2.onCompleteCalls.get();
 			r.r5 = subscriber1.onErrorCalls.get();
 			r.r6 = subscriber2.onErrorCalls.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"10, 1, 0"}, expect = ACCEPTABLE, desc = "all values and completion delivered")
+	@Outcome(id = {"10, 0, 1"}, expect = ACCEPTABLE, desc = "some values are delivered some dropped since overflow")
+	@State
+	public static class ConcurrentDisposeAndProduceStressTest {
+
+		final Sinks.Many<Integer> producer = Sinks.unsafe().many().multicast().directAllOrNothing();
+
+		final ConnectableFlux<Integer> sharedSource = producer.asFlux().publish(5);
+
+		final StressSubscriber<Integer> subscriber1 = new StressSubscriber<>();
+
+		final Disposable disposable;
+
+		{
+			sharedSource.subscribe(subscriber1);
+			disposable = sharedSource.connect();
+		}
+
+		@Actor
+		public void subscribe1() {
+			disposable.dispose();
+		}
+
+		@Actor
+		public void subscribe2() {
+			for (int i = 0; i < 10; i++) {
+				if (producer.tryEmitNext(i) != Sinks.EmitResult.OK) {
+					Operators.onDiscard(i, subscriber1.context);
+				}
+			}
+
+			producer.tryEmitComplete();
+		}
+
+		@Arbiter
+		public void arbiter(III_Result r) {
+			r.r1 = subscriber1.onNextCalls.get() + subscriber1.onNextDiscarded.get();
+			r.r2 = subscriber1.onCompleteCalls.get();
+			r.r3 = subscriber1.onErrorCalls.get();
 		}
 	}
 }
