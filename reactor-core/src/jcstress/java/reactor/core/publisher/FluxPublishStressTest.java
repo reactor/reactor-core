@@ -26,7 +26,8 @@ import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.IIIIII_Result;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
-import org.openjdk.jcstress.infra.results.III_Result;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.Nullable;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
