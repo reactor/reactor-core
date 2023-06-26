@@ -94,7 +94,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 			}
 		}
 
-		inner.setRefConnection(connection);
+		inner.setRefConnection(conn);
 
 		if (connect) {
 			source.connect(conn);
