@@ -55,6 +55,36 @@ public abstract class FluxPublishStressTest {
 	@JCStressTest
 	@Outcome(id = {"10, 10, 1, 1, 0, 0"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
 	@State
+	public static class RefCntConcurrentSubscriptionRangeSyncFusionStressTest extends
+	                                                                           RefCntConcurrentSubscriptionBaseStressTest<Integer> {
+
+		public RefCntConcurrentSubscriptionRangeSyncFusionStressTest() {
+			super(Flux.range(0, 10), null);
+		}
+
+		@Actor
+		public void subscribe1() {
+			sharedSource.subscribe(subscriber1);
+		}
+		@Actor
+		public void subscribe2() {
+			sharedSource.subscribe(subscriber2);
+		}
+
+		@Arbiter
+		public void arbiter(IIIIII_Result r) {
+			r.r1 = subscriber1.onNextCalls.get();
+			r.r2 = subscriber2.onNextCalls.get();
+			r.r3 = subscriber1.onCompleteCalls.get();
+			r.r4 = subscriber2.onCompleteCalls.get();
+			r.r5 = subscriber1.onErrorCalls.get();
+			r.r6 = subscriber2.onErrorCalls.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"10, 10, 1, 1, 0, 0"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
+	@State
 	public static class RefCntConcurrentSubscriptionRangeAsyncFusionStressTest extends
 	                                                                           RefCntConcurrentSubscriptionBaseStressTest<Integer> {
 
@@ -90,6 +120,36 @@ public abstract class FluxPublishStressTest {
 
 		public RefCntConcurrentSubscriptionRangeNoneFusionStressTest() {
 			super(Flux.range(0, 10).hide(), null);
+		}
+
+		@Actor
+		public void subscribe1() {
+			sharedSource.subscribe(subscriber1);
+		}
+		@Actor
+		public void subscribe2() {
+			sharedSource.subscribe(subscriber2);
+		}
+
+		@Arbiter
+		public void arbiter(IIIIII_Result r) {
+			r.r1 = subscriber1.onNextCalls.get();
+			r.r2 = subscriber2.onNextCalls.get();
+			r.r3 = subscriber1.onCompleteCalls.get();
+			r.r4 = subscriber2.onCompleteCalls.get();
+			r.r5 = subscriber1.onErrorCalls.get();
+			r.r6 = subscriber2.onErrorCalls.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"0, 0, 1, 1, 0, 0"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
+	@State
+	public static class RefCntConcurrentSubscriptionEmptySyncStressTest extends
+	                                                                     RefCntConcurrentSubscriptionBaseStressTest<Object> {
+
+		public RefCntConcurrentSubscriptionEmptySyncStressTest() {
+			super(Flux.empty(), null);
 		}
 
 		@Actor

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -407,6 +407,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				boolean d = done;
 
 				Queue<T> q = queue;
+				int mode = sourceMode;
 
 				boolean empty = q == null || q.isEmpty();
 
@@ -448,7 +449,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						if (checkTerminated(d, v == null)) {
 							return;
 						}
-						if (sourceMode != Fuseable.SYNC) {
+						if (mode != Fuseable.SYNC) {
 							s.request(1);
 						}
 						continue;
@@ -479,7 +480,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 						if (empty) {
 							//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
-							if (sourceMode == Fuseable.SYNC) {
+							if (mode == Fuseable.SYNC) {
 								done = true;
 								checkTerminated(true, true);
 							}
@@ -498,7 +499,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						e++;
 					}
 
-					if (e != 0 && sourceMode != Fuseable.SYNC) {
+					if (e != 0 && mode != Fuseable.SYNC) {
 						s.request(e);
 					}
 
@@ -506,7 +507,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						continue;
 					}
 				}
-				else if (sourceMode == Fuseable.SYNC) {
+				else if (q != null && mode == Fuseable.SYNC) {
 					done = true;
 					if (checkTerminated(true, empty)) {
 						break;
