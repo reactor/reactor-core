@@ -288,6 +288,64 @@ class MicrometerObservationListenerTest {
 
 	@ParameterizedTestWithName
 	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithObservationSupplierReturningNull(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Mono<Integer> mono = Mono.just(1)
+		                         .name("testMono")
+		                         .tap(Micrometer.observation(
+				                         registry,
+				                         observationRegistry -> null));
+
+		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
+
+		mono.block();
+
+		assertThat(registry)
+				.hasSingleObservationThat()
+				.hasNameEqualTo("testMono")
+				.hasContextualNameEqualTo("testMono")
+				.as("subscribeToTerminalObservation")
+				.hasBeenStarted()
+				.hasBeenStopped()
+				.hasLowCardinalityKeyValue("reactor.type", "Mono")
+				.hasLowCardinalityKeyValue("reactor.status",  "completed")
+				.hasKeyValuesCount(2);
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithObservationSupplierThrowingException(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Mono<Integer> mono = Mono.just(1)
+		                         .name("testMono")
+		                         .tap(Micrometer.observation(
+				                         registry,
+				                         observationRegistry -> {
+											 throw new IllegalStateException("Exception should be handled");
+				                         }));
+
+		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
+
+		mono.block();
+
+		assertThat(registry)
+				.hasSingleObservationThat()
+				.hasNameEqualTo("testMono")
+				.hasContextualNameEqualTo("testMono")
+				.as("subscribeToTerminalObservation")
+				.hasBeenStarted()
+				.hasBeenStopped()
+				.hasLowCardinalityKeyValue("reactor.type", "Mono")
+				.hasLowCardinalityKeyValue("reactor.status",  "completed")
+				.hasKeyValuesCount(2);
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
 	void observationStoppedByCancellation(boolean automatic) {
 		if (automatic) {
 			Hooks.enableAutomaticContextPropagation();
