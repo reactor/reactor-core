@@ -123,6 +123,7 @@ dependencies {
 	withMicrometerTestImplementation libs.micrometer.commons
 	withMicrometerTestImplementation libs.micrometer.core
 	withMicrometerTestImplementation libs.micrometer.contextPropagation
+	withMicrometerTestImplementation libs.micrometer.contextPropagationTest
 	withMicrometerTestImplementation sourceSets.test.output
 
 	withContextPropagation102TestImplementation platform(libs.micrometer102Compatible.bom)

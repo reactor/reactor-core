@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.context.ContextRegistry;
-import io.micrometer.context.ContextSnapshotFactory;
-import io.micrometer.context.ThreadLocalAccessor;
+import io.micrometer.context.test.ScopedValue;
+import io.micrometer.context.test.ScopedValueThreadLocalAccessor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,112 +66,6 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
-	void basicScopeWorks() {
-		assertThat(ScopedValue.getCurrent()).isNull();
-
-		ScopedValue scopedValue = ScopedValue.create("hello");
-		try (ScopedValue.Scope scope = scopedValue.open()) {
-			assertThat(ScopedValue.getCurrent()).isEqualTo(scopedValue);
-		}
-
-		assertThat(ScopedValue.getCurrent()).isNull();
-	}
-
-	@Test
-	void scopeWorksInAnotherThread() throws Exception {
-		AtomicReference<ScopedValue> valueInNewThread = new AtomicReference<>();
-		ContextSnapshotFactory snapshotFactory = ContextSnapshotFactory.builder().build();
-		ScopedValue scopedValue = ScopedValue.create("hello");
-
-		assertThat(ScopedValue.getCurrent()).isNull();
-
-		try (ScopedValue.Scope scope = scopedValue.open()) {
-			assertThat(ScopedValue.getCurrent()).isEqualTo(scopedValue);
-			Runnable wrapped = snapshotFactory.captureAll().wrap(() -> valueInNewThread.set(ScopedValue.getCurrent()));
-			Thread t = new Thread(wrapped);
-			t.start();
-			t.join();
-		}
-
-		assertThat(valueInNewThread.get()).isEqualTo(scopedValue);
-		assertThat(ScopedValue.getCurrent()).isNull();
-	}
-
-	@Test
-	void emptyScopeWorks() {
-		assertThat(ScopedValue.getCurrent()).isNull();
-
-		ScopedValue scopedValue = ScopedValue.create("hello");
-		try (ScopedValue.Scope scope = scopedValue.open()) {
-			assertThat(ScopedValue.getCurrent()).isEqualTo(scopedValue);
-			try (ScopedValue.Scope emptyScope = ScopedValue.nullValue().open()) {
-				assertThat(ScopedValue.getCurrent()).isInstanceOf(NullScopedValue.class);
-				assertThat(ScopedValue.getCurrent().get()).isNull();
-			}
-			assertThat(ScopedValue.getCurrent()).isEqualTo(scopedValue);
-		}
-
-		assertThat(ScopedValue.getCurrent()).isNull();
-	}
-
-	@Test
-	void nestedScopeWorksInAnotherThread() throws Exception {
-		AtomicReference<ScopedValue> value1InNewThreadBefore = new AtomicReference<>();
-		AtomicReference<ScopedValue> value1InNewThreadAfter = new AtomicReference<>();
-		AtomicReference<ScopedValue> value2InNewThread = new AtomicReference<>();
-
-		ContextSnapshotFactory snapshotFactory = ContextSnapshotFactory.builder().build();
-
-		ScopedValue v1 = ScopedValue.create("val1");
-		ScopedValue v2 = ScopedValue.create("val2");
-
-		assertThat(ScopedValue.getCurrent()).isNull();
-
-		Thread t;
-
-		try (ScopedValue.Scope v1Scope = v1.open()) {
-			assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
-			try (ScopedValue.Scope v2scope1T1 = v2.open()) {
-				assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-				try (ScopedValue.Scope v2scope2T1 = v2.open()) {
-					assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-					Runnable runnable = () -> {
-						value1InNewThreadBefore.set(ScopedValue.getCurrent());
-						try (ScopedValue.Scope v2scopeT2 = v2.open()) {
-							value2InNewThread.set(ScopedValue.getCurrent());
-						}
-						value1InNewThreadAfter.set(ScopedValue.getCurrent());
-					};
-
-					Runnable wrapped = snapshotFactory.captureAll().wrap(runnable);
-					t = new Thread(wrapped);
-					t.start();
-
-					assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-					assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v2scope2T1);
-				}
-				assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-				assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v2scope1T1);
-			}
-
-			assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
-
-			try (ScopedValue.Scope childScope3 = v2.open()) {
-				assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-				assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(childScope3);
-			}
-
-			t.join();
-			assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
-		}
-
-		assertThat(value1InNewThreadBefore.get()).isEqualTo(v2);
-		assertThat(value1InNewThreadAfter.get()).isEqualTo(v2);
-		assertThat(value2InNewThread.get()).isEqualTo(v2);
-		assertThat(ScopedValue.getCurrent()).isNull();
-	}
-
-	@Test
 	void basicMonoWorks() {
 		ScopedValue scopedValue = ScopedValue.create("hello");
 
@@ -203,7 +96,7 @@ class ContextPropagationWithScopesTest {
 			assertThat(ScopedValue.getCurrent()).isEqualTo(scopedValue);
 
 			Mono.just("item")
-			    .doOnNext(item -> assertThat(ScopedValue.getCurrent()).isInstanceOf(NullScopedValue.class))
+			    .doOnNext(item -> assertThat(ScopedValue.getCurrent().get()).isNull())
 			    .contextWrite(ctx -> Context.empty())
 			    .block();
 
@@ -264,40 +157,6 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
-	void multiLevelScopesWithDifferentValues() {
-		ScopedValue v1 = ScopedValue.create("val1");
-		ScopedValue v2 = ScopedValue.create("val2");
-
-		try (ScopedValue.Scope v1scope1 = v1.open()) {
-			try (ScopedValue.Scope v1scope2 = v1.open()) {
-				try (ScopedValue.Scope v2scope1 = v2.open()) {
-					try (ScopedValue.Scope v2scope2 = v2.open()) {
-						try (ScopedValue.Scope v1scope3 = v1.open()) {
-							try (ScopedValue.Scope nullScope =
-									     ScopedValue.nullValue().open()) {
-								assertThat(ScopedValue.getCurrent()).isInstanceOf(NullScopedValue.class);
-								assertThat(ScopedValue.getCurrent().get()).isNull();
-							}
-							assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
-							assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v1scope3);
-						}
-						assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-						assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v2scope2);
-					}
-					assertThat(ScopedValue.getCurrent()).isEqualTo(v2);
-					assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v2scope1);
-				}
-				assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
-				assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v1scope2);
-			}
-			assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
-			assertThat(ScopedValue.getCurrent().currentScope()).isEqualTo(v1scope1);
-		}
-
-		assertThat(ScopedValue.getCurrent()).isNull();
-	}
-
-	@Test
 	void multiLevelScopesWithDifferentValuesAndFlux() {
 		ScopedValue v1 = ScopedValue.create("val1");
 		ScopedValue v2 = ScopedValue.create("val2");
@@ -311,7 +170,6 @@ class ContextPropagationWithScopesTest {
 						try (ScopedValue.Scope v1scope3 = v1.open()) {
 							try (ScopedValue.Scope nullScope =
 									     ScopedValue.nullValue().open()) {
-								assertThat(ScopedValue.getCurrent()).isInstanceOf(NullScopedValue.class);
 								assertThat(ScopedValue.getCurrent().get()).isNull();
 							}
 							assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
@@ -359,7 +217,6 @@ class ContextPropagationWithScopesTest {
 						try (ScopedValue.Scope v1scope3 = v1.open()) {
 							try (ScopedValue.Scope nullScope =
 									     ScopedValue.nullValue().open()) {
-								assertThat(ScopedValue.getCurrent()).isInstanceOf(NullScopedValue.class);
 								assertThat(ScopedValue.getCurrent().get()).isNull();
 							}
 							assertThat(ScopedValue.getCurrent()).isEqualTo(v1);
@@ -391,165 +248,5 @@ class ContextPropagationWithScopesTest {
 		assertThat(ScopedValue.getCurrent()).isNull();
 
 		assertThat(valueInsideFlatMap.get()).isEqualTo(v1);
-	}
-
-	private static class ScopedValueThreadLocalAccessor implements ThreadLocalAccessor<ScopedValue> {
-
-		static final String KEY = "svtla";
-
-		@Override
-		public Object key() {
-			return KEY;
-		}
-
-		@Override
-		public ScopedValue getValue() {
-			return ScopedValue.VALUE_IN_SCOPE.get();
-		}
-
-		@Override
-		public void setValue(ScopedValue value) {
-			value.open();
-		}
-
-		@Override
-		public void setValue() {
-			ScopedValue.nullValue().open();
-		}
-
-		@Override
-		public void restore(ScopedValue previousValue) {
-			ScopedValue current = ScopedValue.VALUE_IN_SCOPE.get();
-			if (current != null) {
-				ScopedValue.Scope currentScope = current.currentScope();
-				if (currentScope == null || currentScope.parentScope == null ||
-						currentScope.parentScope.scopedValue != previousValue) {
-					throw new RuntimeException("Restoring to a different previous scope than expected!");
-				}
-				currentScope.close();
-			} else {
-				throw new RuntimeException("Restoring to previous scope, but current is missing.");
-			}
-		}
-
-		@Override
-		public void restore() {
-			ScopedValue current = ScopedValue.VALUE_IN_SCOPE.get();
-			if (current != null) {
-				ScopedValue.Scope currentScope = current.currentScope();
-				if (currentScope == null) {
-					throw new RuntimeException("Can't close current scope, as it is missing");
-				}
-				currentScope.close();
-			} else {
-				throw new RuntimeException("Restoring to previous scope, but current is missing.");
-			}
-		}
-	}
-	private interface ScopedValue {
-
-		ThreadLocal<ScopedValue> VALUE_IN_SCOPE = new ThreadLocal<>();
-
-		@Nullable
-		static ScopedValue getCurrent() {
-			return VALUE_IN_SCOPE.get();
-		}
-
-		static ScopedValue create(String value) {
-			return new SimpleScopedValue(value);
-		}
-
-		static ScopedValue nullValue() {
-			return new NullScopedValue();
-		}
-
-		@Nullable
-		String get();
-
-		@Nullable
-		Scope currentScope();
-
-		void updateCurrentScope(Scope scope);
-
-		Scope open();
-
-		class Scope implements AutoCloseable {
-
-			private final ScopedValue scopedValue;
-
-			@Nullable
-			private final Scope parentScope;
-
-			public Scope(ScopedValue scopedValue) {
-				log.info("{}: open scope[{}]", scopedValue.get(), hashCode());
-				this.scopedValue = scopedValue;
-
-				ScopedValue currentValue = ScopedValue.VALUE_IN_SCOPE.get();
-				this.parentScope = currentValue != null ? currentValue.currentScope() : null;
-
-				ScopedValue.VALUE_IN_SCOPE.set(scopedValue);
-			}
-
-			@Override
-			public void close() {
-				if (parentScope == null) {
-					log.info("{}: remove scope[{}]", scopedValue.get(), hashCode());
-					ScopedValue.VALUE_IN_SCOPE.remove();
-				} else {
-					log.info("{}: close scope[{}] -> restore {} scope[{}]",
-							scopedValue.get(), hashCode(),
-							parentScope.scopedValue.get(), parentScope.hashCode());
-					parentScope.scopedValue.updateCurrentScope(parentScope);
-					ScopedValue.VALUE_IN_SCOPE.set(parentScope.scopedValue);
-				}
-			}
-		}
-	}
-
-	private static class SimpleScopedValue implements ScopedValue {
-
-		private final String value;
-
-		ThreadLocal<Scope> currentScope = new ThreadLocal<>();
-
-		private SimpleScopedValue(String value) {
-			this.value = value;
-		}
-
-		@Override
-		public String get() {
-			return value;
-		}
-
-		@Override
-		public Scope currentScope() {
-			return currentScope.get();
-		}
-
-		@Override
-		public Scope open() {
-			Scope scope = new Scope(this);
-			this.currentScope.set(scope);
-			return scope;
-		}
-
-		@Override
-		public void updateCurrentScope(Scope scope) {
-			log.info("{} update scope[{}] -> scope[{}]",
-					value, currentScope.get().hashCode(), scope.hashCode());
-			this.currentScope.set(scope);
-		}
-	}
-
-	private static class NullScopedValue extends SimpleScopedValue {
-
-		public NullScopedValue() {
-			super("null");
-		}
-
-		@Override
-		public String get() {
-			return null;
-		}
 	}
 }
