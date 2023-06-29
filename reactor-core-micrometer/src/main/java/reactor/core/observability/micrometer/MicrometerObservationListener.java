@@ -106,13 +106,9 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 			MicrometerObservationListenerConfiguration configuration,
 			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
 		if (observationSupplier != null) {
-			try {
-				final Observation observation = observationSupplier.apply(configuration.registry);
-				if (observation != null) {
-					return observation;
-				}
-			} catch (final Exception e) {
-				LOGGER.error("Error creating observation with given supplier, use default supplier instead", e);
+			final Observation observation = observationSupplier.apply(configuration.registry);
+			if (observation != null) {
+				return observation;
 			}
 		}
 		return Observation.createNotStarted(configuration.sequenceName, configuration.registry);

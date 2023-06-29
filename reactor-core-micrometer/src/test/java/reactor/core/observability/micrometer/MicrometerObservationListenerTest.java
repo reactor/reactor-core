@@ -38,6 +38,7 @@ import reactor.util.context.ContextView;
 
 import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Simon Baslé
@@ -330,18 +331,8 @@ class MicrometerObservationListenerTest {
 
 		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
 
-		mono.block();
-
-		assertThat(registry)
-				.hasSingleObservationThat()
-				.hasNameEqualTo("testMono")
-				.hasContextualNameEqualTo("testMono")
-				.as("subscribeToTerminalObservation")
-				.hasBeenStarted()
-				.hasBeenStopped()
-				.hasLowCardinalityKeyValue("reactor.type", "Mono")
-				.hasLowCardinalityKeyValue("reactor.status",  "completed")
-				.hasKeyValuesCount(2);
+		assertThatThrownBy(mono::block)
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@ParameterizedTestWithName
