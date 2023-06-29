@@ -157,6 +157,96 @@ myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
 ----
 ====
 
+[[faq.monoZipEmptyCompletion]]
+== Using `zip` along with empty-completed publishers
+
+When using the `zip` operator along with empty-completed publishers (i.e., publishers completing without emitting an item), it is important to be aware of the following behavior.
+
+Consider the following test case:
+
+====
+[source,java]
+----
+    @Test
+    public void testZipEmptyCompletionAllSubscribed() {
+        AtomicInteger cnt = new AtomicInteger();
+        Mono<Integer> mono1 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Integer> mono2 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Integer> zippedMono = Mono.zip(mono1, mono2, (v1, v2) -> v1);
+        zippedMono.subscribe();
+        assertEquals(2, cnt.get());
+    }
+----
+====
+
+While in this case the resulting `zippedMono` subscribes to both `mono1` and `mono2`, such behaviour is not guaranteed for all cases. For instance, consider the following test case:
+
+====
+[source,java]
+----
+    @Test
+    public void testZipEmptyCompletionOneSubscribed() {
+        AtomicInteger cnt = new AtomicInteger();
+        Mono<Integer> mono1 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Integer> mono2 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Integer> mono3 = Mono.create(sink -> {
+            cnt.incrementAndGet();
+            sink.success();
+        });
+        Mono<Integer> zippedMono = Mono.zip(mono1, Mono.zip(mono2, mono3, (v1, v2) -> v1), (v1, v2) -> v1);
+        zippedMono.subscribe();
+        assertEquals(1, cnt.get());
+    }
+----
+====
+In this case upon empty completion of `mono1`, `zippedMono` completes immediately and does not subscribe to `mono2` and `mono3`.
+
+Therefore, in cases where `zip` operator is used to combine empty-completed publishers, it is not guaranteed that the resulting publisher will subscribe to all the empty-completed publishers.
+
+If it is necessary to keep the semantics as shown in the second test case and to ensure subscription to all the publishers to be zipped, consider using `singleOptional` operator, as demonstrated in the test case below:
+
+====
+[source,java]
+----
+
+@Test
+public void testZipOptionalAllSubscribed() {
+	AtomicInteger cnt = new AtomicInteger();
+	Mono<Integer> mono1 = Mono.create(sink -> {
+		cnt.incrementAndGet();
+		sink.success();
+	});
+	Mono<Integer> mono2 = Mono.create(sink -> {
+		cnt.incrementAndGet();
+		sink.success();
+	});
+	Mono<Integer> mono3 = Mono.create(sink -> {
+		cnt.incrementAndGet();
+		sink.success();
+	});
+	Mono<Optional<Integer>> zippedMono =
+			Mono.zip(
+					mono1.singleOptional(),
+					Mono.zip(mono2.singleOptional(), mono3.singleOptional(), (v1, v2) -> v1),
+					(v1, v2) -> v1);
+	zippedMono.subscribe();
+	assertEquals(3, cnt.get());
+}
+----
+====
+
 [[faq.retryWhen]]
 == How to Use `retryWhen` to Emulate `retry(3)`?
 
