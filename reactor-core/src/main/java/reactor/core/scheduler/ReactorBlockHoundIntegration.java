@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import reactor.blockhound.BlockHound;
 import reactor.blockhound.integration.BlockHoundIntegration;
 
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -50,5 +51,6 @@ public final class ReactorBlockHoundIntegration implements BlockHoundIntegration
         // For now, let's not add a separate integration, but rather let's define the class name manually
         // ContextRegistry reads files as part of the Service Loader aspect. If class is initialized in a non-blocking thread, BlockHound would complain
         builder.allowBlockingCallsInside("reactor.core.publisher.ContextPropagation", "<clinit>");
+        builder.allowBlockingCallsInside(FutureTask.class.getName(),"handlePossibleCancellationInterrupt");
     }
 }
