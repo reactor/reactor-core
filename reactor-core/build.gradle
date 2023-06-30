@@ -298,6 +298,14 @@ test {
   }
 }
 
+java21Test {
+  println("Available number of processors is " + Runtime.getRuntime().availableProcessors())
+  if (Runtime.getRuntime().availableProcessors() <= 2) {
+	systemProperty "jdk.virtualThreadScheduler.parallelism", "6"
+  }
+  systemProperty "reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true"
+}
+
 tasks.withType(Test).matching { !(it.name in testing.suites.names) }.configureEach {
   def tags = rootProject.findProperty("junit-tags")
   if (tags != null) {
