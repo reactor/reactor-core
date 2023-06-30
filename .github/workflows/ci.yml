@@ -1,6 +1,8 @@
 name: CI
 on:
-  pull_request: {}
+  pull_request:
+    branches-ignore:
+      - 3.6.x
 permissions: read-all
 jobs:
   preliminary:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,10 @@ import static org.mockito.Mockito.*;
  */
 class LoggerTest {
 
+	static abstract class InnerLogger implements Logger { }
+
 	private Logger mockVerbose() {
-		Logger mockLogger = Mockito.mock(Logger.class);
+		Logger mockLogger = Mockito.mock(InnerLogger.class);
 
 		when(mockLogger.isInfoEnabled()).thenReturn(true);
 		when(mockLogger.isWarnEnabled()).thenReturn(true);
@@ -46,7 +48,7 @@ class LoggerTest {
 	}
 
 	private Logger mockTerse() {
-		Logger mockLogger = Mockito.mock(Logger.class);
+		Logger mockLogger = Mockito.mock(InnerLogger.class);
 
 		when(mockLogger.isInfoEnabled()).thenReturn(true);
 		when(mockLogger.isWarnEnabled()).thenReturn(true);
@@ -64,7 +66,7 @@ class LoggerTest {
 	}
 
 	private Logger mockSilent() {
-		Logger mockLogger = Mockito.mock(Logger.class);
+		Logger mockLogger = Mockito.mock(InnerLogger.class);
 
 		when(mockLogger.isInfoEnabled()).thenReturn(false);
 		when(mockLogger.isWarnEnabled()).thenReturn(false);
