@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import reactor.blockhound.BlockHound;
 import reactor.blockhound.integration.BlockHoundIntegration;
 
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -50,7 +51,6 @@ public final class ReactorBlockHoundIntegration implements BlockHoundIntegration
         // For now, let's not add a separate integration, but rather let's define the class name manually
         // ContextRegistry reads files as part of the Service Loader aspect. If class is initialized in a non-blocking thread, BlockHound would complain
         builder.allowBlockingCallsInside("reactor.core.publisher.ContextPropagation", "<clinit>");
-        builder.allowBlockingCallsInside("java.util.concurrent.FutureTask",
-                "handlePossibleCancellationInterrupt");
+        builder.allowBlockingCallsInside(FutureTask.class.getName(),"handlePossibleCancellationInterrupt");
     }
 }
