@@ -2,7 +2,6 @@ name: publish
 on:
   push:
     branches: # For branches, better to list them explicitly than regexp include
-      - 3.6.x
       - main
       - 3.5.x
       - 3.4.x
