@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'idea' // needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
-apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'kotlin'
+apply plugin: 'jvm-test-suite'
 apply plugin: 'jcstress'
 
 ext {
@@ -44,15 +44,61 @@ ext {
 	]
 }
 
-testSets {
-	blockHoundTest
-	withMicrometerTest
-	tckTest
+testing {
+  suites {
+	test {
+	  useJUnitJupiter()
+	}
+	blockHoundTest(JvmTestSuite) {
+	  useJUnitJupiter()
+	  sources.java.srcDirs = ['src/blockHoundTest/java']
+	  dependencies {
+		implementation project()
+	  }
+	}
+	tckTest(JvmTestSuite) {
+	  useTestNG()
+	  sources.java.srcDirs = ['src/tckTest/java']
+	  dependencies {
+		implementation project()
+		implementation sourceSets.test.output
+	  }
+	}
+	withMicrometerTest(JvmTestSuite) {
+	  useJUnitJupiter()
+	  sources.java.srcDirs = ['src/withMicrometerTest/java']
+	  dependencies {
+		implementation project()
+		implementation sourceSets.test.output
+	  }
+	}
+	withContextPropagation102Test(JvmTestSuite) {
+	  useJUnitJupiter()
+	  sources.java.srcDirs = ['src/withContextPropagation102Test/java']
+	  dependencies {
+		implementation project()
+		implementation sourceSets.test.output
+	  }
+	}
+  }
 }
 
 configurations {
 	compileOnly.extendsFrom jsr166backport
 	testCompileOnly.extendsFrom jsr166backport
+
+  	blockHoundTestApi.extendsFrom testApi
+  	blockHoundTestImplementation.extendsFrom testImplementation
+  	blockHoundTestCompileOnly.extendsFrom testCompileOnly
+  	tckTestApi.extendsFrom testApi
+  	tckTestImplementation.extendsFrom testImplementation
+  	tckTestCompileOnly.extendsFrom testCompileOnly
+  	withMicrometerTestApi.extendsFrom testApi
+  	withMicrometerTestImplementation.extendsFrom testImplementation
+  	withMicrometerTestCompileOnly.extendsFrom testCompileOnly
+  	withContextPropagation102TestApi.extendsFrom testApi
+  	withContextPropagation102TestImplementation.extendsFrom testImplementation
+  	withContextPropagation102TestCompileOnly.extendsFrom testCompileOnly
 }
 
 dependencies {
@@ -223,28 +269,33 @@ task loops(type: Test, group: 'verification') {
 	}
 }
 
-tasks.withType(Test).all {
-	if (it.name == "test") {
-		//configure tag support for the core test task
-		def tags = rootProject.findProperty("junit-tags")
-		if (tags != null) {
-			println "junit5 tags for core: $tags"
-			useJUnitPlatform() {
-				includeTags "$tags"
-			}
-		}
-		else {
-			useJUnitPlatform()
-		}
+test {
+  def tags = rootProject.findProperty("junit-tags")
+  if (tags != null) {
+	println "junit5 tags for core: $tags"
+	useJUnitPlatform() {
+	  includeTags "$tags"
 	}
-	else if (it.name != "tckTest") {
-		//default to JunitPlatform
-		useJUnitPlatform()
+  }
+  else {
+	useJUnitPlatform()
+  }
+}
+
+tasks.withType(Test).matching { !(it.name in testing.suites.names) }.configureEach {
+  def tags = rootProject.findProperty("junit-tags")
+  if (tags != null) {
+	println "junit5 tags for core: $tags"
+	useJUnitPlatform() {
+	  includeTags "$tags"
 	}
+  }
+  else {
+	useJUnitPlatform()
+  }
 }
 
 tckTest {
-	useTestNG()
 	include '**/*Verification.*'
 	doFirst {
 		println "Additional tests from `${name}` (${includes})"
