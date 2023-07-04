@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,9 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		RefConnection conn;
+		RefCountInner<T> inner = new RefCountInner<>(actual, this);
+
+		source.subscribe(inner);
 
 		boolean connect = false;
 		synchronized (this) {
@@ -91,7 +94,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 			}
 		}
 
-		source.subscribe(new RefCountInner<>(actual, this, conn));
+		inner.setRefConnection(conn);
 
 		if (connect) {
 			source.connect(conn);
@@ -196,20 +199,55 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		final FluxRefCountGrace<T> parent;
 
-		final RefConnection connection;
+		RefConnection connection;
 
 		Subscription s;
 		QueueSubscription<T> qs;
 
-		volatile int parentDone;
-		static final AtomicIntegerFieldUpdater<RefCountInner> PARENT_DONE =
-				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "parentDone");
+		Throwable error;
 
-		RefCountInner(CoreSubscriber<? super T> actual, FluxRefCountGrace<T> parent,
-				RefConnection connection) {
+
+		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
+		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;
+		static final int CANCELLED_FLAG   = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+
+		volatile int state; //used to guard against doubly terminating subscribers (e.g. double cancel)
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<RefCountInner> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "state");
+
+		RefCountInner(CoreSubscriber<? super T> actual, FluxRefCountGrace<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
+		}
+
+		void setRefConnection(RefConnection connection) {
 			this.connection = connection;
+			this.actual.onSubscribe(this);
+
+			for (;;) {
+				int previousState = this.state;
+
+				if (isCancelled(previousState)) {
+					return;
+				}
+
+				if (isTerminated(previousState)) {
+					this.parent.terminated(connection);
+					Throwable e = this.error;
+					if (e != null) {
+						this.actual.onError(e);
+					}
+					else {
+						this.actual.onComplete();
+					}
+					return;
+				}
+
+				if (STATE.compareAndSet(this, previousState, previousState | MONITOR_SET_FLAG)) {
+					return;
+				}
+			}
 		}
 
 		@Override
@@ -219,18 +257,42 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void onError(Throwable t) {
-			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
-				parent.terminated(connection);
+			this.error = t;
+			for (;;) {
+				int previousState = this.state;
+
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					Operators.onErrorDropped(t, actual.currentContext());
+					return;
+				}
+
+				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
+					if (isMonitorSet(previousState)) {
+						this.parent.terminated(connection);
+						this.actual.onError(t);
+					}
+					return;
+				}
 			}
-			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
-				parent.terminated(connection);
+			for (;;) {
+				int previousState = this.state;
+
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
+
+				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
+					if (isMonitorSet(previousState)) {
+						this.parent.terminated(connection);
+						this.actual.onComplete();
+					}
+					return;
+				}
 			}
-			actual.onComplete();
 		}
 
 		@Override
@@ -241,7 +303,14 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		@Override
 		public void cancel() {
 			s.cancel();
-			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
+
+			int previousState = this.state;
+
+			if (isTerminated(previousState) || isCancelled(previousState)) {
+				return;
+			}
+
+			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
 				parent.cancel(connection);
 			}
 		}
@@ -250,8 +319,6 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-
-				actual.onSubscribe(this);
 			}
 		}
 
@@ -294,7 +361,23 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return isTerminated(state);
+			if (key == Attr.CANCELLED) return isCancelled(state);
+
 			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		static boolean isTerminated(int state) {
+			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
+		}
+
+		static boolean isCancelled(int state) {
+			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
+		}
+
+		static boolean isMonitorSet(int state) {
+			return (state & MONITOR_SET_FLAG) == MONITOR_SET_FLAG;
 		}
 	}
 

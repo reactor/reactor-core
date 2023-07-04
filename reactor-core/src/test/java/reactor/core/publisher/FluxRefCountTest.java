@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -443,9 +443,10 @@ public class FluxRefCountTest {
 		}, null, sub -> sub.request(100));
 		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10)
 																   .publish(), 17);
-		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(main));
+		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
+		test.setRefCountMonitor(new FluxRefCount.RefCountMonitor<>(main));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -469,9 +470,10 @@ public class FluxRefCountTest {
 		}, null, sub -> sub.request(100));
 		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10)
 																   .publish(), 17);
-		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(main));
+		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
+		test.setRefCountMonitor(new FluxRefCount.RefCountMonitor<>(main));
 		test.cancel();
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel")
