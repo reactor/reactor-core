@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -511,7 +511,9 @@ public class FluxRefCountGraceTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxRefCountGrace<Integer> parent = new FluxRefCountGrace<>(Flux.just(10).publish(), 17, Duration.ofSeconds(1), Schedulers.single());
 
-		FluxRefCountGrace.RefCountInner<Integer> test = new FluxRefCountGrace.RefCountInner<>(actual, parent, new FluxRefCountGrace.RefConnection(parent));
+		FluxRefCountGrace.RefCountInner<Integer> test = new FluxRefCountGrace.RefCountInner<>(actual, parent);
+		test.onSubscribe(Operators.emptySubscription());
+		test.setRefConnection(new FluxRefCountGrace.RefConnection(parent));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
