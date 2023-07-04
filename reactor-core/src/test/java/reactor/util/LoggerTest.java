@@ -27,6 +27,9 @@ import static org.mockito.Mockito.*;
  */
 class LoggerTest {
 
+	// This class is needed to overcome "Cannot call abstract real method on java
+	// object!" problem for interfaces with default methods.
+	// For more details see: https://github.com/mockito/mockito/issues/2587
 	static abstract class InnerLogger implements Logger { }
 
 	private Logger mockVerbose() {

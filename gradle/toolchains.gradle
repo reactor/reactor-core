@@ -15,6 +15,10 @@
  */
 
 /**
+ * Copied from https://github.com/spring-projects/spring-framework/blob/main/gradle/toolchains.gradle
+ */
+
+/**
  * Apply the JVM Toolchain conventions
  * See https://docs.gradle.org/current/userguide/toolchains.html
  *

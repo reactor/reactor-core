@@ -26,6 +26,9 @@ import static reactor.core.publisher.Traces.full;
 import static reactor.core.publisher.Traces.isUserCode;
 import static reactor.core.publisher.Traces.shouldSanitize;
 
+/**
+ * Utility class for the call-site extracting on Java 8.
+ */
 class CallSiteSupplierFactory implements Supplier<Supplier<String>> {
 
 	static final Supplier<Supplier<String>> supplier;
@@ -35,8 +38,9 @@ class CallSiteSupplierFactory implements Supplier<Supplier<String>> {
 				CallSiteSupplierFactory.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
 				CallSiteSupplierFactory.class.getName() + "$ExceptionCallSiteSupplierFactory",
 		};
-		// find one available call-site supplier w.r.t. the jdk version to provide
-		// linkage-compatibility between jdk 8 and 9+
+		// tries to use stack trace traversing approach via and sun.misc.JavaLangAccess
+		// .getStackTrace* or fallbacks to default java.lang.Throwable.getStackTrace
+		// fallbacks to default s
 		supplier = Stream
 				.of(strategyClasses)
 				.flatMap(className -> {
