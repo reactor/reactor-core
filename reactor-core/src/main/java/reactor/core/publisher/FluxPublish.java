@@ -490,7 +490,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 				boolean empty = q == null || q.isEmpty();
 
-				if (checkTerminated(d, empty)) {
+				if (checkTerminated(d, empty, null)) {
 					return;
 				}
 
@@ -525,7 +525,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 							d = true;
 							v = null;
 						}
-						if (checkTerminated(d, v == null)) {
+						if (checkTerminated(d, v == null, v)) {
 							return;
 						}
 						if (mode != Fuseable.SYNC) {
@@ -553,7 +553,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 						empty = v == null;
 
-						if (checkTerminated(d, empty)) {
+						if (checkTerminated(d, empty, v)) {
 							return;
 						}
 
@@ -561,7 +561,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 							//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
 							if (mode == Fuseable.SYNC) {
 								done = true;
-								checkTerminated(true, true);
+								checkTerminated(true, true, null);
 							}
 							break;
 						}
@@ -588,7 +588,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				}
 				else if (q != null && mode == Fuseable.SYNC) {
 					done = true;
-					if (checkTerminated(true, empty)) {
+					if (checkTerminated(true, empty, null)) {
 						break;
 					}
 				}
@@ -605,9 +605,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty) {
+		boolean checkTerminated(boolean d, boolean empty, @Nullable T t) {
 			long state = this.state;
 			if (isCancelled(state)) {
+				Operators.onDiscard(t, currentContext());
 				disconnectAction(state);
 				return true;
 			}
