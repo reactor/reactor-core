@@ -99,6 +99,8 @@ public final class Micrometer {
 	 * Similar to {@link #observation(ObservationRegistry)} but enables providing
 	 * a function creating the Micrometer {@link Observation}
 	 * representing the runtime of the publisher to the provided {@link ObservationRegistry}.
+	 * If this function returns {@code null}, the behavior will be identical to
+	 * {@link #observation(ObservationRegistry)} with a default {@link Observation}.
 	 *
 	 * @param <T> the type of onNext in the target publisher
 	 * @return a {@link SignalListenerFactory} to record observations
