@@ -177,7 +177,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;
 		static final int CANCELLED_FLAG   = 0b1000_0000_0000_0000_0000_0000_0000_0000;
 
-		volatile int state; //used to guard against doubly terminating subscribers (e.g. double cancel)
+		volatile int state;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<RefCountInner> STATE =
 				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "state");
