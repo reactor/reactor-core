@@ -239,7 +239,7 @@ public abstract class FluxPublishStressTest {
 		static final Throwable testError = new RuntimeException("boom");
 
 		public RefCntConcurrentSubscriptionErrorSyncStressTest() {
-			super(Flux.error(testError).publishOn(Schedulers.immediate()), null);
+			super(Flux.error(testError), null);
 		}
 
 		@Actor
@@ -272,6 +272,38 @@ public abstract class FluxPublishStressTest {
 
 		public RefCntConcurrentSubscriptionErrorAsyncStressTest() {
 			super(Flux.error(testError).publishOn(Schedulers.immediate()), null);
+		}
+
+		@Actor
+		public void subscribe1() {
+			sharedSource.subscribe(subscriber1);
+		}
+		@Actor
+		public void subscribe2() {
+			sharedSource.subscribe(subscriber2);
+		}
+
+		@Arbiter
+		public void arbiter(IIIIII_Result r) {
+			r.r1 = subscriber1.onNextCalls.get();
+			r.r2 = subscriber2.onNextCalls.get();
+			r.r3 = subscriber1.onCompleteCalls.get();
+			r.r4 = subscriber2.onCompleteCalls.get();
+			r.r5 = subscriber1.onErrorCalls.get();
+			r.r6 = subscriber2.onErrorCalls.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"0, 0, 0, 0, 1, 1"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
+	@State
+	public static class RefCntConcurrentSubscriptionErrorNoneStressTest extends
+	                                                                     RefCntConcurrentSubscriptionBaseStressTest<Object> {
+
+		static final Throwable testError = new RuntimeException("boom");
+
+		public RefCntConcurrentSubscriptionErrorNoneStressTest() {
+			super(Flux.error(testError).hide(), null);
 		}
 
 		@Actor
