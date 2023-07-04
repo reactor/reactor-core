@@ -298,7 +298,7 @@ public abstract class FluxPublishStressTest {
 	@Outcome(id = {"0, 0, 0, 0, 1, 1"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
 	@State
 	public static class RefCntConcurrentSubscriptionErrorNoneStressTest extends
-	                                                                     RefCntConcurrentSubscriptionBaseStressTest<Object> {
+	                                                                    RefCntConcurrentSubscriptionBaseStressTest<Object> {
 
 		static final Throwable testError = new RuntimeException("boom");
 
