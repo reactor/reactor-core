@@ -26,8 +26,6 @@ import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.IIIIII_Result;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
-import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
@@ -235,12 +233,12 @@ public abstract class FluxPublishStressTest {
 	@JCStressTest
 	@Outcome(id = {"0, 0, 0, 0, 1, 1"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
 	@State
-	public static class RefCntConcurrentSubscriptionErrorAsyncStressTest extends
+	public static class RefCntConcurrentSubscriptionErrorSyncStressTest extends
 	                                                                     RefCntConcurrentSubscriptionBaseStressTest<Object> {
 
 		static final Throwable testError = new RuntimeException("boom");
 
-		public RefCntConcurrentSubscriptionErrorAsyncStressTest() {
+		public RefCntConcurrentSubscriptionErrorSyncStressTest() {
 			super(Flux.error(testError).publishOn(Schedulers.immediate()), null);
 		}
 
@@ -251,6 +249,29 @@ public abstract class FluxPublishStressTest {
 		@Actor
 		public void subscribe2() {
 			sharedSource.subscribe(subscriber2);
+		}
+
+		@Arbiter
+		public void arbiter(IIIIII_Result r) {
+			r.r1 = subscriber1.onNextCalls.get();
+			r.r2 = subscriber2.onNextCalls.get();
+			r.r3 = subscriber1.onCompleteCalls.get();
+			r.r4 = subscriber2.onCompleteCalls.get();
+			r.r5 = subscriber1.onErrorCalls.get();
+			r.r6 = subscriber2.onErrorCalls.get();
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"0, 0, 0, 0, 1, 1"}, expect = ACCEPTABLE, desc = "concurrent subscription succeeded")
+	@State
+	public static class RefCntConcurrentSubscriptionErrorAsyncStressTest extends
+	                                                                     RefCntConcurrentSubscriptionBaseStressTest<Object> {
+
+		static final Throwable testError = new RuntimeException("boom");
+
+		public RefCntConcurrentSubscriptionErrorAsyncStressTest() {
+			super(Flux.error(testError).publishOn(Schedulers.immediate()), null);
 		}
 
 		@Actor
