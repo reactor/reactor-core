@@ -90,6 +90,7 @@ jobs:
       with:
         arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow
   java-21-core-fast:
+    if: ${{ github.base_ref == 'main' }}
     name: Java 21 core fast tests
     runs-on: ubuntu-latest
     needs: preliminary
