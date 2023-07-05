@@ -48,4 +48,4 @@ jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.15" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.11" }
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
 spotless = { id = "com.diffplug.spotless", version = "6.13.0" }
-
+mrjar = { id = "me.champeau.mrjar",  version = "0.1.1" }

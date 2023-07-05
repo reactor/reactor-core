@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 plugins {
 	id "com.gradle.enterprise" version "3.12.4"
+	id "org.gradle.toolchains.foojay-resolver-convention" version "0.5.0"
 }
 
 rootProject.name = 'reactor'

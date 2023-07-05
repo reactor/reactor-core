@@ -21,6 +21,7 @@ apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'jvm-test-suite'
 apply plugin: 'jcstress'
 apply plugin: 'java-library'
+apply plugin: 'me.champeau.mrjar'
 
 ext {
 	bndOptions = [
@@ -41,6 +42,10 @@ ext {
 		"Bundle-SymbolicName" : "io.projectreactor.reactor-core",
 		"Bundle-Version" : "$osgiVersion"
 	]
+}
+
+multiRelease {
+  targetVersions 8, 9, 21
 }
 
 testing {
@@ -347,6 +352,12 @@ if (!JavaVersion.current().isJava9Compatible()) {
 	}
 }
 
+if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
+  blockHoundTest {
+		jvmArgs = ["-XX:+AllowRedefinitionToAddDeleteMethods"]
+  }
+}
+
 jar {
 	manifest {
 		attributes 'Implementation-Title': 'reactor-core',
@@ -368,40 +379,5 @@ jar {
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 check.dependsOn japicmp
-
-
-if (JavaVersion.current().java9Compatible) {
-	// SharedSecretsCallSiteSupplierFactory is a Java 8 specific optimization.
-	// It uses sun.misc.SharedSecrets which is unavailable on Java 9+, and the compilation would fail with JDK 9.
-	// This workaround allows compiling the main sourceset on JDK 9+ while still referring to the Java 8 classes.
-
-	sourceSets {
-		java8stubs.java.srcDirs = ['src/main/java8stubs']
-	}
-
-	tasks.withType(JavaCompile).all {
-		sourceCompatibility = targetCompatibility = 8
-	}
-
-	tasks.withType(Javadoc).all {
-		excludes = ["reactor/core/publisher/Traces.java"]
-	}
-
-	dependencies {
-		compileOnly sourceSets.java8stubs.output
-	}
-}
-else {
-	// reactor.core.publisher.Traces contains a strategy that only works with Java 9+.
-	// While compiling on Java 8, we can't access Java 9+ APIs.
-	// To workaround this, we "link" the main sourceset to the stubs of Java 9 APIs without having to use the Java 9 target.
-	sourceSets {
-		java9stubs.java.srcDirs = ['src/main/java9stubs']
-	}
-
-	dependencies {
-		compileOnly sourceSets.java9stubs.output
-	}
-}
 
 // docs.zip is added in afterEvaluate block in setup.gradle

@@ -10,7 +10,25 @@ jobs:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
         with:
           fetch-depth: 0 #needed by spotless
-      - uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      - name: Download JDK 9
+        if: ${{ github.base_ref == 'main' }}
+        run: ${GITHUB_WORKSPACE}/.github/setup.sh
+        shell: bash
+      - name: Setup JDK 9
+        if: ${{ github.base_ref == 'main' }}
+        uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+        with:
+          distribution: 'jdkfile'
+          java-version: 9.0.4
+          jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+      - name: Setup JDK 21
+        if: ${{ github.base_ref == 'main' }}
+        uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 21-ea
+      - name: Setup JDK 8
+        uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
         with:
           distribution: 'temurin'
           java-version: 8
@@ -45,7 +63,25 @@ jobs:
     needs: preliminary
     steps:
     - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
-    - uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+    - name: Download JDK 9
+      if: ${{ github.base_ref == 'main' }}
+      run: ${GITHUB_WORKSPACE}/.github/setup.sh
+      shell: bash
+    - name: Setup JDK 9
+      if: ${{ github.base_ref == 'main' }}
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      with:
+        distribution: 'jdkfile'
+        java-version: 9.0.4
+        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+    - name: Setup JDK 21
+      if: ${{ github.base_ref == 'main' }}
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 21-ea
+    - name: Setup JDK 8
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
@@ -59,7 +95,25 @@ jobs:
     needs: preliminary
     steps:
     - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
-    - uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+    - name: Download JDK 9
+      if: ${{ github.base_ref == 'main' }}
+      run: ${GITHUB_WORKSPACE}/.github/setup.sh
+      shell: bash
+    - name: Setup JDK 9
+      if: ${{ github.base_ref == 'main' }}
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      with:
+        distribution: 'jdkfile'
+        java-version: 9.0.4
+        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+    - name: Setup JDK 21
+      if: ${{ github.base_ref == 'main' }}
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 21-ea
+    - name: Setup JDK 8
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
@@ -73,11 +127,29 @@ jobs:
     needs: preliminary
     steps:
     - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
-    - uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+    - name: Download JDK 9
+      if: ${{ github.base_ref == 'main' }}
+      run: ${GITHUB_WORKSPACE}/.github/setup.sh
+      shell: bash
+    - name: Setup JDK 9
+      if: ${{ github.base_ref == 'main' }}
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      with:
+        distribution: 'jdkfile'
+        java-version: 9.0.4
+        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+    - name: Setup JDK 21
+      if: ${{ github.base_ref == 'main' }}
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 21-ea
+    - name: Setup JDK 8
+      uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
     - uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # tag=v2
       name: other tests
       with:
-        arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon
+        arguments: check -x :reactor-core:test -x :reactor-core:java9Test -x :reactor-core:java21Test -x spotlessCheck --no-daemon
