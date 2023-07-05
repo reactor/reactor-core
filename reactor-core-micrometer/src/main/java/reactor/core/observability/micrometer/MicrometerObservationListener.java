@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package reactor.core.observability.micrometer;
 
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags;
@@ -26,6 +27,8 @@ import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+
+import java.util.function.Function;
 
 import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.STATUS;
 import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.TAG_STATUS_CANCELLED;
@@ -70,11 +73,20 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	boolean valued;
 
 	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration) {
-		this(subscriberContext, configuration, TAG_STATUS_COMPLETED);
+		this(subscriberContext, configuration, null);
+	}
+
+	MicrometerObservationListener(ContextView subscriberContext,
+			MicrometerObservationListenerConfiguration configuration,
+			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
+		this(subscriberContext, configuration, TAG_STATUS_COMPLETED, observationSupplier);
 	}
 
 	//for test purposes, we can pass in a value for the status tag, to be used when a Mono completes from onNext
-	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration, String completedOnNextStatus) {
+	MicrometerObservationListener(ContextView subscriberContext,
+			MicrometerObservationListenerConfiguration configuration,
+			String completedOnNextStatus,
+			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
 		this.configuration = configuration;
 		this.originalContext = subscriberContext;
 		this.completedOnNextStatus = completedOnNextStatus;
@@ -85,12 +97,21 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
 		//NOTE: we don't use the `DocumentedObservation` features to create the Observation, even for the ANONYMOUS case,
 		//because the discovered tags could be more than the documented defaults
-		tapObservation = Observation.createNotStarted(
-			configuration.sequenceName,
-			configuration.registry
-		)
-			.contextualName(configuration.sequenceName)
-			.lowCardinalityKeyValues(configuration.commonKeyValues);
+		tapObservation = defaultObservation(configuration, observationSupplier)
+				.contextualName(configuration.sequenceName)
+				.lowCardinalityKeyValues(configuration.commonKeyValues);
+	}
+
+	private static Observation defaultObservation(
+			MicrometerObservationListenerConfiguration configuration,
+			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
+		if (observationSupplier != null) {
+			final Observation observation = observationSupplier.apply(configuration.registry);
+			if (observation != null) {
+				return observation;
+			}
+		}
+		return Observation.createNotStarted(configuration.sequenceName, configuration.registry);
 	}
 
 	@Override

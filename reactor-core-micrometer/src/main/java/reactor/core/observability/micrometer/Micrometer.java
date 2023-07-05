@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package reactor.core.observability.micrometer;
+
+import java.util.function.Function;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
@@ -91,6 +93,22 @@ public final class Micrometer {
 	 */
 	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry) {
 		return new MicrometerObservationListenerFactory<>(registry);
+	}
+
+	/**
+	 * Similar to {@link #observation(ObservationRegistry)} but enables providing
+	 * a function creating the Micrometer {@link Observation}
+	 * representing the runtime of the publisher to the provided {@link ObservationRegistry}.
+	 * If this function returns {@code null}, the behavior will be identical to
+	 * {@link #observation(ObservationRegistry)} with a default {@link Observation}.
+	 *
+	 * @param <T> the type of onNext in the target publisher
+	 * @return a {@link SignalListenerFactory} to record observations
+	 * @see MicrometerObservationListenerDocumentation
+	 */
+	public static <T> SignalListenerFactory<T, ?> observation(ObservationRegistry registry,
+			Function<ObservationRegistry, Observation> observationSupplier) {
+		return new MicrometerObservationListenerFactory<>(registry, observationSupplier);
 	}
 
 	/**
