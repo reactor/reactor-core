@@ -25,6 +25,11 @@ import static reactor.core.scheduler.Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE;
 import static reactor.core.scheduler.Schedulers.LOOM_BOUNDED_ELASTIC;
 import static reactor.core.scheduler.Schedulers.newBoundedElastic;
 
+/**
+ * JDK 8 Specific implementation of BoundedElasticScheduler supplier which uses
+ * {@link java.lang.ThreadBuilders.VirtualThreadFactory} instead of the default
+ * {@link ReactorThreadFactory} when one enables virtual thread support
+ */
 class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 
 	@Override

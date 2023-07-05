@@ -27,6 +27,10 @@ import static reactor.core.scheduler.Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZ
 import static reactor.core.scheduler.Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE;
 import static reactor.core.scheduler.Schedulers.newBoundedElastic;
 
+/**
+ * JDK 8 Specific implementation of BoundedElasticScheduler supplier which warns when
+ * one enables virtual thread support
+ */
 class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 
 	static final Logger logger = Loggers.getLogger(BoundedElasticSchedulerSupplier.class);
