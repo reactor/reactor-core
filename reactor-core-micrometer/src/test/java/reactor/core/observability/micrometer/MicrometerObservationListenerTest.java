@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ import reactor.util.context.ContextView;
 
 import static io.micrometer.observation.tck.TestObservationRegistryAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Simon Baslé
@@ -233,6 +235,106 @@ class MicrometerObservationListenerTest {
 			.hasKeyValuesCount(4);
 	}
 
+	private static class CustomConvention implements ObservationConvention<Observation.Context> {
+
+		@Override
+		public KeyValues getLowCardinalityKeyValues(Observation.Context context) {
+			return KeyValues.of("testTag1", "testTagValue1");
+		}
+
+		@Override
+		public boolean supportsContext(Observation.Context context) {
+			return true;
+		}
+
+		@Override
+		public String getName() {
+			return "myName";
+		}
+
+		@Override
+		public String getContextualName(Observation.Context context) {
+			return "myContextualName";
+		}
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithCustomConvention(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Mono<Integer> mono = Mono.just(1)
+		    .name("testMono")
+		    .tap(Micrometer.observation(
+					registry,
+				    observationRegistry -> Observation.createNotStarted(new CustomConvention(), observationRegistry)));
+
+		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
+
+		mono.block();
+
+		assertThat(registry)
+				.hasSingleObservationThat()
+				.hasNameEqualTo("myName")
+				.hasContextualNameEqualTo("myContextualName")
+				.as("subscribeToTerminalObservation")
+				.hasBeenStarted()
+				.hasBeenStopped()
+				.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
+				.hasLowCardinalityKeyValue("reactor.type", "Mono")
+				.hasLowCardinalityKeyValue("reactor.status",  "completed")
+				.hasKeyValuesCount(3);
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithObservationSupplierReturningNull(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Mono<Integer> mono = Mono.just(1)
+		                         .name("testMono")
+		                         .tap(Micrometer.observation(
+				                         registry,
+				                         observationRegistry -> null));
+
+		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
+
+		mono.block();
+
+		assertThat(registry)
+				.hasSingleObservationThat()
+				.hasNameEqualTo("testMono")
+				.hasContextualNameEqualTo("testMono")
+				.as("subscribeToTerminalObservation")
+				.hasBeenStarted()
+				.hasBeenStopped()
+				.hasLowCardinalityKeyValue("reactor.type", "Mono")
+				.hasLowCardinalityKeyValue("reactor.status",  "completed")
+				.hasKeyValuesCount(2);
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapFromMonoWithObservationSupplierThrowingException(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		Mono<Integer> mono = Mono.just(1)
+		                         .name("testMono")
+		                         .tap(Micrometer.observation(
+				                         registry,
+				                         observationRegistry -> {
+											 throw new IllegalStateException("Exception should be handled");
+				                         }));
+
+		assertThat(registry).as("before subscription").doesNotHaveAnyObservation();
+
+		assertThatThrownBy(mono::block)
+				.isInstanceOf(IllegalStateException.class);
+	}
+
 	@ParameterizedTestWithName
 	@ValueSource(booleans =  {true, false})
 	void observationStoppedByCancellation(boolean automatic) {
@@ -336,7 +438,7 @@ class MicrometerObservationListenerTest {
 		final String expectedStatus = "completedOnNext";
 
 		//we use a test-oriented constructor to force the onNext completion case to have a different tag value
-		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, expectedStatus);
+		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, expectedStatus, null);
 
 		listener.doFirst(); // forces observation start
 		listener.doOnNext(1); // emulates onNext, should stop observation
