@@ -38,9 +38,9 @@ class CallSiteSupplierFactory implements Supplier<Supplier<String>> {
 				CallSiteSupplierFactory.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
 				CallSiteSupplierFactory.class.getName() + "$ExceptionCallSiteSupplierFactory",
 		};
-		// tries to use stack trace traversing approach via and sun.misc.JavaLangAccess
-		// .getStackTrace* or fallbacks to default java.lang.Throwable.getStackTrace
-		// fallbacks to default s
+		// tries to use the stacktrace traversing approach via the
+		// sun.misc.JavaLangAccess.getStackTrace* or fallbacks to the default way of
+		// stacktrace retrieval via the java.lang.Throwable.getStackTrace method
 		supplier = Stream
 				.of(strategyClasses)
 				.flatMap(className -> {
