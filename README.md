@@ -53,7 +53,7 @@ in the reference guide.
 
 ## Trouble building the project?
 Since the introduction of [Java Multi-Release JAR File](https://openjdk.org/jeps/238) 
-support one need to have JDK 8, 9, 21 available on the classpath. All the JDKs should 
+support one needs to have JDK 8, 9, and 21 available on the classpath. All the JDKs should 
 be automatically [detected](https://docs.gradle.org/current/userguide/toolchains.html#sec:auto_detection) 
 or [provisioned](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) 
 by Gradle Toolchain. 
