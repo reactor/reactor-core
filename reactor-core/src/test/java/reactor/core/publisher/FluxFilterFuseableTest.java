@@ -175,18 +175,17 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 				    throw new IllegalStateException("boom");
 			    })
 			    .contextWrite(previous -> {
-				    Consumer previousDiscardHandler =
-						    previous.get(Hooks.KEY_ON_DISCARD);
+				    Consumer previousDiscardHandler = previous.get(Hooks.KEY_ON_DISCARD);
 
 				    return Operators.enableOnDiscard(previous, (discarded) -> {
 					    previousDiscardHandler.accept(discarded);
 					    latch.countDown();
 				    });
 			    })
-				.as(StepVerifier::create)
-	            .expectFusion(Fuseable.ASYNC)
-	            .expectErrorMessage("boom")
-	            .verifyThenAssertThat();
+			    .as(StepVerifier::create)
+			    .expectFusion(Fuseable.ASYNC)
+			    .expectErrorMessage("boom")
+			    .verifyThenAssertThat();
 
 		Assertions.assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertions
@@ -299,18 +298,17 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 			    })
 			    .filter(i -> true)
 			    .contextWrite(previous -> {
-				    Consumer previousDiscardHandler =
-						    previous.get(Hooks.KEY_ON_DISCARD);
+				    Consumer previousDiscardHandler = previous.get(Hooks.KEY_ON_DISCARD);
 
 				    return Operators.enableOnDiscard(previous, (discarded) -> {
 					    previousDiscardHandler.accept(discarded);
 					    latch.countDown();
 				    });
 			    })
-				.as(StepVerifier::create)
-	            .expectFusion(Fuseable.ASYNC)
-	            .expectErrorMessage("boom")
-	            .verifyThenAssertThat();
+			    .as(StepVerifier::create)
+			    .expectFusion(Fuseable.ASYNC)
+			    .expectErrorMessage("boom")
+			    .verifyThenAssertThat();
 
 		Assertions.assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
