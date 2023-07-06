@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,6 +103,19 @@ public abstract class Schedulers {
 			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticQueueSize"))
 			        .map(Integer::parseInt)
 			        .orElse(100000);
+
+	/**
+	 * Default execution of enqueued tasks on {@link Thread#ofVirtual} for the global
+	 * {@link #boundedElastic()} {@link Scheduler},
+	 * initialized by system property {@code reactor.schedulers.defaultBoundedElasticOnVirtualThreads}
+	 * and falls back to false .
+	 *
+	 * @see #boundedElastic()
+	 */
+	public static final boolean DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS =
+			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads"))
+			        .map(Boolean::parseBoolean)
+			        .orElse(false);
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -1060,6 +1073,7 @@ public abstract class Schedulers {
 
 	// Internals
 	static final String BOUNDED_ELASTIC       = "boundedElastic"; // Blocking stuff with scale to zero
+	static final String LOOM_BOUNDED_ELASTIC  = "loomBoundedElastic"; // Loom stuff
 	static final String PARALLEL              = "parallel"; //scale up common tasks
 	static final String SINGLE                = "single"; //non blocking tasks
 	static final String IMMEDIATE             = "immediate";
@@ -1072,9 +1086,7 @@ public abstract class Schedulers {
 	static AtomicReference<CachedScheduler> CACHED_PARALLEL        = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_SINGLE          = new AtomicReference<>();
 
-	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER =
-			() -> newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE, DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
-					BOUNDED_ELASTIC, BoundedElasticScheduler.DEFAULT_TTL_SECONDS, true);
+	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER = new BoundedElasticSchedulerSupplier();
 
 	static final Supplier<Scheduler> PARALLEL_SUPPLIER =
 			() -> newParallel(PARALLEL, DEFAULT_POOL_SIZE, true);
