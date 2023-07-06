@@ -87,7 +87,7 @@ When the installations succeed, try to refresh the project and see that it build
 ### Installing JDKs manually
 
 The manual Operation-system specific JDK installation
-is well explained at the [official docs](https://docs.oracle.com/en/java/javase/20/install/overview-jdk-installation.html)
+is well explained in the [official docs](https://docs.oracle.com/en/java/javase/20/install/overview-jdk-installation.html)
 
 ## Getting Started
 
