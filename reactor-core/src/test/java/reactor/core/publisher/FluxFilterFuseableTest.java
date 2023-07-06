@@ -17,8 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -27,6 +29,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
@@ -162,26 +165,34 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void discardPollAsyncPredicateFail() {
+	public void discardPollAsyncPredicateFail() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newSingle("discardPollAsync");
 		CountDownLatch latch = new CountDownLatch(10);
-		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
-		                        .publishOn(Schedulers.newSingle("discardPollAsync"), 1)
-				                .contextWrite(previous -> {
-					                Consumer previousDiscardHandler = previous.get(Hooks.KEY_ON_DISCARD);
+		StepVerifier.Assertions assertions =
+			Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+			    .publishOn(scheduler, 1)
+			    .filter(i -> {
+				    throw new IllegalStateException("boom");
+			    })
+			    .contextWrite(previous -> {
+				    Consumer previousDiscardHandler =
+						    previous.get(Hooks.KEY_ON_DISCARD);
 
-									return Operators.enableOnDiscard(previous, (discarded) -> {
-												latch.countDown();
-												previousDiscardHandler.accept(discarded);
-											});
-				                })
-		                        .filter(i -> { throw new IllegalStateException("boom"); })
-		)
-		            .expectFusion(Fuseable.ASYNC)
-		            .expectErrorMessage("boom")
-		            .verifyThenAssertThat()
-		            .hasDiscarded(1) //publishOn also might discard the rest
-                            .hasDiscardedElementsMatching(list -> !list.contains(0))
-			    .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+				    return Operators.enableOnDiscard(previous, (discarded) -> {
+					    previousDiscardHandler.accept(discarded);
+					    latch.countDown();
+				    });
+			    })
+				.as(StepVerifier::create)
+	            .expectFusion(Fuseable.ASYNC)
+	            .expectErrorMessage("boom")
+	            .verifyThenAssertThat();
+
+		Assertions.assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertions
+				.hasDiscarded(1) //publishOn also might discard the rest
+				.hasDiscardedElementsMatching(list -> !list.contains(0))
+				.hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 	}
 
 	@Test
@@ -277,27 +288,35 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void discardConditionalPollAsyncPredicateFail() {
+	public void discardConditionalPollAsyncPredicateFail() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newSingle("discardPollAsync");
 		CountDownLatch latch = new CountDownLatch(10);
-		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext, so let's use just instead
-		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
-		                        .filter(i -> { throw new IllegalStateException("boom"); })
-		                        .filter(i -> true)
-		                        .contextWrite(previous -> {
-			                        Consumer previousDiscardHandler = previous.get(Hooks.KEY_ON_DISCARD);
+		StepVerifier.Assertions assertions =
+			Flux.range(1, 10) //range uses tryOnNext, so let's use just instead
+			    .publishOn(scheduler, 1)
+			    .filter(i -> {
+				    throw new IllegalStateException("boom");
+			    })
+			    .filter(i -> true)
+			    .contextWrite(previous -> {
+				    Consumer previousDiscardHandler =
+						    previous.get(Hooks.KEY_ON_DISCARD);
 
-			                        return Operators.enableOnDiscard(previous, (discarded) -> {
-				                        latch.countDown();
-				                        previousDiscardHandler.accept(discarded);
-			                        });
-		                        })
-		)
-		            .expectFusion(Fuseable.ASYNC)
-		            .expectErrorMessage("boom")
-		            .verifyThenAssertThat()
-		            .hasDiscarded(1) //publishOn also discards the rest
-			    .hasDiscardedElementsMatching(list -> !list.contains(0))
-			    .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+				    return Operators.enableOnDiscard(previous, (discarded) -> {
+					    previousDiscardHandler.accept(discarded);
+					    latch.countDown();
+				    });
+			    })
+				.as(StepVerifier::create)
+	            .expectFusion(Fuseable.ASYNC)
+	            .expectErrorMessage("boom")
+	            .verifyThenAssertThat();
+
+		Assertions.assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+
+		assertions.hasDiscarded(1) //publishOn also discards the rest
+		          .hasDiscardedElementsMatching(list -> !list.contains(0))
+		          .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 	}
 
 	@Test
