@@ -60,7 +60,7 @@ by Gradle Toolchain.
 
 However, if you see error message such as `No matching toolchains found for requested 
 specification: {languageVersion=X, vendor=any, implementation=vendor-specific}` (where 
-`X` can be 8, 9 or 21), it means that you need to install missing JDK:
+`X` can be 8, 9 or 21), it means that you need to install the missing JDK:
 
 ### Installing JDKs with [SDKMAN!](https://sdkman.io/)
 
