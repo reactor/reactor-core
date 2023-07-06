@@ -169,7 +169,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		Scheduler scheduler = Schedulers.newSingle("discardPollAsync");
 		CountDownLatch latch = new CountDownLatch(10);
 		StepVerifier.Assertions assertions =
-			Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+			Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 			    .publishOn(scheduler, 1)
 			    .filter(i -> {
 				    throw new IllegalStateException("boom");
@@ -291,7 +291,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		Scheduler scheduler = Schedulers.newSingle("discardPollAsync");
 		CountDownLatch latch = new CountDownLatch(10);
 		StepVerifier.Assertions assertions =
-			Flux.range(1, 10) //range uses tryOnNext, so let's use just instead
+			Flux.range(1, 10)
 			    .publishOn(scheduler, 1)
 			    .filter(i -> {
 				    throw new IllegalStateException("boom");
