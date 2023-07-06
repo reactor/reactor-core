@@ -19,21 +19,17 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.context.ContextRegistry;
-import io.micrometer.context.ContextSnapshotFactory;
-import io.micrometer.context.ThreadLocalAccessor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.scopedvalue.ScopeHolder;
-import reactor.core.publisher.scopedvalue.ScopedValue;
-import reactor.core.publisher.scopedvalue.ScopedValueThreadLocalAccessor;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import io.micrometer.scopedvalue.Scope;
+import io.micrometer.scopedvalue.ScopeHolder;
+import io.micrometer.scopedvalue.ScopedValue;
+import io.micrometer.scopedvalue.ScopedValueThreadLocalAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -92,7 +88,7 @@ class ContextPropagationWithScopesTest {
 	@Test
 	void emptyContextWorksInMono() {
 		ScopedValue scopedValue = ScopedValue.create("hello");
-		try (ScopedValue.Scope scope = scopedValue.open()) {
+		try (Scope scope = Scope.open(scopedValue)) {
 			assertThat(ScopeHolder.currentValue()).isEqualTo(scopedValue);
 
 			Mono.just("item")
@@ -113,7 +109,7 @@ class ContextPropagationWithScopesTest {
 		ScopedValue externalValue = ScopedValue.create("outside");
 		ScopedValue internalValue = ScopedValue.create("inside");
 
-		try (ScopedValue.Scope scope = externalValue.open()) {
+		try (Scope scope = Scope.open(externalValue)) {
 			assertThat(ScopeHolder.currentValue()).isEqualTo(externalValue);
 
 			Mono.just(1)
@@ -138,7 +134,7 @@ class ContextPropagationWithScopesTest {
 		ScopedValue externalValue = ScopedValue.create("outside");
 		ScopedValue internalValue = ScopedValue.create("inside");
 
-		try (ScopedValue.Scope scope = externalValue.open()) {
+		try (Scope scope = Scope.open(externalValue)) {
 			assertThat(ScopeHolder.currentValue()).isEqualTo(externalValue);
 
 			Flux.just(1)
@@ -163,13 +159,12 @@ class ContextPropagationWithScopesTest {
 
 		AtomicReference<ScopedValue> valueInsideFlatMap = new AtomicReference<>();
 
-		try (ScopedValue.Scope v1scope1 = v1.open()) {
-			try (ScopedValue.Scope v1scope2 = v1.open()) {
-				try (ScopedValue.Scope v2scope1 = v2.open()) {
-					try (ScopedValue.Scope v2scope2 = v2.open()) {
-						try (ScopedValue.Scope v1scope3 = v1.open()) {
-							try (ScopedValue.Scope nullScope =
-									     ScopedValue.nullValue().open()) {
+		try (Scope v1scope1 = Scope.open(v1)) {
+			try (Scope v1scope2 = Scope.open(v1)) {
+				try (Scope v2scope1 = Scope.open(v2)) {
+					try (Scope v2scope2 = Scope.open(v2)) {
+						try (Scope v1scope3 = Scope.open(v1)) {
+							try (Scope nullScope = Scope.open(ScopedValue.nullValue())) {
 								assertThat(ScopeHolder.currentValue().get()).isNull();
 							}
 							assertThat(ScopeHolder.currentValue()).isEqualTo(v1);
@@ -210,13 +205,12 @@ class ContextPropagationWithScopesTest {
 
 		AtomicReference<ScopedValue> valueInsideFlatMap = new AtomicReference<>();
 
-		try (ScopedValue.Scope v1scope1 = v1.open()) {
-			try (ScopedValue.Scope v1scope2 = v1.open()) {
-				try (ScopedValue.Scope v2scope1 = v2.open()) {
-					try (ScopedValue.Scope v2scope2 = v2.open()) {
-						try (ScopedValue.Scope v1scope3 = v1.open()) {
-							try (ScopedValue.Scope nullScope =
-									     ScopedValue.nullValue().open()) {
+		try (Scope v1scope1 = Scope.open(v1)) {
+			try (Scope v1scope2 = Scope.open(v1)) {
+				try (Scope v2scope1 = Scope.open(v2)) {
+					try (Scope v2scope2 = Scope.open(v2)) {
+						try (Scope v1scope3 = Scope.open(v1)) {
+							try (Scope nullScope = Scope.open(ScopedValue.nullValue())) {
 								assertThat(ScopeHolder.currentValue().get()).isNull();
 							}
 							assertThat(ScopeHolder.currentValue()).isEqualTo(v1);
