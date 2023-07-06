@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.context.ContextRegistry;
@@ -242,5 +244,25 @@ class ContextPropagationWithScopesTest {
 		assertThat(ScopeHolder.currentValue()).isNull();
 
 		assertThat(valueInsideFlatMap.get()).isEqualTo(v1);
+	}
+
+	@Test
+	void parallelFlatMapFlux() {
+		ScopedValue outerValue = ScopedValue.create("val1");
+
+		Queue<String> innerValues = new ArrayBlockingQueue<>(3);
+
+		Flux.just(0, 1, 2).hide()
+		    .flatMap(i -> Flux.just(i).subscribeOn(Schedulers.parallel())
+		                      .doOnNext(item -> {
+								  innerValues.offer(ScopeHolder.currentValue().get());
+		                      })
+		                      .contextWrite(Context.of(ScopedValueThreadLocalAccessor.KEY, ScopedValue.create("item_" + i))),
+				    3, 1)
+		    .contextWrite(Context.of(ScopedValueThreadLocalAccessor.KEY, outerValue))
+		    .blockLast();
+
+		assertThat(innerValues).containsExactlyInAnyOrder("item_0", "item_1", "item_2");
+		assertThat(ScopeHolder.get()).isNull();
 	}
 }
