@@ -31,15 +31,15 @@ repositories {
 }
 
 dependencies {
-    compile "io.projectreactor:reactor-core:3.6.0-SNAPSHOT"
-    testCompile "io.projectreactor:reactor-test:3.6.0-SNAPSHOT"
+    compile "io.projectreactor:reactor-core:3.5.7"
+    testCompile "io.projectreactor:reactor-test:3.5.7"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.6.0-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.6.0-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.5.8-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.5.8-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.6.0-SNAPSHOT"
+    // implementation "io.projectreactor:reactor-tools:3.5.8-SNAPSHOT"
 }
 ```
 
@@ -73,13 +73,13 @@ sdk env install
 then (if needed) install JDK 9: 
 
 ```shell
-sdk install java 9.0.4-open
+sdk install java $(sdk list java | grep -Eo -m1 '9\b\.[ea|0-9]{1,2}\.[0-9]{1,2}-open')
 ```
 
 then (if needed) install JDK 21:
 
 ```shell
-sdk install java 21.ea.28-open
+sdk install java $(sdk list java | grep -Eo -m1 '21\b\.[ea|0-9]{1,2}\.[0-9]{1,2}-open')
 ```
 
 When the installations succeed, try to refresh the project and see that it builds.
