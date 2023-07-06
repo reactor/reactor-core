@@ -82,7 +82,7 @@ then (if needed) install JDK 21:
 sdk install java 21.ea.28-open
 ```
 
-now you are done, try to refresh the project and see that it builds.
+When the installations succeed, try to refresh the project and see that it builds.
 
 ### Installing JDKs manually
 
