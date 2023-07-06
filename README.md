@@ -39,7 +39,7 @@ dependencies {
     // testCompile "io.projectreactor:reactor-test:3.5.8-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.5.7"
+    // implementation "io.projectreactor:reactor-tools:3.5.8-SNAPSHOT"
 }
 ```
 
@@ -51,21 +51,43 @@ However it should work fine with Android SDK 21 (Android 5.0) and above. See the
 [complete note](https://projectreactor.io/docs/core/release/reference/docs/index.html#prerequisites)
 in the reference guide.
 
-## Trouble importing the project in IDE?
-Since the introduction of Java 9 stubs in order to optimize the performance of debug tracebacks, one can sometimes
-encounter cryptic messages from the build system when importing or re-importing the project in their IDE.
+## Trouble building the project?
+Since the introduction of [Java Multi-Release JAR File](https://openjdk.org/jeps/238) 
+support one needs to have JDK 8, 9, and 21 available on the classpath. All the JDKs should 
+be automatically [detected](https://docs.gradle.org/current/userguide/toolchains.html#sec:auto_detection) 
+or [provisioned](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) 
+by Gradle Toolchain. 
 
-For example: 
+However, if you see error message such as `No matching toolchains found for requested 
+specification: {languageVersion=X, vendor=any, implementation=vendor-specific}` (where 
+`X` can be 8, 9 or 21), it means that you need to install the missing JDK:
 
- - `package StackWalker does not exist`: probably building under JDK8 but `java9stubs` was not added to sources
- - `cannot find symbol @CallerSensitive`: probably building with JDK11+ and importing using JDK8
+### Installing JDKs with [SDKMAN!](https://sdkman.io/)
 
-When encountering these issues, one need to ensure that:
+In the project root folder run [SDKMAN env initialization](https://sdkman.io/usage#env): 
 
- - Gradle JVM matches the JDK used by the IDE for the modules (in IntelliJ, `Modules Settings` JDK). Preferably, 1.8.
- - The IDE is configured to delegate build to Gradle (in IntelliJ: `Build Tools > Gradle > Runner` and project setting uses that default)
- 
-Then rebuild the project and the errors should disappear.
+```shell
+sdk env install
+```
+
+then (if needed) install JDK 9: 
+
+```shell
+sdk install java $(sdk list java | grep -Eo -m1 '9\b\.[ea|0-9]{1,2}\.[0-9]{1,2}-open')
+```
+
+then (if needed) install JDK 21:
+
+```shell
+sdk install java $(sdk list java | grep -Eo -m1 '21\b\.[ea|0-9]{1,2}\.[0-9]{1,2}-open')
+```
+
+When the installations succeed, try to refresh the project and see that it builds.
+
+### Installing JDKs manually
+
+The manual Operation-system specific JDK installation
+is well explained in the [official docs](https://docs.oracle.com/en/java/javase/20/install/overview-jdk-installation.html)
 
 ## Getting Started
 
