@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.context.ContextRegistry;
@@ -123,6 +124,68 @@ public class AutomaticContextPropagationTest {
 	}
 
 	@Test
+	void threadLocalsPresentInDoOnSubscribe() {
+		AtomicReference<String> tlValue = new AtomicReference<>();
+
+		Flux.just(1)
+			.subscribeOn(Schedulers.boundedElastic())
+			.doOnSubscribe(s -> tlValue.set(REF.get()))
+		    .contextWrite(Context.of(KEY, "present"))
+		    .blockLast();
+
+		assertThat(tlValue.get()).isEqualTo("present");
+	}
+
+	@Test
+	void threadLocalsPresentInDoOnEach() {
+		ArrayBlockingQueue<String> threadLocals = new ArrayBlockingQueue<>(4);
+		Flux.just(1, 2, 3)
+		    .doOnEach(s -> threadLocals.add(REF.get()))
+		    .contextWrite(Context.of(KEY, "present"))
+		    .blockLast();
+
+		assertThat(threadLocals).containsOnly("present", "present", "present", "present");
+	}
+
+	@Test
+	void threadLocalsPresentInDoOnRequest() {
+		AtomicReference<String> tlValue1 = new AtomicReference<>();
+		AtomicReference<String> tlValue2 = new AtomicReference<>();
+
+		Flux.just(1)
+		    .subscribeOn(Schedulers.boundedElastic())
+		    .doOnRequest(s -> tlValue1.set(REF.get()))
+		    .publishOn(Schedulers.single())
+		    .doOnRequest(s -> tlValue2.set(REF.get()))
+		    .contextWrite(Context.of(KEY, "present"))
+		    .blockLast();
+
+		assertThat(tlValue1.get()).isEqualTo("present");
+		assertThat(tlValue2.get()).isEqualTo("present");
+	}
+
+	@Test
+	void threadLocalsPresentInDoAfterTerminate() throws InterruptedException {
+		AtomicReference<String> tlValue = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		Flux.just(1)
+		    .subscribeOn(Schedulers.boundedElastic())
+		    .doAfterTerminate(() -> {
+				tlValue.set(REF.get());
+				latch.countDown();
+		    })
+		    .contextWrite(Context.of(KEY, "present"))
+		    .blockLast();
+
+		// Need to synchronize, as the doAfterTerminate operator can race with the
+		// assertion. First, blockLast receives the completion signal, and only then,
+		// the callback is triggered.
+		latch.await(10, TimeUnit.MILLISECONDS);
+		assertThat(tlValue.get()).isEqualTo("present");
+	}
+
+	@Test
 	void contextCapturePropagatedAutomaticallyToAllSignals() throws InterruptedException {
 		AtomicReference<String> requestTlValue = new AtomicReference<>();
 		AtomicReference<String> subscribeTlValue = new AtomicReference<>();
@@ -188,7 +251,7 @@ public class AutomaticContextPropagationTest {
 			s.complete();
 		});
 
-		assertThat(REF.get()).isEqualTo("ref1_init");
+		assertThat(REF.get()).isEqualTo("ref_init");
 
 		ArrayBlockingQueue<String> innerThreadLocals = new ArrayBlockingQueue<>(size);
 		ArrayBlockingQueue<String> outerThreadLocals = new ArrayBlockingQueue<>(size);
@@ -203,7 +266,7 @@ public class AutomaticContextPropagationTest {
 		      .blockLast();
 
 		assertThat(innerThreadLocals).containsOnly("present").hasSize(size);
-		assertThat(outerThreadLocals).containsOnly("ref1_init").hasSize(size);
+		assertThat(outerThreadLocals).containsOnly("ref_init").hasSize(size);
 	}
 
 	@Test
@@ -255,10 +318,10 @@ public class AutomaticContextPropagationTest {
 			// previous values
 			executorService.submit(() -> value.set(REF.get())).get();
 
-			assertThat(value.get()).isEqualTo("ref1_init");
+			assertThat(value.get()).isEqualTo("ref_init");
 
 			// validate the current Thread does not have the value set either
-			assertThat(REF.get()).isEqualTo("ref1_init");
+			assertThat(REF.get()).isEqualTo("ref_init");
 
 			executorService.shutdownNow();
 		}
@@ -289,10 +352,10 @@ public class AutomaticContextPropagationTest {
 			// previous values
 			executorService.submit(() -> value.set(REF.get())).get();
 
-			assertThat(value.get()).isEqualTo("ref1_init");
+			assertThat(value.get()).isEqualTo("ref_init");
 
 			// validate the current Thread does not have the value set either
-			assertThat(REF.get()).isEqualTo("ref1_init");
+			assertThat(REF.get()).isEqualTo("ref_init");
 
 			executorService.shutdownNow();
 		}
@@ -324,10 +387,10 @@ public class AutomaticContextPropagationTest {
 			// previous values
 			executorService.submit(() -> value.set(REF.get())).get();
 
-			assertThat(value.get()).isEqualTo("ref1_init");
+			assertThat(value.get()).isEqualTo("ref_init");
 
 			// validate the current Thread does not have the value set either
-			assertThat(REF.get()).isEqualTo("ref1_init");
+			assertThat(REF.get()).isEqualTo("ref_init");
 
 			executorService.shutdownNow();
 		}
@@ -367,10 +430,10 @@ public class AutomaticContextPropagationTest {
 			// previous values
 			executorService.submit(() -> value.set(REF.get())).get();
 
-			assertThat(value.get()).isEqualTo("ref1_init");
+			assertThat(value.get()).isEqualTo("ref_init");
 
 			// validate the current Thread does not have the value set either
-			assertThat(REF.get()).isEqualTo("ref1_init");
+			assertThat(REF.get()).isEqualTo("ref_init");
 
 			executorService.shutdownNow();
 		}
@@ -410,10 +473,10 @@ public class AutomaticContextPropagationTest {
 			// previous values
 			executorService.submit(() -> value.set(REF.get())).get();
 
-			assertThat(value.get()).isEqualTo("ref1_init");
+			assertThat(value.get()).isEqualTo("ref_init");
 
 			// validate the current Thread does not have the value set either
-			assertThat(REF.get()).isEqualTo("ref1_init");
+			assertThat(REF.get()).isEqualTo("ref_init");
 
 			executorService.shutdownNow();
 		}
