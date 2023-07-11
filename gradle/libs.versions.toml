@@ -7,8 +7,8 @@
 
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.5.8"
-baselinePerfCore = "3.5.8"
+baseline-core-api = "3.5.7"
+baselinePerfCore = "3.5.7"
 baselinePerfExtra = "3.5.1"
 
 # Other shared versions
@@ -27,7 +27,7 @@ micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-contextPropagation102 = "io.micrometer:context-propagation:1.0.2"
 micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.4"
-micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.3"}
+micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.2"}
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
 micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.7"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
