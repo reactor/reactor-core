@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,5 +72,20 @@ class MicrometerTest {
 			assertThat(id.getTags()).as("tags")
 				.containsExactlyElementsOf(tags.and("submission.type", "direct"));
 		});
+	}
+
+    @Test
+    void installFactoryAndThenUninstall() {
+        Micrometer.installSchedulerMetrics("testSchedulerMetrics", new SimpleMeterRegistry());
+
+        assertThat(Schedulers.newBoundedElastic(1, 1, "name")).isInstanceOf(TimedScheduler.class);
+        assertThat(Schedulers.newParallel( "name")).isInstanceOf(TimedScheduler.class);
+        assertThat(Schedulers.newSingle( "name")).isInstanceOf(TimedScheduler.class);
+
+		Micrometer.uninstallSchedulerMetrics();
+
+		assertThat(Schedulers.newBoundedElastic(1, 1, "name")).isNotInstanceOf(TimedScheduler.class);
+		assertThat(Schedulers.newParallel( "name")).isNotInstanceOf(TimedScheduler.class);
+		assertThat(Schedulers.newSingle( "name")).isNotInstanceOf(TimedScheduler.class);
 	}
 }

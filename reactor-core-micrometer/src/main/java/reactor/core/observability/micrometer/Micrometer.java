@@ -30,6 +30,10 @@ import io.micrometer.observation.ObservationRegistry;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
 
 public final class Micrometer {
 
@@ -144,4 +148,56 @@ public final class Micrometer {
 	public static Scheduler timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix, Iterable<Tag> tags) {
 		return new TimedScheduler(original, meterRegistry, metricsPrefix, tags);
 	}
+
+    /**
+     * Install a {@link Schedulers.Factory} with metrics support. All new schedulers will be instrumented with
+	 * the provided {@link MeterRegistry} and naming meters using the provided {@code metricsPrefix}.
+     *
+     * @param metricsPrefix the prefix to use in meter names. Must not end with a dot, which is automatically added.
+     * @param meterRegistry the {@link MeterRegistry} in which to register the various meters
+     */
+    public static void installSchedulerMetrics(final String metricsPrefix, final MeterRegistry meterRegistry) {
+        Schedulers.Factory factory = new Schedulers.Factory() {
+            @Override
+            public Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
+                final Scheduler original = Schedulers.Factory.super.newBoundedElastic(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
+                final String simplifiedName = inferSimpleSchedulerName(threadFactory, "boundedElastic");
+                return Micrometer.timedScheduler(original, meterRegistry, metricsPrefix + simplifiedName);
+            }
+
+            @Override
+            public Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
+                final Scheduler original = Schedulers.Factory.super.newParallel(parallelism, threadFactory);
+                final String simplifiedName = inferSimpleSchedulerName(threadFactory, "parallel");
+                return Micrometer.timedScheduler(original, meterRegistry, metricsPrefix + simplifiedName);
+            }
+
+            @Override
+            public Scheduler newSingle(ThreadFactory threadFactory) {
+                final Scheduler original = Schedulers.Factory.super.newSingle(threadFactory);
+                final String simplifiedName = inferSimpleSchedulerName(threadFactory, "single");
+                return Micrometer.timedScheduler(original, meterRegistry, metricsPrefix + simplifiedName);
+            }
+        };
+
+        Schedulers.setFactory(factory);
+    }
+
+    private static String inferSimpleSchedulerName(ThreadFactory threadFactory, String defaultName) {
+        if (!(threadFactory instanceof Supplier)) {
+            return defaultName;
+        }
+        Object supplied = ((Supplier<?>) threadFactory).get();
+        if (!(supplied instanceof String)) {
+            return defaultName;
+        }
+        return (String) supplied;
+    }
+
+    /**
+     * Re-apply default factory to {@link Schedulers}
+     */
+    public static void uninstallSchedulerMetrics() {
+        Schedulers.resetFactory();
+    }
 }
