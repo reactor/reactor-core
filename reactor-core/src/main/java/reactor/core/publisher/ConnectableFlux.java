@@ -95,7 +95,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * can be used for disconnecting.
 	 * @return the {@link Disposable} that allows disconnecting the connection after.
 	 */
-	public final Disposable     connect() {
+	public final Disposable connect() {
 		final Disposable[] out = { null };
 		connect(r -> out[0] = r);
 		return out[0];
