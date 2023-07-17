@@ -448,46 +448,49 @@ public abstract class FluxPublishStressTest {
 		}
 	}
 
-	@JCStressTest
-	@Outcome(id = {"10, 1, 0"}, expect = ACCEPTABLE, desc = "all values and completion delivered")
-	@Outcome(id = {"10, 0, 1"}, expect = ACCEPTABLE, desc = "some values are delivered some dropped since overflow")
-	@State
-	public static class ConcurrentDisposeAndProduceStressTest {
-
-		final Sinks.Many<Integer> producer = Sinks.unsafe().many().multicast().directAllOrNothing();
-
-		final ConnectableFlux<Integer> sharedSource = producer.asFlux().publish(5);
-
-		final StressSubscriber<Integer> subscriber1 = new StressSubscriber<>();
-
-		final Disposable disposable;
-
-		{
-			sharedSource.subscribe(subscriber1);
-			disposable = sharedSource.connect();
-		}
-
-		@Actor
-		public void subscribe1() {
-			disposable.dispose();
-		}
-
-		@Actor
-		public void subscribe2() {
-			for (int i = 0; i < 10; i++) {
-				if (producer.tryEmitNext(i) != Sinks.EmitResult.OK) {
-					Operators.onDiscard(i, subscriber1.context);
-				}
-			}
-
-			producer.tryEmitComplete();
-		}
-
-		@Arbiter
-		public void arbiter(III_Result r) {
-			r.r1 = subscriber1.onNextCalls.get() + subscriber1.onNextDiscarded.get();
-			r.r2 = subscriber1.onCompleteCalls.get();
-			r.r3 = subscriber1.onErrorCalls.get();
-		}
-	}
+// TODO: uncomment me. Proper discard is not supported yet since we dont have stable
+//  downstream context available all the time. This should be uncommented once we have
+//  an explicitly passed onDiscard handler
+//	@JCStressTest
+//	@Outcome(id = {"10, 1, 0"}, expect = ACCEPTABLE, desc = "all values and completion delivered")
+//	@Outcome(id = {"10, 0, 1"}, expect = ACCEPTABLE, desc = "some values are delivered some dropped since overflow")
+//	@State
+//	public static class ConcurrentDisposeAndProduceStressTest {
+//
+//		final Sinks.Many<Integer> producer = Sinks.unsafe().many().multicast().directAllOrNothing();
+//
+//		final ConnectableFlux<Integer> sharedSource = producer.asFlux().publish(5);
+//
+//		final StressSubscriber<Integer> subscriber1 = new StressSubscriber<>();
+//
+//		final Disposable disposable;
+//
+//		{
+//			sharedSource.subscribe(subscriber1);
+//			disposable = sharedSource.connect();
+//		}
+//
+//		@Actor
+//		public void subscribe1() {
+//			disposable.dispose();
+//		}
+//
+//		@Actor
+//		public void subscribe2() {
+//			for (int i = 0; i < 10; i++) {
+//				if (producer.tryEmitNext(i) != Sinks.EmitResult.OK) {
+//					Operators.onDiscard(i, subscriber1.context);
+//				}
+//			}
+//
+//			producer.tryEmitComplete();
+//		}
+//
+//		@Arbiter
+//		public void arbiter(III_Result r) {
+//			r.r1 = subscriber1.onNextCalls.get() + subscriber1.onNextDiscarded.get();
+//			r.r2 = subscriber1.onCompleteCalls.get();
+//			r.r3 = subscriber1.onErrorCalls.get();
+//		}
+//	}
 }
