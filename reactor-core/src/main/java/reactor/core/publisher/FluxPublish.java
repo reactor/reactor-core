@@ -208,7 +208,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						Throwable.class,
 						"error");
 
-		@SuppressWarnings("unchecked")
 		PublishSubscriber(int prefetch, FluxPublish<T> parent) {
 			this.prefetch = prefetch;
 			this.parent = parent;
@@ -242,7 +241,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 							return;
 						}
 
-						drain(previousState, previousState | SUBSCRIPTION_SET_FLAG | 1);
+						drain(previousState | SUBSCRIPTION_SET_FLAG | 1);
 						return;
 					}
 
@@ -272,7 +271,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		public void onNext(T t) {
+		public void onNext(@Nullable T t) {
 			if (done) {
 				if (t != null) {
 					Operators.onNextDropped(t, currentContext());
@@ -307,7 +306,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 
-			drain(previousState, previousState + 1);
+			drain(previousState + 1);
 		}
 
 		@Override
@@ -331,7 +330,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 
-			drain(previousState, (previousState | TERMINATED_FLAG) + 1);
+			drain((previousState | TERMINATED_FLAG) + 1);
 		}
 
 		@Override
@@ -350,7 +349,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 
-			drain(previousState, (previousState | TERMINATED_FLAG) + 1);
+			drain((previousState | TERMINATED_FLAG) + 1);
 		}
 
 		@Override
@@ -417,7 +416,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			}
 		}
 
-		@SuppressWarnings("unchecked")
 		public void remove(PubSubInner<T> inner) {
 			for (; ; ) {
 				PubSubInner<T>[] a = subscribers;
@@ -477,10 +475,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 
-			drain(previousState, previousState + 1);
+			drain(previousState + 1);
 		}
 
-		final void drain(long previousState, long expectedState) {
+		final void drain(long expectedState) {
 			for (; ; ) {
 
 				boolean d = done;
@@ -835,7 +833,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		static final long FINALIZED_FLAG =
-				0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+				0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
 
 		static final long CANCELLED_FLAG =
 				0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
