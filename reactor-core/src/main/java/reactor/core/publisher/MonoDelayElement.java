@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @author Simon Baslé
- * TODO : Review impl
  */
 final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 
@@ -141,12 +140,33 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 			this.value = t;
 
 			try {
-				final Disposable currentTask = this.task;
-				final Disposable nextTask = scheduler.schedule(this, delay, unit);
-				if (currentTask != null || !TASK.compareAndSet(this, null, nextTask)) {
+				Disposable currentTask = this.task;
+				if (currentTask == CANCELLED) {
 					this.value = null;
-					nextTask.dispose();
 					Operators.onDiscard(t, actual.currentContext());
+					return;
+				}
+
+				final Disposable nextTask = scheduler.schedule(this, delay, unit);
+
+				for (;;) {
+					currentTask = this.task;
+
+					if (currentTask == CANCELLED) {
+						nextTask.dispose();
+						Operators.onDiscard(t, actual.currentContext());
+						return;
+					}
+
+					if (currentTask == TERMINATED) {
+						// scheduled task completion happened before this
+						// just return and do nothing
+						return;
+					}
+
+					if (TASK.compareAndSet(this, null, nextTask)) {
+						return;
+					}
 				}
 			}
 			catch (RejectedExecutionException ree) {
@@ -158,10 +178,17 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public void run() {
-			final Disposable currentTask = this.task;
+			for (;;) {
+				final Disposable currentTask = this.task;
 
-			if (currentTask == CANCELLED || !TASK.compareAndSet(this, currentTask, TERMINATED)) {
-				return;
+				if (currentTask == CANCELLED) {
+					return;
+				}
+
+				if (TASK.compareAndSet(this, currentTask, TERMINATED)) {
+					break;
+				}
+				// we may to repeat since this may race with CAS in the onNext method
 			}
 
 			final T value = this.value;
@@ -173,20 +200,23 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public void cancel() {
-			final Disposable task = this.task;
-			if (task == CANCELLED || task == TERMINATED) {
-				return;
-			}
-
-			if (TASK.compareAndSet(this, task, CANCELLED)) {
-				if (task != null) {
-					task.dispose();
-
-					final T value = this.value;
-					this.value = null;
-
-					Operators.onDiscard(value, actual.currentContext());
+			for (;;) {
+				final Disposable task = this.task;
+				if (task == CANCELLED || task == TERMINATED) {
 					return;
+				}
+
+				if (TASK.compareAndSet(this, task, CANCELLED)) {
+					if (task != null) {
+						task.dispose();
+
+						final T value = this.value;
+						this.value = null;
+
+						Operators.onDiscard(value, actual.currentContext());
+						return;
+					}
+					break;
 				}
 			}
 

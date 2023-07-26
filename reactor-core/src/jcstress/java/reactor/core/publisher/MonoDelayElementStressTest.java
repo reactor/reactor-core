@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ public abstract class MonoDelayElementStressTest {
 		 */
 
 		final StressSubscriber<Object> subscriber = new StressSubscriber<>(0L);
-		final VirtualTimeScheduler   virtualTimeScheduler;
-		final MonoDelayElement<Object>       monoDelay;
+		final VirtualTimeScheduler     virtualTimeScheduler;
+		final MonoDelayElement<Object> monoDelay;
 
 		MonoDelayElement.DelayElementSubscriber<Object> subscription;
 
