@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -88,6 +89,21 @@ public class FluxTakeUntilPredicateTest {
 		Flux.range(1, 5)
 		    .takeUntil(v -> v == 3)
 		    .subscribe(ts);
+
+		ts.assertValues(1, 2, 3)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
+	public void takeSomeWithChangedValue() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 5)
+			.map(AtomicInteger::new)
+			.takeUntil(v -> v.get() == 3)
+			.map(v -> v.getAndSet(0))
+			.subscribe(ts);
 
 		ts.assertValues(1, 2, 3)
 		  .assertComplete()

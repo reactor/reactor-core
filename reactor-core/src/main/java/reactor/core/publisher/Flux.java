@@ -9206,6 +9206,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Relay values from this {@link Flux} until the given {@link Predicate} matches.
 	 * This includes the matching data (unlike {@link #takeWhile}).
+	 * The predicate is tested before the element is emitted,
+	 * so if the element is modified by the consumer, this won't affect the predicate.
+	 * In case of an error during the predicate test, the current element is emitted before the error.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/takeUntil.svg" alt="">
