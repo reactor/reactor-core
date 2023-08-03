@@ -718,7 +718,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				drain();
 			}
 			else {
-				actual.onError(new IllegalStateException(
+				Operators.error(actual, new IllegalStateException(
 						"GroupedFlux allows only one Subscriber"));
 			}
 		}
