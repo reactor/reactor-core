@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,16 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class FluxGroupByTest extends
                              FluxOperatorTest<String, GroupedFlux<Integer, String>> {
+
+	@Test
+	// see https://github.com/reactor/reactor-core/issues/3554
+	void flatMapExceptionTest() {
+		Flux.just(1, 2, 3, 4, 5, 6)
+		    .groupBy(it -> it > 3)
+		    .flatMap(it -> it.flatMap(__ -> Mono.error(new RuntimeException("whoopsies"))).retry(2))
+		    .as(StepVerifier::create)
+		    .verifyErrorSatisfies(it -> assertThat(it).hasMessage("GroupedFlux allows only one Subscriber"));
+	}
 
 	@Test
 	@Tag("slow")
