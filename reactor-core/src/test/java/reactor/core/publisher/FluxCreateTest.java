@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package reactor.core.publisher;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.reactivestreams.Subscriber;
@@ -52,6 +56,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 class FluxCreateTest {
+
+	@Test
+	//https://github.com/reactor/reactor-core/issues/1949
+	void ensuresConcurrentRequestAndSettingOnRequestAlwaysDeliversDemand() throws ExecutionException, InterruptedException {
+		AtomicReference<Subscription> sub = new AtomicReference<>();
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int i = 0;
+		int attempts = 100;
+		for (AtomicBoolean requested = new AtomicBoolean(true); requested.getAndSet(false) && i < attempts; ++i) {
+			FutureTask<Void> task = new FutureTask<>(() -> sub.get().request(1), null);
+			Flux.create(sink -> sink.onRequest(__ -> requested.set(true)))
+			    .subscribe(new BaseSubscriber<Object>() {
+				    @Override
+				    protected void hookOnSubscribe(Subscription subscription) {
+					    sub.set(subscription);
+					    executor.execute(task);
+				    }
+			    });
+			task.get();
+		}
+		executor.shutdown();
+		Assertions.assertThat(i).as("Failed after %d attempts", i).isEqualTo(attempts);
+	}
 
 	@Test
 	void normalBuffered() {
