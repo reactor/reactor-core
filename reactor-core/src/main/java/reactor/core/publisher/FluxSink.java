@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,6 +108,11 @@ public interface FluxSink<T> {
 	 * or {@link Flux#create(java.util.function.Consumer, FluxSink.OverflowStrategy)},
 	 * the consumer
 	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
+	 * <p>
+	 * <strong>Note:</strong> in case of multiple {@link Subscription#request} happening
+	 * concurrently to this method, the first consumer invocation may process
+	 * accumulated demand instead of being called multiple times.
+	 * <p>
 	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
 	 * may be used to request more data from source if required and to manage backpressure
 	 * by delivering data to sink only when requests are pending.
