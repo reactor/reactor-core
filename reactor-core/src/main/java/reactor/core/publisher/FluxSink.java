@@ -108,6 +108,10 @@ public interface FluxSink<T> {
 	 * or {@link Flux#create(java.util.function.Consumer, FluxSink.OverflowStrategy)},
 	 * the consumer
 	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
+	 * <b>Note:</b> in case of multiple {@link Subscription#request} happening
+	 * concurrently to this method, then the first consumer invocation may have
+	 * accumulated demand instead of multiple independent invocations
+	 * <br>
 	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
 	 * may be used to request more data from source if required and to manage backpressure
 	 * by delivering data to sink only when requests are pending.
