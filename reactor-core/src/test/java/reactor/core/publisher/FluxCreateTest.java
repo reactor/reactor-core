@@ -65,8 +65,15 @@ class FluxCreateTest {
 		int i = 0;
 		int attempts = 100;
 		for (AtomicBoolean requested = new AtomicBoolean(true); requested.getAndSet(false) && i < attempts; ++i) {
+			CountDownLatch latch = new CountDownLatch(1);
 			FutureTask<Void> task = new FutureTask<>(() -> sub.get().request(1), null);
-			Flux.create(sink -> sink.onRequest(__ -> requested.set(true)))
+			Flux.create(sink -> sink.onRequest(__ -> {
+				    requested.set(true);
+					// onRequest can be delivered asynchronously after request(n) has
+				    // returned, so latch coordinates successful request->onRequest
+				    // completion.
+				    latch.countDown();
+			    }))
 			    .subscribe(new BaseSubscriber<Object>() {
 				    @Override
 				    protected void hookOnSubscribe(Subscription subscription) {
@@ -74,7 +81,7 @@ class FluxCreateTest {
 					    executor.execute(task);
 				    }
 			    });
-			task.get();
+			latch.await(100, TimeUnit.MILLISECONDS);
 		}
 		executor.shutdown();
 		Assertions.assertThat(i).as("Failed after %d attempts", i).isEqualTo(attempts);
