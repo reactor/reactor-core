@@ -409,6 +409,15 @@ public abstract class Schedulers {
 		return fromFactory;
 	}
 
+	static Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
+		Scheduler fromFactory = factory.newLoomBoundedElastic(threadCap,
+				queuedTaskCap,
+				threadFactory,
+				ttlSeconds);
+		fromFactory.init();
+		return fromFactory;
+	}
+
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
 	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
@@ -998,6 +1007,30 @@ public abstract class Schedulers {
 		 */
 		default Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
 			return new BoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
+		}
+
+		/**
+		 * {@link Scheduler} that dynamically creates a bounded number of
+		 * Workers, reusing them once the Workers have been shut down. The underlying (user or daemon)
+		 * threads can be evicted if idle for more than {@code ttlSeconds}.
+		 * <p>
+		 * The maximum number of created thread pools is bounded by the provided {@code cap}.
+		 * <p>
+		 * The main difference between {@link BoundedElasticScheduler} and
+		 * {@link LoomBoundedElasticScheduler} is that underlying workers allocates a
+		 * new thread for every new task which is the main requirements for
+		 * {@link VirtualThread}s
+		 *
+		 * @param threadCap maximum number of underlying threads to create
+		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
+		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
+		 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
+		 *
+		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
+		 * the number of backing threads, reuses threads and evict idle ones
+		 */
+		default Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
+			return new LoomBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
 		}
 
 		/**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -470,6 +470,14 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		@Override
 		public Scheduler newBoundedElastic(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
+			return s;
+		}
+
+		@Override
+		public Scheduler newLoomBoundedElastic(int threadCap,
+				int queuedTaskCap,
+				ThreadFactory threadFactory,
+				int ttlSeconds) {
 			return s;
 		}
 
