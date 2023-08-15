@@ -14,7 +14,7 @@ baselinePerfExtra = "3.5.1"
 # Other shared versions
 asciidoctor = "3.3.2"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.10.10-SNAPSHOT"
+micrometer = "1.10.10"
 kotlin = "1.5.32"
 reactiveStreams = "1.0.4"
 
@@ -26,10 +26,10 @@ micrometer102Compatible-bom = { module = "io.micrometer:micrometer-bom", version
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-contextPropagation102 = "io.micrometer:context-propagation:1.0.2"
-micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.4"
-micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.3-SNAPSHOT"}
+micrometer-contextPropagation = "io.micrometer:context-propagation:1.0.5"
+micrometer-docsGenerator = { module = "io.micrometer:micrometer-docs-generator", version = "1.0.2"}
 micrometer-observation-test = { module = "io.micrometer:micrometer-observation-test" }
-micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.7"
+micrometer-tracing-test = "io.micrometer:micrometer-tracing-integration-test:1.0.9"
 micrometer-test = { module = "io.micrometer:micrometer-test" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
