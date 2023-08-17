@@ -4745,7 +4745,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * in conjunction with the use of {@link #contextCapture()} operator down the chain.
 	 *
 	 * @param listenerFactory the {@link SignalListenerFactory} to create a new {@link SignalListener} on each subscription
-	 * @return a new {@link Flux} with side effects defined by generated {@link SignalListener}
+	 * @return a new {@link Mono} with side effects defined by generated {@link SignalListener}
 	 * @see #tap(Supplier)
 	 * @see #tap(Function)
 	 */
