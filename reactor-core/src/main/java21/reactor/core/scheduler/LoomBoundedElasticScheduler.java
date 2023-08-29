@@ -763,6 +763,14 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
+		void removeTask() {
+			if (queueCapacity == Integer.MAX_VALUE) {
+				return;
+			}
+
+			SIZE.decrementAndGet(this);
+		}
+
 		int estimateQueueSize() {
 			return this.tasksQueue.size();
 		}
@@ -969,6 +977,8 @@ final class LoomBoundedElasticScheduler
 					if (task == null) {
 						break;
 					}
+
+					removeTask();
 
 					this.activeTask = task;
 					if (task.start()) {
