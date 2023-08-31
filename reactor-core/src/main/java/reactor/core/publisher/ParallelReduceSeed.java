@@ -44,7 +44,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 	ParallelReduceSeed(ParallelFlux<? extends T> source,
 			Supplier<R> initialSupplier,
 			BiFunction<R, ? super T, R> reducer) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.initialSupplier = initialSupplier;
 		this.reducer = reducer;
 	}

@@ -46,7 +46,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	 * Create an assembly trace wrapping a {@link ParallelFlux}.
 	 */
 	ParallelFluxOnAssembly(ParallelFlux<T> source, AssemblySnapshot stacktrace) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.stacktrace = stacktrace;
 	}
 

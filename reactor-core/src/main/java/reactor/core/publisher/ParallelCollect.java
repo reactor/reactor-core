@@ -43,7 +43,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	ParallelCollect(ParallelFlux<? extends T> source,
 			Supplier<? extends C> initialCollection,
 			BiConsumer<? super C, ? super T> collector) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.initialCollection = initialCollection;
 		this.collector = collector;
 	}

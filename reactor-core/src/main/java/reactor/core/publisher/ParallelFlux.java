@@ -76,6 +76,14 @@ import reactor.util.context.Context;
  */
 public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
+	public static <T> ParallelFlux<T> from(ParallelFlux<T> source) {
+		Scannable s = Scannable.from(source);
+		if (!s.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false)) {
+			return new ParallelFluxRestoringThreadLocals<>(source);
+		}
+		return source;
+	}
+
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)
 	 * in a round-robin fashion. Equivalent to {@link Flux#parallel}.

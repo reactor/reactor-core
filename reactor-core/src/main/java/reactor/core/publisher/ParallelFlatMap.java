@@ -53,7 +53,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 			boolean delayError, 
 			int maxConcurrency, Supplier<? extends Queue<R>> mainQueueSupplier, 
 			int prefetch, Supplier<? extends Queue<R>> innerQueueSupplier) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.mapper = mapper;
 		this.delayError = delayError;
 		this.maxConcurrency = maxConcurrency;

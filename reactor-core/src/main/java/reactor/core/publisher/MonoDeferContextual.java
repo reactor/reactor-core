@@ -52,7 +52,7 @@ final class MonoDeferContextual<T> extends Mono<T> implements SourceProducer<T> 
 			return;
 		}
 
-		p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, actual));
+		Operators.toFluxOrMono(p).subscribe(actual);
 	}
 
 	@Override

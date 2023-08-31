@@ -127,7 +127,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 						new NullPointerException("The single source Publisher is null"));
 			}
 			else {
-				p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, actual));
+				Operators.toFluxOrMono(p).subscribe(actual);
 			}
 			return;
 		}
@@ -223,7 +223,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 					return;
 				}
 
-				p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, a[i]));
+				Operators.toFluxOrMono(p).subscribe(a[i]);
 			}
 
 		}

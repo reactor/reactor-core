@@ -52,7 +52,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel
 	) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 
 		this.onNext = onNext;
 		this.onAfterNext = onAfterNext;

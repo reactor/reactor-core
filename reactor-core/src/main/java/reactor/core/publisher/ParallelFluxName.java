@@ -80,7 +80,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 	ParallelFluxName(ParallelFlux<T> source,
 			@Nullable String name,
 			@Nullable List<Tuple2<String, String>> tags) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.name = name;
 		this.tagsWithDuplicates = tags;
 	}

@@ -54,11 +54,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
-		// TODO: this can be improved to restore TLs in ParallelSourceMain or by
-		//  modifying the from() method to lift the source to wrap the Subscriber upon
-		//  subscription.
-		// FIXME: when source is a Flux, but not a INTERNAL_PRODUCER, this won't help
-		this.source = Flux.from(source);
+		this.source = Operators.toFluxOrMono(source);
 		this.parallelism = parallelism;
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;

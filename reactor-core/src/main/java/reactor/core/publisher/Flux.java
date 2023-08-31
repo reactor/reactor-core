@@ -1063,8 +1063,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		//duplicated in wrap, but necessary to detect early and thus avoid applying assembly
-		// TODO: Consider checking for INTERNAL_PRODUCER here and potentially lift
-		if (source instanceof Flux) {
+		if (source instanceof Flux
+				&& Scannable.from(source).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false)) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
 			return casted;
@@ -8779,7 +8779,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			//  subscribe(CoreSubscriber), so this would be the last resort when the user
 			//  directly subscribes.
 			subscriber = Operators.restoreContextOnSubscriberIfNecessary(publisher, subscriber);
-
 			publisher.subscribe(subscriber);
 		}
 		catch (Throwable e) {
@@ -9898,6 +9897,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return deferContextual(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
+						// TODO: why no assembly hooks are applied?
 						publisher -> transformer.apply(wrap(publisher), ctxView),
 						transformer.toString()
 				);
@@ -11075,8 +11075,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	static <I> Flux<I> wrap(Publisher<? extends I> source) {
-		if (source instanceof  Flux) {
-			return (Flux<I>) source;
+		boolean isInternal = Scannable.from(source)
+		                            .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
+				                            false);
+		if (source instanceof Flux) {
+			if (isInternal) {
+				return (Flux<I>) source;
+			}
+			return new FluxContextWriteRestoringThreadLocals<>((Flux<? extends I>) source, Function.identity());
 		}
 
 		//for scalars we'll instantiate the operators directly to avoid onAssembly
@@ -11094,16 +11100,25 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			}
 		}
 
-		if(source instanceof Mono){
-			if(source instanceof Fuseable){
-				return new FluxSourceMonoFuseable<>((Mono<I>)source);
+		Publisher<? extends I> target = source;
+		if (!isInternal) {
+			if (target instanceof Mono) {
+				target = new MonoRestoringThreadLocals<>(source);
+			} else {
+				target = new FluxRestoringThreadLocals<>(source);
 			}
-			return new FluxSourceMono<>((Mono<I>)source);
 		}
-		if(source instanceof Fuseable){
-			return new FluxSourceFuseable<>(source);
+
+		if (source instanceof Mono) {
+			if (source instanceof Fuseable) {
+				return new FluxSourceMonoFuseable<>((Mono<I>) target);
+			}
+			return new FluxSourceMono<>((Mono<I>) target);
 		}
-		return new FluxSource<>(source);
+		if (source instanceof Fuseable) {
+			return new FluxSourceFuseable<>(target);
+		}
+		return new FluxSource<>(target);
 	}
 
 	@SuppressWarnings("rawtypes")

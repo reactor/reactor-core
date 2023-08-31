@@ -47,7 +47,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 
 	ParallelMergeSort(ParallelFlux<List<T>> source,
 			Comparator<? super T> comparator) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.comparator = comparator;
 	}
 
@@ -71,6 +71,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.INTERNAL_PRODUCER) return true;
 
 		return null;
 	}

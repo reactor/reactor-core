@@ -238,7 +238,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         }
                         onComplete();
                     } else {
-                        m.subscribe(Operators.restoreContextOnSubscriberIfNecessary(m, this));
+                        Operators.toFluxOrMono(m).subscribe(this);
                     }
                     return;
                 } else {
@@ -261,7 +261,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         continue;
                     }
 
-                    m.subscribe((CoreSubscriber) Operators.restoreContextOnSubscriberIfNecessary(m, this));
+                    Operators.toFluxOrMono(m).subscribe((CoreSubscriber) this);
                     return;
                 }
             }

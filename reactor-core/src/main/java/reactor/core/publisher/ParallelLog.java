@@ -36,7 +36,7 @@ final class ParallelLog<T> extends ParallelFlux<T> implements Scannable {
 	ParallelLog(ParallelFlux<T> source,
 			SignalPeek<T> log
 	) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.log = log;
 	}
 

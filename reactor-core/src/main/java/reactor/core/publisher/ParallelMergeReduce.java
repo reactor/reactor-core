@@ -42,7 +42,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 	ParallelMergeReduce(ParallelFlux<? extends T> source,
 			BiFunction<T, T, T> reducer) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.reducer = reducer;
 	}
 
@@ -51,6 +51,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.INTERNAL_PRODUCER) return true;
 
 		return null;
 	}

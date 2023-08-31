@@ -35,7 +35,7 @@ final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 	final Predicate<? super T> predicate;
 	
 	ParallelFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.predicate = predicate;
 	}
 

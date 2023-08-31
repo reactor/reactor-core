@@ -58,8 +58,7 @@ final class FluxDeferContextual<T> extends Flux<T> implements SourceProducer<T> 
 		//  even wrap (which skips assembly hooks) was called.
 		//  We need to decide whether from/wrap perform the Subscriber wrapping instead
 		//  of the below construct!
-		Flux<? extends T> flux = from(p);
-		flux.subscribe(Operators.restoreContextOnSubscriberIfNecessary(flux, actual));
+		Operators.toFluxOrMono(p).subscribe(actual);
 	}
 
 

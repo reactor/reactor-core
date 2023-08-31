@@ -30,6 +30,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -198,12 +199,12 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			else {
 				// TODO: wrap Subscriber only or wrap the Publisher? What about
 				//  assembly hooks?
-				CoreSubscriber<? super R> sub = Operators.restoreContextOnSubscriberIfNecessary(p, s);
+				CorePublisher<? extends R> pub = Operators.toFluxOrMono(p);
 				if (!fuseableExpected || p instanceof Fuseable) {
-					p.subscribe(sub);
+					pub.subscribe(s);
 				}
 				else {
-					p.subscribe(new FluxHide.SuppressFuseableSubscriber<>(sub));
+					pub.subscribe(new FluxHide.SuppressFuseableSubscriber<>(s));
 				}
 			}
 
@@ -427,7 +428,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
 				if (add(inner)) {
-					p.subscribe(Operators.restoreContextOnSubscriberIfNecessary(p, inner));
+					Operators.toFluxOrMono(p).subscribe(inner);
 				} else {
 					Operators.onDiscard(t, actual.currentContext());
 				}

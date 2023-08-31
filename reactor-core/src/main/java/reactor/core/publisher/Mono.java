@@ -480,18 +480,28 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public static <T> Mono<T> from(Publisher<? extends T> source) {
 		//some sources can be considered already assembled monos
 		//all conversion methods (from, fromDirect, wrap) must accommodate for this
-		if (source instanceof Mono) {
+		boolean isInternal = Scannable.from(source)
+		                              .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
+				                              false);
+		if (isInternal && source instanceof Mono) {
 			@SuppressWarnings("unchecked")
 			Mono<T> casted = (Mono<T>) source;
 			return casted;
 		}
+
 		if (source instanceof FluxSourceMono
 				|| source instanceof FluxSourceMonoFuseable) {
 			@SuppressWarnings("unchecked")
 			FluxFromMonoOperator<T, T> wrapper = (FluxFromMonoOperator<T,T>) source;
 			@SuppressWarnings("unchecked")
 			Mono<T> extracted = (Mono<T>) wrapper.source;
-			return extracted;
+			boolean isExtractedInternal = Scannable.from(extracted).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+			if (isExtractedInternal) {
+				return extracted;
+			} else {
+				// Skip assembly hook
+				return wrap(extracted, false);
+			}
 		}
 
 		//we delegate to `wrap` and apply assembly hooks
@@ -4497,7 +4507,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			//  subscribe(CoreSubscriber), so this would be the last resort when the user
 			//  directly subscribes.
 			subscriber = Operators.restoreContextOnSubscriberIfNecessary(publisher, subscriber);
-
 			publisher.subscribe(subscriber);
 		}
 		catch (Throwable e) {
@@ -5338,39 +5347,57 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	static <T> Mono<T> wrap(Publisher<T> source, boolean enforceMonoContract) {
 		//some sources can be considered already assembled monos
 		//all conversion methods (from, fromDirect, wrap) must accommodate for this
+		boolean isInternal = Scannable.from(source)
+		                              .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
+				                              false);
 		if (source instanceof Mono) {
-			return (Mono<T>) source;
+			if (isInternal) {
+				return (Mono<T>) source;
+			}
+			return new MonoContextWriteRestoringThreadLocals<>((Mono<? extends T>) source, Function.identity());
 		}
-		if (source instanceof FluxSourceMono
-				|| source instanceof FluxSourceMonoFuseable) {
-			@SuppressWarnings("unchecked")
-			Mono<T> extracted = (Mono<T>) ((FluxFromMonoOperator<T,T>) source).source;
-			return extracted;
+
+		if (source instanceof FluxSourceMono || source instanceof FluxSourceMonoFuseable) {
+			@SuppressWarnings("unchecked") Mono<T> extracted =
+					(Mono<T>) ((FluxFromMonoOperator<T, T>) source).source;
+			boolean isExtractedInternal = Scannable.from(extracted)
+			                                       .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
+					                                       false);
+			if (isExtractedInternal) {
+				return extracted;
+			}
+			return new MonoContextWriteRestoringThreadLocals<>(extracted, Function.identity());
+		}
+
+		if (source instanceof Flux && source instanceof Callable) {
+			@SuppressWarnings("unchecked") Callable<T> m = (Callable<T>) source;
+			return Flux.wrapToMono(m);
+		}
+
+		Publisher<T> target = source;
+		if (!isInternal) {
+			target = new FluxRestoringThreadLocals<>(source);
 		}
 
 		//equivalent to what from used to be, without assembly hooks
 		if (enforceMonoContract) {
-			if (source instanceof Flux && source instanceof Callable) {
-					@SuppressWarnings("unchecked") Callable<T> m = (Callable<T>) source;
-					return Flux.wrapToMono(m);
-			}
 			if (source instanceof Flux) {
-				return new MonoNext<>((Flux<T>) source);
+				return new MonoNext<>((Flux<T>) target);
 			}
-			return new MonoFromPublisher<>(source);
+			return new MonoFromPublisher<>(target);
 		}
 
 		//equivalent to what fromDirect used to be without onAssembly
-		if(source instanceof Flux && source instanceof Fuseable) {
-			return new MonoSourceFluxFuseable<>((Flux<T>) source);
+		if (source instanceof Flux && source instanceof Fuseable) {
+			return new MonoSourceFluxFuseable<>((Flux<T>) target);
 		}
 		if (source instanceof Flux) {
-			return new MonoSourceFlux<>((Flux<T>) source);
+			return new MonoSourceFlux<>((Flux<T>) target);
 		}
-		if(source instanceof Fuseable) {
-			return new MonoSourceFuseable<>(source);
+		if (source instanceof Fuseable) {
+			return new MonoSourceFuseable<>(target);
 		}
-		return new MonoSource<>(source);
+		return new MonoSource<>(target);
 	}
 
 	@SuppressWarnings("unchecked")

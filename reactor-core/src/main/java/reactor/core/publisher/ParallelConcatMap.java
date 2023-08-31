@@ -50,7 +50,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 			Function<? super T, ? extends Publisher<? extends R>> mapper, 
 					Supplier<? extends Queue<T>> queueSupplier,
 					int prefetch, ErrorMode errorMode) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;

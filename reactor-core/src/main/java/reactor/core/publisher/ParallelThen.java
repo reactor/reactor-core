@@ -34,7 +34,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 	final ParallelFlux<?> source;
 
 	ParallelThen(ParallelFlux<?> source) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 	}
 
 	@Override
@@ -42,6 +42,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.INTERNAL_PRODUCER) return true;
 
 		return null;
 	}

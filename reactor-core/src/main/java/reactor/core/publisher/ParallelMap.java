@@ -36,7 +36,7 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 	final Function<? super T, ? extends R> mapper;
 	
 	ParallelMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.mapper = mapper;
 	}
 

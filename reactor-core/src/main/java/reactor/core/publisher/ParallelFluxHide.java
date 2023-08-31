@@ -32,7 +32,7 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 	final ParallelFlux<T> source;
 
 	ParallelFluxHide(ParallelFlux<T> source) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 	}
 
 	@Override

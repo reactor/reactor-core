@@ -62,8 +62,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
 					CorePublisher operatorSource = operator.source();
-					subscriber = Operators.restoreContextOnSubscriberIfNecessary(operatorSource, subscriber);
-					operatorSource.subscribe(subscriber);
+					Operators.toFluxOrMono(operatorSource).subscribe(subscriber);
 					return;
 				}
 				operator = newSource;

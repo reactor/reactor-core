@@ -46,7 +46,7 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 			@Nullable BiConsumer<Context, ? super Throwable> onError,
 			@Nullable Consumer<Context> onComplete
 	) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 
 		this.onNext = onNext;
 		this.onError = onError;

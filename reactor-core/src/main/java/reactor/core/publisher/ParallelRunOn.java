@@ -45,7 +45,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
-		this.source = parent;
+		this.source = ParallelFlux.from(parent);
 		this.scheduler = scheduler;
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;

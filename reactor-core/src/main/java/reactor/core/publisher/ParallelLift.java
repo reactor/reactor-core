@@ -33,7 +33,7 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 
 	ParallelLift(ParallelFlux<I> p,
 			Operators.LiftFunction<I, O> liftFunction) {
-		this.source = Objects.requireNonNull(p, "source");
+		this.source = ParallelFlux.from(Objects.requireNonNull(p, "source"));
 		this.liftFunction = liftFunction;
 	}
 
@@ -62,7 +62,8 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 		if (key == Attr.LIFTER) {
 			return liftFunction.name;
 		}
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		// We don't control what the lifter does, so we play it safe.
+		if (key == Attr.INTERNAL_PRODUCER) return false;
 
 		return null;
 	}

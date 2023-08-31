@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -339,7 +340,7 @@ public class AutomaticContextPropagationTest {
 			assertThat(value.get()).isEqualTo("present");
 		}
 
-		// Basic tests for Flux
+		// Fundamental tests for Flux
 
 		@Test
 		void chainedFluxSubscribe() {
@@ -451,7 +452,7 @@ public class AutomaticContextPropagationTest {
 			assertThat(value.get()).isEqualTo("present");
 		}
 
-		// Basic tests for Mono
+		// Fundamental tests for Mono
 
 		@Test
 		void chainedMonoSubscribe() {
@@ -644,17 +645,110 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalPresentInOnNext(Mono.firstWithSignal(list));
 		}
 
+		@Test
+		void monoFromFluxSingle() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
+			Mono<String> chain = flux.single();
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
 		// ParallelFlux tests
 
 		@Test
-		void fuseableParallelFluxToMono() {
-			Mono<String> flux = new ThreadSwitchingMono<>("Hello", executorService);
+		void parallelFluxFromMonoToMono() {
+			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
+			Mono<String> chain = Mono.from(ParallelFlux.from(mono));
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
+		void parallelFluxFromMonoToFlux() {
+			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
+			Flux<String> chain = Flux.from(ParallelFlux.from(mono));
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
+		void parallelFluxFromFluxToMono() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
 			Mono<String> chain = Mono.from(ParallelFlux.from(flux));
 			assertThreadLocalPresentInOnNext(chain);
 		}
 
 		@Test
-		void parallelFlux() {
+		void parallelFluxFromFluxToFlux() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
+			Flux<String> chain = Flux.from(ParallelFlux.from(flux));
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
+		void parallelFluxLift() {
+			ParallelFlux<String> parallelFlux =
+					ParallelFlux.from(Flux.just("Hello"));
+
+			Publisher<String> lifted =
+					Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
+						         @Override
+						         public void onSubscribe(Subscription s) {
+									 executorService.submit(() -> sub.onSubscribe(s));
+						         }
+
+						         @Override
+						         public void onNext(String s) {
+							         executorService.submit(() -> sub.onNext(s));
+						         }
+
+						         @Override
+						         public void onError(Throwable t) {
+							         executorService.submit(() -> sub.onError(t));
+						         }
+
+						         @Override
+						         public void onComplete() {
+									 executorService.submit(sub::onComplete);
+						         }
+					         })
+					         .apply(parallelFlux);
+
+			assertThreadLocalPresentInOnNext(((ParallelFlux<?>) lifted).sequential());
+		}
+
+		@Test
+		void parallelFluxLiftFuseable() {
+			ParallelFlux<ArrayList<String>> parallelFlux =
+					ParallelFlux.from(Flux.just("Hello"))
+					            .collect(ArrayList::new, ArrayList::add);
+
+			Publisher<ArrayList<String>> lifted = Operators.<ArrayList<String>, ArrayList<String>>liftPublisher(
+					(pub, sub) -> new CoreSubscriber<ArrayList<String>>() {
+						         @Override
+						         public void onSubscribe(Subscription s) {
+							         executorService.submit(() -> sub.onSubscribe(s));
+						         }
+
+						         @Override
+						         public void onNext(ArrayList<String> s) {
+							         executorService.submit(() -> sub.onNext(s));
+						         }
+
+						         @Override
+						         public void onError(Throwable t) {
+							         executorService.submit(() -> sub.onError(t));
+						         }
+
+						         @Override
+						         public void onComplete() {
+							         executorService.submit(sub::onComplete);
+						         }
+					         })
+					         .apply(parallelFlux);
+
+			assertThreadLocalPresentInOnNext(((ParallelFlux<?>) lifted).sequential());
+		}
+
+		@Test
+		void parallelFluxFromThreadSwitchingMono() {
 			AtomicReference<String> value = new AtomicReference<>();
 
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
@@ -664,6 +758,33 @@ public class AutomaticContextPropagationTest {
 			            .sequential()
 			            .contextWrite(Context.of(KEY, "present"))
 			            .blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void parallelFluxFromThreadSwitchingFlux() {
+			AtomicReference<String> value = new AtomicReference<>();
+
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
+
+			ParallelFlux.from(flux)
+			            .doOnNext(i -> value.set(REF.get()))
+			            .sequential()
+			            .contextWrite(Context.of(KEY, "present"))
+			            .blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFlux() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.doOnNext(i -> value.set(REF.get()))
+					.sequential()
+					.contextWrite(Context.of(KEY, "present"))
+					.blockLast();
 
 			assertThat(value.get()).isEqualTo("present");
 		}

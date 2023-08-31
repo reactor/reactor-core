@@ -991,63 +991,43 @@ public abstract class Operators {
 		}
 	}
 
-	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
-			Publisher<?> publisher, CoreSubscriber<T> subscriber) {
-
-		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()
-				// TODO: consider Scannable.from(subscriber).scanOrDefault(Scannable.Attr.TL_RESTORING_SUBSCRIBER, false) instead
-				|| subscriber instanceof MonoSource.MonoSourceRestoringThreadLocalsSubscriber
-				|| subscriber instanceof FluxSource.FluxSourceRestoringThreadLocalsSubscriber) {
-			return subscriber;
+	public static <T> CorePublisher<? extends T> toFluxOrMono(Publisher<T> publisher) {
+		if (publisher instanceof Mono) {
+			return Mono.from(publisher);
 		}
+		return Flux.from(publisher);
+	}
+
+	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
+			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
 
 		Scannable scannable = Scannable.from(publisher);
-		// TODO: REPORT AS INTERNAL EVERYWHERE IN reactor-core
 		boolean internal = scannable.isScanAvailable()
 				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
 		if (!internal) {
-			if (publisher instanceof Mono) {
-				subscriber = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(subscriber);
-			} else {
-				subscriber = new FluxSource.FluxSourceRestoringThreadLocalsSubscriber<>(subscriber);
-			}
+			subscriber = new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
+					subscriber, subscriber.currentContext());
 		}
 		return subscriber;
 	}
 
-//	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
-//			Mono<?> mono, CoreSubscriber<T> subscriber) {
-//
-//		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-//			return subscriber;
-//		}
-//
-//		Scannable scannable = Scannable.from(mono);
-//		// TODO: REPORT AS INTERNAL EVERYWHERE IN reactor-core
-//		boolean internal = scannable.isScanAvailable()
-//				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
-//		if (!internal) {
-//			subscriber = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(subscriber);
-//		}
-//		return subscriber;
-//	}
-//
-//	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
-//			Flux<?> flux, CoreSubscriber<T> subscriber) {
-//
-//		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-//			return subscriber;
-//		}
-//
-//		Scannable scannable = Scannable.from(flux);
-//		// TODO: REPORT AS INTERNAL EVERYWHERE IN reactor-core
-//		boolean internal = scannable.isScanAvailable()
-//				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
-//		if (!internal) {
-//			subscriber = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(subscriber);
-//		}
-//		return subscriber;
-//	}
+	public static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribersIfNecessary(
+			Publisher<?> publisher, CoreSubscriber<? super T>[] subscribers) {
+		CoreSubscriber<? super T>[] actualSubscribers = subscribers;
+		Scannable scannable = Scannable.from(publisher);
+		boolean internal = scannable.isScanAvailable()
+				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+		if (!internal) {
+			actualSubscribers = new CoreSubscriber[subscribers.length];
+			for (int i = 0; i < subscribers.length; i++) {
+				CoreSubscriber<? super T> subscriber =
+						new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
+								subscribers[i], subscribers[i].currentContext());
+				actualSubscribers[i] = subscriber;
+			}
+		}
+		return actualSubscribers;
+	}
 
 	private static Throwable unwrapOnNextError(Throwable error) {
 		return Exceptions.isBubbling(error) ? error : Exceptions.unwrap(error);
@@ -1534,24 +1514,14 @@ public abstract class Operators {
 	Operators() {
 	}
 
-	static final class CorePublisherAdapter<T> implements CorePublisher<T>,
-	                                                      OptimizableOperator<T, T> {
+	static final class CorePublisherAdapter<T> implements CorePublisher<T> {
 
 		final Publisher<T> publisher;
 
-		@Nullable
-		final OptimizableOperator<?, T> optimizableOperator;
-
 		CorePublisherAdapter(Publisher<T> publisher) {
 			this.publisher = publisher;
-			if (publisher instanceof OptimizableOperator) {
-				@SuppressWarnings("unchecked")
-				OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) publisher;
-				this.optimizableOperator = optimSource;
-			}
-			else {
-				this.optimizableOperator = null;
-			}
+			// note: if publisher is not CorePublisher it can't be an
+			// OptimizableOperator, which extends CorePublisher
 		}
 
 		@Override
@@ -1562,21 +1532,6 @@ public abstract class Operators {
 		@Override
 		public void subscribe(Subscriber<? super T> s) {
 			publisher.subscribe(s);
-		}
-
-		@Override
-		public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-			return actual;
-		}
-
-		@Override
-		public final CorePublisher<? extends T> source() {
-			return this;
-		}
-
-		@Override
-		public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
-			return optimizableOperator;
 		}
 	}
 
@@ -2714,6 +2669,11 @@ public abstract class Operators {
 		final Predicate<Publisher> filter;
 		final String name;
 
+		// TODO: this leaks to the users of LiftFunction, encapsulation is broken
+		// TODO: consider: liftFunction.lifter.apply could go through encapsulation
+		//  like: liftFunction.applyLifter() where what lifter.apply returns is wrapped
+		//  unconditionally; otherwise -> all lift* operators need to be considered as
+		//  NOT INTERNAL_PRODUCER sources
 		final BiFunction<Publisher, ? super CoreSubscriber<? super O>,
 				? extends CoreSubscriber<? super I>> lifter;
 
