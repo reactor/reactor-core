@@ -20,6 +20,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -558,6 +560,13 @@ public class AutomaticContextPropagationTest {
 		// Flux tests
 
 		@Test
+		void fluxMap() {
+			Flux<String> flux =
+					new ThreadSwitchingFlux<>("Hello", executorService).map(String::toUpperCase);
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
 		void fluxIgnoreThenSwitchThread() {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 			Mono<String> chain = Flux.just("Bye").then(mono);
@@ -754,8 +763,8 @@ public class AutomaticContextPropagationTest {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 
 			ParallelFlux.from(mono)
-			            .doOnNext(i -> value.set(REF.get()))
 			            .sequential()
+			            .doOnNext(i -> value.set(REF.get()))
 			            .contextWrite(Context.of(KEY, "present"))
 			            .blockLast();
 
@@ -769,8 +778,8 @@ public class AutomaticContextPropagationTest {
 			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
 
 			ParallelFlux.from(flux)
-			            .doOnNext(i -> value.set(REF.get()))
 			            .sequential()
+			            .doOnNext(i -> value.set(REF.get()))
 			            .contextWrite(Context.of(KEY, "present"))
 			            .blockLast();
 
@@ -778,11 +787,88 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void threadSwitchingParallelFlux() {
+		void threadSwitchingParallelFluxSequential() {
 			AtomicReference<String> value = new AtomicReference<>();
 			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
-					.doOnNext(i -> value.set(REF.get()))
 					.sequential()
+					.doOnNext(i -> value.set(REF.get()))
+					.contextWrite(Context.of(KEY, "present"))
+					.blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFluxThen() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.then()
+					.doOnSuccess(v -> value.set(REF.get()))
+					.contextWrite(Context.of(KEY, "present"))
+					.block();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFluxOrdered() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.ordered(Comparator.naturalOrder())
+					.doOnNext(i -> value.set(REF.get()))
+					.contextWrite(Context.of(KEY, "present"))
+					.blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFluxReduce() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.reduce((s1, s2) -> s2)
+					.doOnNext(i -> value.set(REF.get()))
+					.contextWrite(Context.of(KEY, "present"))
+					.block();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFluxReduceSeed() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.reduce(ArrayList::new, (l, s) -> {
+						value.set(REF.get());
+						l.add(s);
+						return l;
+					})
+					.sequential()
+					.contextWrite(Context.of(KEY, "present"))
+					.blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFluxGroup() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.groups()
+					.doOnNext(i -> value.set(REF.get()))
+					.flatMap(Flux::last)
+					.contextWrite(Context.of(KEY, "present"))
+					.blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void threadSwitchingParallelFluxSort() {
+			AtomicReference<String> value = new AtomicReference<>();
+			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					.sorted(Comparator.naturalOrder())
+					.doOnNext(i -> value.set(REF.get()))
 					.contextWrite(Context.of(KEY, "present"))
 					.blockLast();
 
@@ -807,6 +893,107 @@ public class AutomaticContextPropagationTest {
 			            .subscribe();
 
 			executorService.submit(() -> sink.tryEmitValue(1));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkDirect() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean complete = new AtomicBoolean();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.One<String> sink = Sinks.one();
+
+			CoreSubscriberWithContext subscriberWithContext =
+					new CoreSubscriberWithContext(value, error, latch, complete);
+
+			sink.asMono()
+					.subscribe(subscriberWithContext);
+
+			executorService.submit(() -> sink.tryEmitValue("Hello"));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkEmpty() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.Empty<Object> empty = Sinks.empty();
+
+			empty.asMono()
+			    .doOnTerminate(() -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService.submit(empty::tryEmitEmpty);
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		@Disabled("Subscribe-time wrapping breaks fusion for now")
+		//FIXME
+		void sinkManyUnicast() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.ManySpec spec = Sinks.many();
+
+			Sinks.Many<String> many = spec.unicast()
+			                               .onBackpressureBuffer();
+			many.asFlux()
+			       .doOnNext(i -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			       .contextWrite(Context.of(KEY, "present"))
+			       .subscribe();
+
+			executorService.submit(() -> many.tryEmitNext("Hello"));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkManyMulticast() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.ManySpec spec = Sinks.many();
+
+			Sinks.Many<String> many = spec.multicast().directAllOrNothing();
+			many.asFlux()
+			    .doOnNext(i -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService.submit(() -> many.tryEmitNext("Hello"));
 
 			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");

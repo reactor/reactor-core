@@ -88,7 +88,10 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		while (i < subscribers.length) {
 			CoreSubscriber<? super O> actual = s[i];
 			// As this is not an INTERNAL_PRODUCER, the subscribers should be protected
-			// in case of automatic context propagation
+			// in case of automatic context propagation.
+			// If a user directly subscribes with a set of rails, there is no
+			// protection against that, so a ThreadLocal restoring subscriber would
+			// need to be provided.
 			CoreSubscriber<? super I> converted =
 					Objects.requireNonNull(liftFunction.lifter.apply(source, actual),
 							"Lifted subscriber MUST NOT be null");

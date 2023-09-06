@@ -998,9 +998,11 @@ public abstract class Operators {
 		return Flux.from(publisher);
 	}
 
-	public static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
+	static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
 			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
-
+		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			return subscriber;
+		}
 		Scannable scannable = Scannable.from(publisher);
 		boolean internal = scannable.isScanAvailable()
 				&& scannable.scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
@@ -1011,8 +1013,20 @@ public abstract class Operators {
 		return subscriber;
 	}
 
-	public static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribersIfNecessary(
+	static <T> CoreSubscriber<? super T> restoreContextOnSubscriber(CoreSubscriber<? super T> subscriber) {
+		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			return subscriber;
+		}
+		return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
+				subscriber, subscriber.currentContext());
+	}
+
+	static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribersIfNecessary(
 			Publisher<?> publisher, CoreSubscriber<? super T>[] subscribers) {
+		if (!ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			return subscribers;
+		}
+
 		CoreSubscriber<? super T>[] actualSubscribers = subscribers;
 		Scannable scannable = Scannable.from(publisher);
 		boolean internal = scannable.isScanAvailable()

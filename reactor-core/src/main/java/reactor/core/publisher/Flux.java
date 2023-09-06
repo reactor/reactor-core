@@ -1064,7 +1064,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		//duplicated in wrap, but necessary to detect early and thus avoid applying assembly
 		if (source instanceof Flux
-				&& Scannable.from(source).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false)) {
+				&& (Scannable.from(source).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false) || !ContextPropagationSupport.shouldPropagateContextToThreadLocals())) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
 			return casted;
@@ -11079,7 +11079,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		                            .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
 				                            false);
 		if (source instanceof Flux) {
-			if (isInternal) {
+			if (isInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 				return (Flux<I>) source;
 			}
 			return new FluxContextWriteRestoringThreadLocals<>((Flux<? extends I>) source, Function.identity());
@@ -11101,7 +11101,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		}
 
 		Publisher<? extends I> target = source;
-		if (!isInternal) {
+		if (!isInternal && ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			if (target instanceof Mono) {
 				target = new MonoRestoringThreadLocals<>(source);
 			} else {

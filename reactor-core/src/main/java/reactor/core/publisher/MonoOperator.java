@@ -47,7 +47,8 @@ public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.PARENT) return source;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		// FIXME: not internal! public
+		if (key == Attr.INTERNAL_PRODUCER) return false;
 		return null;
 	}
 

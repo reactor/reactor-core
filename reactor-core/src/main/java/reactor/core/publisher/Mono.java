@@ -483,7 +483,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		boolean isInternal = Scannable.from(source)
 		                              .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
 				                              false);
-		if (isInternal && source instanceof Mono) {
+		if ((isInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) && source instanceof Mono) {
 			@SuppressWarnings("unchecked")
 			Mono<T> casted = (Mono<T>) source;
 			return casted;
@@ -496,7 +496,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			@SuppressWarnings("unchecked")
 			Mono<T> extracted = (Mono<T>) wrapper.source;
 			boolean isExtractedInternal = Scannable.from(extracted).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
-			if (isExtractedInternal) {
+			if (isExtractedInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 				return extracted;
 			} else {
 				// Skip assembly hook
@@ -5351,7 +5351,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		                              .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
 				                              false);
 		if (source instanceof Mono) {
-			if (isInternal) {
+			if (isInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 				return (Mono<T>) source;
 			}
 			return new MonoContextWriteRestoringThreadLocals<>((Mono<? extends T>) source, Function.identity());
@@ -5363,7 +5363,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			boolean isExtractedInternal = Scannable.from(extracted)
 			                                       .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
 					                                       false);
-			if (isExtractedInternal) {
+			if (isExtractedInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 				return extracted;
 			}
 			return new MonoContextWriteRestoringThreadLocals<>(extracted, Function.identity());
@@ -5375,7 +5375,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		}
 
 		Publisher<T> target = source;
-		if (!isInternal) {
+		if (!isInternal && ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			target = new FluxRestoringThreadLocals<>(source);
 		}
 

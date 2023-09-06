@@ -50,15 +50,17 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(actual);
+		CoreSubscriber<? super T> wrapped = Operators.restoreContextOnSubscriber(actual);
 
-		actual.onSubscribe(emitter);
+		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(wrapped);
+
+		wrapped.onSubscribe(emitter);
 
 		try {
 			callback.accept(emitter);
 		}
 		catch (Throwable ex) {
-			emitter.error(Operators.onOperatorError(ex, actual.currentContext()));
+			emitter.error(Operators.onOperatorError(ex, wrapped.currentContext()));
 		}
 	}
 
