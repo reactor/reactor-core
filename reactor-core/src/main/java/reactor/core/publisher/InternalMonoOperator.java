@@ -49,6 +49,12 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.INTERNAL_PRODUCER) return true;
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
 		OptimizableOperator operator = this;

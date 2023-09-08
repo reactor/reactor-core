@@ -480,10 +480,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public static <T> Mono<T> from(Publisher<? extends T> source) {
 		//some sources can be considered already assembled monos
 		//all conversion methods (from, fromDirect, wrap) must accommodate for this
-		boolean isInternal = Scannable.from(source)
-		                              .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
-				                              false);
-		if ((isInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) && source instanceof Mono) {
+		boolean shouldWrap = ContextPropagationSupport.shouldWrapPublisher(source);
+		if (source instanceof Mono && !shouldWrap) {
 			@SuppressWarnings("unchecked")
 			Mono<T> casted = (Mono<T>) source;
 			return casted;
@@ -495,8 +493,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			FluxFromMonoOperator<T, T> wrapper = (FluxFromMonoOperator<T,T>) source;
 			@SuppressWarnings("unchecked")
 			Mono<T> extracted = (Mono<T>) wrapper.source;
-			boolean isExtractedInternal = Scannable.from(extracted).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
-			if (isExtractedInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			boolean shouldWrapExtracted = ContextPropagationSupport.shouldWrapPublisher(extracted);
+			if (!shouldWrapExtracted) {
 				return extracted;
 			} else {
 				// Skip assembly hook
@@ -583,7 +581,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
 		//some sources can be considered already assembled monos
 		//all conversion methods (from, fromDirect, wrap) must accommodate for this
-		if(source instanceof Mono){
+		boolean shouldWrap = ContextPropagationSupport.shouldWrapPublisher(source);
+		if (source instanceof Mono && !shouldWrap) {
 			@SuppressWarnings("unchecked")
 			Mono<I> m = (Mono<I>)source;
 			return m;
@@ -594,7 +593,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			FluxFromMonoOperator<I, I> wrapper = (FluxFromMonoOperator<I,I>) source;
 			@SuppressWarnings("unchecked")
 			Mono<I> extracted = (Mono<I>) wrapper.source;
-			return extracted;
+			boolean shouldWrapExtracted =
+					ContextPropagationSupport.shouldWrapPublisher(extracted);
+			if (!shouldWrapExtracted) {
+				return extracted;
+			} else {
+				// Skip assembly hook
+				return wrap(extracted, false);
+			}
 		}
 
 		//we delegate to `wrap` and apply assembly hooks
@@ -5347,11 +5353,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	static <T> Mono<T> wrap(Publisher<T> source, boolean enforceMonoContract) {
 		//some sources can be considered already assembled monos
 		//all conversion methods (from, fromDirect, wrap) must accommodate for this
-		boolean isInternal = Scannable.from(source)
-		                              .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
-				                              false);
+		boolean shouldWrap = ContextPropagationSupport.shouldWrapPublisher(source);
 		if (source instanceof Mono) {
-			if (isInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			if (!shouldWrap) {
 				return (Mono<T>) source;
 			}
 			return new MonoContextWriteRestoringThreadLocals<>((Mono<? extends T>) source, Function.identity());
@@ -5360,10 +5364,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		if (source instanceof FluxSourceMono || source instanceof FluxSourceMonoFuseable) {
 			@SuppressWarnings("unchecked") Mono<T> extracted =
 					(Mono<T>) ((FluxFromMonoOperator<T, T>) source).source;
-			boolean isExtractedInternal = Scannable.from(extracted)
-			                                       .scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER,
-					                                       false);
-			if (isExtractedInternal || !ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			boolean shouldWrapExtracted =
+					ContextPropagationSupport.shouldWrapPublisher(extracted);
+			if (!shouldWrapExtracted) {
 				return extracted;
 			}
 			return new MonoContextWriteRestoringThreadLocals<>(extracted, Function.identity());
@@ -5374,30 +5377,30 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			return Flux.wrapToMono(m);
 		}
 
-		Publisher<T> target = source;
-		if (!isInternal && ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-			target = new FluxRestoringThreadLocals<>(source);
-		}
+		Mono<T> target;
 
 		//equivalent to what from used to be, without assembly hooks
 		if (enforceMonoContract) {
 			if (source instanceof Flux) {
-				return new MonoNext<>((Flux<T>) target);
+				target = new MonoNext<>((Flux<T>) source);
+			} else {
+				target = new MonoFromPublisher<>(source);
 			}
-			return new MonoFromPublisher<>(target);
+		//equivalent to what fromDirect used to be without onAssembly
+		} else if (source instanceof Flux && source instanceof Fuseable) {
+			target = new MonoSourceFluxFuseable<>((Flux<T>) source);
+		} else if (source instanceof Flux) {
+			target = new MonoSourceFlux<>((Flux<T>) source);
+		} else if (source instanceof Fuseable) {
+			target = new MonoSourceFuseable<>(source);
+		} else {
+			target = new MonoSource<>(source);
 		}
 
-		//equivalent to what fromDirect used to be without onAssembly
-		if (source instanceof Flux && source instanceof Fuseable) {
-			return new MonoSourceFluxFuseable<>((Flux<T>) target);
+		if (shouldWrap) {
+			return ContextPropagationSupport.monoRestoreThreadLocals(target);
 		}
-		if (source instanceof Flux) {
-			return new MonoSourceFlux<>((Flux<T>) target);
-		}
-		if (source instanceof Fuseable) {
-			return new MonoSourceFuseable<>(target);
-		}
-		return new MonoSource<>(target);
+		return target;
 	}
 
 	@SuppressWarnings("unchecked")

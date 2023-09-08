@@ -16,6 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Function;
+
+import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -65,7 +71,26 @@ final class ContextPropagationSupport {
         return isContextPropagationOnClasspath && propagateContextToThreadLocals;
     }
 
+    static boolean shouldWrapPublisher(Publisher<?> publisher) {
+        return shouldPropagateContextToThreadLocals() &&
+                !Scannable.from(publisher).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+    }
+
     static boolean shouldRestoreThreadLocalsInSomeOperators() {
         return isContextPropagationOnClasspath && !propagateContextToThreadLocals;
+    }
+
+    static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux) {
+        if (flux instanceof Fuseable) {
+            return new FluxContextWriteRestoringThreadLocalsFuseable<>(flux, Function.identity());
+        }
+        return new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
+    }
+
+    static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {
+        if (mono instanceof Fuseable) {
+            return new MonoContextWriteRestoringThreadLocals<>(mono, Function.identity());
+        }
+        return new MonoContextWriteRestoringThreadLocals<>(mono, Function.identity());
     }
 }

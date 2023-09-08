@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -560,6 +558,44 @@ public class AutomaticContextPropagationTest {
 		// Flux tests
 
 		@Test
+		void fluxCreate() {
+			Flux<String> flux = Flux.create(sink -> {
+				executorService.submit(() -> {
+					sink.next("Hello");
+					sink.complete();
+				});
+			});
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxCreateDirect() throws InterruptedException {
+			AtomicReference<String> value = new AtomicReference<>();
+			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean complete = new AtomicBoolean();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			CoreSubscriberWithContext subscriberWithContext =
+					new CoreSubscriberWithContext(value, error, latch, complete);
+
+			Publisher<String> flux = Flux.create(sink -> {
+				executorService.submit(() -> {
+					sink.next("Hello");
+					sink.complete();
+				});
+			});
+
+			flux.subscribe(subscriberWithContext);
+
+			latch.await(10, TimeUnit.MILLISECONDS);
+
+			assertThat(error.get()).isNull();
+			assertThat(complete.get()).isTrue();
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
 		void fluxMap() {
 			Flux<String> flux =
 					new ThreadSwitchingFlux<>("Hello", executorService).map(String::toUpperCase);
@@ -950,7 +986,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		@Disabled("Subscribe-time wrapping breaks fusion for now")
+//		@Disabled("Subscribe-time wrapping breaks fusion for now")
 		//FIXME
 		void sinkManyUnicast() throws InterruptedException, TimeoutException {
 			AtomicReference<String> value = new AtomicReference<>();

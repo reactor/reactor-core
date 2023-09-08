@@ -22,10 +22,13 @@ import java.util.function.Function;
 import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> {
+// TODO: create fuseable version and handle the same way as Flux
+final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T>
+		implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 
@@ -48,11 +51,12 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.INTERNAL_PRODUCER) return true;
 		return super.scanUnsafe(key);
 	}
 
 	static final class ContextWriteRestoringThreadLocalsSubscriber<T>
-			implements InnerOperator<T, T> {
+			implements InnerOperator<T, T>, QueueSubscription<T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Context                   context;
@@ -163,6 +167,31 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 					     ContextPropagation.setThreadLocals(context)) {
 				s.cancel();
 			}
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return NONE;
+		}
+
+		@Override
+		public T poll() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public int size() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedOperationException("Nope");
 		}
 	}
 }
