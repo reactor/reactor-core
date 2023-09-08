@@ -21,20 +21,17 @@ import java.lang.invoke.VarHandle;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,9 +63,7 @@ final class LoomBoundedElasticScheduler
 	final int maxThreads;
 	final int maxTaskQueuedPerThread;
 
-	final Clock         clock;
 	final ThreadFactory factory;
-	final long          ttlMillis;
 
 	volatile SchedulerState<BoundedServices> state;
 	@SuppressWarnings("rawtypes")
@@ -78,15 +73,18 @@ final class LoomBoundedElasticScheduler
 	private static final SchedulerState<BoundedServices> INIT =
 			SchedulerState.init(SHUTDOWN);
 
+
+
 	/**
-	 * This constructor lets define millisecond-grained TTLs and a custom {@link Clock},
-	 * which can be useful for tests.
+	 * Create a {@link BoundedElasticScheduler} with the given configuration. Note that backing threads
+	 * (or executors) can be shared by each {@link reactor.core.scheduler.Scheduler.Worker}, so each worker
+	 * can contribute to the task queue size.
+	 *
+	 * @param maxThreads             the maximum number of backing threads to spawn, must be strictly positive
+	 * @param maxTaskQueuedPerThread the maximum amount of tasks an executor can queue up
+	 * @param threadFactory                the {@link ThreadFactory} to name the backing threads
 	 */
-	LoomBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread,
-			ThreadFactory threadFactory, long ttlMillis, Clock clock) {
-		if (ttlMillis <= 0) {
-			throw new IllegalArgumentException("TTL must be strictly positive, was " + ttlMillis + "ms");
-		}
+	LoomBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory threadFactory) {
 		if (maxThreads <= 0) {
 			throw new IllegalArgumentException("maxThreads must be strictly positive, was " + maxThreads);
 		}
@@ -96,25 +94,8 @@ final class LoomBoundedElasticScheduler
 		this.maxThreads = maxThreads;
 		this.maxTaskQueuedPerThread = maxTaskQueuedPerThread;
 		this.factory = threadFactory;
-		this.clock = Objects.requireNonNull(clock, "A Clock must be provided");
-		this.ttlMillis = ttlMillis;
 
 		STATE.lazySet(this, INIT);
-	}
-
-	/**
-	 * Create a {@link BoundedElasticScheduler} with the given configuration. Note that backing threads
-	 * (or executors) can be shared by each {@link reactor.core.scheduler.Scheduler.Worker}, so each worker
-	 * can contribute to the task queue size.
-	 *
-	 * @param maxThreads             the maximum number of backing threads to spawn, must be strictly positive
-	 * @param maxTaskQueuedPerThread the maximum amount of tasks an executor can queue up
-	 * @param factory                the {@link ThreadFactory} to name the backing threads
-	 * @param ttlSeconds             the time-to-live (TTL) of idle threads, in seconds
-	 */
-	LoomBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory, int ttlSeconds) {
-		this(maxThreads, maxTaskQueuedPerThread, factory, ttlSeconds * 1000L,
-				Clock.tickSeconds(BoundedServices.ZONE_UTC));
 	}
 
 	@Override
@@ -139,29 +120,7 @@ final class LoomBoundedElasticScheduler
 
 		SchedulerState<BoundedServices> b =
 				SchedulerState.init(new BoundedServices(this));
-		if (STATE.compareAndSet(this, INIT, b)) {
-			try {
-				//TODO: remove.
-				// this is not need with simplified immediate eviction
-				b.currentResource.evictor.scheduleAtFixedRate(
-						b.currentResource::eviction,
-						ttlMillis, ttlMillis, TimeUnit.MILLISECONDS
-				);
-				return;
-			}
-			catch (RejectedExecutionException ree) {
-				// The executor was most likely shut down in parallel.
-				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
-				// If it's running - the other thread did a restart and will run its own schedule.
-				// In both cases we throw an exception, as the caller of init() should
-				// expect the scheduler to be running when this method returns.
-				throw new IllegalStateException(
-						"Scheduler disposed during initialization"
-				);
-			}
-		}
-		else {
-			b.currentResource.evictor.shutdownNow();
+		if (!STATE.compareAndSet(this, INIT, b)) {
 			// Currently, isDisposed() is true for non-initialized state, but that will
 			// be fixed in 3.5.0. At this stage we know however that the state is no
 			// longer INIT, so isDisposed() actually means disposed state.
@@ -184,29 +143,16 @@ final class LoomBoundedElasticScheduler
 
 		SchedulerState<BoundedServices> b =
 				SchedulerState.init(new BoundedServices(this));
-		if (STATE.compareAndSet(this, a, b)) {
-			try {
-				b.currentResource.evictor.scheduleAtFixedRate(
-						b.currentResource::eviction,
-						ttlMillis, ttlMillis, TimeUnit.MILLISECONDS
-				);
-				return;
-			}
-			catch (RejectedExecutionException ree) {
-				// The executor was most likely shut down in parallel.
-				// If the state is SHUTDOWN - it's ok, no eviction schedule required;
-				// If it's running - the other thread did a restart and will run its own schedule.
-				// In both cases we ignore it.
-			}
+		if (!STATE.compareAndSet(this, a, b)) {
+			// someone else shutdown or started successfully, free the resource
+			b.currentResource.sharedDelayedTasksScheduler.shutdownNow();
 		}
 
-		// someone else shutdown or started successfully, free the resource
-		b.currentResource.evictor.shutdownNow();
 	}
 
 	@Override
 	public boolean await(BoundedServices boundedServices, long timeout, TimeUnit timeUnit) throws InterruptedException {
-		if (!boundedServices.evictor.awaitTermination(timeout, timeUnit)) {
+		if (!boundedServices.sharedDelayedTasksScheduler.awaitTermination(timeout, timeUnit)) {
 			return false;
 		}
 		for (BoundedState bs : boundedServices.busyStates.array) {
@@ -225,7 +171,7 @@ final class LoomBoundedElasticScheduler
 			// A dispose process might be ongoing, but we want a forceful shutdown,
 			// so we do our best to release the resources without updating the state.
 			if (previous.initialResource != null) {
-				previous.initialResource.evictor.shutdownNow();
+				previous.initialResource.sharedDelayedTasksScheduler.shutdownNow();
 				for (BoundedState bs : previous.initialResource.busyStates.array) {
 					bs.shutdown(true);
 				}
@@ -244,7 +190,7 @@ final class LoomBoundedElasticScheduler
 		// we only care about the one stored in shutDown.
 
 		assert shutDown.initialResource != null;
-		shutDown.initialResource.evictor.shutdownNow();
+		shutDown.initialResource.sharedDelayedTasksScheduler.shutdownNow();
 		for (BoundedState bs : toAwait) {
 			bs.shutdown(true);
 		}
@@ -270,7 +216,7 @@ final class LoomBoundedElasticScheduler
 			// we only care about the one stored in shutDown.
 
 			assert shutDown.initialResource != null;
-			shutDown.initialResource.evictor.shutdown();
+			shutDown.initialResource.sharedDelayedTasksScheduler.shutdown();
 			for (BoundedState bs : toAwait) {
 				bs.shutdown(false);
 			}
@@ -297,7 +243,7 @@ final class LoomBoundedElasticScheduler
 		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
 		final BoundedState picked = state.currentResource.pick();
 		try {
-			return picked.schedule(task, delay, unit, true);
+			return picked.schedule(task, delay, unit, null);
 		}
 		catch (RejectedExecutionException ex) {
 			// ensure to free the BoundedState so it can be reused
@@ -317,7 +263,7 @@ final class LoomBoundedElasticScheduler
 					initialDelay,
 					period,
 					unit,
-					true);
+					null);
 		}
 		catch (RejectedExecutionException ex) {
 			// ensure to free the BoundedState so it can be reused
@@ -336,12 +282,6 @@ final class LoomBoundedElasticScheduler
 		ts.append("maxThreads=").append(maxThreads)
 		  .append(",maxTaskQueuedPerThread=").append(maxTaskQueuedPerThread == Integer.MAX_VALUE ? "unbounded" : maxTaskQueuedPerThread)
 		  .append(",ttl=");
-		if (ttlMillis < 1000) {
-			ts.append(ttlMillis).append("ms)");
-		}
-		else {
-			ts.append(ttlMillis / 1000).append("s)");
-		}
 		return ts.toString();
 	}
 
@@ -357,13 +297,6 @@ final class LoomBoundedElasticScheduler
 	 */
 	int estimateBusy() {
 		return state.currentResource.busyStates.array.length;
-	}
-
-	/**
-	 * @return a best effort total count of the idle executors
-	 */
-	int estimateIdle() {
-		return state.currentResource.idleQueue.size();
 	}
 
 	/**
@@ -399,15 +332,13 @@ final class LoomBoundedElasticScheduler
 	@Override
 	public Stream<? extends Scannable> inners() {
 		BoundedServices services = state.currentResource;
-		return Stream.concat(Stream.of(services.busyStates.array), services.idleQueue.stream())
+		return Stream.of(services.busyStates.array)
 		             .filter(obj -> obj != null && obj != CREATING);
 	}
 
-	// TODO: create a separate worker wrapper so all assiciated tasks are disposed once
-	//  the create worker is disposed by holder and then boundedState is just released
 	@Override
 	public Worker createWorker() {
-		return state.currentResource.pick();
+		return new BoundedStateWorker(state.currentResource.pick());
 	}
 
 	static final class BoundedServices extends AtomicInteger {
@@ -455,24 +386,19 @@ final class LoomBoundedElasticScheduler
 				}
 			};
 			CREATING.markCount = -1; //always -1, ensures tryPick never returns true
-			CREATING.idleSinceTimestamp = -1; //consider evicted
 		}
 
-		static final AtomicLong EVICTOR_COUNTER = new AtomicLong();
-		static final ThreadFactory EVICTOR_FACTORY = r -> {
-			Thread t = new Thread(r, Schedulers.BOUNDED_ELASTIC + "-evictor-" + EVICTOR_COUNTER.incrementAndGet());
+		static final AtomicLong    DELAYED_TASKS_SCHEDULER_COUNTER = new AtomicLong();
+		static final ThreadFactory DELAYED_TASKS_SCHEDULER_FACTORY = r -> {
+			Thread t = new Thread(r,
+					Schedulers.LOOM_BOUNDED_ELASTIC + "-delayed-tasks-scheduler-" + DELAYED_TASKS_SCHEDULER_COUNTER.incrementAndGet());
 			t.setDaemon(true);
 			return t;
 		};
 
-
 		final LoomBoundedElasticScheduler parent;
 		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
-		final Clock                       clock;
-		final ScheduledExecutorService    evictor; // TODO: rename to just sharedScheduler
-		final Deque<BoundedState>         idleQueue; // TODO: eliminate. we may keep it
-		// simpler by removing boundedstate immidiatelly since it is just plain java
-		// object
+		final ScheduledExecutorService    sharedDelayedTasksScheduler;
 		final ThreadFactory               factory;
 		final int                         maxTaskQueuedPerThread;
 
@@ -485,42 +411,24 @@ final class LoomBoundedElasticScheduler
 			this.parent = null;
 			this.maxTaskQueuedPerThread = 0;
 			this.factory = null;
-			this.clock = Clock.fixed(Instant.EPOCH, ZONE_UTC);
-			this.idleQueue = new ConcurrentLinkedDeque<>();
 			this.busyStates = ALL_SHUTDOWN;
-			this.evictor = EVICTOR_SHUTDOWN;
+			this.sharedDelayedTasksScheduler = EVICTOR_SHUTDOWN;
 		}
 
 		BoundedServices(LoomBoundedElasticScheduler parent) {
 			this.parent = parent;
 			this.maxTaskQueuedPerThread = parent.maxTaskQueuedPerThread;
 			this.factory = parent.factory;
-			this.clock = parent.clock;
-			this.idleQueue = new ConcurrentLinkedDeque<>();
 			this.busyStates = ALL_IDLE;
-			this.evictor = Executors.newSingleThreadScheduledExecutor(EVICTOR_FACTORY);
-		}
-
-		/**
-		 * Trigger the eviction by computing the oldest acceptable timestamp and letting each {@link BoundedState}
-		 * check (and potentially shutdown) itself.
-		 */
-		void eviction() {
-			final long evictionTimestamp = parent.clock.millis();
-			List<BoundedState> idleCandidates = new ArrayList<>(idleQueue);
-			for (BoundedState candidate : idleCandidates) {
-				if (candidate.tryEvict(evictionTimestamp, parent.ttlMillis)) {
-					idleQueue.remove(candidate);
-					decrementAndGet();
-				}
-			}
+			this.sharedDelayedTasksScheduler = Executors.newSingleThreadScheduledExecutor(
+					DELAYED_TASKS_SCHEDULER_FACTORY);
 		}
 
 		/**
 		 * @param bs the state to set busy
 		 * @return true if the {@link BoundedState} could be added to the busy array (ie. we're not shut down), false if shutting down
 		 */
-		boolean setBusy(BoundedState bs) {
+		boolean add(BoundedState bs) {
 			for (; ; ) {
 				BoundedServices.BusyStates previous = busyStates;
 				if (previous.shutdown) {
@@ -539,7 +447,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		void setIdle(BoundedState boundedState) {
+		void remove(BoundedState boundedState) {
 			for(;;) {
 				BusyStates current = busyStates;
 				BoundedState[] arr = busyStates.array;
@@ -573,17 +481,6 @@ final class LoomBoundedElasticScheduler
 					return;
 				}
 				if (BUSY_STATES.compareAndSet(this, current, replacement)) {
-					//impl. note: reversed order could lead to a race condition where state is added to idleQueue
-					//then concurrently pick()ed into busyQueue then removed from same busyQueue.
-					this.idleQueue.add(boundedState);
-					// check whether we missed a shutdown
-					if (this.busyStates.shutdown) {
-						// we did, so we make sure the racing adds don't leak
-						boundedState.shutdown(true);
-						while ((boundedState = idleQueue.pollLast()) != null) {
-							boundedState.shutdown(true);
-						}
-					}
 					return;
 				}
 			}
@@ -603,25 +500,12 @@ final class LoomBoundedElasticScheduler
 				}
 
 				int a = get();
-				if (!idleQueue.isEmpty()) {
-					//try to find an idle resource
-					BoundedState bs = idleQueue.pollLast();
-					if (bs != null && bs.markPicked()) {
-						boolean accepted = setBusy(bs);
-						if (!accepted) { // shutdown in the meantime
-							bs.shutdown(true);
-							return CREATING;
-						}
-						return bs;
-					}
-					//else optimistically retry (implicit continue here)
-				}
-				else if (a < parent.maxThreads) {
+				if (a < parent.maxThreads) {
 					//try to build a new resource
 					if (compareAndSet(a, a + 1)) {
 						BoundedState newState = new BoundedState(this);
 						if (newState.markPicked()) {
-							boolean accepted = setBusy(newState);
+							boolean accepted = add(newState);
 							if (!accepted) { // shutdown in the meantime
 								newState.shutdown(true);
 								return CREATING;
@@ -683,21 +567,7 @@ final class LoomBoundedElasticScheduler
 				// so we need to retry if shutdown transition fails
 			}
 
-			BoundedState[] arr = current.array;
-			// The idleQueue must be drained first as concurrent removals
-			// by evictor or additions by finished tasks can invalidate the size
-			// used if a regular array was created here.
-			// In case of concurrent calls, it is not needed to atomically drain the
-			// queue, nor guarantee same BoundedStates are read, as long as the caller
-			// shuts down the returned BoundedStates. Also, idle ones should easily
-			// shut down, it's not necessary to distinguish graceful from forceful.
-			ArrayList<BoundedState> toAwait = new ArrayList<>(idleQueue.size() + arr.length);
-			BoundedState bs;
-			while ((bs = idleQueue.pollLast()) != null) {
-				toAwait.add(bs);
-			}
-			Collections.addAll(toAwait, arr);
-			return toAwait.toArray(new BoundedState[0]);
+			return Arrays.copyOf(current.array, current.array.length);
 		}
 	}
 
@@ -712,14 +582,10 @@ final class LoomBoundedElasticScheduler
 
 		final BoundedServices parent;
 
-		final Clock clock;
-
 		final int queueCapacity;
 
-		final Queue<ScheduledDisposable> tasksQueue;
+		final Queue<SchedulerTask>     tasksQueue;
 		final ScheduledExecutorService scheduledTasksExecutor;
-
-		long idleSinceTimestamp = -1L;
 
 		volatile int markCount;
 		static final AtomicIntegerFieldUpdater<BoundedState> MARK_COUNT = AtomicIntegerFieldUpdater.newUpdater(BoundedState.class, "markCount");
@@ -743,20 +609,18 @@ final class LoomBoundedElasticScheduler
 
 		final ThreadFactory factory;
 
-		ScheduledDisposable activeTask;
+		SchedulerTask activeTask;
 
 		BoundedState(BoundedServices parent) {
 			super(1);
 			this.parent = parent;
-			this.tasksQueue = Queues.<ScheduledDisposable>unboundedMultiproducer().get();
+			this.tasksQueue = Queues.<SchedulerTask>unboundedMultiproducer().get();
 			this.queueCapacity = parent.maxTaskQueuedPerThread;
 			this.factory = parent.factory;
-			this.scheduledTasksExecutor = parent.evictor;
-			this.clock = parent.clock;
+			this.scheduledTasksExecutor = parent.sharedDelayedTasksScheduler;
 		}
 
 		void ensureQueueCapacityAndAddTasks(int taskCount) {
-			// TODO: check state at this stage as well
 			if (queueCapacity == Integer.MAX_VALUE) {
 				return;
 			}
@@ -800,35 +664,6 @@ final class LoomBoundedElasticScheduler
 		}
 
 		/**
-		 * Check if this {@link BoundedState} should be evicted by comparing its idleSince
-		 * timestamp to the evictionTimestamp and comparing the difference with the
-		 * given ttlMillis. When eligible for eviction, the executor is shut down and the
-		 * method returns true (to remove the state from the array).
-		 *
-		 * @param evictionTimestamp the timestamp at which the eviction process is running
-		 * @param ttlMillis the maximum idle duration
-		 * @return true if this {@link BoundedState} has shut down itself as part of eviction, false otherwise
-		 */
-		boolean tryEvict(long evictionTimestamp, long ttlMillis) {
-			long idleSince = this.idleSinceTimestamp;
-			if (idleSince < 0) return false;
-			long elapsed = evictionTimestamp - idleSince;
-			if (elapsed >= ttlMillis) {
-				if (MARK_COUNT.compareAndSet(this, 0, DISPOSED_NOW_STATE)) {
-					int previousState = markShutdown(this);
-
-					if (previousState == 0) {
-						clearAllTask();
-						countDown();
-					}
-
-					return true;
-				}
-			}
-			return false;
-		}
-
-		/**
 		 * Release the {@link BoundedState}, ie atomically decrease the counter of times it has been picked
 		 * and mark as idle if that counter reaches 0.
 		 * This is called when a worker is done using the executor. {@link #dispose()} is an alias
@@ -844,14 +679,14 @@ final class LoomBoundedElasticScheduler
 				return;
 			}
 
-			if (picked == 0) {
-				//we released enough that this BoundedState is now idle
-				this.idleSinceTimestamp = parent.clock.millis();
-				parent.setIdle(this);
-			}
-			else {
-				//still picked by at least one worker, defensively ensure timestamp is not set
-				this.idleSinceTimestamp = -1L;
+			if (picked == 0 && markDisposed(this)) {
+				parent.remove(this);
+				int previousState = markShutdown(this);
+
+				if (previousState == 0) {
+					clearAllTask();
+					countDown();
+				}
 			}
 		}
 
@@ -862,7 +697,6 @@ final class LoomBoundedElasticScheduler
 		 * @see #dispose()
 		 */
 		void shutdown(boolean now) {
-			this.idleSinceTimestamp = -1L;
 			MARK_COUNT.set(this, now ? DISPOSED_NOW_STATE : DISPOSED_STATE);
 			int previousState = markShutdown(this);
 
@@ -881,17 +715,20 @@ final class LoomBoundedElasticScheduler
 			this.release();
 		}
 
-		Disposable schedule(Runnable task, @Nullable Composite parent) {
-			Objects.requireNonNull(task, "Task should be non-null");
+		Disposable schedule(Runnable task, @Nullable Composite disposables) {
+			if (isShutdown(this.state)) {
+				throw Exceptions.failWithRejected();
+			}
+
 			ensureQueueCapacityAndAddTasks(1);
 
 			Runnable decoratedTask = onSchedule(task);
-			boolean isDirect = parent == null;
-			ScheduledDisposable disposable =
-					new ScheduledDisposable(this, decoratedTask, 0, TimeUnit.NANOSECONDS, isDirect);
+			boolean isDirect = disposables == null;
+			SchedulerTask disposable =
+					new SchedulerTask(this, decoratedTask, -1, TimeUnit.NANOSECONDS, disposables);
 
 			if (!isDirect) {
-				if (!parent.add(disposable)) {
+				if (!disposables.add(disposable)) {
 					throw Exceptions.failWithRejected();
 				}
 			}
@@ -903,27 +740,34 @@ final class LoomBoundedElasticScheduler
 			return disposable;
 		}
 
-		Disposable schedule(Runnable task, long delay, TimeUnit unit, @Nullable Composite parent) {
-			Objects.requireNonNull(task, "Task should be non-null");
+		Disposable schedule(Runnable task, long delay, TimeUnit unit, @Nullable Composite disposables) {
 			Objects.requireNonNull(unit, "TimeUnit should be non-null");
-			if (delay <= 0) {
-				throw new IllegalArgumentException();
+
+			if (isShutdown(this.state)) {
+				throw Exceptions.failWithRejected();
 			}
 
 			ensureQueueCapacityAndAddTasks(1);
 
 			Runnable decoratedTask = onSchedule(task);
-			boolean isDirect = parent == null;
-			ScheduledDisposable disposable =
-					new ScheduledDisposable(this, decoratedTask, 0, unit, isDirect);
+			boolean isDirect = disposables == null;
+			SchedulerTask disposable =
+					new SchedulerTask(this, decoratedTask, -1, unit, disposables);
 
 			if (!isDirect) {
-				if (!parent.add(disposable)) {
+				if (!disposables.add(disposable)) {
 					throw Exceptions.failWithRejected();
 				}
 			}
 
-			disposable.schedule(delay, unit);
+			if (delay <= 0) {
+				this.tasksQueue.offer(disposable);
+
+				trySchedule();
+			}
+			else {
+				disposable.schedule(delay, unit);
+			}
 
 			return disposable;
 		}
@@ -932,27 +776,38 @@ final class LoomBoundedElasticScheduler
 				long initialDelay,
 				long period,
 				TimeUnit unit,
-				@Nullable Composite parent) {
-			Objects.requireNonNull(task, "Task should be non-null");
+				@Nullable Composite disposables) {
 			Objects.requireNonNull(unit, "TimeUnit should be non-null");
-			if (initialDelay <= 0 || period <= 0) {
-				throw new IllegalArgumentException();
+
+			if (isShutdown(this.state)) {
+				throw Exceptions.failWithRejected();
 			}
 
 			ensureQueueCapacityAndAddTasks(1);
 
 			Runnable decoratedTask = onSchedule(task);
-			boolean isDirect = parent == null;
-			ScheduledDisposable disposable =
-					new ScheduledDisposable(this, decoratedTask, period, unit, isDirect);
+			boolean isDirect = disposables == null;
+
+			SchedulerTask disposable = new SchedulerTask(this,
+					decoratedTask,
+					period < 0 ? 0 : period,
+					unit,
+					disposables);
 
 			if (!isDirect) {
-				if (!parent.add(disposable)) {
+				if (!disposables.add(disposable)) {
 					throw Exceptions.failWithRejected();
 				}
 			}
 
-			disposable.schedule(initialDelay, unit);
+			if (initialDelay <= 0) {
+				this.tasksQueue.offer(disposable);
+
+				trySchedule();
+			}
+			else {
+				disposable.schedule(initialDelay, unit);
+			}
 
 			return disposable;
 		}
@@ -976,7 +831,7 @@ final class LoomBoundedElasticScheduler
 		}
 
 		void drain() {
-			final Queue<ScheduledDisposable> q = this.tasksQueue;
+			final Queue<SchedulerTask> q = this.tasksQueue;
 
 			int m = this.state;
 			for (;;) {
@@ -987,7 +842,7 @@ final class LoomBoundedElasticScheduler
 						return;
 					}
 
-					final ScheduledDisposable task = q.poll();
+					final SchedulerTask task = q.poll();
 
 					if (task == null) {
 						break;
@@ -1015,14 +870,14 @@ final class LoomBoundedElasticScheduler
 		}
 
 		void clearAllTask() {
-			ScheduledDisposable activeTask = this.activeTask;
+			SchedulerTask activeTask = this.activeTask;
 			if (activeTask != null) {
 				activeTask.dispose();
 			}
 
-			Queue<ScheduledDisposable> q = this.tasksQueue;
+			Queue<SchedulerTask> q = this.tasksQueue;
 
-			ScheduledDisposable d;
+			SchedulerTask d;
 			while ((d = q.poll()) != null) {
 				d.dispose();
 			}
@@ -1045,8 +900,7 @@ final class LoomBoundedElasticScheduler
 
 		@Override
 		public String toString() {
-			return "BoundedState@" + System.identityHashCode(this) + "{" + " backing=" + MARK_COUNT.get(
-					this) + ", idleSince=" + idleSinceTimestamp + '}';
+			return "BoundedState@" + System.identityHashCode(this) + "{" + " backing=" + markCount + '}';
 		}
 
 		// -- MARK-COUNTER --
@@ -1079,7 +933,23 @@ final class LoomBoundedElasticScheduler
 					return state;
 				}
 			}
+		}
 
+		static boolean markDisposed(BoundedState instance) {
+			for (;;) {
+				int markCount = instance.markCount;
+				if (markCount > 0) {
+					return false;
+				}
+
+				if (isDisposedNow(markCount)) {
+					return true;
+				}
+
+				if (MARK_COUNT.compareAndSet(instance, markCount, DISPOSED_NOW_STATE)) {
+					return true;
+				}
+			}
 		}
 
 		static boolean isDisposed(int state) {
@@ -1151,7 +1021,7 @@ final class LoomBoundedElasticScheduler
 		}
 	}
 
-	final static class ScheduledDisposable extends AtomicInteger
+	final static class SchedulerTask extends AtomicInteger
 			implements Disposable, Callable<Void>, Runnable {
 
 		static final int INITIAL_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0000;
@@ -1166,23 +1036,24 @@ final class LoomBoundedElasticScheduler
 		final BoundedState holder;
 
 		final Runnable task;
-		final boolean direct;
+		@Nullable
+		final Composite tracker;
 
 		Thread carrier;
 		long   startedAtInMillis;
 
 		Future<Void> scheduledFuture;
 
-		ScheduledDisposable(BoundedState holder,
+		SchedulerTask(BoundedState holder,
 				Runnable task,
 				long fixedRatePeriod,
 				TimeUnit timeUnit,
-				boolean direct) {
+				@Nullable Composite tracker) {
 			this.fixedRatePeriod = fixedRatePeriod;
 			this.timeUnit = timeUnit;
 			this.holder = holder;
 			this.task = task;
-			this.direct = direct;
+			this.tracker = tracker;
 		}
 
 		@Override
@@ -1197,25 +1068,29 @@ final class LoomBoundedElasticScheduler
 			try {
 				task.run();
 			}
-			catch (Throwable t) {
-				if (direct) {
+			catch (Throwable ex) {
+				if (this.tracker == null) {
 					this.holder.release();
 				}
+				else {
+					this.tracker.remove(this);
+				}
 				this.holder.drain();
-				throw Exceptions.propagate(t);
+				Schedulers.handleError(ex);
+				return;
 			}
 
 			if (isPeriodic()) {
 				previousState = markInitial(this);
 				if (isDisposed(previousState)) {
-					if (direct) {
+					if (this.tracker == null) {
 						this.holder.release();
 					}
 					this.holder.drain();
 					return;
 				}
 
-				long completedAtInMillis = this.holder.clock.millis();
+				long completedAtInMillis = Instant.now().toEpochMilli();
 				long executionTimeInMillis = completedAtInMillis - this.startedAtInMillis;
 				long fixedRatePeriodInMillis = this.timeUnit.toMillis(this.fixedRatePeriod);
 
@@ -1236,8 +1111,11 @@ final class LoomBoundedElasticScheduler
 
 			markCompleted(this);
 
-			if (direct) {
+			if (this.tracker == null) {
 				this.holder.release();
+			}
+			else {
+				this.tracker.remove(this);
 			}
 
 			this.holder.drain();
@@ -1251,7 +1129,7 @@ final class LoomBoundedElasticScheduler
 
 			final BoundedState parent = this.holder;
 
-			this.startedAtInMillis = parent.clock.millis();
+			this.startedAtInMillis = Instant.now().toEpochMilli();
 
 			parent.tasksQueue.offer(this);
 			parent.tryForceSchedule();
@@ -1266,10 +1144,15 @@ final class LoomBoundedElasticScheduler
 				return;
 			}
 
+			boolean isDirect = this.tracker == null;
+			if (!isDirect) {
+				this.tracker.remove(this);
+			}
+
 			if (isScheduled(previousState)) {
 				this.scheduledFuture.cancel(true);
-				if (direct) {
-					holder.release();
+				if (isDirect) {
+					this.holder.release();
 				}
 				return;
 			}
@@ -1279,7 +1162,7 @@ final class LoomBoundedElasticScheduler
 				return;
 			}
 
-			if (direct) {
+			if (isDirect) {
 				holder.release();
 			}
 
@@ -1308,14 +1191,17 @@ final class LoomBoundedElasticScheduler
 		}
 
 		boolean isPeriodic() {
-			return fixedRatePeriod > 0;
+			return fixedRatePeriod >= 0;
 		}
 
 		void schedule(long delay, TimeUnit unit) {
-			this.scheduledFuture =
-					this.holder.scheduledTasksExecutor.schedule((Callable<Void>) this, delay, unit);
+			final ScheduledFuture<Void> future = this.holder.scheduledTasksExecutor.schedule((Callable<Void>) this, delay, unit);
+			this.scheduledFuture = future;
 
-			markScheduled(this);
+			final int previousState = markScheduled(this);
+			if (isDisposed(previousState)) {
+				future.cancel(true);
+			}
 		}
 
 		static boolean isInitialState(int state) {
@@ -1342,7 +1228,7 @@ final class LoomBoundedElasticScheduler
 			return (state & DISPOSED_STATE) == DISPOSED_STATE;
 		}
 
-		static int markInitial(ScheduledDisposable disposable) {
+		static int markInitial(SchedulerTask disposable) {
 			for (; ; ) {
 				int state = disposable.get();
 
@@ -1356,7 +1242,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static int markStarting(ScheduledDisposable disposable) {
+		static int markStarting(SchedulerTask disposable) {
 			for (;;) {
 				int state = disposable.get();
 
@@ -1370,7 +1256,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static int markRunning(ScheduledDisposable disposable) {
+		static int markRunning(SchedulerTask disposable) {
 			for (;;) {
 				int state = disposable.get();
 
@@ -1384,21 +1270,21 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static void markScheduled(ScheduledDisposable disposable) {
+		static int markScheduled(SchedulerTask disposable) {
 			for (;;) {
 				int state = disposable.get();
 
 				if (!isInitialState(state)) {
-					return;
+					return state;
 				}
 
 				if (disposable.weakCompareAndSetPlain(state, SCHEDULED_STATE)) {
-					return;
+					return state;
 				}
 			}
 		}
 
-		static int markDisposed(ScheduledDisposable disposable) {
+		static int markDisposed(SchedulerTask disposable) {
 			for (;;) {
 				int state = disposable.get();
 
@@ -1412,7 +1298,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static void markCompleted(ScheduledDisposable disposable) {
+		static void markCompleted(SchedulerTask disposable) {
 			int state = disposable.get();
 
 			if (isDisposed(state)) {
@@ -1446,13 +1332,12 @@ final class LoomBoundedElasticScheduler
 
 		@Override
 		public Disposable schedule(Runnable task) {
-			disposables.add(state.schedule(task, false))
-			return ;
+			return state.schedule(task, disposables);
 		}
 
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			return state.schedule(task, delay, unit, false);
+			return state.schedule(task, delay, unit, disposables);
 		}
 
 		@Override
@@ -1460,7 +1345,7 @@ final class LoomBoundedElasticScheduler
 				long initialDelay,
 				long period,
 				TimeUnit unit) {
-			return state.schedulePeriodically(task, initialDelay, period, unit, false);
+			return state.schedulePeriodically(task, initialDelay, period, unit, disposables);
 		}
 	}
 

@@ -41,8 +41,7 @@ class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 					Thread.ofVirtual()
 					      .name(LOOM_BOUNDED_ELASTIC + "-", 1)
 					      .uncaughtExceptionHandler(Schedulers::defaultUncaughtException)
-					      .factory(),
-					BoundedElasticScheduler.DEFAULT_TTL_SECONDS);
+					      .factory());
 		}
 		return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
 				DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,

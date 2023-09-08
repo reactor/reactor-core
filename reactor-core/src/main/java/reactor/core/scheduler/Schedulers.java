@@ -409,11 +409,10 @@ public abstract class Schedulers {
 		return fromFactory;
 	}
 
-	static Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
+	static Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
 		Scheduler fromFactory = factory.newLoomBoundedElastic(threadCap,
 				queuedTaskCap,
-				threadFactory,
-				ttlSeconds);
+				threadFactory);
 		fromFactory.init();
 		return fromFactory;
 	}
@@ -1024,13 +1023,12 @@ public abstract class Schedulers {
 		 * @param threadCap maximum number of underlying threads to create
 		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
-		 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
 		 *
 		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 		 * the number of backing threads, reuses threads and evict idle ones
 		 */
-		default Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
-			return new LoomBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
+		default Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
+			return new LoomBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory);
 		}
 
 		/**

@@ -474,10 +474,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
-		public Scheduler newLoomBoundedElastic(int threadCap,
-				int queuedTaskCap,
-				ThreadFactory threadFactory,
-				int ttlSeconds) {
+		public Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
 			return s;
 		}
 
