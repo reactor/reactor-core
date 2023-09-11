@@ -81,16 +81,10 @@ final class ContextPropagationSupport {
     }
 
     static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux) {
-        if (flux instanceof Fuseable) {
-            return new FluxContextWriteRestoringThreadLocalsFuseable<>(flux, Function.identity());
-        }
         return new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
     }
 
     static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {
-        if (mono instanceof Fuseable) {
-            return new MonoContextWriteRestoringThreadLocalsFuseable<>(mono, Function.identity());
-        }
         return new MonoContextWriteRestoringThreadLocals<>(mono, Function.identity());
     }
 }

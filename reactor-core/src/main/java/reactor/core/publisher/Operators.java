@@ -1003,10 +1003,10 @@ public abstract class Operators {
 		if (ContextPropagationSupport.shouldWrapPublisher(publisher)) {
 			if (publisher instanceof Fuseable) {
 				subscriber =
-						new FluxContextWriteRestoringThreadLocalsFuseable.FuseableContextWriteRestoringThreadLocalsSubscriber<>(subscriber,
+						new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(subscriber,
 								subscriber.currentContext());
 			} else {
-				subscriber = new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+				subscriber = new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
 						subscriber,
 						subscriber.currentContext());
 			}
@@ -1018,10 +1018,10 @@ public abstract class Operators {
 			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
 		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
 			if (publisher instanceof Fuseable) {
-				return new FluxContextWriteRestoringThreadLocalsFuseable.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+				return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
 						subscriber, subscriber.currentContext());
 			} else {
-				return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+				return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
 						subscriber,
 						subscriber.currentContext());
 			}
@@ -1038,13 +1038,13 @@ public abstract class Operators {
 				CoreSubscriber<? super T> subscriber;
 				if (publisher instanceof Fuseable) {
 					subscriber =
-							new FluxContextWriteRestoringThreadLocalsFuseable.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+							new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
 									subscribers[i],
 									subscribers[i].currentContext());
 				}
 				else {
 					subscriber =
-							new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+							new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
 									subscribers[i],
 									subscribers[i].currentContext());
 				}

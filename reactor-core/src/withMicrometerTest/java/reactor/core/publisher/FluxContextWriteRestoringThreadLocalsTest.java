@@ -39,9 +39,9 @@ public class FluxContextWriteRestoringThreadLocalsTest {
 	@Test
 	public void scanSubscriber(){
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<Integer>
+		FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<Integer>
 				test =
-				new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+				new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
 								actual, Context.empty()
 				);
 
