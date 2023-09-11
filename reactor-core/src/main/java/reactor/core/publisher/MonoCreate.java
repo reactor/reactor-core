@@ -50,7 +50,8 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> wrapped = Operators.restoreContextOnSubscriber(actual);
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriber(this, actual);
 
 		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(wrapped);
 

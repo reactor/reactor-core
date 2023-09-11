@@ -82,7 +82,8 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 
 	@Override
 	public void subscribe(final CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super O> wrapped = Operators.restoreContextOnSubscriber(actual);
+		CoreSubscriber<? super O> wrapped =
+				Operators.restoreContextOnSubscriber(this, actual);
 		NextInner<O> as = new NextInner<>(wrapped, this);
 		wrapped.onSubscribe(as);
 		final int addState = add(as);

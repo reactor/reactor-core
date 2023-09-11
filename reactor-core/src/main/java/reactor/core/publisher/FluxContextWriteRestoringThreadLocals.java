@@ -22,7 +22,6 @@ import java.util.function.Function;
 import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -43,7 +42,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		Context c = doOnContext.apply(actual.currentContext());
 
 		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(c)) {
-			source.subscribe(new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c));
+			source.subscribe(new FuseableContextWriteRestoringThreadLocalsSubscriber<>(actual, c));
 		}
 	}
 
@@ -54,7 +53,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		return super.scanUnsafe(key);
 	}
 
-	static final class ContextWriteRestoringThreadLocalsSubscriber<T>
+	static final class FuseableContextWriteRestoringThreadLocalsSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T>        actual;
@@ -64,7 +63,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		Subscription s;
 
 		@SuppressWarnings("unchecked")
-		ContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
+		FuseableContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
 			this.actual = actual;
 			this.context = context;
 			if (actual instanceof ConditionalSubscriber) {
