@@ -648,6 +648,42 @@ public class AutomaticContextPropagationTest {
 		// Mono tests
 
 		@Test
+		void monoCreate() {
+			Mono<String> mono = Mono.create(sink -> {
+				executorService.submit(() -> {
+					sink.success("Hello");
+				});
+			});
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoCreateDirect() throws InterruptedException {
+			AtomicReference<String> value = new AtomicReference<>();
+			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean complete = new AtomicBoolean();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			CoreSubscriberWithContext subscriberWithContext =
+					new CoreSubscriberWithContext(value, error, latch, complete);
+
+			Publisher<String> mono = Mono.create(sink -> {
+				executorService.submit(() -> {
+					sink.success("Hello");
+				});
+			});
+
+			mono.subscribe(subscriberWithContext);
+
+			latch.await(10, TimeUnit.MILLISECONDS);
+
+			assertThat(error.get()).isNull();
+			assertThat(complete.get()).isTrue();
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
 		void monoSwitchThreadIgnoreThen() {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 			Mono<String> chain = mono.then(Mono.just("Bye"));
@@ -986,8 +1022,6 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-//		@Disabled("Subscribe-time wrapping breaks fusion for now")
-		//FIXME
 		void sinkManyUnicast() throws InterruptedException, TimeoutException {
 			AtomicReference<String> value = new AtomicReference<>();
 			CountDownLatch latch = new CountDownLatch(1);
