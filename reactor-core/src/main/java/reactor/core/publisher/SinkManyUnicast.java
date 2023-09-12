@@ -183,7 +183,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		if (Attr.CANCELLED == key) return cancelled;
 		if (Attr.TERMINATED == key) return done;
 		if (Attr.ERROR == key) return error;
-		if (Attr.INTERNAL_PRODUCER == key) return false;
+		if (Attr.INTERNAL_PRODUCER == key) return true;
 
 		return null;
 	}
@@ -409,18 +409,20 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriber(this, actual);
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 			this.hasDownstream = true;
-			actual.onSubscribe(this);
-			this.actual = actual;
+			wrapped.onSubscribe(this);
+			this.actual = wrapped;
 			if (cancelled) {
 				this.hasDownstream = false;
 			} else {
 				drain(null);
 			}
 		} else {
-			Operators.error(actual, new IllegalStateException("Sinks.many().unicast() sinks only allow a single Subscriber"));
+			Operators.error(wrapped, new IllegalStateException("Sinks.many().unicast() sinks only allow a single Subscriber"));
 		}
 	}
 

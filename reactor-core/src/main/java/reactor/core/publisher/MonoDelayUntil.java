@@ -123,6 +123,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.INTERNAL_PRODUCER) return true;
 		return null; //no particular key to be represented, still useful in hooks
 	}
 
@@ -303,7 +304,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				this.triggerSubscriber = triggerSubscriber;
 			}
 
-			p.subscribe(triggerSubscriber);
+			Operators.toFluxOrMono(p).subscribe(triggerSubscriber);
 		}
 
 		@Override

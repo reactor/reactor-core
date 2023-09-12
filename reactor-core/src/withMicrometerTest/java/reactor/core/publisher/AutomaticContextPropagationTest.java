@@ -698,6 +698,20 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
+		void monoSwitchThreadDelayUntil() {
+			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
+			Mono<String> chain = mono.delayUntil(s -> Mono.delay(Duration.ofMillis(1)));
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
+		void monoDelayUntilSwitchingThread() {
+			Mono<String> mono = Mono.just("Hello");
+			Mono<String> chain = mono.delayUntil(s -> new ThreadSwitchingMono<>("Done", executorService));
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
 		void monoDeferContextual() {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 			Mono<String> chain = Mono.deferContextual(ctx -> mono);
@@ -1048,7 +1062,34 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void sinkManyMulticast() throws InterruptedException, TimeoutException {
+		void sinkManyUnicastNoBackpressure() throws InterruptedException,
+		                                           TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.ManySpec spec = Sinks.many();
+
+			Sinks.Many<String> many = spec.unicast().onBackpressureError();
+			many.asFlux()
+			    .doOnNext(i -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService.submit(() -> many.tryEmitNext("Hello"));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkManyMulticastAllOrNothing() throws InterruptedException,
+		                                           TimeoutException {
 			AtomicReference<String> value = new AtomicReference<>();
 			CountDownLatch latch = new CountDownLatch(1);
 
@@ -1064,6 +1105,80 @@ public class AutomaticContextPropagationTest {
 			    .subscribe();
 
 			executorService.submit(() -> many.tryEmitNext("Hello"));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkManyMulticastBuffer() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.ManySpec spec = Sinks.many();
+
+			Sinks.Many<String> many = spec.multicast().onBackpressureBuffer();
+			many.asFlux()
+			    .doOnNext(i -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService.submit(() -> many.tryEmitNext("Hello"));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkManyMulticastBestEffort() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.ManySpec spec = Sinks.many();
+
+			Sinks.Many<String> many = spec.multicast().directBestEffort();
+			many.asFlux()
+			    .doOnNext(i -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService.submit(() -> many.tryEmitNext("Hello"));
+
+			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinksEmpty() throws InterruptedException, TimeoutException {
+			AtomicReference<String> value = new AtomicReference<>();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Sinks.Empty<Void> spec = Sinks.empty();
+
+			spec.asMono()
+			    .doOnSuccess(ignored -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService.submit(spec::tryEmitEmpty);
 
 			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");

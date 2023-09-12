@@ -67,6 +67,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+		if (key == Attr.INTERNAL_PRODUCER) return true;
 
 		return null;
 	}
