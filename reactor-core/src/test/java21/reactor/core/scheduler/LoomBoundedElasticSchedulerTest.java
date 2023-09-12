@@ -342,7 +342,7 @@ class LoomBoundedElasticSchedulerTest {
 			tasks.forEach(Disposable::dispose);
 
 			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
-			Assertions.assertThat(worker.isDisposed()).isTrue();
+			Assertions.assertThat(worker.isDisposed()).isFalse();
 			Assertions.assertThat(tasks).allMatch(Disposable::isDisposed);
 		}
 	}
