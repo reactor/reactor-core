@@ -1,5 +1,7 @@
 package reactor.core.scheduler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -262,6 +264,86 @@ class LoomBoundedElasticSchedulerTest {
 			          .isOne();
 			Assertions.assertThat(worker.isDisposed()).isTrue();
 			Assertions.assertThat(disposable.isDisposed()).isTrue();
+		}
+	}
+
+	@Test
+	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenWorkerIsDisposed() throws InterruptedException {
+		LoomBoundedElasticScheduler scheduler = new LoomBoundedElasticScheduler(2,
+				1000,
+				Thread.ofVirtual()
+				      .name("loom", 0)
+				      .factory());
+		scheduler.init();
+		Runnable task = () -> {};
+
+		for (int i = 0; i < 100; i++) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Scheduler.Worker worker = scheduler.createWorker();
+			List<Disposable> tasks = new ArrayList<>();
+			tasks.add(worker.schedule(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
+			for (int j = 0; j < 1000; j++) {
+				tasks.add(worker.schedule(task));
+			}
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(1000);
+
+			latch.countDown();
+			Thread.yield();
+			worker.dispose();
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
+			Assertions.assertThat(worker.isDisposed()).isTrue();
+			Assertions.assertThat(tasks).allMatch(Disposable::isDisposed);
+		}
+	}
+
+	@Test
+	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposed() throws InterruptedException {
+		LoomBoundedElasticScheduler scheduler = new LoomBoundedElasticScheduler(2,
+				1000,
+				Thread.ofVirtual()
+				      .name("loom", 0)
+				      .factory());
+		scheduler.init();
+		Runnable task = () -> {};
+
+		for (int i = 0; i < 100; i++) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Scheduler.Worker worker = scheduler.createWorker();
+			List<Disposable> tasks = new ArrayList<>();
+			tasks.add(worker.schedule(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
+			for (int j = 0; j < 1000; j++) {
+				tasks.add(worker.schedule(task));
+			}
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(1000);
+
+			latch.countDown();
+			Thread.yield();
+			tasks.forEach(Disposable::dispose);
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
+			Assertions.assertThat(worker.isDisposed()).isTrue();
+			Assertions.assertThat(tasks).allMatch(Disposable::isDisposed);
 		}
 	}
 }

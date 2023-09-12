@@ -26,15 +26,6 @@ import reactor.core.Scannable;
 final class LoomBoundedElasticScheduler
 		implements Scheduler, SchedulerState.DisposeAwaiter<LoomBoundedElasticScheduler.BoundedServices>, Scannable {
 
-	/**
-	 * Create a {@link BoundedElasticScheduler} with the given configuration. Note that backing threads
-	 * (or executors) can be shared by each {@link reactor.core.scheduler.Scheduler.Worker}, so each worker
-	 * can contribute to the task queue size.
-	 *
-	 * @param maxThreads             the maximum number of backing threads to spawn, must be strictly positive
-	 * @param maxTaskQueuedPerThread the maximum amount of tasks an executor can queue up
-	 * @param factory                the {@link ThreadFactory} to name the backing threads
-	 */
 	LoomBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
 		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
 	}

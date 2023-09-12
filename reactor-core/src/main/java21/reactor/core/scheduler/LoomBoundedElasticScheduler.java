@@ -18,9 +18,7 @@ package reactor.core.scheduler;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.PriorityQueue;
@@ -76,7 +74,7 @@ final class LoomBoundedElasticScheduler
 
 
 	/**
-	 * Create a {@link BoundedElasticScheduler} with the given configuration. Note that backing threads
+	 * Create a {@link LoomBoundedElasticScheduler} with the given configuration. Note that backing threads
 	 * (or executors) can be shared by each {@link reactor.core.scheduler.Scheduler.Worker}, so each worker
 	 * can contribute to the task queue size.
 	 *
@@ -133,21 +131,8 @@ final class LoomBoundedElasticScheduler
 	}
 
 	@Override
-	// TODO: this is deprecated and should be removed in 3.6.x
 	public void start() {
-		SchedulerState<BoundedServices> a = this.state;
-
-		if (a.currentResource != SHUTDOWN) {
-			return;
-		}
-
-		SchedulerState<BoundedServices> b =
-				SchedulerState.init(new BoundedServices(this));
-		if (!STATE.compareAndSet(this, a, b)) {
-			// someone else shutdown or started successfully, free the resource
-			b.currentResource.sharedDelayedTasksScheduler.shutdownNow();
-		}
-
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -353,26 +338,17 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		/**
-		 * The {@link ZoneId} used for clocks. Since the {@link Clock} is only used to ensure
-		 * TTL cleanup is executed every N seconds, the zone doesn't really matter, hence UTC.
-		 *
-		 * @implNote Note that {@link ZoneId#systemDefault()} isn't used since it triggers disk read,
-		 * contrary to {@link ZoneId#of(String)}.
-		 */
-		static final ZoneId ZONE_UTC = ZoneId.of("UTC");
-
 		static final BusyStates ALL_IDLE = new BusyStates(new BoundedState[0], false);
-		static final BusyStates ALL_SHUTDOWN = new BusyStates(new BoundedState[0], true);
-		static final ScheduledExecutorService EVICTOR_SHUTDOWN;
+		static final BusyStates               ALL_SHUTDOWN = new BusyStates(new BoundedState[0], true);
+		static final ScheduledExecutorService DELAYED_TASKS_SCHEDULER_SHUTDOWN;
 
 		static final BoundedServices SHUTDOWN;
 		static final BoundedServices SHUTTING_DOWN;
 		static final BoundedState    CREATING;
 
 		static {
-			EVICTOR_SHUTDOWN = Executors.newSingleThreadScheduledExecutor();
-			EVICTOR_SHUTDOWN.shutdownNow();
+			DELAYED_TASKS_SCHEDULER_SHUTDOWN = Executors.newSingleThreadScheduledExecutor();
+			DELAYED_TASKS_SCHEDULER_SHUTDOWN.shutdownNow();
 
 			SHUTDOWN = new BoundedServices();
 			SHUTTING_DOWN = new BoundedServices();
@@ -412,7 +388,7 @@ final class LoomBoundedElasticScheduler
 			this.maxTaskQueuedPerThread = 0;
 			this.factory = null;
 			this.busyStates = ALL_SHUTDOWN;
-			this.sharedDelayedTasksScheduler = EVICTOR_SHUTDOWN;
+			this.sharedDelayedTasksScheduler = DELAYED_TASKS_SCHEDULER_SHUTDOWN;
 		}
 
 		BoundedServices(LoomBoundedElasticScheduler parent) {
@@ -673,17 +649,15 @@ final class LoomBoundedElasticScheduler
 		 * @see #dispose()
 		 */
 		void release() {
-			int picked = release(this);
-			if (picked < 0) {
-				//picked == -1 means being evicted, do nothing in that case
+			int previousState = releaseAndTryMarkDisposed(this);
+			if (isDisposedNow(previousState)) {
 				return;
 			}
 
-			if (picked == 0 && markDisposed(this)) {
+			if (isDisposed(previousState) || previousState == 1) {
 				parent.remove(this);
-				int previousState = markShutdown(this);
 
-				if (previousState == 0) {
+				if (markShutdown(this) == 0) {
 					clearAllTask();
 					countDown();
 				}
@@ -697,9 +671,11 @@ final class LoomBoundedElasticScheduler
 		 * @see #dispose()
 		 */
 		void shutdown(boolean now) {
-			MARK_COUNT.set(this, now ? DISPOSED_NOW_STATE : DISPOSED_STATE);
-			int previousState = markShutdown(this);
+			if (!markDisposed(this, now)) {
+				return;
+			}
 
+			int previousState = markShutdown(this);
 			if (previousState != 0) {
 				return;
 			}
@@ -848,8 +824,6 @@ final class LoomBoundedElasticScheduler
 						break;
 					}
 
-					removeTask();
-
 					this.activeTask = task;
 					if (task.start()) {
 						return;
@@ -920,33 +894,30 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static int release(BoundedState instance) {
+		static int releaseAndTryMarkDisposed(BoundedState instance) {
 			for (;;) {
 				int state = instance.markCount;
 
-				if (isDisposed(state)) {
+				if (isDisposedNow(state)) {
 					return state;
 				}
 
-				int nextState = state - 1;
+				int nextState = isDisposed(state) || state == 1 ? DISPOSED_NOW_STATE : state - 1;
 				if (MARK_COUNT.weakCompareAndSet(instance, state, nextState)) {
 					return state;
 				}
 			}
 		}
 
-		static boolean markDisposed(BoundedState instance) {
+		static boolean markDisposed(BoundedState instance, boolean now) {
 			for (;;) {
 				int markCount = instance.markCount;
-				if (markCount > 0) {
+
+				if (isDisposedNow(markCount) || (!now && isDisposed(markCount))) {
 					return false;
 				}
 
-				if (isDisposedNow(markCount)) {
-					return true;
-				}
-
-				if (MARK_COUNT.compareAndSet(instance, markCount, DISPOSED_NOW_STATE)) {
+				if (MARK_COUNT.weakCompareAndSet(instance, markCount, DISPOSED_NOW_STATE)) {
 					return true;
 				}
 			}
@@ -1151,6 +1122,7 @@ final class LoomBoundedElasticScheduler
 
 			if (isScheduled(previousState)) {
 				this.scheduledFuture.cancel(true);
+				this.holder.removeTask();
 				if (isDirect) {
 					this.holder.release();
 				}
@@ -1160,6 +1132,10 @@ final class LoomBoundedElasticScheduler
 			if (isRunning(previousState)) {
 				this.carrier.interrupt();
 				return;
+			}
+
+			if (isInitialState(previousState)) {
+				this.holder.removeTask();
 			}
 
 			if (isDirect) {
@@ -1184,6 +1160,8 @@ final class LoomBoundedElasticScheduler
 
 			Thread carrier = this.holder.factory.newThread(this);
 			this.carrier = carrier;
+
+			this.holder.removeTask();
 
 			carrier.start();
 
@@ -1316,8 +1294,7 @@ final class LoomBoundedElasticScheduler
 
 		BoundedStateWorker(BoundedState state) {
 			this.state = state;
-			this.disposables = Disposables.composite();
-			disposables.add(state);
+			this.disposables = Disposables.composite(state);
 		}
 
 		@Override
