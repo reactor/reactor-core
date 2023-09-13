@@ -47,11 +47,11 @@ jobs:
       #output: versionType, fullVersion
       #fails if versionType is BAD, which interrupts the workflow
       run: ./gradlew qualifyVersionGha
-#    - name: run checks
-#      id: checks
-#      uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
-#      with:
-#        arguments: check -Pjunit-tags=!slow -x jcstress
+    - name: run checks
+      id: checks
+      uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+      with:
+        arguments: check -Pjunit-tags=!slow -x jcstress
 
   slowerChecks:
     # similar limitations as in prepare, but we parallelize slower tests here
@@ -81,11 +81,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-#      - name: run slower tests
-#        id: slowerTests
-#        uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
-#        with:
-#          arguments: reactor-core:test -Pjunit-tags=slow
+      - name: run slower tests
+        id: slowerTests
+        uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+        with:
+          arguments: reactor-core:test -Pjunit-tags=slow
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
