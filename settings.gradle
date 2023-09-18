@@ -24,3 +24,16 @@ include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools', 'reactor-
 //libs catalog is declared in ./gradle/libs.versions.toml
 //TODO remove once Version Catalogs are stabilized. It is also activated in buildSrc
 enableFeaturePreview("VERSION_CATALOGS")
+dependencyResolutionManagement {
+  versionCatalogs {
+	libs {
+	  if (System.getProperty("useSnapshotMicrometerVersion")) {
+		version('micrometer', '1.10.12-SNAPSHOT')
+		version('micrometer', "1.10.12-SNAPSHOT")
+		version('micrometerDocsGenerator', "1.0.3-SNAPSHOT")
+		version('micrometerTracingTest', "1.0.11-SNAPSHOT")
+		version('contextPropagation', "1.0.6-SNAPSHOT")
+	  }
+	}
+  }
+}
