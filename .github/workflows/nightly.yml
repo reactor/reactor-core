@@ -1,0 +1,64 @@
+name: Nightly Check
+
+on:
+  schedule:
+    - cron: "0 14 * * *"
+permissions: read-all
+jobs:
+  core-fast:
+    name: core fast tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: ${{ matrix.branch }}
+      - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+        name: gradle
+        with:
+          arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true
+  core-slow:
+    name: core slower tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: ${{ matrix.branch }}
+      - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+        name: gradle
+        with:
+          arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true
+  other:
+    name: other tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: ${{ matrix.branch }}
+      - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+        name: other tests
+        with:
+          arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true
