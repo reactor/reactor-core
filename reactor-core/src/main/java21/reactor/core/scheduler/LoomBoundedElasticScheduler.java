@@ -140,7 +140,7 @@ final class LoomBoundedElasticScheduler
 		if (!boundedServices.sharedDelayedTasksScheduler.awaitTermination(timeout, timeUnit)) {
 			return false;
 		}
-		for (BoundedState bs : boundedServices.busyStates.array) {
+		for (SingleThreadExecutor bs : boundedServices.busyStates.array) {
 			if (!bs.await(timeout, timeUnit)) {
 				return false;
 			}
@@ -157,14 +157,14 @@ final class LoomBoundedElasticScheduler
 			// so we do our best to release the resources without updating the state.
 			if (previous.initialResource != null) {
 				previous.initialResource.sharedDelayedTasksScheduler.shutdownNow();
-				for (BoundedState bs : previous.initialResource.busyStates.array) {
+				for (SingleThreadExecutor bs : previous.initialResource.busyStates.array) {
 					bs.shutdown(true);
 				}
 			}
 			return;
 		}
 
-		final BoundedState[] toAwait = previous.currentResource.dispose();
+		final SingleThreadExecutor[] toAwait = previous.currentResource.dispose();
 		SchedulerState<BoundedServices> shutDown = SchedulerState.transition(
 				previous.currentResource,
 				SHUTDOWN, this
@@ -176,7 +176,7 @@ final class LoomBoundedElasticScheduler
 
 		assert shutDown.initialResource != null;
 		shutDown.initialResource.sharedDelayedTasksScheduler.shutdownNow();
-		for (BoundedState bs : toAwait) {
+		for (SingleThreadExecutor bs : toAwait) {
 			bs.shutdown(true);
 		}
 	}
@@ -190,7 +190,7 @@ final class LoomBoundedElasticScheduler
 				return previous.onDispose;
 			}
 
-			final BoundedState[] toAwait = previous.currentResource.dispose();
+			final SingleThreadExecutor[] toAwait = previous.currentResource.dispose();
 			SchedulerState<BoundedServices> shutDown = SchedulerState.transition(
 					previous.currentResource,
 					SHUTDOWN, this
@@ -202,7 +202,7 @@ final class LoomBoundedElasticScheduler
 
 			assert shutDown.initialResource != null;
 			shutDown.initialResource.sharedDelayedTasksScheduler.shutdown();
-			for (BoundedState bs : toAwait) {
+			for (SingleThreadExecutor bs : toAwait) {
 				bs.shutdown(false);
 			}
 			return shutDown.onDispose;
@@ -211,13 +211,13 @@ final class LoomBoundedElasticScheduler
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
-		BoundedState picked = state.currentResource.pick();
+		//tasks running once will call dispose on the SingleThreadExecutor, decreasing its usage by one
+		SingleThreadExecutor picked = state.currentResource.pick();
 		try {
 			return picked.schedule(task, null);
 		}
 		catch (RejectedExecutionException ex) {
-			// ensure to free the BoundedState so it can be reused
+			// ensure to free the SingleThreadExecutor so it can be reused
 			picked.dispose();
 			throw ex;
 		}
@@ -225,13 +225,13 @@ final class LoomBoundedElasticScheduler
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		//tasks running once will call dispose on the BoundedState, decreasing its usage by one
-		final BoundedState picked = state.currentResource.pick();
+		//tasks running once will call dispose on the SingleThreadExecutor, decreasing its usage by one
+		final SingleThreadExecutor picked = state.currentResource.pick();
 		try {
 			return picked.schedule(task, delay, unit, null);
 		}
 		catch (RejectedExecutionException ex) {
-			// ensure to free the BoundedState so it can be reused
+			// ensure to free the SingleThreadExecutor so it can be reused
 			picked.dispose();
 			throw ex;
 		}
@@ -242,7 +242,7 @@ final class LoomBoundedElasticScheduler
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		final BoundedState picked = state.currentResource.pick();
+		final SingleThreadExecutor picked = state.currentResource.pick();
 		try {
 			return picked.schedulePeriodically(task,
 					initialDelay,
@@ -251,7 +251,7 @@ final class LoomBoundedElasticScheduler
 					null);
 		}
 		catch (RejectedExecutionException ex) {
-			// ensure to free the BoundedState so it can be reused
+			// ensure to free the SingleThreadExecutor so it can be reused
 			picked.dispose();
 			throw ex;
 		}
@@ -290,9 +290,9 @@ final class LoomBoundedElasticScheduler
 	 * @return the total task capacity, or {@literal -1} if any backing executor's task queue size cannot be instrumented
 	 */
 	int estimateRemainingTaskCapacity() {
-		BoundedState[] busyArray = state.currentResource.busyStates.array;
+		SingleThreadExecutor[] busyArray = state.currentResource.busyStates.array;
 		int totalTaskCapacity = maxTaskQueuedPerThread * maxThreads;
-		for (BoundedState state : busyArray) {
+		for (SingleThreadExecutor state : busyArray) {
 			int stateQueueSize = state.estimateQueueSize();
 			if (stateQueueSize >= 0) {
 				totalTaskCapacity -= stateQueueSize;
@@ -323,28 +323,28 @@ final class LoomBoundedElasticScheduler
 
 	@Override
 	public Worker createWorker() {
-		return new BoundedStateWorker(state.currentResource.pick());
+		return new SingleThreadExecutorWorker(state.currentResource.pick());
 	}
 
-	static final class BoundedServices extends AtomicInteger {
+	static final class BoundedServices {
 
 		static final class BusyStates {
-			final BoundedState[] array;
-			final boolean shutdown;
+			final SingleThreadExecutor[] array;
+			final boolean                shutdown;
 
-			public BusyStates(BoundedState[] array, boolean shutdown) {
+			public BusyStates(SingleThreadExecutor[] array, boolean shutdown) {
 				this.array = array;
 				this.shutdown = shutdown;
 			}
 		}
 
-		static final BusyStates ALL_IDLE = new BusyStates(new BoundedState[0], false);
-		static final BusyStates               ALL_SHUTDOWN = new BusyStates(new BoundedState[0], true);
+		static final BusyStates ALL_IDLE = new BusyStates(new SingleThreadExecutor[0], false);
+		static final BusyStates               ALL_SHUTDOWN = new BusyStates(new SingleThreadExecutor[0], true);
 		static final ScheduledExecutorService DELAYED_TASKS_SCHEDULER_SHUTDOWN;
 
 		static final BoundedServices SHUTDOWN;
-		static final BoundedServices SHUTTING_DOWN;
-		static final BoundedState    CREATING;
+		static final BoundedServices      SHUTTING_DOWN;
+		static final SingleThreadExecutor CREATING;
 
 		static {
 			DELAYED_TASKS_SCHEDULER_SHUTDOWN = Executors.newSingleThreadScheduledExecutor();
@@ -355,10 +355,10 @@ final class LoomBoundedElasticScheduler
 			SHUTDOWN.dispose();
 			SHUTTING_DOWN.dispose();
 
-			CREATING = new BoundedState(SHUTDOWN) {
+			CREATING = new SingleThreadExecutor(SHUTDOWN) {
 				@Override
 				public String toString() {
-					return "CREATING BoundedState";
+					return "CREATING SingleThreadExecutor";
 				}
 			};
 			CREATING.markCount = -1; //always -1, ensures tryPick never returns true
@@ -402,9 +402,9 @@ final class LoomBoundedElasticScheduler
 
 		/**
 		 * @param bs the state to set busy
-		 * @return true if the {@link BoundedState} could be added to the busy array (ie. we're not shut down), false if shutting down
+		 * @return true if the {@link SingleThreadExecutor} could be added to the busy array (ie. we're not shut down), false if shutting down
 		 */
-		boolean add(BoundedState bs) {
+		boolean add(SingleThreadExecutor bs) {
 			for (; ; ) {
 				BoundedServices.BusyStates previous = busyStates;
 				if (previous.shutdown) {
@@ -412,7 +412,7 @@ final class LoomBoundedElasticScheduler
 				}
 
 				int len = previous.array.length;
-				BoundedState[] replacement = new BoundedState[len + 1];
+				SingleThreadExecutor[] replacement = new SingleThreadExecutor[len + 1];
 				System.arraycopy(previous.array, 0, replacement, 0, len);
 				replacement[len] = bs;
 
@@ -423,10 +423,10 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		void remove(BoundedState boundedState) {
+		void remove(SingleThreadExecutor singleThreadExecutor) {
 			for(;;) {
 				BusyStates current = busyStates;
-				BoundedState[] arr = busyStates.array;
+				SingleThreadExecutor[] arr = busyStates.array;
 				int len = arr.length;
 
 				if (len == 0 || current.shutdown) {
@@ -435,16 +435,16 @@ final class LoomBoundedElasticScheduler
 
 				BusyStates replacement = null;
 				if (len == 1) {
-					if (arr[0] == boundedState) {
+					if (arr[0] == singleThreadExecutor) {
 						replacement = ALL_IDLE;
 					}
 				}
 				else {
 					for (int i = 0; i < len; i++) {
-						BoundedState state = arr[i];
-						if (state == boundedState) {
+						SingleThreadExecutor state = arr[i];
+						if (state == singleThreadExecutor) {
 							replacement = new BusyStates(
-									new BoundedState[len - 1], false
+									new SingleThreadExecutor[len - 1], false
 							);
 							System.arraycopy(arr, 0, replacement.array, 0, i);
 							System.arraycopy(arr, i + 1, replacement.array, i, len - i - 1);
@@ -463,13 +463,13 @@ final class LoomBoundedElasticScheduler
 		}
 
 		/**
-		 * Pick a {@link BoundedState}, prioritizing idle ones then spinning up a new one if enough capacity.
+		 * Pick a {@link SingleThreadExecutor}, prioritizing idle ones then spinning up a new one if enough capacity.
 		 * Otherwise, picks an active one by taking from a {@link PriorityQueue}. The picking is
 		 * optimistically re-attempted if the picked slot cannot be marked as picked.
 		 *
-		 * @return the picked {@link BoundedState}
+		 * @return the picked {@link SingleThreadExecutor}
 		 */
-		BoundedState pick() {
+		SingleThreadExecutor pick() {
 			for (;;) {
 				if (busyStates == ALL_SHUTDOWN) {
 					return CREATING; //synonym for shutdown, since the underlying executor is shut down
@@ -479,7 +479,7 @@ final class LoomBoundedElasticScheduler
 				if (a < parent.maxThreads) {
 					//try to build a new resource
 					if (compareAndSet(a, a + 1)) {
-						BoundedState newState = new BoundedState(this);
+						SingleThreadExecutor newState = new SingleThreadExecutor(this);
 						if (newState.markPicked()) {
 							boolean accepted = add(newState);
 							if (!accepted) { // shutdown in the meantime
@@ -492,7 +492,7 @@ final class LoomBoundedElasticScheduler
 					//else optimistically retry (implicit continue here)
 				}
 				else {
-					BoundedState s = choseOneBusy();
+					SingleThreadExecutor s = choseOneBusy();
 					if (s != null && s.markPicked()) {
 						return s;
 					}
@@ -502,8 +502,8 @@ final class LoomBoundedElasticScheduler
 		}
 
 		@Nullable
-		private BoundedState choseOneBusy() {
-			BoundedState[] arr = busyStates.array;
+		private SingleThreadExecutor choseOneBusy() {
+			SingleThreadExecutor[] arr = busyStates.array;
 			int len = arr.length;
 			if (len == 0) {
 				return null; //implicit retry in the pick() loop
@@ -512,11 +512,11 @@ final class LoomBoundedElasticScheduler
 				return arr[0];
 			}
 
-			BoundedState choice = arr[0];
+			SingleThreadExecutor choice = arr[0];
 			int leastBusy = Integer.MAX_VALUE;
 
 			for (int i = 0; i < arr.length; i++) {
-				BoundedState state = arr[i];
+				SingleThreadExecutor state = arr[i];
 				int busy = state.markCount;
 				if (busy < leastBusy) {
 					leastBusy = busy;
@@ -526,7 +526,7 @@ final class LoomBoundedElasticScheduler
 			return choice;
 		}
 
-		public BoundedState[] dispose() {
+		public SingleThreadExecutor[] dispose() {
 			BusyStates current;
 			for (;;) {
 				current = busyStates;
@@ -547,7 +547,7 @@ final class LoomBoundedElasticScheduler
 		}
 	}
 
-	static class BoundedState extends CountDownLatch implements Disposable, Scannable {
+	static class SingleThreadExecutor extends CountDownLatch implements Disposable, Scannable {
 
 		/**
 		 * Constant for this counter of backed workers to reflect the given executor has
@@ -563,12 +563,13 @@ final class LoomBoundedElasticScheduler
 		final Queue<SchedulerTask>     tasksQueue;
 		final ScheduledExecutorService scheduledTasksExecutor;
 
-		volatile int markCount;
-		static final AtomicIntegerFieldUpdater<BoundedState> MARK_COUNT = AtomicIntegerFieldUpdater.newUpdater(BoundedState.class, "markCount");
+		volatile int                                                 markCount;
+		static final AtomicIntegerFieldUpdater<SingleThreadExecutor> MARK_COUNT = AtomicIntegerFieldUpdater.newUpdater(
+				SingleThreadExecutor.class, "markCount");
 
-		volatile int size;
-		static final AtomicIntegerFieldUpdater<BoundedState> SIZE =
-				AtomicIntegerFieldUpdater.newUpdater(BoundedState.class, "size");
+		volatile int                                                 size;
+		static final AtomicIntegerFieldUpdater<SingleThreadExecutor> SIZE =
+				AtomicIntegerFieldUpdater.newUpdater(SingleThreadExecutor.class, "size");
 
 		volatile int state;
 		static final VarHandle STATE;
@@ -576,7 +577,7 @@ final class LoomBoundedElasticScheduler
 		static {
 			try {
 				STATE = MethodHandles.lookup()
-				                     .findVarHandle(BoundedState.class, "state", Integer.TYPE);
+				                     .findVarHandle(SingleThreadExecutor.class, "state", Integer.TYPE);
 			}
 			catch (NoSuchFieldException | IllegalAccessException e) {
 				throw new RuntimeException(e);
@@ -587,7 +588,7 @@ final class LoomBoundedElasticScheduler
 
 		SchedulerTask activeTask;
 
-		BoundedState(BoundedServices parent) {
+		SingleThreadExecutor(BoundedServices parent) {
 			super(1);
 			this.parent = parent;
 			this.tasksQueue = Queues.<SchedulerTask>unboundedMultiproducer().get();
@@ -628,7 +629,7 @@ final class LoomBoundedElasticScheduler
 		}
 
 		/**
-		 * Try to mark this {@link BoundedState} as picked.
+		 * Try to mark this {@link SingleThreadExecutor} as picked.
 		 *
 		 * @return true if this state could atomically be marked as picked, false if
 		 * eviction started on it in the meantime
@@ -640,7 +641,7 @@ final class LoomBoundedElasticScheduler
 		}
 
 		/**
-		 * Release the {@link BoundedState}, ie atomically decrease the counter of times it has been picked
+		 * Release the {@link SingleThreadExecutor}, ie atomically decrease the counter of times it has been picked
 		 * and mark as idle if that counter reaches 0.
 		 * This is called when a worker is done using the executor. {@link #dispose()} is an alias
 		 * to this method (for APIs that take a {@link Disposable}).
@@ -665,7 +666,7 @@ final class LoomBoundedElasticScheduler
 		}
 
 		/**
-		 * Forcibly shut down the executor and mark that {@link BoundedState} as evicted.
+		 * Forcibly shut down the executor and mark that {@link SingleThreadExecutor} as evicted.
 		 *
 		 * @see #release()
 		 * @see #dispose()
@@ -858,7 +859,7 @@ final class LoomBoundedElasticScheduler
 		}
 
 		/**
-		 * Is this {@link BoundedState} still in use by workers.
+		 * Is this {@link SingleThreadExecutor} still in use by workers.
 		 *
 		 * @return true if in use, false if it has been disposed enough times
 		 */
@@ -874,12 +875,12 @@ final class LoomBoundedElasticScheduler
 
 		@Override
 		public String toString() {
-			return "BoundedState@" + System.identityHashCode(this) + "{" + " backing=" + markCount + '}';
+			return "SingleThreadExecutor@" + System.identityHashCode(this) + "{" + " backing=" + markCount + '}';
 		}
 
 		// -- MARK-COUNTER --
 
-		static int retain(BoundedState instance) {
+		static int retain(SingleThreadExecutor instance) {
 			for (;;) {
 				int state = instance.markCount;
 
@@ -894,7 +895,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static int releaseAndTryMarkDisposed(BoundedState instance) {
+		static int releaseAndTryMarkDisposed(SingleThreadExecutor instance) {
 			for (;;) {
 				int state = instance.markCount;
 
@@ -909,7 +910,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static boolean markDisposed(BoundedState instance, boolean now) {
+		static boolean markDisposed(SingleThreadExecutor instance, boolean now) {
 			for (;;) {
 				int markCount = instance.markCount;
 
@@ -941,7 +942,7 @@ final class LoomBoundedElasticScheduler
 			return (state & Integer.MAX_VALUE) > 0;
 		}
 
-		static int markWorkDone(BoundedState instance, int expectedState) {
+		static int markWorkDone(SingleThreadExecutor instance, int expectedState) {
 			for (;;) {
 				int currentState = instance.state;
 
@@ -956,7 +957,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static int addWork(BoundedState instance) {
+		static int addWork(SingleThreadExecutor instance) {
 			for (;;) {
 				int state = instance.state;
 
@@ -971,7 +972,7 @@ final class LoomBoundedElasticScheduler
 			}
 		}
 
-		static int forceAddWork(BoundedState instance) {
+		static int forceAddWork(SingleThreadExecutor instance) {
 			for (;;) {
 				int state = instance.state;
 				int wip = state & Integer.MAX_VALUE;
@@ -987,7 +988,7 @@ final class LoomBoundedElasticScheduler
 			return currentWork == Integer.MAX_VALUE ? 1 : currentWork + 1;
 		}
 
-		static int markShutdown(BoundedState instance) {
+		static int markShutdown(SingleThreadExecutor instance) {
 			return (int) STATE.getAndBitwiseOrRelease(instance, 0b11111111111111111111111111111111);
 		}
 	}
@@ -1003,8 +1004,8 @@ final class LoomBoundedElasticScheduler
 		static final int DISPOSED_STATE  = 0b1000_0000_0000_0000_0000_0000_0000_0000;
 
 		final long     fixedRatePeriod;
-		final TimeUnit timeUnit;
-		final BoundedState holder;
+		final TimeUnit             timeUnit;
+		final SingleThreadExecutor holder;
 
 		final Runnable task;
 		@Nullable
@@ -1015,7 +1016,7 @@ final class LoomBoundedElasticScheduler
 
 		Future<Void> scheduledFuture;
 
-		SchedulerTask(BoundedState holder,
+		SchedulerTask(SingleThreadExecutor holder,
 				Runnable task,
 				long fixedRatePeriod,
 				TimeUnit timeUnit,
@@ -1098,7 +1099,7 @@ final class LoomBoundedElasticScheduler
 				return null;
 			}
 
-			final BoundedState parent = this.holder;
+			final SingleThreadExecutor parent = this.holder;
 
 			this.startedAtInMillis = Instant.now().toEpochMilli();
 
@@ -1287,12 +1288,12 @@ final class LoomBoundedElasticScheduler
 		}
 	}
 
-	static class BoundedStateWorker implements Worker {
+	static class SingleThreadExecutorWorker implements Worker {
 
-		final Composite    disposables;
-		final BoundedState state;
+		final Composite            disposables;
+		final SingleThreadExecutor state;
 
-		BoundedStateWorker(BoundedState state) {
+		SingleThreadExecutorWorker(SingleThreadExecutor state) {
 			this.state = state;
 			this.disposables = Disposables.composite(state);
 		}
