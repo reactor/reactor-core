@@ -5,48 +5,17 @@ on:
     - cron: "0 14 * * *"
 permissions: read-all
 jobs:
-  preliminary:
-    name: preliminary sanity checks
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
-        with:
-          fetch-depth: 0 #needed by spotless
-      - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
-        with:
-          distribution: 'temurin'
-          java-version: 8
-      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
-        name: spotless (license header)
-        if: always()
-        with:
-          arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
-      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
-        name: api compatibility
-        if: always()
-        with:
-          arguments: japicmp
-      - name: how to fix
-        if: failure()
-        # the foreground (38;5) color code 208 is orange. we also have bold, white bg (38;5;0;48;5;255m), white fg on black bg...
-        run: |
-          echo -e "\n\033[38;5;0;48;5;208m \u001b[1m How to deal with errors in preliminary job: \u001b[0m\033[0m"
-          echo "(Have a look at the steps above to see what failed exactly)"
-          echo -e "\n - \u001b[1mSpotless (license headers)\u001b[0m failures on touched java files \033[38;5;255;48;5;0m\u001b[1mcan be automatically fixed by running\u001b[0m:"
-          echo -e "   \033[38;5;0;48;5;255m ./gradlew spotlessApply \033[0m"
-          echo -e "\n - \u001b[1mAPI Compatibility\u001b[0m failures should be considered carefully and \033[38;5;255;48;5;0m\u001b[1mdiscussed with maintainers in the PR\u001b[0m"
-          echo "   If there are failures, the detail should be available in the step's log:"
-          echo -e "   Look for the \033[38;5;0;48;5;255m API compatibility failures \033[0m block(s)."
-          echo "   Alternatively, locally run the following command to get access to the full report:"
-          echo -e "   \033[38;5;0;48;5;255m ./gradlew japicmp \033[0m"
-          echo ""
-          exit -1
   core-fast:
     name: core fast tests
     runs-on: ubuntu-latest
-    needs: preliminary
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: ${{ matrix.branch }}
       - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
         with:
           distribution: 'temurin'
@@ -58,9 +27,14 @@ jobs:
   core-slow:
     name: core slower tests
     runs-on: ubuntu-latest
-    needs: preliminary
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: ${{ matrix.branch }}
       - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
         with:
           distribution: 'temurin'
@@ -72,9 +46,14 @@ jobs:
   other:
     name: other tests
     runs-on: ubuntu-latest
-    needs: preliminary
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+        with:
+          ref: ${{ matrix.branch }}
       - uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # tag=v3
         with:
           distribution: 'temurin'
