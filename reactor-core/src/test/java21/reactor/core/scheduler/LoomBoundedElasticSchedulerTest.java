@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
@@ -352,6 +353,60 @@ class LoomBoundedElasticSchedulerTest {
 			          .until(() -> worker.executor.state == 0);
 
 			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
+			Assertions.assertThat(worker.isDisposed()).isFalse();
+			Assertions.assertThat(tasks).allMatch(Disposable::isDisposed);
+		}
+	}
+
+	@Test
+	public void ensuresRandomTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposed() throws InterruptedException {
+		LoomBoundedElasticScheduler scheduler = new LoomBoundedElasticScheduler(2,
+				10000,
+				Thread.ofVirtual()
+				      .name("loom", 0)
+				      .uncaughtExceptionHandler((tr, t) -> {
+					      System.out.println("Dropping " + t + " from " + tr);
+				      })
+				      .factory());
+		scheduler.init();
+		Runnable task = () -> {};
+
+		for (int i = 0; i < 100; i++) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			LoomBoundedElasticScheduler.SingleThreadExecutorWorker worker =
+					(LoomBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+			List<Disposable> tasks = new ArrayList<>();
+			tasks.add(worker.schedule(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(20000);
+			for (int j = 0; j < 10000; j++) {
+				switch (ThreadLocalRandom.current().nextInt(5)) {
+					case 0: tasks.add(worker.schedule(task)); break;
+					case 1: tasks.add(worker.schedule(task, 1, TimeUnit.NANOSECONDS)); break;
+					case 2: tasks.add(worker.schedulePeriodically(task, 1, 1, TimeUnit.NANOSECONDS)); break;
+					case 3: tasks.add(worker.schedulePeriodically(task, 0, 1, TimeUnit.NANOSECONDS)); break;
+					case 4: tasks.add(worker.schedulePeriodically(task, 0, 0, TimeUnit.NANOSECONDS)); break;
+				}
+			}
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(10000);
+
+			latch.countDown();
+			Thread.yield();
+			tasks.forEach(Disposable::dispose);
+
+			Awaitility.await()
+			          .atMost(Duration.ofSeconds(5))
+			          .until(() -> worker.executor.state == 0);
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(20000);
 			Assertions.assertThat(worker.isDisposed()).isFalse();
 			Assertions.assertThat(tasks).allMatch(Disposable::isDisposed);
 		}
