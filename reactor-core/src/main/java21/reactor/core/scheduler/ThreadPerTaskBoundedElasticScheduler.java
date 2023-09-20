@@ -21,7 +21,6 @@ import java.lang.invoke.VarHandle;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -206,7 +205,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 	@Override
 	public Disposable schedule(Runnable task) {
 		//tasks running once will call dispose on the SingleThreadExecutor, decreasing its usage by one
-		SequentialThreadPerTaskExecutor picked = state.currentResource.pick();
+		SequentialThreadPerTaskExecutor picked = state.currentResource.pickOrAllocate();
 		try {
 			return picked.schedule(task, null);
 		}
@@ -220,7 +219,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		//tasks running once will call dispose on the SingleThreadExecutor, decreasing its usage by one
-		final SequentialThreadPerTaskExecutor picked = state.currentResource.pick();
+		final SequentialThreadPerTaskExecutor picked = state.currentResource.pickOrAllocate();
 		try {
 			return picked.schedule(task, delay, unit, null);
 		}
@@ -236,7 +235,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		final SequentialThreadPerTaskExecutor picked = state.currentResource.pick();
+		final SequentialThreadPerTaskExecutor picked = state.currentResource.pickOrAllocate();
 		try {
 			return picked.schedulePeriodically(task,
 					initialDelay,
@@ -319,7 +318,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 	@Override
 	public Worker createWorker() {
-		return new SingleThreadExecutorWorker(state.currentResource.pick());
+		return new SingleThreadExecutorWorker(state.currentResource.pickOrAllocate());
 	}
 
 	static final class BoundedServices {
@@ -334,8 +333,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 		}
 
-		static final ActiveExecutorsState
-				                              ALL_IDLE     = new ActiveExecutorsState(new SequentialThreadPerTaskExecutor[0], false);
+		static final ActiveExecutorsState     INITIAL      = new ActiveExecutorsState(new SequentialThreadPerTaskExecutor[0], false);
 		static final ActiveExecutorsState     ALL_SHUTDOWN = new ActiveExecutorsState(new SequentialThreadPerTaskExecutor[0], true);
 		static final ScheduledExecutorService DELAYED_TASKS_SCHEDULER_SHUTDOWN;
 
@@ -370,7 +368,6 @@ final class ThreadPerTaskBoundedElasticScheduler
 		};
 
 		final ThreadPerTaskBoundedElasticScheduler parent;
-		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
 		final ScheduledExecutorService             sharedDelayedTasksScheduler;
 		final ThreadFactory factory;
 		final int maxTasksQueuedPerThread;
@@ -393,8 +390,9 @@ final class ThreadPerTaskBoundedElasticScheduler
 			this.parent = parent;
 			this.maxTasksQueuedPerThread = parent.maxTasksQueuedPerThread;
 			this.factory = parent.factory;
-			this.activeExecutorsState = ALL_IDLE;
 			this.sharedDelayedTasksScheduler = new ScheduledThreadPoolExecutor(1, DELAYED_TASKS_SCHEDULER_FACTORY);
+
+			ACTIVE_EXECUTORS_STATE.lazySet(this, INITIAL);
 		}
 
 		void remove(SequentialThreadPerTaskExecutor sequentialThreadPerTaskExecutor) {
@@ -410,7 +408,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 				ActiveExecutorsState replacement = null;
 				if (len == 1) {
 					if (arr[0] == sequentialThreadPerTaskExecutor) {
-						replacement = ALL_IDLE;
+						replacement = INITIAL;
 					}
 				}
 				else {
@@ -436,14 +434,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 		}
 
-		/**
-		 * Pick a {@link SequentialThreadPerTaskExecutor}, prioritizing idle ones then spinning up a new one if enough capacity.
-		 * Otherwise, picks an active one by taking from a {@link PriorityQueue}. The picking is
-		 * optimistically re-attempted if the picked slot cannot be marked as picked.
-		 *
-		 * @return the picked {@link SequentialThreadPerTaskExecutor}
-		 */
-		SequentialThreadPerTaskExecutor pick() {
+		SequentialThreadPerTaskExecutor pickOrAllocate() {
 			for (;;) {
 				ActiveExecutorsState activeState = activeExecutorsState;
 				if (activeState == ALL_SHUTDOWN || activeState.shutdown) {
@@ -518,11 +509,11 @@ final class ThreadPerTaskBoundedElasticScheduler
 		final Queue<SchedulerTask>     tasksQueue;
 		final ScheduledExecutorService scheduledTasksExecutor;
 
-		volatile int                                                            markCount;
+		volatile int markCount;
 		static final AtomicIntegerFieldUpdater<SequentialThreadPerTaskExecutor> MARK_COUNT = AtomicIntegerFieldUpdater.newUpdater(
 				SequentialThreadPerTaskExecutor.class, "markCount");
 
-		volatile int                                                            size;
+		volatile int size;
 		static final AtomicIntegerFieldUpdater<SequentialThreadPerTaskExecutor> SIZE =
 				AtomicIntegerFieldUpdater.newUpdater(SequentialThreadPerTaskExecutor.class, "size");
 
@@ -1261,12 +1252,13 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		SingleThreadExecutorWorker(SequentialThreadPerTaskExecutor executor) {
 			this.executor = executor;
-			this.disposables = Disposables.composite(executor);
+			this.disposables = Disposables.composite();
 		}
 
 		@Override
 		public void dispose() {
 			disposables.dispose();
+			executor.release();
 		}
 
 		@Override
