@@ -1,5 +1,6 @@
 package reactor.core.scheduler;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -7,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -313,6 +315,9 @@ class LoomBoundedElasticSchedulerTest {
 				1000,
 				Thread.ofVirtual()
 				      .name("loom", 0)
+					  .uncaughtExceptionHandler((tr, t) -> {
+						  System.out.println("Dropping " + t + " from " + tr);
+					  })
 				      .factory());
 		scheduler.init();
 		Runnable task = () -> {};
@@ -320,7 +325,8 @@ class LoomBoundedElasticSchedulerTest {
 		for (int i = 0; i < 100; i++) {
 			CountDownLatch latch = new CountDownLatch(1);
 
-			Scheduler.Worker worker = scheduler.createWorker();
+			LoomBoundedElasticScheduler.SingleThreadExecutorWorker worker =
+					(LoomBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 			List<Disposable> tasks = new ArrayList<>();
 			tasks.add(worker.schedule(() -> {
 				try {
@@ -340,6 +346,10 @@ class LoomBoundedElasticSchedulerTest {
 			latch.countDown();
 			Thread.yield();
 			tasks.forEach(Disposable::dispose);
+
+			Awaitility.await()
+			          .atMost(Duration.ofSeconds(5))
+			          .until(() -> worker.executor.state == 0);
 
 			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(2000);
 			Assertions.assertThat(worker.isDisposed()).isFalse();
