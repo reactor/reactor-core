@@ -18,15 +18,14 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 
-final class LoomBoundedElasticScheduler
-		implements Scheduler, SchedulerState.DisposeAwaiter<LoomBoundedElasticScheduler.BoundedServices>, Scannable {
+final class ThreadPerTaskBoundedElasticScheduler
+		implements Scheduler, SchedulerState.DisposeAwaiter<ThreadPerTaskBoundedElasticScheduler.BoundedServices>, Scannable {
 
-	LoomBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
+	ThreadPerTaskBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
 		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
 	}
 
@@ -51,7 +50,11 @@ final class LoomBoundedElasticScheduler
 		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
 	}
 
-	static final class BoundedServices extends AtomicInteger {
+	static final class BoundedServices {
+		private BoundedServices() {
 
+		}
+
+		BoundedServices(ThreadPerTaskBoundedElasticScheduler parent) {}
 	}
 }

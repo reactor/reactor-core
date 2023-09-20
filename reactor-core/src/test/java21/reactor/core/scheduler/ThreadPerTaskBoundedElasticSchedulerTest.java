@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -17,13 +18,13 @@ import reactor.core.Disposable;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.concurrent.Queues;
 
-class LoomBoundedElasticSchedulerTest {
+class ThreadPerTaskBoundedElasticSchedulerTest {
 
-	Scheduler scheduler;
+	ThreadPerTaskBoundedElasticScheduler scheduler;
 
 	@BeforeEach
 	void setup() {
-		scheduler = new LoomBoundedElasticScheduler(2,
+		scheduler = new ThreadPerTaskBoundedElasticScheduler(2,
 				3,
 				Thread.ofVirtual()
 				      .name("loom", 0)
@@ -49,8 +50,31 @@ class LoomBoundedElasticSchedulerTest {
 	@Test
 	public void ensuresTasksDelayedScheduling() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch awaiter = new CountDownLatch(1);
 
-		Disposable disposable = scheduler.schedule(latch::countDown, 200, TimeUnit.MILLISECONDS);
+		ThreadPerTaskBoundedElasticScheduler.BoundedServices resource =
+				scheduler.state.currentResource;
+		// submit task which occupy shared single threaded scheduler
+		resource.sharedDelayedTasksScheduler.submit(() -> {
+			awaiter.await();
+			return null;
+		});
+
+		// ensures task is picked
+		Awaitility.await()
+		          .atMost(Duration.ofSeconds(2))
+		          .until(() -> ((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().isEmpty());
+
+		// schedule delayed task which should go to sharedDelayedTasksScheduler
+		Disposable disposable = scheduler.schedule(latch::countDown, 1, TimeUnit.MILLISECONDS);
+
+		Assertions.assertThat(((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().size()).isOne();
+
+		awaiter.countDown();
+
+		Awaitility.await()
+				.atMost(Duration.ofSeconds(2))
+				.until(() -> ((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().isEmpty());
 
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isTrue();
@@ -59,8 +83,28 @@ class LoomBoundedElasticSchedulerTest {
 	@Test
 	public void ensuresTasksDelayedZeroDelayScheduling() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch awaiter = new CountDownLatch(1);
+
+		ThreadPerTaskBoundedElasticScheduler.BoundedServices resource =
+				scheduler.state.currentResource;
+		// submit task which occupy shared single threaded scheduler
+		resource.sharedDelayedTasksScheduler.submit(() -> {
+			awaiter.await();
+			return null;
+		});
+
+		// ensures task is picked
+		Awaitility.await()
+		          .atMost(Duration.ofSeconds(2))
+		          .until(() -> ((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().isEmpty());
 
 		Disposable disposable = scheduler.schedule(latch::countDown, 0, TimeUnit.MILLISECONDS);
+
+		// assures that no tasks is scheduled for shared scheduler
+		Assertions.assertThat(((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().size()).isZero();
+
+		// unblock scheduler
+		awaiter.countDown();
 
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isTrue();
@@ -71,7 +115,7 @@ class LoomBoundedElasticSchedulerTest {
 		CountDownLatch latch = new CountDownLatch(10);
 
 		Disposable disposable = scheduler.schedulePeriodically(latch::countDown,
-				100,
+				1,
 				10,
 				TimeUnit.MILLISECONDS);
 
@@ -101,7 +145,7 @@ class LoomBoundedElasticSchedulerTest {
 		CountDownLatch latch = new CountDownLatch(10);
 
 		Disposable disposable = scheduler.schedulePeriodically(latch::countDown,
-				100,
+				1,
 				0,
 				TimeUnit.MILLISECONDS);
 
@@ -272,7 +316,8 @@ class LoomBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenWorkerIsDisposed() throws InterruptedException {
-		LoomBoundedElasticScheduler scheduler = new LoomBoundedElasticScheduler(2,
+		ThreadPerTaskBoundedElasticScheduler
+				scheduler = new ThreadPerTaskBoundedElasticScheduler(2,
 				1000,
 				Thread.ofVirtual()
 				      .name("loom", 0)
@@ -312,7 +357,8 @@ class LoomBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposed() throws InterruptedException {
-		LoomBoundedElasticScheduler scheduler = new LoomBoundedElasticScheduler(2,
+		ThreadPerTaskBoundedElasticScheduler
+				scheduler = new ThreadPerTaskBoundedElasticScheduler(2,
 				1000,
 				Thread.ofVirtual()
 				      .name("loom", 0)
@@ -324,8 +370,8 @@ class LoomBoundedElasticSchedulerTest {
 		for (int i = 0; i < 100; i++) {
 			CountDownLatch latch = new CountDownLatch(1);
 
-			LoomBoundedElasticScheduler.SingleThreadExecutorWorker worker =
-					(LoomBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+			ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker =
+					(ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 			List<Disposable> tasks = new ArrayList<>();
 			tasks.add(worker.schedule(() -> {
 				try {
@@ -358,7 +404,8 @@ class LoomBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresRandomTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposed() throws InterruptedException {
-		LoomBoundedElasticScheduler scheduler = new LoomBoundedElasticScheduler(2,
+		ThreadPerTaskBoundedElasticScheduler
+				scheduler = new ThreadPerTaskBoundedElasticScheduler(2,
 				10000,
 				Thread.ofVirtual()
 				      .name("loom", 0)
@@ -370,8 +417,8 @@ class LoomBoundedElasticSchedulerTest {
 		for (int i = 0; i < 100; i++) {
 			CountDownLatch latch = new CountDownLatch(1);
 
-			LoomBoundedElasticScheduler.SingleThreadExecutorWorker worker =
-					(LoomBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+			ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker =
+					(ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 			List<Disposable> tasks = new ArrayList<>();
 			tasks.add(worker.schedule(() -> {
 				try {

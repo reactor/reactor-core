@@ -409,8 +409,8 @@ public abstract class Schedulers {
 		return fromFactory;
 	}
 
-	static Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
-		Scheduler fromFactory = factory.newLoomBoundedElastic(threadCap,
+	static Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
+		Scheduler fromFactory = factory.newThreadPerTaskBoundedElastic(threadCap,
 				queuedTaskCap,
 				threadFactory);
 		fromFactory.init();
@@ -994,7 +994,7 @@ public abstract class Schedulers {
 		 * Workers, reusing them once the Workers have been shut down. The underlying (user or daemon)
 		 * threads can be evicted if idle for more than {@code ttlSeconds}.
 		 * <p>
-		 * The maximum number of created thread pools is bounded by the provided {@code cap}.
+		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
 		 *
 		 * @param threadCap maximum number of underlying threads to create
 		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
@@ -1013,22 +1013,24 @@ public abstract class Schedulers {
 		 * Workers, reusing them once the Workers have been shut down. The underlying (user or daemon)
 		 * threads can be evicted if idle for more than {@code ttlSeconds}.
 		 * <p>
-		 * The maximum number of created thread pools is bounded by the provided {@code cap}.
+		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
 		 * <p>
 		 * The main difference between {@link BoundedElasticScheduler} and
-		 * {@link LoomBoundedElasticScheduler} is that underlying workers allocates a
-		 * new thread for every new task which is the main requirements for
-		 * {@link VirtualThread}s
+		 * {@link ThreadPerTaskBoundedElasticScheduler} is that underlying machinery
+		 * allocates a new thread for every new task which is one of the requirements
+		 * for usage with {@link VirtualThread}s
+		 * <p>
+		 * <b>Note:</b> for now this scheduler is available only in Java 21 runtime
 		 *
 		 * @param threadCap maximum number of underlying threads to create
 		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
 		 *
 		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
-		 * the number of backing threads, reuses threads and evict idle ones
+		 * the number of backing threads
 		 */
-		default Scheduler newLoomBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
-			return new LoomBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory);
+		default Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
+			return new ThreadPerTaskBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory);
 		}
 
 		/**
