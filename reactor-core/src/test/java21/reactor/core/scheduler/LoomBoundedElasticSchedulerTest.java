@@ -316,9 +316,7 @@ class LoomBoundedElasticSchedulerTest {
 				1000,
 				Thread.ofVirtual()
 				      .name("loom", 0)
-					  .uncaughtExceptionHandler((tr, t) -> {
-						  System.out.println("Dropping " + t + " from " + tr);
-					  })
+					  .uncaughtExceptionHandler((tr, t) -> {})
 				      .factory());
 		scheduler.init();
 		Runnable task = () -> {};
@@ -364,9 +362,7 @@ class LoomBoundedElasticSchedulerTest {
 				10000,
 				Thread.ofVirtual()
 				      .name("loom", 0)
-				      .uncaughtExceptionHandler((tr, t) -> {
-					      System.out.println("Dropping " + t + " from " + tr);
-				      })
+				      .uncaughtExceptionHandler((tr, t) -> {})
 				      .factory());
 		scheduler.init();
 		Runnable task = () -> {};

@@ -610,7 +610,7 @@ final class LoomBoundedElasticScheduler
 		}
 
 		int estimateQueueSize() {
-			return this.tasksQueue.size();
+			return size;
 		}
 
 		/**
