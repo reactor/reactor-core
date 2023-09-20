@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
@@ -53,6 +55,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -330,10 +333,59 @@ public class AutomaticContextPropagationTest {
 			assertThat(value.get()).isEqualTo("present");
 		}
 
+		void assertThreadLocalPresentInOnSuccess(Mono<?> chain) {
+			AtomicReference<String> value = new AtomicReference<>();
+
+			chain.doOnSuccess(item -> value.set(REF.get()))
+			     .contextWrite(Context.of(KEY, "present"))
+			     .block();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		void assertThreadLocalPresentInOnError(Mono<?> chain) {
+			AtomicReference<String> value = new AtomicReference<>();
+
+			chain.doOnError(item -> value.set(REF.get()))
+			     .contextWrite(Context.of(KEY, "present"))
+			     .onErrorComplete()
+			     .block();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(CorePublisher<? extends T> source) throws InterruptedException {
+			AtomicReference<String> value = new AtomicReference<>();
+			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean complete = new AtomicBoolean();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			CoreSubscriberWithContext<T> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
+
+			source.subscribe(subscriberWithContext);
+
+			latch.await(10, TimeUnit.MILLISECONDS);
+
+			assertThat(error.get()).isNull();
+			assertThat(complete.get()).isTrue();
+			assertThat(value.get()).isEqualTo("present");
+		}
+
 		void assertThreadLocalPresentInOnNext(Flux<?> chain) {
 			AtomicReference<String> value = new AtomicReference<>();
 
 			chain.doOnNext(item -> value.set(REF.get()))
+			     .contextWrite(Context.of(KEY, "present"))
+			     .blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+		}
+
+		void assertThreadLocalPresentInOnComplete(Flux<?> chain) {
+			AtomicReference<String> value = new AtomicReference<>();
+
+			chain.doOnComplete(() -> value.set(REF.get()))
 			     .contextWrite(Context.of(KEY, "present"))
 			     .blockLast();
 
@@ -411,8 +463,8 @@ public class AutomaticContextPropagationTest {
 
 			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			flux.subscribe(subscriberWithContext);
 
@@ -436,8 +488,8 @@ public class AutomaticContextPropagationTest {
 
 			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			// We force the use of subscribe(Subscriber) override instead of
 			// subscribe(CoreSubscriber), and we can observe that for such a case we
@@ -514,8 +566,8 @@ public class AutomaticContextPropagationTest {
 
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			mono.subscribe(subscriberWithContext);
 
@@ -539,8 +591,8 @@ public class AutomaticContextPropagationTest {
 
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			// We force the use of subscribe(Subscriber) override instead of
 			// subscribe(CoreSubscriber), and we can observe that for such a case we
@@ -576,8 +628,8 @@ public class AutomaticContextPropagationTest {
 			AtomicBoolean complete = new AtomicBoolean();
 			CountDownLatch latch = new CountDownLatch(1);
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			Publisher<String> flux = Flux.create(sink -> {
 				executorService.submit(() -> {
@@ -645,6 +697,84 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalPresentInOnNext(Flux.firstWithSignal(list));
 		}
 
+		@Test
+		void fluxRetryWhen() {
+			Flux<String> flux =
+					new ThreadSwitchingFlux<>("Hello", executorService).retryWhen(Retry.max(1));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxRetryWhenSwitchingThread() {
+			Flux<Object> flux =
+					Flux.error(new RuntimeException("Oops"))
+					    .retryWhen(Retry.from(f -> new ThreadSwitchingFlux<>(
+							    "Hello", executorService)));
+
+			assertThreadLocalPresentInOnComplete(flux);
+		}
+
+		@Test
+		void fluxWindowUntil() {
+			Flux<String> flux =
+					new ThreadSwitchingFlux<>("Hello", executorService)
+							.windowUntil(s -> true)
+							.flatMap(Function.identity());
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void switchOnFirst() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
+					.switchOnFirst((s, f) -> f.map(String::toUpperCase));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void switchOnFirstFuseable() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
+					.filter("Hello"::equals)
+					.switchOnFirst((s, f) -> f.map(String::toUpperCase));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void switchOnFirstSwitchThread() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
+					.switchOnFirst((s, f) -> new ThreadSwitchingFlux<>("Goodbye", executorService));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void switchOnFirstFuseableSwitchThread() {
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
+					.filter("Hello"::equals)
+					.switchOnFirst((s, f) -> new ThreadSwitchingFlux<>("Goodbye", executorService));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxWindowTimeout() {
+			Flux<Flux<String>> flux = new ThreadSwitchingFlux<>("Hello", executorService)
+					.windowTimeout(1, Duration.ofDays(1), true);
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxWindowTimeoutDirect() throws InterruptedException {
+			Flux<Flux<String>> flux = new ThreadSwitchingFlux<>("Hello", executorService)
+					.windowTimeout(1, Duration.ofDays(1), true);
+
+			assertThatThreadLocalsPresentDirectCoreSubscribe(flux);
+		}
+
 		// Mono tests
 
 		@Test
@@ -665,8 +795,8 @@ public class AutomaticContextPropagationTest {
 			AtomicBoolean complete = new AtomicBoolean();
 			CountDownLatch latch = new CountDownLatch(1);
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			Publisher<String> mono = Mono.create(sink -> {
 				executorService.submit(() -> {
@@ -712,6 +842,12 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
+		void monoIgnoreSwitchingThread() {
+			Mono<String> mono = Mono.ignoreElements(new ThreadSwitchingMono<>("Hello", executorService));
+			assertThreadLocalPresentInOnSuccess(mono);
+		}
+
+		@Test
 		void monoDeferContextual() {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 			Mono<String> chain = Mono.deferContextual(ctx -> mono);
@@ -745,6 +881,24 @@ public class AutomaticContextPropagationTest {
 			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
 			Mono<String> chain = flux.single();
 			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
+		void monoRetryWhen() {
+			Mono<String> mono =
+					new ThreadSwitchingMono<>("Hello", executorService).retryWhen(Retry.max(1));
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoRetryWhenSwitchingThread() {
+			Mono<Object> mono =
+					Mono.error(new RuntimeException("Oops"))
+					    .retryWhen(Retry.from(f -> new ThreadSwitchingMono<>(
+							"Hello", executorService)));
+
+			assertThreadLocalPresentInOnSuccess(mono);
 		}
 
 		// ParallelFlux tests
@@ -996,8 +1150,8 @@ public class AutomaticContextPropagationTest {
 
 			Sinks.One<String> sink = Sinks.one();
 
-			CoreSubscriberWithContext subscriberWithContext =
-					new CoreSubscriberWithContext(value, error, latch, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext =
+					new CoreSubscriberWithContext<>(value, error, latch, complete);
 
 			sink.asMono()
 					.subscribe(subscriberWithContext);
@@ -1249,7 +1403,7 @@ public class AutomaticContextPropagationTest {
 			}
 		}
 
-		private class CoreSubscriberWithContext implements CoreSubscriber<String> {
+		private class CoreSubscriberWithContext<T> implements CoreSubscriber<T> {
 
 			private final AtomicReference<String>    value;
 			private final AtomicReference<Throwable> error;
@@ -1277,7 +1431,7 @@ public class AutomaticContextPropagationTest {
 			}
 
 			@Override
-			public void onNext(String s) {
+			public void onNext(T t) {
 				value.set(REF.get());
 			}
 

@@ -40,7 +40,7 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 	final OptimizableOperator<?, T> optimizableOperator;
 
 	MonoIgnorePublisher(Publisher<? extends T> source) {
-		this.source = Objects.requireNonNull(source, "publisher");
+		this.source = Operators.toFluxOrMono(Objects.requireNonNull(source, "publisher"));
 		if (source instanceof OptimizableOperator) {
 			@SuppressWarnings("unchecked")
 			OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) source;

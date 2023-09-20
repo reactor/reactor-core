@@ -37,7 +37,7 @@ final class MonoRetryWhen<T> extends InternalMonoOperator<T, T> {
 	final Retry whenSourceFactory;
 
 	MonoRetryWhen(Mono<? extends T> source, Retry whenSourceFactory) {
-		super(source);
+		super(Mono.fromDirect(source));
 		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 

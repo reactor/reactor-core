@@ -542,7 +542,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				outboundPublisher.subscribe(o);
+				Operators.toFluxOrMono(outboundPublisher).subscribe(o);
 				return;
 			}
 
@@ -586,7 +586,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				result.subscribe(o);
+				Operators.toFluxOrMono(result).subscribe(o);
 			}
 		}
 
@@ -623,7 +623,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				result.subscribe(o);
+				Operators.toFluxOrMono(result).subscribe(o);
 			}
 		}
 
@@ -868,7 +868,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return true;
 				}
 
-				result.subscribe(o);
+				Operators.toFluxOrMono(result).subscribe(o);
 				return true;
 			}
 

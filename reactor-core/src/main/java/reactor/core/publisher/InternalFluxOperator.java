@@ -65,6 +65,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 				if (newSource == null) {
 					CorePublisher operatorSource = operator.source();
 					Operators.toFluxOrMono(operatorSource).subscribe(subscriber);
+//					operatorSource.subscribe(subscriber);
 					return;
 				}
 				operator = newSource;
