@@ -147,7 +147,7 @@ final class MonoFirstWithValue<T> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 		if (n == 1) {
-			Publisher<? extends T> p = a[0];
+			Publisher<? extends T> p = Mono.from(a[0]);
 
 			if (p == null) {
 				Operators.error(actual,

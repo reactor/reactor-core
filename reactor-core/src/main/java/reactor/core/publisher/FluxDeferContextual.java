@@ -54,10 +54,6 @@ final class FluxDeferContextual<T> extends Flux<T> implements SourceProducer<T> 
 			return;
 		}
 
-		// TODO: Here assembly hooks were applied, while in Mono's implementation, not
-		//  even wrap (which skips assembly hooks) was called.
-		//  We need to decide whether from/wrap perform the Subscriber wrapping instead
-		//  of the below construct!
 		Operators.toFluxOrMono(p).subscribe(actual);
 	}
 

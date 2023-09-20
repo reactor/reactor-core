@@ -65,6 +65,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 			if (source == null) {
 				throw new NullPointerException("sources[" + i + "] is null");
 			}
+			sources[i] = Operators.toFluxOrMono(sources[i]);
 		}
 
 		this.prefetch = prefetch;

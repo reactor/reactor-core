@@ -82,8 +82,8 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		Mono<? extends T> p;
 
 		try {
-			p = Objects.requireNonNull(sourceFactory.apply(resource),
-					"The sourceFactory returned a null value");
+			p = Mono.fromDirect(Objects.requireNonNull(sourceFactory.apply(resource),
+					"The sourceFactory returned a null value"));
 		}
 		catch (Throwable e) {
 

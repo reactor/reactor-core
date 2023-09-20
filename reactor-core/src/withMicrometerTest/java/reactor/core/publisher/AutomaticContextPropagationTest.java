@@ -775,6 +775,60 @@ public class AutomaticContextPropagationTest {
 			assertThatThreadLocalsPresentDirectCoreSubscribe(flux);
 		}
 
+		@Test
+		void fluxMergeComparing() {
+			Flux<String> flux = Flux.mergeComparing(Flux.empty(),
+					new ThreadSwitchingFlux<>("Hello", executorService));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxMergeComparingDirect() throws InterruptedException {
+			Flux<String> flux = Flux.mergeComparing(Flux.empty(),
+					new ThreadSwitchingFlux<>("Hello", executorService));
+
+			assertThatThreadLocalsPresentDirectCoreSubscribe(flux);
+		}
+
+		@Test
+		void fluxFirstWithValueArray() {
+			Flux<String> flux = Flux.firstWithValue(Flux.empty(),
+					new ThreadSwitchingFlux<>("Hola", executorService));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxFirstWithValueIterable() {
+			List<Flux<String>> list = Stream.of(Flux.<String>empty(),
+					                                new ThreadSwitchingFlux<>("Hola", executorService))
+			                                .collect(Collectors.toList());
+			Flux<String> flux = Flux.firstWithValue(list);
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxConcatArray() {
+			Flux<String> flux = Flux.concat(Mono.<String>empty(),
+					new ThreadSwitchingFlux<>("Hello", executorService));
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxConcatIterable() {
+			List<Flux<String>> list = Stream.of(Flux.<String>empty(),
+					                                new ThreadSwitchingFlux<>("Hello", executorService))
+					.collect(Collectors.toList());
+
+			Flux<String> flux = Flux.concat(list);
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+
+
 		// Mono tests
 
 		@Test
@@ -899,6 +953,35 @@ public class AutomaticContextPropagationTest {
 							"Hello", executorService)));
 
 			assertThreadLocalPresentInOnSuccess(mono);
+		}
+
+		@Test
+		void monoUsing() {
+			Mono<String> mono = Mono.using(
+					() -> "Hello",
+					seed -> new ThreadSwitchingMono<>("Hola", executorService),
+					seed -> {},
+					false);
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoFirstWithValueArray() {
+			Mono<String> mono = Mono.firstWithValue(Mono.empty(),
+					new ThreadSwitchingMono<>("Hola", executorService));
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoFirstWithValueIterable() {
+			List<Mono<String>> list = Stream.of(Mono.<String>empty(),
+					                                new ThreadSwitchingMono<>("Hola", executorService))
+			                                .collect(Collectors.toList());
+			Mono<String> mono = Mono.firstWithValue(list);
+
+			assertThreadLocalPresentInOnNext(mono);
 		}
 
 		// ParallelFlux tests

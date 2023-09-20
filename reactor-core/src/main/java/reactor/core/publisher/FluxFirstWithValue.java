@@ -159,7 +159,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 			return;
 		}
 		if (n == 1) {
-			Publisher<? extends T> p = a[0];
+			Publisher<? extends T> p = Flux.from(a[0]);
 
 			if (p == null) {
 				Operators.error(actual,
@@ -237,7 +237,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				sources[i].subscribe(subscribers[i]);
+				Operators.toFluxOrMono(sources[i]).subscribe(subscribers[i]);
 			}
 		}
 
