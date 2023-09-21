@@ -592,7 +592,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		/**
 		 * Release the {@link SequentialThreadPerTaskExecutor}, ie atomically decrease the counter of times it has been picked
-		 * and mark as idle if that counter reaches 0.
+		 * and remove from the list of active executors if that counter reaches 0.
 		 * This is called when a worker is done using the executor. {@link #dispose()} is an alias
 		 * to this method (for APIs that take a {@link Disposable}).
 		 *
@@ -1024,6 +1024,8 @@ final class ThreadPerTaskBoundedElasticScheduler
 				long nextDelayInMillis = fixedRatePeriodInMillis - executionTimeInMillis;
 				if (nextDelayInMillis > 0) {
 					// schedule next delay
+					// TODO: should we prevent scheduling if parent is for graceful
+					//  shutdown
 					schedule(nextDelayInMillis, TimeUnit.MILLISECONDS);
 				}
 				else {

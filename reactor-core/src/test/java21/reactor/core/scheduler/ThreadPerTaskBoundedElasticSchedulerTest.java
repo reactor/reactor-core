@@ -454,4 +454,6 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 			Assertions.assertThat(tasks).allMatch(Disposable::isDisposed);
 		}
 	}
+
+	// TODO: add graceful shutdown check
 }
