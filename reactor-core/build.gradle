@@ -251,6 +251,13 @@ task japicmp(type: JapicmpTask) {
 	classExcludes = [
 	]
 	methodExcludes = [
+		  "reactor.core.publisher.FluxSink#contextView()",
+		  "reactor.core.publisher.FluxSink#currentContext()",
+		  "reactor.core.publisher.MonoSink#contextView()",
+		  "reactor.core.publisher.MonoSink#currentContext()",
+		  "reactor.core.publisher.SynchronousSink#contextView()",
+		  "reactor.core.publisher.SynchronousSink#currentContext()",
+		  "reactor.util.context.Context#putAll(reactor.util.context.Context)",
 	]
 }
 
