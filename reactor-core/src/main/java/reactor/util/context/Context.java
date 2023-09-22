@@ -301,18 +301,4 @@ public interface Context extends ContextView {
 		}
 		return combined;
 	}
-
-	/**
-	 * See {@link #putAll(ContextView)}.
-	 *
-	 * @deprecated will be removed in 3.5, kept for backward compatibility with 3.3. Until
-	 * then if you need to work around the deprecation, use {@link #putAll(ContextView)}
-	 * combined with {@link #readOnly()}
-	 * @param context the {@link Context} from which to copy entries
-	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
-	 */
-	@Deprecated
-	default Context putAll(Context context) {
-		return this.putAll(context.readOnly());
-	}
 }

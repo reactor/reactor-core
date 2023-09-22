@@ -129,12 +129,6 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		}
 
 		@Override
-		@Deprecated
-		public Context currentContext() {
-			return actual.currentContext();
-		}
-
-		@Override
 		public ContextView contextView() {
 			return actual.currentContext();
 		}

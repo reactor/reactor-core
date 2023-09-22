@@ -139,12 +139,6 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Deprecated
-		public Context currentContext() {
-			return sink.currentContext();
-		}
-
-		@Override
 		public ContextView contextView() {
 			return sink.contextView();
 		}
@@ -153,7 +147,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		public FluxSink<T> next(T t) {
 			Objects.requireNonNull(t, "t is null in sink.next(t)");
 			if (sink.isTerminated() || done) {
-				Operators.onNextDropped(t, sink.currentContext());
+				Operators.onNextDropped(t, sink.ctx);
 				return this;
 			}
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
@@ -161,7 +155,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					sink.next(t);
 				}
 				catch (Throwable ex) {
-					Operators.onOperatorError(sink, ex, t, sink.currentContext());
+					Operators.onOperatorError(sink, ex, t, sink.ctx);
 				}
 				if (WIP.decrementAndGet(this) == 0) {
 					return this;
@@ -181,7 +175,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		public void error(Throwable t) {
 			Objects.requireNonNull(t, "t is null in sink.error(t)");
 			if (sink.isTerminated() || done) {
-				Operators.onOperatorError(t, sink.currentContext());
+				Operators.onOperatorError(t, sink.ctx);
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -189,7 +183,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				drain();
 			}
 			else {
-				Context ctx = sink.currentContext();
+				Context ctx = sink.ctx;
 				Operators.onDiscardQueueWithClear(mpscQueue, ctx, null);
 				Operators.onOperatorError(t, ctx);
 			}
@@ -215,7 +209,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		void drainLoop() {
-			Context ctx = sink.currentContext();
+			Context ctx = sink.ctx;
 			BaseSink<T> e = sink;
 			Queue<T> q = mpscQueue;
 			for (; ; ) {
@@ -256,7 +250,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 						e.next(v);
 					}
 					catch (Throwable ex) {
-						Operators.onOperatorError(sink, ex, v, sink.currentContext());
+						Operators.onOperatorError(sink, ex, v, sink.ctx);
 					}
 				}
 
@@ -331,12 +325,6 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		SerializeOnRequestSink(BaseSink<T> sink) {
 			this.baseSink = sink;
 			this.sink = sink;
-		}
-
-		@Override
-		@Deprecated
-		public Context currentContext() {
-			return sink.currentContext();
 		}
 
 		@Override
@@ -437,14 +425,6 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			this.actual = actual;
 			this.ctx = actual.currentContext();
 			REQUESTED.lazySet(this, Long.MIN_VALUE);
-		}
-
-		@Override
-		@Deprecated
-		public Context currentContext() {
-			//we cache the context for hooks purposes, but this forces to go through the
-			// chain when queried for context, in case downstream can update the Context...
-			return actual.currentContext();
 		}
 
 		@Override

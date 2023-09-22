@@ -64,18 +64,6 @@ public interface FluxSink<T> {
 	void error(Throwable e);
 
 	/**
-	 * Return the current subscriber {@link Context}.
-	 * <p>
-	 *   {@link Context} can be enriched via {@link Flux#contextWrite(Function)}
-	 *   operator or directly by a child subscriber overriding
-	 *   {@link CoreSubscriber#currentContext()}
-	 *
-	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #contextView() instead.
-	 */
-	@Deprecated
-	Context currentContext();
-
-	/**
 	 * Return the current subscriber's context as a {@link ContextView} for inspection.
 	 * <p>
 	 * {@link Context} can be enriched downstream via {@link Flux#contextWrite(Function)}
@@ -83,10 +71,7 @@ public interface FluxSink<T> {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	default ContextView contextView() {
-		return currentContext();
-	}
-
+	ContextView contextView();
 
 	/**
 	 * The current outstanding request amount.

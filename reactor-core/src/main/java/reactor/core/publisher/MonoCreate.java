@@ -104,12 +104,6 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Deprecated
-		public Context currentContext() {
-			return this.actual.currentContext();
-		}
-
-		@Override
 		public ContextView contextView() {
 			return this.actual.currentContext();
 		}
