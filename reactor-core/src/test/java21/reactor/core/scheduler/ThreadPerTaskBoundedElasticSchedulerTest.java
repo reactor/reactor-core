@@ -34,7 +34,7 @@ import reactor.core.Disposable;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.concurrent.Queues;
 
-class ThreadPerTaskBoundedElasticSchedulerTest {
+class ThreadPerTaskBoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	ThreadPerTaskBoundedElasticScheduler scheduler;
 
@@ -119,11 +119,11 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		// assures that no tasks is scheduled for shared scheduler
 		Assertions.assertThat(((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().size()).isZero();
 
-		// unblock scheduler
-		awaiter.countDown();
-
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isTrue();
+
+		// unblock scheduler
+		awaiter.countDown();
 	}
 
 	@Test
@@ -471,5 +471,10 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		}
 	}
 
-	// TODO: add graceful shutdown check
+	// TODO: add graceful shutdown check (check how we await delayed and period tasks
+	//       along with normal tasks)
+	// TODO: add tasks ordering test
+	// TODO: if the same executor used by different workers ensures that disposing one
+	//       worker does not affect tasks of the others
+	// TODO: write a test for estimateRemainingTaskCapacity() to ensure math never fails
 }

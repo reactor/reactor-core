@@ -124,8 +124,9 @@ final class ThreadPerTaskBoundedElasticScheduler
 	}
 
 	@Override
+	@Deprecated
 	public void start() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Use init method instead");
 	}
 
 	@Override
@@ -275,7 +276,8 @@ final class ThreadPerTaskBoundedElasticScheduler
 	/**
 	 * Best effort snapshot of the remaining queue capacity for pending tasks across all the backing executors.
 	 *
-	 * @return the total task capacity, or {@literal -1} if any backing executor's task queue size cannot be instrumented
+	 * @return the total task capacity, or {@literal -1} if any backing executor's task
+	 * queue size cannot be estimated
 	 */
 	int estimateRemainingTaskCapacity() {
 		if (maxTasksQueuedPerThread == Integer.MAX_VALUE) {
@@ -284,19 +286,14 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		SequentialThreadPerTaskExecutor[] busyArray = state.currentResource.activeExecutorsState.array;
 
-		long totalTaskCapacity = maxTasksQueuedPerThread * (long) maxThreads;
-
+		long numberOfTotalAvailableSlots = 0;
 		for (SequentialThreadPerTaskExecutor state : busyArray) {
-			int stateQueueSize = state.estimateQueueSize();
-			if (stateQueueSize >= 0) {
-				totalTaskCapacity -= stateQueueSize;
-			}
-			else {
-				return -1;
-			}
+			numberOfTotalAvailableSlots += state.numberOfAvailableSlots();
 		}
 
-		return (int) Math.min(totalTaskCapacity, Integer.MAX_VALUE);
+		numberOfTotalAvailableSlots += (maxThreads - busyArray.length) * (long) maxTasksQueuedPerThread;
+
+		return (int) Math.min(numberOfTotalAvailableSlots, Integer.MAX_VALUE);
 	}
 
 	@Override
@@ -509,6 +506,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		final Queue<SchedulerTask>     tasksQueue;
 		final ScheduledExecutorService scheduledTasksExecutor;
 
+		// FIXME: merge with size or wip fields
 		volatile int markCount;
 		static final AtomicIntegerFieldUpdater<SequentialThreadPerTaskExecutor> MARK_COUNT = AtomicIntegerFieldUpdater.newUpdater(
 				SequentialThreadPerTaskExecutor.class, "markCount");
@@ -574,8 +572,16 @@ final class ThreadPerTaskBoundedElasticScheduler
 			SIZE.decrementAndGet(this);
 		}
 
-		int estimateQueueSize() {
+		int numberOfEnqueuedTasks() {
 			return size;
+		}
+
+		int numberOfAvailableSlots() {
+			if (queueCapacity == Integer.MAX_VALUE) {
+				return Integer.MAX_VALUE;
+			}
+
+			return queueCapacity - size;
 		}
 
 		/**
@@ -739,6 +745,9 @@ final class ThreadPerTaskBoundedElasticScheduler
 			return disposable;
 		}
 
+		/**
+		 * Is being called from public API and tries to add work and then execute it
+		 */
 		void trySchedule() {
 			int previousState = addWork(this);
 			if (previousState != 0) {
@@ -748,6 +757,11 @@ final class ThreadPerTaskBoundedElasticScheduler
 			drain();
 		}
 
+
+		/**
+		 * Is being called from the {@link SchedulerTask} internals when the scheduler
+		 * task was offloaded to sharedScheduledExecutorService for the delayed execution
+		 */
 		void tryForceSchedule() {
 			int previousState = forceAddWork(this);
 			if (previousState != 0) {
