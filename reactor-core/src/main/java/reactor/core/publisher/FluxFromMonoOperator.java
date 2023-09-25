@@ -81,6 +81,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 				}
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
+					subscriber = Operators.restoreContextOnSubscriberIfPublisherNonInternal(operator.source(), subscriber);
 					operator.source().subscribe(subscriber);
 					return;
 				}

@@ -296,7 +296,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 
 		FluxReplay.ReplaySubscription<T> rs = new ReplayInner<>(wrapped, this);
 		wrapped.onSubscribe(rs);

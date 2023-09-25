@@ -48,7 +48,6 @@ final class ParallelArraySource<T> extends ParallelFlux<T> implements SourceProd
 		}
 		
 		int n = subscribers.length;
-		
 		for (int i = 0; i < n; i++) {
 			Operators.toFluxOrMono(sources[i]).subscribe(subscribers[i]);
 		}

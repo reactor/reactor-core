@@ -75,7 +75,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 
 		S state;
 

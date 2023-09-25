@@ -141,9 +141,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 			return;
 		}
 
-		for (int i = 0; i < n; i++) {
-			a[i] = Operators.toFluxOrMono(a[i]);
-		}
+		Operators.toFluxOrMono(a);
 
 		FluxFirstWithSignal.RaceCoordinator<T> coordinator =
 				new FluxFirstWithSignal.RaceCoordinator<>(n);

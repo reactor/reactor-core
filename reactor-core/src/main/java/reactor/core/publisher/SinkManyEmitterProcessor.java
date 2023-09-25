@@ -167,7 +167,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		Objects.requireNonNull(actual, "subscribe");
 
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 
 		EmitterInner<T> inner = new EmitterInner<>(wrapped, this);
 		wrapped.onSubscribe(inner);

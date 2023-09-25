@@ -95,9 +95,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 			return;
 		}
 
-		for (int i = 0; i < n; i++) {
-			a[i] = Operators.toFluxOrMono(a[i]);
-		}
+		Operators.toFluxOrMono(a);
 
 		WhenCoordinator parent = new WhenCoordinator(a, actual, n, delayError);
 		actual.onSubscribe(parent);

@@ -198,7 +198,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 		Inner<T> as = new VoidInner<>(wrapped, this);
 		wrapped.onSubscribe(as);
 		final int addedState = add(as);

@@ -89,7 +89,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 		BaseSink<T> sink = createSink(wrapped, backpressure);
 
 		wrapped.onSubscribe(sink);

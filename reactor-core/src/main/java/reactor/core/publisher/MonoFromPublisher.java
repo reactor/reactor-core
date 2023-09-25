@@ -60,6 +60,7 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 			if (subscriber == null) {
 				return;
 			}
+			subscriber = Operators.restoreContextOnSubscriberIfPublisherNonInternal(source, subscriber);
 			source.subscribe(subscriber);
 		}
 		catch (Throwable e) {

@@ -54,9 +54,9 @@ final class FluxMerge<T> extends Flux<T> implements SourceProducer<T> {
 			throw new IllegalArgumentException("maxConcurrency > 0 required but it was " + maxConcurrency);
 		}
 		this.sources = Objects.requireNonNull(sources, "sources");
-		for (int i = 0; i < sources.length; i++) {
-			this.sources[i] = Operators.toFluxOrMono(this.sources[i]);
-		}
+
+		Operators.toFluxOrMono(this.sources);
+
 		this.delayError = delayError;
 		this.maxConcurrency = maxConcurrency;
 		this.prefetch = prefetch;

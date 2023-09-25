@@ -79,7 +79,8 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable,
 				}
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
-					Operators.toFluxOrMono(operator.source()).subscribe(subscriber);
+					subscriber = Operators.restoreContextOnSubscriberIfPublisherNonInternal(operator.source(), subscriber);
+					operator.source().subscribe(subscriber);
 					return;
 				}
 				operator = newSource;

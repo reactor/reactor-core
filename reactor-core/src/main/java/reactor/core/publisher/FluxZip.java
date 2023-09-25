@@ -294,11 +294,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			@Nullable Object[] scalars,
 			int n,
 			int sc) {
-		for (int i = 0; i < n; i++) {
-			if (srcs[i] != null) {
-				srcs[i] = Operators.toFluxOrMono(srcs[i]);
-			}
-		}
+		Operators.toFluxOrMono(srcs);
+
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =

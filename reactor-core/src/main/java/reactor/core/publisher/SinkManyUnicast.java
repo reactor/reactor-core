@@ -410,7 +410,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 			this.hasDownstream = true;

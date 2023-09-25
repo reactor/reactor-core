@@ -193,7 +193,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		Objects.requireNonNull(actual, "subscribe(null) is forbidden");
 
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 
 		DirectInner<T> p = new DirectInner<>(wrapped, this);
 		wrapped.onSubscribe(p);

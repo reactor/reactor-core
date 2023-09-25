@@ -36,7 +36,7 @@ public class ParallelFluxRestoringThreadLocals<T> extends ParallelFlux<T> implem
 	@Override
 	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		CoreSubscriber<? super T>[] actualSubscribers =
-				Operators.restoreContextOnSubscribersIfNecessary(source, subscribers);
+				Operators.restoreContextOnSubscribers(source, subscribers);
 
 		source.subscribe(actualSubscribers);
 	}

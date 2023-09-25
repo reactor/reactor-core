@@ -77,7 +77,7 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 		Objects.requireNonNull(actual, "subscribe");
 
 		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriber(this, actual);
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 
 		if (!STATE.compareAndSet(this, State.INITIAL, State.SUBSCRIBED)) {
 			Operators.reportThrowInSubscribe(wrapped, new IllegalStateException(

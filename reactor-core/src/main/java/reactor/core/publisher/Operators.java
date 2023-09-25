@@ -991,14 +991,22 @@ public abstract class Operators {
 		}
 	}
 
-	public static <T> CorePublisher<? extends T> toFluxOrMono(Publisher<T> publisher) {
+	public static <T> CorePublisher<T> toFluxOrMono(Publisher<T> publisher) {
 		if (publisher instanceof Mono) {
 			return Mono.fromDirect(publisher);
 		}
 		return Flux.from(publisher);
 	}
 
-	static <T> CoreSubscriber<T> restoreContextOnSubscriberIfNecessary(
+	public static <T> void toFluxOrMono(Publisher<? extends T>[] sources) {
+		for (int i = 0; i < sources.length; i++) {
+			if (sources[i] != null) {
+				sources[i] = toFluxOrMono(sources[i]);
+			}
+		}
+	}
+
+	static <T> CoreSubscriber<T> restoreContextOnSubscriberIfPublisherNonInternal(
 			Publisher<?> publisher, CoreSubscriber<T> subscriber) {
 		if (ContextPropagationSupport.shouldWrapPublisher(publisher)) {
 			if (publisher instanceof Fuseable) {
@@ -1014,42 +1022,31 @@ public abstract class Operators {
 		return subscriber;
 	}
 
-	static <T> CoreSubscriber<? super T> restoreContextOnSubscriber(
+	static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfAutoCPEnabled(
 			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
 		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-			if (publisher instanceof Fuseable) {
-				return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
-						subscriber, subscriber.currentContext());
-			} else {
-				return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
-						subscriber,
-						subscriber.currentContext());
-			}
+			return restoreContextOnSubscriber(publisher, subscriber);
 		}
 		return subscriber;
 	}
 
-	static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribersIfNecessary(
+	static <T> CoreSubscriber<? super T> restoreContextOnSubscriber(
+			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
+		if (publisher instanceof Fuseable) {
+			return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+					subscriber, subscriber.currentContext());
+		} else {
+			return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
+					subscriber,
+					subscriber.currentContext());
+		}
+	}
+
+	static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribers(
 			Publisher<?> publisher, CoreSubscriber<? super T>[] subscribers) {
-		CoreSubscriber<? super T>[] actualSubscribers = subscribers;
-		if (ContextPropagationSupport.shouldWrapPublisher(publisher)) {
-			actualSubscribers = new CoreSubscriber[subscribers.length];
-			for (int i = 0; i < subscribers.length; i++) {
-				CoreSubscriber<? super T> subscriber;
-				if (publisher instanceof Fuseable) {
-					subscriber =
-							new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
-									subscribers[i],
-									subscribers[i].currentContext());
-				}
-				else {
-					subscriber =
-							new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
-									subscribers[i],
-									subscribers[i].currentContext());
-				}
-				actualSubscribers[i] = subscriber;
-			}
+		CoreSubscriber<? super T>[] actualSubscribers = new CoreSubscriber[subscribers.length];
+		for (int i = 0; i < subscribers.length; i++) {
+			actualSubscribers[i] = restoreContextOnSubscriber(publisher, subscribers[i]);
 		}
 		return actualSubscribers;
 	}
