@@ -84,7 +84,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 							asyncCancel,
 							null);
 
-					p.subscribe(subscriber);
+					fromDirect(p).subscribe(subscriber);
 				}
 			}
 			catch (Throwable e) {
@@ -93,7 +93,8 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		resourceSupplier.subscribe(new ResourceSubscriber(actual, resourceClosure,
+		Operators.toFluxOrMono(resourceSupplier).subscribe(new ResourceSubscriber(actual,
+				resourceClosure,
 				asyncComplete, asyncError, asyncCancel,
 				resourceSupplier instanceof Mono));
 	}
@@ -180,7 +181,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 
 			final Mono<? extends T> p = deriveMonoFromResource(resource, resourceClosure);
 
-			p.subscribe(MonoUsingWhen.<S, T>prepareSubscriberForResource(resource,
+			fromDirect(p).subscribe(MonoUsingWhen.<S, T>prepareSubscriberForResource(resource,
 					this.actual,
 					this.asyncComplete,
 					this.asyncError,

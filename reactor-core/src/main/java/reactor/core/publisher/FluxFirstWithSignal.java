@@ -132,6 +132,12 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 			return;
 		}
 
+		for (int i = 0; i < n; i++) {
+			if (a[i] != null) {
+				a[i] = Operators.toFluxOrMono(a[i]);
+			}
+		}
+
 		RaceCoordinator<T> coordinator = new RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, actual);
@@ -223,7 +229,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 					return;
 				}
 
-				Operators.toFluxOrMono(p).subscribe(a[i]);
+				p.subscribe(a[i]);
 			}
 
 		}

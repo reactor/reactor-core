@@ -42,8 +42,8 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 
 	MonoSequenceEqual(Publisher<? extends T> first, Publisher<? extends T> second,
 			BiPredicate<? super T, ? super T> comparer, int prefetch) {
-		this.first = Objects.requireNonNull(first, "first");
-		this.second = Objects.requireNonNull(second, "second");
+		this.first = Operators.toFluxOrMono(Objects.requireNonNull(first, "first"));
+		this.second = Operators.toFluxOrMono(Objects.requireNonNull(second, "second"));
 		this.comparer = Objects.requireNonNull(comparer, "comparer");
 		if(prefetch < 1){
 			throw new IllegalArgumentException("Buffer size must be strictly positive: " +

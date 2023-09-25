@@ -122,6 +122,10 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			return;
 		}
 
+		for (int i = 0; i < n; i++) {
+			a[i] = Mono.fromDirect(a[i]);
+		}
+
 		actual.onSubscribe(new ZipCoordinator<>(a, actual, n, delayError, zipper));
 	}
 

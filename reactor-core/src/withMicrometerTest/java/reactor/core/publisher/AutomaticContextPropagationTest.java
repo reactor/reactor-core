@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -55,6 +56,8 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -621,6 +624,21 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalPresentInOnNext(flux);
 		}
 
+		/*
+		1. raw RS Publisher:
+		  a) subscribe(Subscriber) -> we need to wrap when we call publisher.subscribe()
+		2. Flux/Mono
+		  a) subscribe(CoreSubscriber) -> we need to wrap if publisher is not INTERNAL_PRODUCER
+		  b) subscribe(Subscriber) -> no need to wrap, because of the fallback in Flux#subscribe(Subscriber)
+		                              BUT, if implementation overrides subscribe (Subscriber) that fallback is GONE ? NO -> method is final
+
+		Problem with Subscriber wrapping:
+		  When we have raw Publisher ref, we wrap the Subscriber, then call
+		  subscribe(Subscriber), we'd wrap Subscriber again, as the Publisher is still
+		  not INTERNAL_PRODUCER.
+		  We could do instanceof, but would need to go through all instances.
+		  We could have every Subscriber report Scannable RESTORING_THREAD_LOCALS instead.
+		 */
 		@Test
 		void fluxCreateDirect() throws InterruptedException {
 			AtomicReference<String> value = new AtomicReference<>();
@@ -827,7 +845,56 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalPresentInOnNext(flux);
 		}
 
+		@Test
+		void fluxGenerate() {
+			Flux<String> flux = Flux.generate(sink -> {
+				sink.next("Hello");
+				// the generator is checked if any signal was delivered by the consumer
+				// so we check at completion only
+				executorService.submit(() -> {
+					sink.complete();
+				});
+			});
 
+			assertThreadLocalPresentInOnComplete(flux);
+		}
+
+		@Test
+		void fluxCombineLatest() {
+			Flux<String> flux = Flux.combineLatest(Flux.just(""),
+					new ThreadSwitchingFlux<>("Hello", executorService), (s1, s2) -> s2);
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxUsing() {
+			Flux<String> flux = Flux.using(() -> 0, i -> new ThreadSwitchingFlux<>(
+					"Hello", executorService), i -> {});
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxZip() {
+			Flux<Tuple2<String, String>> flux = Flux.zip(Flux.just(""),
+					new ThreadSwitchingFlux<>("Hello",
+							executorService));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
+
+		@Test
+		void fluxZipIterable() {
+			List<Flux<String>> list = Stream.of(Flux.just(""),
+					new ThreadSwitchingFlux<>("Hello",
+							executorService)).collect(Collectors.toList());
+
+			Flux<Tuple2<String, String>> flux = Flux.zip(list,
+					obj -> Tuples.of((String) obj[0], (String) obj[1]));
+
+			assertThreadLocalPresentInOnNext(flux);
+		}
 
 		// Mono tests
 
@@ -909,6 +976,13 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
+		void monoDefer() {
+			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
+			Mono<String> chain = Mono.defer(() -> mono);
+			assertThreadLocalPresentInOnNext(chain);
+		}
+
+		@Test
 		void monoFirstWithSignalArray() {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 			Mono<String> chain = Mono.firstWithSignal(mono);
@@ -980,6 +1054,51 @@ public class AutomaticContextPropagationTest {
 					                                new ThreadSwitchingMono<>("Hola", executorService))
 			                                .collect(Collectors.toList());
 			Mono<String> mono = Mono.firstWithValue(list);
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoZip() {
+			Mono<Tuple2<String, String>> mono = Mono.zip(Mono.just(""),
+					new ThreadSwitchingMono<>("Hello",
+					executorService));
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoZipIterable() {
+			List<Mono<String>> list = Stream.of(Mono.just(""),
+					new ThreadSwitchingMono<>("Hello",
+							executorService)).collect(Collectors.toList());
+
+			Mono<Tuple2<String, String>> mono = Mono.zip(list,
+					obj -> Tuples.of((String) obj[0], (String) obj[1]));
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoSequenceEqual() {
+			Mono<Boolean> mono = Mono.sequenceEqual(Mono.just("Hello"),
+					new ThreadSwitchingMono<>("Hello", executorService));
+
+			assertThreadLocalPresentInOnNext(mono);
+		}
+
+		@Test
+		void monoWhen() {
+			Mono<Void> mono = Mono.when(Mono.empty(), new ThreadSwitchingMono<>("Hello"
+					, executorService));
+
+			assertThreadLocalPresentInOnSuccess(mono);
+		}
+
+		@Test
+		void monoUsingWhen() {
+			Mono<String> mono = Mono.usingWhen(Mono.just("Hello"), s ->
+					new ThreadSwitchingMono<>(s, executorService), s -> Mono.empty());
 
 			assertThreadLocalPresentInOnNext(mono);
 		}

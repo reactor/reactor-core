@@ -74,15 +74,18 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriber(this, actual);
+
 		S state;
 
 		try {
 			state = stateSupplier.call();
 		} catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
+			Operators.error(wrapped, Operators.onOperatorError(e, wrapped.currentContext()));
 			return;
 		}
-		actual.onSubscribe(new GenerateSubscription<>(actual, state, generator, stateConsumer));
+		wrapped.onSubscribe(new GenerateSubscription<>(wrapped, state, generator, stateConsumer));
 	}
 
 	@Override

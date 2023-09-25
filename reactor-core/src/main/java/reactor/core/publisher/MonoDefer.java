@@ -50,7 +50,7 @@ final class MonoDefer<T> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		p.subscribe(actual);
+		fromDirect(p).subscribe(actual);
 	}
 
 	@Override

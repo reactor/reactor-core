@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -949,13 +949,13 @@ public class HooksTest {
 		AtomicInteger liftCounter = new AtomicInteger();
 		Hooks.onEachOperator(Operators.lift((sc, sub) -> liftSubscriber(sc, sub, liftCounter)));
 
-		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1)) //internally converts each rail to a Flux using Flux.from
+		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
 		                                .log()
 		                                .log())
-		            .expectNext(601, 601) //6x lifts => just,Flux.from,ParallelFlux.from,log,log, back to sequential (shared)
+		            .expectNext(501, 501) //6x lifts => just,Flux.from,ParallelFlux.from,log,log, back to sequential (shared)
 		            .verifyComplete();
 
-		assertThat(liftCounter).hasValue(11); //11x total lifts: 2xjust, 2xfrom, 2xparallelFrom,4xlog,sequential
+		assertThat(liftCounter).hasValue(9); //9x total lifts: 2xjust,2xparallelFrom,4xlog,sequential
 	}
 
 	@Test

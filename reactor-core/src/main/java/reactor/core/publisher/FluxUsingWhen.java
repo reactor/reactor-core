@@ -91,7 +91,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 							asyncCancel,
 							null);
 
-					p.subscribe(subscriber);
+					Operators.toFluxOrMono(p).subscribe(subscriber);
 				}
 			}
 			catch (Throwable e) {
@@ -101,7 +101,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		//trigger the resource creation and delay the subscription to actual
-		resourceSupplier.subscribe(new ResourceSubscriber(actual, resourceClosure, asyncComplete, asyncError, asyncCancel, resourceSupplier instanceof Mono));
+		Operators.toFluxOrMono(resourceSupplier).subscribe(new ResourceSubscriber(actual,
+				resourceClosure,	asyncComplete, asyncError, asyncCancel, resourceSupplier instanceof Mono));
 	}
 
 	@Override
@@ -192,7 +193,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 			final Publisher<? extends T> p = deriveFluxFromResource(resource, resourceClosure);
 
-			p.subscribe(FluxUsingWhen.<S, T>prepareSubscriberForResource(resource,
+			Operators.toFluxOrMono(p).subscribe(FluxUsingWhen.<S, T>prepareSubscriberForResource(resource,
 					this.actual,
 					this.asyncComplete,
 					this.asyncError,
@@ -361,7 +362,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				p.subscribe(new RollbackInner(this, t));
+				Operators.toFluxOrMono(p).subscribe(new RollbackInner(this, t));
 			}
 		}
 
@@ -381,7 +382,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				p.subscribe(new CommitInner(this));
+				Operators.toFluxOrMono(p).subscribe(new CommitInner(this));
 			}
 		}
 

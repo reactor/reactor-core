@@ -430,6 +430,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				if (add(inner)) {
 					p = Operators.toFluxOrMono(p);
 					p.subscribe(inner);
+//					p.subscribe((Subscriber<? super R>) Operators.restoreContextOnSubscriberIfNecessary(p, inner));
 				} else {
 					Operators.onDiscard(t, actual.currentContext());
 				}

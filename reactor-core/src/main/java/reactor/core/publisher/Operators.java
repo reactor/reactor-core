@@ -998,8 +998,8 @@ public abstract class Operators {
 		return Flux.from(publisher);
 	}
 
-	static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfNecessary(
-			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
+	static <T> CoreSubscriber<T> restoreContextOnSubscriberIfNecessary(
+			Publisher<?> publisher, CoreSubscriber<T> subscriber) {
 		if (ContextPropagationSupport.shouldWrapPublisher(publisher)) {
 			if (publisher instanceof Fuseable) {
 				subscriber =

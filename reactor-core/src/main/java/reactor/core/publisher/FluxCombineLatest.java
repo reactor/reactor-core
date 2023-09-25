@@ -166,6 +166,10 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 			}
 		}
 
+		for (int i = 0; i < n; i++) {
+			a[i] = Operators.toFluxOrMono(a[i]);
+		}
+
 		Queue<SourceAndArray> queue = queueSupplier.get();
 
 		CombineLatestCoordinator<T, R> coordinator =
