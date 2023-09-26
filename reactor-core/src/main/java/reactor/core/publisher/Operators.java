@@ -1009,15 +1009,7 @@ public abstract class Operators {
 	static <T> CoreSubscriber<T> restoreContextOnSubscriberIfPublisherNonInternal(
 			Publisher<?> publisher, CoreSubscriber<T> subscriber) {
 		if (ContextPropagationSupport.shouldWrapPublisher(publisher)) {
-			if (publisher instanceof Fuseable) {
-				subscriber =
-						new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(subscriber,
-								subscriber.currentContext());
-			} else {
-				subscriber = new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
-						subscriber,
-						subscriber.currentContext());
-			}
+			return restoreContextOnSubscriber(publisher, subscriber);
 		}
 		return subscriber;
 	}
@@ -1030,8 +1022,7 @@ public abstract class Operators {
 		return subscriber;
 	}
 
-	static <T> CoreSubscriber<? super T> restoreContextOnSubscriber(
-			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
+	static <T> CoreSubscriber<T> restoreContextOnSubscriber(Publisher<?> publisher, CoreSubscriber<T> subscriber) {
 		if (publisher instanceof Fuseable) {
 			return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
 					subscriber, subscriber.currentContext());

@@ -52,7 +52,7 @@ final class MonoCompletionStage<T> extends Mono<T>
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        CoreSubscriber<? super T> wrapped = Operators.restoreContextOnSubscriber(this, actual);
+        CoreSubscriber<? super T> wrapped = Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
         wrapped.onSubscribe(new MonoCompletionStageSubscription<>(
                 wrapped, future, suppressCancellation));
     }
