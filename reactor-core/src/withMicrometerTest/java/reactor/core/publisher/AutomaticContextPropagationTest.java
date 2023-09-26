@@ -624,21 +624,6 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalPresentInOnNext(flux);
 		}
 
-		/*
-		1. raw RS Publisher:
-		  a) subscribe(Subscriber) -> we need to wrap when we call publisher.subscribe()
-		2. Flux/Mono
-		  a) subscribe(CoreSubscriber) -> we need to wrap if publisher is not INTERNAL_PRODUCER
-		  b) subscribe(Subscriber) -> no need to wrap, because of the fallback in Flux#subscribe(Subscriber)
-		                              BUT, if implementation overrides subscribe (Subscriber) that fallback is GONE ? NO -> method is final
-
-		Problem with Subscriber wrapping:
-		  When we have raw Publisher ref, we wrap the Subscriber, then call
-		  subscribe(Subscriber), we'd wrap Subscriber again, as the Publisher is still
-		  not INTERNAL_PRODUCER.
-		  We could do instanceof, but would need to go through all instances.
-		  We could have every Subscriber report Scannable RESTORING_THREAD_LOCALS instead.
-		 */
 		@Test
 		void fluxCreateDirect() throws InterruptedException {
 			AtomicReference<String> value = new AtomicReference<>();
