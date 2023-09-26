@@ -36,13 +36,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
@@ -603,39 +601,6 @@ public abstract class Schedulers {
 	 */
 	public static boolean isNonBlockingThread(Thread t) {
 		return t instanceof NonBlocking;
-	}
-
-	/**
-	 * If Micrometer is available, set-up a decorator that will instrument any
-	 * {@link ExecutorService} that backs a {@link Scheduler}.
-	 * No-op if Micrometer isn't available.
-	 *
-	 * <p>
-	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
-	 * prior to using this method, the default being
-	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
-	 * </p>
-	 *
-	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers, which doesn't change the Factory.
-	 * @deprecated prefer using Micrometer#timedScheduler from the reactor-core-micrometer module. To be removed at the earliest in 3.6.0.
-	 */
-	@Deprecated
-	public static void enableMetrics() {
-		if (Metrics.isInstrumentationAvailable()) {
-			addExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
-		}
-	}
-
-	/**
-	 * If {@link #enableMetrics()} has been previously called, removes the decorator.
-	 * No-op if {@link #enableMetrics()} hasn't been called.
-	 *
-	 * @deprecated prefer using Micrometer#timedScheduler from the reactor-core-micrometer module. To be removed at the earliest in 3.6.0.
-	 */
- 	@Deprecated
-	public static void disableMetrics() {
-		removeExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY);
 	}
 
 	/**
