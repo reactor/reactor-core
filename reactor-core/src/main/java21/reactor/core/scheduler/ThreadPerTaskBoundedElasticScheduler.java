@@ -18,7 +18,6 @@ package reactor.core.scheduler;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Queue;
@@ -503,7 +502,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		final int queueCapacity;
 
-		final Queue<SchedulerTask>     tasksQueue;
+		final Queue<SchedulerTask> tasksQueue;
 		final ScheduledExecutorService scheduledTasksExecutor;
 
 		// FIXME: merge with size or wip fields
@@ -535,7 +534,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		SequentialThreadPerTaskExecutor(BoundedServices parent, boolean markPicked) {
 			super(1);
 			this.parent = parent;
-			this.tasksQueue = Queues.<SchedulerTask>unboundedMultiproducer().get();
+			this.tasksQueue = Queues.<RunnableTask>unboundedMultiproducer().get();
 			this.queueCapacity = parent.maxTasksQueuedPerThread;
 			this.factory = parent.factory;
 			this.scheduledTasksExecutor = parent.sharedDelayedTasksScheduler;
@@ -721,7 +720,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 			Runnable decoratedTask = onSchedule(task);
 			boolean isDirect = disposables == null;
 
-			SchedulerTask disposable = new SchedulerTask(this,
+			RunnableTask disposable = new RunnableTask(this,
 					decoratedTask,
 					period < 0 ? 0 : period,
 					unit,
@@ -759,7 +758,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 
 		/**
-		 * Is being called from the {@link SchedulerTask} internals when the scheduler
+		 * Is being called from the {@link RunnableTask} internals when the scheduler
 		 * task was offloaded to sharedScheduledExecutorService for the delayed execution
 		 */
 		void tryForceSchedule() {
@@ -772,7 +771,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		void drain() {
-			final Queue<SchedulerTask> q = this.tasksQueue;
+			final Queue<RunnableTask> q = this.tasksQueue;
 
 			int m = this.state;
 			for (;;) {
@@ -783,7 +782,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 						return;
 					}
 
-					final SchedulerTask task = q.poll();
+					final RunnableTask task = q.poll();
 
 					if (task == null) {
 						break;
@@ -797,7 +796,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 				m = markWorkDone(this, m);
 
-				if (isShutdown(m)) {
+				if (isShutdown(m) && q.isEmpty()) {
 					countDown();
 					return;
 				}
@@ -809,14 +808,14 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		void clearAllTask() {
-			SchedulerTask activeTask = this.activeTask;
+			RunnableTask activeTask = this.activeTask;
 			if (activeTask != null) {
 				activeTask.dispose();
 			}
 
-			Queue<SchedulerTask> q = this.tasksQueue;
+			Queue<RunnableTask> q = this.tasksQueue;
 
-			SchedulerTask d;
+			RunnableTask d;
 			while ((d = q.poll()) != null) {
 				d.dispose();
 			}
@@ -882,7 +881,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 					return false;
 				}
 
-				if (MARK_COUNT.weakCompareAndSet(instance, markCount, DISPOSED_NOW_STATE)) {
+				if (MARK_COUNT.weakCompareAndSet(instance, markCount, now ? DISPOSED_NOW_STATE : DISPOSED_STATE)) {
 					return true;
 				}
 			}
@@ -1021,31 +1020,27 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 
 			if (isPeriodic()) {
-				previousState = markInitial(this);
+				if (this.fixedRatePeriod != 0) {
+					// schedule next delay
+					// TODO: should we prevent scheduling if parent is for graceful
+					//  shutdown
+					previousState = markScheduled(this);
+
+				}
+				else {
+					previousState = markScheduled(this);
+					if (!isDisposed(previousState) && SequentialThreadPerTaskExecutor.isShutdown(holder.state)) {
+						// we do not schedule task since execution time is greater than
+						// fixed rate period which means we need to run this task right away
+						this.holder.tasksQueue.offer(this);
+					}
+				}
+
 				if (isDisposed(previousState)) {
 					this.holder.removeTask();
 					if (this.tracker == null) {
 						this.holder.release();
 					}
-					this.holder.drain();
-					return;
-				}
-
-				long completedAtInMillis = Instant.now().toEpochMilli();
-				long executionTimeInMillis = completedAtInMillis - this.startedAtInMillis;
-				long fixedRatePeriodInMillis = this.timeUnit.toMillis(this.fixedRatePeriod);
-
-				long nextDelayInMillis = fixedRatePeriodInMillis - executionTimeInMillis;
-				if (nextDelayInMillis > 0) {
-					// schedule next delay
-					// TODO: should we prevent scheduling if parent is for graceful
-					//  shutdown
-					schedule(nextDelayInMillis, TimeUnit.MILLISECONDS);
-				}
-				else {
-					// we do not schedule task since execution time is greater than
-					// fixed rate period which means we need to run this task right away
-					this.holder.tasksQueue.offer(this);
 				}
 				// and drain next task if available
 				this.holder.drain();
@@ -1065,7 +1060,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		@Override
-		public Void call() throws Exception {
+		public Void call() {
 			if (isDisposed()) {
 				return null;
 			}
@@ -1260,6 +1255,524 @@ final class ThreadPerTaskBoundedElasticScheduler
 			disposable.weakCompareAndSetPlain(state, COMPLETED_STATE);
 		}
 	}
+
+
+//	interface Task extends Disposable, Runnable {
+//
+//		int INITIAL_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0000;
+//		int SCHEDULED_STATE = 0b0000_0000_0000_0000_0000_0000_0000_0001;
+//		int STARTED_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0010;
+//		int RUNNING_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0100;
+//		int COMPLETED_STATE = 0b0000_0000_0000_0000_0000_0000_0000_1000;
+//		int DISPOSED_STATE  = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+//
+//
+//
+//		static boolean isInitialState(int state) {
+//			return state == 0;
+//		}
+//
+//		static boolean isStarting(int state) {
+//			return (state & STARTED_STATE) == STARTED_STATE;
+//		}
+//
+//		static boolean isRunning(int state) {
+//			return (state & RUNNING_STATE) == RUNNING_STATE;
+//		}
+//
+//		static boolean isCompleted(int state) {
+//			return (state & COMPLETED_STATE) == COMPLETED_STATE;
+//		}
+//
+//		static boolean isScheduled(int state) {
+//			return (state & SCHEDULED_STATE) == SCHEDULED_STATE;
+//		}
+//
+//		static boolean isDisposed(int state) {
+//			return (state & DISPOSED_STATE) == DISPOSED_STATE;
+//		}
+//
+//		static int markInitial(AtomicInteger disposable) {
+//			for (; ; ) {
+//				int state = disposable.get();
+//
+//				if (isDisposed(state)) {
+//					return state;
+//				}
+//
+//				if (disposable.weakCompareAndSetPlain(state, INITIAL_STATE)) {
+//					return state;
+//				}
+//			}
+//		}
+//
+//		static int markStarting(AtomicInteger disposable) {
+//			for (;;) {
+//				int state = disposable.get();
+//
+//				if (isDisposed(state)) {
+//					return state;
+//				}
+//
+//				if (disposable.weakCompareAndSetPlain(state, STARTED_STATE)) {
+//					return state;
+//				}
+//			}
+//		}
+//
+//		static int markRunning(AtomicInteger disposable) {
+//			for (;;) {
+//				int state = disposable.get();
+//
+//				if (isDisposed(state)) {
+//					return state;
+//				}
+//
+//				if (disposable.weakCompareAndSetPlain(state, RUNNING_STATE)) {
+//					return state;
+//				}
+//			}
+//		}
+//
+//		static int markScheduled(AtomicInteger disposable) {
+//			for (;;) {
+//				int state = disposable.get();
+//
+//				if (!isInitialState(state)) {
+//					return state;
+//				}
+//
+//				if (disposable.weakCompareAndSetPlain(state, SCHEDULED_STATE)) {
+//					return state;
+//				}
+//			}
+//		}
+//
+//		static int markDisposed(AtomicInteger disposable) {
+//			for (;;) {
+//				int state = disposable.get();
+//
+//				if (isDisposed(state) || isCompleted(state)) {
+//					return state;
+//				}
+//
+//				if (disposable.weakCompareAndSetAcquire(state, state | DISPOSED_STATE)) {
+//					return state;
+//				}
+//			}
+//		}
+//
+//		static void markCompleted(AtomicInteger disposable) {
+//			int state = disposable.get();
+//
+//			if (isDisposed(state)) {
+//				return;
+//			}
+//
+//			disposable.weakCompareAndSetPlain(state, COMPLETED_STATE);
+//		}
+//	}
+//
+//	final static class RunnableTask extends AtomicInteger implements Task {
+//
+//
+//		final SequentialThreadPerTaskExecutor holder;
+//
+//		final Runnable task;
+//		@Nullable
+//		final Composite tracker;
+//
+//		Thread carrier;
+//
+//		RunnableTask(SequentialThreadPerTaskExecutor holder,
+//				Runnable task,
+//				@Nullable Composite tracker) {
+//			this.holder = holder;
+//			this.task = task;
+//			this.tracker = tracker;
+//		}
+//
+//		@Override
+//		public void run() {
+//			int previousState = Task.markRunning(this);
+//
+//			if (Task.isDisposed(previousState)) {
+//				this.holder.drain();
+//				return;
+//			}
+//
+//			try {
+//				task.run();
+//			}
+//			catch (Throwable ex) {
+//				boolean handled = false;
+//				try {
+//					Schedulers.handleError(ex);
+//					handled = true;
+//				} finally {
+//					if (!handled) {
+//						if (this.tracker == null) {
+//							this.holder.release();
+//						}
+//						else {
+//							this.tracker.remove(this);
+//						}
+//						this.holder.drain();
+//					}
+//				}
+//			}
+//
+//			Task.markCompleted(this);
+//
+//			if (this.tracker == null) {
+//				this.holder.release();
+//			}
+//			else {
+//				this.tracker.remove(this);
+//			}
+//
+//			this.holder.drain();
+//		}
+//
+//		@Override
+//		public void dispose() {
+//			int previousState = Task.markDisposed(this);
+//
+//			if (Task.isDisposed(previousState) || Task.isCompleted(previousState)) {
+//				return;
+//			}
+//
+//			boolean isDirect = this.tracker == null;
+//			if (!isDirect) {
+//				this.tracker.remove(this);
+//			}
+//
+//			if (Task.isRunning(previousState)) {
+//				this.carrier.interrupt();
+//				return;
+//			}
+//
+//			if (Task.isInitialState(previousState)) {
+//				this.holder.removeTask();
+//			}
+//
+//			if (isDirect) {
+//				holder.release();
+//			}
+//
+//			// don't do anything else, this task is marked as disposed so once it is
+//			// drained, the disposed flag should be observed and the task skipped
+//		}
+//
+//		@Override
+//		public boolean isDisposed() {
+//			int state = get();
+//			return Task.isDisposed(state) || Task.isCompleted(state);
+//		}
+//
+//		boolean start() {
+//			int previousState = Task.markStarting(this);
+//			if (Task.isDisposed(previousState)) {
+//				return false;
+//			}
+//
+//			Thread carrier = this.holder.factory.newThread(this);
+//			this.carrier = carrier;
+//
+//			carrier.start();
+//
+//			return true;
+//		}
+//	}
+//
+//	final static class SchedulerTask extends AtomicInteger implements Callable<Void>, Task {
+//
+//
+//		final SequentialThreadPerTaskExecutor holder;
+//
+//		final Runnable task;
+//		@Nullable
+//		final Composite tracker;
+//
+//		Thread carrier;
+//
+//		Future<Void> scheduledFuture;
+//
+//		SchedulerTask(SequentialThreadPerTaskExecutor holder,
+//				Runnable task,
+//				@Nullable Composite tracker) {
+//			this.holder = holder;
+//			this.task = task;
+//			this.tracker = tracker;
+//		}
+//
+//		@Override
+//		public void run() {
+//			int previousState = Task.markRunning(this);
+//
+//			if (Task.isDisposed(previousState)) {
+//				this.holder.drain();
+//				return;
+//			}
+//
+//			try {
+//				task.run();
+//			}
+//			catch (Throwable ex) {
+//				boolean handled = false;
+//				try {
+//					Schedulers.handleError(ex);
+//					handled = true;
+//				} finally {
+//					if (!handled) {
+//						if (this.tracker == null) {
+//							this.holder.release();
+//						}
+//						else {
+//							this.tracker.remove(this);
+//						}
+//						this.holder.drain();
+//					}
+//				}
+//			}
+//
+//			Task.markCompleted(this);
+//
+//			if (this.tracker == null) {
+//				this.holder.release();
+//			}
+//			else {
+//				this.tracker.remove(this);
+//			}
+//
+//			this.holder.drain();
+//		}
+//
+//		@Override
+//		public Void call() throws Exception {
+//			if (isDisposed()) {
+//				return null;
+//			}
+//
+//			final SequentialThreadPerTaskExecutor parent = this.holder;
+//			parent.tasksQueue.offer(this);
+//			parent.tryForceSchedule();
+//			return null;
+//		}
+//
+//		@Override
+//		public void dispose() {
+//			int previousState = Task.markDisposed(this);
+//
+//			if (Task.isDisposed(previousState) || Task.isCompleted(previousState)) {
+//				return;
+//			}
+//
+//			boolean isDirect = this.tracker == null;
+//			if (!isDirect) {
+//				this.tracker.remove(this);
+//			}
+//
+//			if (Task.isScheduled(previousState)) {
+//				this.scheduledFuture.cancel(true);
+//				this.holder.removeTask();
+//				if (isDirect) {
+//					this.holder.release();
+//				}
+//				return;
+//			}
+//
+//			if (Task.isRunning(previousState)) {
+//				this.carrier.interrupt();
+//				return;
+//			}
+//
+//			if (Task.isInitialState(previousState)) {
+//				this.holder.removeTask();
+//			}
+//
+//			if (isDirect) {
+//				holder.release();
+//			}
+//
+//			// don't do anything else, this task is marked as disposed so once it is
+//			// drained, the disposed flag should be observed and the task skipped
+//		}
+//
+//		@Override
+//		public boolean isDisposed() {
+//			int state = get();
+//			return Task.isDisposed(state) || Task.isCompleted(state);
+//		}
+//
+//		boolean start() {
+//			int previousState = Task.markStarting(this);
+//			if (Task.isDisposed(previousState)) {
+//				return false;
+//			}
+//
+//			Thread carrier = this.holder.factory.newThread(this);
+//			this.carrier = carrier;
+//
+//			carrier.start();
+//
+//			return true;
+//		}
+//
+//		void schedule(long delay, TimeUnit unit) {
+//			final ScheduledFuture<Void> future = this.holder.scheduledTasksExecutor.schedule((Callable<Void>) this, delay, unit);
+//			this.scheduledFuture = future;
+//
+//			final int previousState = Task.markScheduled(this);
+//			if (Task.isDisposed(previousState)) {
+//				future.cancel(true);
+//			}
+//		}
+//	}
+//
+//
+//	final static class PeriodicSchedulerTask extends AtomicInteger
+//			implements Callable<Void>, Task {
+//
+//		final SequentialThreadPerTaskExecutor holder;
+//
+//		final Runnable task;
+//		@Nullable
+//		final Composite tracker;
+//
+//		Thread carrier;
+//
+//		Future<Void> scheduledFuture;
+//
+//		PeriodicSchedulerTask(SequentialThreadPerTaskExecutor holder,
+//				Runnable task,
+//				long fixedRatePeriod,
+//				TimeUnit timeUnit,
+//				@Nullable Composite tracker) {
+//			this.holder = holder;
+//			this.task = task;
+//			this.tracker = tracker;
+//		}
+//
+//		@Override
+//		public void run() {
+//			int previousState = Task.markRunning(this);
+//
+//			if (Task.isDisposed(previousState)) {
+//				this.holder.drain();
+//				return;
+//			}
+//
+//			try {
+//				task.run();
+//			}
+//			catch (Throwable ex) {
+//				boolean handled = false;
+//				try {
+//					Schedulers.handleError(ex);
+//					handled = true;
+//				} finally {
+//					if (!handled) {
+//						this.holder.removeTask();
+//
+//						if (this.tracker == null) {
+//							this.holder.release();
+//						}
+//						else {
+//							this.tracker.remove(this);
+//						}
+//						this.holder.drain();
+//						return;
+//					}
+//				}
+//			}
+//
+//			Task.markScheduled()
+//		}
+//
+//		@Override
+//		public Void call() throws Exception {
+//			if (isDisposed()) {
+//				return null;
+//			}
+//
+//			final SequentialThreadPerTaskExecutor parent = this.holder;
+//			parent.tasksQueue.offer(this);
+//			parent.tryForceSchedule();
+//			return null;
+//		}
+//
+//		@Override
+//		public void dispose() {
+//			int previousState = Task.markDisposed(this);
+//
+//			if (Task.isDisposed(previousState) || Task.isCompleted(previousState)) {
+//				return;
+//			}
+//
+//			boolean isDirect = this.tracker == null;
+//			if (!isDirect) {
+//				this.tracker.remove(this);
+//			}
+//
+//			if (Task.isScheduled(previousState)) {
+//				this.scheduledFuture.cancel(true);
+//				this.holder.removeTask();
+//				if (isDirect) {
+//					this.holder.release();
+//				}
+//				return;
+//			}
+//
+//			if (Task.isRunning(previousState)) {
+//				this.carrier.interrupt();
+//				return;
+//			}
+//
+//			this.holder.removeTask();
+//
+//			if (isDirect) {
+//				holder.release();
+//			}
+//
+//			// don't do anything else, this task is marked as disposed so once it is
+//			// drained, the disposed flag should be observed and the task skipped
+//		}
+//
+//		@Override
+//		public boolean isDisposed() {
+//			int state = get();
+//			return Task.isDisposed(state) || Task.isCompleted(state);
+//		}
+//
+//		boolean start() {
+//			int previousState = Task.markStarting(this);
+//			if (Task.isDisposed(previousState)) {
+//				return false;
+//			}
+//
+//			Thread carrier = this.holder.factory.newThread(this);
+//			this.carrier = carrier;
+//
+//			if (!isPeriodic()) {
+//				this.holder.removeTask();
+//			}
+//
+//			carrier.start();
+//
+//			return true;
+//		}
+//
+//		void schedule(long delay, TimeUnit unit) {
+//			final ScheduledFuture<Void> future = this.holder.scheduledTasksExecutor.schedule((Callable<Void>) this, delay, unit);
+//			this.scheduledFuture = future;
+//
+//			final int previousState = Task.markScheduled(this);
+//			if (Task.isDisposed(previousState)) {
+//				future.cancel(true);
+//			}
+//		}
+//	}
 
 	static class SingleThreadExecutorWorker implements Worker {
 

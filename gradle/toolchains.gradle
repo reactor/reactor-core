@@ -94,6 +94,25 @@ pluginManager.withPlugin("me.champeau.jmh") {
 	}
 }
 
+// Configure the JCStress plugin to use the toolchain for generating and running JCStress bytecode
+pluginManager.withPlugin("io.github.reyerizo.gradle.jcstress") {
+  if (testToolchainConfigured()) {
+	tasks.matching { it.name.contains('jcstress') && it.hasProperty('javaLauncher') }.configureEach {
+	  javaLauncher.set(javaToolchains.launcherFor {
+		languageVersion.set(testToolchainLanguageVersion())
+	  })evrika18
+	}
+	tasks.withType(JavaCompile).matching {
+	  println(it.name)
+	  it.name.contains("jcstress")
+	}.configureEach {
+	  javaCompiler = javaToolchains.compilerFor {
+		languageVersion = testToolchainLanguageVersion()
+	  }
+	}
+  }
+}
+
 // Store resolved Toolchain JVM information as custom values in the build scan.
 rootProject.ext {
 	resolvedMainToolchain = false
