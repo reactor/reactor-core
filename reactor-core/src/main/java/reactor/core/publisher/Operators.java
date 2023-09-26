@@ -2683,7 +2683,7 @@ public abstract class Operators {
 		final String name;
 
 		// TODO: this leaks to the users of LiftFunction, encapsulation is broken
-		// TODO: consider: liftFunction.lifter.apply could go through encapsulation
+		//  consider: liftFunction.lifter.apply could go through encapsulation
 		//  like: liftFunction.applyLifter() where what lifter.apply returns is wrapped
 		//  unconditionally; otherwise -> all lift* operators need to be considered as
 		//  NOT INTERNAL_PRODUCER sources

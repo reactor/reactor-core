@@ -62,6 +62,10 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 			while (true) {
 				subscriber = operator.subscribeOrReturn(subscriber);
 				if (subscriber == null) {
+					// if internally subscribed, it means the optimized operator is
+					// already within the internals and subscribing up the chain will
+					// at some point need to consider the source and wrap it
+
 					// null means "I will subscribe myself", returning...
 					return;
 				}

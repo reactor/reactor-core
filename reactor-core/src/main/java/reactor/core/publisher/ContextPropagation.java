@@ -60,6 +60,14 @@ final class ContextPropagation {
 		}
 	}
 
+	static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux) {
+		return new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
+	}
+
+	static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {
+		return new MonoContextWriteRestoringThreadLocals<>(mono, Function.identity());
+	}
+
 	static void configureContextSnapshotFactory(boolean clearMissing) {
 		if (ContextPropagationSupport.isContextPropagation103OnClasspath) {
 			globalContextSnapshotFactory = ContextSnapshotFactory.builder()

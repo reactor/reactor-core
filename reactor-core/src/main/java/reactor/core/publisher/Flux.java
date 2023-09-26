@@ -9892,7 +9892,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return deferContextual(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
-						// TODO: why no assembly hooks are applied?
 						publisher -> transformer.apply(wrap(publisher), ctxView),
 						transformer.toString()
 				);
@@ -11075,7 +11074,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			if (!shouldWrap) {
 				return (Flux<I>) source;
 			}
-			return ContextPropagationSupport.fluxRestoreThreadLocals((Flux<? extends I>) source);
+			return ContextPropagation.fluxRestoreThreadLocals((Flux<? extends I>) source);
 		}
 
 		//for scalars we'll instantiate the operators directly to avoid onAssembly
@@ -11106,7 +11105,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			target = new FluxSource<>(source);
 		}
 		if (shouldWrap) {
-			return ContextPropagationSupport.fluxRestoreThreadLocals(target);
+			return ContextPropagation.fluxRestoreThreadLocals(target);
 		}
 		return target;
 	}

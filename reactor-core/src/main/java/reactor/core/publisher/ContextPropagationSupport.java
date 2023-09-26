@@ -80,12 +80,4 @@ final class ContextPropagationSupport {
     static boolean shouldRestoreThreadLocalsInSomeOperators() {
         return isContextPropagationOnClasspath && !propagateContextToThreadLocals;
     }
-
-    static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux) {
-        return new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
-    }
-
-    static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {
-        return new MonoContextWriteRestoringThreadLocals<>(mono, Function.identity());
-    }
 }

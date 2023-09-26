@@ -5354,7 +5354,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			if (!shouldWrap) {
 				return (Mono<T>) source;
 			}
-			return ContextPropagationSupport.monoRestoreThreadLocals((Mono<? extends T>) source);
+			return ContextPropagation.monoRestoreThreadLocals((Mono<? extends T>) source);
 		}
 
 		if (source instanceof FluxSourceMono || source instanceof FluxSourceMonoFuseable) {
@@ -5365,7 +5365,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			if (!shouldWrapExtracted) {
 				return extracted;
 			}
-			return ContextPropagationSupport.monoRestoreThreadLocals(extracted);
+			return ContextPropagation.monoRestoreThreadLocals(extracted);
 		}
 
 		if (source instanceof Flux && source instanceof Callable) {
@@ -5394,7 +5394,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		}
 
 		if (shouldWrap) {
-			return ContextPropagationSupport.monoRestoreThreadLocals(target);
+			return ContextPropagation.monoRestoreThreadLocals(target);
 		}
 		return target;
 	}

@@ -19,12 +19,12 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
-public class ParallelFluxRestoringThreadLocals<T> extends ParallelFlux<T> implements
+class ParallelFluxRestoringThreadLocals<T> extends ParallelFlux<T> implements
                                                                           Scannable {
 
 	private final ParallelFlux<? extends T> source;
 
-	public ParallelFluxRestoringThreadLocals(ParallelFlux<? extends T> source) {
+	ParallelFluxRestoringThreadLocals(ParallelFlux<? extends T> source) {
 		this.source = source;
 	}
 
