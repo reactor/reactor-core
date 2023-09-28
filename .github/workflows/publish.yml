@@ -51,7 +51,7 @@ jobs:
       id: checks
       uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
       with:
-        arguments: check -Pjunit-tags=!slow -x jcstress
+        arguments: check -x :reactor-core:java21Test -Pjunit-tags=!slow -x jcstress
 
   slowerChecks:
     # similar limitations as in prepare, but we parallelize slower tests here
