@@ -94,7 +94,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		try {
-			source.subscribe(subscribeOrReturn(actual));
+			Operators.toFluxOrMono(source).subscribe(subscribeOrReturn(actual));
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));

@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.io.File;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -35,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,6 +43,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -61,6 +62,7 @@ import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 public class AutomaticContextPropagationTest {
 
@@ -234,7 +236,6 @@ public class AutomaticContextPropagationTest {
 		    // disabling prefetching to observe cancellation
 		    .publishOn(Schedulers.parallel(), 1)
 		    .doOnNext(i -> {
-			    System.out.println(REF.get());
 			    secondNextTlValue.set(REF.get());
 			    itemDelivered.countDown();
 		    })
@@ -316,7 +317,7 @@ public class AutomaticContextPropagationTest {
 
 		@BeforeEach
 		void enableAutomaticContextPropagation() {
-			executorService = Executors.newSingleThreadExecutor();
+			executorService = Executors.newFixedThreadPool(3);
 		}
 
 		@AfterEach
@@ -326,148 +327,224 @@ public class AutomaticContextPropagationTest {
 
 		// Scaffold methods
 
-		void assertThreadLocalPresentInOnNext(Mono<?> chain) {
-			AtomicReference<String> value = new AtomicReference<>();
+		private ThreadSwitchingFlux<String> threadSwitchingFlux() {
+			return new ThreadSwitchingFlux<>("Hello", executorService);
+		}
 
-			chain.doOnNext(item -> value.set(REF.get()))
+		private ThreadSwitchingMono<String> threadSwitchingMono() {
+			return new ThreadSwitchingMono<>("Hello", executorService);
+		}
+
+		void assertThreadLocalsPresentInFlux(Supplier<Flux<?>> chainSupplier) {
+			assertThreadLocalsPresentInFlux(chainSupplier, false);
+		}
+
+		void assertThreadLocalsPresentInFlux(Supplier<Flux<?>> chainSupplier,
+				boolean skipCoreSubscriber) {
+			assertThreadLocalsPresent(chainSupplier.get());
+			assertThatNoException().isThrownBy(() ->
+					assertThatThreadLocalsPresentDirectRawSubscribe(chainSupplier.get()));
+			if (!skipCoreSubscriber) {
+				assertThatNoException().isThrownBy(() ->
+						assertThatThreadLocalsPresentDirectCoreSubscribe(chainSupplier.get()));
+			}
+		}
+
+		void assertThreadLocalsPresentInMono(Supplier<Mono<?>> chainSupplier) {
+			assertThreadLocalsPresentInMono(chainSupplier, false);
+		}
+
+		void assertThreadLocalsPresentInMono(Supplier<Mono<?>> chainSupplier,
+				boolean skipCoreSubscriber) {
+			assertThreadLocalsPresent(chainSupplier.get());
+			assertThatNoException().isThrownBy(() ->
+					assertThatThreadLocalsPresentDirectRawSubscribe(chainSupplier.get()));
+			if (!skipCoreSubscriber) {
+				assertThatNoException().isThrownBy(() ->
+						assertThatThreadLocalsPresentDirectCoreSubscribe(chainSupplier.get()));
+			}
+		}
+
+		void assertThreadLocalsPresent(Flux<?> chain) {
+			AtomicReference<String> tlInOnNext = new AtomicReference<>();
+			AtomicReference<String> tlInOnComplete = new AtomicReference<>();
+			AtomicReference<String> tlInOnError = new AtomicReference<>();
+
+			AtomicBoolean hadNext = new AtomicBoolean(false);
+			AtomicBoolean hadError = new AtomicBoolean(false);
+
+			chain.doOnEach(signal -> {
+				     if (signal.isOnNext()) {
+					     tlInOnNext.set(REF.get());
+					     hadNext.set(true);
+				     } else if (signal.isOnError()) {
+					     tlInOnError.set(REF.get());
+					     hadError.set(true);
+				     } else if (signal.isOnComplete()) {
+					     tlInOnComplete.set(REF.get());
+				     }
+			     })
+			     .contextWrite(Context.of(KEY, "present"))
+			     .blockLast();
+
+			if (hadNext.get()) {
+				assertThat(tlInOnNext.get()).isEqualTo("present");
+			}
+			if (hadError.get()) {
+				assertThat(tlInOnError.get()).isEqualTo("present");
+			} else {
+				assertThat(tlInOnComplete.get()).isEqualTo("present");
+			}
+		}
+
+		void assertThreadLocalsPresent(Mono<?> chain) {
+			AtomicReference<String> tlInOnNext = new AtomicReference<>();
+			AtomicReference<String> tlInOnComplete = new AtomicReference<>();
+			AtomicReference<String> tlInOnError = new AtomicReference<>();
+
+			AtomicBoolean hadNext = new AtomicBoolean(false);
+			AtomicBoolean hadError = new AtomicBoolean(false);
+
+			chain.doOnEach(signal -> {
+				if (signal.isOnNext()) {
+					tlInOnNext.set(REF.get());
+					hadNext.set(true);
+				} else if (signal.isOnError()) {
+					tlInOnError.set(REF.get());
+					hadError.set(true);
+				} else if (signal.isOnComplete()) {
+					tlInOnComplete.set(REF.get());
+				}
+			})
 			     .contextWrite(Context.of(KEY, "present"))
 			     .block();
 
-			assertThat(value.get()).isEqualTo("present");
+			if (hadNext.get()) {
+				assertThat(tlInOnNext.get()).isEqualTo("present");
+			}
+			if (hadError.get()) {
+				assertThat(tlInOnError.get()).isEqualTo("present");
+			} else {
+				assertThat(tlInOnComplete.get()).isEqualTo("present");
+			}
 		}
 
-		void assertThreadLocalPresentInOnSuccess(Mono<?> chain) {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			chain.doOnSuccess(item -> value.set(REF.get()))
-			     .contextWrite(Context.of(KEY, "present"))
-			     .block();
-
-			assertThat(value.get()).isEqualTo("present");
+		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(
+				CorePublisher<? extends T> source) throws InterruptedException {
+			assertThatThreadLocalsPresentDirectCoreSubscribe(source, () -> {});
 		}
 
-		void assertThreadLocalPresentInOnError(Mono<?> chain) {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			chain.doOnError(item -> value.set(REF.get()))
-			     .contextWrite(Context.of(KEY, "present"))
-			     .onErrorComplete()
-			     .block();
-
-			assertThat(value.get()).isEqualTo("present");
-		}
-
-		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(CorePublisher<? extends T> source) throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
+		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(
+				CorePublisher<? extends T> source, Runnable asyncAction) throws InterruptedException {
+			AtomicReference<String> valueInOnNext = new AtomicReference<>();
+			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
+			AtomicReference<String> valueInOnError = new AtomicReference<>();
 			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean complete = new AtomicBoolean();
+			AtomicBoolean hadNext = new AtomicBoolean();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			CoreSubscriberWithContext<T> subscriberWithContext =
+					new CoreSubscriberWithContext<>(
+							valueInOnNext, valueInOnComplete, valueInOnError,
+							error, latch, hadNext, complete);
+
+			source.subscribe(subscriberWithContext);
+
+			executorService.submit(asyncAction);
+
+			latch.await(10, TimeUnit.MILLISECONDS);
+
+			if (hadNext.get()) {
+				assertThat(valueInOnNext.get()).isEqualTo("present");
+			}
+			if (error.get() == null) {
+				assertThat(valueInOnComplete.get()).isEqualTo("present");
+				assertThat(complete).isTrue();
+			} else {
+				assertThat(valueInOnError.get()).isEqualTo("present");
+			}
+		}
+
+		// We force the use of subscribe(Subscriber) override instead of
+		// subscribe(CoreSubscriber), and we can observe that for such a case we
+		// are able to wrap the Subscriber and restore ThreadLocal values for the
+		// signals received downstream.
+		<T> void assertThatThreadLocalsPresentDirectRawSubscribe(
+				Publisher<? extends T> source) throws InterruptedException {
+			assertThatThreadLocalsPresentDirectRawSubscribe(source, () -> {});
+		}
+
+		<T> void assertThatThreadLocalsPresentDirectRawSubscribe(
+				Publisher<? extends T> source, Runnable asyncAction) throws InterruptedException {
+			AtomicReference<String> valueInOnNext = new AtomicReference<>();
+			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
+			AtomicReference<String> valueInOnError = new AtomicReference<>();
+			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean hadNext = new AtomicBoolean();
 			AtomicBoolean complete = new AtomicBoolean();
 			CountDownLatch latch = new CountDownLatch(1);
 
 			CoreSubscriberWithContext<T> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
+					new CoreSubscriberWithContext<>(
+							valueInOnNext, valueInOnComplete, valueInOnError,
+							error, latch, hadNext, complete);
 
 			source.subscribe(subscriberWithContext);
 
+			executorService.submit(asyncAction);
+
 			latch.await(10, TimeUnit.MILLISECONDS);
 
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
-		}
-
-		void assertThreadLocalPresentInOnNext(Flux<?> chain) {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			chain.doOnNext(item -> value.set(REF.get()))
-			     .contextWrite(Context.of(KEY, "present"))
-			     .blockLast();
-
-			assertThat(value.get()).isEqualTo("present");
-		}
-
-		void assertThreadLocalPresentInOnComplete(Flux<?> chain) {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			chain.doOnComplete(() -> value.set(REF.get()))
-			     .contextWrite(Context.of(KEY, "present"))
-			     .blockLast();
-
-			assertThat(value.get()).isEqualTo("present");
+			if (hadNext.get()) {
+				assertThat(valueInOnNext.get()).isEqualTo("present");
+			}
+			if (error.get() == null) {
+				assertThat(valueInOnComplete.get()).isEqualTo("present");
+				assertThat(complete).isTrue();
+			} else {
+				assertThat(valueInOnError.get()).isEqualTo("present");
+			}
 		}
 
 		// Fundamental tests for Flux
 
 		@Test
-		void chainedFluxSubscribe() {
-			ThreadSwitchingFlux<String> chain = new ThreadSwitchingFlux<>("Hello", executorService);
-			assertThreadLocalPresentInOnNext(chain);
+		void fluxSubscribe() {
+			assertThreadLocalsPresentInFlux(this::threadSwitchingFlux, true);
 		}
 
 		@Test
-		void internalFluxSubscribe() {
-			ThreadSwitchingFlux<String> inner = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> chain = Flux.just("hello").flatMap(item -> inner);
-
-			assertThreadLocalPresentInOnNext(chain);
+		void internalFluxFlatMapSubscribe() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello")
+					    .flatMap(item -> threadSwitchingFlux()));
 		}
 
 		@Test
 		void internalFluxSubscribeNoFusion() {
-			ThreadSwitchingFlux<String> inner = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> chain = Flux.just("hello").hide().flatMap(item -> inner);
-
-			assertThreadLocalPresentInOnNext(chain);
-		}
-
-		@Test
-		void testFluxSubscriberAsRawSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-
-			TestSubscriber<String> testSubscriber =
-					TestSubscriber.builder().contextPut(KEY, "present").build();
-
-			flux
-					.doOnNext(i -> value.set(REF.get()))
-					.subscribe((Subscriber<? super String>) testSubscriber);
-
-			testSubscriber.block(Duration.ofMillis(10));
-			assertThat(testSubscriber.expectTerminalSignal().isOnComplete()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
-		}
-
-		@Test
-		void testFluxSubscriberAsCoreSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-
-			TestSubscriber<String> testSubscriber =
-					TestSubscriber.builder().contextPut(KEY, "present").build();
-
-			flux
-					.doOnNext(i -> value.set(REF.get()))
-					.subscribe(testSubscriber);
-
-			testSubscriber.block(Duration.ofMillis(10));
-			assertThat(testSubscriber.expectTerminalSignal().isOnComplete()).isTrue();
-			// Because of onNext in the chain, the internal operator implementation is
-			// able to wrap the subscriber and restore the ThreadLocal values
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello")
+					    .hide()
+					    .flatMap(item -> threadSwitchingFlux()));
 		}
 
 		@Test
 		void directFluxSubscribeAsCoreSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
+			AtomicReference<String> valueInOnNext = new AtomicReference<>();
+			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
+			AtomicReference<String> valueInOnError = new AtomicReference<>();
 			AtomicReference<Throwable> error = new AtomicReference<>();
+			AtomicBoolean hadNext = new AtomicBoolean();
 			AtomicBoolean complete = new AtomicBoolean();
 			CountDownLatch latch = new CountDownLatch(1);
 
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
+			Flux<String> flux = threadSwitchingFlux();
 
 			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
+					new CoreSubscriberWithContext<>(
+							valueInOnNext, valueInOnComplete, valueInOnError,
+							error, latch, hadNext, complete);
 
 			flux.subscribe(subscriberWithContext);
 
@@ -479,98 +556,40 @@ public class AutomaticContextPropagationTest {
 			// We can't do anything here. subscribe(CoreSubscriber) is abstract in
 			// CoreSubscriber interface and we have no means to intercept the calls to
 			// restore ThreadLocals.
-			assertThat(value.get()).isEqualTo("ref_init");
-		}
-
-		@Test
-		void directFluxSubscribeAsRawSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-
-			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
-
-			// We force the use of subscribe(Subscriber) override instead of
-			// subscribe(CoreSubscriber), and we can observe that for such a case we
-			// are able to wrap the Subscriber and restore ThreadLocal values for the
-			// signals received downstream.
-			flux.subscribe((Subscriber<? super String>) subscriberWithContext);
-
-			latch.await(10, TimeUnit.MILLISECONDS);
-
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
+			assertThat(valueInOnNext.get()).isEqualTo("ref_init");
+			assertThat(valueInOnComplete.get()).isEqualTo("ref_init");
 		}
 
 		// Fundamental tests for Mono
 
 		@Test
-		void chainedMonoSubscribe() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			assertThreadLocalPresentInOnNext(mono);
+		void monoSubscribe() {
+			assertThreadLocalsPresentInMono(this::threadSwitchingMono, true);
 		}
 
 		@Test
-		void internalMonoSubscribe() {
-			Mono<String> inner = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.just("hello").flatMap(item -> inner);
-			assertThreadLocalPresentInOnNext(chain);
-		}
-
-		@Test
-		void testMonoSubscriberAsRawSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-
-			TestSubscriber<String> testSubscriber =
-					TestSubscriber.builder().contextPut(KEY, "present").build();
-
-			mono
-					.doOnNext(i -> value.set(REF.get()))
-					.subscribe((Subscriber<? super String>) testSubscriber);
-
-			testSubscriber.block(Duration.ofMillis(10));
-			assertThat(testSubscriber.expectTerminalSignal().isOnComplete()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
-		}
-
-		@Test
-		void testMonoSubscriberAsCoreSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-
-			TestSubscriber<String> testSubscriber =
-					TestSubscriber.builder().contextPut(KEY, "present").build();
-
-			mono
-					.doOnNext(i -> value.set(REF.get()))
-					.subscribe(testSubscriber);
-
-			testSubscriber.block(Duration.ofMillis(10));
-			assertThat(testSubscriber.expectTerminalSignal().isOnComplete()).isTrue();
-			// Because of onNext in the chain, the internal operator implementation is
-			// able to wrap the subscriber and restore the ThreadLocal values
-			assertThat(value.get()).isEqualTo("present");
+		void internalMonoFlatMapSubscribe() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("hello")
+					    .flatMap(item -> threadSwitchingMono()));
 		}
 
 		@Test
 		void directMonoSubscribeAsCoreSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
+			AtomicReference<String> valueInOnNext = new AtomicReference<>();
+			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
+			AtomicReference<String> valueInOnError = new AtomicReference<>();
 			AtomicReference<Throwable> error = new AtomicReference<>();
 			AtomicBoolean complete = new AtomicBoolean();
+			AtomicBoolean hadNext = new AtomicBoolean();
 			CountDownLatch latch = new CountDownLatch(1);
 
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 
 			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
+					new CoreSubscriberWithContext<>(
+							valueInOnNext, valueInOnComplete, valueInOnError,
+							error, latch, hadNext, complete);
 
 			mono.subscribe(subscriberWithContext);
 
@@ -582,635 +601,443 @@ public class AutomaticContextPropagationTest {
 			// We can't do anything here. subscribe(CoreSubscriber) is abstract in
 			// CoreSubscriber interface and we have no means to intercept the calls to
 			// restore ThreadLocals.
-			assertThat(value.get()).isEqualTo("ref_init");
-		}
-
-		@Test
-		void directMonoSubscribeAsRawSubscriber() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-
-			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
-
-			// We force the use of subscribe(Subscriber) override instead of
-			// subscribe(CoreSubscriber), and we can observe that for such a case we
-			// are able to wrap the Subscriber and restore ThreadLocal values for the
-			// signals received downstream.
-			mono.subscribe((Subscriber<? super String>) subscriberWithContext);
-
-			latch.await(10, TimeUnit.MILLISECONDS);
-
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
+			assertThat(valueInOnNext.get()).isEqualTo("ref_init");
+			assertThat(valueInOnComplete.get()).isEqualTo("ref_init");
 		}
 
 		// Flux tests
 
 		@Test
 		void fluxCreate() {
-			Flux<String> flux = Flux.create(sink -> {
-				executorService.submit(() -> {
-					sink.next("Hello");
-					sink.complete();
-				});
-			});
+			Supplier<Flux<?>> fluxSupplier =
+					() -> Flux.create(sink -> executorService.submit(() -> {
+				sink.next("Hello");
+				sink.complete();
+			}));
 
-			assertThreadLocalPresentInOnNext(flux);
-		}
-
-		@Test
-		void fluxCreateDirect() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
-
-			Publisher<String> flux = Flux.create(sink -> {
-				executorService.submit(() -> {
-					sink.next("Hello");
-					sink.complete();
-				});
-			});
-
-			flux.subscribe(subscriberWithContext);
-
-			latch.await(10, TimeUnit.MILLISECONDS);
-
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInFlux(fluxSupplier);
 		}
 
 		@Test
 		void fluxMap() {
-			Flux<String> flux =
-					new ThreadSwitchingFlux<>("Hello", executorService).map(String::toUpperCase);
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().map(String::toUpperCase));
 		}
 
 		@Test
 		void fluxIgnoreThenSwitchThread() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Flux.just("Bye").then(mono);
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() -> Flux.just("Bye").then(threadSwitchingMono()));
 		}
 
 		@Test
 		void fluxSwitchThreadThenIgnore() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Ignored", executorService);
-			Mono<String> chain = flux.then(Mono.just("Hello"));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() -> threadSwitchingFlux().then(Mono.just("Hi")));
 		}
 
 		@Test
 		void fluxDeferContextual() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> chain = Flux.deferContextual(ctx -> flux);
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.deferContextual(ctx -> threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxFirstWithSignalArray() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> chain = Flux.firstWithSignal(flux);
-			assertThreadLocalPresentInOnNext(chain);
-
-			Flux<String> other = new ThreadSwitchingFlux<>("Hello", executorService);
-			assertThreadLocalPresentInOnNext(chain.or(other));
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.firstWithSignal(threadSwitchingFlux()));
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.firstWithSignal(threadSwitchingFlux()).or(threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxFirstWithSignalIterable() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> chain = Flux.firstWithSignal(Collections.singletonList(flux));
-			assertThreadLocalPresentInOnNext(chain);
-
-			Flux<String> other1 = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> other2 = new ThreadSwitchingFlux<>("Hello", executorService);
-			List<Flux<String>> list = Stream.of(other1, other2).collect(Collectors.toList());
-			assertThreadLocalPresentInOnNext(Flux.firstWithSignal(list));
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.firstWithSignal(Collections.singletonList(threadSwitchingFlux())));
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.firstWithSignal(Stream.of(threadSwitchingFlux(), threadSwitchingFlux()).collect(Collectors.toList())));
 		}
 
 		@Test
 		void fluxRetryWhen() {
-			Flux<String> flux =
-					new ThreadSwitchingFlux<>("Hello", executorService).retryWhen(Retry.max(1));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux().retryWhen(Retry.max(1)));
 		}
 
 		@Test
 		void fluxRetryWhenSwitchingThread() {
-			Flux<Object> flux =
+			assertThreadLocalsPresentInFlux(() ->
 					Flux.error(new RuntimeException("Oops"))
-					    .retryWhen(Retry.from(f -> new ThreadSwitchingFlux<>(
-							    "Hello", executorService)));
-
-			assertThreadLocalPresentInOnComplete(flux);
+					    .retryWhen(Retry.from(f -> threadSwitchingFlux())));
 		}
 
 		@Test
 		void fluxWindowUntil() {
-			Flux<String> flux =
-					new ThreadSwitchingFlux<>("Hello", executorService)
-							.windowUntil(s -> true)
-							.flatMap(Function.identity());
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux().windowUntil(s -> true)
+					                     .flatMap(Function.identity()));
 		}
 
 		@Test
 		void switchOnFirst() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
-					.switchOnFirst((s, f) -> f.map(String::toUpperCase));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+							.switchOnFirst((s, f) -> f.map(String::toUpperCase)));
 		}
 
 		@Test
 		void switchOnFirstFuseable() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
-					.filter("Hello"::equals)
-					.switchOnFirst((s, f) -> f.map(String::toUpperCase));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+							.filter("Hello"::equals)
+							.switchOnFirst((s, f) -> f.map(String::toUpperCase)));
 		}
 
 		@Test
 		void switchOnFirstSwitchThread() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
-					.switchOnFirst((s, f) -> new ThreadSwitchingFlux<>("Goodbye", executorService));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+							.switchOnFirst((s, f) -> threadSwitchingFlux()));
 		}
 
 		@Test
 		void switchOnFirstFuseableSwitchThread() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService)
-					.filter("Hello"::equals)
-					.switchOnFirst((s, f) -> new ThreadSwitchingFlux<>("Goodbye", executorService));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+							.filter("Hello"::equals)
+							.switchOnFirst((s, f) -> threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxWindowTimeout() {
-			Flux<Flux<String>> flux = new ThreadSwitchingFlux<>("Hello", executorService)
-					.windowTimeout(1, Duration.ofDays(1), true);
-
-			assertThreadLocalPresentInOnNext(flux);
-		}
-
-		@Test
-		void fluxWindowTimeoutDirect() throws InterruptedException {
-			Flux<Flux<String>> flux = new ThreadSwitchingFlux<>("Hello", executorService)
-					.windowTimeout(1, Duration.ofDays(1), true);
-
-			assertThatThreadLocalsPresentDirectCoreSubscribe(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+							.windowTimeout(1, Duration.ofDays(1), true));
 		}
 
 		@Test
 		void fluxMergeComparing() {
-			Flux<String> flux = Flux.mergeComparing(Flux.empty(),
-					new ThreadSwitchingFlux<>("Hello", executorService));
-
-			assertThreadLocalPresentInOnNext(flux);
-		}
-
-		@Test
-		void fluxMergeComparingDirect() throws InterruptedException {
-			Flux<String> flux = Flux.mergeComparing(Flux.empty(),
-					new ThreadSwitchingFlux<>("Hello", executorService));
-
-			assertThatThreadLocalsPresentDirectCoreSubscribe(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.mergeComparing(Flux.empty(), threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxFirstWithValueArray() {
-			Flux<String> flux = Flux.firstWithValue(Flux.empty(),
-					new ThreadSwitchingFlux<>("Hola", executorService));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.firstWithValue(Flux.empty(), threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxFirstWithValueIterable() {
-			List<Flux<String>> list = Stream.of(Flux.<String>empty(),
-					                                new ThreadSwitchingFlux<>("Hola", executorService))
-			                                .collect(Collectors.toList());
-			Flux<String> flux = Flux.firstWithValue(list);
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.firstWithValue(
+							Stream.of(Flux.<String>empty(), threadSwitchingFlux())
+							      .collect(Collectors.toList())));
 		}
 
 		@Test
 		void fluxConcatArray() {
-			Flux<String> flux = Flux.concat(Mono.<String>empty(),
-					new ThreadSwitchingFlux<>("Hello", executorService));
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.concat(Mono.<String>empty(), threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxConcatIterable() {
-			List<Flux<String>> list = Stream.of(Flux.<String>empty(),
-					                                new ThreadSwitchingFlux<>("Hello", executorService))
-					.collect(Collectors.toList());
-
-			Flux<String> flux = Flux.concat(list);
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.concat(
+							Stream.of(Flux.<String>empty(), threadSwitchingFlux()).collect(Collectors.toList())));
 		}
 
 		@Test
 		void fluxGenerate() {
-			Flux<String> flux = Flux.generate(sink -> {
+			assertThreadLocalsPresentInFlux(() -> Flux.generate(sink -> {
 				sink.next("Hello");
 				// the generator is checked if any signal was delivered by the consumer
-				// so we check at completion only
+				// so we perform asynchronous completion only
 				executorService.submit(() -> {
 					sink.complete();
 				});
-			});
-
-			assertThreadLocalPresentInOnComplete(flux);
+			}));
 		}
 
 		@Test
 		void fluxCombineLatest() {
-			Flux<String> flux = Flux.combineLatest(Flux.just(""),
-					new ThreadSwitchingFlux<>("Hello", executorService), (s1, s2) -> s2);
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.combineLatest(
+							Flux.just(""), threadSwitchingFlux(), (s1, s2) -> s2));
 		}
 
 		@Test
 		void fluxUsing() {
-			Flux<String> flux = Flux.using(() -> 0, i -> new ThreadSwitchingFlux<>(
-					"Hello", executorService), i -> {});
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.using(() -> 0, i -> threadSwitchingFlux(), i -> {}));
 		}
 
 		@Test
 		void fluxZip() {
-			Flux<Tuple2<String, String>> flux = Flux.zip(Flux.just(""),
-					new ThreadSwitchingFlux<>("Hello",
-							executorService));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.zip(Flux.just(""), threadSwitchingFlux()));
 		}
 
 		@Test
 		void fluxZipIterable() {
-			List<Flux<String>> list = Stream.of(Flux.just(""),
-					new ThreadSwitchingFlux<>("Hello",
-							executorService)).collect(Collectors.toList());
-
-			Flux<Tuple2<String, String>> flux = Flux.zip(list,
-					obj -> Tuples.of((String) obj[0], (String) obj[1]));
-
-			assertThreadLocalPresentInOnNext(flux);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.zip(Stream.of(Flux.just(""), threadSwitchingFlux()).collect(Collectors.toList()),
+					obj -> Tuples.of((String) obj[0], (String) obj[1])));
 		}
 
 		// Mono tests
 
 		@Test
 		void monoCreate() {
-			Mono<String> mono = Mono.create(sink -> {
-				executorService.submit(() -> {
-					sink.success("Hello");
-				});
-			});
-
-			assertThreadLocalPresentInOnNext(mono);
-		}
-
-		@Test
-		void monoCreateDirect() throws InterruptedException {
-			AtomicReference<String> value = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
-
-			Publisher<String> mono = Mono.create(sink -> {
-				executorService.submit(() -> {
-					sink.success("Hello");
-				});
-			});
-
-			mono.subscribe(subscriberWithContext);
-
-			latch.await(10, TimeUnit.MILLISECONDS);
-
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInMono(() ->
+					Mono.create(sink -> {
+						executorService.submit(() -> {
+							sink.success("Hello");
+						});
+					}));
 		}
 
 		@Test
 		void monoSwitchThreadIgnoreThen() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = mono.then(Mono.just("Bye"));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					threadSwitchingMono().then(Mono.just("Bye")));
 		}
 
 		@Test
 		void monoIgnoreThenSwitchThread() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.just("Bye").then(mono);
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("Bye").then(threadSwitchingMono()));
 		}
 
 		@Test
 		void monoSwitchThreadDelayUntil() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = mono.delayUntil(s -> Mono.delay(Duration.ofMillis(1)));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					threadSwitchingMono().delayUntil(s -> Mono.delay(Duration.ofMillis(1))));
 		}
 
 		@Test
 		void monoDelayUntilSwitchingThread() {
-			Mono<String> mono = Mono.just("Hello");
-			Mono<String> chain = mono.delayUntil(s -> new ThreadSwitchingMono<>("Done", executorService));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("Hello").delayUntil(s -> threadSwitchingMono()));
 		}
 
 		@Test
 		void monoIgnoreSwitchingThread() {
-			Mono<String> mono = Mono.ignoreElements(new ThreadSwitchingMono<>("Hello", executorService));
-			assertThreadLocalPresentInOnSuccess(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.ignoreElements(threadSwitchingMono()));
 		}
 
 		@Test
 		void monoDeferContextual() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.deferContextual(ctx -> mono);
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.deferContextual(ctx -> threadSwitchingMono()));
 		}
 
 		@Test
 		void monoDefer() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.defer(() -> mono);
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.defer(this::threadSwitchingMono));
 		}
 
 		@Test
 		void monoFirstWithSignalArray() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.firstWithSignal(mono);
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.firstWithSignal(threadSwitchingMono()));
 
-			Mono<String> other = new ThreadSwitchingMono<>("Hello", executorService);
-			assertThreadLocalPresentInOnNext(chain.or(other));
+			assertThreadLocalsPresentInMono(() ->
+					Mono.firstWithSignal(threadSwitchingMono())
+					    .or(threadSwitchingMono()));
 		}
 
 		@Test
 		void monoFirstWithSignalIterable() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.firstWithSignal(Collections.singletonList(mono));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.firstWithSignal(Collections.singletonList(threadSwitchingMono())));
 
-			Mono<String> other1 = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> other2 = new ThreadSwitchingMono<>("Hello", executorService);
-			List<Mono<String>> list = Stream.of(other1, other2).collect(Collectors.toList());
-			assertThreadLocalPresentInOnNext(Mono.firstWithSignal(list));
+			assertThreadLocalsPresentInMono(() ->
+					Mono.firstWithSignal(
+							Stream.of(threadSwitchingMono(), threadSwitchingMono())
+							      .collect(Collectors.toList())));
 		}
 
 		@Test
 		void monoFromFluxSingle() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-			Mono<String> chain = flux.single();
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					threadSwitchingFlux().single());
 		}
 
 		@Test
 		void monoRetryWhen() {
-			Mono<String> mono =
-					new ThreadSwitchingMono<>("Hello", executorService).retryWhen(Retry.max(1));
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					threadSwitchingMono().retryWhen(Retry.max(1)));
 		}
 
 		@Test
 		void monoRetryWhenSwitchingThread() {
-			Mono<Object> mono =
+			assertThreadLocalsPresentInMono(() ->
 					Mono.error(new RuntimeException("Oops"))
-					    .retryWhen(Retry.from(f -> new ThreadSwitchingMono<>(
-							"Hello", executorService)));
-
-			assertThreadLocalPresentInOnSuccess(mono);
+					    .retryWhen(Retry.from(f -> threadSwitchingMono())));
 		}
 
 		@Test
 		void monoUsing() {
-			Mono<String> mono = Mono.using(
-					() -> "Hello",
-					seed -> new ThreadSwitchingMono<>("Hola", executorService),
-					seed -> {},
-					false);
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.using(() -> "Hello",
+							seed -> threadSwitchingMono(),
+							seed -> {},
+							false));
 		}
 
 		@Test
 		void monoFirstWithValueArray() {
-			Mono<String> mono = Mono.firstWithValue(Mono.empty(),
-					new ThreadSwitchingMono<>("Hola", executorService));
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.firstWithValue(Mono.empty(), threadSwitchingMono()));
 		}
 
 		@Test
 		void monoFirstWithValueIterable() {
-			List<Mono<String>> list = Stream.of(Mono.<String>empty(),
-					                                new ThreadSwitchingMono<>("Hola", executorService))
-			                                .collect(Collectors.toList());
-			Mono<String> mono = Mono.firstWithValue(list);
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.firstWithValue(
+							Stream.of(Mono.<String>empty(), threadSwitchingMono())
+							      .collect(Collectors.toList())));
 		}
 
 		@Test
 		void monoZip() {
-			Mono<Tuple2<String, String>> mono = Mono.zip(Mono.just(""),
-					new ThreadSwitchingMono<>("Hello",
-					executorService));
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.zip(Mono.just(""), threadSwitchingMono()));
 		}
 
 		@Test
 		void monoZipIterable() {
-			List<Mono<String>> list = Stream.of(Mono.just(""),
-					new ThreadSwitchingMono<>("Hello",
-							executorService)).collect(Collectors.toList());
-
-			Mono<Tuple2<String, String>> mono = Mono.zip(list,
-					obj -> Tuples.of((String) obj[0], (String) obj[1]));
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.zip(
+							Stream.of(Mono.just(""), threadSwitchingMono())
+							      .collect(Collectors.toList()),
+							obj -> Tuples.of((String) obj[0], (String) obj[1])));
 		}
 
 		@Test
 		void monoSequenceEqual() {
-			Mono<Boolean> mono = Mono.sequenceEqual(Mono.just("Hello"),
-					new ThreadSwitchingMono<>("Hello", executorService));
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.sequenceEqual(Mono.just("Hello"), threadSwitchingMono()));
 		}
 
 		@Test
 		void monoWhen() {
-			Mono<Void> mono = Mono.when(Mono.empty(), new ThreadSwitchingMono<>("Hello"
-					, executorService));
-
-			assertThreadLocalPresentInOnSuccess(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.when(Mono.empty(), threadSwitchingMono()));
 		}
 
 		@Test
 		void monoUsingWhen() {
-			Mono<String> mono = Mono.usingWhen(Mono.just("Hello"), s ->
-					new ThreadSwitchingMono<>(s, executorService), s -> Mono.empty());
-
-			assertThreadLocalPresentInOnNext(mono);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.usingWhen(Mono.just("Hello"), s -> threadSwitchingMono(),
+							s -> Mono.empty()));
 		}
 
 		// ParallelFlux tests
 
 		@Test
 		void parallelFluxFromMonoToMono() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Mono<String> chain = Mono.from(ParallelFlux.from(mono));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.from(ParallelFlux.from(threadSwitchingMono())));
 		}
 
 		@Test
 		void parallelFluxFromMonoToFlux() {
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-			Flux<String> chain = Flux.from(ParallelFlux.from(mono));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.from(ParallelFlux.from(threadSwitchingMono())));
 		}
 
 		@Test
 		void parallelFluxFromFluxToMono() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-			Mono<String> chain = Mono.from(ParallelFlux.from(flux));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInMono(() ->
+					Mono.from(ParallelFlux.from(threadSwitchingFlux())));
 		}
 
 		@Test
 		void parallelFluxFromFluxToFlux() {
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-			Flux<String> chain = Flux.from(ParallelFlux.from(flux));
-			assertThreadLocalPresentInOnNext(chain);
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.from(ParallelFlux.from(threadSwitchingFlux())));
 		}
 
 		@Test
 		void parallelFluxLift() {
-			ParallelFlux<String> parallelFlux =
-					ParallelFlux.from(Flux.just("Hello"));
+			assertThreadLocalsPresentInFlux(() -> {
+				ParallelFlux<String> parallelFlux = ParallelFlux.from(Flux.just("Hello"));
 
-			Publisher<String> lifted =
-					Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
-						         @Override
-						         public void onSubscribe(Subscription s) {
-									 executorService.submit(() -> sub.onSubscribe(s));
-						         }
+				Publisher<String> lifted =
+						Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
+							         @Override
+							         public void onSubscribe(Subscription s) {
+								         executorService.submit(() -> sub.onSubscribe(s));
+							         }
 
-						         @Override
-						         public void onNext(String s) {
-							         executorService.submit(() -> sub.onNext(s));
-						         }
+							         @Override
+							         public void onNext(String s) {
+								         executorService.submit(() -> sub.onNext(s));
+							         }
 
-						         @Override
-						         public void onError(Throwable t) {
-							         executorService.submit(() -> sub.onError(t));
-						         }
+							         @Override
+							         public void onError(Throwable t) {
+								         executorService.submit(() -> sub.onError(t));
+							         }
 
-						         @Override
-						         public void onComplete() {
-									 executorService.submit(sub::onComplete);
-						         }
-					         })
-					         .apply(parallelFlux);
+							         @Override
+							         public void onComplete() {
+								         executorService.submit(sub::onComplete);
+							         }
+						         })
+						         .apply(parallelFlux);
 
-			assertThreadLocalPresentInOnNext(((ParallelFlux<?>) lifted).sequential());
+						return ((ParallelFlux<?>) lifted).sequential();
+					});
 		}
 
 		@Test
 		void parallelFluxLiftFuseable() {
-			ParallelFlux<ArrayList<String>> parallelFlux =
-					ParallelFlux.from(Flux.just("Hello"))
-					            .collect(ArrayList::new, ArrayList::add);
+			assertThreadLocalsPresentInFlux(() -> {
+				ParallelFlux<ArrayList<String>> parallelFlux =
+						ParallelFlux.from(Flux.just("Hello"))
+						            .collect(ArrayList::new, ArrayList::add);
 
-			Publisher<ArrayList<String>> lifted = Operators.<ArrayList<String>, ArrayList<String>>liftPublisher(
-					(pub, sub) -> new CoreSubscriber<ArrayList<String>>() {
-						         @Override
-						         public void onSubscribe(Subscription s) {
-							         executorService.submit(() -> sub.onSubscribe(s));
-						         }
+				Publisher<ArrayList<String>> lifted =
+						Operators.<ArrayList<String>, ArrayList<String>>liftPublisher((pub, sub) -> new CoreSubscriber<ArrayList<String>>() {
+							         @Override
+							         public void onSubscribe(Subscription s) {
+								         executorService.submit(() -> sub.onSubscribe(s));
+							         }
 
-						         @Override
-						         public void onNext(ArrayList<String> s) {
-							         executorService.submit(() -> sub.onNext(s));
-						         }
+							         @Override
+							         public void onNext(ArrayList<String> s) {
+								         executorService.submit(() -> sub.onNext(s));
+							         }
 
-						         @Override
-						         public void onError(Throwable t) {
-							         executorService.submit(() -> sub.onError(t));
-						         }
+							         @Override
+							         public void onError(Throwable t) {
+								         executorService.submit(() -> sub.onError(t));
+							         }
 
-						         @Override
-						         public void onComplete() {
-							         executorService.submit(sub::onComplete);
-						         }
-					         })
-					         .apply(parallelFlux);
+							         @Override
+							         public void onComplete() {
+								         executorService.submit(sub::onComplete);
+							         }
+						         })
+						         .apply(parallelFlux);
 
-			assertThreadLocalPresentInOnNext(((ParallelFlux<?>) lifted).sequential());
+				return ((ParallelFlux<?>) lifted).sequential();
+			});
 		}
 
 		@Test
 		void parallelFluxFromThreadSwitchingMono() {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
-
-			ParallelFlux.from(mono)
-			            .sequential()
-			            .doOnNext(i -> value.set(REF.get()))
-			            .contextWrite(Context.of(KEY, "present"))
-			            .blockLast();
-
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInFlux(() ->
+					ParallelFlux.from(threadSwitchingMono()).sequential());
 		}
 
 		@Test
 		void parallelFluxFromThreadSwitchingFlux() {
-			AtomicReference<String> value = new AtomicReference<>();
-
-			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
-
-			ParallelFlux.from(flux)
-			            .sequential()
-			            .doOnNext(i -> value.set(REF.get()))
-			            .contextWrite(Context.of(KEY, "present"))
-			            .blockLast();
-
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInFlux(() ->
+					ParallelFlux.from(threadSwitchingFlux()).sequential());
 		}
 
 		@Test
@@ -1227,26 +1054,16 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void threadSwitchingParallelFluxThen() {
-			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
-					.then()
-					.doOnSuccess(v -> value.set(REF.get()))
-					.contextWrite(Context.of(KEY, "present"))
-					.block();
-
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInMono(() ->
+					new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+							.then());
 		}
 
 		@Test
 		void threadSwitchingParallelFluxOrdered() {
-			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
-					.ordered(Comparator.naturalOrder())
-					.doOnNext(i -> value.set(REF.get()))
-					.contextWrite(Context.of(KEY, "present"))
-					.blockLast();
-
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInFlux(() ->
+					new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+							.ordered(Comparator.naturalOrder()));
 		}
 
 		@Test
@@ -1292,14 +1109,9 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void threadSwitchingParallelFluxSort() {
-			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
-					.sorted(Comparator.naturalOrder())
-					.doOnNext(i -> value.set(REF.get()))
-					.contextWrite(Context.of(KEY, "present"))
-					.blockLast();
-
-			assertThat(value.get()).isEqualTo("present");
+			assertThreadLocalsPresentInFlux(() ->
+					new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+							.sorted(Comparator.naturalOrder()));
 		}
 
 		// Sinks tests
@@ -1330,20 +1142,31 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void sinkDirect() throws InterruptedException, TimeoutException {
+			Sinks.One<String> sink1 = Sinks.one();
+			assertThatThreadLocalsPresentDirectCoreSubscribe(sink1.asMono(),
+					() -> sink1.tryEmitValue("Hello"));
+
+			Sinks.One<String> sink2 = Sinks.one();
+			assertThatThreadLocalsPresentDirectRawSubscribe(sink2.asMono(),
+					() -> sink2.tryEmitValue("Hello"));
+		}
+
+		@Test
+		void sinksEmpty() throws InterruptedException, TimeoutException {
 			AtomicReference<String> value = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
 			CountDownLatch latch = new CountDownLatch(1);
 
-			Sinks.One<String> sink = Sinks.one();
+			Sinks.Empty<Void> spec = Sinks.empty();
 
-			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(value, error, latch, complete);
+			spec.asMono()
+			    .doOnSuccess(ignored -> {
+				    value.set(REF.get());
+				    latch.countDown();
+			    })
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
 
-			sink.asMono()
-					.subscribe(subscriberWithContext);
-
-			executorService.submit(() -> sink.tryEmitValue("Hello"));
+			executorService.submit(spec::tryEmitEmpty);
 
 			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
@@ -1353,27 +1176,12 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void sinkEmpty() throws InterruptedException, TimeoutException {
-			AtomicReference<String> value = new AtomicReference<>();
-			CountDownLatch latch = new CountDownLatch(1);
+		void sinksEmptyDirect() throws InterruptedException {
+			Sinks.Empty<Object> empty1 = Sinks.empty();
+			assertThatThreadLocalsPresentDirectCoreSubscribe(empty1.asMono(), empty1::tryEmitEmpty);
 
-			Sinks.Empty<Object> empty = Sinks.empty();
-
-			empty.asMono()
-			    .doOnTerminate(() -> {
-				    value.set(REF.get());
-				    latch.countDown();
-			    })
-			    .contextWrite(Context.of(KEY, "present"))
-			    .subscribe();
-
-			executorService.submit(empty::tryEmitEmpty);
-
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
-				throw new TimeoutException("timed out");
-			}
-
-			assertThat(value.get()).isEqualTo("present");
+			Sinks.Empty<Object> empty2 = Sinks.empty();
+			assertThatThreadLocalsPresentDirectRawSubscribe(empty2.asMono(), empty2::tryEmitEmpty);
 		}
 
 		@Test
@@ -1400,6 +1208,25 @@ public class AutomaticContextPropagationTest {
 			}
 
 			assertThat(value.get()).isEqualTo("present");
+		}
+
+		@Test
+		void sinkManyUnicastDirect() throws InterruptedException {
+			Sinks.Many<String> many1 = Sinks.many().unicast()
+			                              .onBackpressureBuffer();
+
+			assertThatThreadLocalsPresentDirectCoreSubscribe(many1.asFlux(), () -> {
+				many1.tryEmitNext("Hello");
+				many1.tryEmitComplete();
+			});
+
+			Sinks.Many<String> many2 = Sinks.many().unicast()
+			                                .onBackpressureBuffer();
+
+			assertThatThreadLocalsPresentDirectRawSubscribe(many2.asFlux(), () -> {
+				many2.tryEmitNext("Hello");
+				many2.tryEmitComplete();
+			});
 		}
 
 		@Test
@@ -1504,30 +1331,6 @@ public class AutomaticContextPropagationTest {
 			assertThat(value.get()).isEqualTo("present");
 		}
 
-		@Test
-		void sinksEmpty() throws InterruptedException, TimeoutException {
-			AtomicReference<String> value = new AtomicReference<>();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			Sinks.Empty<Void> spec = Sinks.empty();
-
-			spec.asMono()
-			    .doOnSuccess(ignored -> {
-				    value.set(REF.get());
-				    latch.countDown();
-			    })
-			    .contextWrite(Context.of(KEY, "present"))
-			    .subscribe();
-
-			executorService.submit(spec::tryEmitEmpty);
-
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
-				throw new TimeoutException("timed out");
-			}
-
-			assertThat(value.get()).isEqualTo("present");
-		}
-
 		// Other
 
 		List<Class<?>> getAllClassesInClasspathRecursively(File directory) throws Exception {
@@ -1557,6 +1360,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
+		@Disabled("Used to find Publishers that can switch threads")
 		void printInterestingClasses() throws Exception {
 			List<Class<?>> allClasses =
 					getAllClassesInClasspathRecursively(new File("./build/classes/java/main/reactor/"));
@@ -1592,18 +1396,28 @@ public class AutomaticContextPropagationTest {
 
 		private class CoreSubscriberWithContext<T> implements CoreSubscriber<T> {
 
-			private final AtomicReference<String>    value;
+			private final AtomicReference<String>    valueInOnNext;
+			private final AtomicReference<String>    valueInOnComplete;
+			private final AtomicReference<String>    valueInOnError;
 			private final AtomicReference<Throwable> error;
 			private final CountDownLatch             latch;
 			private final AtomicBoolean              complete;
+			private final AtomicBoolean              hadNext;
 
-			public CoreSubscriberWithContext(AtomicReference<String> value,
+			public CoreSubscriberWithContext(
+					AtomicReference<String> valueInOnNext,
+					AtomicReference<String> valueInOnComplete,
+					AtomicReference<String> valueInOnError,
 					AtomicReference<Throwable> error,
 					CountDownLatch latch,
+					AtomicBoolean hadNext,
 					AtomicBoolean complete) {
-				this.value = value;
+				this.valueInOnNext = valueInOnNext;
+				this.valueInOnComplete = valueInOnComplete;
+				this.valueInOnError = valueInOnError;
 				this.error = error;
 				this.latch = latch;
+				this.hadNext = hadNext;
 				this.complete = complete;
 			}
 
@@ -1619,18 +1433,21 @@ public class AutomaticContextPropagationTest {
 
 			@Override
 			public void onNext(T t) {
-				value.set(REF.get());
+				hadNext.set(true);
+				valueInOnNext.set(REF.get());
 			}
 
 			@Override
 			public void onError(Throwable t) {
 				error.set(t);
+				valueInOnError.set(REF.get());
 				latch.countDown();
 			}
 
 			@Override
 			public void onComplete() {
 				complete.set(true);
+				valueInOnComplete.set(REF.get());
 				latch.countDown();
 			}
 		}
