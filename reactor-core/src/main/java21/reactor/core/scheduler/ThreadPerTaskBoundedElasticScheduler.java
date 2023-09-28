@@ -32,8 +32,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
@@ -260,8 +260,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		ts.append("maxThreads=").append(maxThreads)
 		  .append(",maxTasksQueuedPerThread=").append(
 				  maxTasksQueuedPerThread == Integer.MAX_VALUE ? "unbounded" :
-						  maxTasksQueuedPerThread)
-		  .append(",ttl=");
+						  maxTasksQueuedPerThread);
 		return ts.toString();
 	}
 
@@ -352,7 +351,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 					return "CREATING SingleThreadExecutor";
 				}
 			};
-			CREATING.markCount = -1; //always -1, ensures tryPick never returns true
+			CREATING.wipAndRefCnt = -1; //always -1, ensures tryPick never returns true
 		}
 
 		static final AtomicLong    DELAYED_TASKS_SCHEDULER_COUNTER = new AtomicLong();
@@ -459,14 +458,14 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 					for (int i = 0; i < len; i++) {
 						SequentialThreadPerTaskExecutor state = arr[i];
-						int busy = state.markCount;
+						int busy = state.refCnt();
 						if (busy < leastBusy) {
 							leastBusy = busy;
 							choice = state;
 						}
 					}
 
-					if (choice.markPicked()) {
+					if (choice.retain()) {
 						return choice;
 					}
 					//else optimistically retry (implicit continue here)
@@ -495,9 +494,6 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 	static class SequentialThreadPerTaskExecutor extends CountDownLatch implements Disposable, Scannable {
 
-		static final int DISPOSED_STATE     = 0b1000_0000_0000_0000_0000_0000_0000_0000;
-		static final int DISPOSED_NOW_STATE = 0b1100_0000_0000_0000_0000_0000_0000_0000;
-
 		final BoundedServices parent;
 
 		final int queueCapacity;
@@ -506,21 +502,18 @@ final class ThreadPerTaskBoundedElasticScheduler
 		final ScheduledExecutorService scheduledTasksExecutor;
 
 		// FIXME: merge with size or wip fields
-		volatile int markCount;
-		static final AtomicIntegerFieldUpdater<SequentialThreadPerTaskExecutor> MARK_COUNT = AtomicIntegerFieldUpdater.newUpdater(
-				SequentialThreadPerTaskExecutor.class, "markCount");
+		volatile long size;
+		static final AtomicLongFieldUpdater<SequentialThreadPerTaskExecutor> SIZE =
+				AtomicLongFieldUpdater.newUpdater(
+				SequentialThreadPerTaskExecutor.class, "size");
 
-		volatile int size;
-		static final AtomicIntegerFieldUpdater<SequentialThreadPerTaskExecutor> SIZE =
-				AtomicIntegerFieldUpdater.newUpdater(SequentialThreadPerTaskExecutor.class, "size");
-
-		volatile int state;
-		static final VarHandle STATE;
+		volatile long wipAndRefCnt;
+		static final VarHandle WIP_AND_REF_CNT;
 
 		static {
 			try {
-				STATE = MethodHandles.lookup()
-				                     .findVarHandle(SequentialThreadPerTaskExecutor.class, "state", Integer.TYPE);
+				WIP_AND_REF_CNT = MethodHandles.lookup()
+				                     .findVarHandle(SequentialThreadPerTaskExecutor.class, "wipAndRefCnt", Long.TYPE);
 			}
 			catch (NoSuchFieldException | IllegalAccessException e) {
 				throw new RuntimeException(e);
@@ -534,45 +527,61 @@ final class ThreadPerTaskBoundedElasticScheduler
 		SequentialThreadPerTaskExecutor(BoundedServices parent, boolean markPicked) {
 			super(1);
 			this.parent = parent;
-			this.tasksQueue = Queues.<RunnableTask>unboundedMultiproducer().get();
+			this.tasksQueue = Queues.<SchedulerTask>unboundedMultiproducer().get();
 			this.queueCapacity = parent.maxTasksQueuedPerThread;
 			this.factory = parent.factory;
 			this.scheduledTasksExecutor = parent.sharedDelayedTasksScheduler;
 
 			if (markPicked) {
-				MARK_COUNT.lazySet(this, 1);
+				WIP_AND_REF_CNT.set(this, 1L << 31);
 			}
 		}
 
-		void ensureQueueCapacityAndAddTasks(int taskCount) {
-			if (queueCapacity == Integer.MAX_VALUE) {
-				return;
-			}
-
+		void incrementTasksCount() {
 			for (; ; ) {
-				int queueSize = size;
-				int nextQueueSize = queueSize + taskCount;
-				if (nextQueueSize > queueCapacity) {
-					throw Exceptions.failWithRejected(
-							"Task capacity of bounded elastic scheduler reached while scheduling " + taskCount + " tasks (" + nextQueueSize + "/" + queueCapacity + ")");
+				long size = this.size;
+
+				if (!canAcceptTasks(size)) {
+					throw Exceptions.failWithRejected();
 				}
 
-				if (SIZE.compareAndSet(this, queueSize, nextQueueSize)) {
+				long nextSize = size + 1;
+				if (queueCapacity != Integer.MAX_VALUE && nextSize > queueCapacity) {
+					throw Exceptions.failWithRejected(
+							"Task capacity of bounded elastic scheduler reached while scheduling a new tasks (" + nextSize + "/" + queueCapacity + ")");
+				}
+
+				if (SIZE.compareAndSet(this, size, nextSize)) {
 					return;
 				}
 			}
 		}
 
-		void removeTask() {
-			if (queueCapacity == Integer.MAX_VALUE) {
-				return;
-			}
-
+		void decrementTasksCount() {
 			SIZE.decrementAndGet(this);
 		}
 
-		int numberOfEnqueuedTasks() {
-			return size;
+		void stopAcceptingTasks() {
+			for (;;) {
+				long size = this.size;
+
+				if (!canAcceptTasks(size)) {
+					return;
+				}
+
+				if (SIZE.weakCompareAndSet(this, size, size | Long.MIN_VALUE)) {
+					return;
+				}
+			}
+		}
+
+		static boolean canAcceptTasks(long state) {
+			return (state & Long.MIN_VALUE) != Long.MIN_VALUE;
+		}
+
+
+		long numberOfEnqueuedTasks() {
+			return size & Long.MAX_VALUE;
 		}
 
 		int numberOfAvailableSlots() {
@@ -580,7 +589,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 				return Integer.MAX_VALUE;
 			}
 
-			return queueCapacity - size;
+			return queueCapacity - (int) numberOfEnqueuedTasks();
 		}
 
 		/**
@@ -589,10 +598,10 @@ final class ThreadPerTaskBoundedElasticScheduler
 		 * @return true if this state could atomically be marked as picked, false if
 		 * eviction started on it in the meantime
 		 */
-		boolean markPicked() {
-			int previousState = retain(this);
+		boolean retain() {
+			long previousState = retain(this);
 
-			return !isDisposed(previousState);
+			return !isShutdown(previousState);
 		}
 
 		/**
@@ -605,19 +614,24 @@ final class ThreadPerTaskBoundedElasticScheduler
 		 * @see #dispose()
 		 */
 		void release() {
-			int previousState = releaseAndTryMarkDisposed(this);
-			if (isDisposedNow(previousState)) {
+			long previousState = release(this);
+			if (isShutdown(previousState)) {
 				return;
 			}
 
-			if (isDisposed(previousState) || previousState == 1) {
+			if (refCnt(previousState) == 1) {
+				stopAcceptingTasks();
 				parent.remove(this);
 
-				if (markShutdown(this) == 0) {
+				if (!hasWork(previousState)) {
 					clearAllTask();
 					countDown();
 				}
 			}
+		}
+
+		int refCnt() {
+			return refCnt(this.wipAndRefCnt);
 		}
 
 		/**
@@ -627,12 +641,15 @@ final class ThreadPerTaskBoundedElasticScheduler
 		 * @see #dispose()
 		 */
 		void shutdown(boolean now) {
-			if (!markDisposed(this, now)) {
+			long previousState = markShutdown(this, now);
+
+			if (isShutdown(previousState)) {
 				return;
 			}
 
-			int previousState = markShutdown(this);
-			if (previousState != 0) {
+			stopAcceptingTasks();
+
+			if (hasWork(previousState)) {
 				return;
 			}
 
@@ -648,11 +665,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		Disposable schedule(Runnable task, @Nullable Composite disposables) {
-			if (isShutdown(this.state)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			ensureQueueCapacityAndAddTasks(1);
+			incrementTasksCount();
 
 			Runnable decoratedTask = onSchedule(task);
 			boolean isDirect = disposables == null;
@@ -675,11 +688,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		Disposable schedule(Runnable task, long delay, TimeUnit unit, @Nullable Composite disposables) {
 			Objects.requireNonNull(unit, "TimeUnit should be non-null");
 
-			if (isShutdown(this.state)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			ensureQueueCapacityAndAddTasks(1);
+			incrementTasksCount();
 
 			Runnable decoratedTask = onSchedule(task);
 			boolean isDirect = disposables == null;
@@ -711,16 +720,12 @@ final class ThreadPerTaskBoundedElasticScheduler
 				@Nullable Composite disposables) {
 			Objects.requireNonNull(unit, "TimeUnit should be non-null");
 
-			if (isShutdown(this.state)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			ensureQueueCapacityAndAddTasks(1);
+			incrementTasksCount();
 
 			Runnable decoratedTask = onSchedule(task);
 			boolean isDirect = disposables == null;
 
-			RunnableTask disposable = new RunnableTask(this,
+			SchedulerTask disposable = new SchedulerTask(this,
 					decoratedTask,
 					period < 0 ? 0 : period,
 					unit,
@@ -732,13 +737,18 @@ final class ThreadPerTaskBoundedElasticScheduler
 				}
 			}
 
-			if (initialDelay <= 0) {
-				this.tasksQueue.offer(disposable);
+			if (period <= 0) {
+				if (initialDelay <= 0) {
+					this.tasksQueue.offer(disposable);
 
-				trySchedule();
+					trySchedule();
+				}
+				else {
+					disposable.schedule(initialDelay, unit);
+				}
 			}
 			else {
-				disposable.schedule(initialDelay, unit);
+				disposable.scheduleAtFixedRate(initialDelay, period, unit);
 			}
 
 			return disposable;
@@ -748,22 +758,8 @@ final class ThreadPerTaskBoundedElasticScheduler
 		 * Is being called from public API and tries to add work and then execute it
 		 */
 		void trySchedule() {
-			int previousState = addWork(this);
-			if (previousState != 0) {
-				return;
-			}
-
-			drain();
-		}
-
-
-		/**
-		 * Is being called from the {@link RunnableTask} internals when the scheduler
-		 * task was offloaded to sharedScheduledExecutorService for the delayed execution
-		 */
-		void tryForceSchedule() {
-			int previousState = forceAddWork(this);
-			if (previousState != 0) {
+			long previousState = addWork(this);
+			if (hasWork(previousState) || isShutdownNow(previousState)) {
 				return;
 			}
 
@@ -771,18 +767,18 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		void drain() {
-			final Queue<RunnableTask> q = this.tasksQueue;
+			final Queue<SchedulerTask> q = this.tasksQueue;
 
-			int m = this.state;
+			long state = this.wipAndRefCnt;
 			for (;;) {
 				for (;;) {
-					if (isDisposedNow(this.markCount)) {
+					if (isShutdownNow(this.wipAndRefCnt)) {
 						clearAllTask();
 						countDown();
 						return;
 					}
 
-					final RunnableTask task = q.poll();
+					final SchedulerTask task = q.poll();
 
 					if (task == null) {
 						break;
@@ -794,28 +790,28 @@ final class ThreadPerTaskBoundedElasticScheduler
 					}
 				}
 
-				m = markWorkDone(this, m);
+				state = markWorkDone(this, state);
 
-				if (isShutdown(m) && q.isEmpty()) {
+				if (isShutdown(state) && numberOfEnqueuedTasks() == 0) {
 					countDown();
 					return;
 				}
 
-				if (!hasWork(m)) {
+				if (!hasWork(state)) {
 					return;
 				}
 			}
 		}
 
 		void clearAllTask() {
-			RunnableTask activeTask = this.activeTask;
+			SchedulerTask activeTask = this.activeTask;
 			if (activeTask != null) {
 				activeTask.dispose();
 			}
 
-			Queue<RunnableTask> q = this.tasksQueue;
+			Queue<SchedulerTask> q = this.tasksQueue;
 
-			RunnableTask d;
+			SchedulerTask d;
 			while ((d = q.poll()) != null) {
 				d.dispose();
 			}
@@ -828,7 +824,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		 */
 		@Override
 		public boolean isDisposed() {
-			return isDisposed(this.markCount);
+			return isShutdown(this.wipAndRefCnt);
 		}
 
 		@Override
@@ -838,121 +834,120 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		@Override
 		public String toString() {
-			return "SingleThreadExecutor@" + System.identityHashCode(this) + "{" + " backing=" + markCount + '}';
+			return "SingleThreadExecutor@" + System.identityHashCode(this) + "{" + " backing=" + refCnt(this.wipAndRefCnt) + '}';
 		}
 
-		// -- MARK-COUNTER --
+		static final long WIP_MASK =
+				0b0000_0000_0000_0000_0000_0000_0000_0000_0111_1111_1111_1111_1111_1111_1111_1111L;
+		static final long REF_CNT_MASK =
+				0b0011_1111_1111_1111_1111_1111_1111_1111_1000_0000_0000_0000_0000_0000_0000_0000L;
 
-		static int retain(SequentialThreadPerTaskExecutor instance) {
+		static final long SHUTDOWN_FLAG =
+				0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long SHUTDOWN_NOW_FLAG =
+				0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+
+		static int refCnt(long state) {
+			return (int) ((state & REF_CNT_MASK) >> 31);
+		}
+
+		static long retain(SequentialThreadPerTaskExecutor instance) {
 			for (;;) {
-				int state = instance.markCount;
-
-				if (isDisposed(state)) {
-					return state;
-				}
-
-				int nextState = state + 1;
-				if (MARK_COUNT.weakCompareAndSet(instance, state, nextState)) {
-					return state;
-				}
-			}
-		}
-
-		static int releaseAndTryMarkDisposed(SequentialThreadPerTaskExecutor instance) {
-			for (;;) {
-				int state = instance.markCount;
-
-				if (isDisposedNow(state)) {
-					return state;
-				}
-
-				int nextState = isDisposed(state) || state == 1 ? DISPOSED_NOW_STATE : state - 1;
-				if (MARK_COUNT.weakCompareAndSet(instance, state, nextState)) {
-					return state;
-				}
-			}
-		}
-
-		static boolean markDisposed(SequentialThreadPerTaskExecutor instance, boolean now) {
-			for (;;) {
-				int markCount = instance.markCount;
-
-				if (isDisposedNow(markCount) || (!now && isDisposed(markCount))) {
-					return false;
-				}
-
-				if (MARK_COUNT.weakCompareAndSet(instance, markCount, now ? DISPOSED_NOW_STATE : DISPOSED_STATE)) {
-					return true;
-				}
-			}
-		}
-
-		static boolean isDisposed(int state) {
-			return (state & DISPOSED_STATE) == DISPOSED_STATE;
-		}
-
-		static boolean isDisposedNow(int state) {
-			return (state & DISPOSED_NOW_STATE) == DISPOSED_NOW_STATE;
-		}
-
-		// -- WIP --
-
-		static boolean isShutdown(int state) {
-			return (state & Integer.MIN_VALUE) == Integer.MIN_VALUE;
-		}
-
-		static boolean hasWork(int state) {
-			return (state & Integer.MAX_VALUE) > 0;
-		}
-
-		static int markWorkDone(SequentialThreadPerTaskExecutor instance, int expectedState) {
-			for (;;) {
-				int currentState = instance.state;
-
-				if (expectedState != currentState) {
-					return currentState;
-				}
-
-				int nextState = currentState & Integer.MIN_VALUE;
-				if (STATE.weakCompareAndSetPlain(instance, currentState, nextState)) {
-					return nextState;
-				}
-			}
-		}
-
-		static int addWork(SequentialThreadPerTaskExecutor instance) {
-			for (;;) {
-				int state = instance.state;
+				long state = instance.wipAndRefCnt;
 
 				if (isShutdown(state)) {
 					return state;
 				}
 
-				int nextState = incrementWork(state);
-				if (STATE.weakCompareAndSetPlain(instance, state, nextState)) {
+				long nextState = incrementRefCnt(state);
+				if (WIP_AND_REF_CNT.weakCompareAndSet(instance, state, nextState)) {
 					return state;
 				}
 			}
 		}
 
-		static int forceAddWork(SequentialThreadPerTaskExecutor instance) {
-			for (;;) {
-				int state = instance.state;
-				int wip = state & Integer.MAX_VALUE;
+		static long incrementRefCnt(long state) {
+			long rawRefCnt = state & REF_CNT_MASK;
+			return (rawRefCnt) == REF_CNT_MASK ? state : (rawRefCnt >> 31 + 1) << 31 | (state &~ REF_CNT_MASK);
+		}
 
-				int nextState = (incrementWork(wip)) | (state & Integer.MIN_VALUE);
-				if (STATE.weakCompareAndSetPlain(instance, state, nextState)) {
-					return wip;
+		static long release(SequentialThreadPerTaskExecutor instance) {
+			for (;;) {
+				long state = instance.wipAndRefCnt;
+
+				if (isShutdown(state)) {
+					return state;
+				}
+
+				long refCnt = (state & REF_CNT_MASK) >> 31;
+				long nextRefCnt = refCnt - 1;
+				long nextState;
+				if (nextRefCnt == 0) {
+					nextState =
+							incrementWork(state & ~REF_CNT_MASK | SHUTDOWN_NOW_FLAG | SHUTDOWN_FLAG);
+				} else {
+					nextState = (refCnt) == 0 ? state : nextRefCnt << 31 | (state & ~REF_CNT_MASK);
+				}
+				if (WIP_AND_REF_CNT.weakCompareAndSetPlain(instance, state, nextState)) {
+					return state;
 				}
 			}
 		}
 
-		static int incrementWork(int currentWork) {
-			return currentWork == Integer.MAX_VALUE ? 1 : currentWork + 1;
+		static long markShutdown(SequentialThreadPerTaskExecutor instance, boolean now) {
+			for (;;) {
+				long state = instance.wipAndRefCnt;
+
+				if (isShutdownNow(state) || (!now && isShutdown(state))) {
+					return state;
+				}
+
+				if (WIP_AND_REF_CNT.weakCompareAndSetPlain(instance, state, state | SHUTDOWN_FLAG | (now ? SHUTDOWN_NOW_FLAG : 0))) {
+					return state;
+				}
+			}
 		}
 
-		static int markShutdown(SequentialThreadPerTaskExecutor instance) {
-			return (int) STATE.getAndBitwiseOrRelease(instance, 0b11111111111111111111111111111111);
+		static boolean isShutdown(long state) {
+			return (state & SHUTDOWN_FLAG) == SHUTDOWN_FLAG;
+		}
+
+		static boolean isShutdownNow(long state) {
+			return (state & SHUTDOWN_NOW_FLAG) == SHUTDOWN_NOW_FLAG;
+		}
+
+		static boolean hasWork(long state) {
+			return (state & WIP_MASK) > 0;
+		}
+
+		static long markWorkDone(SequentialThreadPerTaskExecutor instance, long expectedState) {
+			for (;;) {
+				long currentState = instance.wipAndRefCnt;
+
+				if (expectedState != currentState) {
+					return currentState;
+				}
+
+				long nextState = currentState &~ WIP_MASK;
+				if (WIP_AND_REF_CNT.weakCompareAndSetPlain(instance, currentState, nextState)) {
+					return nextState;
+				}
+			}
+		}
+
+		static long addWork(SequentialThreadPerTaskExecutor instance) {
+			for (;;) {
+				long state = instance.wipAndRefCnt;
+
+				long nextState = incrementWork(state);
+				if (WIP_AND_REF_CNT.weakCompareAndSetPlain(instance, state, nextState)) {
+					return state;
+				}
+			}
+		}
+
+		static long incrementWork(long state) {
+			return ((state & WIP_MASK) == WIP_MASK ? (state &~ WIP_MASK) : state) + 1;
 		}
 	}
 
@@ -961,11 +956,12 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		static final int INITIAL_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0000;
 		static final int SCHEDULED_STATE = 0b0000_0000_0000_0000_0000_0000_0000_0001;
-		static final int STARTED_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0010;
+		static final int STARTING_STATE  = 0b0000_0000_0000_0000_0000_0000_0000_0010;
 		static final int RUNNING_STATE   = 0b0000_0000_0000_0000_0000_0000_0000_0100;
 		static final int COMPLETED_STATE = 0b0000_0000_0000_0000_0000_0000_0000_1000;
-		static final int DISPOSED_STATE  = 0b1000_0000_0000_0000_0000_0000_0000_0000;
-
+		static final int DISPOSED_FLAG   = 0b1000_0000_0000_0000_0000_0000_0000_0000;
+		static final int HAS_FUTURE_FLAG = 0b0000_1000_0000_0000_0000_0000_0000_0000;
+								   int i = 0b1000_0000_0000_0000_0000_0000_0000_0100;
 		final long     fixedRatePeriod;
 		final TimeUnit                        timeUnit;
 		final SequentialThreadPerTaskExecutor holder;
@@ -975,9 +971,8 @@ final class ThreadPerTaskBoundedElasticScheduler
 		final Composite tracker;
 
 		Thread carrier;
-		long   startedAtInMillis;
 
-		Future<Void> scheduledFuture;
+		Future<?> scheduledFuture;
 
 		SchedulerTask(SequentialThreadPerTaskExecutor holder,
 				Runnable task,
@@ -1004,44 +999,51 @@ final class ThreadPerTaskBoundedElasticScheduler
 				task.run();
 			}
 			catch (Throwable ex) {
-				if (isPeriodic()) {
-					this.holder.removeTask();
+				boolean handled = false;
+				try {
+					Schedulers.handleError(ex);
+					handled = true;
 				}
+				finally {
+					if (!handled) {
+						if (isPeriodic()) {
+							this.holder.decrementTasksCount();
+						}
 
-				if (this.tracker == null) {
-					this.holder.release();
+						if (this.tracker == null) {
+							this.holder.release();
+						}
+						else {
+							this.tracker.remove(this);
+						}
+						this.holder.drain();
+					}
 				}
-				else {
-					this.tracker.remove(this);
-				}
-				this.holder.drain();
-				Schedulers.handleError(ex);
-				return;
 			}
 
-			if (isPeriodic()) {
-				if (this.fixedRatePeriod != 0) {
-					// schedule next delay
-					// TODO: should we prevent scheduling if parent is for graceful
-					//  shutdown
-					previousState = markScheduled(this);
 
-				}
-				else {
-					previousState = markScheduled(this);
-					if (!isDisposed(previousState) && SequentialThreadPerTaskExecutor.isShutdown(holder.state)) {
+			if (isPeriodic()) {
+				boolean isInstant = this.fixedRatePeriod == 0;
+
+				previousState = isInstant ? markInitial(this) : markRescheduled(this);
+				boolean isDisposed = isDisposed(previousState);
+				boolean isShutdown = holder.isDisposed();
+
+				if (isInstant) {
+					if (!isDisposed && !isShutdown) {
 						// we do not schedule task since execution time is greater than
 						// fixed rate period which means we need to run this task right away
 						this.holder.tasksQueue.offer(this);
 					}
 				}
 
-				if (isDisposed(previousState)) {
-					this.holder.removeTask();
+				if (isDisposed || isShutdown) {
+					this.holder.decrementTasksCount();
 					if (this.tracker == null) {
 						this.holder.release();
 					}
 				}
+
 				// and drain next task if available
 				this.holder.drain();
 				return;
@@ -1067,10 +1069,8 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 			final SequentialThreadPerTaskExecutor parent = this.holder;
 
-			this.startedAtInMillis = Instant.now().toEpochMilli();
-
 			parent.tasksQueue.offer(this);
-			parent.tryForceSchedule();
+			parent.trySchedule();
 			return null;
 		}
 
@@ -1089,7 +1089,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 			if (isScheduled(previousState)) {
 				this.scheduledFuture.cancel(true);
-				this.holder.removeTask();
+				this.holder.decrementTasksCount();
 				if (isDirect) {
 					this.holder.release();
 				}
@@ -1097,12 +1097,21 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 
 			if (isRunning(previousState)) {
+				if (hasFuture(previousState)) {
+					this.scheduledFuture.cancel(true);
+				}
 				this.carrier.interrupt();
 				return;
 			}
 
-			if (isInitialState(previousState) || isPeriodic()) {
-				this.holder.removeTask();
+			if (isInitialState(previousState)) {
+				this.holder.decrementTasksCount();
+			}
+			else if (isPeriodic()) {
+				if (hasFuture(previousState)) {
+					this.scheduledFuture.cancel(true);
+				}
+				this.holder.decrementTasksCount();
 			}
 
 			if (isDirect) {
@@ -1129,7 +1138,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 			this.carrier = carrier;
 
 			if (!isPeriodic()) {
-				this.holder.removeTask();
+				this.holder.decrementTasksCount();
 			}
 
 			carrier.start();
@@ -1151,12 +1160,23 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 		}
 
+		void scheduleAtFixedRate(long initialDelay, long delay, TimeUnit unit) {
+			final ScheduledFuture<?> future =
+					this.holder.scheduledTasksExecutor.scheduleAtFixedRate(this::call, initialDelay, delay, unit);
+			this.scheduledFuture = future;
+
+			final int previousState = markScheduled(this);
+			if (isDisposed(previousState)) {
+				future.cancel(true);
+			}
+		}
+
 		static boolean isInitialState(int state) {
 			return state == 0;
 		}
 
 		static boolean isStarting(int state) {
-			return (state & STARTED_STATE) == STARTED_STATE;
+			return (state & STARTING_STATE) == STARTING_STATE;
 		}
 
 		static boolean isRunning(int state) {
@@ -1172,7 +1192,11 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		static boolean isDisposed(int state) {
-			return (state & DISPOSED_STATE) == DISPOSED_STATE;
+			return (state & DISPOSED_FLAG) == DISPOSED_FLAG;
+		}
+
+		static boolean hasFuture(int state) {
+			return (state & HAS_FUTURE_FLAG) == HAS_FUTURE_FLAG;
 		}
 
 		static int markInitial(SchedulerTask disposable) {
@@ -1197,7 +1221,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 					return state;
 				}
 
-				if (disposable.weakCompareAndSetPlain(state, STARTED_STATE)) {
+				if (disposable.weakCompareAndSetPlain(state, (state & HAS_FUTURE_FLAG) | STARTING_STATE)) {
 					return state;
 				}
 			}
@@ -1211,7 +1235,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 					return state;
 				}
 
-				if (disposable.weakCompareAndSetPlain(state, RUNNING_STATE)) {
+				if (disposable.weakCompareAndSetPlain(state, (state & HAS_FUTURE_FLAG) | RUNNING_STATE)) {
 					return state;
 				}
 			}
@@ -1221,11 +1245,25 @@ final class ThreadPerTaskBoundedElasticScheduler
 			for (;;) {
 				int state = disposable.get();
 
-				if (!isInitialState(state)) {
+				if (isDisposed(state)) {
 					return state;
 				}
 
-				if (disposable.weakCompareAndSetPlain(state, SCHEDULED_STATE)) {
+				if (disposable.weakCompareAndSetRelease(state, !isInitialState(state) ? HAS_FUTURE_FLAG : SCHEDULED_STATE | HAS_FUTURE_FLAG)) {
+					return state;
+				}
+			}
+		}
+
+		static int markRescheduled(SchedulerTask disposable) {
+			for (;;) {
+				int state = disposable.get();
+
+				if (isDisposed(state)) {
+					return state;
+				}
+
+				if (disposable.weakCompareAndSetRelease(state, HAS_FUTURE_FLAG | SCHEDULED_STATE)) {
 					return state;
 				}
 			}
@@ -1239,7 +1277,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 					return state;
 				}
 
-				if (disposable.weakCompareAndSetAcquire(state, state | DISPOSED_STATE)) {
+				if (disposable.weakCompareAndSetAcquire(state, state | DISPOSED_FLAG)) {
 					return state;
 				}
 			}
@@ -1253,6 +1291,12 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 
 			disposable.weakCompareAndSetPlain(state, COMPLETED_STATE);
+		}
+
+		@Override
+		public String toString() {
+			return "SchedulerTask(" + hashCode() +"){" + "carrier=" + carrier + ", " +
+					"scheduledFuture=" + scheduledFuture + "state= " + Integer.toBinaryString(get()) + '}';
 		}
 	}
 

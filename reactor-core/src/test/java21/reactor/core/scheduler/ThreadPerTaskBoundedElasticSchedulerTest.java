@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.pivovarit.function.ThrowingRunnable;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -50,6 +51,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 	@BeforeEach
 	void setup() {
 		scheduler = newScheduler(2, 3);
+		scheduler.init();
 	}
 
 	@AfterEach
@@ -429,7 +431,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 				Awaitility.await()
 				          .atMost(Duration.ofSeconds(5))
-				          .until(() -> worker.executor.state == 0);
+				          .until(() -> !ThreadPerTaskBoundedElasticScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
 
 				Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
 				          .isEqualTo(2000);
@@ -438,6 +440,54 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 				Assertions.assertThat(tasks)
 				          .allMatch(Disposable::isDisposed);
 			}
+	}
+
+	@Test
+	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposedDelayedCase() throws InterruptedException {
+		ThreadPerTaskBoundedElasticScheduler
+				scheduler = newScheduler(2, 1000);
+
+		scheduler.init();
+		Runnable task = () -> {
+		};
+
+		for (int i = 0; i < 100; i++) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker = (ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+			List<Disposable> tasks = new ArrayList<>();
+			tasks.add(worker.schedule(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
+			          .isEqualTo(2000);
+			for (int j = 0; j < 1000; j++) {
+				tasks.add(worker.schedulePeriodically(task, 1,1, TimeUnit.MILLISECONDS));
+			}
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
+			          .isEqualTo(1000);
+
+			latch.countDown();
+			Thread.yield();
+			tasks.forEach(Disposable::dispose);
+
+			Awaitility.await()
+			          .atMost(Duration.ofSeconds(5))
+			          .until(() -> !ThreadPerTaskBoundedElasticScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
+
+			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
+			          .isEqualTo(2000);
+			Assertions.assertThat(worker.isDisposed())
+			          .isFalse();
+			Assertions.assertThat(tasks)
+			          .allMatch(Disposable::isDisposed);
+		}
 	}
 
 	@Test
@@ -493,7 +543,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 				Awaitility.await()
 				          .atMost(Duration.ofSeconds(5))
-				          .until(() -> worker.executor.state == 0);
+				          .until(() -> !ThreadPerTaskBoundedElasticScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
 
 				Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
 				          .isEqualTo(20000);
@@ -558,7 +608,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		AtomicInteger counter = new AtomicInteger();
 
 		for (int i = 0; i < 500; i++) {
-			switch (i % 3) {
+			switch (i % 4) {
 				case 0 : worker.schedule(counter::incrementAndGet); break;
 				case 1 : worker.schedule(counter::incrementAndGet, 1, TimeUnit.MILLISECONDS); break;
 				case 2 : worker.schedulePeriodically(new Runnable() {
@@ -570,7 +620,17 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 							counter.incrementAndGet();
 						}
 					}
-				}, 1, 1, TimeUnit.MILLISECONDS); break;
+				}, 0, 0, TimeUnit.MILLISECONDS); break;
+				case 3 : worker.schedulePeriodically(new Runnable() {
+					boolean once = false;
+					@Override
+					public void run() {
+						if (!once) {
+							once = true;
+							counter.incrementAndGet();
+						}
+					}
+				}, 1, 0, TimeUnit.MILLISECONDS); break;
  			}
 		}
 
@@ -592,13 +652,13 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresSupportGracefulShutdown() {
-		ThreadPerTaskBoundedElasticScheduler scheduler = newScheduler(100, 1000);
+		ThreadPerTaskBoundedElasticScheduler scheduler = newScheduler(100, 100_000);
 		scheduler.init();
 
 		AtomicInteger counter = new AtomicInteger();
 
 		for (int i = 0; i < 100_000; i++) {
-			switch (i % 3) {
+			switch (i % 4) {
 				case 0 : scheduler.schedule(counter::incrementAndGet); break;
 				case 1 : scheduler.schedule(counter::incrementAndGet, 1, TimeUnit.MILLISECONDS); break;
 				case 2 : scheduler.schedulePeriodically(new Runnable() {
@@ -610,7 +670,30 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 							counter.incrementAndGet();
 						}
 					}
-				}, 1, 1, TimeUnit.MILLISECONDS); break;
+				}, 1, 0, TimeUnit.MILLISECONDS); break;
+				case 3 : scheduler.schedulePeriodically(new Runnable() {
+					boolean once = false;
+					@Override
+					public void run() {
+						if (!once) {
+							once = true;
+							counter.incrementAndGet();
+						}
+					}
+				}, 0, 0, TimeUnit.MILLISECONDS); break;
+				// we can not test that real scheduledAtFixedRate task is awaited since
+				// it is not awaited by ScheduledExecutorService, thus no way to
+				// observe it
+				/*case 4 : scheduler.schedulePeriodically(new Runnable() {
+					boolean once = false;
+					@Override
+					public void run() {
+						if (!once) {
+							once = true;
+							counter.incrementAndGet();
+						}
+					}
+				}, 1, 1, TimeUnit.MILLISECONDS); break;*/
 			}
 		}
 
@@ -623,17 +706,59 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		Assertions.assertThat(counter).hasValue(100_000);
 	}
 
-	public static void main(String[] args) throws InterruptedException {
-		ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+	@Test
+	void ensuresTotalTasksMathIsDoneCorrectlyInOverflow() {
+		ThreadPerTaskBoundedElasticScheduler scheduler =
+				newScheduler(10,
+				Integer.MAX_VALUE - 1);
+		scheduler.init();
+		CountDownLatch latch = new CountDownLatch(1);
 
-		service.scheduleAtFixedRate(() -> System.out.println("test"), 5, 5, TimeUnit.SECONDS);
+		Runnable task = () -> {
+			try {
+				latch.await();
+			}
+			catch (InterruptedException e) {
 
-		service.shutdown();
-		service.awaitTermination(10, TimeUnit.SECONDS);
-		System.out.println("done");
+			}
+		};
+
+		for (int i = 0; i < 10; i++) {
+			Scheduler.Worker worker = scheduler.createWorker();
+			for (int j = 0; j < 100; j++) {
+				worker.schedule(task);
+			}
+		}
+
+		Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(Integer.MAX_VALUE);
 	}
 
-	// TODO: add graceful shutdown check (check how we await delayed and period tasks
-	//       along with normal tasks)
-	// TODO: write a test for estimateRemainingTaskCapacity() to ensure math never fails
+	@Test
+	void ensuresTotalTasksMathIsDoneCorrectlyInEdgeCase() {
+		ThreadPerTaskBoundedElasticScheduler scheduler =
+				newScheduler(10,
+						Integer.MAX_VALUE / 10 + 1);
+		scheduler.init();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		Runnable task = () -> {
+			try {
+				latch.await();
+			}
+			catch (InterruptedException e) {
+
+			}
+		};
+
+		for (int i = 0; i < 10; i++) {
+			Scheduler.Worker worker = scheduler.createWorker();
+			for (int j = 0; j < 100; j++) {
+				worker.schedule(task);
+			}
+		}
+
+		// Note +10 means that 10 tasks are in fly blocked, and they are not included
+		// in the capacity counting since they don't occupy a queue
+		Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(10L * (Integer.MAX_VALUE / 10 + 1) - 1000 + 10);
+	}
 }
