@@ -48,7 +48,7 @@ public class ThreadSwitchingFlux<T> extends Flux<T> implements Subscription, Run
 	private void deliver() {
 		if (done.compareAndSet(false, true)) {
 			this.actual.onNext(this.item);
-			this.actual.onComplete();
+			this.executorService.submit(this.actual::onComplete);
 		}
 	}
 

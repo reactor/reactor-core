@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
@@ -57,7 +56,6 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
-import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
@@ -186,7 +184,7 @@ public class AutomaticContextPropagationTest {
 	}
 
 	@Test
-	void threadLocalsPresentInDoAfterTerminate() throws InterruptedException {
+	void threadLocalsPresentInDoAfterTerminate() throws InterruptedException, TimeoutException {
 		AtomicReference<String> tlValue = new AtomicReference<>();
 		CountDownLatch latch = new CountDownLatch(1);
 
@@ -202,7 +200,9 @@ public class AutomaticContextPropagationTest {
 		// Need to synchronize, as the doAfterTerminate operator can race with the
 		// assertion. First, blockLast receives the completion signal, and only then,
 		// the callback is triggered.
-		latch.await(10, TimeUnit.MILLISECONDS);
+		if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+			throw new TimeoutException("timed out");
+		}
 		assertThat(tlValue.get()).isEqualTo("present");
 	}
 
@@ -430,12 +430,12 @@ public class AutomaticContextPropagationTest {
 		}
 
 		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(
-				CorePublisher<? extends T> source) throws InterruptedException {
+				CorePublisher<? extends T> source) throws InterruptedException, TimeoutException {
 			assertThatThreadLocalsPresentDirectCoreSubscribe(source, () -> {});
 		}
 
 		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(
-				CorePublisher<? extends T> source, Runnable asyncAction) throws InterruptedException {
+				CorePublisher<? extends T> source, Runnable asyncAction) throws InterruptedException, TimeoutException {
 			AtomicReference<String> valueInOnNext = new AtomicReference<>();
 			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
 			AtomicReference<String> valueInOnError = new AtomicReference<>();
@@ -453,7 +453,9 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(asyncAction);
 
-			latch.await(10, TimeUnit.MILLISECONDS);
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
 
 			if (hadNext.get()) {
 				assertThat(valueInOnNext.get()).isEqualTo("present");
@@ -471,12 +473,12 @@ public class AutomaticContextPropagationTest {
 		// are able to wrap the Subscriber and restore ThreadLocal values for the
 		// signals received downstream.
 		<T> void assertThatThreadLocalsPresentDirectRawSubscribe(
-				Publisher<? extends T> source) throws InterruptedException {
+				Publisher<? extends T> source) throws InterruptedException, TimeoutException {
 			assertThatThreadLocalsPresentDirectRawSubscribe(source, () -> {});
 		}
 
 		<T> void assertThatThreadLocalsPresentDirectRawSubscribe(
-				Publisher<? extends T> source, Runnable asyncAction) throws InterruptedException {
+				Publisher<? extends T> source, Runnable asyncAction) throws InterruptedException, TimeoutException {
 			AtomicReference<String> valueInOnNext = new AtomicReference<>();
 			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
 			AtomicReference<String> valueInOnError = new AtomicReference<>();
@@ -494,7 +496,9 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(asyncAction);
 
-			latch.await(10, TimeUnit.MILLISECONDS);
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
 
 			if (hadNext.get()) {
 				assertThat(valueInOnNext.get()).isEqualTo("present");
@@ -530,7 +534,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void directFluxSubscribeAsCoreSubscriber() throws InterruptedException {
+		void directFluxSubscribeAsCoreSubscriber() throws InterruptedException, TimeoutException {
 			AtomicReference<String> valueInOnNext = new AtomicReference<>();
 			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
 			AtomicReference<String> valueInOnError = new AtomicReference<>();
@@ -548,7 +552,9 @@ public class AutomaticContextPropagationTest {
 
 			flux.subscribe(subscriberWithContext);
 
-			latch.await(10, TimeUnit.MILLISECONDS);
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
 
 			assertThat(error.get()).isNull();
 			assertThat(complete.get()).isTrue();
@@ -575,7 +581,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void directMonoSubscribeAsCoreSubscriber() throws InterruptedException {
+		void directMonoSubscribeAsCoreSubscriber() throws InterruptedException, TimeoutException {
 			AtomicReference<String> valueInOnNext = new AtomicReference<>();
 			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
 			AtomicReference<String> valueInOnError = new AtomicReference<>();
@@ -593,7 +599,9 @@ public class AutomaticContextPropagationTest {
 
 			mono.subscribe(subscriberWithContext);
 
-			latch.await(10, TimeUnit.MILLISECONDS);
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("timed out");
+			}
 
 			assertThat(error.get()).isNull();
 			assertThat(complete.get()).isTrue();
@@ -735,7 +743,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void fluxConcatArray() {
 			assertThreadLocalsPresentInFlux(() ->
-					Flux.concat(Mono.<String>empty(), threadSwitchingFlux()));
+					Flux.concat(Mono.empty(), threadSwitchingFlux()));
 		}
 
 		@Test
@@ -751,9 +759,7 @@ public class AutomaticContextPropagationTest {
 				sink.next("Hello");
 				// the generator is checked if any signal was delivered by the consumer
 				// so we perform asynchronous completion only
-				executorService.submit(() -> {
-					sink.complete();
-				});
+				executorService.submit(sink::complete);
 			}));
 		}
 
@@ -1043,7 +1049,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void threadSwitchingParallelFluxSequential() {
 			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+			new ThreadSwitchingParallelFlux<>("Hello", executorService)
 					.sequential()
 					.doOnNext(i -> value.set(REF.get()))
 					.contextWrite(Context.of(KEY, "present"))
@@ -1055,21 +1061,21 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void threadSwitchingParallelFluxThen() {
 			assertThreadLocalsPresentInMono(() ->
-					new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					new ThreadSwitchingParallelFlux<>("Hello", executorService)
 							.then());
 		}
 
 		@Test
 		void threadSwitchingParallelFluxOrdered() {
 			assertThreadLocalsPresentInFlux(() ->
-					new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					new ThreadSwitchingParallelFlux<>("Hello", executorService)
 							.ordered(Comparator.naturalOrder()));
 		}
 
 		@Test
 		void threadSwitchingParallelFluxReduce() {
 			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+			new ThreadSwitchingParallelFlux<>("Hello", executorService)
 					.reduce((s1, s2) -> s2)
 					.doOnNext(i -> value.set(REF.get()))
 					.contextWrite(Context.of(KEY, "present"))
@@ -1081,7 +1087,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void threadSwitchingParallelFluxReduceSeed() {
 			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+			new ThreadSwitchingParallelFlux<>("Hello", executorService)
 					.reduce(ArrayList::new, (l, s) -> {
 						value.set(REF.get());
 						l.add(s);
@@ -1097,7 +1103,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void threadSwitchingParallelFluxGroup() {
 			AtomicReference<String> value = new AtomicReference<>();
-			new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+			new ThreadSwitchingParallelFlux<>("Hello", executorService)
 					.groups()
 					.doOnNext(i -> value.set(REF.get()))
 					.flatMap(Flux::last)
@@ -1110,7 +1116,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void threadSwitchingParallelFluxSort() {
 			assertThreadLocalsPresentInFlux(() ->
-					new ThreadSwitchingParallelFlux<String>("Hello", executorService)
+					new ThreadSwitchingParallelFlux<>("Hello", executorService)
 							.sorted(Comparator.naturalOrder()));
 		}
 
@@ -1133,7 +1139,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(() -> sink.tryEmitValue(1));
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1168,7 +1174,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(spec::tryEmitEmpty);
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1176,7 +1182,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void sinksEmptyDirect() throws InterruptedException {
+		void sinksEmptyDirect() throws InterruptedException, TimeoutException {
 			Sinks.Empty<Object> empty1 = Sinks.empty();
 			assertThatThreadLocalsPresentDirectCoreSubscribe(empty1.asMono(), empty1::tryEmitEmpty);
 
@@ -1203,7 +1209,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(() -> many.tryEmitNext("Hello"));
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1211,7 +1217,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void sinkManyUnicastDirect() throws InterruptedException {
+		void sinkManyUnicastDirect() throws InterruptedException, TimeoutException {
 			Sinks.Many<String> many1 = Sinks.many().unicast()
 			                              .onBackpressureBuffer();
 
@@ -1248,7 +1254,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(() -> many.tryEmitNext("Hello"));
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1274,7 +1280,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(() -> many.tryEmitNext("Hello"));
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1299,7 +1305,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(() -> many.tryEmitNext("Hello"));
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1324,7 +1330,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(() -> many.tryEmitNext("Hello"));
 
-			if (!latch.await(10, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 

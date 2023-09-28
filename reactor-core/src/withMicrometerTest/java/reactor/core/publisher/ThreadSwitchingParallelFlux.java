@@ -58,7 +58,7 @@ public class ThreadSwitchingParallelFlux<T> extends ParallelFlux<T> implements
 	private void deliver() {
 		if (done.compareAndSet(false, true)) {
 			this.actual[0].onNext(this.item);
-			this.actual[0].onComplete();
+			this.executorService.submit(this.actual[0]::onComplete);
 		}
 	}
 
