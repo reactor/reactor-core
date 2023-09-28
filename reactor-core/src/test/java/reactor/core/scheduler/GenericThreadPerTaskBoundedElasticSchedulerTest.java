@@ -51,6 +51,7 @@ class GenericThreadPerTaskBoundedElasticSchedulerTest extends AbstractSchedulerT
 
 	@Override
 	protected Scheduler freshScheduler() {
+		Assumptions.assumeThat(SUPPORTED).isTrue();
 		return new ThreadPerTaskBoundedElasticScheduler(4,
 				Integer.MAX_VALUE,
 				new VirtualThreadFactory(
