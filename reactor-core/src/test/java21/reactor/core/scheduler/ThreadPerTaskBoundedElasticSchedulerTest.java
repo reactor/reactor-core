@@ -571,7 +571,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 
 		worker.executor.shutdown(false);
-		worker.executor.await();
+		Assertions.assertThat(worker.executor.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Assertions.assertThat(tasksIds).containsExactlyElementsOf(Flux.range(0, 1000).collectList().block());
 	}
@@ -592,7 +592,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		}
 
 		worker.executor.shutdown(false);
-		worker.executor.await();
+		Assertions.assertThat(worker.executor.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Assertions.assertThat(tasksIds).containsExactlyElementsOf(Flux.range(0, 1000).collectList().block());
 	}
@@ -645,7 +645,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		}
 
 		worker.executor.shutdown(false);
-		worker.executor.await();
+		Assertions.assertThat(worker.executor.await(10, TimeUnit.SECONDS)).isTrue();
 
 		Assertions.assertThat(counter).hasValue(500);
 	}

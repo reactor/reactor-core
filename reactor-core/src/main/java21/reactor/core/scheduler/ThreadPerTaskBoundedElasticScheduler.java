@@ -540,7 +540,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 			for (; ; ) {
 				long size = this.size;
 
-				if (!canAcceptTasks(size)) {
+				if (canNotAcceptTasks(size)) {
 					throw Exceptions.failWithRejected();
 				}
 
@@ -557,14 +557,18 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 
 		void decrementTasksCount() {
-			SIZE.decrementAndGet(this);
+			long actualState = SIZE.decrementAndGet(this);
+
+			if (canNotAcceptTasks(actualState) && tasksCount(actualState) == 0) {
+				trySchedule();
+			}
 		}
 
 		void stopAcceptingTasks() {
 			for (;;) {
 				long size = this.size;
 
-				if (!canAcceptTasks(size)) {
+				if (canNotAcceptTasks(size)) {
 					return;
 				}
 
@@ -574,13 +578,8 @@ final class ThreadPerTaskBoundedElasticScheduler
 			}
 		}
 
-		static boolean canAcceptTasks(long state) {
-			return (state & Long.MIN_VALUE) != Long.MIN_VALUE;
-		}
-
-
 		long numberOfEnqueuedTasks() {
-			return size & Long.MAX_VALUE;
+			return tasksCount(this.size);
 		}
 
 		int numberOfAvailableSlots() {
@@ -836,6 +835,14 @@ final class ThreadPerTaskBoundedElasticScheduler
 		@Override
 		public String toString() {
 			return "SingleThreadExecutor@" + System.identityHashCode(this) + "{" + " backing=" + refCnt(this.wipAndRefCnt) + '}';
+		}
+
+		static boolean canNotAcceptTasks(long state) {
+			return (state & Long.MIN_VALUE) == Long.MIN_VALUE;
+		}
+
+		static long tasksCount(long state) {
+			return state & Long.MAX_VALUE;
 		}
 
 		static final long WIP_MASK =
