@@ -194,7 +194,7 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 		if (key == Attr.ACTUAL) return actual;
 		if (key == Attr.TERMINATED) return state == State.TERMINATED;
 		if (key == Attr.CANCELLED) return state == State.CANCELLED;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

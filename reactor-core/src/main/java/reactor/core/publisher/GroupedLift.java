@@ -62,7 +62,7 @@ final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable 
 		if (key == Attr.LIFTER) {
 			return liftFunction.name;
 		}
-		if (key == Attr.INTERNAL_PRODUCER) {
+		if (key == InternalProducerAttr.INSTANCE) {
 			return true;
 		}
 

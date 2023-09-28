@@ -95,7 +95,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 		return super.scanUnsafe(key);
 	}
 

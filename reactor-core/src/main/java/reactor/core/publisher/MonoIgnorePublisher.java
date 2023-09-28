@@ -86,7 +86,7 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 		if (key == Attr.RUN_STYLE) {
 			return Attr.RunStyle.SYNC;
 		}
-		if (key == Attr.INTERNAL_PRODUCER) {
+		if (key == InternalProducerAttr.INSTANCE) {
 			return true;
 		}
 		return null;

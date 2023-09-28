@@ -66,7 +66,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 			return liftFunction.name;
 		}
 		// We don't control what the lifter does, so we play it safe.
-		if (key == Attr.INTERNAL_PRODUCER) return false;
+		if (key == InternalProducerAttr.INSTANCE) return false;
 
 		return null;
 	}

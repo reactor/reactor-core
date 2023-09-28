@@ -64,7 +64,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.DELAY_ERROR) return errorMode != ErrorMode.IMMEDIATE;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

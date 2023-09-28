@@ -77,7 +77,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
 		if (key == Attr.ERROR) return error;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

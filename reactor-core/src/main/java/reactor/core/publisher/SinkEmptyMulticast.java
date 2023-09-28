@@ -124,7 +124,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 		if (key == Attr.TERMINATED) return isTerminated(subscribers);
 		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

@@ -258,7 +258,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.PARENT) return main.otherArbiter;
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-			if (key == Attr.INTERNAL_PRODUCER) return true;
+			if (key == InternalProducerAttr.INSTANCE) return true;
 
 			return null;
 		}

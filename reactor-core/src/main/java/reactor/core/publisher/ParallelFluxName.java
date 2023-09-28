@@ -113,7 +113,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		    return SYNC;
 		}
 
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

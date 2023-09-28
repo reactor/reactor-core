@@ -48,7 +48,7 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 		return super.scanUnsafe(key);
 	}
 

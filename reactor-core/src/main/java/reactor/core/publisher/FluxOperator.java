@@ -47,7 +47,7 @@ public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
-		if (key == Attr.INTERNAL_PRODUCER) return false; // public class!
+		if (key == InternalProducerAttr.INSTANCE) return false; // public class!
 		return null;
 	}
 

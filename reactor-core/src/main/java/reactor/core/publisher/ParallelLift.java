@@ -63,7 +63,7 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 			return liftFunction.name;
 		}
 		// We don't control what the lifter does, so we play it safe.
-		if (key == Attr.INTERNAL_PRODUCER) return false;
+		if (key == InternalProducerAttr.INSTANCE) return false;
 
 		return null;
 	}

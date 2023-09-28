@@ -63,7 +63,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 		return null;
 	}
 

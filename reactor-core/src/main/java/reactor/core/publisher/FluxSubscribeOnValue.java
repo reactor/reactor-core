@@ -73,7 +73,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

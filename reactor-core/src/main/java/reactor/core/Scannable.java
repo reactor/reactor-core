@@ -228,8 +228,6 @@ public interface Scannable {
 		 */
 		public static final Attr<String> LIFTER = new Attr<>(null);
 
-		public static final Attr<Boolean> INTERNAL_PRODUCER = new Attr<>(false);
-
 		/**
 		 * An {@link Enum} enumerating the different styles an operator can run : their {@link #ordinal()} reflects the level of confidence
 		 * in their running mode

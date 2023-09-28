@@ -97,7 +97,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.ACTUAL_METADATA) return !stacktrace.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

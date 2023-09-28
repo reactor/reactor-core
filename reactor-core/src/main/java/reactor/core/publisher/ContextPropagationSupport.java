@@ -74,7 +74,7 @@ final class ContextPropagationSupport {
 
     static boolean shouldWrapPublisher(Publisher<?> publisher) {
         return shouldPropagateContextToThreadLocals() &&
-                !Scannable.from(publisher).scanOrDefault(Scannable.Attr.INTERNAL_PRODUCER, false);
+                !Scannable.from(publisher).scanOrDefault(InternalProducerAttr.INSTANCE, false);
     }
 
     static boolean shouldRestoreThreadLocalsInSomeOperators() {

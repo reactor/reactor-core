@@ -377,7 +377,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		if (key == Attr.TERMINATED) return isTerminated();
 		if (key == Attr.ERROR) return getError();
 		if (key == Attr.CAPACITY) return getPrefetch();
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

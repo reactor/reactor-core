@@ -43,7 +43,7 @@ interface InnerProducer<O>
 		if (key == Attr.ACTUAL) {
 			return actual();
 		}
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 		return null;
 	}
 

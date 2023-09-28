@@ -45,7 +45,7 @@ final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

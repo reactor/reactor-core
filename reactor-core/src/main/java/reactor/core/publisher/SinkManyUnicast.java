@@ -183,7 +183,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		if (Attr.CANCELLED == key) return cancelled;
 		if (Attr.TERMINATED == key) return done;
 		if (Attr.ERROR == key) return error;
-		if (Attr.INTERNAL_PRODUCER == key) return true;
+		if (InternalProducerAttr.INSTANCE == key) return true;
 
 		return null;
 	}

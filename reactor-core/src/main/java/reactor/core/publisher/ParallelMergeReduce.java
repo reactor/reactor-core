@@ -51,7 +51,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

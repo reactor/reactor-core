@@ -90,7 +90,7 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 	public Object scanUnsafe(Scannable.Attr key) {
 		if (key == Scannable.Attr.PREFETCH) return getPrefetch();
 		if (key == Scannable.Attr.PARENT) return source;
-		if (key == Attr.INTERNAL_PRODUCER) return true;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 		return null;
 	}
 }

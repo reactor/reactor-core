@@ -64,7 +64,7 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 		if (key == Attr.LIFTER) {
 			return liftFunction.name;
 		}
-		if (key == Attr.INTERNAL_PRODUCER) {
+		if (key == InternalProducerAttr.INSTANCE) {
 			return true;
 		}
 
