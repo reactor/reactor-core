@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,13 @@ import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
- * The {@link VirtualThread} Reactor {@link ThreadFactory Thread factories} to be used by
- * {@link Scheduler},
- * creating {@link VirtualThread} with a prefix (which can be retrieved with the
- * {@link #get()} method).
+ * The {@link VirtualThread} Reactor {@link ThreadFactory} to be used with
+ * {@link ThreadPerTaskBoundedElasticScheduler}, delegates all allocations to real {@link
+ * java.lang.ThreadBuilders.VirtualThreadFactory}
  *
  * @author Oleh Dokuka
  */
 class VirtualThreadFactory implements ThreadFactory,
-                                      Supplier<String>,
                                       Thread.UncaughtExceptionHandler {
 
 	final ThreadFactory                         delegate;
@@ -62,16 +60,5 @@ class VirtualThreadFactory implements ThreadFactory,
 		}
 
 		uncaughtExceptionHandler.accept(t,e);
-	}
-
-	/**
-	 * Get the prefix used for new {@link Thread Threads} created by this {@link ThreadFactory}.
-	 * The factory can also be seen as a {@link Supplier Supplier&lt;String&gt;}.
-	 *
-	 * @return the thread name prefix
-	 */
-	@Override
-	public final String get() {
-		throw new UnsupportedOperationException("Virtual Threads are not supported in JVM lower than 21");
 	}
 }
