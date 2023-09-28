@@ -16,12 +16,29 @@
 
 package reactor.core.scheduler;
 
+import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.Assertions;
 
 class GenericThreadPerTaskBoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
+
+	static boolean SUPPORTED;
+
+	static {
+		try {
+			new VirtualThreadFactory("threadPerTaskBoundedElasticSchedulerTest",
+					false,
+					Schedulers::defaultUncaughtException);
+			SUPPORTED = true;
+		}
+		catch (Throwable t) {
+			SUPPORTED = false;
+		}
+	}
+
 	@Override
 	protected Scheduler scheduler() {
+		Assumptions.assumeThat(SUPPORTED).isTrue();
 		ThreadPerTaskBoundedElasticScheduler test =
 				new ThreadPerTaskBoundedElasticScheduler(4,
 						Integer.MAX_VALUE,
