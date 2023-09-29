@@ -37,20 +37,14 @@ class GenericThreadPerTaskBoundedElasticSchedulerTest extends AbstractSchedulerT
 	}
 
 	@Override
-	protected Scheduler scheduler() {
-		Assumptions.assumeThat(SUPPORTED).isTrue();
-		ThreadPerTaskBoundedElasticScheduler test =
-				new ThreadPerTaskBoundedElasticScheduler(4,
-						Integer.MAX_VALUE,
-						new VirtualThreadFactory(
-								"threadPerTaskBoundedElasticSchedulerTest", false,
-								Schedulers::defaultUncaughtException));
+	protected ThreadPerTaskBoundedElasticScheduler scheduler() {
+		ThreadPerTaskBoundedElasticScheduler test = freshScheduler();
 		test.init();
 		return test;
 	}
 
 	@Override
-	protected Scheduler freshScheduler() {
+	protected ThreadPerTaskBoundedElasticScheduler freshScheduler() {
 		Assumptions.assumeThat(SUPPORTED).isTrue();
 		return new ThreadPerTaskBoundedElasticScheduler(4,
 				Integer.MAX_VALUE,

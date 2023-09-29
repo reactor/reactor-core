@@ -274,8 +274,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 	/**
 	 * Best effort snapshot of the remaining queue capacity for pending tasks across all the backing executors.
 	 *
-	 * @return the total task capacity, or {@literal -1} if any backing executor's task
-	 * queue size cannot be estimated
+	 * @return the total task capacity
 	 */
 	int estimateRemainingTaskCapacity() {
 		if (maxTasksQueuedPerThread == Integer.MAX_VALUE) {

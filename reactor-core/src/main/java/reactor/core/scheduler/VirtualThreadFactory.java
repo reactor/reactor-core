@@ -26,8 +26,9 @@ import reactor.util.annotation.Nullable;
 
 /**
  * The noop {@link VirtualThread} Reactor {@link ThreadFactory} to be
- * used with {@link ThreadPerTaskBoundedElasticScheduler}, throws exceptions when is being created, so it indicates
- * that current Java Runtime does not support {@link VirtualThread}s.
+ * used with {@link ThreadPerTaskBoundedElasticScheduler}. It throws exceptions when is
+ * being created, so it indicates that current Java Runtime does not support
+ * {@link VirtualThread}s.
  *
  * @author Oleh Dokuka
  */

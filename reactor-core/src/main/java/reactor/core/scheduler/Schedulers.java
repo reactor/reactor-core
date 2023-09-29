@@ -1009,9 +1009,7 @@ public abstract class Schedulers {
 		}
 
 		/**
-		 * {@link Scheduler} that dynamically creates a bounded number of
-		 * Workers, reusing them once the Workers have been shut down. The underlying (user or daemon)
-		 * threads can be evicted if idle for more than {@code ttlSeconds}.
+		 * {@link Scheduler} that dynamically creates a bounded number of Workers.
 		 * <p>
 		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
 		 * <p>
