@@ -75,6 +75,7 @@ import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.util.repeat.Repeat;
 import reactor.util.retry.Retry;
 
 /**
@@ -4066,8 +4067,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
-	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
-		return Flux.onAssembly(new MonoRepeatWhen<>(this, repeatFactory));
+	public final Flux<T> repeatWhen(Repeat repeatFactory) {
+		//return Flux.onAssembly(new MonoRepeatWhen<>(this, repeatFactory));
+		return null;
 	}
 
 	/**
@@ -4110,6 +4112,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * as long as the companion {@link Publisher} produces an onNext signal and the maximum number of repeats isn't exceeded.
 	 */
 	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+	/*
 		return Mono.defer(() -> this.repeatWhen(o -> {
 			if (maxRepeat == Integer.MAX_VALUE) {
 				return repeatFactory.apply(o.index().map(Tuple2::getT1));
@@ -4122,6 +4125,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 					.concatWith(Flux.error(() -> new IllegalStateException("Exceeded maximum number of repeats"))));
 			}
 		}).next());
+
+	 */
+		return null;
 	}
 
 

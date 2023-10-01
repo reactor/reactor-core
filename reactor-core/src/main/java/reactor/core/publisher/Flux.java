@@ -81,6 +81,7 @@ import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
+import reactor.util.repeat.Repeat;
 import reactor.util.retry.Retry;
 
 /**
@@ -7789,7 +7790,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
-	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+	public final Flux<T> repeatWhen(Repeat repeatFactory) {
 		return onAssembly(new FluxRepeatWhen<>(this, repeatFactory));
 	}
 

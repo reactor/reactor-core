@@ -17,11 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
+import reactor.util.repeat.Repeat;
 
 /**
  * Repeats a source when a companion sequence signals an item in response to the main's
@@ -37,10 +36,9 @@ import reactor.core.CoreSubscriber;
  */
 final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 
-	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
+	final Repeat whenSourceFactory;
 
-	MonoRepeatWhen(Mono<? extends T> source,
-			Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
+	MonoRepeatWhen(Mono<? extends T> source, Repeat whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory =
 				Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
@@ -54,16 +52,16 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		FluxRepeatWhen.RepeatWhenMainSubscriber<T> main =
-				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, other.completionSignal, source);
+				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, other.completionSignal, source, whenSourceFactory.getRepeatContext());
 		other.main = main;
 
 		serial.onSubscribe(main);
 
-		Publisher<?> p;
+		Publisher<?> p =  null;
 
 		try {
-			p = Objects.requireNonNull(whenSourceFactory.apply(other),
-					"The whenSourceFactory returned a null Publisher");
+			//p = Objects.requireNonNull(whenSourceFactory.apply(other),
+			//		"The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));

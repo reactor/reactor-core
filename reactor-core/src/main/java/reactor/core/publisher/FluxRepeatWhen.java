@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -30,6 +29,7 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
+import reactor.util.repeat.Repeat;
 
 /**
  * Repeats a source when a companion sequence signals an item in response to the main's
@@ -45,22 +45,23 @@ import reactor.util.context.ContextView;
  */
 final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
-	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
+	final Repeat whenSourceFactory;
 
 	FluxRepeatWhen(Flux<? extends T> source,
-			Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
+			Repeat whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory =
 				Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 
-	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	static <T> void subscribe(CoreSubscriber<? super T> actual,
+							  Repeat whenSourceFactory,
+							  CorePublisher<? extends T> source) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
-		RepeatWhenMainSubscriber<T> main =
-				new RepeatWhenMainSubscriber<>(serial, other.completionSignal, source);
+		RepeatWhenMainSubscriber<T> main = new RepeatWhenMainSubscriber<>(
+				serial, other.completionSignal, source, whenSourceFactory.getRepeatContext());
 		other.main = main;
 
 		serial.onSubscribe(main);
@@ -68,22 +69,24 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		Publisher<?> p;
 
 		try {
-			p = Objects.requireNonNull(whenSourceFactory.apply(other),
+			p = Objects.requireNonNull(whenSourceFactory.generateCompanion(other),
 					"The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-			return null;
+			return;
 		}
-
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			return main;
+			source.subscribe(main);
 		}
-		else {
-			return null;
-		}
+	}
+
+	@Override
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		subscribe(actual, whenSourceFactory, source);
+		return null;
 	}
 
 	@Override
@@ -93,14 +96,17 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 	}
 
 	static final class RepeatWhenMainSubscriber<T>
-			extends Operators.MultiSubscriptionSubscriber<T, T> {
+			extends Operators.MultiSubscriptionSubscriber<T, T>
+			implements Repeat.RepeatSignal {
 
 		final Operators.DeferredSubscription otherArbiter;
 
-		final Sinks.Many<Long> signaller;
+		final Sinks.Many<Repeat.RepeatSignal> signaller;
 
 		final CorePublisher<? extends T> source;
 
+		long totalRetriesSoFar = 0L;
+		final ContextView repeatContext;
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<RepeatWhenMainSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
@@ -110,11 +116,12 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		long    produced;
 
 		RepeatWhenMainSubscriber(CoreSubscriber<? super T> actual,
-				Sinks.Many<Long> signaller,
-				CorePublisher<? extends T> source) {
+								 Sinks.Many<Repeat.RepeatSignal> signaller,
+								 CorePublisher<? extends T> source, ContextView repeatContext) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
+			this.repeatContext = repeatContext;
 			this.otherArbiter = new Operators.DeferredSubscription();
 			this.context = actual.currentContext();
 		}
@@ -139,6 +146,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onNext(T t) {
+			totalRetriesSoFar++;
 			actual.onNext(t);
 
 			produced++;
@@ -159,7 +167,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 				produced(p);
 			}
 
-			signaller.emitNext(p, Sinks.EmitFailureHandler.FAIL_FAST);
+			signaller.emitNext(this, Sinks.EmitFailureHandler.FAIL_FAST);
 			// request after signalling, otherwise it may race
 			otherArbiter.request(1);
 		}
@@ -182,7 +190,6 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 					}
 
 					source.subscribe(this);
-
 				}
 				while (WIP.decrementAndGet(this) != 0);
 			}
@@ -205,14 +212,30 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);
 		}
+
+		@Override
+		public Throwable failure() {
+			return null;
+		}
+
+		@Override
+		public ContextView retryContextView() {
+			return repeatContext;
+		}
+
+		@Override
+		public long getRepeatsSoFar() {
+			return totalRetriesSoFar;
+		}
 	}
 
-	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-			implements InnerConsumer<Object>, OptimizableOperator<Long, Long> {
+	static final class RepeatWhenOtherSubscriber extends Flux<Repeat.RepeatSignal>
+			implements InnerConsumer<Object>, OptimizableOperator<Repeat.RepeatSignal, Repeat.RepeatSignal>
+	{
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final Sinks.Many<Long> completionSignal = Sinks.many().multicast().onBackpressureBuffer();
+		final Sinks.Many<Repeat.RepeatSignal> completionSignal = Sinks.many().multicast().onBackpressureBuffer();
 
 		@Override
 		public Context currentContext() {
@@ -236,7 +259,11 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onNext(Object t) {
-			main.resubscribe(t);
+			if (t.equals(-1L)) {
+				onComplete();
+			} else {
+				main.resubscribe(t);
+			}
 		}
 
 		@Override
@@ -250,22 +277,22 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super Long> actual) {
+		public void subscribe(CoreSubscriber<? super Repeat.RepeatSignal> actual) {
 			completionSignal.asFlux().subscribe(actual);
 		}
 
 		@Override
-		public CoreSubscriber<? super Long> subscribeOrReturn(CoreSubscriber<? super Long> actual) {
+		public CoreSubscriber<? super Repeat.RepeatSignal> subscribeOrReturn(CoreSubscriber<? super Repeat.RepeatSignal> actual) {
 			return actual;
 		}
 
 		@Override
-		public Flux<Long> source() {
+		public Flux<Repeat.RepeatSignal> source() {
 			return completionSignal.asFlux();
 		}
 
 		@Override
-		public OptimizableOperator<?, ? extends Long> nextOptimizableSource() {
+		public OptimizableOperator<?, ? extends Repeat.RepeatSignal> nextOptimizableSource() {
 			return null;
 		}
 	}

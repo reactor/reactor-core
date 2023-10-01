@@ -102,6 +102,16 @@ public abstract class Retry {
 	 * providing the {@link Throwable} that caused the source to fail as well as counters keeping track of retries.
 	 */
 	public interface RetrySignal {
+		/**
+		 * Return a read-only view of the user provided context, which may be used to store
+		 * objects to be reset/rolled-back or otherwise mutated before or after a retry.
+		 *
+		 * @return a read-only view of a user provided context.
+		 */
+		default ContextView retryContextView() {
+			return Context.empty();
+		}
+
 
 		/**
 		 * The total number of retries since the source first was subscribed to (in other words the number of errors -1
@@ -128,16 +138,6 @@ public abstract class Retry {
 		 * @return the current failure.
 		 */
 		Throwable failure();
-
-		/**
-		 * Return a read-only view of the user provided context, which may be used to store
-		 * objects to be reset/rolled-back or otherwise mutated before or after a retry.
-		 *
-		 * @return a read-only view of a user provided context.
-		 */
-		default ContextView retryContextView() {
-			return Context.empty();
-		}
 
 		/**
 		 * An immutable copy of this {@link RetrySignal} which is guaranteed to give a consistent view
