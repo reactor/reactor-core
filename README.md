@@ -133,12 +133,11 @@ Mono.fromCallable(System::currentTimeMillis)
 ```
 
 Blocking Mono result :
-```java    
-Tuple2<Long, Long> nowAndLater = 
-        Mono.zip(
-                Mono.just(System.currentTimeMillis()),
-                Flux.just(1).delay(1).map(i -> System.currentTimeMillis()))
-            .block();
+```java
+Tuple2<Instant, Instant> nowAndLater = Mono.zip(
+    Mono.just(Instant.now()),
+    Mono.delay(Duration.ofSeconds(1)).then(Mono.fromCallable(Instant::now)))
+  .block();
 ```
 
 ## Schedulers
