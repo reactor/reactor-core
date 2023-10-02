@@ -38,7 +38,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
         name: gradle
         with:
           arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true
@@ -68,7 +68,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # tag=v2
+      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
         name: gradle
         with:
           arguments: :reactor-core:java21Test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true
@@ -105,7 +105,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
         name: gradle
         with:
           arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true
@@ -142,7 +142,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@a4cf152f482c7ca97ef56ead29bf08bcd953284c # tag=v2
+      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
         name: other tests
         with:
           arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true
