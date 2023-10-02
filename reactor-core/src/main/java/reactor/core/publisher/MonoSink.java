@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,18 +64,6 @@ public interface MonoSink<T> {
 	void error(Throwable e);
 
 	/**
-	 * Return the current subscriber {@link Context}.
-	 * <p>
-	 *   {@link Context} can be enriched via {@link Mono#contextWrite(Function)}
-	 *   operator or directly by a child subscriber overriding
-	 *   {@link CoreSubscriber#currentContext()}
-	 *
-	 * @deprecated To be removed in 3.6.0 at the earliest. Prefer using #contextView() instead.
-	 */
-	@Deprecated
-	Context currentContext();
-
-	/**
 	 * Return the current subscriber's context as a {@link ContextView} for inspection.
 	 * <p>
 	 * {@link Context} can be enriched downstream via {@link Mono#contextWrite(Function)}
@@ -83,9 +71,7 @@ public interface MonoSink<T> {
 	 *
 	 * @return the current subscriber {@link ContextView}.
 	 */
-	default ContextView contextView() {
-		return this.currentContext();
-	}
+	ContextView contextView();
 
 	/**
 	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of

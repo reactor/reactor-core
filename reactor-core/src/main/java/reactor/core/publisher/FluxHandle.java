@@ -92,12 +92,6 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Deprecated
-		public Context currentContext() {
-			return actual.currentContext();
-		}
-
-		@Override
 		public ContextView contextView() {
 			return actual.currentContext();
 		}
@@ -294,12 +288,6 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
-		}
-
-		@Override
-		@Deprecated
-		public Context currentContext() {
-			return actual.currentContext();
 		}
 
 		@Override
