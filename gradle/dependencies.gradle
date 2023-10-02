@@ -8,7 +8,7 @@ ext {
     byteBuddyVersion = "1.14.5"
     cglibVersion = "3.3.0"
     javaObjectLayoutVersion = "0.17"
-    jmhVersion = "1.36"
+    jmhVersion = "1.37"
     junitVersion = "5.10.0"
     logbackVersion = "1.2.11"
     mockitoVersion = "4.11.0"
