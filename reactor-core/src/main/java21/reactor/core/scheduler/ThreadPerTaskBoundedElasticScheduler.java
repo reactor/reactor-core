@@ -823,11 +823,14 @@ final class ThreadPerTaskBoundedElasticScheduler
 		 */
 		@Override
 		public boolean isDisposed() {
-			return isShutdown(this.wipAndRefCnt);
+			return isShutdown(this.wipAndRefCnt) && numberOfEnqueuedTasks() == 0;
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
+			if (Attr.TERMINATED == key) return isDisposed();
+			if (Attr.BUFFERED == key) return numberOfEnqueuedTasks();
+			if (Attr.CAPACITY == key) return this.queueCapacity;
 			return null;
 		}
 
@@ -1307,7 +1310,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		}
 	}
 
-	static class SingleThreadExecutorWorker implements Worker {
+	static class SingleThreadExecutorWorker implements Worker, Disposable, Scannable {
 
 		final Composite                       disposables;
 		final SequentialThreadPerTaskExecutor executor;
@@ -1344,6 +1347,15 @@ final class ThreadPerTaskBoundedElasticScheduler
 				long period,
 				TimeUnit unit) {
 			return executor.schedulePeriodically(task, initialDelay, period, unit, disposables);
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.BUFFERED) return disposables.size();
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.NAME) return "SingleThreadExecutorWorker";
+
+			return executor.scanUnsafe(key);
 		}
 	}
 
