@@ -968,7 +968,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 		static final int COMPLETED_STATE = 0b0000_0000_0000_0000_0000_0000_0000_1000;
 		static final int DISPOSED_FLAG   = 0b1000_0000_0000_0000_0000_0000_0000_0000;
 		static final int HAS_FUTURE_FLAG = 0b0000_1000_0000_0000_0000_0000_0000_0000;
-								   int i = 0b1000_0000_0000_0000_0000_0000_0000_0100;
+
 		final long     fixedRatePeriod;
 		final TimeUnit                        timeUnit;
 		final SequentialThreadPerTaskExecutor holder;
