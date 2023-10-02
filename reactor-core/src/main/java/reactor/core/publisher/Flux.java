@@ -66,7 +66,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
-import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -904,45 +903,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
-	 * @deprecated use {@link #firstWithSignal(Publisher[])}. To be removed in reactor 3.5.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
-		return firstWithSignal(sources);
-	}
-
-	/**
-	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
-	 * replay all signals from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The type of values in both source and output sequences
-	 *
-	 * @return a new {@link Flux} behaving like the fastest of its sources
-	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
-	 */
-	@Deprecated
-	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
-		return firstWithSignal(sources);
-	}
-
-	/**
-	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
-	 * replay all signals from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The type of values in both source and output sequences
-	 *
-	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> firstWithSignal(Publisher<? extends I>... sources) {
@@ -1717,96 +1677,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by their natural order).
-	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingNaturalOrder.svg" alt="">
-	 *
-	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
-	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <I extends Comparable<? super I>> Flux<I> mergeOrdered(Publisher<? extends I>... sources) {
-		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by the provided
-	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
-	 * the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
-	 *
-	 * @param comparator the {@link Comparator} to use to find the smallest value
-	 * @param sources {@link Publisher} sources to merge
-	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Flux<T> mergeOrdered(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
-		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, comparator, sources);
-	}
-
-	/**
-	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
-	 * by picking the smallest values from each source (as defined by the provided
-	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
-	 * the whole of each sequences.
-	 * <p>
-	 * Instead, this operator considers only one value from each source and picks the
-	 * smallest of all these values, then replenishes the slot for that picked source.
-	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparing.svg" alt="">
-	 *
-	 * @param prefetch the number of elements to prefetch from each source (avoiding too
-	 * many small requests to the source when picking)
-	 * @param comparator the {@link Comparator} to use to find the smallest value
-	 * @param sources {@link Publisher} sources to merge
-	 * @param <T> the merged type
-	 * @return a merged {@link Flux} that compares latest values from each source, using the
-	 * smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingDelayError(int, Comparator, Publisher[])} instead
-	 * (as {@link #mergeComparing(Publisher[])} don't have this operator's delayError behavior).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Flux<T> mergeOrdered(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return from(sources[0]);
-		}
-		return onAssembly(new FluxMergeComparing<>(prefetch, comparator, true, true, sources));
-	}
-
-	/**
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
@@ -2036,37 +1906,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
 		return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
 			identityFunction()));
-	}
-
-	/**
-	 * Creates a {@link Flux} that mirrors the most recently emitted {@link Publisher},
-	 * forwarding its data until a new {@link Publisher} comes in the source.
-	 * <p>
-	 * The resulting {@link Flux} will complete once there are no new {@link Publisher} in
-	 * the source (source has completed) and the last mirrored {@link Publisher} has also
-	 * completed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/switchOnNext.svg" alt="">
-	 *
-	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
-	 * @param prefetch the inner source request size
-	 * @param <T> the produced type
-	 *
-	 * @return a {@link SinkManyAbstractBase} accepting publishers and producing T
-	 *
-	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
-	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
-	 * behavior of the single-parameter variant will then change to prefetch=0.
-	 */
-	@Deprecated
-	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
-		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
-					identityFunction()));
-		}
-		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
-				identityFunction(),
-				Queues.unbounded(prefetch), prefetch));
 	}
 
 	/**
@@ -6317,38 +6156,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Take only the first N values from this {@link Flux}, if available.
-	 * Furthermore, ensure that the total amount requested upstream is capped at {@code n}.
-	 * If n is zero, the source isn't even subscribed to and the operator completes immediately
-	 * upon subscription.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/takeLimitRequestTrue.svg" alt="">
-	 * <p>
-	 * Backpressure signals from downstream subscribers are smaller than the cap are
-	 * propagated as is, but if they would cause the total requested amount to go over the
-	 * cap, they are reduced to the minimum value that doesn't go over.
-	 * <p>
-	 * As a result, this operator never let the upstream produce more elements than the
-	 * cap.
-	 * Typically useful for cases where a race between request and cancellation can lead the upstream to
-	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
-	 * a source that would send the extraneous data over the network).
-	 *
-	 * @param n the number of elements to emit from this flux, which is also the backpressure
-	 * cap for all of downstream's request
-	 *
-	 * @return a {@link Flux} of {@code n} elements from the source, that requests AT MOST {@code n} from upstream in total.
-	 * @see #take(long)
-	 * @see #take(long, boolean)
-	 * @deprecated replace with {@link #take(long, boolean) take(n, true)} in 3.4.x, then {@link #take(long)} in 3.5.0.
-	 * To be removed in 3.6.0 at the earliest. See https://github.com/reactor/reactor-core/issues/2339
-	 */
-	@Deprecated
-	public final Flux<T> limitRequest(long n) {
-		return take(n, true);
-	}
-
-	/**
 	 * Observe all Reactive Streams signals and trace them using {@link Logger} support.
 	 * Default will use {@link Level#INFO} and {@code java.util.logging}.
 	 * If SLF4J is available, it will be used instead.
@@ -6577,44 +6384,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
 	 * <p>
-	 * Note that it is delaying errors until all data is consumed.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
-	 *
-	 * @param other the {@link Publisher} to merge with
-	 * @param otherComparator the {@link Comparator} to use for merging
-	 *
-	 * @return a new {@link Flux} that compares latest values from the given publisher
-	 * and this flux, using the smallest value and replenishing the source that produced it
-	 * @deprecated Use {@link #mergeComparingWith(Publisher, Comparator)} instead
-	 * (with the caveat that it defaults to NOT delaying errors, unlike this operator).
-	 * To be removed in 3.6.0 at the earliest.
-	 */
-	@Deprecated
-	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
-			Comparator<? super T> otherComparator) {
-		if (this instanceof FluxMergeComparing) {
-			FluxMergeComparing<T> fluxMerge = (FluxMergeComparing<T>) this;
-			return fluxMerge.mergeAdditionalSource(other, otherComparator);
-		}
-		return mergeOrdered(otherComparator, this, other);
-	}
-
-	/**
-	 * Merge data from this {@link Flux} and a {@link Publisher} into a reordered merge
-	 * sequence, by picking the smallest value from each sequence as defined by a provided
-	 * {@link Comparator}. Note that subsequent calls are combined, and their comparators are
-	 * in lexicographic order as defined by {@link Comparator#thenComparing(Comparator)}.
-	 * <p>
-	 * The combination step is avoided if the two {@link Comparator Comparators} are
-	 * {@link Comparator#equals(Object) equal} (which can easily be achieved by using the
-	 * same reference, and is also always true of {@link Comparator#naturalOrder()}).
-	 * <p>
-	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
-	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
-	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
-	 * another source.
-	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeComparingWith.svg" alt="">
 	 * <p>
 	 * mergeComparingWith doesn't delay errors by default, but it will inherit the delayError
@@ -6657,40 +6426,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			return fluxMerge.mergeAdditionalSource(other, Queues::get);
 		}
 		return merge(this, other);
-	}
-
-	/**
-	 * Activate metrics for this sequence, provided there is an instrumentation facade
-	 * on the classpath (otherwise this method is a pure no-op).
-	 * <p>
-	 * Metrics are gathered on {@link Subscriber} events, and it is recommended to also
-	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
-	 * sequence.
-	 * <p>
-	 * The name serves as a prefix in the reported metrics names. In case no name has been provided, the default name "reactor" will be applied.
-	 * <p>
-	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
-	 * prior to using this operator, the default being
-	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
-	 *
-	 * @return an instrumented {@link Flux}
-	 *
-	 * @see #name(String)
-	 * @see #tag(String, String)
-	 * @deprecated Prefer using the {@link #tap(SignalListenerFactory)} with the {@link SignalListenerFactory} provided by
-	 * the new reactor-core-micrometer module. To be removed in 3.6.0 at the earliest.
-	 */
-	@Deprecated
-	public final Flux<T> metrics() {
-		if (!Metrics.isInstrumentationAvailable()) {
-			return this;
-		}
-
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxMetricsFuseable<>(this));
-		}
-		return onAssembly(new FluxMetrics<>(this));
 	}
 
 	/**
@@ -7499,24 +7234,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			extends R>> transform, int prefetch) {
 		return onAssembly(new FluxPublishMulticast<>(this, transform, prefetch, Queues
 				.get(prefetch)));
-	}
-
-	/**
-	 * Prepare a {@link Mono} which shares this {@link Flux} sequence and dispatches the
-	 * first observed item to subscribers in a backpressure-aware manner.
-	 * This will effectively turn any type of sequence into a hot sequence when the first
-	 * {@link Subscriber} subscribes.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/publishNext.svg" alt="">
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use {@link #shareNext()} instead, or use `publish().next()` if you need
-	 * to `{@link ConnectableFlux#connect() connect()}. To be removed in 3.5.0
-	 */
-	@Deprecated
-	public final Mono<T> publishNext() {
-		//Should add a ConnectableMono to align with #publish()
-		return shareNext();
 	}
 
 	/**
@@ -9025,34 +8742,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
 		return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
-	}
-
-	/**
-	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever
-	 * this {@link Flux} produces an item. As such, the elements from each generated
-	 * Publisher are emitted in the resulting {@link Flux}.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/switchMap.svg" alt="">
-	 *
-	 * @param fn the {@link Function} to generate a {@link Publisher} for each source value
-	 * @param prefetch the produced demand for inner sources
-	 *
-	 * @param <V> the type of the return value of the transformation function
-	 *
-	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
-	 * for each source onNext
-	 *
-	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
-	 * calls with prefetch=0 with calls to switchMap(fn), as the default behavior of the
-	 * single-parameter variant will then change to prefetch=0.
-	 */
-	@Deprecated
-	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
-		if (prefetch == 0) {
-			return onAssembly(new FluxSwitchMapNoPrefetch<>(this, fn));
-		}
-		return onAssembly(new FluxSwitchMap<>(this, fn, Queues.unbounded(prefetch), prefetch));
 	}
 
 	/**

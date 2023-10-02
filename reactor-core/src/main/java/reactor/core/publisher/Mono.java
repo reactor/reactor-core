@@ -60,7 +60,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
-import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -312,43 +311,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public static <T> Mono<T> error(Supplier<? extends Throwable> errorSupplier) {
 		return onAssembly(new MonoErrorSupplied<>(errorSupplier));
-	}
-
-	/**
-	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
-	 * and replay that signal, effectively behaving like the fastest of these competing
-	 * sources.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
-	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
-	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
-	 * @deprecated use {@link #firstWithSignal(Mono[])}. To be removed in reactor 3.5.
-	 */
-	@SafeVarargs
-	@Deprecated
-	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return firstWithSignal(monos);
-	}
-
-	/**
-	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
-	 * and replay that signal, effectively behaving like the fastest of these competing
-	 * sources.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
-	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
-	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
-	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
-	 */
-	@Deprecated
-	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return firstWithSignal(monos);
 	}
 
 	/**
@@ -3465,41 +3427,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		return Flux.merge(this, other);
-	}
-
-	/**
-	 * Activate metrics for this sequence, provided there is an instrumentation facade
-	 * on the classpath (otherwise this method is a pure no-op).
-	 * <p>
-	 * Metrics are gathered on {@link Subscriber} events, and it is recommended to also
-	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
-	 * sequence.
-	 * <p>
-	 * The name serves as a prefix in the reported metrics names. In case no name has been provided, the default name "reactor" will be applied.
-	 * <p>
-	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
-	 * prior to using this operator, the default being
-	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
-	 * </p>
-	 *
-	 * @return an instrumented {@link Mono}
-	 *
-	 * @see #name(String)
-	 * @see #tag(String, String)
-	 * @deprecated Prefer using the {@link #tap(SignalListenerFactory)} with the {@link SignalListenerFactory} provided by
-	 * the new reactor-core-micrometer module. To be removed in 3.6.0 at the earliest.
-	 */
-	@Deprecated
-	public final Mono<T> metrics() {
-		if (!Metrics.isInstrumentationAvailable()) {
-			return this;
-		}
-
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoMetricsFuseable<>(this));
-		}
-		return onAssembly(new MonoMetrics<>(this));
 	}
 
 	/**
