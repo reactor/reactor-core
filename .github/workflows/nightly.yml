@@ -13,7 +13,7 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
     steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
         with:
           ref: ${{ matrix.branch }}
       - uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
@@ -32,7 +32,7 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
     steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
         with:
           ref: ${{ matrix.branch }}
       - uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
@@ -51,7 +51,7 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
     steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
         with:
           ref: ${{ matrix.branch }}
       - uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
