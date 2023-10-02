@@ -952,10 +952,10 @@ public class HooksTest {
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
 		                                .log()
 		                                .log())
-		            .expectNext(501, 501) //5x lifts => just,ParallelFlux.from,log,log,back to sequential (shared)
+		            .expectNext(601, 601) //5x lifts => just,Flux.from,ParallelFlux.from,log,log, back to sequential (shared)
 		            .verifyComplete();
 
-		assertThat(liftCounter).hasValue(9); //9x total lifts: 2xjust,2xparallelFrom,4xlog,sequential
+		assertThat(liftCounter).hasValue(11); //11x total lifts: 2xjust, 2xfrom, 2xparallelFrom,4xlog,sequential
 	}
 
 	@Test

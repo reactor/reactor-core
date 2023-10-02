@@ -376,7 +376,7 @@ public class HooksTraceTest {
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
 		                                .log(null, Level.OFF)
 		                                .log(null, Level.OFF))
-		            .expectNext(6, 6)
+		            .expectNext(7, 7)
 		            .verifyComplete();
 	}
 
