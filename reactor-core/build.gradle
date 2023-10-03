@@ -108,6 +108,7 @@ configurations {
 dependencies {
 	// Reactive Streams
 	api libs.reactiveStreams
+	java21Implementation libs.reactiveStreams
 	tckTestImplementation (libs.reactiveStreams.tck) {
 		/*
 		Without this exclusion, testng brings an old version of junit (3.8.1).
