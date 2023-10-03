@@ -55,15 +55,12 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-			actual = new MonoSource.MonoSourceRestoringThreadLocalsSubscriber<>(actual);
-		}
-
 		try {
 			CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
 			if (subscriber == null) {
 				return;
 			}
+			subscriber = Operators.restoreContextOnSubscriberIfPublisherNonInternal(source, subscriber);
 			source.subscribe(subscriber);
 		}
 		catch (Throwable e) {
@@ -95,6 +92,9 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 		}
 		if (key == Scannable.Attr.RUN_STYLE) {
 		    return Attr.RunStyle.SYNC;
+		}
+		if (key == InternalProducerAttr.INSTANCE) {
+			return true;
 		}
 		return null;
 	}

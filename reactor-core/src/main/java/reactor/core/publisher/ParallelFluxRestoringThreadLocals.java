@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,34 @@
 package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 
-/**
- * Materialize current {@link Context} from the subscribing flow
- */
-@Deprecated
-final class MonoCurrentContext extends Mono<Context>
-		implements Fuseable, Scannable {
+class ParallelFluxRestoringThreadLocals<T> extends ParallelFlux<T> implements
+                                                                          Scannable {
 
-	static final MonoCurrentContext INSTANCE = new MonoCurrentContext();
+	private final ParallelFlux<? extends T> source;
 
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super Context> actual) {
-		Context ctx = actual.currentContext();
-		actual.onSubscribe(Operators.scalarSubscription(actual, ctx));
+	ParallelFluxRestoringThreadLocals(ParallelFlux<? extends T> source) {
+		this.source = source;
+	}
+
+	@Override
+	public int parallelism() {
+		return source.parallelism();
+	}
+
+	@Override
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
+		CoreSubscriber<? super T>[] actualSubscribers =
+				Operators.restoreContextOnSubscribers(source, subscribers);
+
+		source.subscribe(actualSubscribers);
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		if (key == InternalProducerAttr.INSTANCE) return true;
 		return null;

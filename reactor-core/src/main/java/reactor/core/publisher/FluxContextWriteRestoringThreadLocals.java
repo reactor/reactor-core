@@ -22,6 +22,7 @@ import java.util.function.Function;
 import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -49,10 +50,11 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 		return super.scanUnsafe(key);
 	}
 
-	static final class ContextWriteRestoringThreadLocalsSubscriber<T>
+	static class ContextWriteRestoringThreadLocalsSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T>        actual;
@@ -169,6 +171,48 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 					     ContextPropagation.setThreadLocals(context)) {
 				s.cancel();
 			}
+		}
+	}
+
+	static final class FuseableContextWriteRestoringThreadLocalsSubscriber<T>
+			extends ContextWriteRestoringThreadLocalsSubscriber<T>
+			implements Fuseable.QueueSubscription<T> {
+
+		FuseableContextWriteRestoringThreadLocalsSubscriber(
+				CoreSubscriber<? super T> actual, Context context) {
+			super(actual, context);
+		}
+
+		// Required for
+		// FuseableBestPracticesTest.coreFuseableSubscribersShouldNotExtendNonFuseableOnNext
+		@Override
+		public void onNext(T t) {
+			super.onNext(t);
+		}
+
+		@Override
+		public T poll() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public int size() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedOperationException("Nope");
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			if (p == null) {
 				Operators.error(actual, new NullPointerException("The single source Publisher is null"));
 			} else {
-				p.subscribe(actual);
+				Operators.toFluxOrMono(p).subscribe(actual);
 			}
 			return;
 		}
@@ -83,7 +83,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	/**
@@ -255,7 +255,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				if (this.cancelled) {
 					return;
 				}
-				p.subscribe(this);
+				Operators.toFluxOrMono(p).subscribe(this);
 
 				final Object state = this.get();
 				if (state != DONE) {
@@ -440,7 +440,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				p.subscribe(this);
+				Operators.toFluxOrMono(p).subscribe(this);
 
 				final Object state = this.get();
 				if (state != DONE) {

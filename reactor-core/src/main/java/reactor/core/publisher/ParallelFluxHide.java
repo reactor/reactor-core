@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 	final ParallelFlux<T> source;
 
 	ParallelFluxHide(ParallelFlux<T> source) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 	}
 
 	@Override
@@ -51,6 +51,7 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

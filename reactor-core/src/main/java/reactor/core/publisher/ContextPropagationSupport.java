@@ -16,6 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Function;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.CorePublisher;
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -63,6 +70,11 @@ final class ContextPropagationSupport {
 
     static boolean shouldPropagateContextToThreadLocals() {
         return isContextPropagationOnClasspath && propagateContextToThreadLocals;
+    }
+
+    static boolean shouldWrapPublisher(Publisher<?> publisher) {
+        return shouldPropagateContextToThreadLocals() &&
+                !Scannable.from(publisher).scanOrDefault(InternalProducerAttr.INSTANCE, false);
     }
 
     static boolean shouldRestoreThreadLocalsInSomeOperators() {

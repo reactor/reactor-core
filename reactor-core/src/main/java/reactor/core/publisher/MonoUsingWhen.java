@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 							asyncCancel,
 							null);
 
-					p.subscribe(subscriber);
+					fromDirect(p).subscribe(subscriber);
 				}
 			}
 			catch (Throwable e) {
@@ -93,7 +93,8 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		resourceSupplier.subscribe(new ResourceSubscriber(actual, resourceClosure,
+		Operators.toFluxOrMono(resourceSupplier).subscribe(new ResourceSubscriber(actual,
+				resourceClosure,
 				asyncComplete, asyncError, asyncCancel,
 				resourceSupplier instanceof Mono));
 	}
@@ -101,7 +102,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	private static <RESOURCE, T> Mono<? extends T> deriveMonoFromResource(
@@ -180,7 +181,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 
 			final Mono<? extends T> p = deriveMonoFromResource(resource, resourceClosure);
 
-			p.subscribe(MonoUsingWhen.<S, T>prepareSubscriberForResource(resource,
+			fromDirect(p).subscribe(MonoUsingWhen.<S, T>prepareSubscriberForResource(resource,
 					this.actual,
 					this.asyncComplete,
 					this.asyncError,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 	ParallelFluxName(ParallelFlux<T> source,
 			@Nullable String name,
 			@Nullable List<Tuple2<String, String>> tags) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.name = name;
 		this.tagsWithDuplicates = tags;
 	}
@@ -112,6 +112,8 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		if (key == RUN_STYLE) {
 		    return SYNC;
 		}
+
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

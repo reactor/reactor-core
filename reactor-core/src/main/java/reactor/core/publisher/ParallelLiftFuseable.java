@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 
 	ParallelLiftFuseable(ParallelFlux<I> p,
 			Operators.LiftFunction<I, O> liftFunction) {
-		this.source = Objects.requireNonNull(p, "source");
+		this.source = ParallelFlux.from(Objects.requireNonNull(p, "source"));
 		this.liftFunction = liftFunction;
 	}
 
@@ -65,6 +65,8 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		if (key == Attr.LIFTER) {
 			return liftFunction.name;
 		}
+		// We don't control what the lifter does, so we play it safe.
+		if (key == InternalProducerAttr.INSTANCE) return false;
 
 		return null;
 	}
@@ -85,6 +87,11 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		int i = 0;
 		while (i < subscribers.length) {
 			CoreSubscriber<? super O> actual = s[i];
+			// As this is not an INTERNAL_PRODUCER, the subscribers should be protected
+			// in case of automatic context propagation.
+			// If a user directly subscribes with a set of rails, there is no
+			// protection against that, so a ThreadLocal restoring subscriber would
+			// need to be provided.
 			CoreSubscriber<? super I> converted =
 					Objects.requireNonNull(liftFunction.lifter.apply(source, actual),
 							"Lifted subscriber MUST NOT be null");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 	final Function<? super T, ? extends R> mapper;
 	
 	ParallelMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
-		this.source = source;
+		this.source = ParallelFlux.from(source);
 		this.mapper = mapper;
 	}
 
@@ -46,6 +46,7 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

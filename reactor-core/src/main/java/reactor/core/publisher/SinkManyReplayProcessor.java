@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -295,8 +295,11 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
-		FluxReplay.ReplaySubscription<T> rs = new ReplayInner<>(actual, this);
-		actual.onSubscribe(rs);
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+
+		FluxReplay.ReplaySubscription<T> rs = new ReplayInner<>(wrapped, this);
+		wrapped.onSubscribe(rs);
 
 		if (add(rs)) {
 			if (rs.isCancelled()) {

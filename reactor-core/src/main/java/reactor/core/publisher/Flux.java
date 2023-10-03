@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.io.File;
+import java.lang.reflect.ParameterizedType;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +46,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -1060,7 +1063,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		//duplicated in wrap, but necessary to detect early and thus avoid applying assembly
-		if (source instanceof Flux) {
+		if (source instanceof Flux && !ContextPropagationSupport.shouldWrapPublisher(source)) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
 			return casted;
@@ -8770,6 +8773,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				}
 			}
 
+			subscriber = Operators.restoreContextOnSubscriberIfPublisherNonInternal(publisher, subscriber);
 			publisher.subscribe(subscriber);
 		}
 		catch (Throwable e) {
@@ -11065,8 +11069,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	static <I> Flux<I> wrap(Publisher<? extends I> source) {
-		if (source instanceof  Flux) {
-			return (Flux<I>) source;
+		boolean shouldWrap = ContextPropagationSupport.shouldWrapPublisher(source);
+		if (source instanceof Flux) {
+			if (!shouldWrap) {
+				return (Flux<I>) source;
+			}
+			return ContextPropagation.fluxRestoreThreadLocals((Flux<? extends I>) source);
 		}
 
 		//for scalars we'll instantiate the operators directly to avoid onAssembly
@@ -11084,16 +11092,22 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			}
 		}
 
-		if(source instanceof Mono){
-			if(source instanceof Fuseable){
-				return new FluxSourceMonoFuseable<>((Mono<I>)source);
+		Flux<I> target;
+		if (source instanceof Mono) {
+			if (source instanceof Fuseable) {
+				target = new FluxSourceMonoFuseable<>((Mono<I>) source);
+			} else {
+				target = new FluxSourceMono<>((Mono<I>) source);
 			}
-			return new FluxSourceMono<>((Mono<I>)source);
+		} else if (source instanceof Fuseable) {
+			target = new FluxSourceFuseable<>(source);
+		} else {
+			target = new FluxSource<>(source);
 		}
-		if(source instanceof Fuseable){
-			return new FluxSourceFuseable<>(source);
+		if (shouldWrap) {
+			return ContextPropagation.fluxRestoreThreadLocals(target);
 		}
-		return new FluxSource<>(source);
+		return target;
 	}
 
 	@SuppressWarnings("rawtypes")

@@ -202,19 +202,23 @@ def japicmpReport = tasks.register('japicmpReport') {
 	}
 	doLast {
 		def reportFile = file("${project.buildDir}/reports/japi.txt")
-		if (reportFile.exists()) {
-			println "\n **********************************"
-			println " * /!\\ API compatibility failures *"
-			println " **********************************"
-			println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
-			reportFile.eachLine {
-				if (it.contains("*") && (!it.contains("***") || it.contains("****")))
-					println "source incompatible change: $it"
-				else if (it.contains("!"))
-					println "binary incompatible change: $it"
-			}
+	  if (reportFile.exists()) {
+		println "\n **********************************"
+		println " * /!\\ API compatibility failures *"
+		println " **********************************"
+		println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
+		reportFile.eachLine {
+		  if (it.contains("*") && (!it.contains("***") || it.contains("****"))) {
+			println "source incompatible change: $it"
+		  }
+		  else if (it.contains("!")) {
+			println "binary incompatible change: $it"
+		  }
 		}
-		else println "No incompatible change to report"
+	  }
+	  else {
+		println "No incompatible change to report"
+	  }
 	}
 }
 
@@ -252,6 +256,9 @@ task japicmp(type: JapicmpTask) {
 	classExcludes = [
 	]
 	methodExcludes = [
+			"reactor.core.publisher.Operators#toFluxOrMono(org.reactivestreams.Publisher)",
+			"reactor.core.publisher.Operators#toFluxOrMono(org.reactivestreams.Publisher[])",
+			"reactor.core.publisher.ParallelFlux#from(reactor.core.publisher.ParallelFlux)"
 	]
 }
 

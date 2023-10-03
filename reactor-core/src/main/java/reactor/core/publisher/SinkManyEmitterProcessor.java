@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,8 +165,12 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
-		EmitterInner<T> inner = new EmitterInner<>(actual, this);
-		actual.onSubscribe(inner);
+
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+
+		EmitterInner<T> inner = new EmitterInner<>(wrapped, this);
+		wrapped.onSubscribe(inner);
 
 		if (inner.isCancelled()) {
 			return;
@@ -373,6 +377,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		if (key == Attr.TERMINATED) return isTerminated();
 		if (key == Attr.ERROR) return getError();
 		if (key == Attr.CAPACITY) return getPrefetch();
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

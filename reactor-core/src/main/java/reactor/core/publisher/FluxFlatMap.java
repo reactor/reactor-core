@@ -30,6 +30,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -196,6 +197,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				}
 			}
 			else {
+				p = Operators.toFluxOrMono(p);
 				if (!fuseableExpected || p instanceof Fuseable) {
 					p.subscribe(s);
 				}
@@ -424,6 +426,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
 				if (add(inner)) {
+					p = Operators.toFluxOrMono(p);
 					p.subscribe(inner);
 				} else {
 					Operators.onDiscard(t, actual.currentContext());
