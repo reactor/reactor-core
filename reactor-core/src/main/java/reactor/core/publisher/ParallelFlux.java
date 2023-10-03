@@ -76,7 +76,7 @@ import reactor.util.context.Context;
  */
 public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
-	public static <T> ParallelFlux<T> from(ParallelFlux<T> source) {
+	static <T> ParallelFlux<T> from(ParallelFlux<T> source) {
 		if (ContextPropagationSupport.shouldWrapPublisher(source)) {
 			return new ParallelFluxRestoringThreadLocals<>(source);
 		}
