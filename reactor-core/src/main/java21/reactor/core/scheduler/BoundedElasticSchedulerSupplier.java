@@ -24,6 +24,7 @@ import static reactor.core.scheduler.Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZ
 import static reactor.core.scheduler.Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE;
 import static reactor.core.scheduler.Schedulers.LOOM_BOUNDED_ELASTIC;
 import static reactor.core.scheduler.Schedulers.newBoundedElastic;
+import static reactor.core.scheduler.Schedulers.newThreadPerTaskBoundedElastic;
 
 /**
  * JDK 8 Specific implementation of BoundedElasticScheduler supplier which uses
@@ -35,13 +36,12 @@ class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 	@Override
 	public Scheduler get() {
 		if (DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS) {
-			return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
+			return newThreadPerTaskBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
 					DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
 					Thread.ofVirtual()
 					      .name(LOOM_BOUNDED_ELASTIC + "-", 1)
 					      .uncaughtExceptionHandler(Schedulers::defaultUncaughtException)
-					      .factory(),
-					BoundedElasticScheduler.DEFAULT_TTL_SECONDS);
+					      .factory());
 		}
 		return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
 				DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
