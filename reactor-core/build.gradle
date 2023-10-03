@@ -334,7 +334,7 @@ blockHoundTest {
 }
 
 jcstress {
-	mode = getProperty('jcstress.mode') ?: 'quick' //quick, default, tough
+	mode = project.hasProperty('jcstress.mode') ? project.getProperty('jcstress.mode') : 'quick'//quick, default, tough
     jcstressDependency 'org.openjdk.jcstress:jcstress-core:0.16'
 	heapPerFork = 512
 }
