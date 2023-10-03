@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -376,7 +376,7 @@ public class HooksTraceTest {
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
 		                                .log(null, Level.OFF)
 		                                .log(null, Level.OFF))
-		            .expectNext(7, 7)
+		            .expectNext(7, 7) //from now counts as an additional one
 		            .verifyComplete();
 	}
 
