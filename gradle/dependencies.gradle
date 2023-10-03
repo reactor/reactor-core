@@ -10,7 +10,7 @@ ext {
     javaObjectLayoutVersion = "0.17"
     jmhVersion = "1.37"
     junitVersion = "5.10.0"
-    logbackVersion = "1.2.11"
+    logbackVersion = "1.2.12"
     mockitoVersion = "4.11.0"
     slf4jVersion = "1.7.36"
     testngVersion = "7.5.1" // since 7.6 JDK8 is unsupported, don't bump
