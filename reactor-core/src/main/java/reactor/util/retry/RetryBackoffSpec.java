@@ -150,7 +150,7 @@ public final class RetryBackoffSpec extends Retry {
 		this.isTransientErrors = isTransientErrors;
 		this.minBackoff = minBackoff;
 		this.maxBackoff = maxBackoff;
-		this.multiplier = multiplier;
+		this.multiplier = multiplier > 1.0 ? multiplier : 1;
 		this.jitterFactor = jitterFactor;
 		this.backoffSchedulerSupplier = backoffSchedulerSupplier;
 		this.syncPreRetry = doPreRetry;
