@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 
 import com.pivovarit.function.ThrowingRunnable;
 import com.pivovarit.function.ThrowingSupplier;
+import org.assertj.core.api.Assumptions;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -1407,6 +1408,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void defaultBoundedElasticConfigurationIsConsistentWithJavadoc() {
+		Assumptions.assumeThat(Schedulers.DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS).isFalse();
 		Schedulers.CachedScheduler cachedBoundedElastic = (Schedulers.CachedScheduler) Schedulers.boundedElastic();
 		BoundedElasticScheduler boundedElastic = (BoundedElasticScheduler) cachedBoundedElastic.cached;
 
