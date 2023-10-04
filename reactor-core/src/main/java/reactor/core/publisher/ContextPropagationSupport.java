@@ -54,7 +54,7 @@ final class ContextPropagationSupport {
         isContextPropagation103OnClasspath = contextPropagation103;
 
         if (isContextPropagationOnClasspath && !isContextPropagation103OnClasspath) {
-            LOGGER.warn("context-propagation version below 1.0.4 can cause memory leaks" +
+            LOGGER.warn("context-propagation version below 1.0.3 can cause memory leaks" +
                     " when working with scope-based ThreadLocalAccessors, please " +
                     "upgrade!");
         }
