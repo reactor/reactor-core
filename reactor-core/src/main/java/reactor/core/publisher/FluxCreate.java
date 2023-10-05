@@ -654,7 +654,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				s = instance.requested;
 				r = s & Long.MAX_VALUE;
 				if (r == Long.MAX_VALUE) {
-					return Long.MAX_VALUE;
+					return s;
 				}
 				u = Operators.addCap(r, toAdd);
 				if (REQUESTED.compareAndSet(instance, s, u | (s & Long.MIN_VALUE))) {
