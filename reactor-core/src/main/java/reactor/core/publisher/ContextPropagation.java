@@ -90,7 +90,10 @@ final class ContextPropagation {
 				Object value = ((ContextAccessor<C, ?>) contextAccessor).readValue((C) context, key);
 				previousValues = setThreadLocal(key, value, threadLocalAccessor, previousValues);
 			}
-			return ReactorScopeImpl.from(previousValues, registry);
+			if (ContextPropagationSupport.isContextPropagation101Available()) {
+				return ReactorScopeImpl.from(previousValues, registry);
+			}
+			return ReactorScopeImpl100.from(previousValues, registry);
 		}
 	}
 
@@ -498,6 +501,44 @@ final class ContextPropagation {
 
 		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
 			return (previousValues != null ? new ReactorScopeImpl(previousValues, registry) : () -> {
+			});
+		}
+	}
+
+	private static class ReactorScopeImpl100 implements ContextSnapshot.Scope {
+
+		private final Map<Object, Object> previousValues;
+
+		private final ContextRegistry contextRegistry;
+
+		private ReactorScopeImpl100(Map<Object, Object> previousValues,
+				ContextRegistry contextRegistry) {
+			this.previousValues = previousValues;
+			this.contextRegistry = contextRegistry;
+		}
+
+		@Override
+		public void close() {
+			for (ThreadLocalAccessor<?> accessor : this.contextRegistry.getThreadLocalAccessors()) {
+				if (this.previousValues.containsKey(accessor.key())) {
+					Object previousValue = this.previousValues.get(accessor.key());
+					resetThreadLocalValue(accessor, previousValue);
+				}
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
+			if (previousValue != null) {
+				((ThreadLocalAccessor<V>) accessor).setValue(previousValue);
+			}
+			else {
+				accessor.reset();
+			}
+		}
+
+		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
+			return (previousValues != null ? new ReactorScopeImpl100(previousValues, registry) : () -> {
 			});
 		}
 	}
