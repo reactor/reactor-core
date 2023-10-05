@@ -98,7 +98,6 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		//NOTE: we don't use the `DocumentedObservation` features to create the Observation, even for the ANONYMOUS case,
 		//because the discovered tags could be more than the documented defaults
 		tapObservation = defaultObservation(configuration, observationSupplier)
-				.contextualName(configuration.sequenceName)
 				.lowCardinalityKeyValues(configuration.commonKeyValues);
 	}
 
@@ -108,10 +107,16 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		if (observationSupplier != null) {
 			final Observation observation = observationSupplier.apply(configuration.registry);
 			if (observation != null) {
-				return observation;
+				if (observation.getContext().getContextualName() != null) {
+					return observation;
+				}
+				else {
+					return observation.contextualName(configuration.sequenceName);
+				}
 			}
 		}
-		return Observation.createNotStarted(configuration.sequenceName, configuration.registry);
+		return Observation.createNotStarted(configuration.sequenceName, configuration.registry)
+		                  .contextualName(configuration.sequenceName);
 	}
 
 	@Override
