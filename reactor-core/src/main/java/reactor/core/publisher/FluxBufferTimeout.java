@@ -715,7 +715,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			nextCallback(value);
 
-			if (this.index % batchSize == 0) {
+			if (index % batchSize == 0) {
 				this.index = 0;
 				if (timespanRegistration != null) {
 					timespanRegistration.dispose();
