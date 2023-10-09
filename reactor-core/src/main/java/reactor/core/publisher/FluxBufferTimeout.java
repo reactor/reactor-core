@@ -694,9 +694,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		@Override
 		public void onNext(final T value) {
 			int index;
+			boolean flush;
 			for(;;){
 				index = this.index + 1;
-				if(INDEX.compareAndSet(this, index - 1, index)){
+				flush = index % batchSize == 0;
+				if(INDEX.compareAndSet(this, index - 1, flush ? 0 : index)){
 					break;
 				}
 			}
@@ -715,8 +717,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			nextCallback(value);
 
-			if (index % batchSize == 0) {
-				this.index = 0;
+			if (flush) {
 				if (timespanRegistration != null) {
 					timespanRegistration.dispose();
 					timespanRegistration = null;
