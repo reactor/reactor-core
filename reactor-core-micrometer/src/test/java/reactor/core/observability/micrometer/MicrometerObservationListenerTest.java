@@ -68,7 +68,7 @@ class MicrometerObservationListenerTest {
 		};
 		configuration = new MicrometerObservationListenerConfiguration(
 			"testName",
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 		subscriberContext = Context.of("contextKey", "contextValue");
@@ -83,7 +83,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 				MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 				//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-				KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+				KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 				registry,
 				false);
 
@@ -124,7 +124,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 
@@ -157,7 +157,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			"testName",
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 
@@ -191,7 +191,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromMono (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			true);
 
@@ -685,7 +685,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 

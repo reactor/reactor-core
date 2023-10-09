@@ -97,11 +97,11 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
 		//NOTE: we don't use the `DocumentedObservation` features to create the Observation, even for the ANONYMOUS case,
 		//because the discovered tags could be more than the documented defaults
-		tapObservation = defaultObservation(configuration, observationSupplier)
+		tapObservation = supplyOrCreateObservation(configuration, observationSupplier)
 				.lowCardinalityKeyValues(configuration.commonKeyValues);
 	}
 
-	private static Observation defaultObservation(
+	private static Observation supplyOrCreateObservation(
 			MicrometerObservationListenerConfiguration configuration,
 			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
 		if (observationSupplier != null) {
