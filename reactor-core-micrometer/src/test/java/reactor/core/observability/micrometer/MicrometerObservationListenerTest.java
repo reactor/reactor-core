@@ -68,10 +68,51 @@ class MicrometerObservationListenerTest {
 		};
 		configuration = new MicrometerObservationListenerConfiguration(
 			"testName",
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 		subscriberContext = Context.of("contextKey", "contextValue");
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void whenStartedFluxWithDefaultNameWithCustomObservationSupplier(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		configuration = new MicrometerObservationListenerConfiguration(
+				MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
+				//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
+				KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
+				registry,
+				false);
+
+		MicrometerObservationListener<Integer> listener =
+				new MicrometerObservationListener<>(subscriberContext, configuration,
+						or -> Observation.createNotStarted("user.name", or)
+						                 .lowCardinalityKeyValue("userType", "admin")
+						                 .highCardinalityKeyValue("userId", "testId")
+						                 .contextualName("getting-user-name"));
+
+		assertThat(listener.valued).as("valued").isFalse();
+		assertThat(listener.tapObservation)
+				.as("subscribeToTerminalObservation field")
+				.isNotNull();
+		assertThat(registry).as("before start").doesNotHaveAnyObservation();
+
+		listener.doFirst(); // forces observation start
+
+		assertThat(registry)
+				.hasSingleObservationThat()
+				.hasNameEqualTo("user.name")
+				.hasContextualNameEqualTo("getting-user-name")
+				.as("subscribeToTerminalObservation")
+				.hasBeenStarted()
+				.isNotStopped()
+				.hasLowCardinalityKeyValue("testTag1", "testTagValue1")
+				.hasLowCardinalityKeyValue("testTag2", "testTagValue2")
+				.hasLowCardinalityKeyValue("userType", "admin")
+				.hasHighCardinalityKeyValue("userId", "testId");
 	}
 
 	@ParameterizedTestWithName
@@ -83,7 +124,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 
@@ -116,7 +157,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			"testName",
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 
@@ -150,7 +191,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromMono (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			true);
 
@@ -644,7 +685,7 @@ class MicrometerObservationListenerTest {
 		configuration = new MicrometerObservationListenerConfiguration(
 			MicrometerObservationListenerDocumentation.ANONYMOUS.getName(),
 			//note: "type" key is added by MicrometerObservationListenerConfiguration#fromFlux (which is tested separately)
-			KeyValues.of("testTag1", "testTagValue1","testTag2", "testTagValue2"),
+			KeyValues.of("testTag1", "testTagValue1", "testTag2", "testTagValue2"),
 			registry,
 			false);
 
