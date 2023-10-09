@@ -5,20 +5,36 @@ Since 3.5.0, Reactor-Core embeds support for the `io.micrometer:context-propagat
 This library is intended as a means to easily adapt between various implementations of the concept of a Context, of which
 `ContextView`/`Context` is an example, and between `ThreadLocal` variables as well.
 
-`ReactorContextAccessor` allows the Context-Propagation library to understand Reactor `Context` and `Contextview`.
+`ReactorContextAccessor` allows the Context-Propagation library to understand Reactor
+`Context` and `ContextView`.
 It implements the SPI and is loaded via `java.util.ServiceLoader`.
 No user action is required, other than having a dependency on both reactor-core and `io.micrometer:context-propagation`. The `ReactorContextAccessor` class is public but shouldn't generally be accessed by user code.
 
-On top of that, Reactor-Core 3.5.0 also modifies the behavior of a couple key operators as well as introduces the `contextCapture` operator
-to transparently deal with `ContextSnapshot`s if the library is available at runtime.
+We support two modes of operation with `io.micrometer:context-propagation`:
 
-== `contextCapture` Operator
+- the **default** (limited) mode,
+- and the **automatic** mode, enabled via `Hooks.enableAutomaticContextPropagation()`
+when the app starts.
+
+We will discuss the differences in the context of either writing data to Reactor `Context` or accessing
+`ThreadLocal` state that reflects the contents of the `Context` of currently attached
+`Subscriber` for reading.
+
+The act of discovering the mapping between `ThreadLocal` values and relevant entries in
+the Reactor `Context` is performed using the registered `ThreadLocalAccessor`(s).
+
+== Writing to `Context`
+
+Depending on the individual application, you might either have to store already populated
+`ThreadLocal` state as entries in the `Context`, or might only need to directly populate
+the `Context`.
+
+=== `contextCapture` Operator
 This operator can be used when one needs to capture `ThreadLocal` value(s) at subscription time and reflect these values in the Reactor `Context` for the benefit of upstream operators.
-It relies on the `context-propagation` library and notably the registered `ThreadLocalAccessor`(s) to discover relevant ThreadLocal values.
 
 This is a convenient alternative to `contextWrite` which uses the `context-propagation` API to obtain a `ContextSnapshot` and then uses that snapshot to populate the Reactor `Context`.
 
-As a result, if there were any ThreadLocal values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
+As a result, if there were any `ThreadLocal` values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
 at runtime in upstream operators.
 
 ====
@@ -32,25 +48,80 @@ TL.set("HELLO");
 
 Mono.deferContextual(ctx ->
   Mono.delay(Duration.ofSeconds(1))
-      //we're now in another thread, TL is not set
-      .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get())
-)
-.contextCapture()
-.block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null"
+      //we're now in another thread, TL is not explicitly set
+      .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get()))
+.contextCapture() // can be skipped in automatic mode when a blocking operator follows
+.block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
+          // returns "delayed ctx[TLKEY]=HELLO, TL=HELLO" in automatic mode
 ----
 ====
 
-== Operators that transparently restore a snapshot: `handle` and `tap`
-Both `Flux` and `Mono` variants of `handle` and `tap` will have their behavior slightly modified
-if the Context-Propagation library is available at runtime.
+NOTE: In the **automatic** mode, blocking operators, such as `Flux#blockFirst()`,
+`Flux#blockLast()`, `Flux#toIterable()`, `Mono#block()`, `Mono#blockOptional()`, and
+relevant overloads, all perform `contextCapture()` transparently, so in most cases it is
+not necessary to add it.
 
-Namely, if their downstream `ContextView` is not empty they will assume a context capture has occurred
-(either manually or via the `contextCapture()` operator) and will attempt to restore `ThreadLocal`s from
-that snapshot transparently.
+=== `contextWrite` Operator
+
+When the `ThreadLocal` values are not and do not need to be present at the time of
+subscription, we can immediately store the value in the `Context`:
+
+====
+[source,java]
+----
+//assuming TL is known to Context-Propagation as key TLKEY.
+static final ThreadLocal<String> TL = new ThreadLocal<>();
+
+//in the main thread, TL is not set
+
+Mono.deferContextual(ctx ->
+  Mono.delay(Duration.ofSeconds(1))
+      //we're now in another thread, TL is not explicitly set
+      .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get()))
+.contextWrite(ctx -> ctx.put(TLKEY, "HELLO"))
+.block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
+          // returns "delayed ctx[TLKEY]=HELLO, TL=HELLO" in automatic mode
+----
+====
+
+== Accessing `ThreadLocal` state corresponding to `ContextView`
+
+As can be seen in the above examples, in the default mode, the `ThreadLocal` value is
+`null` inside the lambda provided to the `map` operator. This shows a major difference
+between the **default** (limited) mode, and the **automatic** mode.
+
+=== Automatic mode
+
+In the **automatic** mode all operators restore `ThreadLocal` state across `Thread`
+boundaries. In contrast, in the **default** mode only selected operators do so.
+
+It is not an easy task to achieve, as the Reactive Streams specification makes reactive
+chains `Thread`-agnostic. However, we did our best to control sources of `Thread` switches
+and perform snapshot restoration based on the Reactor `Context`, which is treated as the
+source of truth for `ThreadLocal` state. In case you are interested, we described how
+we got here in a three-article series on
+https://spring.io/blog/2023/03/28/context-propagation-with-project-reactor-1-the-basics[the spring.io blog].
+
+WARNING: While the **default** mode limits the `ThreadLocal` state only to the user code
+executed as arguments to the chosen operators, the **automatic** mode allows
+`ThreadLocal` state to cross operator boundaries. This requires proper cleanup to avoid
+leaking the state to unrelated code which reuses the same `Thread`. This requires to
+treat absent keys in the `Context` for registered instances of `ThreadLocalAccessor` as
+signals to clear the corresponding `ThreadLocal` state. This is especially important for
+an empty `Context`, which clears all state for registered `ThreadLocalAccessor` instances.
+
+=== Default mode operators for snapshot restoration: `handle` and `tap`
+
+In default mode, both `Flux` and `Mono` variants of `handle` and `tap` will have their
+behavior slightly modified if the Context-Propagation library is available at runtime.
+
+Namely, if their downstream `ContextView` is not empty they will assume a context
+capture has occurred (either manually or via the `contextCapture()` operator) and will attempt to restore ThreadLocals from that snapshot transparently. Any ThreadLocals for keys that are missing in the `ContextView` are left untouched.
 
 These operators will ensure restoration is performed around the user-provided code, respectively:
- - `handle` will wrap the `BiConsumer` in one which restores `ThreadLocal`s
- - `tap` variants will wrap the `SignalListener` into one that has the same kind of wrapping around each method (this includes the `addToContext` method)
+
+- `handle` will wrap the `BiConsumer` in one which restores `ThreadLocal`s
+- `tap` variants will wrap the `SignalListener` into one that has the same kind of wrapping around each method (this includes the `addToContext` method)
 
 The intent is to have a minimalistic set of operators transparently perform restoration.
 As a result we chose operators with rather general and broad applications (one with transformative capabilities, one with side-effect capabilities)
@@ -73,3 +144,18 @@ Mono.delay(Duration.ofSeconds(1))
   .block(); // prints "null" and returns "handled delayed TL=HELLO"
 ----
 ====
+
+== Which mode should I choose?
+
+Both **default** and **automatic** modes have an impact on performance. Accessing
+`ThreadLocal` variables can impact a reactive pipeline significantly. If the highest
+scalability and performance is the goal, more verbose approaches for logging and
+explicit argument passing can be considered instead of relying on `ThreadLocal` state. If
+access to established libraries in the space of Observability, such as Micrometer and
+SLF4J, which use `ThreadLocal` state for convenience to provide meaningful production
+grade features is an understood compromise, the choice of the mode is yet another
+compromise to make. The **automatic** mode, depending on the flow of your application and
+the amount of operators used, can be either better or worse than the **default** mode. The
+only recommendation we can give is to measure how your application behaves and what
+scalability and performance characteristics you obtain when presented with a load you
+expect.
