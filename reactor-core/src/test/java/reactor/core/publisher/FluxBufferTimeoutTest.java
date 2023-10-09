@@ -24,11 +24,13 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -310,31 +312,54 @@ public class FluxBufferTimeoutTest {
 
 	@Test
 	public void flushShouldNotRaceWithNext() {
-		Set<Integer> seen = new HashSet<>();
-		Consumer<List<Integer>> consumer = integers -> {
-			for (Integer i : integers) {
-				if (!seen.add(i)) {
-					throw new IllegalStateException("Duplicate! " + i);
+		for (int i = 0; i < 100; i++) {
+			AtomicInteger caller = new AtomicInteger();
+			AtomicBoolean stop = new AtomicBoolean();
+			Set<Integer> seen = new HashSet<>();
+			Consumer<List<Integer>> consumer = integers -> {
+				RuntimeException ex = new RuntimeException(integers.toString());
+				if (caller.getAndIncrement() == 0) {
+					for (Integer value : integers) {
+						if (!seen.add(value)) {
+							throw new IllegalStateException("Duplicate! " + value);
+						}
+					}
+
+					if (caller.decrementAndGet() != 0) {
+						stop.set(true);
+						throw ex;
+					}
 				}
+				else {
+					stop.set(true);
+					throw ex;
+				}
+			};
+			CoreSubscriber<List<Integer>> actual =
+					new LambdaSubscriber<>(consumer, null, null, null);
+
+			FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>> test =
+					new FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>>(
+							actual,
+							3,
+							1000,
+							TimeUnit.MILLISECONDS,
+							Schedulers.boundedElastic()
+							          .createWorker(),
+							ArrayList::new);
+			test.onSubscribe(Operators.emptySubscription());
+
+			AtomicInteger counter = new AtomicInteger();
+			for (int j = 0; j < 500; j++) {
+				RaceTestUtils.race(() -> test.onNext(counter.getAndIncrement()), test.flushTask);
+				Assertions.assertThat(stop).isFalse();
 			}
-		};
-		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(consumer, null, null, null);
 
-		FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>>(
-				actual, 3, 1000, TimeUnit.MILLISECONDS, Schedulers.boundedElastic().createWorker(), ArrayList::new);
-		test.onSubscribe(Operators.emptySubscription());
+			test.onComplete();
 
-		AtomicInteger counter = new AtomicInteger();
-		for (int i = 0; i < 500; i++) {
-			RaceTestUtils.race(
-					() -> test.onNext(counter.getAndIncrement()),
-					() -> test.flushCallback(null)
-			);
+			assertThat(seen.size()).as(() -> seen.size() + " " + seen.toString())
+			                       .isEqualTo(500);
 		}
-
-		test.onComplete();
-
-		assertThat(seen.size()).isEqualTo(500);
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1247
