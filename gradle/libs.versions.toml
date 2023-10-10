@@ -7,8 +7,8 @@
 
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.5.10"
-baselinePerfCore = "3.5.10"
+baseline-core-api = "3.5.11"
+baselinePerfCore = "3.5.11"
 baselinePerfExtra = "3.5.1"
 
 # Other shared versions
@@ -17,7 +17,7 @@ asciidoctor = "3.3.2"
 micrometer = "1.12.0-M3"
 micrometerDocsGenerator = "1.0.2"
 micrometerTracingTest="1.2.0-M2"
-contextPropagation="1.0.5"
+contextPropagation="1.0.6"
 kotlin = "1.5.32"
 reactiveStreams = "1.0.4"
 
