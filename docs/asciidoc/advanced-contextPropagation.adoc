@@ -10,19 +10,21 @@ This library is intended as a means to easily adapt between various implementati
 It implements the SPI and is loaded via `java.util.ServiceLoader`.
 No user action is required, other than having a dependency on both reactor-core and `io.micrometer:context-propagation`. The `ReactorContextAccessor` class is public but shouldn't generally be accessed by user code.
 
-We support two modes of operation with `io.micrometer:context-propagation`:
+Reactor-Core supports two modes of operation with `io.micrometer:context-propagation`:
 
 - the **default** (limited) mode,
-- and the **automatic** mode, enabled via `Hooks.enableAutomaticContextPropagation()`
-when the app starts.
+- and the **automatic** mode, enabled via `Hooks.enableAutomaticContextPropagation()`.
+  Please note that this mode applies only to new subscriptions, so it is recommended to
+enable this hook when the application starts.
 
-We will discuss the differences in the context of either writing data to Reactor `Context` or accessing
-`ThreadLocal` state that reflects the contents of the `Context` of currently attached
-`Subscriber` for reading.
+Their key differences are discussed in the context of either <<context-writing, writing
+data>> to Reactor `Context`, or <<context-accessing,accessing `ThreadLocal` state>> that
+reflects the contents of the`Context` of currently attached `Subscriber` for reading.
 
 The act of discovering the mapping between `ThreadLocal` values and relevant entries in
 the Reactor `Context` is performed using the registered `ThreadLocalAccessor`(s).
 
+[[context-writing]]
 == Writing to `Context`
 
 Depending on the individual application, you might either have to store already populated
@@ -64,7 +66,7 @@ not necessary to add it.
 === `contextWrite` Operator
 
 When the `ThreadLocal` values are not and do not need to be present at the time of
-subscription, we can immediately store the value in the `Context`:
+subscription, they can immediately be stored in the `Context`:
 
 ====
 [source,java]
@@ -84,36 +86,18 @@ Mono.deferContextual(ctx ->
 ----
 ====
 
+[[context-accessing]]
 == Accessing `ThreadLocal` state corresponding to `ContextView`
 
-As can be seen in the above examples, in the default mode, the `ThreadLocal` value is
-`null` inside the lambda provided to the `map` operator. This shows a major difference
-between the **default** (limited) mode, and the **automatic** mode.
-
-=== Automatic mode
-
-In the **automatic** mode all operators restore `ThreadLocal` state across `Thread`
-boundaries. In contrast, in the **default** mode only selected operators do so.
-
-It is not an easy task to achieve, as the Reactive Streams specification makes reactive
-chains `Thread`-agnostic. However, we did our best to control sources of `Thread` switches
-and perform snapshot restoration based on the Reactor `Context`, which is treated as the
-source of truth for `ThreadLocal` state. In case you are interested, we described how
-we got here in a three-article series on
-https://spring.io/blog/2023/03/28/context-propagation-with-project-reactor-1-the-basics[the spring.io blog].
-
-WARNING: While the **default** mode limits the `ThreadLocal` state only to the user code
-executed as arguments to the chosen operators, the **automatic** mode allows
-`ThreadLocal` state to cross operator boundaries. This requires proper cleanup to avoid
-leaking the state to unrelated code which reuses the same `Thread`. This requires to
-treat absent keys in the `Context` for registered instances of `ThreadLocalAccessor` as
-signals to clear the corresponding `ThreadLocal` state. This is especially important for
-an empty `Context`, which clears all state for registered `ThreadLocalAccessor` instances.
+Starting from Reactor-Core 3.5.0, `ThreadLocal` state is restored in a limited set
+of operators. We call this behaviour the **default** (limited) mode. In 3.5.3, a new
+mode was added, the **automatic** mode, which provides access to `ThreadLocal` values
+throughout the reactive chain.
 
 === Default mode operators for snapshot restoration: `handle` and `tap`
 
-In default mode, both `Flux` and `Mono` variants of `handle` and `tap` will have their
-behavior slightly modified if the Context-Propagation library is available at runtime.
+In the **default** mode, both `Flux` and `Mono` variants of `handle` and `tap` will have
+their behavior slightly modified if the Context-Propagation library is available at runtime.
 
 Namely, if their downstream `ContextView` is not empty they will assume a context
 capture has occurred (either manually or via the `contextCapture()` operator) and will attempt to restore ThreadLocals from that snapshot transparently. Any ThreadLocals for keys that are missing in the `ContextView` are left untouched.
@@ -145,6 +129,28 @@ Mono.delay(Duration.ofSeconds(1))
 ----
 ====
 
+=== Automatic mode
+
+In the **automatic** mode, all operators restore `ThreadLocal` state across `Thread`
+boundaries. In contrast, in the **default** mode only selected operators do so.
+
+`Hooks.enableAutomaticContextPropagation()` can be called upon application start to
+enable the **automatic** mode. Please note that this mode applies only to new subscriptions,
+so it is recommended to enable this hook when the application starts.
+
+It is not an easy task to achieve, as the Reactive Streams specification makes reactive
+chains `Thread`-agnostic. However, Reactor-Core does its best to control sources of
+`Thread` switches and perform snapshot restoration based on the Reactor `Context`,
+which is treated as the source of truth for `ThreadLocal` state.
+
+WARNING: While the **default** mode limits the `ThreadLocal` state only to the user code
+executed as arguments to the chosen operators, the **automatic** mode allows
+`ThreadLocal` state to cross operator boundaries. This requires proper cleanup to avoid
+leaking the state to unrelated code which reuses the same `Thread`. This requires to
+treat absent keys in the `Context` for registered instances of `ThreadLocalAccessor` as
+signals to clear the corresponding `ThreadLocal` state. This is especially important for
+an empty `Context`, which clears all state for registered `ThreadLocalAccessor` instances.
+
 == Which mode should I choose?
 
 Both **default** and **automatic** modes have an impact on performance. Accessing
@@ -156,6 +162,6 @@ SLF4J, which use `ThreadLocal` state for convenience to provide meaningful produ
 grade features is an understood compromise, the choice of the mode is yet another
 compromise to make. The **automatic** mode, depending on the flow of your application and
 the amount of operators used, can be either better or worse than the **default** mode. The
-only recommendation we can give is to measure how your application behaves and what
+only recommendation that can be given is to measure how your application behaves and what
 scalability and performance characteristics you obtain when presented with a load you
 expect.
