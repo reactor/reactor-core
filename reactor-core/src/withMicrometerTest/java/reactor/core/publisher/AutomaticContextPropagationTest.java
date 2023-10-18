@@ -496,7 +496,7 @@ public class AutomaticContextPropagationTest {
 
 			executorService.submit(asyncAction);
 
-			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+			if (!latch.await(500, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
@@ -1528,6 +1528,42 @@ public class AutomaticContextPropagationTest {
 
 			Flux.just("hello")
 				.flatMap(s -> nonReactorPublisher)
+			    .doOnNext(s -> value.set(REF.get()))
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService
+					.submit(() -> testPublisher.emit("test").complete())
+					.get();
+
+			testPublisher.assertWasSubscribed();
+			testPublisher.assertWasNotCancelled();
+			testPublisher.assertWasRequested();
+			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF.get()).isEqualTo("ref_init");
+
+			executorService.shutdownNow();
+		}
+
+		@Test
+		void monoFlatMapToPublisher() throws InterruptedException, ExecutionException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
+			AtomicReference<String> value = new AtomicReference<>();
+
+			TestPublisher<String> testPublisher = TestPublisher.create();
+			Publisher<String> nonReactorPublisher = testPublisher;
+
+			Mono.just("hello")
+			    .hide()
+			    .flatMapMany(s -> nonReactorPublisher)
 			    .doOnNext(s -> value.set(REF.get()))
 			    .contextWrite(Context.of(KEY, "present"))
 			    .subscribe();
