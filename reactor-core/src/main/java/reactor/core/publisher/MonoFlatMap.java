@@ -162,7 +162,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			}
 
 			try {
-				m.subscribe(new FlatMapInner<>(this));
+				Mono.fromDirect(m).subscribe(new FlatMapInner<>(this));
 			}
 			catch (Throwable e) {
 				actual.onError(Operators.onOperatorError(this, e, t,

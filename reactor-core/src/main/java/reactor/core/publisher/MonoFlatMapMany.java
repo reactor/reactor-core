@@ -192,7 +192,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 				return;
 			}
 
-			p.subscribe(new FlatMapManyInner<>(this, actual));
+			Operators.toFluxOrMono(p).subscribe(new FlatMapManyInner<>(this, actual));
 		}
 
 		@Override

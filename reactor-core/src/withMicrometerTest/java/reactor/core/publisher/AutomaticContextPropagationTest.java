@@ -581,6 +581,14 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
+		void internalMonoFlatMapSubscribeNoFusion() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("hello")
+					    .hide()
+					    .flatMap(item -> threadSwitchingMono()));
+		}
+
+		@Test
 		void directMonoSubscribeAsCoreSubscriber() throws InterruptedException, TimeoutException {
 			AtomicReference<String> valueInOnNext = new AtomicReference<>();
 			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
@@ -938,6 +946,21 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalsPresentInMono(() ->
 					Mono.usingWhen(Mono.just("Hello"), s -> threadSwitchingMono(),
 							s -> Mono.empty()));
+		}
+
+		@Test
+		void monoFlatMapMany() {
+			assertThreadLocalsPresentInFlux(() ->
+					Mono.just("hello")
+						.hide()
+					    .flatMapMany(item -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void monoFlatMapManyFuseable() {
+			assertThreadLocalsPresentInFlux(() ->
+					Mono.just("hello")
+					    .flatMapMany(item -> threadSwitchingFlux()));
 		}
 
 		// ParallelFlux tests
