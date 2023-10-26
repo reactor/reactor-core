@@ -826,6 +826,10 @@ final class ThreadPerTaskBoundedElasticScheduler
 			return isShutdown(this.wipAndRefCnt) && numberOfEnqueuedTasks() == 0;
 		}
 
+		boolean isShutdown() {
+			return isShutdown(this.wipAndRefCnt);
+		}
+
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (Attr.TERMINATED == key) return isDisposed();
@@ -1037,7 +1041,7 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 				previousState = isInstant ? markInitial(this) : markRescheduled(this);
 				boolean isDisposed = isDisposed(previousState);
-				boolean isShutdown = holder.isDisposed();
+				boolean isShutdown = holder.isShutdown();
 
 				if (isInstant) {
 					if (!isDisposed && !isShutdown) {
@@ -1305,8 +1309,11 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		@Override
 		public String toString() {
-			return "SchedulerTask(" + hashCode() +"){" + "carrier=" + carrier + ", " +
-					"scheduledFuture=" + scheduledFuture + "state= " + Integer.toBinaryString(get()) + '}';
+			return (isPeriodic() ? this.fixedRatePeriod == 0 ?  "InstantPeriodic" :
+					"Periodic" :
+					"") +
+					"SchedulerTask(" + hashCode() +"){" + "carrier=" + carrier + ", " +
+					"scheduledFuture=" + scheduledFuture + ", state= " + Integer.toBinaryString(get()) + '}';
 		}
 	}
 
