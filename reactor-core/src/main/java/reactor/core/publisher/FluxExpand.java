@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,8 +119,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 
 			Publisher<? extends T> p;
 			try {
-				p = Objects.requireNonNull(expander.apply(t),
-						"The expander returned a null Publisher");
+				p = Operators.toFluxOrMono(Objects.requireNonNull(expander.apply(t),
+						"The expander returned a null Publisher"));
 			}
 			catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);

@@ -2701,7 +2701,7 @@ public abstract class Operators {
 			}
 
 			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-					effectiveLifter = (pub, sub) -> lifter.apply(Scannable.from(pub), sub);
+					effectiveLifter = (pub, sub) -> lifter.apply(Scannable.from(pub), restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
 
 			return new LiftFunction<>(effectiveFilter, effectiveLifter, lifter.toString());
 		}
