@@ -802,7 +802,7 @@ public class AutomaticContextPropagationTest {
 					Flux.concat(
 							Stream.of(Flux.<String>empty(), threadSwitchingFlux()).collect(Collectors.toList())));
 
-			// core subscriber case doesn't work
+			// Direct subscription
 		}
 
 		@Test
@@ -879,6 +879,10 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void fluxExpand() {
 			AtomicBoolean done = new AtomicBoolean(false);
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
 			assertThreadLocalsPresent(
 					Flux.just("hello").expand(s -> {
 						if (done.get()) {
@@ -888,19 +892,17 @@ public class AutomaticContextPropagationTest {
 							return threadSwitchingFlux();
 						}
 					}));
-
-			// core subscriber case doesn't work
 		}
 
 		@Test
 		void fluxFilterWhen() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
 			assertThreadLocalsPresent(
 					Flux.just("hello")
 					    .filterWhen(s -> new ThreadSwitchingFlux<>(Boolean.TRUE, executorService)));
-
-			// it can happen that the drain loop is in the main thread and won't
-			// restore TLs from CoreSubscriber Context when contextWrite operator is
-			// missing along the way
 		}
 
 		@Test
@@ -1054,10 +1056,13 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void fluxSampleFirst() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
 			assertThreadLocalsPresent(
 					Flux.just("Hello").concatWith(Flux.never())
 					    .sampleFirst(s -> new ThreadSwitchingFlux<>(new RuntimeException("oops"), executorService)));
-			// core subscriber case doesn't work
 		}
 
 		@Test
@@ -1090,10 +1095,13 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void fluxTakeUntilOther() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
 			assertThreadLocalsPresent(
 					Flux.concat(Flux.just("Hello"), Flux.never())
 					    .takeUntilOther(threadSwitchingFlux()));
-			// core subscriber case doesn't work
 		}
 
 		@Test
@@ -1155,10 +1163,13 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void fluxWithLatestFrom() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
 			assertThreadLocalsPresent(
 					Flux.just("Hello")
 					    .withLatestFrom(threadSwitchingFlux(), (s1, s2) -> s1));
-			// core subscriber case doesn't work
 		}
 
 		@Test
