@@ -19,10 +19,7 @@ enable this hook when the application starts.
 
 Their key differences are discussed in the context of either <<context-writing, writing
 data>> to Reactor `Context`, or <<context-accessing,accessing `ThreadLocal` state>> that
-reflects the contents of the`Context` of currently attached `Subscriber` for reading.
-
-The act of discovering the mapping between `ThreadLocal` values and relevant entries in
-the Reactor `Context` is performed using the registered `ThreadLocalAccessor`(s).
+reflects the contents of the `Context` of currently attached `Subscriber` for reading.
 
 [[context-writing]]
 == Writing to `Context`
@@ -31,10 +28,35 @@ Depending on the individual application, you might either have to store already 
 `ThreadLocal` state as entries in the `Context`, or might only need to directly populate
 the `Context`.
 
+=== `contextWrite` Operator
+
+When the values meant to be accessed as `ThreadLocal` are not (or do not need to be)
+present at the time of subscription, they can immediately be stored in the `Context`:
+
+====
+[source,java]
+----
+// assuming TL is known to Context-Propagation as key TLKEY.
+static final ThreadLocal<String> TL = new ThreadLocal<>();
+
+// in the main Thread, TL is not set
+
+Mono.deferContextual(ctx ->
+  Mono.delay(Duration.ofSeconds(1))
+      // we're now in another thread, TL is not explicitly set
+      .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get()))
+.contextWrite(ctx -> ctx.put(TLKEY, "HELLO"))
+.block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
+          // returns "delayed ctx[TLKEY]=HELLO, TL=HELLO" in automatic mode
+----
+====
+
 === `contextCapture` Operator
 This operator can be used when one needs to capture `ThreadLocal` value(s) at subscription time and reflect these values in the Reactor `Context` for the benefit of upstream operators.
 
-This is a convenient alternative to `contextWrite` which uses the `context-propagation` API to obtain a `ContextSnapshot` and then uses that snapshot to populate the Reactor `Context`.
+In contrast to the manual `contextWrite` operator, `contextCapture` uses the
+`context-propagation` API to obtain a `ContextSnapshot` and then uses that snapshot
+to populate the Reactor `Context`.
 
 As a result, if there were any `ThreadLocal` values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
 at runtime in upstream operators.
@@ -42,15 +64,15 @@ at runtime in upstream operators.
 ====
 [source,java]
 ----
-//assuming TL is known to Context-Propagation as key TLKEY.
+// assuming TL is known to Context-Propagation as key TLKEY.
 static final ThreadLocal<String> TL = new ThreadLocal<>();
 
-//in the main thread, TL is set to "HELLO"
+// in the main Thread, TL is set to "HELLO"
 TL.set("HELLO");
 
 Mono.deferContextual(ctx ->
   Mono.delay(Duration.ofSeconds(1))
-      //we're now in another thread, TL is not explicitly set
+      // we're now in another thread, TL is not explicitly set
       .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get()))
 .contextCapture() // can be skipped in automatic mode when a blocking operator follows
 .block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
@@ -63,36 +85,17 @@ NOTE: In the **automatic** mode, blocking operators, such as `Flux#blockFirst()`
 relevant overloads, all perform `contextCapture()` transparently, so in most cases it is
 not necessary to add it.
 
-=== `contextWrite` Operator
-
-When the `ThreadLocal` values are not and do not need to be present at the time of
-subscription, they can immediately be stored in the `Context`:
-
-====
-[source,java]
-----
-//assuming TL is known to Context-Propagation as key TLKEY.
-static final ThreadLocal<String> TL = new ThreadLocal<>();
-
-//in the main thread, TL is not set
-
-Mono.deferContextual(ctx ->
-  Mono.delay(Duration.ofSeconds(1))
-      //we're now in another thread, TL is not explicitly set
-      .map(v -> "delayed ctx[" + TLKEY + "]=" + ctx.getOrDefault(TLKEY, "not found") + ", TL=" + TL.get()))
-.contextWrite(ctx -> ctx.put(TLKEY, "HELLO"))
-.block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
-          // returns "delayed ctx[TLKEY]=HELLO, TL=HELLO" in automatic mode
-----
-====
-
 [[context-accessing]]
-== Accessing `ThreadLocal` state corresponding to `ContextView`
+== Accessing `ThreadLocal` state
 
 Starting from Reactor-Core 3.5.0, `ThreadLocal` state is restored in a limited set
 of operators. We call this behaviour the **default** (limited) mode. In 3.5.3, a new
 mode was added, the **automatic** mode, which provides access to `ThreadLocal` values
 throughout the reactive chain.
+
+Reactor-Core performs `ThreadLocal` state restoration using the values
+stored in `Context` and `ThreadLocalAccessor` instances registered in `ContextRegistry`
+that match by key.
 
 === Default mode operators for snapshot restoration: `handle` and `tap`
 
