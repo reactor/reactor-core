@@ -205,7 +205,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 			Publisher<? extends R> publisher;
 
 			try {
-				publisher = Objects.requireNonNull(mapper.apply(t), "publisher");
+				publisher = Operators.toFluxOrMono(Objects.requireNonNull(mapper.apply(t), "publisher"));
 			}
 			catch (Throwable ex) {
 				onError(Operators.onOperatorError(s, ex, t, actual.currentContext()));

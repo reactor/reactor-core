@@ -48,7 +48,7 @@ final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 			Publisher<U> firstTimeout,
 			String timeoutDescription) {
 		super(source);
-		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
+		this.firstTimeout = Mono.fromDirect(Objects.requireNonNull(firstTimeout, "firstTimeout"));
 		this.other = null;
 		this.timeoutDescription = timeoutDescription;
 	}
@@ -57,8 +57,8 @@ final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 			Publisher<U> firstTimeout,
 			Publisher<? extends T> other) {
 		super(source);
-		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
-		this.other = Objects.requireNonNull(other, "other");
+		this.firstTimeout = Mono.fromDirect(Objects.requireNonNull(firstTimeout, "firstTimeout"));
+		this.other = Mono.fromDirect(Objects.requireNonNull(other, "other"));
 		this.timeoutDescription = null;
 	}
 

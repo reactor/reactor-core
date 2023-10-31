@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,7 @@ final class MonoLiftFuseable<I, O> extends InternalMonoOperator<I, O>
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-
-		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, actual);
+		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual));
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

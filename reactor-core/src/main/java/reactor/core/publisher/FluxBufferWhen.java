@@ -65,7 +65,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			Supplier<BUFFER> bufferSupplier,
 			Supplier<? extends Queue<BUFFER>> queueSupplier) {
 		super(source);
-		this.start = Objects.requireNonNull(start, "start");
+		this.start = Operators.toFluxOrMono(Objects.requireNonNull(start, "start"));
 		this.end = Objects.requireNonNull(end, "end");
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
@@ -360,7 +360,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 
 			BufferWhenCloseSubscriber<T, BUFFER> bc = new BufferWhenCloseSubscriber<>(this, idx);
 			subscribers.add(bc);
-			p.subscribe(bc);
+			Operators.toFluxOrMono(p).subscribe(bc);
 		}
 
 		void openComplete(BufferWhenOpenSubscriber<OPEN> os) {

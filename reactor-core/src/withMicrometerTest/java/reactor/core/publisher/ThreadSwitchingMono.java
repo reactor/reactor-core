@@ -26,11 +26,19 @@ public class ThreadSwitchingMono<T> extends Mono<T> implements Subscription, Run
 
 	private final ExecutorService executorService;
 	private final T item;
+	private final Throwable error;
 	private CoreSubscriber<? super T> actual;
 	AtomicBoolean done = new AtomicBoolean();
 
 	public ThreadSwitchingMono(T item, ExecutorService executorService) {
 		this.item = item;
+		this.error = null;
+		this.executorService = executorService;
+	}
+
+	public ThreadSwitchingMono(ExecutorService executorService, Throwable error) {
+		this.item = null;
+		this.error = error;
 		this.executorService = executorService;
 	}
 
@@ -47,7 +55,12 @@ public class ThreadSwitchingMono<T> extends Mono<T> implements Subscription, Run
 
 	private void deliver() {
 		if (done.compareAndSet(false, true)) {
-			this.actual.onNext(this.item);
+			if (this.item != null) {
+				this.actual.onNext(this.item);
+			}
+			if (this.error != null) {
+				this.actual.onError(this.error);
+			}
 			this.executorService.submit(this.actual::onComplete);
 		}
 	}

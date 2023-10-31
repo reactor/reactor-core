@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 			Publisher<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> combiner) {
 		super(source);
-		this.other = Objects.requireNonNull(other, "other");
+		this.other = Operators.toFluxOrMono(Objects.requireNonNull(other, "other"));
 		this.combiner = Objects.requireNonNull(combiner, "combiner");
 	}
 

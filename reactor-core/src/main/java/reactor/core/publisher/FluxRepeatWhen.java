@@ -76,7 +76,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 			return null;
 		}
 
-		p.subscribe(other);
+		Operators.toFluxOrMono(p).subscribe(other);
 
 		if (!main.cancelled) {
 			return main;

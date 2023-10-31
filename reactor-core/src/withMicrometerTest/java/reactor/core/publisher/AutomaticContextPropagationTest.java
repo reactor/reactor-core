@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.micrometer.context.ContextRegistry;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,6 +50,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -59,6 +63,7 @@ import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
+import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
@@ -317,7 +322,7 @@ public class AutomaticContextPropagationTest {
 
 		@BeforeEach
 		void enableAutomaticContextPropagation() {
-			executorService = Executors.newFixedThreadPool(3);
+			executorService = Executors.newSingleThreadExecutor();
 		}
 
 		@AfterEach
@@ -342,11 +347,9 @@ public class AutomaticContextPropagationTest {
 		void assertThreadLocalsPresentInFlux(Supplier<Flux<?>> chainSupplier,
 				boolean skipCoreSubscriber) {
 			assertThreadLocalsPresent(chainSupplier.get());
-			assertThatNoException().isThrownBy(() ->
-					assertThatThreadLocalsPresentDirectRawSubscribe(chainSupplier.get()));
+			assertThatThreadLocalsPresentDirectRawSubscribe(chainSupplier.get());
 			if (!skipCoreSubscriber) {
-				assertThatNoException().isThrownBy(() ->
-						assertThatThreadLocalsPresentDirectCoreSubscribe(chainSupplier.get()));
+				assertThatThreadLocalsPresentDirectCoreSubscribe(chainSupplier.get());
 			}
 		}
 
@@ -357,11 +360,9 @@ public class AutomaticContextPropagationTest {
 		void assertThreadLocalsPresentInMono(Supplier<Mono<?>> chainSupplier,
 				boolean skipCoreSubscriber) {
 			assertThreadLocalsPresent(chainSupplier.get());
-			assertThatNoException().isThrownBy(() ->
-					assertThatThreadLocalsPresentDirectRawSubscribe(chainSupplier.get()));
+			assertThatThreadLocalsPresentDirectRawSubscribe(chainSupplier.get());
 			if (!skipCoreSubscriber) {
-				assertThatNoException().isThrownBy(() ->
-						assertThatThreadLocalsPresentDirectCoreSubscribe(chainSupplier.get()));
+				assertThatThreadLocalsPresentDirectCoreSubscribe(chainSupplier.get());
 			}
 		}
 
@@ -371,26 +372,37 @@ public class AutomaticContextPropagationTest {
 			AtomicReference<String> tlInOnError = new AtomicReference<>();
 
 			AtomicBoolean hadNext = new AtomicBoolean(false);
-			AtomicBoolean hadError = new AtomicBoolean(false);
+			AtomicReference<Throwable> error = new AtomicReference<>();
 
-			chain.doOnEach(signal -> {
-				     if (signal.isOnNext()) {
-					     tlInOnNext.set(REF.get());
-					     hadNext.set(true);
-				     } else if (signal.isOnError()) {
-					     tlInOnError.set(REF.get());
-					     hadError.set(true);
-				     } else if (signal.isOnComplete()) {
-					     tlInOnComplete.set(REF.get());
-				     }
-			     })
-			     .contextWrite(Context.of(KEY, "present"))
-			     .blockLast();
+			try {
+				chain.doOnEach(signal -> {
+					     if (signal.isOnNext()) {
+						     tlInOnNext.set(REF.get());
+						     hadNext.set(true);
+					     }
+					     else if (signal.isOnError()) {
+						     tlInOnError.set(REF.get());
+						     error.set(signal.getThrowable());
+					     }
+					     else if (signal.isOnComplete()) {
+						     tlInOnComplete.set(REF.get());
+					     }
+				     })
+				     .contextWrite(Context.of(KEY, "present"))
+				     .blockLast(Duration.ofMillis(5000));
+			} catch (Exception e) {
+				if (e instanceof IllegalStateException) {
+					throw e;
+				}
+				assertThat(e).satisfiesAnyOf(
+						exception -> assertThat(exception).isEqualTo(error.get()),
+						exception -> assertThat(exception).hasCause(error.get()));
+			}
 
 			if (hadNext.get()) {
 				assertThat(tlInOnNext.get()).isEqualTo("present");
 			}
-			if (hadError.get()) {
+			if (error.get() != null) {
 				assertThat(tlInOnError.get()).isEqualTo("present");
 			} else {
 				assertThat(tlInOnComplete.get()).isEqualTo("present");
@@ -406,17 +418,20 @@ public class AutomaticContextPropagationTest {
 			AtomicBoolean hadError = new AtomicBoolean(false);
 
 			chain.doOnEach(signal -> {
-				if (signal.isOnNext()) {
-					tlInOnNext.set(REF.get());
-					hadNext.set(true);
-				} else if (signal.isOnError()) {
-					tlInOnError.set(REF.get());
-					hadError.set(true);
-				} else if (signal.isOnComplete()) {
-					tlInOnComplete.set(REF.get());
-				}
-			})
+				     if (signal.isOnNext()) {
+					     tlInOnNext.set(REF.get());
+					     hadNext.set(true);
+				     }
+				     else if (signal.isOnError()) {
+					     tlInOnError.set(REF.get());
+					     hadError.set(true);
+				     }
+				     else if (signal.isOnComplete()) {
+					     tlInOnComplete.set(REF.get());
+				     }
+			     })
 			     .contextWrite(Context.of(KEY, "present"))
+			     .onErrorComplete()
 			     .block();
 
 			if (hadNext.get()) {
@@ -430,42 +445,36 @@ public class AutomaticContextPropagationTest {
 		}
 
 		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(
-				CorePublisher<? extends T> source) throws InterruptedException, TimeoutException {
+				CorePublisher<? extends T> source) {
 			assertThatThreadLocalsPresentDirectCoreSubscribe(source, () -> {});
 		}
 
 		<T> void assertThatThreadLocalsPresentDirectCoreSubscribe(
-				CorePublisher<? extends T> source, Runnable asyncAction) throws InterruptedException, TimeoutException {
-			AtomicReference<String> valueInOnNext = new AtomicReference<>();
-			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
-			AtomicReference<String> valueInOnError = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
-			AtomicBoolean hadNext = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
+				CorePublisher<? extends T> source, Runnable asyncAction) {
+			assertThatNoException().isThrownBy(() -> {
+				CoreSubscriberWithContext<T> subscriberWithContext = new CoreSubscriberWithContext<>();
 
-			CoreSubscriberWithContext<T> subscriberWithContext =
-					new CoreSubscriberWithContext<>(
-							valueInOnNext, valueInOnComplete, valueInOnError,
-							error, latch, hadNext, complete);
+				source.subscribe(subscriberWithContext);
 
-			source.subscribe(subscriberWithContext);
+				executorService.submit(asyncAction)
+				               .get(100, TimeUnit.MILLISECONDS);
 
-			executorService.submit(asyncAction);
+				if (!subscriberWithContext.latch.await(500, TimeUnit.MILLISECONDS)) {
+					throw new TimeoutException("timed out");
+				}
 
-			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
-				throw new TimeoutException("timed out");
-			}
-
-			if (hadNext.get()) {
-				assertThat(valueInOnNext.get()).isEqualTo("present");
-			}
-			if (error.get() == null) {
-				assertThat(valueInOnComplete.get()).isEqualTo("present");
-				assertThat(complete).isTrue();
-			} else {
-				assertThat(valueInOnError.get()).isEqualTo("present");
-			}
+				if (subscriberWithContext.hadNext.get()) {
+					assertThat(subscriberWithContext.valueInOnNext.get()).isEqualTo(
+							"present");
+				}
+				if (subscriberWithContext.error.get() == null) {
+					assertThat(subscriberWithContext.valueInOnComplete.get()).isEqualTo("present");
+					assertThat(subscriberWithContext.complete).isTrue();
+				}
+				else {
+					assertThat(subscriberWithContext.valueInOnError.get()).isEqualTo("present");
+				}
+			});
 		}
 
 		// We force the use of subscribe(Subscriber) override instead of
@@ -473,42 +482,35 @@ public class AutomaticContextPropagationTest {
 		// are able to wrap the Subscriber and restore ThreadLocal values for the
 		// signals received downstream.
 		<T> void assertThatThreadLocalsPresentDirectRawSubscribe(
-				Publisher<? extends T> source) throws InterruptedException, TimeoutException {
+				Publisher<? extends T> source) {
 			assertThatThreadLocalsPresentDirectRawSubscribe(source, () -> {});
 		}
 
 		<T> void assertThatThreadLocalsPresentDirectRawSubscribe(
-				Publisher<? extends T> source, Runnable asyncAction) throws InterruptedException, TimeoutException {
-			AtomicReference<String> valueInOnNext = new AtomicReference<>();
-			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
-			AtomicReference<String> valueInOnError = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean hadNext = new AtomicBoolean();
-			AtomicBoolean complete = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
+				Publisher<? extends T> source, Runnable asyncAction) {
+			assertThatNoException().isThrownBy(() -> {
+				CoreSubscriberWithContext<T> subscriberWithContext = new CoreSubscriberWithContext<>();
 
-			CoreSubscriberWithContext<T> subscriberWithContext =
-					new CoreSubscriberWithContext<>(
-							valueInOnNext, valueInOnComplete, valueInOnError,
-							error, latch, hadNext, complete);
+				source.subscribe(subscriberWithContext);
 
-			source.subscribe(subscriberWithContext);
+				executorService.submit(asyncAction)
+				               .get(100, TimeUnit.MILLISECONDS);
 
-			executorService.submit(asyncAction);
+				if (!subscriberWithContext.latch.await(500, TimeUnit.MILLISECONDS)) {
+					throw new TimeoutException("timed out");
+				}
 
-			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
-				throw new TimeoutException("timed out");
-			}
-
-			if (hadNext.get()) {
-				assertThat(valueInOnNext.get()).isEqualTo("present");
-			}
-			if (error.get() == null) {
-				assertThat(valueInOnComplete.get()).isEqualTo("present");
-				assertThat(complete).isTrue();
-			} else {
-				assertThat(valueInOnError.get()).isEqualTo("present");
-			}
+				if (subscriberWithContext.hadNext.get()) {
+					assertThat(subscriberWithContext.valueInOnNext.get()).isEqualTo("present");
+				}
+				if (subscriberWithContext.error.get() == null) {
+					assertThat(subscriberWithContext.valueInOnComplete.get()).isEqualTo("present");
+					assertThat(subscriberWithContext.complete).isTrue();
+				}
+				else {
+					assertThat(subscriberWithContext.valueInOnError.get()).isEqualTo("present");
+				}
+			});
 		}
 
 		// Fundamental tests for Flux
@@ -528,42 +530,30 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void internalFluxSubscribeNoFusion() {
 			assertThreadLocalsPresentInFlux(() ->
-					Flux.just("hello")
-					    .hide()
+					threadSwitchingFlux()
 					    .flatMap(item -> threadSwitchingFlux()));
 		}
 
 		@Test
 		void directFluxSubscribeAsCoreSubscriber() throws InterruptedException, TimeoutException {
-			AtomicReference<String> valueInOnNext = new AtomicReference<>();
-			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
-			AtomicReference<String> valueInOnError = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean hadNext = new AtomicBoolean();
-			AtomicBoolean complete = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
-
 			Flux<String> flux = threadSwitchingFlux();
 
-			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(
-							valueInOnNext, valueInOnComplete, valueInOnError,
-							error, latch, hadNext, complete);
+			CoreSubscriberWithContext<String> subscriberWithContext = new CoreSubscriberWithContext<>();
 
 			flux.subscribe(subscriberWithContext);
 
-			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+			if (!subscriberWithContext.latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
+			assertThat(subscriberWithContext.error.get()).isNull();
+			assertThat(subscriberWithContext.complete.get()).isTrue();
 
 			// We can't do anything here. subscribe(CoreSubscriber) is abstract in
 			// CoreSubscriber interface and we have no means to intercept the calls to
 			// restore ThreadLocals.
-			assertThat(valueInOnNext.get()).isEqualTo("ref_init");
-			assertThat(valueInOnComplete.get()).isEqualTo("ref_init");
+			assertThat(subscriberWithContext.valueInOnNext.get()).isEqualTo("ref_init");
+			assertThat(subscriberWithContext.valueInOnComplete.get()).isEqualTo("ref_init");
 		}
 
 		// Fundamental tests for Mono
@@ -581,36 +571,34 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void directMonoSubscribeAsCoreSubscriber() throws InterruptedException, TimeoutException {
-			AtomicReference<String> valueInOnNext = new AtomicReference<>();
-			AtomicReference<String> valueInOnComplete = new AtomicReference<>();
-			AtomicReference<String> valueInOnError = new AtomicReference<>();
-			AtomicReference<Throwable> error = new AtomicReference<>();
-			AtomicBoolean complete = new AtomicBoolean();
-			AtomicBoolean hadNext = new AtomicBoolean();
-			CountDownLatch latch = new CountDownLatch(1);
+		void internalMonoFlatMapSubscribeNoFusion() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("hello")
+					    .hide()
+					    .flatMap(item -> threadSwitchingMono()));
+		}
 
+		@Test
+		void directMonoSubscribeAsCoreSubscriber() throws InterruptedException, TimeoutException {
 			Mono<String> mono = new ThreadSwitchingMono<>("Hello", executorService);
 
 			CoreSubscriberWithContext<String> subscriberWithContext =
-					new CoreSubscriberWithContext<>(
-							valueInOnNext, valueInOnComplete, valueInOnError,
-							error, latch, hadNext, complete);
+					new CoreSubscriberWithContext<>();
 
 			mono.subscribe(subscriberWithContext);
 
-			if (!latch.await(100, TimeUnit.MILLISECONDS)) {
+			if (!subscriberWithContext.latch.await(100, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("timed out");
 			}
 
-			assertThat(error.get()).isNull();
-			assertThat(complete.get()).isTrue();
+			assertThat(subscriberWithContext.error.get()).isNull();
+			assertThat(subscriberWithContext.complete.get()).isTrue();
 
 			// We can't do anything here. subscribe(CoreSubscriber) is abstract in
 			// CoreSubscriber interface and we have no means to intercept the calls to
 			// restore ThreadLocals.
-			assertThat(valueInOnNext.get()).isEqualTo("ref_init");
-			assertThat(valueInOnComplete.get()).isEqualTo("ref_init");
+			assertThat(subscriberWithContext.valueInOnNext.get()).isEqualTo("ref_init");
+			assertThat(subscriberWithContext.valueInOnComplete.get()).isEqualTo("ref_init");
 		}
 
 		// Flux tests
@@ -674,6 +662,20 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalsPresentInFlux(() ->
 					Flux.error(new RuntimeException("Oops"))
 					    .retryWhen(Retry.from(f -> threadSwitchingFlux())));
+		}
+
+		@Test
+		void fluxRepeatWhen() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+							.repeatWhen(s -> Flux.just(1)));
+		}
+
+		@Test
+		void fluxRepeatWhenSwitchingThread() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello")
+					    .repeatWhen(s -> threadSwitchingFlux()));
 		}
 
 		@Test
@@ -748,9 +750,11 @@ public class AutomaticContextPropagationTest {
 
 		@Test
 		void fluxConcatIterable() {
-			assertThreadLocalsPresentInFlux(() ->
+			assertThreadLocalsPresent(
 					Flux.concat(
 							Stream.of(Flux.<String>empty(), threadSwitchingFlux()).collect(Collectors.toList())));
+
+			// Direct subscription
 		}
 
 		@Test
@@ -787,6 +791,343 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalsPresentInFlux(() ->
 					Flux.zip(Stream.of(Flux.just(""), threadSwitchingFlux()).collect(Collectors.toList()),
 					obj -> Tuples.of((String) obj[0], (String) obj[1])));
+		}
+
+		@Test
+		void fluxBufferBoundary() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello").delayElements(Duration.ofMillis(20))
+					    .buffer(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxBufferWhen() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello").delayElements(Duration.ofMillis(20))
+					    .bufferWhen(threadSwitchingFlux(), x -> Flux.empty()));
+		}
+
+		@Test
+		void fluxConcatMap() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+					    .concatMap(s -> threadSwitchingFlux(), 1));
+		}
+
+		@Test
+		void fluxConcatMapNoPrefetch() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello").hide()
+					    .concatMap(s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxDelaySubscription() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello")
+					    .delaySubscription(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxExpand() {
+			AtomicBoolean done = new AtomicBoolean(false);
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
+			assertThreadLocalsPresent(
+					Flux.just("hello").expand(s -> {
+						if (done.get()) {
+							return Flux.empty();
+						} else {
+							done.set(true);
+							return threadSwitchingFlux();
+						}
+					}));
+		}
+
+		@Test
+		void fluxFilterWhen() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
+			assertThreadLocalsPresent(
+					Flux.just("hello")
+					    .filterWhen(s -> new ThreadSwitchingFlux<>(Boolean.TRUE, executorService)));
+		}
+
+		@Test
+		void fluxGroupJoinFlattened() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello").groupJoin(threadSwitchingFlux(),
+							l -> Flux.never(), r -> Flux.never(),
+							(s, f) -> f.map(i -> s)).flatMap(Function.identity()));
+		}
+
+		@Test
+		void fluxGroupJoin() {
+			assertThreadLocalsPresent(
+					Flux.just("hello").groupJoin(threadSwitchingFlux(),
+							l -> Flux.never(), r -> Flux.never(),
+							(s, f) -> f.map(i -> s)));
+
+			// works only with contextWrite because the group is delivered using the
+			// signal from the left hand side
+		}
+
+		@Test
+		void fluxGroupJoinSubscribed() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello").groupJoin(threadSwitchingFlux(),
+							l -> Flux.never(), r -> Flux.never(),
+							(s, f) -> f.map(i -> s))
+					    .flatMap(Function.identity()));
+		}
+
+		@Disabled("Only contextWrite/contextCapture usages are supported")
+		@Test
+		void fluxJustRawSubscribe() {
+			assertThatNoException().isThrownBy(() ->
+				assertThatThreadLocalsPresentDirectRawSubscribe(Flux.just("hello"))
+			);
+		}
+
+		@Test
+		void fluxJoin() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("hello").join(threadSwitchingFlux(), l -> Flux.never(),
+							r -> Flux.never(), (s1, s2) -> s1 + s2));
+		}
+
+		@Test
+		void fluxLift() {
+			assertThreadLocalsPresentInFlux(() -> {
+				Flux<String> flux = Flux.just("Hello").hide();
+
+				Publisher<String> lifted =
+						Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
+							         @Override
+							         public void onSubscribe(Subscription s) {
+								         executorService.submit(() -> sub.onSubscribe(s));
+							         }
+
+							         @Override
+							         public void onNext(String s) {
+								         executorService.submit(() -> sub.onNext(s));
+							         }
+
+							         @Override
+							         public void onError(Throwable t) {
+								         executorService.submit(() -> sub.onError(t));
+							         }
+
+							         @Override
+							         public void onComplete() {
+								         executorService.submit(sub::onComplete);
+							         }
+
+							         @Override
+							         public Context currentContext() {
+								         return sub.currentContext();
+							         }
+						         })
+						         .apply(flux);
+
+				return (Flux<String>) lifted;
+			});
+		}
+
+		@Test
+		void fluxLiftFuseable() {
+			assertThreadLocalsPresentInFlux(() -> {
+				Flux<String> flux = Flux.just("Hello");
+
+				Publisher<String> lifted =
+						Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
+							         @Override
+							         public void onSubscribe(Subscription s) {
+								         executorService.submit(() -> sub.onSubscribe(s));
+							         }
+
+							         @Override
+							         public void onNext(String s) {
+								         executorService.submit(() -> sub.onNext(s));
+							         }
+
+							         @Override
+							         public void onError(Throwable t) {
+								         executorService.submit(() -> sub.onError(t));
+							         }
+
+							         @Override
+							         public void onComplete() {
+								         executorService.submit(sub::onComplete);
+							         }
+						         })
+						         .apply(flux);
+
+				return (Flux<String>) lifted;
+			});
+		}
+
+		@Test
+		void fluxFlatMapSequential() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+					    .flatMapSequential(s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxOnErrorResume() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.error(new RuntimeException("Oops"))
+					    .onErrorResume(t -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxPublishMulticast() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello")
+							.publish(s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxSkipUntilOther() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+					    .skipUntilOther(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxSample() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello").concatWith(Flux.never())
+					    .sample(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxSampleFirst() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
+			assertThreadLocalsPresent(
+					Flux.just("Hello").concatWith(Flux.never())
+					    .sampleFirst(s -> new ThreadSwitchingFlux<>(new RuntimeException("oops"), executorService)));
+		}
+
+		@Test
+		void fluxSampleTimeout() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux().concatWith(Mono.delay(Duration.ofMillis(10)).map(l -> "").concatWith(Mono.empty()))
+					    .sampleTimeout(s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxSwitchIfEmpty() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.empty()
+					    .switchIfEmpty(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxSwitchMapNoPrefetch() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+					    .switchMap(s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxSwitchMap() {
+			assertThreadLocalsPresentInFlux(() ->
+					threadSwitchingFlux()
+					    .switchMap(s -> threadSwitchingFlux(), 1));
+		}
+
+		@Test
+		void fluxTakeUntilOther() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
+			assertThreadLocalsPresent(
+					Flux.concat(Flux.just("Hello"), Flux.never())
+					    .takeUntilOther(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxTimeoutFirst() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.never()
+					    .timeout(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxTimeoutOther() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.never()
+					    .timeout(threadSwitchingFlux(), i -> Flux.never(), threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxWindowBoundary() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello").delayElements(Duration.ofMillis(20))
+							.window(threadSwitchingFlux()));
+		}
+
+		@Test
+		void fluxWindowBoundaryFlattened() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello").delayElements(Duration.ofMillis(20))
+					    .window(threadSwitchingFlux())
+					    .flatMap(Function.identity()));
+		}
+
+		@Test
+		@Disabled("Publisher delivering the window has no notion of Context so nothing " +
+				"can be restored in onNext")
+		void fluxWindowWhen() {
+			assertThreadLocalsPresent(
+					threadSwitchingFlux()
+					    .windowWhen(threadSwitchingFlux(), s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		@Disabled("Publisher delivering the window has no notion of Context so nothing " +
+				"can be restored in onNext")
+		void fluxDelayedWindowWhen() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello").delayElements(Duration.ofMillis(100))
+					    .windowWhen(threadSwitchingFlux(), s -> threadSwitchingFlux()));
+		}
+
+		@Test
+		@Disabled("Publisher completing the window has no notion of Context so nothing " +
+				"can be restored in onComplete")
+		void fluxWindowWhenFlatMapped() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.just("Hello").delayElements(Duration.ofMillis(100))
+					    .windowWhen(threadSwitchingFlux(), s -> threadSwitchingFlux())
+					    .flatMap(Function.identity()));
+		}
+
+		@Test
+		void fluxWithLatestFrom() {
+			// We don't validate direct subscription via CoreSubscriber with Context in
+			// this case as it can happen that the drain loop is in the main thread
+			// and won't restore TLs from the Context when contextWrite operator is
+			// missing along the way in the chain.
+			assertThreadLocalsPresent(
+					Flux.just("Hello")
+					    .withLatestFrom(threadSwitchingFlux(), (s1, s2) -> s1));
+		}
+
+		@Test
+		void continuationBrokenByThreadSwitch() {
+			assertThreadLocalsPresentInFlux(() ->
+					Flux.concat(Mono.empty(), threadSwitchingMono().retry()));
 		}
 
 		// Mono tests
@@ -940,6 +1281,140 @@ public class AutomaticContextPropagationTest {
 							s -> Mono.empty()));
 		}
 
+		@Test
+		void monoFlatMapMany() {
+			assertThreadLocalsPresentInFlux(() ->
+					Mono.just("hello")
+						.hide()
+					    .flatMapMany(item -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void monoFlatMapManyFuseable() {
+			assertThreadLocalsPresentInFlux(() ->
+					Mono.just("hello")
+					    .flatMapMany(item -> threadSwitchingFlux()));
+		}
+
+		@Test
+		void monoDelaySubscription() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("Hello").delaySubscription(threadSwitchingMono()));
+		}
+
+		@Test
+		void monoFilterWhen() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("Hello").hide()
+					    .filterWhen(s -> new ThreadSwitchingMono<>(Boolean.TRUE, executorService)));
+		}
+
+		@Test
+		void monoLift() {
+			assertThreadLocalsPresentInMono(() -> {
+				Mono<String> mono = Mono.just("Hello").hide();
+
+				Publisher<String> lifted =
+						Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
+							         @Override
+							         public void onSubscribe(Subscription s) {
+								         executorService.submit(() -> sub.onSubscribe(s));
+							         }
+
+							         @Override
+							         public void onNext(String s) {
+								         executorService.submit(() -> sub.onNext(s));
+							         }
+
+							         @Override
+							         public void onError(Throwable t) {
+								         executorService.submit(() -> sub.onError(t));
+							         }
+
+							         @Override
+							         public void onComplete() {
+								         executorService.submit(sub::onComplete);
+							         }
+						         })
+						         .apply(mono);
+
+				return (Mono<String>) lifted;
+			});
+		}
+
+		@Test
+		void monoLiftFuseable() {
+			assertThreadLocalsPresentInMono(() -> {
+				Mono<String> mono = Mono.just("Hello");
+
+				Publisher<String> lifted =
+						Operators.<String, String>liftPublisher((pub, sub) -> new CoreSubscriber<String>() {
+							         @Override
+							         public void onSubscribe(Subscription s) {
+								         executorService.submit(() -> sub.onSubscribe(s));
+							         }
+
+							         @Override
+							         public void onNext(String s) {
+								         executorService.submit(() -> sub.onNext(s));
+							         }
+
+							         @Override
+							         public void onError(Throwable t) {
+								         executorService.submit(() -> sub.onError(t));
+							         }
+
+							         @Override
+							         public void onComplete() {
+								         executorService.submit(sub::onComplete);
+							         }
+						         })
+						         .apply(mono);
+
+				return (Mono<String>) lifted;
+			});
+		}
+
+		@Test
+		void monoOnErrorResume() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.error(new RuntimeException("oops"))
+							.onErrorResume(e -> threadSwitchingMono()));
+		}
+
+		@Test
+		void monoPublishMulticast() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.just("Hello")
+					    .publish(s -> threadSwitchingMono()));
+		}
+
+		@Test
+		void monoSwitchIfEmpty() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.empty()
+					    .switchIfEmpty(threadSwitchingMono()));
+		}
+
+		@Test
+		void monoTakeUntilOther() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.delay(Duration.ofDays(1)).then(Mono.just("Hello"))
+					    .takeUntilOther(threadSwitchingMono()));
+		}
+
+		@Test
+		void monoTimeoutFirst() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.never().timeout(threadSwitchingMono()));
+		}
+
+		@Test
+		void monoTimeoutFallback() {
+			assertThreadLocalsPresentInMono(() ->
+					Mono.never().timeout(threadSwitchingMono(), threadSwitchingMono()));
+		}
+
 		// ParallelFlux tests
 
 		@Test
@@ -1004,7 +1479,7 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalsPresentInFlux(() -> {
 				ParallelFlux<ArrayList<String>> parallelFlux =
 						ParallelFlux.from(Flux.just("Hello"))
-						            .collect(ArrayList::new, ArrayList::add);
+						            .collect(ArrayList<String>::new, ArrayList::add);
 
 				Publisher<ArrayList<String>> lifted =
 						Operators.<ArrayList<String>, ArrayList<String>>liftPublisher((pub, sub) -> new CoreSubscriber<ArrayList<String>>() {
@@ -1147,7 +1622,7 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void sinkDirect() throws InterruptedException, TimeoutException {
+		void sinkDirect() throws InterruptedException, TimeoutException, ExecutionException {
 			Sinks.One<String> sink1 = Sinks.one();
 			assertThatThreadLocalsPresentDirectCoreSubscribe(sink1.asMono(),
 					() -> sink1.tryEmitValue("Hello"));
@@ -1402,29 +1877,22 @@ public class AutomaticContextPropagationTest {
 
 		private class CoreSubscriberWithContext<T> implements CoreSubscriber<T> {
 
-			private final AtomicReference<String>    valueInOnNext;
-			private final AtomicReference<String>    valueInOnComplete;
-			private final AtomicReference<String>    valueInOnError;
-			private final AtomicReference<Throwable> error;
-			private final CountDownLatch             latch;
-			private final AtomicBoolean              complete;
-			private final AtomicBoolean              hadNext;
+			final AtomicReference<String>    valueInOnNext;
+			final AtomicReference<String>    valueInOnComplete;
+			final AtomicReference<String>    valueInOnError;
+			final AtomicReference<Throwable> error;
+			final CountDownLatch             latch;
+			final AtomicBoolean              complete;
+			final AtomicBoolean              hadNext;
 
-			public CoreSubscriberWithContext(
-					AtomicReference<String> valueInOnNext,
-					AtomicReference<String> valueInOnComplete,
-					AtomicReference<String> valueInOnError,
-					AtomicReference<Throwable> error,
-					CountDownLatch latch,
-					AtomicBoolean hadNext,
-					AtomicBoolean complete) {
-				this.valueInOnNext = valueInOnNext;
-				this.valueInOnComplete = valueInOnComplete;
-				this.valueInOnError = valueInOnError;
-				this.error = error;
-				this.latch = latch;
-				this.hadNext = hadNext;
-				this.complete = complete;
+			public CoreSubscriberWithContext() {
+				this.valueInOnNext = new AtomicReference<>();
+				this.valueInOnComplete = new AtomicReference<>();
+				this.valueInOnError = new AtomicReference<>();
+				this.error = new AtomicReference<>();
+				this.complete = new AtomicBoolean();
+				this.hadNext = new AtomicBoolean();
+				this.latch = new CountDownLatch(1);
 			}
 
 			@Override
@@ -1505,6 +1973,42 @@ public class AutomaticContextPropagationTest {
 
 			Flux.just("hello")
 				.flatMap(s -> nonReactorPublisher)
+			    .doOnNext(s -> value.set(REF.get()))
+			    .contextWrite(Context.of(KEY, "present"))
+			    .subscribe();
+
+			executorService
+					.submit(() -> testPublisher.emit("test").complete())
+					.get();
+
+			testPublisher.assertWasSubscribed();
+			testPublisher.assertWasNotCancelled();
+			testPublisher.assertWasRequested();
+			assertThat(value.get()).isEqualTo("present");
+
+			// validate there are no leftovers for other tasks to be attributed to
+			// previous values
+			executorService.submit(() -> value.set(REF.get())).get();
+
+			assertThat(value.get()).isEqualTo("ref_init");
+
+			// validate the current Thread does not have the value set either
+			assertThat(REF.get()).isEqualTo("ref_init");
+
+			executorService.shutdownNow();
+		}
+
+		@Test
+		void monoFlatMapToPublisher() throws InterruptedException, ExecutionException {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
+			AtomicReference<String> value = new AtomicReference<>();
+
+			TestPublisher<String> testPublisher = TestPublisher.create();
+			Publisher<String> nonReactorPublisher = testPublisher;
+
+			Mono.just("hello")
+			    .hide()
+			    .flatMapMany(s -> nonReactorPublisher)
 			    .doOnNext(s -> value.set(REF.get()))
 			    .contextWrite(Context.of(KEY, "present"))
 			    .subscribe();

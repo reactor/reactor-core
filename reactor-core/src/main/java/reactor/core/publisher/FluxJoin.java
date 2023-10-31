@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 			BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector) {
 		super(source);
-		this.other = Objects.requireNonNull(other, "other");
+		this.other = Operators.toFluxOrMono(Objects.requireNonNull(other, "other"));
 		this.leftEnd = Objects.requireNonNull(leftEnd, "leftEnd");
 		this.rightEnd = Objects.requireNonNull(rightEnd, "rightEnd");
 		this.resultSelector = Objects.requireNonNull(resultSelector, "resultSelector");
@@ -289,7 +289,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 								new LeftRightEndSubscriber(this, true, idx);
 						cancellations.add(end);
 
-						p.subscribe(end);
+						Operators.toFluxOrMono(p).subscribe(end);
 
 						ex = error;
 						if (ex != null) {
@@ -366,7 +366,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 								new LeftRightEndSubscriber(this, false, idx);
 						cancellations.add(end);
 
-						p.subscribe(end);
+						Operators.toFluxOrMono(p).subscribe(end);
 
 						ex = error;
 						if (ex != null) {

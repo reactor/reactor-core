@@ -82,7 +82,7 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
-				liftFunction.lifter.apply(source, actual);
+				liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual));
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
