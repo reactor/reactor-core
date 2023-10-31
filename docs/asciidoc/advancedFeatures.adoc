@@ -1080,7 +1080,7 @@ public void contextForLibraryReactivePut() {
 ----
 ====
 
-include::advanced-contextPropagation.adoc[leveloffset=1]
+include::advanced-contextPropagation.adoc[leveloffset=2]
 
 [[cleanup]]
 == Dealing with Objects that Need Cleanup
