@@ -19,7 +19,6 @@ package reactor.core.scheduler;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
@@ -93,7 +92,7 @@ public abstract class BasicSchedulersStressTest {
 	public static class ParallelSchedulerStartDisposeStressTest {
 
 		private final ParallelScheduler scheduler =
-				new ParallelScheduler(4, Thread::new);
+				new ParallelScheduler(2, Thread::new);
 
 		{
 			scheduler.init();
@@ -174,7 +173,7 @@ public abstract class BasicSchedulersStressTest {
 
 		private final CountDownLatch latch = new CountDownLatch(2);
 		private final ParallelScheduler scheduler =
-				new ParallelScheduler(10, Thread::new);
+				new ParallelScheduler(2, Thread::new);
 
 		{
 			scheduler.init();
@@ -268,7 +267,7 @@ public abstract class BasicSchedulersStressTest {
 	public static class ParallelSchedulerDisposeGracefullyAndDisposeStressTest {
 
 		private final ParallelScheduler scheduler =
-				new ParallelScheduler(10, Thread::new);
+				new ParallelScheduler(2, Thread::new);
 
 		{
 			scheduler.init();
