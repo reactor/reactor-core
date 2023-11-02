@@ -29,6 +29,7 @@ import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.IIZ_Result;
 import org.openjdk.jcstress.infra.results.Z_Result;
+import reactor.core.Disposable;
 
 public abstract class BasicSchedulersStressTest {
 
@@ -43,11 +44,15 @@ public abstract class BasicSchedulersStressTest {
 		if (scheduler.isDisposed()) {
 			return false;
 		}
-		scheduler.schedule(latch::countDown);
+		Disposable disposable = scheduler.schedule(latch::countDown);
 		boolean taskDone = false;
 		try {
-			taskDone = latch.await(100, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException ignored) {
+			taskDone = latch.await(1, TimeUnit.SECONDS);
+		} catch (InterruptedException ie) {
+			throw new RuntimeException(ie);
+		}
+		if (((SchedulerTask) disposable).future.isCancelled()) {
+			throw new RuntimeException("Future cancelled " + disposable);
 		}
 		return taskDone;
 	}
@@ -78,7 +83,7 @@ public abstract class BasicSchedulersStressTest {
 			// At this stage, at least one actor called scheduler.start(),
 			// so we should be able to execute a task.
 			r.r1 = canScheduleTask(scheduler);
-			scheduler.dispose();
+			scheduler.disposeGracefully().block(Duration.ofMillis(500));
 		}
 	}
 
@@ -109,7 +114,7 @@ public abstract class BasicSchedulersStressTest {
 			// At this stage, at least one actor called scheduler.start(),
 			// so we should be able to execute a task.
 			r.r1 = canScheduleTask(scheduler);
-			scheduler.dispose();
+			scheduler.disposeGracefully().block(Duration.ofMillis(500));;
 		}
 	}
 
