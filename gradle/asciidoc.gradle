@@ -34,7 +34,7 @@ configure(rootProject) {
 
 	asciidoctor {
 		dependsOn "generateObservabilityDocs"
-		inputs.dir("$buildDir/generatedMetricsDocs/") // force the task to consider changes in this folder, making it not UP-TO-DATE
+		inputs.dir(layout.buildDirectory.dir("generatedMetricsDocs/").get().asFile) // force the task to consider changes in this folder, making it not UP-TO-DATE
 		sourceDir "docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
@@ -47,7 +47,7 @@ configure(rootProject) {
 			}
 
 		}
-		outputDir file("$buildDir/docs/asciidoc/html")
+		outputDir layout.buildDirectory.dir("docs/asciidoc/html").get().asFile
 		logDocuments = true
 		attributes stylesdir: "stylesheets/",
 				stylesheet: 'reactor.css',
@@ -65,7 +65,7 @@ configure(rootProject) {
 			include "index.asciidoc"
 		}
 		baseDirFollowsSourceDir()
-		outputDir file("$buildDir/docs/asciidoc/pdf")
+		outputDir layout.buildDirectory.dir("docs/asciidoc/pdf").get().asFile
 		logDocuments = true
 		attributes 'source-highlighter': 'rouge'
 	}
@@ -103,38 +103,43 @@ configure(rootProject) {
 	task generateMeterListenerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*MicrometerMeterListenerDocumentation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/meterListener").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(),
+				".*MicrometerMeterListenerDocumentation.*.java",
+				project.rootProject.layout.buildDirectory.dir("generatedMetricsDocs/meterListener").get().asFile.absolutePath
 	}
 
 	task generateTimedSchedulerDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*TimedSchedulerMeterDocumentation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/timedScheduler").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(), ".*TimedSchedulerMeterDocumentation.*.java",
+				project.rootProject.layout.buildDirectory.dir("generatedMetricsDocs/timedScheduler").get().asFile.absolutePath
 	}
 
 	task generateObservationDocs(type: JavaExec) {
 		mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
 		classpath configurations.adoc
-		args project.rootDir.getAbsolutePath(), ".*MicrometerObservationListenerDocumentation.*.java", project.rootProject.buildDir.toPath().resolve("generatedMetricsDocs/observation").toAbsolutePath().toString()
+		args project.rootDir.getAbsolutePath(),
+				".*MicrometerObservationListenerDocumentation.*.java",
+				project.rootProject.layout.buildDirectory.dir("generatedMetricsDocs/observation").get().asFile.absolutePath
 	}
 
 	task polishGeneratedMetricsDocs(type: Copy) {
 		mustRunAfter "generateMeterListenerDocs"
 		mustRunAfter "generateTimedSchedulerDocs"
 		mustRunAfter "generateObservationDocs"
-		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/meterListener/") {
+		from(project.rootProject.layout.buildDirectory.get().asFile.toString() + "/generatedMetricsDocs/meterListener/") {
 			include "_*.adoc"
 			rename '_(.*).adoc', 'meterListener_$1.adoc'
 		}
-		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/timedScheduler/") {
+		from(project.rootProject.layout.buildDirectory.get().asFile.toString() + "/generatedMetricsDocs/timedScheduler/") {
 			include "_*.adoc"
 			rename '_(.*).adoc', 'timedScheduler_$1.adoc'
 		}
-		from(project.rootProject.buildDir.toString() + "/generatedMetricsDocs/observation/") {
+		from(project.rootProject.layout.buildDirectory.get().asFile.toString() + "/generatedMetricsDocs/observation/") {
 			include "_*.adoc"
 			rename '_(.*).adoc', 'observation_$1.adoc'
 		}
-		into project.rootProject.buildDir.toString() + "/documentedMetrics"
+		into project.rootProject.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics"
 		filter { String line ->
 			line.startsWith('[[observability-metrics]]') ||
 				line.startsWith('=== Observability - Metrics') ||
@@ -145,9 +150,9 @@ configure(rootProject) {
 		filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
 		doLast {
 			//since these are the files that get explicitly included in asciidoc, smoke test they exist
-			assert file(project.rootProject.buildDir.toString() + "/documentedMetrics/meterListener_metrics.adoc").exists()
-			assert file(project.rootProject.buildDir.toString() + "/documentedMetrics/timedScheduler_metrics.adoc").exists()
-			assert file(project.rootProject.buildDir.toString() + "/documentedMetrics/observation_metrics.adoc").exists()
+			assert file(project.rootProject.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics/meterListener_metrics.adoc").exists()
+			assert file(project.rootProject.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics/timedScheduler_metrics.adoc").exists()
+			assert file(project.rootProject.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics/observation_metrics.adoc").exists()
 		}
 	}
 
