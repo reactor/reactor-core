@@ -91,7 +91,7 @@ publishing {
 	repositories {
 		maven {
 			name = "mock"
-			url = "${rootProject.buildDir}/repo"
+			url = "${rootProject.layout.buildDirectory.get().asFile.toString()}/repo"
 		}
 		if (qualifyVersion("$version") == "RELEASE") {
 			maven {
