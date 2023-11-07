@@ -419,38 +419,27 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						}
 						// make another spin if there's more work
 					} else {
-						if (completed) {
-							// if queue is empty, the discard is ignored
+						if (completed || terminated == TERMINATED_WITH_CANCEL) {
 							if (logger != null) {
 								trace(logger, "Discarding entire queue of " + queue.size());
 							}
-							Operators.onDiscardQueueWithClear(queue, currentContext(),
-									null);
-							return;
-						}
-						// TODO: potentially the below can be executed twice?
-						if (terminated == TERMINATED_WITH_CANCEL) {
-							if (logger != null) {
-								trace(logger, "Discarding entire queue of " + queue.size());
-							}
-							Operators.onDiscardQueueWithClear(queue, currentContext(),
-									null);
-							return;
-						}
-						while (flushABuffer()) {
-							// no-op
-						}
-						if (queue.isEmpty()) {
-							completed = true;
-							if (this.error != null) {
-								actual.onError(this.error);
-							}
-							else {
-								actual.onComplete();
-							}
+							Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 						} else {
-							if (logger != null) {
-								trace(logger, "Queue not empty after termination");
+							while (flushABuffer()) {
+								// no-op
+							}
+							if (queue.isEmpty()) {
+								completed = true;
+								if (this.error != null) {
+									actual.onError(this.error);
+								}
+								else {
+									actual.onComplete();
+								}
+							} else {
+								if (logger != null) {
+									trace(logger, "Queue not empty after termination");
+								}
 							}
 						}
 					}
