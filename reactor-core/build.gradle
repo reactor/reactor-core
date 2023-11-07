@@ -201,7 +201,7 @@ def japicmpReport = tasks.register('japicmpReport') {
 		japicmp.state.failure != null
 	}
 	doLast {
-		def reportFile = file("${project.buildDir}/reports/japi.txt")
+		def reportFile = project.layout.buildDirectory.file("reports/japi.txt").get().asFile
 	  if (reportFile.exists()) {
 		println "\n **********************************"
 		println " * /!\\ API compatibility failures *"
@@ -246,7 +246,7 @@ task japicmp(type: JapicmpTask) {
 	onlyModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
-	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	txtOutputFile = project.layout.buildDirectory.file("reports/japi.txt").get().asFile
 	ignoreMissingClasses = true
 	includeSynthetic = true
 	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
@@ -265,7 +265,7 @@ task japicmp(type: JapicmpTask) {
 gradle.taskGraph.afterTask { task, state ->
 	if (task instanceof JapicmpTask && state.failure && ((JapicmpTask) task).richReport == null) {
 		//FIXME print the rich report somehow on console ?
-		print file("${project.buildDir}/reports/japi.txt").getText()
+		print project.layout.buildDirectory.file("reports/japi.txt").get().asFile.getText()
 	}
 }
 
@@ -280,7 +280,7 @@ javadoc {
 		// work around https://github.com/gradle/gradle/issues/4046
 		copy {
 			from('src/main/java')
-			into "$project.buildDir/docs/javadoc/"
+			into "${project.layout.buildDirectory.dir('/docs/javadoc/').get().asFile.toString()}"
 			include "**/doc-files/**/*"
 		}
 	}
