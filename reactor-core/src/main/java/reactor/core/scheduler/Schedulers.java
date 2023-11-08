@@ -64,6 +64,10 @@ import static reactor.core.Exceptions.unwrap;
  * while other factories like {@link #boundedElastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
  * All instances are returned in a {@link Scheduler#init() initialized} state.
  *
+ * TODO: add clarification on VirtualThread. boundedElastic can be run on
+ *       VirtualThreads if property x set to true. newBoundedElastic remains running on
+ *       normal thread with pooling
+ *
  * @author Stephane Maldini
  */
 public abstract class Schedulers {
@@ -214,6 +218,9 @@ public abstract class Schedulers {
 	 * One cannot directly {@link Scheduler#dispose() dispose} the common instances, as they are cached and shared
 	 * between callers. They can however be all {@link #shutdownNow() shut down} together, or replaced by a
 	 * {@link #setFactory(Factory) change in Factory}.
+	 *
+	 * TODO: specify that this one runs on VT when property is set to true
+	 *
 	 *
 	 * @return the common <em>boundedElastic</em> instance, a {@link Scheduler} that dynamically creates workers with
 	 * an upper bound to the number of backing threads and after that on the number of enqueued tasks, that reuses
@@ -405,14 +412,6 @@ public abstract class Schedulers {
 				queuedTaskCap,
 				threadFactory,
 				ttlSeconds);
-		fromFactory.init();
-		return fromFactory;
-	}
-
-	static Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
-		Scheduler fromFactory = factory.newThreadPerTaskBoundedElastic(threadCap,
-				queuedTaskCap,
-				threadFactory);
 		fromFactory.init();
 		return fromFactory;
 	}
