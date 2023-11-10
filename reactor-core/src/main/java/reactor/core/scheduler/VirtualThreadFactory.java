@@ -17,16 +17,14 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
  * The noop {@link VirtualThread} Reactor {@link ThreadFactory} to be
- * used with {@link ThreadPerTaskBoundedElasticScheduler}. It throws exceptions when is
+ * used with {@link BoundedElasticPerThreadScheduler}. It throws exceptions when is
  * being created, so it indicates that current Java Runtime does not support
  * {@link VirtualThread}s.
  *

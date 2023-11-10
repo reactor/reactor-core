@@ -63,10 +63,8 @@ import static reactor.core.Exceptions.unwrap;
  * Factories prefixed with {@code new} (eg. {@link #newBoundedElastic(int, int, String)} return a new instance of their flavor of {@link Scheduler},
  * while other factories like {@link #boundedElastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
  * All instances are returned in a {@link Scheduler#init() initialized} state.
- *
- * TODO: add clarification on VirtualThread. boundedElastic can be run on
- *       VirtualThreads if property x set to true. newBoundedElastic remains running on
- *       normal thread with pooling
+ * <p>
+ * Please note, starting from 3.6.0
  *
  * @author Stephane Maldini
  */
@@ -219,12 +217,21 @@ public abstract class Schedulers {
 	 * between callers. They can however be all {@link #shutdownNow() shut down} together, or replaced by a
 	 * {@link #setFactory(Factory) change in Factory}.
 	 *
-	 * TODO: specify that this one runs on VT when property is set to true
+	 * <p>
+	 * Note: Starting from 3.6.0 within Java 21 runtime with
+	 * {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS} set to {@code true} the
+	 * returned scheduler will run on {@link VirtualThread}. Consider increasing
+	 * {@link #DEFAULT_BOUNDED_ELASTIC_SIZE} to run more concurrent
+	 * {@link VirtualThread} underneath.
 	 *
 	 *
 	 * @return the common <em>boundedElastic</em> instance, a {@link Scheduler} that dynamically creates workers with
 	 * an upper bound to the number of backing threads and after that on the number of enqueued tasks, that reuses
-	 * threads and evict idle ones
+	 * threads and evict idle ones. If runs on Java 21 with
+	 * {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS} set to {@code true}, the
+	 * returned implementation will run tasks on {@link VirtualThread} where every
+	 * individual task within a worker is executed on the new instance of
+	 * {@link VirtualThread}.
 	 */
 	public static Scheduler boundedElastic() {
 		return cache(CACHED_BOUNDED_ELASTIC, BOUNDED_ELASTIC, BOUNDED_ELASTIC_SUPPLIER);
@@ -398,6 +405,12 @@ public abstract class Schedulers {
 	 * which can decide whether to create user threads or daemon threads. Note that user threads
 	 * will prevent the JVM from exiting until their worker has been disposed AND they've been evicted by TTL,
 	 * or the whole scheduler has been {@link Scheduler#dispose() disposed}.
+	 *
+	 * <p>
+	 * Please note, this implementation is not designed to run tasks on
+	 * {@link VirtualThread}. Please see
+	 * {@link Factory#newBoundedElasticPerThread(int, int, ThreadFactory)} if you need
+	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
@@ -1013,7 +1026,7 @@ public abstract class Schedulers {
 		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
 		 * <p>
 		 * The main difference between {@link BoundedElasticScheduler} and
-		 * {@link ThreadPerTaskBoundedElasticScheduler} is that underlying machinery
+		 * {@link BoundedElasticPerThreadScheduler} is that underlying machinery
 		 * allocates a new thread for every new task which is one of the requirements
 		 * for usage with {@link VirtualThread}s
 		 * <p>
@@ -1023,11 +1036,13 @@ public abstract class Schedulers {
 		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
 		 *
+		 * @since 3.6.0
+		 *
 		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 		 * the number of backing threads
 		 */
-		default Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
-			return new ThreadPerTaskBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory);
+		default Scheduler newBoundedElasticPerThread(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
+			return new BoundedElasticPerThreadScheduler(threadCap, queuedTaskCap, threadFactory);
 		}
 
 		/**

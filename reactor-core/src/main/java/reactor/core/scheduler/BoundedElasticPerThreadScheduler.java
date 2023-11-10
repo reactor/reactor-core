@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 
-final class ThreadPerTaskBoundedElasticScheduler
-		implements Scheduler, SchedulerState.DisposeAwaiter<ThreadPerTaskBoundedElasticScheduler.BoundedServices>, Scannable {
+final class BoundedElasticPerThreadScheduler
+		implements Scheduler, SchedulerState.DisposeAwaiter<BoundedElasticPerThreadScheduler.BoundedServices>, Scannable {
 
-	ThreadPerTaskBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
+	BoundedElasticPerThreadScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
 		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
 	}
 
@@ -55,6 +55,6 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		}
 
-		BoundedServices(ThreadPerTaskBoundedElasticScheduler parent) {}
+		BoundedServices(BoundedElasticPerThreadScheduler parent) {}
 	}
 }
