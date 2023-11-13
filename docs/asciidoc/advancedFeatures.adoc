@@ -624,18 +624,6 @@ invoked whenever a `Runnable` task submitted to a `Scheduler` throws an `Excepti
 that if there is an `UncaughtExceptionHandler` set for the `Thread` that ran the task,
 both the handler and the hook are invoked).
 
-[[scheduler-virtual-thread]]
-== Scheduling on virtual threads
-
-Starting from 3.6.0 Reactor-Core introduced support for virtual threads. To embrace that
-functionality the application should run in Java 21 environment and set the `reactor
-.schedulers.defaultBoundedElasticOnVirtualThreads` system property to `true`. Once the
-above is set, the shared `Schedulers.boundedElastic()` return a specific implementation
-of `BoundedElasticScheduler` tailored to run every individual task on a new instance of
-the `VirtualThread` class. Please note, that the `Schedulers.newBoundedElastic` factory
-method keeps the original behaviour so one can create an old implementation of the
-`BoundedElasticScheduler` class if needed.
-
 [[hooks]]
 == Using Global Hooks
 
