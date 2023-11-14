@@ -220,7 +220,7 @@ also disposed. Unlike its `elastic()` predecessor, it has a cap on the number of
 Up to 100 000 tasks submitted after the cap has been reached are enqueued and will be re-scheduled when a thread becomes available
 (when scheduling with a delay, the delay starts when the thread becomes available).
  - Thread-per-task-based, designed to run on `VirtualThread` instances.
-To embrace that functionality, the application should run in Java 21 environment and set the `reactor.schedulers.defaultBoundedElasticOnVirtualThreads` system property to `true`.
+To embrace that functionality, the application should run in Java 21+ environment and set the `reactor.schedulers.defaultBoundedElasticOnVirtualThreads` system property to `true`.
 Once the above is set, the shared `Schedulers.boundedElastic()` return a specific implementation
 of `BoundedElasticScheduler` tailored to run every task on a new instance of the
 `VirtualThread` class. This implementation is similar in terms of the behavior to the
