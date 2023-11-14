@@ -47,25 +47,25 @@ import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
-import static reactor.core.scheduler.BoundedElasticPerThreadScheduler.BoundedServices.CREATING;
-import static reactor.core.scheduler.BoundedElasticPerThreadScheduler.BoundedServices.SHUTDOWN;
-import static reactor.core.scheduler.BoundedElasticPerThreadScheduler.BoundedServices;
+import static reactor.core.scheduler.BoundedElasticThreadPerTaskScheduler.BoundedServices.CREATING;
+import static reactor.core.scheduler.BoundedElasticThreadPerTaskScheduler.BoundedServices.SHUTDOWN;
+import static reactor.core.scheduler.BoundedElasticThreadPerTaskScheduler.BoundedServices;
 import static reactor.core.scheduler.Schedulers.onSchedule;
 
-final class BoundedElasticPerThreadScheduler
+final class BoundedElasticThreadPerTaskScheduler
 		implements Scheduler, SchedulerState.DisposeAwaiter<BoundedServices>, Scannable {
 
-	static final Logger LOGGER = Loggers.getLogger(BoundedElasticPerThreadScheduler.class);
+	static final Logger LOGGER = Loggers.getLogger(BoundedElasticThreadPerTaskScheduler.class);
 
 	final int maxThreads;
 	final int maxTasksQueuedPerThread;
 
 	final ThreadFactory factory;
 
-	volatile SchedulerState<BoundedServices>                                                  state;
+	volatile SchedulerState<BoundedServices>                                                      state;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<BoundedElasticPerThreadScheduler, SchedulerState>STATE =
-			AtomicReferenceFieldUpdater.newUpdater(BoundedElasticPerThreadScheduler.class, SchedulerState.class, "state");
+	static final AtomicReferenceFieldUpdater<BoundedElasticThreadPerTaskScheduler, SchedulerState>STATE =
+			AtomicReferenceFieldUpdater.newUpdater(BoundedElasticThreadPerTaskScheduler.class, SchedulerState.class, "state");
 
 	private static final SchedulerState<BoundedServices> INIT =
 			SchedulerState.init(SHUTDOWN);
@@ -73,7 +73,7 @@ final class BoundedElasticPerThreadScheduler
 
 
 	/**
-	 * Create a {@link BoundedElasticPerThreadScheduler} with the given configuration. Note that backing threads
+	 * Create a {@link BoundedElasticThreadPerTaskScheduler} with the given configuration. Note that backing threads
 	 * (or executors) can be shared by each {@link reactor.core.scheduler.Scheduler.Worker}, so each worker
 	 * can contribute to the task queue size.
 	 *
@@ -81,7 +81,7 @@ final class BoundedElasticPerThreadScheduler
 	 * @param maxTasksQueuedPerThread the maximum amount of tasks an executor can queue up
 	 * @param threadFactory                the {@link ThreadFactory} to name the backing threads
 	 */
-	BoundedElasticPerThreadScheduler(int maxThreads, int maxTasksQueuedPerThread, ThreadFactory threadFactory) {
+	BoundedElasticThreadPerTaskScheduler(int maxThreads, int maxTasksQueuedPerThread, ThreadFactory threadFactory) {
 		if (maxThreads <= 0) {
 			throw new IllegalArgumentException("maxThreads must be strictly positive, was " + maxThreads);
 		}
@@ -361,8 +361,8 @@ final class BoundedElasticPerThreadScheduler
 			return t;
 		};
 
-		final BoundedElasticPerThreadScheduler parent;
-		final ScheduledExecutorService         sharedDelayedTasksScheduler;
+		final BoundedElasticThreadPerTaskScheduler parent;
+		final ScheduledExecutorService             sharedDelayedTasksScheduler;
 		final ThreadFactory factory;
 		final int maxTasksQueuedPerThread;
 
@@ -380,7 +380,7 @@ final class BoundedElasticPerThreadScheduler
 			this.sharedDelayedTasksScheduler = DELAYED_TASKS_SCHEDULER_SHUTDOWN;
 		}
 
-		BoundedServices(BoundedElasticPerThreadScheduler parent) {
+		BoundedServices(BoundedElasticThreadPerTaskScheduler parent) {
 			this.parent = parent;
 			this.maxTasksQueuedPerThread = parent.maxTasksQueuedPerThread;
 			this.factory = parent.factory;

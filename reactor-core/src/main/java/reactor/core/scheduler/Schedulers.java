@@ -1080,7 +1080,7 @@ public abstract class Schedulers {
 		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
 		 * <p>
 		 * The main difference between {@link BoundedElasticScheduler} and
-		 * {@link BoundedElasticPerThreadScheduler} is that underlying machinery
+		 * {@link BoundedElasticThreadPerTaskScheduler} is that underlying machinery
 		 * allocates a new thread for every new task which is one of the requirements
 		 * for usage with {@link VirtualThread}s
 		 * <p>
@@ -1096,7 +1096,7 @@ public abstract class Schedulers {
 		 * the number of backing threads
 		 */
 		default Scheduler newBoundedElasticPerThread(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
-			return new BoundedElasticPerThreadScheduler(threadCap, queuedTaskCap, threadFactory);
+			return new BoundedElasticThreadPerTaskScheduler(threadCap, queuedTaskCap, threadFactory);
 		}
 
 		/**

@@ -24,7 +24,7 @@ import reactor.util.annotation.Nullable;
 
 /**
  * The {@link VirtualThread} Reactor {@link ThreadFactory} to be used with
- * {@link BoundedElasticPerThreadScheduler}, delegates all allocations to real {@link
+ * {@link BoundedElasticThreadPerTaskScheduler}, delegates all allocations to real {@link
  * java.lang.ThreadBuilders.VirtualThreadFactory}
  *
  * @author Oleh Dokuka

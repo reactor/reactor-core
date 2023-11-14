@@ -28,8 +28,9 @@ import static reactor.core.scheduler.Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE;
 import static reactor.core.scheduler.Schedulers.newBoundedElastic;
 
 /**
- * JDK 8 Specific implementation of BoundedElasticScheduler supplier which warns when
- * one enables virtual thread support
+ * JDK 8 Specific implementation of BoundedElasticScheduler supplier, which warns when
+ * one enables virtual thread support. An alternative variant is available for use on JDK 21+
+ * where virtual threads are supported.
  */
 class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 

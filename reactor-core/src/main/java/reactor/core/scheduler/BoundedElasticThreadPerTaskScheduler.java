@@ -22,10 +22,16 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 
-final class BoundedElasticPerThreadScheduler
-		implements Scheduler, SchedulerState.DisposeAwaiter<BoundedElasticPerThreadScheduler.BoundedServices>, Scannable {
+/**
+ * This {@link BoundedElasticThreadPerTaskScheduler} variant is included when Reactor is
+ * used with JDK versions lower than 21, and all methods raise an
+ * {@link UnsupportedOperationException}. An alternative variant is available for use on
+ * JDK 21+ where virtual threads are supported.
+ */
+final class BoundedElasticThreadPerTaskScheduler
+		implements Scheduler, SchedulerState.DisposeAwaiter<BoundedElasticThreadPerTaskScheduler.BoundedServices>, Scannable {
 
-	BoundedElasticPerThreadScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
+	BoundedElasticThreadPerTaskScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
 		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
 	}
 
@@ -55,6 +61,6 @@ final class BoundedElasticPerThreadScheduler
 
 		}
 
-		BoundedServices(BoundedElasticPerThreadScheduler parent) {}
+		BoundedServices(BoundedElasticThreadPerTaskScheduler parent) {}
 	}
 }
