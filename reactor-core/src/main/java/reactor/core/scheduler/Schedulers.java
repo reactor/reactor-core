@@ -1093,6 +1093,9 @@ public abstract class Schedulers {
 		 * @since 3.6.0
 		 *
 		 * @deprecated in favor of
+		 * {@link #newBoundedElasticThreadPerTask(int, int, ThreadFactory)}.
+		 * Should be safely removed in 3.8.0
+		 *
 		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 		 * the number of backing threads
 		 */
