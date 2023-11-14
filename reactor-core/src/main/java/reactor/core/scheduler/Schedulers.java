@@ -205,16 +205,16 @@ public abstract class Schedulers {
 	 * {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
 	 * </li>
 	 *
-	 * <li> Since 3.6.0 there is an thread-per-task implementation tailored to run on
-	 * {@link VirtualThread} instances. This implementation is enabled if the
-	 * application runs within Java 21 runtime and the
-	 * {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS} system property is set to
+	 * <li> As of 3.6.0 there is a thread-per-task implementation tailored for use
+	 * with virtual threads. This implementation is enabled if the
+	 * application runs on a JDK 21+ runtime and the system property
+	 * {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS} is set to
 	 * {@code true}. Every Worker is based on the custom implementation of the execution
-	 * mechanism which ensures every submitted task runs on a new instance of the
-	 * {@link VirtualThread}. This implementation has a shared instance of
+	 * mechanism which ensures every submitted task runs on a new
+	 * {@link VirtualThread} instance. This implementation has a shared instance of
 	 * {@link ScheduledExecutorService} used to schedule delayed and periodic tasks
-	 * which upon the trigger is being offloaded to dedicated new instance of
-	 * {@link VirtualThread}.
+	 * such that when triggered they are offloaded to a dedicated new
+	 * {@link VirtualThread} instance.
 	 * </li>
 	 *
 	 * </ul>
