@@ -22,16 +22,11 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import com.pivovarit.function.ThrowingRunnable;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -43,10 +38,10 @@ import reactor.test.StepVerifier;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.concurrent.Queues;
 
-class ThreadPerTaskBoundedElasticSchedulerTest {
+class BoundedElasticThreadPerTaskSchedulerTest {
 
-	ThreadPerTaskBoundedElasticScheduler scheduler;
-	List<Disposable> disposables = new ArrayList<>();
+	BoundedElasticThreadPerTaskScheduler scheduler;
+	List<Disposable>                     disposables = new ArrayList<>();
 
 	@BeforeEach
 	void setup() {
@@ -60,9 +55,9 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		disposables.clear();
 	}
 
-	ThreadPerTaskBoundedElasticScheduler newScheduler(int maxThreads, int maxCapacity) {
-		ThreadPerTaskBoundedElasticScheduler scheduler =
-				new ThreadPerTaskBoundedElasticScheduler(maxThreads,
+	BoundedElasticThreadPerTaskScheduler newScheduler(int maxThreads, int maxCapacity) {
+		BoundedElasticThreadPerTaskScheduler scheduler =
+				new BoundedElasticThreadPerTaskScheduler(maxThreads,
 						maxCapacity,
 						Thread.ofVirtual()
 						      .name("virtualThreadPerTaskBoundedElasticScheduler", 1)
@@ -88,7 +83,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		CountDownLatch latch = new CountDownLatch(1);
 		CountDownLatch awaiter = new CountDownLatch(1);
 
-		ThreadPerTaskBoundedElasticScheduler.BoundedServices resource =
+		BoundedElasticThreadPerTaskScheduler.BoundedServices resource =
 				scheduler.state.currentResource;
 		// submit task which occupy shared single threaded scheduler
 		resource.sharedDelayedTasksScheduler.submit(() -> {
@@ -121,7 +116,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		CountDownLatch latch = new CountDownLatch(1);
 		CountDownLatch awaiter = new CountDownLatch(1);
 
-		ThreadPerTaskBoundedElasticScheduler.BoundedServices resource =
+		BoundedElasticThreadPerTaskScheduler.BoundedServices resource =
 				scheduler.state.currentResource;
 		// submit task which occupy shared single threaded scheduler
 		resource.sharedDelayedTasksScheduler.submit(() -> {
@@ -352,7 +347,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenWorkerIsDisposed() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler
+		BoundedElasticThreadPerTaskScheduler
 				scheduler = newScheduler(2, 1000);
 			scheduler.init();
 			Runnable task = () -> {
@@ -396,7 +391,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposed() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler
+		BoundedElasticThreadPerTaskScheduler
 				scheduler = newScheduler(2, 1000);
 
 			scheduler.init();
@@ -406,7 +401,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 			for (int i = 0; i < 100; i++) {
 				CountDownLatch latch = new CountDownLatch(1);
 
-				ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker = (ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+				BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker worker = (BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 				List<Disposable> tasks = new ArrayList<>();
 				tasks.add(worker.schedule(() -> {
 					try {
@@ -431,7 +426,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 				Awaitility.await()
 				          .atMost(Duration.ofSeconds(5))
-				          .until(() -> !ThreadPerTaskBoundedElasticScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
+				          .until(() -> !BoundedElasticThreadPerTaskScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
 
 				Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
 				          .isEqualTo(2000);
@@ -444,7 +439,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposedDelayedCase() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler
+		BoundedElasticThreadPerTaskScheduler
 				scheduler = newScheduler(2, 1000);
 
 		scheduler.init();
@@ -454,7 +449,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 		for (int i = 0; i < 100; i++) {
 			CountDownLatch latch = new CountDownLatch(1);
 
-			ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker = (ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+			BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker worker = (BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 			List<Disposable> tasks = new ArrayList<>();
 			tasks.add(worker.schedule(() -> {
 				try {
@@ -479,7 +474,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 			Awaitility.await()
 			          .atMost(Duration.ofSeconds(5))
-			          .until(() -> !ThreadPerTaskBoundedElasticScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
+			          .until(() -> !BoundedElasticThreadPerTaskScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
 
 			Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
 			          .isEqualTo(2000);
@@ -492,7 +487,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresRandomTasksAreDisposedAndQueueCounterIsDecrementedWhenAllTasksAreDisposed() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler
+		BoundedElasticThreadPerTaskScheduler
 				scheduler = newScheduler(2, 10000);
 			scheduler.init();
 			Runnable task = () -> {
@@ -501,7 +496,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 			for (int i = 0; i < 100; i++) {
 				CountDownLatch latch = new CountDownLatch(1);
 
-				ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker = (ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+				BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker worker = (BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 				List<Disposable> tasks = new ArrayList<>();
 				tasks.add(worker.schedule(() -> {
 					try {
@@ -543,7 +538,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 				Awaitility.await()
 				          .atMost(Duration.ofSeconds(5))
-				          .until(() -> !ThreadPerTaskBoundedElasticScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
+				          .until(() -> !BoundedElasticThreadPerTaskScheduler.SequentialThreadPerTaskExecutor.hasWork(worker.executor.wipAndRefCnt));
 
 				Assertions.assertThat(scheduler.estimateRemainingTaskCapacity())
 				          .isEqualTo(20000);
@@ -556,11 +551,11 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresTasksAreOrderedWithinAWorker() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler scheduler = newScheduler(1, 1000);
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(1, 1000);
 		scheduler.init();
 
-		ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker =
-				(ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+		BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker worker =
+				(BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 
 		ConcurrentLinkedQueue<Integer> tasksIds = new ConcurrentLinkedQueue<>();
 
@@ -578,11 +573,11 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresDelayedTasksAreOrderedWithinAWorker() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler scheduler = newScheduler(1, 1000);
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(1, 1000);
 		scheduler.init();
 
-		ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker =
-				(ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+		BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker worker =
+				(BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 
 		ConcurrentLinkedQueue<Integer> tasksIds = new ConcurrentLinkedQueue<>();
 
@@ -599,11 +594,11 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresWorkersAreNotIntersecting() throws InterruptedException {
-		ThreadPerTaskBoundedElasticScheduler scheduler = newScheduler(1, 1000);
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(1, 1000);
 		scheduler.init();
 
-		ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker worker =
-				(ThreadPerTaskBoundedElasticScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
+		BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker worker =
+				(BoundedElasticThreadPerTaskScheduler.SingleThreadExecutorWorker) scheduler.createWorker();
 
 		AtomicInteger counter = new AtomicInteger();
 
@@ -652,7 +647,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	public void ensuresSupportGracefulShutdown() {
-		ThreadPerTaskBoundedElasticScheduler scheduler = newScheduler(100, 100_000);
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(100, 100_000);
 		scheduler.init();
 
 		AtomicInteger counter = new AtomicInteger();
@@ -708,7 +703,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	void ensuresTotalTasksMathIsDoneCorrectlyInOverflow() {
-		ThreadPerTaskBoundedElasticScheduler scheduler =
+		BoundedElasticThreadPerTaskScheduler scheduler =
 				newScheduler(10,
 				Integer.MAX_VALUE - 1);
 		scheduler.init();
@@ -735,7 +730,7 @@ class ThreadPerTaskBoundedElasticSchedulerTest {
 
 	@Test
 	void ensuresTotalTasksMathIsDoneCorrectlyInEdgeCase() {
-		ThreadPerTaskBoundedElasticScheduler scheduler =
+		BoundedElasticThreadPerTaskScheduler scheduler =
 				newScheduler(10,
 						Integer.MAX_VALUE / 10 + 1);
 		scheduler.init();

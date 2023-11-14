@@ -22,11 +22,17 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 
-final class ThreadPerTaskBoundedElasticScheduler
-		implements Scheduler, SchedulerState.DisposeAwaiter<ThreadPerTaskBoundedElasticScheduler.BoundedServices>, Scannable {
+/**
+ * This {@link BoundedElasticThreadPerTaskScheduler} variant is included when Reactor is
+ * used with JDK versions lower than 21, and all methods raise an
+ * {@link UnsupportedOperationException}. An alternative variant is available for use on
+ * JDK 21+ where virtual threads are supported.
+ */
+final class BoundedElasticThreadPerTaskScheduler
+		implements Scheduler, SchedulerState.DisposeAwaiter<BoundedElasticThreadPerTaskScheduler.BoundedServices>, Scannable {
 
-	ThreadPerTaskBoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
-		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
+	BoundedElasticThreadPerTaskScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
+		throw new UnsupportedOperationException("Unsupported in JDK lower than 21");
 	}
 
 	@Override
@@ -42,12 +48,12 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
+		throw new UnsupportedOperationException("Unsupported in JDK lower than 21");
 	}
 
 	@Override
 	public Worker createWorker() {
-		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
+		throw new UnsupportedOperationException("Unsupported in JDK lower than 21");
 	}
 
 	static final class BoundedServices {
@@ -55,6 +61,6 @@ final class ThreadPerTaskBoundedElasticScheduler
 
 		}
 
-		BoundedServices(ThreadPerTaskBoundedElasticScheduler parent) {}
+		BoundedServices(BoundedElasticThreadPerTaskScheduler parent) {}
 	}
 }

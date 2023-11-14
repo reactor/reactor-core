@@ -63,6 +63,10 @@ import static reactor.core.Exceptions.unwrap;
  * Factories prefixed with {@code new} (eg. {@link #newBoundedElastic(int, int, String)} return a new instance of their flavor of {@link Scheduler},
  * while other factories like {@link #boundedElastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
  * All instances are returned in a {@link Scheduler#init() initialized} state.
+ * <p>
+ * Since 3.6.0 {@link #boundedElastic()} can run tasks on {@link VirtualThread}s if the application
+ * runs on a Java 21+ runtime and the {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS}
+ * system property is set to {@code true}.
  *
  * @author Stephane Maldini
  */
@@ -187,26 +191,69 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * The common <em>boundedElastic</em> instance, a {@link Scheduler} that dynamically creates a bounded number of
-	 * ExecutorService-based Workers, reusing them once the Workers have been shut down. The underlying daemon
-	 * threads can be evicted if idle for more than {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
+	 * The common <em>boundedElastic</em> instance, a {@link Scheduler} that
+	 * dynamically creates a bounded number of workers.
 	 * <p>
-	 * The maximum number of created threads is bounded by a {@code cap} (by default
+	 * Depends on the available environment and specified configurations, there are two types
+	 * of implementations for this shared scheduler:
+	 * <ul>
+	 *
+	 * <li> ExecutorService-based implementation tailored to run on Platform {@link Thread}
+	 * instances. Every Worker is {@link ExecutorService}-based. Reusing {@link Thread}s
+	 * once the Workers have been shut down. The underlying daemon threads can be
+	 * evicted if idle for more than
+	 * {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
+	 * </li>
+	 *
+	 * <li> As of 3.6.0 there is a thread-per-task implementation tailored for use
+	 * with virtual threads. This implementation is enabled if the
+	 * application runs on a JDK 21+ runtime and the system property
+	 * {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS} is set to
+	 * {@code true}. Every Worker is based on the custom implementation of the execution
+	 * mechanism which ensures every submitted task runs on a new
+	 * {@link VirtualThread} instance. This implementation has a shared instance of
+	 * {@link ScheduledExecutorService} used to schedule delayed and periodic tasks
+	 * such that when triggered they are offloaded to a dedicated new
+	 * {@link VirtualThread} instance.
+	 * </li>
+	 *
+	 * </ul>
+	 *
+	 * <p>
+	 * Both implementations share the same configurations:
+	 * <ul>
+	 * <li>
+	 * The maximum number of concurrent
+	 * threads is bounded by a {@code cap} (by default
 	 * ten times the number of available CPU cores, see {@link #DEFAULT_BOUNDED_ELASTIC_SIZE}).
+	 * <p>
+	 * <b> Note: </b> Consider increasing {@link #DEFAULT_BOUNDED_ELASTIC_SIZE} with the
+	 * thread-per-task implementation to run more concurrent {@link VirtualThread}
+	 * instances underneath.
+	 * </li>
+	 * <li>
 	 * The maximum number of task submissions that can be enqueued and deferred on each of these
 	 * backing threads is bounded (by default 100K additional tasks, see
 	 * {@link #DEFAULT_BOUNDED_ELASTIC_QUEUESIZE}). Past that point, a {@link RejectedExecutionException}
 	 * is thrown.
+	 * </li>
+	 * </ul>
+	 *
 	 * <p>
-	 * By order of preference, threads backing a new {@link reactor.core.scheduler.Scheduler.Worker} are
-	 * picked from the idle pool, created anew or reused from the busy pool. In the later case, a best effort
-	 * attempt at picking the thread backing the least amount of workers is made.
+	 * Threads backing a new {@link reactor.core.scheduler.Scheduler.Worker} are
+	 * picked from a pool or are created when needed. In the ExecutorService-based
+	 * implementation, the pool is comprised either of idle or busy threads. When all
+	 * threads are busy, a best effort attempt is made at picking the thread backing
+	 * the least number of workers. In the case of the thread-per-task implementation, it
+	 * always creates new threads up to the specified limit.
 	 * <p>
-	 * Note that if a thread is backing a low amount of workers, but these workers submit a lot of pending tasks,
-	 * a second worker could end up being backed by the same thread and see tasks rejected.
-	 * The picking of the backing thread is also done once and for all at worker creation, so
-	 * tasks could be delayed due to two workers sharing the same backing thread and submitting long-running tasks,
-	 * despite another backing thread becoming idle in the meantime.
+	 * Note that if a scheduling mechanism is backing a low amount of workers, but these
+	 * workers submit a lot of pending tasks, a second worker could end up being
+	 * backed by the same mechanism and see tasks rejected.
+	 * The picking of the backing mechanism is also done once and for all at worker
+	 * creation, so tasks could be delayed due to two workers sharing the same backing
+	 * mechanism and submitting long-running tasks, despite another backing mechanism
+	 * becoming idle in the meantime.
 	 * <p>
 	 * Only one instance of this common scheduler will be created on the first call and is cached. The same instance
 	 * is returned on subsequent calls until it is disposed.
@@ -215,9 +262,12 @@ public abstract class Schedulers {
 	 * between callers. They can however be all {@link #shutdownNow() shut down} together, or replaced by a
 	 * {@link #setFactory(Factory) change in Factory}.
 	 *
-	 * @return the common <em>boundedElastic</em> instance, a {@link Scheduler} that dynamically creates workers with
-	 * an upper bound to the number of backing threads and after that on the number of enqueued tasks, that reuses
-	 * threads and evict idle ones
+	 * <p>
+	 *
+	 * @return the ExecutorService/thread-per-task-based <em>boundedElastic</em>
+	 * instance.
+	 * A {@link Scheduler} that dynamically creates workers with an upper
+	 * bound to the number of backing threads and after that on the number of enqueued tasks.
 	 */
 	public static Scheduler boundedElastic() {
 		return cache(CACHED_BOUNDED_ELASTIC, BOUNDED_ELASTIC, BOUNDED_ELASTIC_SUPPLIER);
@@ -279,6 +329,12 @@ public abstract class Schedulers {
 	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
 	 * scheduler has been {@link Scheduler#dispose() disposed}.
 	 *
+	 * <p>
+	 * Please note, this implementation is not designed to run tasks on
+	 * {@link VirtualThread}. Please see
+	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link VirtualThread} compatible scheduler implementation
+	 *
 	 * @param threadCap maximum number of underlying threads to create
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 	 * @param name Thread prefix
@@ -313,6 +369,12 @@ public abstract class Schedulers {
 	 * Threads backing this scheduler are user threads, so they will prevent the JVM
 	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
 	 * scheduler has been {@link Scheduler#dispose() disposed}.
+	 *
+	 * <p>
+	 * Please note, this implementation is not designed to run tasks on
+	 * {@link VirtualThread}. Please see
+	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
@@ -350,6 +412,12 @@ public abstract class Schedulers {
 	 * user threads or daemon threads. Note that user threads will prevent the JVM from exiting until their
 	 * worker has been disposed AND they've been evicted by TTL, or the whole scheduler has been
 	 * {@link Scheduler#dispose() disposed}.
+	 *
+	 * <p>
+	 * Please note, this implementation is not designed to run tasks on
+	 * {@link VirtualThread}. Please see
+	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
@@ -392,6 +460,12 @@ public abstract class Schedulers {
 	 * will prevent the JVM from exiting until their worker has been disposed AND they've been evicted by TTL,
 	 * or the whole scheduler has been {@link Scheduler#dispose() disposed}.
 	 *
+	 * <p>
+	 * Please note, this implementation is not designed to run tasks on
+	 * {@link VirtualThread}. Please see
+	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link VirtualThread} compatible scheduler implementation
+	 *
 	 * @param threadCap maximum number of underlying threads to create
 	 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 	 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
@@ -405,14 +479,6 @@ public abstract class Schedulers {
 				queuedTaskCap,
 				threadFactory,
 				ttlSeconds);
-		fromFactory.init();
-		return fromFactory;
-	}
-
-	static Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory) {
-		Scheduler fromFactory = factory.newThreadPerTaskBoundedElastic(threadCap,
-				queuedTaskCap,
-				threadFactory);
 		fromFactory.init();
 		return fromFactory;
 	}
@@ -1014,21 +1080,23 @@ public abstract class Schedulers {
 		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
 		 * <p>
 		 * The main difference between {@link BoundedElasticScheduler} and
-		 * {@link ThreadPerTaskBoundedElasticScheduler} is that underlying machinery
+		 * {@link BoundedElasticThreadPerTaskScheduler} is that underlying machinery
 		 * allocates a new thread for every new task which is one of the requirements
 		 * for usage with {@link VirtualThread}s
 		 * <p>
-		 * <b>Note:</b> for now this scheduler is available only in Java 21 runtime
+		 * <b>Note:</b> for now this scheduler is available only in Java 21+ runtime
 		 *
 		 * @param threadCap maximum number of underlying threads to create
 		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
 		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
 		 *
+		 * @since 3.6.0
+		 *
 		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 		 * the number of backing threads
 		 */
 		default Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
-			return new ThreadPerTaskBoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory);
+			return new BoundedElasticThreadPerTaskScheduler(threadCap, queuedTaskCap, threadFactory);
 		}
 
 		/**

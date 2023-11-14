@@ -28,7 +28,7 @@ blockingWrapper = blockingWrapper.subscribeOn(Schedulers.boundedElastic()); <3>
 ----
 <1> Create a new `Mono` by using `fromCallable`.
 <2> Return the asynchronous, blocking resource.
-<3> Ensure each subscription happens on a dedicated single-threaded worker
+<3> Ensure each subscription happens on a dedicated worker
 from `Schedulers.boundedElastic()`.
 ====
 
