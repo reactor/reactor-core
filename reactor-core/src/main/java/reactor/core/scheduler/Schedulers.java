@@ -332,7 +332,7 @@ public abstract class Schedulers {
 	 * <p>
 	 * Please note, this implementation is not designed to run tasks on
 	 * {@link VirtualThread}. Please see
-	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link Factory#newBoundedElasticThreadPerTask(int, int, ThreadFactory)} if you need
 	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
@@ -373,7 +373,7 @@ public abstract class Schedulers {
 	 * <p>
 	 * Please note, this implementation is not designed to run tasks on
 	 * {@link VirtualThread}. Please see
-	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link Factory#newBoundedElasticThreadPerTask(int, int, ThreadFactory)} if you need
 	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
@@ -416,7 +416,7 @@ public abstract class Schedulers {
 	 * <p>
 	 * Please note, this implementation is not designed to run tasks on
 	 * {@link VirtualThread}. Please see
-	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link Factory#newBoundedElasticThreadPerTask(int, int, ThreadFactory)} if you need
 	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
@@ -463,7 +463,7 @@ public abstract class Schedulers {
 	 * <p>
 	 * Please note, this implementation is not designed to run tasks on
 	 * {@link VirtualThread}. Please see
-	 * {@link Factory#newThreadPerTaskBoundedElastic(int, int, ThreadFactory)} if you need
+	 * {@link Factory#newBoundedElasticThreadPerTask(int, int, ThreadFactory)} if you need
 	 * {@link VirtualThread} compatible scheduler implementation
 	 *
 	 * @param threadCap maximum number of underlying threads to create
@@ -1092,10 +1092,38 @@ public abstract class Schedulers {
 		 *
 		 * @since 3.6.0
 		 *
+		 * @deprecated in favor of
 		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
 		 * the number of backing threads
 		 */
 		default Scheduler newThreadPerTaskBoundedElastic(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
+			return newBoundedElasticThreadPerTask(threadCap, queuedTaskCap, threadFactory);
+		}
+
+
+
+		/**
+		 * {@link Scheduler} that dynamically creates a bounded number of Workers.
+		 * <p>
+		 * The maximum number of created thread pools is bounded by the provided {@code threadCap}.
+		 * <p>
+		 * The main difference between {@link BoundedElasticScheduler} and
+		 * {@link BoundedElasticThreadPerTaskScheduler} is that underlying machinery
+		 * allocates a new thread for every new task which is one of the requirements
+		 * for usage with {@link VirtualThread}s
+		 * <p>
+		 * <b>Note:</b> for now this scheduler is available only in Java 21 runtime
+		 *
+		 * @param threadCap maximum number of underlying threads to create
+		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.
+		 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
+		 *
+		 * @since 3.6.1
+		 *
+		 * @return a new {@link Scheduler} that dynamically creates workers with an upper bound to
+		 * the number of backing threads
+		 */
+		default Scheduler newBoundedElasticThreadPerTask(int threadCap, int queuedTaskCap,	ThreadFactory threadFactory) {
 			return new BoundedElasticThreadPerTaskScheduler(threadCap, queuedTaskCap, threadFactory);
 		}
 
