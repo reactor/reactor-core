@@ -27,7 +27,7 @@ import static reactor.core.scheduler.Schedulers.newBoundedElastic;
 import static reactor.core.scheduler.Schedulers.factory;
 
 /**
- * JDK 21 Specific implementation of BoundedElasticScheduler supplier which uses
+ * JDK 21+ Specific implementation of BoundedElasticScheduler supplier which uses
  * {@link java.lang.ThreadBuilders.VirtualThreadFactory} instead of the default
  * {@link ReactorThreadFactory} when one enables virtual thread support
  */
