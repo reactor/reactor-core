@@ -65,7 +65,7 @@ import static reactor.core.Exceptions.unwrap;
  * All instances are returned in a {@link Scheduler#init() initialized} state.
  * <p>
  * Since 3.6.0 {@link #boundedElastic()} can run tasks on {@link VirtualThread}s if the application
- * runs on a Java 21 runtime and the {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS}
+ * runs on a Java 21+ runtime and the {@link #DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS}
  * system property is set to {@code true}.
  *
  * @author Stephane Maldini
@@ -1084,7 +1084,7 @@ public abstract class Schedulers {
 		 * allocates a new thread for every new task which is one of the requirements
 		 * for usage with {@link VirtualThread}s
 		 * <p>
-		 * <b>Note:</b> for now this scheduler is available only in Java 21 runtime
+		 * <b>Note:</b> for now this scheduler is available only in Java 21+ runtime
 		 *
 		 * @param threadCap maximum number of underlying threads to create
 		 * @param queuedTaskCap maximum number of tasks to enqueue when no more threads can be created. Can be {@link Integer#MAX_VALUE} for unbounded enqueueing.

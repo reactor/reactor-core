@@ -32,7 +32,7 @@ final class BoundedElasticThreadPerTaskScheduler
 		implements Scheduler, SchedulerState.DisposeAwaiter<BoundedElasticThreadPerTaskScheduler.BoundedServices>, Scannable {
 
 	BoundedElasticThreadPerTaskScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory) {
-		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
+		throw new UnsupportedOperationException("Unsupported in JDK lower than 21");
 	}
 
 	@Override
@@ -48,12 +48,12 @@ final class BoundedElasticThreadPerTaskScheduler
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
+		throw new UnsupportedOperationException("Unsupported in JDK lower than 21");
 	}
 
 	@Override
 	public Worker createWorker() {
-		throw new UnsupportedOperationException("Unsupported in JDK lower thank 21");
+		throw new UnsupportedOperationException("Unsupported in JDK lower than 21");
 	}
 
 	static final class BoundedServices {
