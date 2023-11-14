@@ -36,7 +36,7 @@ class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 	@Override
 	public Scheduler get() {
 		if (DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS) {
-			return factory.newBoundedElasticPerThread(DEFAULT_BOUNDED_ELASTIC_SIZE,
+			return factory.newThreadPerTaskBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
 					DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
 					Thread.ofVirtual()
 					      .name(LOOM_BOUNDED_ELASTIC + "-", 1)
