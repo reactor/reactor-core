@@ -256,9 +256,6 @@ task japicmp(type: JapicmpTask) {
 	classExcludes = [
 	]
 	methodExcludes = [
-			"reactor.core.publisher.Operators#toFluxOrMono(org.reactivestreams.Publisher)",
-			"reactor.core.publisher.Operators#toFluxOrMono(org.reactivestreams.Publisher[])",
-			"reactor.core.publisher.ParallelFlux#from(reactor.core.publisher.ParallelFlux)"
 	]
 }
 
