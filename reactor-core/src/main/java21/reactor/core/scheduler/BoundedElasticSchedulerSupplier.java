@@ -36,12 +36,15 @@ class BoundedElasticSchedulerSupplier implements Supplier<Scheduler> {
 	@Override
 	public Scheduler get() {
 		if (DEFAULT_BOUNDED_ELASTIC_ON_VIRTUAL_THREADS) {
-			return factory.newThreadPerTaskBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
+			Scheduler scheduler = factory.newThreadPerTaskBoundedElastic(
+					DEFAULT_BOUNDED_ELASTIC_SIZE,
 					DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
 					Thread.ofVirtual()
 					      .name(LOOM_BOUNDED_ELASTIC + "-", 1)
 					      .uncaughtExceptionHandler(Schedulers::defaultUncaughtException)
 					      .factory());
+			scheduler.init();
+			return scheduler;
 		}
 		return newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE,
 				DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
