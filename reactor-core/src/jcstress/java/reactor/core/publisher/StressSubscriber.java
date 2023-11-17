@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 
 	public final AtomicInteger onNextDiscarded = new AtomicInteger();
 
-	public final List<T> discardedValues = new CopyOnWriteArrayList<>();
+	public final List<Object> discardedValues = new CopyOnWriteArrayList<>();
 
 	public final AtomicInteger onErrorCalls = new AtomicInteger();
 
@@ -101,7 +101,7 @@ public class StressSubscriber<T> implements CoreSubscriber<T> {
 				}),
 				(value) -> {
 					onNextDiscarded.incrementAndGet();
-					discardedValues.add((T) value);
+					discardedValues.add(value);
 				});
 	}
 
