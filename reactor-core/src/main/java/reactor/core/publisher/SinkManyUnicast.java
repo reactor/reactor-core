@@ -130,6 +130,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyUnicast.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
+	volatile boolean subscriptionDelivered;
 	Throwable error;
 
 	boolean hasDownstream; //important to not loose the downstream too early and miss discard hook, while having relevant hasDownstreams()
@@ -355,9 +356,8 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		int missed = 1;
 
 		for (;;) {
-			CoreSubscriber<? super T> a = actual;
-			if (a != null) {
-
+			if (subscriptionDelivered) {
+			    CoreSubscriber<? super T> a = actual;
 				if (outputFused) {
 					drainFused(a);
 				} else {
@@ -413,6 +413,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 			this.hasDownstream = true;
 			this.actual = actual;
 			actual.onSubscribe(this);
+			subscriptionDelivered = true;
 			if (cancelled) {
 				this.hasDownstream = false;
 			} else {
