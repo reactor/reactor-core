@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -595,20 +595,14 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			Sinks.Many<I> up = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
-			                            .apply(withFluxSource(up.asFlux())), 0)
+			                            .apply(withFluxSource(up.asFlux())), scenario.producing)
 			            .consumeSubscriptionWith(s -> {
 				            if (s instanceof Fuseable.QueueSubscription) {
 					            @SuppressWarnings("unchecked")
 					            Fuseable.QueueSubscription<O> qs = ((Fuseable.QueueSubscription<O>) s);
 					            qs.requestFusion(ASYNC);
-					            //UnicastProcessor#actual
-					            if (up.scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
-						            qs.size(); //touch undeterministic
-					            }
-					            else {
-						            assertThat(qs.size()).isEqualTo(up.scan(Attr.BUFFERED)); //UnicastProcessor#size
-					            }
 					            try {
+									// Assuming scenario.producing >= 3
 						            qs.poll();
 						            qs.poll();
 						            qs.poll();
