@@ -316,10 +316,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 
-			done = true;
 			if (!Exceptions.addThrowable(ERROR, this, t)) {
 				Operators.onErrorDroppedMulticast(t, subscribers);
+				return;
 			}
+
+			done = true;
 
 			long previousState = markTerminated(this);
 			if (isTerminated(previousState) || isCancelled(previousState)) {

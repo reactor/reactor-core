@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -27,6 +29,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.junit.jupiter.api.Test;
 
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -274,6 +277,25 @@ public class SinkManyUnicastTest {
 		            .expectNoEvent(Duration.ofMillis(500))
 		            .then(() -> sinkManyUnicast.tryEmitComplete().orThrow())
 		            .verifyComplete();
+	}
+
+	@Test
+	public void emitWithoutSubscriberAndSubscribeCancellingSubscriptionDiscards() {
+		Sinks.Many<String> sink = Sinks.many()
+		                               .unicast()
+		                               .onBackpressureBuffer();
+
+		sink.tryEmitNext("Hello");
+
+		List<String> discarded = new CopyOnWriteArrayList<String>();
+
+		sink.asFlux()
+		    .doOnSubscribe(Subscription::cancel)
+		    .contextWrite(ctx -> Operators.enableOnDiscard(ctx,
+				               item -> discarded.add((String) item)))
+		    .subscribe();
+
+		assertThat(discarded).containsExactly("Hello");
 	}
 
 	@Test
