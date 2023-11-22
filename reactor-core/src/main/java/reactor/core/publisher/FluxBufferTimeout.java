@@ -237,6 +237,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 							t, actual.currentContext());
 					this.error = error;
 					if (!TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
+						if (logger != null) {
+							trace(logger, "Failed to transition to error. Discarding " + t);
+						}
+						Operators.onDiscard(t, ctx);
 						Operators.onErrorDropped(error, ctx);
 						return;
 					}
@@ -265,14 +269,13 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 								Throwable error = Operators.onRejectedExecution(ree, subscription, null, t, ctx);
 								this.error = error;
 								if (!TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
-									Operators.onDiscard(t, ctx);
+									Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 									Operators.onErrorDropped(error, ctx);
 									return;
 								}
 								if (logger != null) {
-									trace(logger, "Discarding upon timer rejection" + t);
+									trace(logger, "Draining upon timer rejection" + t);
 								}
-								Operators.onDiscard(t, ctx);
 								drain();
 								return;
 							}
@@ -295,8 +298,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						currentTimeoutTask.dispose();
 					}
 					this.index = 0;
-					drain();
 				}
+				drain(shouldDrain);
 			} else {
 				if (logger != null) {
 					trace(logger, "Discarding onNext: " + t);
@@ -395,10 +398,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			if (logger != null) {
 				trace(logger, "cancel");
 			}
-			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
-				if (this.subscription != null) {
-					this.subscription.cancel();
-				}
+			TERMINATED.set(this, TERMINATED_WITH_CANCEL);
+			if (this.subscription != null) {
+				this.subscription.cancel();
 			}
 			if (currentTimeoutTask != null) {
 				currentTimeoutTask.dispose();
@@ -425,6 +427,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		private void drain() {
+			drain(true);
+		}
+		private void drain(boolean flush) {
 			// entering this should be guarded by WIP getAndIncrement == 0
 			// if we're here it means do a flush if there is downstream demand
 			// regardless of queue size
@@ -439,39 +444,38 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					if (logger != null) {
 						trace(logger, "drain. wip: " + wip);
 					}
-					if (terminated == NOT_TERMINATED) {
-						// is there demand?
-						while (flushABuffer()) {
-							// no-op
+					boolean done = terminated != NOT_TERMINATED;
+					boolean cancelled = terminated == TERMINATED_WITH_CANCEL;
+					if (completed || cancelled) {
+						if (logger != null) {
+							trace(logger, "Discarding entire queue of " + queue.size());
 						}
-						// make another spin if there's more work
+						Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+//						return;
 					} else {
-						if (completed || terminated == TERMINATED_WITH_CANCEL) {
-							if (logger != null) {
-								trace(logger, "Discarding entire queue of " + queue.size());
-							}
-							Operators.onDiscardQueueWithClear(queue, currentContext(), null);
-						} else {
+						if (flush) {
 							while (flushABuffer()) {
 								// no-op
 							}
-							if (queue.isEmpty()) {
-								completed = true;
-								if (this.error != null) {
-									actual.onError(this.error);
-								}
-								else {
-									actual.onComplete();
-								}
-							} else {
-								if (logger != null) {
-									trace(logger, "Queue not empty after termination");
-								}
+						}
+					}
+					wip = this.wip;
+					if (wip == 1) {
+						if (done && !cancelled && !completed && queue.isEmpty()) {
+							if (logger != null) {
+								trace(logger, "Completed with " + terminated);
+							}
+							completed = true;
+							if (this.error != null) {
+								actual.onError(this.error);
+							}
+							else {
+								actual.onComplete();
 							}
 						}
 					}
-					if (WIP.compareAndSet(this, wip, 0)) {
-						break;
+					if (WIP.decrementAndGet(this) == 0) {
+						return;
 					}
 				}
 			}
