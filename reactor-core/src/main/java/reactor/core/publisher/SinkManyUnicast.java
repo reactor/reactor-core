@@ -414,7 +414,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 			this.hasDownstream = true;
-			this.actual = actual;
+			this.actual = wrapped;
 			wrapped.onSubscribe(this);
 			subscriptionDelivered = true;
 			if (cancelled) {
