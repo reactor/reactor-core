@@ -47,6 +47,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final long        timespan;
 	final TimeUnit    unit;
 	final boolean     fairBackpressure;
+	final Logger      logger;
 
 	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
@@ -68,6 +69,32 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		this.batchSize = maxSize;
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 		this.fairBackpressure = fairBackpressure;
+		this.logger = null;
+	}
+
+	// for testing
+	FluxBufferTimeout(Flux<T> source,
+			int maxSize,
+			long timespan,
+			TimeUnit unit,
+			Scheduler timer,
+			Supplier<C> bufferSupplier,
+			boolean fairBackpressure,
+			Logger logger) {
+		super(source);
+		if (timespan <= 0) {
+			throw new IllegalArgumentException("Timeout period must be strictly positive");
+		}
+		if (maxSize <= 0) {
+			throw new IllegalArgumentException("maxSize must be strictly positive");
+		}
+		this.timer = Objects.requireNonNull(timer, "Timer");
+		this.timespan = timespan;
+		this.unit = Objects.requireNonNull(unit, "unit");
+		this.batchSize = maxSize;
+		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
+		this.fairBackpressure = fairBackpressure;
+		this.logger = logger;
 	}
 
 	@Override
