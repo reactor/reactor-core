@@ -15,7 +15,7 @@ about formatting your PR description.
 
 <!--
 The PR description will be used to craft a final squash merge commit
-and the titled will be used in release notes, so please keep them up-to-date.
+and the title will be used in release notes, so please keep them up-to-date.
 More detailed description of the commit message convention:
 https://github.com/reactor/.github/blob/main/CONTRIBUTING.md#black_nib-commit-message-convention
 https://github.com/reactor/.github/blob/main/CONTRIBUTING.md#message-convention
