@@ -261,7 +261,7 @@ assertThat(results).contains(
 <2> We want to start some deeper asynchronous processing once we get the list.
 <3> For each element in the list:
 <4> Asynchronously get the associated name.
-<5> Asynchronously get the associated task.
+<5> Asynchronously get the associated statistic.
 <6> Combine both results.
 <7> We now have a list of futures that represent all the combination tasks. To
 execute these tasks, we need to convert the list to an array.
