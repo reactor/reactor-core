@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -156,9 +157,7 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.fluxSource("collect", f -> f.collect(ArrayList::new, ArrayList::add)
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
-			DiscardScenario.fluxSource("collectList", f -> f.collectList()
-			                                                   .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
-			                                                   .thenReturn(Tracked.RELEASED))
+			DiscardScenario.fluxSource("collectList", f -> f.collectList().thenReturn(Tracked.RELEASED))
 	};
 
 	private static final boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
