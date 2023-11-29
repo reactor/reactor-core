@@ -184,7 +184,6 @@ public class OnDiscardShouldNotLeakTest {
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collectList", f -> f.collectList()
-			                                                   .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                                   .thenReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("streamCollector", f -> f.collect(Collectors.toList())
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
