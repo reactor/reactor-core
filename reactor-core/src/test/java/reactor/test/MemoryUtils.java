@@ -186,6 +186,12 @@ public class MemoryUtils {
 			}
 	        else if (t instanceof Tracked) {
 	            ((Tracked) t).release();
+	        } else if (t instanceof Collection) {
+				for (Object o : (Collection) t) {
+					if (o instanceof Tracked) {
+						((Tracked) o).release();
+					}
+				}
 	        }
 	    }
 
