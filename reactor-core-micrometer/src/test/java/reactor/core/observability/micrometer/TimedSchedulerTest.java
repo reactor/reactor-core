@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,16 @@ package reactor.core.observability.micrometer;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.core.tck.MeterRegistryAssert;
@@ -37,8 +43,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Simon Baslé
@@ -323,5 +328,66 @@ class TimedSchedulerTest {
 				+ testScheduler.submittedDelayed.count()
 				+ testScheduler.submittedPeriodicInitial.count()
 				+ testScheduler.submittedPeriodicIteration.count(), "completed tasks == sum of all timer counts");
+	}
+
+	@Test
+	void pendingScheduleRemovedOnScheduleRejection() {
+		CountDownLatch cdl = new CountDownLatch(1);
+		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+				new SynchronousQueue<>());
+		Scheduler original = Schedulers.fromExecutorService(executorService);
+		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		RequiredSearch requiredSearch = registry.get("test.scheduler.tasks.pending");
+		LongTaskTimer longTaskTimer = requiredSearch.longTaskTimer();
+
+		Runnable supp = () -> {
+			try {
+				cdl.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		};
+
+		assertThatNoException().isThrownBy(() -> testScheduler.schedule(supp));
+		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> testScheduler.schedule(supp));
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> testScheduler.schedule(supp, 0, TimeUnit.SECONDS));
+
+		cdl.countDown();
+
+		assertThat(longTaskTimer.activeTasks())
+				.as("longTaskTimer.activeTasks()")
+				.isZero();
+	}
+
+	@Test
+	void workerPendingScheduleRemovedOnScheduleRejection() {
+		CountDownLatch cdl = new CountDownLatch(1);
+		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+				new SynchronousQueue<>());
+		Scheduler original = Schedulers.fromExecutorService(executorService);
+		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		RequiredSearch requiredSearch = registry.get("test.scheduler.tasks.pending");
+		LongTaskTimer longTaskTimer = requiredSearch.longTaskTimer();
+		Scheduler.Worker worker = testScheduler.createWorker();
+
+		Runnable supp = () -> {
+			try {
+				cdl.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		};
+
+		assertThatNoException().isThrownBy(() -> worker.schedule(supp));
+		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> worker.schedule(supp));
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> worker.schedule(supp, 0, TimeUnit.SECONDS));
+
+		cdl.countDown();
+
+		assertThat(longTaskTimer.activeTasks())
+				.as("longTaskTimer.activeTasks()")
+				.isZero();
 	}
 }

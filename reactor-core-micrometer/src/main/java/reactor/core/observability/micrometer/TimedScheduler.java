@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.observability.micrometer;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import io.micrometer.core.instrument.Counter;
@@ -87,13 +88,30 @@ final class TimedScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task) {
 		this.submittedDirect.increment();
-		return delegate.schedule(wrap(task));
+		task = wrap(task);
+
+		try {
+			return delegate.schedule(task);
+		}
+		catch (RejectedExecutionException exception) {
+			((TimedRunnable) task).pendingSample.stop();
+
+			throw exception;
+		}
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		this.submittedDelayed.increment();
-		return delegate.schedule(wrap(task), delay, unit);
+		task = wrap(task);
+
+		try {
+			return delegate.schedule(task, delay, unit);
+		}
+		catch (RejectedExecutionException exception) {
+			((TimedRunnable) task).pendingSample.stop();
+			throw exception;
+		}
 	}
 
 	@Override
@@ -150,13 +168,30 @@ final class TimedScheduler implements Scheduler {
 		@Override
 		public Disposable schedule(Runnable task) {
 			parent.submittedDirect.increment();
-			return delegate.schedule(parent.wrap(task));
+			task = parent.wrap(task);
+
+			try {
+				return delegate.schedule(task);
+			}
+			catch (RejectedExecutionException exception) {
+				((TimedRunnable) task).pendingSample.stop();
+
+				throw exception;
+			}
 		}
 
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			parent.submittedDelayed.increment();
-			return delegate.schedule(parent.wrap(task), delay, unit);
+			task = parent.wrap(task);
+
+			try {
+				return delegate.schedule(task, delay, unit);
+			}
+			catch (RejectedExecutionException exception) {
+				((TimedRunnable) task).pendingSample.stop();
+				throw exception;
+			}
 		}
 
 		@Override
