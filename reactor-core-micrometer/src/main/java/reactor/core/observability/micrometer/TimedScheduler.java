@@ -77,25 +77,24 @@ final class TimedScheduler implements Scheduler {
 
 	}
 
-	Runnable wrap(Runnable task) {
+	TimedRunnable wrap(Runnable task) {
 		return new TimedRunnable(registry, this, task);
 	}
 
-	Runnable wrapPeriodic(Runnable task) {
+	TimedRunnable wrapPeriodic(Runnable task) {
 		return new TimedRunnable(registry, this, task, true);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task) {
 		this.submittedDirect.increment();
-		task = wrap(task);
+		TimedRunnable timedTask = wrap(task);
 
 		try {
-			return delegate.schedule(task);
+			return delegate.schedule(timedTask);
 		}
 		catch (RejectedExecutionException exception) {
-			((TimedRunnable) task).pendingSample.stop();
-
+			timedTask.pendingSample.stop();
 			throw exception;
 		}
 	}
@@ -103,13 +102,13 @@ final class TimedScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		this.submittedDelayed.increment();
-		task = wrap(task);
+		TimedRunnable timedTask = wrap(task);
 
 		try {
-			return delegate.schedule(task, delay, unit);
+			return delegate.schedule(timedTask, delay, unit);
 		}
 		catch (RejectedExecutionException exception) {
-			((TimedRunnable) task).pendingSample.stop();
+			timedTask.pendingSample.stop();
 			throw exception;
 		}
 	}
@@ -168,14 +167,13 @@ final class TimedScheduler implements Scheduler {
 		@Override
 		public Disposable schedule(Runnable task) {
 			parent.submittedDirect.increment();
-			task = parent.wrap(task);
+			TimedRunnable timedTask = parent.wrap(task);
 
 			try {
-				return delegate.schedule(task);
+				return delegate.schedule(timedTask);
 			}
 			catch (RejectedExecutionException exception) {
-				((TimedRunnable) task).pendingSample.stop();
-
+				timedTask.pendingSample.stop();
 				throw exception;
 			}
 		}
@@ -183,13 +181,13 @@ final class TimedScheduler implements Scheduler {
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			parent.submittedDelayed.increment();
-			task = parent.wrap(task);
+			TimedRunnable timedTask = parent.wrap(task);
 
 			try {
-				return delegate.schedule(task, delay, unit);
+				return delegate.schedule(timedTask, delay, unit);
 			}
 			catch (RejectedExecutionException exception) {
-				((TimedRunnable) task).pendingSample.stop();
+				timedTask.pendingSample.stop();
 				throw exception;
 			}
 		}

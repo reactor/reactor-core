@@ -331,9 +331,9 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void pendingScheduleRemovedOnScheduleRejection() {
+	void pendingTaskRemovedOnScheduleRejection() {
 		CountDownLatch cdl = new CountDownLatch(1);
-		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+		ExecutorService executorService = new ThreadPoolExecutor(1, 2, 0L, TimeUnit.MILLISECONDS,
 				new SynchronousQueue<>());
 		Scheduler original = Schedulers.fromExecutorService(executorService);
 		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
@@ -349,6 +349,8 @@ class TimedSchedulerTest {
 		};
 
 		assertThatNoException().isThrownBy(() -> testScheduler.schedule(supp));
+		assertThatNoException().isThrownBy(() -> testScheduler.schedule(supp));
+		assertThat(longTaskTimer.activeTasks()).as("longTaskTimer.activeTasks()").isOne();
 		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> testScheduler.schedule(supp));
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> testScheduler.schedule(supp, 0, TimeUnit.SECONDS));
@@ -361,9 +363,9 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void workerPendingScheduleRemovedOnScheduleRejection() {
+	void workerPendingTaskRemovedOnScheduleRejection() {
 		CountDownLatch cdl = new CountDownLatch(1);
-		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+		ExecutorService executorService = new ThreadPoolExecutor(1, 2, 0L, TimeUnit.MILLISECONDS,
 				new SynchronousQueue<>());
 		Scheduler original = Schedulers.fromExecutorService(executorService);
 		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
@@ -380,6 +382,8 @@ class TimedSchedulerTest {
 		};
 
 		assertThatNoException().isThrownBy(() -> worker.schedule(supp));
+		assertThatNoException().isThrownBy(() -> worker.schedule(supp));
+		assertThat(longTaskTimer.activeTasks()).as("longTaskTimer.activeTasks()").isOne();
 		assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> worker.schedule(supp));
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> worker.schedule(supp, 0, TimeUnit.SECONDS));
