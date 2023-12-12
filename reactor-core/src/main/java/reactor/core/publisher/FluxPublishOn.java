@@ -324,6 +324,12 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// In all other modes we are free to discard queue immediately since there is no racing on pooling
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+
+				if (cancelled) {
+					Operators.onErrorDropped(ree, actual.currentContext());
+					return;
+				}
+
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
@@ -884,6 +890,12 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// In all other modes we are free to discard queue immediately since there is no racing on pooling
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+
+				if (cancelled) {
+					Operators.onErrorDropped(ree, actual.currentContext());
+					return;
+				}
+
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
