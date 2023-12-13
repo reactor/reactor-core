@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -324,6 +324,12 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// In all other modes we are free to discard queue immediately since there is no racing on pooling
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+
+				if (cancelled) {
+					Operators.onErrorDropped(ree, actual.currentContext());
+					return;
+				}
+
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
@@ -884,6 +890,12 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// In all other modes we are free to discard queue immediately since there is no racing on pooling
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+
+				if (cancelled) {
+					Operators.onErrorDropped(ree, actual.currentContext());
+					return;
+				}
+
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
