@@ -4521,7 +4521,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/subscribeOnForMono.svg" alt="">
 	 *
 	 * <blockquote><pre>
-	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe()) }
+	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe() }
 	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
@@ -5324,7 +5324,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Note that this bypasses {@link Hooks#onEachOperator(String, Function) assembly hooks}.
 	 *
 	 * @param source the {@link Publisher} to wrap
-	 * @param enforceMonoContract {@code} true to wrap publishers without assumption about their cardinality
+	 * @param enforceMonoContract {@code true} to wrap publishers without assumption about their cardinality
 	 * (first {@link Subscriber#onNext(Object)} will cancel the source), {@code false} to behave like {@link #fromDirect(Publisher)}.
 	 * @param <T> input upstream type
 	 * @return a wrapped {@link Mono}
