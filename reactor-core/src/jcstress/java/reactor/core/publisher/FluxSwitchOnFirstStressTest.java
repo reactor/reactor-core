@@ -30,7 +30,9 @@ import org.openjdk.jcstress.infra.results.LLLLL_Result;
 import org.openjdk.jcstress.infra.results.LLLL_Result;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.util.FastLogger;
+import reactor.test.util.RaceTestUtils;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
@@ -251,6 +253,30 @@ public abstract class FluxSwitchOnFirstStressTest {
 	@State
 	public static class InboundNextLeadingToErrorAndOutboundCancelStressTest
 			extends FluxSwitchOnFirstStressTest {
+
+		public static void main(String[] args) {
+			for (;;) {
+				InboundNextLeadingToErrorAndOutboundCancelStressTest test =
+						new InboundNextLeadingToErrorAndOutboundCancelStressTest();
+				RaceTestUtils.race(Schedulers.parallel(), test::nextInbound,
+						test::cancelOutbound);
+
+				LLLL_Result result = new LLLL_Result();
+				test.arbiter(result);
+
+				switch (result.toString()) {
+					case "1, 2, 0, 1":
+						continue;
+					case "1, 0, 0, 1":
+						continue;
+					case "1, 3, 0, 1":
+						continue;
+				}
+
+				System.out.println(test.fastLogger.toString());
+				return;
+			}
+		}
 
 		static final RuntimeException DUMMY_ERROR = new RuntimeException("dummy");
 
@@ -595,6 +621,29 @@ public abstract class FluxSwitchOnFirstStressTest {
 	public static class OutboundCancelAndInboundErrorStressTest
 			extends FluxSwitchOnFirstStressTest {
 
+		public static void main(String[] args) {
+			for (;;) {
+				OutboundCancelAndInboundErrorStressTest test =
+						new OutboundCancelAndInboundErrorStressTest();
+
+				LLLLL_Result result = new LLLLL_Result();
+
+				RaceTestUtils.race(test::cancelOutbound, test::errorInbound);
+
+				test.arbiter(result);
+
+				switch (result.toString()) {
+					case "1, 0, 2, 1, 0":
+					case "1, 1, 5, 1, 0":
+						continue;
+				}
+
+				System.out.println(result);
+				System.out.println(test.fastLogger.toString());
+				return;
+			}
+		}
+
 		static final RuntimeException DUMMY_ERROR = new RuntimeException("dummy");
 
 		Flux<String> inboundStream;
@@ -618,7 +667,7 @@ public abstract class FluxSwitchOnFirstStressTest {
 		}
 
 		@Actor
-		public void nextInbound() {
+		public void errorInbound() {
 			main.onError(DUMMY_ERROR);
 		}
 

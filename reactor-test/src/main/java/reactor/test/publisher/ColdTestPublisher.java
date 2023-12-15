@@ -33,6 +33,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
+import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
 
 import static reactor.test.publisher.TestPublisher.Violation.ALLOW_NULL;
@@ -60,6 +61,8 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	/** If true, emit an overflow error when there is more values than request. If false, buffer until data is requested. */
 	final boolean errorOnOverflow;
+	@Nullable
+	final Logger logger;
 
 	/** If misbehaving, the set of violations this publisher will exhibit. */
 	final EnumSet<Violation> violations;
@@ -80,8 +83,9 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	static final AtomicLongFieldUpdater<ColdTestPublisher> SUBSCRIBED_COUNT =
 			AtomicLongFieldUpdater.newUpdater(ColdTestPublisher.class, "subscribeCount");
 
-	ColdTestPublisher(boolean errorOnOverflow, EnumSet<Violation> violations) {
+	ColdTestPublisher(boolean errorOnOverflow, EnumSet<Violation> violations, Logger logger) {
 		this.errorOnOverflow = errorOnOverflow;
+		this.logger = logger;
 		this.values = Collections.synchronizedList(new ArrayList<>());
 		this.violations = violations;
 	}
@@ -103,6 +107,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 
 		s.onSubscribe(p); // will trigger drain() via request()
+		p.drain(); // ensures that empty source terminal signal is propagated without waiting for a request from the subscriber
 	}
 
 	boolean add(ColdTestPublisherSubscription<T> s) {

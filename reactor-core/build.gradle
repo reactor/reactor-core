@@ -305,10 +305,12 @@ test {
 
 java21Test {
   println("Available number of processors is " + Runtime.getRuntime().availableProcessors())
-  if (Runtime.getRuntime().availableProcessors() <= 2) {
+//  if (Runtime.getRuntime().availableProcessors() <= 2) {
 	systemProperty "jdk.virtualThreadScheduler.parallelism", "6"
-  }
+	systemProperty "reactor.schedulers.defaultBoundedElasticSize", "10"
+//  }
   systemProperty "reactor.schedulers.defaultBoundedElasticOnVirtualThreads", "true"
+  maxHeapSize = "256m"
 }
 
 tasks.withType(Test).matching { !(it.name in testing.suites.names) }.configureEach {
@@ -339,9 +341,10 @@ blockHoundTest {
 }
 
 jcstress {
-	mode = project.hasProperty('jcstress.mode') ? project.getProperty('jcstress.mode') : 'quick'//quick, default, tough
+	mode = project.hasProperty('jcstress.mode') ? project.getProperty('jcstress.mode') : 'tough'//quick, default, tough
     jcstressDependency 'org.openjdk.jcstress:jcstress-core:0.16'
-	heapPerFork = 512
+	heapPerFork = "2048"
+  	verbose = "vvv"
 }
 
 // inherit basic test task + common configuration in root

@@ -83,7 +83,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @return the new {@link TestPublisher}
 	 */
 	public static <T> TestPublisher<T> createCold() {
-		return new ColdTestPublisher<>(false, EnumSet.noneOf(Violation.class));
+		return new ColdTestPublisher<>(false, EnumSet.noneOf(Violation.class), null);
 	}
 
 	/**
@@ -100,7 +100,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @return the new {@link TestPublisher}
 	 */
 	public static <T> TestPublisher<T> createColdNonBuffering() {
-		return new ColdTestPublisher<>(true, EnumSet.noneOf(Violation.class));
+		return new ColdTestPublisher<>(true, EnumSet.noneOf(Violation.class), null);
 	}
 
 	/**
@@ -117,7 +117,8 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @return the new {@link TestPublisher}
 	 */
 	public static <T> TestPublisher<T> createColdNonCompliant(boolean errorOnOverflow, Violation firstViolation, Violation... otherViolations) {
-		return new ColdTestPublisher<>(errorOnOverflow, EnumSet.of(firstViolation, otherViolations));
+		return new ColdTestPublisher<>(errorOnOverflow, EnumSet.of(firstViolation,
+				otherViolations), null);
 	}
 
 	/**

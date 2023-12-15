@@ -164,25 +164,29 @@ public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 
 	@Test
 	public void onNextAndCancelRace() {
-		List<Integer> list = new ArrayList<>();
-		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+		for (int i = 0; i < 1000000; i++) {
 
-		MonoReduceSeed.ReduceSeedSubscriber<Integer, List<Integer>> sub =
-				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
-						(l, next) -> {
-							l.add(next);
-							return l;
-						}, list);
+			List<Integer> list = new ArrayList<>();
+			final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
 
-		sub.onSubscribe(Operators.emptySubscription());
+			MonoReduceSeed.ReduceSeedSubscriber<Integer, List<Integer>> sub =
+					new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+							(l, next) -> {
+								l.add(next);
+								return l;
+							},
+							list);
 
-		//the race alone _could_ previously produce a NPE
-		RaceTestUtils.race(() -> sub.onNext(1), sub::cancel);
-		testSubscriber.assertNoError();
+			sub.onSubscribe(Operators.emptySubscription());
 
-		//to be even more sure, we try an onNext AFTER the cancel
-		sub.onNext(2);
-		testSubscriber.assertNoError();
+			//the race alone _could_ previously produce a NPE
+			RaceTestUtils.race(() -> sub.onNext(1), sub::cancel);
+			testSubscriber.assertNoError();
+
+			//to be even more sure, we try an onNext AFTER the cancel
+			sub.onNext(2);
+			testSubscriber.assertNoError();
+		}
 	}
 
 	@Test
