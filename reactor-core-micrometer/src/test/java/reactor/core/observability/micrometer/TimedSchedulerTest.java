@@ -333,7 +333,7 @@ class TimedSchedulerTest {
 	@Test
 	void pendingTaskRemovedOnScheduleRejection() throws InterruptedException {
 		CountDownLatch activeTaskLatch = new CountDownLatch(1);
-		CountDownLatch secondLatch = new CountDownLatch(1);
+		CountDownLatch pendingTaskLatch = new CountDownLatch(1);
 		CountDownLatch countPendingLatch = new CountDownLatch(1);
 		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
 				new ArrayBlockingQueue<>(1));
@@ -355,7 +355,7 @@ class TimedSchedulerTest {
 				}
 			};
 
-			Runnable pendingTask = secondLatch::countDown;
+			Runnable pendingTask = pendingTaskLatch::countDown;
 			Runnable rejectedTask = () -> {};
 
 			// Schedule two tasks: one will execute, the other will wait in the queue
@@ -373,7 +373,7 @@ class TimedSchedulerTest {
 					() -> testScheduler.schedule(rejectedTask, 0, TimeUnit.SECONDS));
 
 			activeTaskLatch.countDown();
-			secondLatch.await(1, TimeUnit.SECONDS);
+			pendingTaskLatch.await(1, TimeUnit.SECONDS);
 
 			assertThat(longTaskTimer.activeTasks()).as("active pending")
 			                                       .isZero();
@@ -385,7 +385,7 @@ class TimedSchedulerTest {
 	@Test
 	void workerPendingTaskRemovedOnScheduleRejection() throws InterruptedException {
 		CountDownLatch activeTaskLatch = new CountDownLatch(1);
-		CountDownLatch secondLatch = new CountDownLatch(1);
+		CountDownLatch pendingTaskLatch = new CountDownLatch(1);
 		CountDownLatch countPendingLatch = new CountDownLatch(1);
 		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
 				new ArrayBlockingQueue<>(1));
@@ -408,7 +408,7 @@ class TimedSchedulerTest {
 				}
 			};
 
-			Runnable pendingTask = secondLatch::countDown;
+			Runnable pendingTask = pendingTaskLatch::countDown;
 			Runnable rejectedTask = () -> {
 			};
 
@@ -427,7 +427,7 @@ class TimedSchedulerTest {
 					() -> worker.schedule(rejectedTask, 0, TimeUnit.SECONDS));
 
 			activeTaskLatch.countDown();
-			secondLatch.await(1, TimeUnit.SECONDS);
+			pendingTaskLatch.await(1, TimeUnit.SECONDS);
 
 			assertThat(longTaskTimer.activeTasks()).as("active pending")
 			                                       .isZero();
