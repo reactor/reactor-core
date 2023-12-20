@@ -191,7 +191,8 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 				SampleFirstOther<U> other = new SampleFirstOther<>(this);
 
 				if (Operators.replace(OTHER, this, other)) {
-					Operators.toFluxOrMono(p).subscribe(other);
+					p = Operators.toFluxOrMono(p);
+					p.subscribe(other);
 				}
 			}
 			else {

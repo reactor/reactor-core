@@ -143,7 +143,8 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 			}
 			else {
 				FilterWhenInner<T> inner = new FilterWhenInner<>(this, !(p instanceof Mono), t);
-				Operators.toFluxOrMono(p).subscribe(inner);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(inner);
 			}
 		}
 

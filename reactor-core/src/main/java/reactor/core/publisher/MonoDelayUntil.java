@@ -287,7 +287,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			final Function<? super T, ? extends Publisher<?>> generator =
 					this.otherGenerators[this.index];
 
-			final Publisher<?> p;
+			Publisher<?> p;
 
 			try {
 				p = generator.apply(this.value);
@@ -304,7 +304,8 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				this.triggerSubscriber = triggerSubscriber;
 			}
 
-			Operators.toFluxOrMono(p).subscribe(triggerSubscriber);
+			p = Operators.toFluxOrMono(p);
+			p.subscribe(triggerSubscriber);
 		}
 
 		@Override

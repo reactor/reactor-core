@@ -74,7 +74,8 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 			return;
 		}
 
-		Operators.toFluxOrMono(p).subscribe(other);
+		p = Operators.toFluxOrMono(p);
+		p.subscribe(other);
 
 		if (!main.cancelled) {
 			wrapped.subscribe(main);

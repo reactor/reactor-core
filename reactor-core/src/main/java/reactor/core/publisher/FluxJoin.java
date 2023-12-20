@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -289,7 +288,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 								new LeftRightEndSubscriber(this, true, idx);
 						cancellations.add(end);
 
-						Operators.toFluxOrMono(p).subscribe(end);
+						p = Operators.toFluxOrMono(p);
+						p.subscribe(end);
 
 						ex = error;
 						if (ex != null) {
@@ -366,7 +366,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 								new LeftRightEndSubscriber(this, false, idx);
 						cancellations.add(end);
 
-						Operators.toFluxOrMono(p).subscribe(end);
+						p = Operators.toFluxOrMono(p);
+						p.subscribe(end);
 
 						ex = error;
 						if (ex != null) {

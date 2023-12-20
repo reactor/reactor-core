@@ -227,6 +227,8 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 
 			actual.onSubscribe(this);
 
+			Operators.toFluxOrMono(sources);
+
 			for (int i = 0; i < n; i++) {
 				if (cancelled || winner != Integer.MIN_VALUE) {
 					return;
@@ -237,7 +239,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				Operators.toFluxOrMono(sources[i]).subscribe(subscribers[i]);
+				sources[i].subscribe(subscribers[i]);
 			}
 		}
 

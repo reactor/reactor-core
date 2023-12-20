@@ -336,7 +336,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 								new LeftRightEndSubscriber(this, true, idx);
 						cancellations.add(end);
 
-						Operators.toFluxOrMono(p).subscribe(end);
+						p = Operators.toFluxOrMono(p);
+						p.subscribe(end);
 
 						ex = error;
 						if (ex != null) {
@@ -404,7 +405,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 								new LeftRightEndSubscriber(this, false, idx);
 						cancellations.add(end);
 
-						Operators.toFluxOrMono(p).subscribe(end);
+						p = Operators.toFluxOrMono(p);
+						p.subscribe(end);
 
 						ex = error;
 						if (ex != null) {

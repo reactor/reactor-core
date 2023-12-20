@@ -144,7 +144,8 @@ final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 						produced(c);
 					}
 
-					Operators.toFluxOrMono(p).subscribe(this);
+					p = Operators.toFluxOrMono(p);
+					p.subscribe(this);
 
 					if (isCancelled()) {
 						return;

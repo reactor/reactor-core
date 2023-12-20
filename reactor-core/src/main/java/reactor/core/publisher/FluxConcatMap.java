@@ -448,7 +448,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 							}
 							else {
 								active = true;
-								Operators.toFluxOrMono(p).subscribe(inner);
+								p = Operators.toFluxOrMono(p);
+								p.subscribe(inner);
 							}
 						}
 					}
@@ -805,7 +806,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 							}
 							else {
 								active = true;
-								Operators.toFluxOrMono(p).subscribe(inner);
+								p = Operators.toFluxOrMono(p);
+								p.subscribe(inner);
 							}
 						}
 					}

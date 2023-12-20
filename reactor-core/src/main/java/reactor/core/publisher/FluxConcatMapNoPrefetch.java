@@ -203,7 +203,8 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				Operators.toFluxOrMono(p).subscribe(inner);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(inner);
 			}
 			catch (Throwable e) {
 				Context ctx = actual.currentContext();

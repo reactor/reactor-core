@@ -360,7 +360,8 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 
 			BufferWhenCloseSubscriber<T, BUFFER> bc = new BufferWhenCloseSubscriber<>(this, idx);
 			subscribers.add(bc);
-			Operators.toFluxOrMono(p).subscribe(bc);
+			p = Operators.toFluxOrMono(p);
+			p.subscribe(bc);
 		}
 
 		void openComplete(BufferWhenOpenSubscriber<OPEN> os) {

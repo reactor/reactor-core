@@ -136,7 +136,8 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 								actual.currentContext()));
 			}
 			else {
-				Operators.toFluxOrMono(p).subscribe(actual);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(actual);
 			}
 			return;
 		}

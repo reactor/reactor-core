@@ -215,7 +215,8 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
-			Operators.toFluxOrMono(p).subscribe(nextInner);
+			p = Operators.toFluxOrMono(p);
+			p.subscribe(nextInner);
 		}
 
 		@Override
