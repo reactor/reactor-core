@@ -546,8 +546,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				tailIndex = 1;
 				a[i] = b;
 				tail = b;
-			}
-			else {
+			} else {
 				a[i] = value;
 				tailIndex = i + 1;
 			}
@@ -773,27 +772,47 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	static final class ArraySizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
 
-		final Object[] buffer;
-		volatile int head;
+		private static final class StampedBuffer {
+			final int index;
+			final Object[] arr;
+
+			private StampedBuffer(int index, Object[] arr) {
+				this.index = index;
+				this.arr = arr;
+			}
+		}
+
+		volatile StampedBuffer buffer;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ArraySizeBoundReplayBuffer> HEAD =
-				AtomicIntegerFieldUpdater.newUpdater(ArraySizeBoundReplayBuffer.class, "head");
+		static final AtomicReferenceFieldUpdater<ArraySizeBoundReplayBuffer, StampedBuffer> BUFF =
+				AtomicReferenceFieldUpdater.newUpdater(ArraySizeBoundReplayBuffer.class, StampedBuffer.class, "buffer");
 
 		final int indexUpdateLimit;
+		final int cap;
 
 		volatile boolean done;
 		Throwable error;
 
 		ArraySizeBoundReplayBuffer(int size) {
-			this.buffer = new Object[size];
+			if (size < 0) {
+				throw new IllegalArgumentException("Limit cannot be negative");
+			}
+			this.buffer = new StampedBuffer(0, new Object[size]);
 			this.indexUpdateLimit = Operators.unboundedOrLimit(size);
+			this.cap = size;
 		}
 
 
 		@Override
 		public void add(T value) {
-			buffer[HEAD.getAndIncrement(this) % capacity()] = value;
+			StampedBuffer buff, next;
+			do {
+				buff = BUFF.get(this);
+				next = new StampedBuffer(buff.index + 1, new Object[cap]);
+				System.arraycopy(buff.arr, 1, next.arr, 0, cap-1);
+				next.arr[cap-1] = value;
+			} while (!BUFF.compareAndSet(this, buff, next));
 		}
 
 		@Override
@@ -816,22 +835,17 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			final Subscriber<? super T> a = rs.actual();
 
 			int missed = 1;
-			Object[] curr = new Object[capacity()];
 			for (; ; ) {
 
 				long r = rs.requested();
 				long e = 0L;
 
-				int max = head;
-				System.arraycopy(buffer, 0, curr, 0, capacity());
+				StampedBuffer curr = BUFF.get(this);
+				int nodeIdx = rs.index();
+				for (int i = minIndex(nodeIdx, curr); i < cap; i++) {
 
-				for (
-						int idx = minIndex(rs.index(), max);
-						idx < max;
-						idx++
-				) {
 					if (rs.isCancelled()) {
-						rs.index(0);
+						clear(rs);
 						return;
 					}
 
@@ -839,20 +853,20 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 						break; // lack of request
 					}
 
-					@SuppressWarnings("unchecked") T next = (T) curr[idx % capacity()];
-
+					@SuppressWarnings("unchecked") T next = (T) curr.arr[i];
 					a.onNext(next);
 
 					e++;
-					rs.index(idx + 1);
+					int logicalNextIdx = curr.index - (cap - i) + 1;
+					rs.index(logicalNextIdx);
 
-					if ((idx + 1) % indexUpdateLimit == 0) {
-						rs.requestMore(idx + 1);
+					if ((logicalNextIdx) % indexUpdateLimit == 0) {
+						rs.requestMore(logicalNextIdx);
 					}
 				}
 
 				if (done && isEmpty(rs)) {
-					rs.index(0);
+					clear(rs);
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
@@ -869,7 +883,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					}
 
 					if (done && isEmpty(rs)) {
-						rs.index(0);
+						clear(rs);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -893,14 +907,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			}
 		}
 
-		private int minIndex(int rsIdx, int max) {
-			if (rsIdx <= max && rsIdx > max - capacity()) {
-				return rsIdx;
+		int minIndex(int rsNodeIdx, StampedBuffer buf) {
+			if (rsNodeIdx > buf.index) {
+				return cap;
 			}
-			if (max < capacity()) {
-				return Math.min(rsIdx, max);
-			}
-			return Math.max(rsIdx, max - capacity());
+			return Math.max(cap-(buf.index - rsNodeIdx), 0);
 		}
 
 		void replayFused(ReplaySubscription<T> rs) {
@@ -911,7 +922,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			for (; ; ) {
 
 				if (rs.isCancelled()) {
-					rs.index(0);
+					clear(rs);
 					return;
 				}
 
@@ -956,16 +967,20 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public T poll(ReplaySubscription<T> rs) {
-			int idx = minIndex(rs.index(), head);
-			@SuppressWarnings("unchecked") T next = (T) buffer[idx % capacity()];
+			StampedBuffer curr = BUFF.get(this);
+			int nodeIdx = rs.index();
 
-			if (next == null) {
+			int idx = minIndex(nodeIdx, curr);
+			if (idx == cap) {
 				return null;
 			}
-			rs.index(idx + 1);
+			@SuppressWarnings("unchecked") T next = (T) curr.arr[idx];
 
-			if ((idx + 1) % indexUpdateLimit == 0) {
-				rs.requestMore(idx + 1);
+			int logicalNextIdx = curr.index - (cap - idx) + 1;
+			rs.index(logicalNextIdx);
+
+			if ((logicalNextIdx) % indexUpdateLimit == 0) {
+				rs.requestMore(logicalNextIdx);
 			}
 
 			return next;
@@ -978,25 +993,24 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public boolean isEmpty(ReplaySubscription<T> rs) {
-			int idx = minIndex(rs.index(), head);
-			rs.index(idx);
-			int hd = head;
-			return hd == idx;
+			int nodeIdx = rs.index();
+			StampedBuffer curr = BUFF.get(this);
+			return nodeIdx == curr.index;
 		}
 
 		@Override
 		public int size(ReplaySubscription<T> rs) {
-			return Math.min(capacity(), head - rs.index());
+			return Math.min(capacity(), BUFF.get(this).index - rs.index());
 		}
 
 		@Override
 		public int size() {
-			return Math.min(capacity(), head);
+			return Math.min(capacity(), BUFF.get(this).index);
 		}
 
 		@Override
 		public int capacity() {
-			return buffer.length;
+			return cap;
 		}
 
 		@Override

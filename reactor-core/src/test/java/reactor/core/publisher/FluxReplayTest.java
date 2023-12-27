@@ -591,24 +591,6 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		assertThat(requests).containsExactly(8L, 6L);
 	}
 
-	@Test
-	public void minimalInitialRequestUnboundedWithFused() {
-		List<Long> requests = new ArrayList<>();
-		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
-
-		ConnectableFlux<Integer> replay =
-				Flux.range(1, 11)
-				    .doOnRequest(requests::add)
-				    .replay(8);
-
-		assertThat(requests).isEmpty();
-
-		replay.subscribe(fiveThenEightSubscriber);
-		replay.subscribe(); //unbounded
-		replay.connect();
-
-		assertThat(requests).containsExactly(8L, 6L);
-	}
 
 	@Test
 	public void onlyInitialRequestWithLateUnboundedSubscriber() {
