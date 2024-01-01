@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -786,6 +788,176 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 				request(secondRequest);
 			}
 		}
+	}
+
+	final static class CancelOnNextSubscription implements FluxReplay.ReplaySubscription<Integer>, CoreSubscriber<Integer> {
+
+		int produced;
+		private Object currentNode;
+		private int tailIndex;
+		private int index;
+		private boolean onNextCalled;
+		private int requestMore;
+		private boolean completed;
+		private Throwable error;
+		private Integer next;
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return 0;
+		}
+
+		@Override
+		public CoreSubscriber<? super Integer> actual() {
+			return this;
+		}
+
+		@Override
+		public boolean enter() {
+			return true;
+		}
+
+		@Override
+		public int leave(int missed) {
+			return 0;
+		}
+
+		@Override
+		public void produced(long n) {
+			produced++;
+		}
+
+		@Override
+		public void node(Object node) {
+			currentNode = node;
+		}
+
+		@Override
+		public Object node() {
+			return currentNode;
+		}
+
+		@Override
+		public int tailIndex() {
+			return tailIndex;
+		}
+
+		@Override
+		public void tailIndex(int tailIndex) {
+			this.tailIndex = tailIndex;
+		}
+
+		@Override
+		public int index() {
+			return index;
+		}
+
+		@Override
+		public void index(int index) {
+			this.index = index;
+		}
+
+		@Override
+		public int fusionMode() {
+			return 0;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return onNextCalled;
+		}
+
+		@Override
+		public long requested() {
+			return Long.MAX_VALUE;
+		}
+
+		@Override
+		public void requestMore(int index) {
+			requestMore = index;
+		}
+
+		@Override
+		public Integer poll() {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+
+		}
+
+		@Override
+		public void request(long n) {
+
+		}
+
+		@Override
+		public void cancel() {
+
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+
+		}
+
+		@Override
+		public void onNext(Integer integer) {
+			next = integer;
+			onNextCalled = true;
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			error = t;
+		}
+
+		@Override
+		public void onComplete() {
+			completed = true;
+		}
+	}
+
+	enum DoNotPlayErrorsToCancelledSubscription {
+		ARRAY(new FluxReplay.ArraySizeBoundReplayBuffer<>(10)),
+		SIZE_TIME(new FluxReplay.SizeAndTimeBoundReplayBuffer<>(10, 1000000000, Schedulers.parallel())),
+		UNBOUND(new FluxReplay.UnboundedReplayBuffer<>(100))
+
+		;
+
+		public final FluxReplay.ReplayBuffer<Integer> buffer;
+
+		DoNotPlayErrorsToCancelledSubscription(FluxReplay.ReplayBuffer<Integer> buffer) {
+			this.buffer = buffer;
+		}
+	}
+
+	// failing to implement this will cause a number of
+	// race*-tests to fail and timeout/run indefinitely
+	@ParameterizedTest
+	@EnumSource
+	void testOnErrorNotConveyedToCancelledSubscription(DoNotPlayErrorsToCancelledSubscription testBuffer) {
+		FluxReplay.ReplayBuffer<Integer> buffer = testBuffer.buffer;
+		buffer.add(5);
+		buffer.onError(new RuntimeException("err"));
+
+		CancelOnNextSubscription rs = new CancelOnNextSubscription();
+		buffer.replay(rs);
+		assertThat(rs.index()).isEqualTo(0);  // reset
+		assertThat(rs.error).isNull();  // error was not played
+		assertThat(rs.next).isEqualTo(5); // cache (re)played its value
+		assertThat(rs.onNextCalled).isTrue();
 	}
 
 }
