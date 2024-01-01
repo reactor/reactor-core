@@ -865,6 +865,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					}
 				}
 
+				if (rs.isCancelled()) {
+					clear(rs);
+					return;
+				}
+
 				if (done && isEmpty(rs)) {
 					clear(rs);
 					Throwable ex = error;
