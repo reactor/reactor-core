@@ -207,7 +207,8 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 			SampleTimeoutOther<T, U> os = new SampleTimeoutOther<>(this, t, idx);
 
 			if (Operators.replace(OTHER, this, os)) {
-				Operators.toFluxOrMono(p).subscribe(os);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(os);
 			}
 		}
 

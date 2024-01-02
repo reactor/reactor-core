@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -91,7 +90,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 							asyncCancel,
 							null);
 
-					Operators.toFluxOrMono(p).subscribe(subscriber);
+					p = Operators.toFluxOrMono(p);
+					p.subscribe(subscriber);
 				}
 			}
 			catch (Throwable e) {
@@ -101,8 +101,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		//trigger the resource creation and delay the subscription to actual
-		Operators.toFluxOrMono(resourceSupplier).subscribe(new ResourceSubscriber(actual,
-				resourceClosure,	asyncComplete, asyncError, asyncCancel, resourceSupplier instanceof Mono));
+		// + ensure onLastOperatorHook is called by invoking Publisher::subscribe(Subscriber)
+		((Publisher<?>) Operators.toFluxOrMono(resourceSupplier)).subscribe(
+				new ResourceSubscriber(actual, resourceClosure,	asyncComplete, asyncError, asyncCancel, resourceSupplier instanceof Mono));
 	}
 
 	@Override
@@ -191,9 +192,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			}
 			resourceProvided = true;
 
-			final Publisher<? extends T> p = deriveFluxFromResource(resource, resourceClosure);
+			Publisher<? extends T> p = deriveFluxFromResource(resource, resourceClosure);
 
-			Operators.toFluxOrMono(p).subscribe(FluxUsingWhen.<S, T>prepareSubscriberForResource(resource,
+			p = Operators.toFluxOrMono(p);
+			p.subscribe(FluxUsingWhen.<S, T>prepareSubscriberForResource(resource,
 					this.actual,
 					this.asyncComplete,
 					this.asyncError,
@@ -362,7 +364,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				Operators.toFluxOrMono(p).subscribe(new RollbackInner(this, t));
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(new RollbackInner(this, t));
 			}
 		}
 
@@ -382,7 +385,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				Operators.toFluxOrMono(p).subscribe(new CommitInner(this));
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(new CommitInner(this));
 			}
 		}
 

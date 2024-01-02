@@ -242,15 +242,15 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                     }
                     return;
                 } else {
-                    final Publisher<?> m = a[i];
+                    Publisher<?> p = a[i];
 
-                    if (m instanceof Callable) {
+                    if (p instanceof Callable) {
                         if (isCancelled(this.state)) {
                             //NB: in the non-callable case, this is handled by activeSubscription.cancel()
                             return;
                         }
                         try {
-                            Operators.onDiscard(((Callable<?>) m).call(), currentContext());
+                            Operators.onDiscard(((Callable<?>) p).call(), currentContext());
                         }
                         catch (Throwable ex) {
                             onError(Operators.onOperatorError(ex, currentContext()));
@@ -261,7 +261,8 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         continue;
                     }
 
-                    Operators.toFluxOrMono(m).subscribe((CoreSubscriber) this);
+                    p = Operators.toFluxOrMono(p);
+                    p.subscribe((CoreSubscriber) this);
                     return;
                 }
             }

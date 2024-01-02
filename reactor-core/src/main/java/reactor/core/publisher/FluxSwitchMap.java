@@ -233,7 +233,8 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 			if (INNER.compareAndSet(this, si, innerSubscriber)) {
 				ACTIVE.getAndIncrement(this);
-				Operators.toFluxOrMono(p).subscribe(innerSubscriber);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(innerSubscriber);
 			}
 		}
 

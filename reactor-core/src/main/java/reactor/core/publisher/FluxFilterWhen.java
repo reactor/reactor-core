@@ -279,7 +279,8 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 								FilterWhenInner inner = new FilterWhenInner(this, !(p instanceof Mono));
 								if (CURRENT.compareAndSet(this,null, inner)) {
 									state = STATE_RUNNING;
-									Operators.toFluxOrMono(p).subscribe(inner);
+									p = Operators.toFluxOrMono(p);
+									p.subscribe(inner);
 									break;
 								}
 							}

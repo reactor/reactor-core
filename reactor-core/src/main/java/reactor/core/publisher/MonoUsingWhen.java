@@ -93,10 +93,9 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		Operators.toFluxOrMono(resourceSupplier).subscribe(new ResourceSubscriber(actual,
-				resourceClosure,
-				asyncComplete, asyncError, asyncCancel,
-				resourceSupplier instanceof Mono));
+		// Ensure onLastOperatorHook is called by invoking Publisher::subscribe(Subscriber)
+		((Publisher<?>) Operators.toFluxOrMono(resourceSupplier)).subscribe(
+				new ResourceSubscriber(actual, resourceClosure, asyncComplete, asyncError, asyncCancel, resourceSupplier instanceof Mono));
 	}
 
 	@Override

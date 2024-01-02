@@ -61,7 +61,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			if (p == null) {
 				Operators.error(actual, new NullPointerException("The single source Publisher is null"));
 			} else {
-				Operators.toFluxOrMono(p).subscribe(actual);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(actual);
 			}
 			return;
 		}
@@ -255,7 +256,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				if (this.cancelled) {
 					return;
 				}
-				Operators.toFluxOrMono(p).subscribe(this);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(this);
 
 				final Object state = this.get();
 				if (state != DONE) {
@@ -404,7 +406,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				final Publisher<? extends T> p = a[i];
+				Publisher<? extends T> p = a[i];
 
 				if (p == null) {
 					this.remove();
@@ -440,7 +442,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				Operators.toFluxOrMono(p).subscribe(this);
+				p = Operators.toFluxOrMono(p);
+				p.subscribe(this);
 
 				final Object state = this.get();
 				if (state != DONE) {

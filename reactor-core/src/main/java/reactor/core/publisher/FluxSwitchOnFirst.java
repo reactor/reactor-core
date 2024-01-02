@@ -519,7 +519,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				final Publisher<? extends R> outboundPublisher;
+				Publisher<? extends R> outboundPublisher;
 				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
@@ -542,7 +542,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				Operators.toFluxOrMono(outboundPublisher).subscribe(o);
+				outboundPublisher = Operators.toFluxOrMono(outboundPublisher);
+				outboundPublisher.subscribe(o);
 				return;
 			}
 
@@ -575,7 +576,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
-				final Publisher<? extends R> result;
+				Publisher<? extends R> result;
 				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 				try {
 					final Signal<T> signal = Signal.error(t, o.currentContext());
@@ -586,7 +587,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				Operators.toFluxOrMono(result).subscribe(o);
+				result = Operators.toFluxOrMono(result);
+				result.subscribe(o);
 			}
 		}
 
@@ -611,7 +613,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
-				final Publisher<? extends R> result;
+				Publisher<? extends R> result;
 				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
@@ -623,7 +625,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				Operators.toFluxOrMono(result).subscribe(o);
+				result = Operators.toFluxOrMono(result);
+				result.subscribe(o);
 			}
 		}
 
@@ -844,7 +847,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return true;
 				}
 
-				final Publisher<? extends R> result;
+				Publisher<? extends R> result;
 				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
@@ -868,7 +871,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return true;
 				}
 
-				Operators.toFluxOrMono(result).subscribe(o);
+				result = Operators.toFluxOrMono(result);
+				result.subscribe(o);
 				return true;
 			}
 
