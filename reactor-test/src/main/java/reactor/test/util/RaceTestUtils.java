@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,11 @@ public class RaceTestUtils {
 			final int index = i;
 			s.schedule(() -> {
 				if (count.decrementAndGet() != 0) {
-					while (count.get() != 0) { }
+					// This is the problem right here. It pins the platform thread. If
+					// there are less CPUs than runnables, this simply spins forever.
+					while (count.get() != 0) {
+						Thread.yield();
+					}
 				}
 
 				try {
