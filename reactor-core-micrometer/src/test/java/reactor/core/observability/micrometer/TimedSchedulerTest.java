@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Simon Baslé
@@ -187,20 +186,25 @@ class TimedSchedulerTest {
 	void schedulePeriodicallyTimesOneRunInActiveAndAllRunsInCompleted() throws InterruptedException {
 		MockClock virtualClock = new MockClock();
 		SimpleMeterRegistry registryWithVirtualClock = new SimpleMeterRegistry(SimpleConfig.DEFAULT, virtualClock);
-		TimedScheduler test = new TimedScheduler(Schedulers.single(), registryWithVirtualClock, "test", Tags.empty());
+		TimedScheduler test = new TimedScheduler(Schedulers.single(), registryWithVirtualClock, "test",
+				Tags.empty());
 
 		//schedule a periodic task for which one run takes 500ms. we cancel after 3 runs
 		CountDownLatch latch = new CountDownLatch(3);
-		Disposable d = test.schedulePeriodically(
-			() -> {
-				try {
-					virtualClock.add(Duration.ofMillis(500));
-				}
-				finally {
-					latch.countDown();
-				}
-			},
-			100, 100, TimeUnit.MILLISECONDS);
+
+		//decrement latch after all task & wrapper actions are performed
+		Schedulers.onScheduleHook("test", task -> () -> {
+			try {
+				task.run();
+			}
+			finally {
+				latch.countDown();
+			}
+		});
+
+		Disposable d = test.schedulePeriodically(() -> virtualClock.add(Duration.ofMillis(500)),
+				100, 100, TimeUnit.MILLISECONDS);
+
 		latch.await(1, TimeUnit.SECONDS);
 		d.dispose();
 
@@ -214,6 +218,9 @@ class TimedSchedulerTest {
 		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
 			.as("total duration of tasks")
 			.isEqualTo(1500);
+
+		Schedulers.resetOnScheduleHook("test");
+		test.disposeGracefully().block(Duration.ofSeconds(1));
 	}
 
 	@Test
@@ -245,7 +252,16 @@ class TimedSchedulerTest {
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
-		Disposable d = test.schedulePeriodically(latch::countDown, 100, 100, TimeUnit.MILLISECONDS);
+		Schedulers.onScheduleHook("test", task -> () -> {
+			try {
+				task.run();
+			}
+			finally {
+				latch.countDown();
+			}
+		});
+
+		Disposable d = test.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
 
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
@@ -259,6 +275,9 @@ class TimedSchedulerTest {
 			.isEqualTo(5)
 			.matches(l -> l == test.submittedDirect.count() + test.submittedDelayed.count()  + test.submittedPeriodicInitial.count()
 				+ test.submittedPeriodicIteration.count(), "completed tasks == sum of all timer counts");
+
+		Schedulers.resetOnScheduleHook("test");
+		test.disposeGracefully().block(Duration.ofSeconds(1));
 	}
 
 	@Test
@@ -302,12 +321,20 @@ class TimedSchedulerTest {
 
 	@Test
 	void workerSchedulePeriodicallyIsCorrectlyMetered() throws InterruptedException {
-		Scheduler original = Schedulers.single();
 		CountDownLatch latch = new CountDownLatch(5);
-		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
 
-		Disposable d = test.schedulePeriodically(latch::countDown, 100, 100, TimeUnit.MILLISECONDS);
+		Schedulers.onScheduleHook("test", task -> () -> {
+			try {
+				task.run();
+			}
+			finally {
+				latch.countDown();
+			}
+		});
+
+		Disposable d = test.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
 
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
@@ -323,5 +350,9 @@ class TimedSchedulerTest {
 				+ testScheduler.submittedDelayed.count()
 				+ testScheduler.submittedPeriodicInitial.count()
 				+ testScheduler.submittedPeriodicIteration.count(), "completed tasks == sum of all timer counts");
+
+		test.dispose();
+		Schedulers.resetOnScheduleHook("test");
+		testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
 	}
 }
