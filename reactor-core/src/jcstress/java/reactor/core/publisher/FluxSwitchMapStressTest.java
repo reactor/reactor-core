@@ -270,7 +270,8 @@ public abstract class FluxSwitchMapStressTest {
 		}
 	}
 
-	@JCStressTest
+	// Ignore, flaky test (https://github.com/reactor/reactor-core/issues/3633)
+	//@JCStressTest
 	@Outcome(id = {"200, 0", "200, 1"}, expect = ACCEPTABLE, desc = "Should produced exactly what was requested")
 	@State
 	public static class RequestAndProduceStressTest2 extends FluxSwitchMapStressTest {

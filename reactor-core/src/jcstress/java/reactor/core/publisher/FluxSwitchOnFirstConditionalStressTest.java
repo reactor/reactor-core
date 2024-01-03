@@ -56,7 +56,8 @@ public abstract class FluxSwitchOnFirstConditionalStressTest {
 	abstract Flux<String> switchOnFirst(Signal<? extends String> signal,
 			Flux<String> inbound);
 
-	@JCStressTest
+	// Ignore, flaky test (https://github.com/reactor/reactor-core/issues/3627)
+	//@JCStressTest
 	@Outcome(id = {"1, 1, 1, 1, 1"}, expect = ACCEPTABLE)
 	@State
 	public static class OutboundOnSubscribeAndRequestStressTest
@@ -95,7 +96,8 @@ public abstract class FluxSwitchOnFirstConditionalStressTest {
 		}
 	}
 
-	@JCStressTest
+	// Ignore, flaky test (https://github.com/reactor/reactor-core/issues/3627)
+	//@JCStressTest
 	@Outcome(id = {
 			"1, 2, 0, 1"}, expect = ACCEPTABLE, desc = "inbound next with error happens first")
 	@Outcome(id = {
@@ -143,7 +145,8 @@ public abstract class FluxSwitchOnFirstConditionalStressTest {
 		}
 	}
 
-	@JCStressTest
+	// Ignore, flaky test (https://github.com/reactor/reactor-core/issues/3627)
+	//@JCStressTest
 	@Outcome(id = {
 			"1, 1, 2, 1, 1"}, expect = ACCEPTABLE, desc = "outbound cancel happened before inbound next")
 	@Outcome(id = {
