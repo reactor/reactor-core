@@ -160,9 +160,17 @@ public class RaceTestUtils {
 			final int index = i;
 			s.schedule(() -> {
 				if (count.decrementAndGet() != 0) {
-					// This is the problem right here. It pins the platform thread. If
-					// there are less CPUs than runnables, this simply spins forever.
 					while (count.get() != 0) {
+						// If there are less CPUs than Runnable instances, this spins
+						// forever. In case of platform Threads, things should be fine
+						// as the OS can interrupt their work and make progress. With
+						// VirtualThreads, they are run on the common ForkJoinPool,
+						// which allocates as many Threads as there are CPUs available.
+						// In such a case, the Runnables pin the platform Threads
+						// disallowing a continuation to be replaced by a pending one.
+						// This call creates the opportunity to swap the Runnables and
+						// make progress. For platform Threads it is just a hint to the
+						// runtime and might be ignored.
 						Thread.yield();
 					}
 				}
