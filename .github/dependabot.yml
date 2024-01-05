@@ -41,6 +41,10 @@ updates:
       - dependency-name: "com.tngtech.archunit:archunit"
         versions:
         - ">= 1.0.a"
+      # bnd: don't upgrade to v7 (requires JDK17+)
+      - dependency-name: "biz.aQute.bnd.builder:biz.aQute.bnd.builder.gradle.plugin"
+        versions:
+          - ">= 7.0.a"
   - package-ecosystem: "github-actions"
     directory: ".github/workflows"
     schedule:
