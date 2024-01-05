@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -323,25 +323,44 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 	@Test
 	public void ensuresConcurrentWorkerTaskDisposure() throws InterruptedException {
 		for (int i = 0; i < 100; i++) {
-			CountDownLatch latch = new CountDownLatch(1);
-			CountDownLatch latch2 = new CountDownLatch(1);
+			CountDownLatch latchNeverReleased = new CountDownLatch(1);
+			CountDownLatch firstTaskLatch = new CountDownLatch(1);
+			CountDownLatch secondTaskLatch = new CountDownLatch(1);
 
 			Scheduler.Worker worker = scheduler.createWorker();
-			worker.schedule(()-> {
+			Disposable firstTask = worker.schedule(() -> {
 				try {
-					latch2.await();
+					firstTaskLatch.await();
 				}
 				catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
 			});
-			Disposable disposable = worker.schedule(latch::countDown);
-			RaceTestUtils.race(() -> worker.dispose(), () -> disposable.dispose());
-			latch2.countDown();
-			Assertions.assertThat(latch.getCount())
-			          .isOne();
+			Disposable secondTask = worker.schedule(() -> {
+				try {
+					secondTaskLatch.await();
+					// The below release is never to be reached.
+					// However, we need the above latch to protect against a situation
+					// in which during the race:
+					// 1. worker is disposed
+					// 2. firstTask is cancelled, gets interrupted
+					// 3. secondTask is pulled by the worker and executed, so
+					//    latchNeverReleased.countDown() is executed
+					// 4. secondTask.dispose() is called after the task has already run
+					latchNeverReleased.countDown();
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			RaceTestUtils.race(worker::dispose, secondTask::dispose);
+
+			firstTaskLatch.countDown();
+			secondTaskLatch.countDown();
+
+			Assertions.assertThat(latchNeverReleased.getCount()).isOne();
 			Assertions.assertThat(worker.isDisposed()).isTrue();
-			Assertions.assertThat(disposable.isDisposed()).isTrue();
+			Assertions.assertThat(firstTask.isDisposed()).isTrue();
+			Assertions.assertThat(secondTask.isDisposed()).isTrue();
 		}
 	}
 
