@@ -5,7 +5,7 @@ ext {
     assertjVersion = "3.24.2"
     awaitilityVersion = "4.2.0"
     blockhoundVersion = "1.0.8.RELEASE"
-    byteBuddyVersion = "1.14.10"
+    byteBuddyVersion = "1.14.11"
     cglibVersion = "3.3.0"
     javaObjectLayoutVersion = "0.17"
     jmhVersion = "1.37"
