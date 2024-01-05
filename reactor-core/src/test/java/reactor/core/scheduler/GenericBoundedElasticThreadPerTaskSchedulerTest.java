@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,17 +64,7 @@ class GenericBoundedElasticThreadPerTaskSchedulerTest extends AbstractSchedulerT
 	}
 
 	@Override
-	public void acceptTaskAfterStartStopStart() {
-		Assertions.fail("no restart supported");
-	}
-
-	@Override
-	public void restartSupport() {
-		Assertions.fail("no restart supported");
-	}
-
-	@Override
-	void multipleRestarts() {
-		Assertions.fail("no restart supported");
+	protected boolean shouldCheckSupportRestart() {
+		return false;
 	}
 }
