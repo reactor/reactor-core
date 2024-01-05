@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -325,7 +325,6 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		for (int i = 0; i < 100; i++) {
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = new CountDownLatch(1);
-			CountDownLatch latch3 = new CountDownLatch(1);
 
 			Scheduler.Worker worker = scheduler.createWorker();
 			worker.schedule(()-> {
@@ -336,27 +335,9 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 					throw new RuntimeException(e);
 				}
 			});
-			Disposable disposable = worker.schedule(() -> {
-				System.out.println("latch::countDown is executed");
-				try {
-					latch3.await();
-					latch.countDown();
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			});
-			RaceTestUtils.race(() -> worker.dispose(), () -> {
-				System.out.println("disposable.dispose() is called");
-				disposable.dispose();
-			});
+			Disposable disposable = worker.schedule(latch::countDown);
+			RaceTestUtils.race(() -> worker.dispose(), () -> disposable.dispose());
 			latch2.countDown();
-			latch3.countDown();
-			// This is not necessarily true
-			// The following could happen
-			// 1. worker is disposed
-			// 2. latch2 awaiting task is cancelled, gets interrupted
-			// 3. latch::countDown is executed
-			// 4. disposable.dispose() is called
 			Assertions.assertThat(latch.getCount())
 			          .isOne();
 			Assertions.assertThat(worker.isDisposed()).isTrue();
