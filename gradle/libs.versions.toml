@@ -12,7 +12,7 @@ baselinePerfCore = "3.4.35"
 baselinePerfExtra = "3.4.10"
 
 # Other shared versions
-asciidoctor = "3.3.2"
+asciidoctor = "4.0.1"
 kotlin = "1.5.32"
 reactiveStreams = "1.0.4"
 
