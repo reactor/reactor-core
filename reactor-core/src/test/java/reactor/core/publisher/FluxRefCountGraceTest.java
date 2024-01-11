@@ -17,6 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -273,28 +276,38 @@ public class FluxRefCountGraceTest {
 	//see https://github.com/reactor/reactor-core/issues/1260
 	@Test
 	@Tag("slow")
-	public void raceSubscribeAndCancelNoTimeout() {
+	public void raceSubscribeAndCancelNoTimeout() throws InterruptedException, TimeoutException {
 		final Flux<String> testFlux = Flux.<String>create(fluxSink -> fluxSink.next("Test").complete())
 				.replay(1)
 				.refCount(1, Duration.ofMillis(0));
 
 		final AtomicInteger signalCount1 = new AtomicInteger();
 		final AtomicInteger signalCount2 = new AtomicInteger();
+		final CountDownLatch latch = new CountDownLatch(200_000);
 
 		final Runnable subscriber1 = () -> {
 			for (int i = 0; i < 100_000; i++) {
-				testFlux.next().doOnNext(signal -> signalCount1.incrementAndGet())
-				        .subscribe();
+				testFlux.next().doOnNext(signal -> {
+					signalCount1.incrementAndGet();
+					latch.countDown();
+				}).subscribe();
 			}
 		};
 		final Runnable subscriber2 = () -> {
 			for (int i = 0; i < 100_000; i++) {
-				testFlux.next().doOnNext(signal -> signalCount2.incrementAndGet())
-				        .subscribe();
+				testFlux.next().doOnNext(signal -> {
+					signalCount2.incrementAndGet();
+					latch.countDown();
+				}).subscribe();
 			}
 		};
 
 		RaceTestUtils.race(subscriber1, subscriber2);
+
+		if (!latch.await(5, TimeUnit.MILLISECONDS)) {
+			throw new TimeoutException("Counts not incremented in time");
+		}
+
 		assertThat(signalCount1).as("signalCount1").hasValue(100_000);
 		assertThat(signalCount2).as("signalCount2").hasValue(100_000);
 	}
