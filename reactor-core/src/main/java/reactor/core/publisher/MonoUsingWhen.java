@@ -24,7 +24,6 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
@@ -220,15 +219,6 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 				actual.onSubscribe(this);
 				s.request(Long.MAX_VALUE);
 			}
-		}
-
-		@Override
-		public void cancel() {
-			if (!resourceProvided) {
-				resourceSubscription.cancel();
-			}
-
-			super.cancel();
 		}
 
 		@Override

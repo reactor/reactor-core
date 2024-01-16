@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -33,7 +34,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -41,12 +41,12 @@ import reactor.core.Scannable.Attr;
 import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.FluxUsingWhen.ResourceSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.util.TestLogger;
-import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
@@ -697,6 +697,43 @@ public class FluxUsingWhenTest {
 		StepVerifier.create(flux.take(1, false), 1)
 		            .expectNext("Transaction started")
 		            .verifyComplete();
+
+		assertThat(ref.get())
+				.isNotNull()
+				.matches(tr -> !tr.commitProbe.wasSubscribed(), "no commit")
+				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback")
+				.matches(tr -> tr.cancelProbe.wasSubscribed(), "cancel method used");
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFullTransaction")
+	public void lateResourcePublisherCleanupIsDeferredOnCancel(Flux<String> transactionToCancel)
+			throws InterruptedException {
+		AtomicReference<TestResource> ref = new AtomicReference<>();
+		CountDownLatch resourceSubscribeLatch = new CountDownLatch(1);
+		CountDownLatch resourceCancelLatch = new CountDownLatch(1);
+		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(() -> {
+					LockSupport.parkNanos(Duration.ofMillis(100).toNanos());
+					TestResource testResource = new TestResource();
+					ref.set(testResource);
+					resourceSubscribeLatch.countDown();
+					return testResource;
+				}).subscribeOn(Schedulers.single()),
+				d -> transactionToCancel,
+				TestResource::commit,
+				TestResource::rollback,
+				testResource -> testResource.cancel()
+				                            .doOnSubscribe(unused -> resourceCancelLatch.countDown()));
+
+		StepVerifier.create(flux.take(Duration.ofMillis(10)), 1)
+		            .verifyComplete();
+
+		assertThat(resourceSubscribeLatch.await(1, TimeUnit.SECONDS))
+				.as("Resource create subscribed")
+				.isTrue();
+		assertThat(resourceCancelLatch.await(1, TimeUnit.SECONDS))
+				.as("Resource cancel subscribed")
+				.isTrue();
 
 		assertThat(ref.get())
 				.isNotNull()

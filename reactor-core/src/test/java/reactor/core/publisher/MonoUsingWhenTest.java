@@ -17,15 +17,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+import java.util.logging.Level;
 
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -34,66 +32,15 @@ import reactor.core.Scannable.Attr;
 import reactor.core.publisher.MonoUsingWhen.ResourceSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
-import reactor.util.Logger;
-import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class MonoUsingWhenTest {
-
-	private static final Logger LOGGER = Loggers.getLogger(MonoUsingWhenTest.class);
-
-	// see https://github.com/reactor/reactor-core/issues/2836
-	@Test
-	@Tag("slow")
-	void cancelEarlyDoesNotLeak() throws InterruptedException {
-		Random random = new Random();
-		Releaseable releaseable = new Releaseable();
-
-		for (int i = 0; i < 100; i++) {
-			LOGGER.debug("iteration #" + i);
-			runCancelEarlyDoesNotLeak(random, releaseable);
-		}
-	}
-
-	private void runCancelEarlyDoesNotLeak(Random random, Releaseable releaseable) throws InterruptedException {
-		Mono<Long> mono = Mono.usingWhen(Mono.fromSupplier(() -> releaseable)
-		                                     .delayElement(Duration.ofMillis(50)).doOnNext(Releaseable::allocate),
-				it -> Mono.delay(Duration.ofMillis(50), Schedulers.boundedElastic()),
-				Releaseable::release);
-
-		CompletableFuture<Long> future = mono.toFuture();
-
-		Thread.sleep(random.nextInt(200));
-		future.cancel(true);
-
-		Awaitility.await().atMost(Duration.ofSeconds(10)).until(releaseable::isReleased);
-	}
-
-	static class Releaseable {
-
-		private final AtomicBoolean released = new AtomicBoolean(true);
-
-		private final Mono<Void> releaser = Mono.fromRunnable(() -> this.released.set(true));
-
-		void allocate() {
-			System.out.println("alloc");
-			released.set(false);
-		}
-
-		boolean isReleased() {
-			return released.get();
-		}
-
-		Mono<Void> release() {
-			System.out.println("release");
-			return releaser;
-		}
-
-	}
 
 	@Test
 	public void nullResourcePublisherRejected() {
@@ -297,61 +244,41 @@ public class MonoUsingWhenTest {
 		assertThat(cancelled).as("resource publisher was not cancelled").isFalse();
 	}
 
-
 	@Test
-	public void lateFluxResourcePublisherIsCancelledOnCancel() {
-		AtomicBoolean resourceCancelled = new AtomicBoolean();
-		AtomicBoolean commitDone = new AtomicBoolean();
-		AtomicBoolean rollbackDone = new AtomicBoolean();
-		AtomicBoolean cancelDone = new AtomicBoolean();
+	public void lateResourcePublisherCleanupIsDeferredOnCancel()
+			throws InterruptedException {
+		AtomicReference<FluxUsingWhenTest.TestResource> ref = new AtomicReference<>();
+		CountDownLatch resourceSubscribeLatch = new CountDownLatch(1);
+		CountDownLatch resourceCancelLatch = new CountDownLatch(1);
+		Mono<Integer> mono = Mono.usingWhen(Mono.fromCallable(() -> {
+					LockSupport.parkNanos(Duration.ofMillis(100).toNanos());
+					FluxUsingWhenTest.TestResource testResource
+							= new FluxUsingWhenTest.TestResource();
+					ref.set(testResource);
+					resourceSubscribeLatch.countDown();
+					return testResource;
+				}).subscribeOn(Schedulers.single()),
+				d -> Mono.just(1),
+				FluxUsingWhenTest.TestResource::commit,
+				FluxUsingWhenTest.TestResource::rollback,
+				testResource -> testResource.cancel()
+						.doOnSubscribe(unused -> resourceCancelLatch.countDown()));
 
-		Flux<String> resourcePublisher = Flux.<String>never()
-				.doOnCancel(() -> resourceCancelled.set(true));
+		StepVerifier.create(mono.take(Duration.ofMillis(10)), 1)
+				.verifyComplete();
 
-		StepVerifier.create(Mono.usingWhen(resourcePublisher,
-				Mono::just,
-				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
-				(tr, err) -> Mono.fromRunnable(() -> rollbackDone.set(true)),
-				tr -> Mono.fromRunnable(() -> cancelDone.set(true))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(100))
-		            .thenCancel()
-		            .verify(Duration.ofSeconds(1));
+		assertThat(resourceSubscribeLatch.await(1, TimeUnit.SECONDS))
+				.as("Resource create subscribed")
+				.isTrue();
+		assertThat(resourceCancelLatch.await(1, TimeUnit.SECONDS))
+				.as("Resource cancel subscribed")
+				.isTrue();
 
-		assertThat(commitDone).as("commitDone").isFalse();
-		assertThat(rollbackDone).as("rollbackDone").isFalse();
-		assertThat(cancelDone).as("cancelDone").isFalse();
-
-		assertThat(resourceCancelled).as("resource cancelled").isTrue();
-	}
-
-	@Test
-	public void lateMonoResourcePublisherIsCancelledOnCancel() {
-		AtomicBoolean resourceCancelled = new AtomicBoolean();
-		AtomicBoolean commitDone = new AtomicBoolean();
-		AtomicBoolean rollbackDone = new AtomicBoolean();
-		AtomicBoolean cancelDone = new AtomicBoolean();
-
-		Mono<String> resourcePublisher = Mono.<String>never()
-				.doOnCancel(() -> resourceCancelled.set(true));
-
-		Mono<String> usingWhen = Mono.usingWhen(resourcePublisher,
-				Mono::just,
-				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
-				(tr, err) -> Mono.fromRunnable(() -> rollbackDone.set(true)),
-				tr -> Mono.fromRunnable(() -> cancelDone.set(true)));
-
-		StepVerifier.create(usingWhen)
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(100))
-		            .thenCancel()
-		            .verify(Duration.ofSeconds(1));
-
-		assertThat(commitDone).as("commitDone").isFalse();
-		assertThat(rollbackDone).as("rollbackDone").isFalse();
-		assertThat(cancelDone).as("cancelDone").isFalse();
-
-		assertThat(resourceCancelled).as("resource cancelled").isTrue();
+		assertThat(ref.get())
+				.isNotNull()
+				.matches(tr -> !tr.commitProbe.wasSubscribed(), "no commit")
+				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback")
+				.matches(tr -> tr.cancelProbe.wasSubscribed(), "cancel method used");
 	}
 
 	@Test
@@ -500,4 +427,105 @@ public class MonoUsingWhenTest {
 		assertThat(op.scanUnsafe(Attr.CANCELLED)).as("CANCELLED not supported").isNull();
 	}
 
+	static class TestResource {
+
+		private static final Duration DELAY = Duration.ofMillis(100);
+
+		final Level level;
+
+		PublisherProbe<Integer> commitProbe   = PublisherProbe.empty();
+		PublisherProbe<Integer> rollbackProbe = PublisherProbe.empty();
+		PublisherProbe<Integer> cancelProbe = PublisherProbe.empty();
+
+		TestResource() {
+			this.level = Level.FINE;
+		}
+
+		TestResource(Level level) {
+			this.level = level;
+		}
+
+		public Flux<String> data() {
+			return Flux.just("Transaction started");
+		}
+
+		public Flux<Integer> commit() {
+			this.commitProbe = PublisherProbe.of(
+					Flux.just(3, 2, 1)
+					    .log("commit method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return commitProbe.flux();
+		}
+
+		public Flux<Integer> commitDelay() {
+			this.commitProbe = PublisherProbe.of(
+					Flux.just(3, 2, 1)
+					    .delayElements(DELAY)
+					    .log("commit method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return commitProbe.flux();
+		}
+
+		public Flux<Integer> commitError() {
+			this.commitProbe = PublisherProbe.of(
+					Flux.just(3, 2, 1)
+					    .delayElements(DELAY)
+					    .map(i -> 100 / (i - 1)) //results in divide by 0
+					    .log("commit method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return commitProbe.flux();
+		}
+
+		@Nullable
+		public Flux<Integer> commitNull() {
+			return null;
+		}
+
+		public Flux<Integer> rollback(Throwable error) {
+			this.rollbackProbe = PublisherProbe.of(
+					Flux.just(5, 4, 3, 2, 1)
+					    .log("rollback me thod used on: " + error, level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return rollbackProbe.flux();
+		}
+
+		public Flux<Integer> rollbackDelay(Throwable error) {
+			this.rollbackProbe = PublisherProbe.of(
+					Flux.just(5, 4, 3, 2, 1)
+					    .delayElements(DELAY)
+					    .log("rollback method used on: " + error, level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return rollbackProbe.flux();
+		}
+
+		public Flux<Integer> rollbackError(Throwable error) {
+			this.rollbackProbe = PublisherProbe.of(
+					Flux.just(5, 4, 3, 2, 1)
+					    .delayElements(DELAY)
+					    .map(i -> 100 / (i - 1)) //results in divide by 0
+					    .log("rollback method used on: " + error, level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return rollbackProbe.flux();
+		}
+
+		@Nullable
+		public Flux<Integer> rollbackNull(Throwable error) {
+			return null;
+		}
+
+		public Flux<Integer> cancel() {
+			this.cancelProbe = PublisherProbe.of(
+					Flux.just(5, 4, 3, 2, 1)
+					    .log("cancel method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return cancelProbe.flux();
+		}
+
+		public Flux<Integer> cancelError() {
+			this.cancelProbe = PublisherProbe.of(
+					Flux.just(5, 4, 3, 2, 1)
+					    .delayElements(DELAY)
+					    .map(i -> 100 / (i - 1)) //results in divide by 0
+					    .log("cancel method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+			return cancelProbe.flux();
+		}
+
+		@Nullable
+		public Flux<Integer> cancelNull() {
+			return null;
+		}
+	}
 }
