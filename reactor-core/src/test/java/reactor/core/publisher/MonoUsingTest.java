@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,25 @@ public class MonoUsingTest {
 		    .subscribe(ts);
 
 		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+
+		assertThat(cleanup).hasValue(1);
+	}
+
+	@Test
+	public void normalAutoCloseable() {
+		AssertSubscriber<AutoCloseable> ts = AssertSubscriber.create();
+
+		AtomicInteger cleanup = new AtomicInteger();
+
+		AutoCloseable resource = cleanup::incrementAndGet;
+
+		Mono.using(() -> resource, r -> Mono.just(resource)
+											.doOnTerminate(() -> assertThat(cleanup).hasValue(0)))
+				.subscribe(ts);
+
+		ts.assertValues(resource)
 		  .assertComplete()
 		  .assertNoError();
 
