@@ -2117,13 +2117,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to generate the resource
 	 * @param sourceSupplier a factory to derive a {@link Publisher} from the supplied resource
 	 * @param <T> emitted type
+	 * @param <D> resource type
 	 *
 	 * @return a new {@link Flux} built around a disposable resource
 	 * @see #usingWhen(Publisher, Function, Function, BiFunction, Function)
 	 * @see #usingWhen(Publisher, Function, Function)
 	 */
-	public static <T> Flux<T> using(Callable<? extends AutoCloseable> resourceSupplier,
-									Function<? super AutoCloseable, ? extends Publisher<? extends T>> sourceSupplier) {
+	public static <T, D extends AutoCloseable> Flux<T> using(Callable<D> resourceSupplier,
+			Function<? super D, ? extends Publisher<? extends T>> sourceSupplier) {
 		return using(resourceSupplier, sourceSupplier, AUTO_CLOSE, true);
 	}
 

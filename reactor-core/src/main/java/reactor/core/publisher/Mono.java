@@ -927,11 +927,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
 	 * @param sourceSupplier a {@link Mono} factory to create the Mono depending on the created resource
 	 * @param <T> emitted type
+	 * @param <D> resource type
 	 *
 	 * @return new {@link Mono}
 	 */
-	public static <T> Mono<T> using(Callable<? extends AutoCloseable> resourceSupplier,
-									Function<? super AutoCloseable, ? extends Mono<? extends T>> sourceSupplier) {
+	public static <T, D extends AutoCloseable> Mono<T> using(Callable<D> resourceSupplier,
+			Function<? super D, ? extends Mono<? extends T>> sourceSupplier) {
 		return using(resourceSupplier, sourceSupplier, Flux.AUTO_CLOSE, true);
 	}
 
