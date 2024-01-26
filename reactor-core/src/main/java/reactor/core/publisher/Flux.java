@@ -70,6 +70,7 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Metrics;
+import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -6539,7 +6540,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <V> Flux<V> mapNotNull(Function <? super T, ? extends V> mapper) {
+	public final <V> @NonNull Flux<V> mapNotNull(Function <? super T, ? extends V> mapper) {
 		return this.handle((t, sink) -> {
 			V v = mapper.apply(t);
 			if (v != null) {
