@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1376,6 +1376,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void dispose() {
+			CONNECTION.compareAndSet(parent, this, null);
 			final long previousState = markDisposed(this);
 			if (isDisposed(previousState)) {
 				return;
@@ -1384,8 +1385,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			if (isSubscribed(previousState)) {
 				s.cancel();
 			}
-
-			CONNECTION.lazySet(parent, null);
 
 			final CancellationException ex = new CancellationException("Disconnected");
 			final ReplayBuffer<T> buffer = this.buffer;
