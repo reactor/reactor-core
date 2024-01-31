@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 
@@ -31,6 +33,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.MockUtils;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -40,6 +43,74 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxUsingTest extends FluxOperatorTest<String, String> {
+
+	public static List<Flux<Integer>> sourcesNonEager() {
+		return Arrays.asList(
+				Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, false),
+				Flux.using(() -> cleanup::incrementAndGet, r -> Flux.range(1, 10), false)
+		);
+	}
+
+	public static List<Flux<Integer>> sourcesEager() {
+		return Arrays.asList(
+				Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set),
+				Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, true),
+				Flux.using(() -> cleanup::incrementAndGet, r -> Flux.range(1, 10)),
+				Flux.using(() -> cleanup::incrementAndGet, r -> Flux.range(1, 10), true)
+		);
+	}
+
+	public static List<Flux<Integer>> sourcesFailNonEager() {
+		return Arrays.asList(
+				Flux.using(() -> 1, r -> Flux.error(new RuntimeException("forced failure")), cleanup::set, false),
+				Flux.using(() -> cleanup::incrementAndGet, r -> Flux.error(new RuntimeException("forced failure")), false)
+		);
+	}
+
+	public static List<Flux<Integer>> sourcesFailEager() {
+		return Arrays.asList(
+				Flux.using(() -> 1, r -> Flux.error(new RuntimeException("forced failure")), cleanup::set),
+				Flux.using(() -> 1, r -> Flux.error(new RuntimeException("forced failure")), cleanup::set, true),
+				Flux.using(() -> cleanup::incrementAndGet, r -> Flux.error(new RuntimeException("forced failure"))),
+				Flux.using(() -> cleanup::incrementAndGet, r -> Flux.error(new RuntimeException("forced failure")), true)
+		);
+	}
+
+	public static List<Flux<Object>> resourcesThrow() {
+		return Arrays.asList(
+				// non eager
+				Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(r, 10), cleanup::set, false),
+				Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(1, 10), false),
+				// eager
+				Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(r, 10), cleanup::set),
+				Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(r, 10), cleanup::set, true),
+				Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(1, 10)),
+				Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(1, 10), true)
+		);
+	}
+
+	public static List<Flux<Integer>> sourcesThrowNonEager() {
+		return Arrays.asList(
+				Flux.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set, false),
+				Flux.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }, false)
+		);
+	}
+
+	public static List<Flux<Integer>> sourcesThrowEager() {
+		return Arrays.asList(
+				Flux.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set),
+				Flux.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set, true),
+				Flux.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }),
+				Flux.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }, true)
+		);
+	}
+
+	private static final AtomicInteger cleanup = new AtomicInteger();
+
+	@BeforeEach
+	public void before() {
+		cleanup.set(0);
+	}
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -114,14 +185,12 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		});
 	}
 
-	@Test
-	public void normal() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesNonEager")
+	public void normal(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, false)
-		    .subscribe(ts);
+		source.doAfterTerminate(() -> assertThat(cleanup).hasValue(0)).subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertComplete()
@@ -130,14 +199,14 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		assertThat(cleanup).hasValue(1);
 	}
 
-	@Test
-	public void normalEager() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesEager")
+	public void normalEager(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set)
-		    .subscribe(ts);
+		source.doFinally(event -> assertThat(cleanup).hasValue(0))
+			  .doOnTerminate(() -> assertThat(cleanup).hasValue(1))
+			  .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertComplete()
@@ -146,26 +215,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		assertThat(cleanup).hasValue(1);
 	}
 
-	@Test
-	public void normalAutoCloseable() {
-		AssertSubscriber<AutoCloseable> ts = AssertSubscriber.create();
-
-		AtomicInteger cleanup = new AtomicInteger();
-
-		AutoCloseable resource = cleanup::incrementAndGet;
-
-		Flux.using(() -> resource, r -> Flux.just(resource))
-		  	.subscribe(ts);
-
-		ts.assertValues(resource)
-		  .assertComplete()
-		  .assertNoError();
-
-		assertThat(cleanup).hasValue(1);
-	}
-
-	void checkCleanupExecutionTime(boolean eager, boolean fail) {
-		AtomicInteger cleanup = new AtomicInteger();
+	void checkCleanupExecutionTime(Flux<Integer> source, boolean eager, boolean fail) {
 		AtomicBoolean before = new AtomicBoolean();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>() {
@@ -182,13 +232,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 			}
 		};
 
-		Flux.using(() -> 1, r -> {
-			if (fail) {
-				return Flux.error(new RuntimeException("forced failure"));
-			}
-			return Flux.range(r, 10);
-		}, cleanup::set, eager)
-		    .subscribe(ts);
+		source.subscribe(ts);
 
 		if (fail) {
 			ts.assertNoValues()
@@ -206,36 +250,36 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		assertThat(before.get()).isEqualTo(eager);
 	}
 
-	@Test
-	public void checkNonEager() {
-		checkCleanupExecutionTime(false, false);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesNonEager")
+	public void checkNonEager(Flux<Integer> source) {
+		checkCleanupExecutionTime(source, false, false);
 	}
 
-	@Test
-	public void checkEager() {
-		checkCleanupExecutionTime(true, false);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesEager")
+	public void checkEager(Flux<Integer> source) {
+		checkCleanupExecutionTime(source, true, false);
 	}
 
-	@Test
-	public void checkErrorNonEager() {
-		checkCleanupExecutionTime(false, true);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFailNonEager")
+	public void checkErrorNonEager(Flux<Integer> source) {
+		checkCleanupExecutionTime(source, false, true);
 	}
 
-	@Test
-	public void checkErrorEager() {
-		checkCleanupExecutionTime(true, true);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFailEager")
+	public void checkErrorEager(Flux<Integer> source) {
+		checkCleanupExecutionTime(source, true, true);
 	}
 
-	@Test
-	public void resourceThrowsEager() {
+	@ParameterizedTestWithName
+	@MethodSource("resourcesThrow")
+	public void resourceThrows(Flux<Object> source) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> {
-			throw new RuntimeException("forced failure");
-		}, r -> Flux.range(1, 10), cleanup::set, false)
-		    .subscribe(ts);
+		source.subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -245,16 +289,29 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		assertThat(cleanup).hasValue(0);
 	}
 
-	@Test
-	public void factoryThrowsEager() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesThrowNonEager")
+	public void factoryThrowsNonEager(Flux<Object> source) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
+		source.doAfterTerminate(() -> assertThat(cleanup).hasValue(0)).subscribe(ts);
 
-		Flux.using(() -> 1, r -> {
-			throw new RuntimeException("forced failure");
-		}, cleanup::set, false)
-		    .subscribe(ts);
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+
+		assertThat(cleanup).hasValue(1);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("sourcesThrowEager")
+	public void factoryThrowsEager(Flux<Object> source) {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		source.doFinally(event -> assertThat(cleanup).hasValue(0))
+			  .doOnTerminate(() -> assertThat(cleanup).hasValue(1))
+			  .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -267,8 +324,6 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void factoryReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-
-		AtomicInteger cleanup = new AtomicInteger();
 
 		Flux.<Integer, Integer>using(() -> 1,
 				r -> null,
@@ -285,8 +340,6 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void subscriberCancels() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		AtomicInteger cleanup = new AtomicInteger();
 
 		Sinks.Many<Integer> tp = Sinks.unsafe().many().multicast().directBestEffort();
 
@@ -339,8 +392,6 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanOperator(){
-		AtomicInteger cleanup = new AtomicInteger();
-
 		FluxUsing<Integer, Integer> test = new FluxUsing<>(() -> 1, r -> Flux.range(r, 10), cleanup::set, false);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

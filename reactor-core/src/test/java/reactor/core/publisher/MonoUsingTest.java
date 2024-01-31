@@ -17,16 +17,21 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -35,6 +40,74 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
 public class MonoUsingTest {
+
+	public static List<Mono<Integer>> sourcesNonEager() {
+		return Arrays.asList(
+				Mono.using(() -> 1, Mono::just, cleanup::set, false),
+				Mono.using(() -> cleanup::incrementAndGet, r -> Mono.just(1), false)
+		);
+	}
+
+	public static List<Mono<Integer>> sourcesEager() {
+		return Arrays.asList(
+				Mono.using(() -> 1, Mono::just, cleanup::set),
+				Mono.using(() -> 1, Mono::just, cleanup::set, true),
+				Mono.using(() -> cleanup::incrementAndGet, r -> Mono.just(1)),
+				Mono.using(() -> cleanup::incrementAndGet, r -> Mono.just(1), true)
+		);
+	}
+
+	public static List<Mono<Integer>> sourcesFailNonEager() {
+		return Arrays.asList(
+				Mono.using(() -> 1, r -> Mono.error(new RuntimeException("forced failure")), cleanup::set, false),
+				Mono.using(() -> cleanup::incrementAndGet, r -> Mono.error(new RuntimeException("forced failure")), false)
+		);
+	}
+
+	public static List<Mono<Integer>> sourcesFailEager() {
+		return Arrays.asList(
+				Mono.using(() -> 1, r -> Mono.error(new RuntimeException("forced failure")), cleanup::set),
+				Mono.using(() -> 1, r -> Mono.error(new RuntimeException("forced failure")), cleanup::set, true),
+				Mono.using(() -> cleanup::incrementAndGet, r -> Mono.error(new RuntimeException("forced failure"))),
+				Mono.using(() -> cleanup::incrementAndGet, r -> Mono.error(new RuntimeException("forced failure")), true)
+		);
+	}
+
+	public static List<Mono<Object>> resourcesThrow() {
+		return Arrays.asList(
+				// non eager
+				Mono.using(() -> { throw new RuntimeException("forced failure"); }, Mono::just, cleanup::set, false),
+				Mono.using(() -> { throw new RuntimeException("forced failure"); }, r -> Mono.just(1), false),
+				// eager
+				Mono.using(() -> { throw new RuntimeException("forced failure"); }, Mono::just, cleanup::set),
+				Mono.using(() -> { throw new RuntimeException("forced failure"); }, Mono::just, cleanup::set, true),
+				Mono.using(() -> { throw new RuntimeException("forced failure"); }, r -> Mono.just(1)),
+				Mono.using(() -> { throw new RuntimeException("forced failure"); }, r -> Mono.just(1), true)
+		);
+	}
+
+	public static List<Mono<Integer>> sourcesThrowNonEager() {
+		return Arrays.asList(
+				Mono.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set, false),
+				Mono.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }, false)
+		);
+	}
+
+	public static List<Mono<Integer>> sourcesThrowEager() {
+		return Arrays.asList(
+				Mono.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set),
+				Mono.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set, true),
+				Mono.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }),
+				Mono.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }, true)
+		);
+	}
+
+	private static final AtomicInteger cleanup = new AtomicInteger();
+
+	@BeforeEach
+	public void before() {
+		cleanup.set(0);
+	}
 
 	@Test
 	public void resourceSupplierNull() {
@@ -59,15 +132,12 @@ public class MonoUsingTest {
 		});
 	}
 
-	@Test
-	public void normal() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesNonEager")
+	public void normal(Mono<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set, false)
-		    .doAfterTerminate(() -> assertThat(cleanup).hasValue(0))
-		    .subscribe(ts);
+		source.doAfterTerminate(() -> assertThat(cleanup).hasValue(0)).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertComplete()
@@ -76,17 +146,14 @@ public class MonoUsingTest {
 		assertThat(cleanup).hasValue(1);
 	}
 
-	@Test
-	public void normalEager() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesEager")
+	public void normalEager(Mono<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Mono.using(() -> 1, r -> Mono.just(1)
-		                             .doOnTerminate(() ->  assertThat(cleanup).hasValue(0)),
-				cleanup::set,
-				true)
-		    .subscribe(ts);
+		source.doFinally(event -> assertThat(cleanup).hasValue(0))
+			  .doOnTerminate(() -> assertThat(cleanup).hasValue(1))
+			  .subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertComplete()
@@ -95,27 +162,7 @@ public class MonoUsingTest {
 		assertThat(cleanup).hasValue(1);
 	}
 
-	@Test
-	public void normalAutoCloseable() {
-		AssertSubscriber<AutoCloseable> ts = AssertSubscriber.create();
-
-		AtomicInteger cleanup = new AtomicInteger();
-
-		AutoCloseable resource = cleanup::incrementAndGet;
-
-		Mono.using(() -> resource, r -> Mono.just(resource)
-											.doOnTerminate(() -> assertThat(cleanup).hasValue(0)))
-				.subscribe(ts);
-
-		ts.assertValues(resource)
-		  .assertComplete()
-		  .assertNoError();
-
-		assertThat(cleanup).hasValue(1);
-	}
-
-	void checkCleanupExecutionTime(boolean eager, boolean fail) {
-		AtomicInteger cleanup = new AtomicInteger();
+	void checkCleanupExecutionTime(Mono<Integer> source, boolean eager, boolean fail) {
 		AtomicBoolean before = new AtomicBoolean();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>() {
@@ -132,13 +179,7 @@ public class MonoUsingTest {
 			}
 		};
 
-		Mono.using(() -> 1, r -> {
-			if (fail) {
-				return Mono.error(new RuntimeException("forced failure"));
-			}
-			return Mono.just(1);
-		}, cleanup::set, eager)
-		    .subscribe(ts);
+		source.subscribe(ts);
 
 		if (fail) {
 			ts.assertNoValues()
@@ -156,36 +197,36 @@ public class MonoUsingTest {
 		assertThat(before.get()).isEqualTo(eager);
 	}
 
-	@Test
-	public void checkNonEager() {
-		checkCleanupExecutionTime(false, false);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesNonEager")
+	public void checkNonEager(Mono<Integer> source) {
+		checkCleanupExecutionTime(source, false, false);
 	}
 
-	@Test
-	public void checkEager() {
-		checkCleanupExecutionTime(true, false);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesEager")
+	public void checkEager(Mono<Integer> source) {
+		checkCleanupExecutionTime(source, true, false);
 	}
 
-	@Test
-	public void checkErrorNonEager() {
-		checkCleanupExecutionTime(false, true);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFailNonEager")
+	public void checkErrorNonEager(Mono<Integer> source) {
+		checkCleanupExecutionTime(source, false, true);
 	}
 
-	@Test
-	public void checkErrorEager() {
-		checkCleanupExecutionTime(true, true);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFailEager")
+	public void checkErrorEager(Mono<Integer> source) {
+		checkCleanupExecutionTime(source, true, true);
 	}
 
-	@Test
-	public void resourceThrowsEager() {
+	@ParameterizedTestWithName
+	@MethodSource("resourcesThrow")
+	public void resourceThrowsEager(Mono<Integer> source) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Mono.using(() -> {
-			throw new RuntimeException("forced failure");
-		}, r -> Mono.just(1), cleanup::set, false)
-		    .subscribe(ts);
+		source.subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -195,16 +236,29 @@ public class MonoUsingTest {
 		assertThat(cleanup).hasValue(0);
 	}
 
-	@Test
-	public void factoryThrowsEager() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesThrowNonEager")
+	public void factoryThrowsNonEager(Mono<Integer> source) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
+		source.doAfterTerminate(() -> assertThat(cleanup).hasValue(0)).subscribe(ts);
 
-		Mono.using(() -> 1, r -> {
-			throw new RuntimeException("forced failure");
-		}, cleanup::set, false)
-		    .subscribe(ts);
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+
+		assertThat(cleanup).hasValue(1);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("sourcesThrowEager")
+	public void factoryThrowsEager(Mono<Integer> source) {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		source.doFinally(event -> assertThat(cleanup).hasValue(0))
+			  .doOnTerminate(() -> assertThat(cleanup).hasValue(1))
+			  .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -217,8 +271,6 @@ public class MonoUsingTest {
 	@Test
 	public void factoryReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-
-		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.<Integer, Integer>using(() -> 1,
 				r -> null,
@@ -235,8 +287,6 @@ public class MonoUsingTest {
 	@Test
 	public void subscriberCancels() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		AtomicInteger cleanup = new AtomicInteger();
 
 		Sinks.One<Integer> tp = Sinks.unsafe().one();
 
