@@ -666,7 +666,7 @@ public class MonoUsingTest {
 		final AtomicInteger cleanup = new AtomicInteger();
 		final String name;
 
-		CleanupCase( String name) {
+		CleanupCase(String name) {
 			this.name = name;
 		}
 
