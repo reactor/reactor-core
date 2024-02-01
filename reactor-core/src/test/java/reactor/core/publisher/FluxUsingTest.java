@@ -223,6 +223,67 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
+	public static List<CleanupCase<Integer>> resourcesCleanupThrowNonEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceCleanupThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), r -> { throw new IllegalStateException("resourceCleanup"); }, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Flux.range(1, 10), false);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> resourcesCleanupThrowEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceCleanupThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), r -> { throw new IllegalStateException("resourceCleanup"); });
+					}
+				},
+				new CleanupCase<Integer>("resourceCleanupThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), r -> { throw new IllegalStateException("resourceCleanup"); }, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Flux.range(1, 10));
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Flux.range(1, 10), true);
+					}
+				}
+		);
+	}
+
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ANY)
@@ -432,6 +493,36 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		  .assertErrorMessage("forced failure");
 
 		assertThat(cleanupCase.cleanup).hasValue(1);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("resourcesCleanupThrowNonEager")
+	public void resourcesCleanupThrowNonEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		cleanupCase.get().subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertComplete()
+		  .assertNoError();
+
+		assertThat(cleanupCase.cleanup).hasValue(0);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("resourcesCleanupThrowEager")
+	public void resourcesCleanupThrowEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		cleanupCase.get().subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertErrorWith(e -> {
+			  assertThat(e).hasMessage("resourceCleanup");
+			  assertThat(e).isExactlyInstanceOf(IllegalStateException.class);
+		  });
+
+		assertThat(cleanupCase.cleanup).hasValue(0);
 	}
 
 	@Test

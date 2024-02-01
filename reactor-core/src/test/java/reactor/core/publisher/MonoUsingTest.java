@@ -220,6 +220,67 @@ public class MonoUsingTest {
 		);
 	}
 
+	public static List<CleanupCase<Integer>> resourcesCleanupThrowNonEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceCleanupThrowNonEager") {
+					@Override
+					public Mono<Integer> get() {
+						return Mono.using(() -> 1, Mono::just, r -> { throw new IllegalStateException("resourceCleanup"); }, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowNonEager") {
+					@Override
+					public Mono<Integer> get() {
+						return Mono.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Mono.just(1), false);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> resourcesCleanupThrowEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceCleanupThrowEager") {
+					@Override
+					public Mono<Integer> get() {
+						return Mono.using(() -> 1, Mono::just, r -> { throw new IllegalStateException("resourceCleanup"); });
+					}
+				},
+				new CleanupCase<Integer>("resourceCleanupThrowEagerFlag") {
+					@Override
+					public Mono<Integer> get() {
+						return Mono.using(() -> 1, Mono::just, r -> { throw new IllegalStateException("resourceCleanup"); }, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowEager") {
+					@Override
+					public Mono<Integer> get() {
+						return Mono.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Mono.just(1));
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowEagerFlag") {
+					@Override
+					public Mono<Integer> get() {
+						return Mono.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Mono.just(1), true);
+					}
+				}
+		);
+	}
+
 	@Test
 	public void resourceSupplierNull() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
@@ -379,6 +440,36 @@ public class MonoUsingTest {
 		  .assertErrorMessage("forced failure");
 
 		assertThat(cleanupCase.cleanup).hasValue(1);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("resourcesCleanupThrowNonEager")
+	public void resourcesCleanupThrowNonEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		cleanupCase.get().subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+
+		assertThat(cleanupCase.cleanup).hasValue(0);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("resourcesCleanupThrowEager")
+	public void resourcesCleanupThrowEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		cleanupCase.get().subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertErrorWith(e -> {
+			  assertThat(e).hasMessage("resourceCleanup");
+			  assertThat(e).isExactlyInstanceOf(IllegalStateException.class);
+		  });
+
+		assertThat(cleanupCase.cleanup).hasValue(0);
 	}
 
 	@Test
