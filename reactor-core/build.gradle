@@ -256,6 +256,10 @@ task japicmp(type: JapicmpTask) {
 	classExcludes = [
 	]
 	methodExcludes = [
+		"reactor.core.publisher.Flux#using(java.util.concurrent.Callable, java.util.function.Function)",
+		"reactor.core.publisher.Flux#using(java.util.concurrent.Callable, java.util.function.Function, boolean)",
+		"reactor.core.publisher.Mono#using(java.util.concurrent.Callable, java.util.function.Function)",
+		"reactor.core.publisher.Mono#using(java.util.concurrent.Callable, java.util.function.Function, boolean)"
 	]
 }
 
