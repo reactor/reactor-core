@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -157,7 +158,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		final TimedNode<T> head;
 
-		TimedNode<T> tail;
+		volatile TimedNode<T> tail;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SizeAndTimeBoundReplayBuffer, TimedNode>
+				TAIL = AtomicReferenceFieldUpdater.newUpdater(SizeAndTimeBoundReplayBuffer.class, TimedNode.class, "tail");
 
 		Throwable error;
 		static final long NOT_DONE = Long.MIN_VALUE;
@@ -390,7 +395,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public boolean isEmpty(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			return node.get() == null;
@@ -431,15 +435,22 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void add(T value) {
-			final TimedNode<T> tail = this.tail;
-			final TimedNode<T> valueNode = new TimedNode<>(tail.index + 1,
-					value,
-					scheduler.now(TimeUnit.NANOSECONDS));
+			TimedNode<T> tail;
+			TimedNode<T> valueNode;
+			do {
+				tail = this.tail;
+				valueNode = new TimedNode<>(tail.index + 1,
+						value,
+						scheduler.now(TimeUnit.NANOSECONDS));
+			} while (
+				!TAIL.compareAndSet(this, tail, valueNode)
+			);
 			tail.set(valueNode);
-			this.tail = valueNode;
 			int s = size;
 			if (s == limit) {
-				head.set(head.get().get());
+				Optional.ofNullable(head.get())
+						.flatMap(node -> Optional.ofNullable(node.get()))
+						.ifPresent(head::set);
 			}
 			else {
 				size = s + 1;
@@ -481,7 +492,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void replay(ReplaySubscription<T> rs) {
 			if (!rs.enter()) {
 				return;
@@ -778,7 +788,10 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		final Node<T> head;
 
-		Node<T> tail;
+		volatile Node<T> tail;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SizeBoundReplayBuffer, Node>
+				TAIL = AtomicReferenceFieldUpdater.newUpdater(SizeBoundReplayBuffer.class, Node.class, "tail");
 
 		int size;
 
@@ -809,15 +822,25 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void add(T value) {
-			final Node<T> tail = this.tail;
-			final Node<T> n = new Node<>(tail.index + 1, value);
+			Node<T> tail;
+			Node<T> n;
+			do {
+			 	tail = this.tail;
+			 	n = new Node<>(tail.index + 1, value);
+			} while (
+				!TAIL.compareAndSet(this, tail, n)
+			);
+			// when tail was successfully updated to 'n'
+			// tail.set(n) will not lose integrity.
+			// replaying between these lines' execution is fine
+			// n will replay on next call to replay, done after this method
 			tail.set(n);
-			this.tail = n;
 			int s = size;
 			if (s == limit) {
-				head.set(head.get().get());
-			}
-			else {
+				Optional.ofNullable(head.get())
+						.flatMap(node -> Optional.ofNullable(node.get()))
+						.ifPresent(head::set);
+			} else {
 				size = s + 1;
 			}
 		}
