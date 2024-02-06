@@ -1,8 +1,8 @@
-name: Nightly Check
+name: Snapshots Check
 
 on:
   schedule:
-    - cron: "0 14 * * 0"
+    - cron: "0 20 * * *"
 permissions: read-all
 jobs:
   core-fast:
@@ -44,7 +44,7 @@ jobs:
         with:
           arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true
   other:
-    name: other tests
+    name: other tests without jcstress
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -61,4 +61,4 @@ jobs:
       - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
         name: other tests
         with:
-          arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default
+          arguments: check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default
