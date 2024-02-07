@@ -13,7 +13,7 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
         with:
           ref: ${{ matrix.branch }}
       - name: Download JDK 9
@@ -46,7 +46,7 @@ jobs:
     name: Java 21 core fast tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
         with:
           ref: main
       - name: Download JDK 9
@@ -80,7 +80,7 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
         with:
           ref: ${{ matrix.branch }}
       - name: Download JDK 9
@@ -117,7 +117,7 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
         with:
           ref: ${{ matrix.branch }}
       - name: Download JDK 9

@@ -7,7 +7,7 @@ jobs:
     name: preliminary sanity checks
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
         with:
           fetch-depth: 0 #needed by spotless
       - name: Download JDK 9
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: preliminary
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.base_ref == 'main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -95,7 +95,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    needs: preliminary
 #    steps:
-#      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+#      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
 #      - name: Download JDK 9
 #        if: ${{ github.base_ref == 'main' }}
 #        run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: preliminary
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.base_ref == 'main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: preliminary
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.base_ref == 'main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh

@@ -18,7 +18,7 @@ jobs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.ref == 'refs/heads/main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -58,7 +58,7 @@ jobs:
     name: slowerChecks
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
       - name: Download JDK 9
         if: ${{ github.ref == 'refs/heads/main' }}
         run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -95,7 +95,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.ref == 'refs/heads/main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -133,7 +133,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.ref == 'refs/heads/main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -173,7 +173,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
       if: ${{ github.ref == 'refs/heads/main' }}
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -214,7 +214,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
@@ -229,7 +229,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
