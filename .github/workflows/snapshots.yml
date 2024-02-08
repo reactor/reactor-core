@@ -20,6 +20,9 @@ jobs:
             arguments: ":reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true"
           - type: other
             arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default"
+        exclude:
+          - branch: 3.5.x
+            test-type: core-fast-java21
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
     steps:
       - name: Checkout Repository
