@@ -2,7 +2,7 @@ name: Nightly Check
 
 on:
   schedule:
-    - cron: "0 14 * * *"
+    - cron: "0 14 * * 0"
 permissions: read-all
 jobs:
   core-fast:

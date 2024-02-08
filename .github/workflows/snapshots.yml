@@ -1,0 +1,35 @@
+name: Snapshots Check
+
+on:
+  schedule:
+    - cron: "0 20 * * *"
+permissions: read-all
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, main ]
+        test-type:
+          - type: core-fast
+            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true"
+          - type: core-slow
+            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true"
+          - type: other
+            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default"
+    name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+        with:
+          ref: ${{ matrix.branch }}
+      - name: Setup Java8
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - name: Run Gradle Tests
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
+        with:
+          arguments: ${{ matrix.test-type.arguments }}
