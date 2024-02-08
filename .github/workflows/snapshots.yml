@@ -5,60 +5,31 @@ on:
     - cron: "0 20 * * *"
 permissions: read-all
 jobs:
-  core-fast:
+  run-tests:
     name: core fast tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         branch: [ 3.5.x, main ]
+        test-type:
+          - type: core-fast
+            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true"
+          - type: core-slow
+            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true"
+          - type: other
+            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default"
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - name: Checkout Repository
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
         with:
           ref: ${{ matrix.branch }}
-      - uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      - name: Setup Java8
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
-        name: gradle
+      - name: Run Gradle Tests
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
         with:
-          arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true
-  core-slow:
-    name: core slower tests
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: [ 3.5.x, main ]
-    steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
-        with:
-          ref: ${{ matrix.branch }}
-      - uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
-        with:
-          distribution: 'temurin'
-          java-version: 8
-      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
-        name: gradle
-        with:
-          arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true
-  other:
-    name: other tests without jcstress
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: [ 3.5.x, main ]
-    steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
-        with:
-          ref: ${{ matrix.branch }}
-      - uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
-        with:
-          distribution: 'temurin'
-          java-version: 8
-      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
-        name: other tests
-        with:
-          arguments: check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default
+          arguments: ${{ matrix.test-type.arguments }}
