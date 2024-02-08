@@ -89,39 +89,39 @@ jobs:
       name: gradle
       with:
         arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow
-#  java-21-core-fast:
-#    if: ${{ github.base_ref == 'main' }}
-#    name: Java 21 core fast tests
-#    runs-on: ubuntu-latest
-#    needs: preliminary
-#    steps:
-#      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
-#      - name: Download JDK 9
-#        if: ${{ github.base_ref == 'main' }}
-#        run: ${GITHUB_WORKSPACE}/.github/setup.sh
-#        shell: bash
-#      - name: Setup JDK 9
-#        if: ${{ github.base_ref == 'main' }}
-#        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
-#        with:
-#          distribution: 'jdkfile'
-#          java-version: 9.0.4
-#          jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
-#      - name: Setup JDK 21
-#        if: ${{ github.base_ref == 'main' }}
-#        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
-#        with:
-#          distribution: 'temurin'
-#          java-version: 21
-#      - name: Setup JDK 8
-#        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
-#        with:
-#          distribution: 'temurin'
-#          java-version: 8
-#      - uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
-#        name: gradle
-#        with:
-#          arguments: :reactor-core:java21Test --no-daemon -Pjunit-tags=!slow
+  java-21-core-fast:
+    if: ${{ github.base_ref == 'main' }}
+    name: Java 21 core fast tests
+    runs-on: ubuntu-latest
+    needs: preliminary
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
+      - name: Download JDK 9
+        if: ${{ github.base_ref == 'main' }}
+        run: ${GITHUB_WORKSPACE}/.github/setup.sh
+        shell: bash
+      - name: Setup JDK 9
+        if: ${{ github.base_ref == 'main' }}
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # tag=v3
+        with:
+          distribution: 'jdkfile'
+          java-version: 9.0.4
+          jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+      - name: Setup JDK 21
+        if: ${{ github.base_ref == 'main' }}
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Setup JDK 8
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - uses: gradle/gradle-build-action@3b1b3b9a2104c2b47fbae53f3938079c00c9bb87 # tag=v2
+        name: gradle
+        with:
+          arguments: :reactor-core:java21Test --no-daemon -Pjunit-tags=!slow
   core-slow:
     name: core slower tests
     runs-on: ubuntu-latest
