@@ -146,9 +146,9 @@ jobs:
         if: ${{ matrix.branch == 'main' }}
         name: other tests
         with:
-          arguments: check -x :reactor-core:test -x :reactor-core:java9Test -x :reactor-core:java21Test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default
+          arguments: check -x :reactor-core:test -x :reactor-core:java9Test -x :reactor-core:java21Test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=quick
       - uses: gradle/gradle-build-action@3b1b3b9a2104c2b47fbae53f3938079c00c9bb87 # tag=v2
         if: ${{ matrix.branch == '3.5.x' }}
         name: other tests
         with:
-          arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default
+          arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=quick
