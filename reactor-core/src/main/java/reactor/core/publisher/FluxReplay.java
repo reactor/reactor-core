@@ -448,9 +448,13 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			tail.set(valueNode);
 			int s = size;
 			if (s == limit) {
-				Optional.ofNullable(head.get())
-						.flatMap(node -> Optional.ofNullable(node.get()))
-						.ifPresent(head::set);
+				TimedNode<T> cur, next;
+				do {
+					cur = head.get();
+					if (cur == null)
+						next = null;
+					else next = cur.get();
+				} while (next != null && !head.compareAndSet(cur, next));
 			}
 			else {
 				size = s + 1;
@@ -837,9 +841,13 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			tail.set(n);
 			int s = size;
 			if (s == limit) {
-				Optional.ofNullable(head.get())
-						.flatMap(node -> Optional.ofNullable(node.get()))
-						.ifPresent(head::set);
+				Node<T> cur, next;
+				do {
+					cur = head.get();
+					if (cur == null)
+						next = null;
+					else next = cur.get();
+				} while (next != null && !head.compareAndSet(cur, next));
 			} else {
 				size = s + 1;
 			}
