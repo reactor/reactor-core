@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -106,6 +108,20 @@ class SinksTest {
 
 			first.assertNoValues()
 			     .assertErrorMessage("boom");
+		}
+
+		@Test
+		public void noEmissionsAfterAutoCancel() {
+			Sinks.Many<Integer> sink = supplier.get();
+			Disposable subscription1 = sink.asFlux().subscribe(System.out::println);
+			assertThat(sink.currentSubscriberCount()).isEqualTo(1);
+			sink.tryEmitNext(1);
+			subscription1.dispose();
+			assertThat(sink.currentSubscriberCount()).isEqualTo(0); //autoCancel kicks in
+			Disposable subscription2 = sink.asFlux().subscribe(System.out::println);
+			assertThat(subscription2.isDisposed()).isTrue(); //auto-cancelled
+			assertThat(sink.currentSubscriberCount()).isEqualTo(0);
+			assertThat(sink.tryEmitNext(2).isSuccess()).isFalse();
 		}
 	}
 
