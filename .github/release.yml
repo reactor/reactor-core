@@ -3,7 +3,7 @@ changelog:
     labels:
       - ignore-changelog
       - type/test
-      - type/chore
+      - type/chores
       - type/dependency-upgrade
   categories:
     - title: ":warning: Update considerations and deprecations"
