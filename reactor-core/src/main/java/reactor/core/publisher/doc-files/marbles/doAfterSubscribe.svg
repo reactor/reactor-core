@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="450" height="387" viewBox="20 33 450 387">
+ <defs>
+  <marker id="a" stroke-linejoin="miter" stroke-miterlimit="10" color="#34302c" markerHeight="12" markerUnits="strokeWidth" markerWidth="14" orient="auto" overflow="visible" viewBox="-1 -6 14 12">
+   <path fill="currentColor" stroke="currentColor" d="M12 0 0-4v9z"/>
+  </marker>
+  <marker id="b" stroke-linejoin="miter" stroke-miterlimit="10" color="#45b8de" markerHeight="10" markerUnits="strokeWidth" markerWidth="11" orient="auto" overflow="visible" viewBox="-1 -5 11 10">
+   <path fill="currentColor" stroke="currentColor" d="M8 0 0-3v6z"/>
+  </marker>
+  <marker id="c" stroke-linejoin="miter" stroke-miterlimit="10" color="#45b8de" markerHeight="10" markerUnits="strokeWidth" markerWidth="11" orient="auto" overflow="visible" viewBox="-1 -5 11 10">
+   <path fill="currentColor" stroke="currentColor" d="M8 0 0-3v6z"/>
+  </marker>
+  <marker id="d" orient="auto" overflow="visible" refX="0" refY="0">
+   <path fill-rule="evenodd" stroke="#000" stroke-linejoin="round" d="M-11-4 1 0l-12 4c2-2 2-6 0-8z"/>
+  </marker>
+ </defs>
+ <path fill="none" stroke="#34302c" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.06" marker-end="url(#a)" d="M26.06 47h401.3"/>
+ <path fill="none" stroke="#45b8de" stroke-dasharray="2, 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" marker-end="url(#b)" d="m179 49-1 123"/>
+ <text x="261" y="-178" fill="#45b8de" transform="rotate(90)"><tspan x="261" y="-163" font-family="Tahoma, 'Nimbus Sans L'" font-size="16" font-weight="400">onSubscribe()</tspan></text>
+ <path fill="#fff" stroke="#34302c" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.99" d="M37.17 192.05h415.78l1.1 1v63.9l-1.1 1H37.17l-1.12-1v-63.9z"/>
+ <path fill="none" stroke="#34302c" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.06" marker-end="url(#a)" d="M26.06 403h400.5"/>
+ <path fill="none" stroke="#45b8de" stroke-dasharray="2, 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" marker-end="url(#b)" d="m179 259-1 123"/>
+ <text x="52" y="-177" fill="#45b8de" transform="rotate(90)"><tspan x="53" y="-162" font-family="Tahoma, 'Nimbus Sans L'" font-size="16" font-weight="400">onSubscribe()</tspan></text>
+ <path fill="none" stroke="#45b8de" stroke-dasharray="2, 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" marker-end="url(#c)" d="M63 398V275"/>
+ <text x="-391" y="43" fill="#45b8de" transform="rotate(-90)"><tspan x="-391" y="56" font-family="Tahoma, 'Nimbus Sans L'" font-size="14" font-weight="400">subscribe()</tspan></text>
+ <path fill="none" stroke="#45b8de" stroke-dasharray="2, 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" marker-end="url(#c)" d="M63 190V67"/>
+ <text x="-183" y="43" fill="#45b8de" transform="rotate(-90)"><tspan x="-183" y="56" font-family="Tahoma, 'Nimbus Sans L'" font-size="14" font-weight="400">subscribe()</tspan></text>
+ <rect width="38" height="38" x="201" y="343" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" rx="10" ry="10"/>
+ <path fill="none" stroke="#000" stroke-width="2" d="M212 344v-8h1m7 8v-8h1m7 8v-8h1m-17 53v-8h1m7 8v-8h1m7 8v-8h1m10-19h7m-7-9h7v1"/>
+ <path d="m192.38 353.94-9.54 3.25v-6.49z"/>
+ <path fill="none" stroke="#000" stroke-width="2" d="M194 354h7m-7 16h7m38 0h7m-52-8h7"/>
+ <text x="167" y="209" fill="#34302c" transform="translate(-117 3)"><tspan x="167" y="231" font-family="Tahoma, 'Nimbus Sans L'" font-size="24" font-weight="700">doAfterSubscribe (sub</tspan></text>
+ <text x="547" y="209" fill="#34302c" transform="translate(-117 3)"><tspan x="547" y="231" font-family="Tahoma, 'Nimbus Sans L'" font-size="24" font-weight="700">)</tspan></text>
+ <path fill="none" stroke="#000" marker-end="url(#d)" d="M446 226h39" transform="translate(-117 3)"/>
+ <g fill="none" stroke="#000" stroke-width="2" transform="matrix(.6 0 0 .6 445.95 321.55)">
+  <rect width="55" height="55" x="-101" y="-186" stroke-linecap="round" stroke-linejoin="round" rx="11" ry="11"/>
+  <path d="M-85-185v-11m12 11v-11m11 11v-11m-23 75v-11m12 11v-11m11 11v-11m15-38h10m-10 11h10v1m-10 11h10m-75-23h11m-11 11h11v1m-11 11h11"/>
+ </g>
+ <text x="505" y="209" fill="#34302c" transform="translate(-117 3)"><tspan x="505" y="231" font-family="Tahoma, 'Nimbus Sans L'" font-size="19" font-weight="400" style="-inkscape-font-specification:&quot;Tahoma, Nimbus Sans L, Normal&quot;;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start">sub</tspan></text>
+ <text x="205" y="347" fill="#34302c"><tspan x="205" y="369" font-family="Tahoma, 'Nimbus Sans L'" font-size="19" font-weight="400" style="-inkscape-font-specification:&quot;Tahoma, Nimbus Sans L, Normal&quot;;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start">sub</tspan></text>
+</svg>

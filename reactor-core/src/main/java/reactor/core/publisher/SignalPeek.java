@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,14 @@ interface SignalPeek<T> extends Scannable {
 	 */
 	@Nullable
 	Consumer<? super Subscription> onSubscribeCall();
+
+	/**
+	 * A consumer that will run after {@link Subscriber#onSubscribe(Subscription)}
+	 *
+	 * @return A consumer that will run after {@link Subscriber#onSubscribe(Subscription)}
+	 */
+	@Nullable
+	Consumer<? super Subscription> onAfterSubscribeCall();
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onNext(Object)}

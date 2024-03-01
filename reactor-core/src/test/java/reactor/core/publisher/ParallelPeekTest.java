@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class ParallelPeekTest {
 	@Test
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.just(500, 300).parallel(10);
-		ParallelPeek<Integer> test = new ParallelPeek<>(source, null, null, null, null, null, null, null, null);
+		ParallelPeek<Integer> test = new ParallelPeek<>(source, null, null, null, null, null, null, null, null, null);
 
 		assertThat(test.parallelism())
 				.isEqualTo(source.parallelism())
@@ -38,7 +38,7 @@ public class ParallelPeekTest {
 	@Test
 	public void scanOperator() {
 		ParallelSource<Integer> source = new ParallelSource<>(Flux.just(500, 300), 10, 123, Queues.one());
-		ParallelPeek<Integer> test = new ParallelPeek<>(source, null, null, null, null, null, null, null, null);
+		ParallelPeek<Integer> test = new ParallelPeek<>(source, null, null, null, null, null, null, null, null, null);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH))

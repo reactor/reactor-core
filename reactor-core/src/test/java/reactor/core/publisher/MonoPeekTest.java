@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,13 +84,63 @@ public class MonoPeekTest {
 	@Test
 	public void onMonoDoOnSubscribe() {
 		Mono<String> mp = Mono.just("test");
-		AtomicReference<Subscription> ref = new AtomicReference<>();
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
 
-		StepVerifier.create(mp.doOnSubscribe(ref::set))
-		            .expectNext("test")
-		            .verifyComplete();
+		StepVerifier.create(mp.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+						.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet())))
+				.expectNext("test")
+				.verifyComplete();
 
-		assertThat(ref.get()).isNotNull();
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void onMonoDoAfterSubscribe() {
+		Mono<String> mp = Mono.just("test");
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+
+		StepVerifier.create(mp.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+						.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet())))
+				.expectNext("test")
+				.verifyComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void onMonoRejectedDoAfterSubscribe() {
+		Mono<String> mp = Mono.error(new Exception("test"));
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+
+		StepVerifier.create(mp.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+						.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet())))
+				.verifyError();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void onMonoEmptyDoAfterSubscribe() {
+		Mono<String> mp = Mono.empty();
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+
+		StepVerifier.create(mp.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+							  .doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet())))
+					.verifyComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
 	}
 
 	@Test
@@ -154,14 +204,14 @@ public class MonoPeekTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoPeek<Integer> test = new MonoPeek<>(Mono.just(1), null, null, null, null);
+	    MonoPeek<Integer> test = new MonoPeek<>(Mono.just(1), null, null, null, null, null);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
 	public void scanFuseableOperator(){
-		MonoPeekFuseable<Integer> test = new MonoPeekFuseable<>(Mono.just(1), null, null, null, null);
+		MonoPeekFuseable<Integer> test = new MonoPeekFuseable<>(Mono.just(1), null, null, null, null, null);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

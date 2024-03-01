@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	final Runnable onComplete;
 	final Runnable onAfterTerminated;
 	final Consumer<? super Subscription> onSubscribe;
+	final Consumer<? super Subscription> onAfterSubscribeCall;
 	final LongConsumer onRequest;
 	final Runnable onCancel;
 
@@ -49,6 +50,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 			@Nullable Runnable onComplete,
 			@Nullable Runnable onAfterTerminated,
 			@Nullable Consumer<? super Subscription> onSubscribe,
+		 	@Nullable Consumer<? super Subscription> onAfterSubscribeCall,
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel
 	) {
@@ -60,6 +62,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 		this.onComplete = onComplete;
 		this.onAfterTerminated = onAfterTerminated;
 		this.onSubscribe = onSubscribe;
+		this.onAfterSubscribeCall = onAfterSubscribeCall;
 		this.onRequest = onRequest;
 		this.onCancel = onCancel;
 	}
@@ -104,6 +107,12 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribe;
+	}
+
+	@Override
+	@Nullable
+	public Consumer<? super Subscription> onAfterSubscribeCall() {
+		return onAfterSubscribeCall;
 	}
 
 	@Override

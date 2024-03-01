@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,10 @@ public enum SignalType {
 	 * A signal when an operator receives a subscription
 	 */
 	ON_SUBSCRIBE,
+	/**
+	 * A signal when after an operator receives a subscription
+	 */
+	AFTER_SUBSCRIBE,
 	/**
 	 * A signal when an operator receives an emitted value
 	 */

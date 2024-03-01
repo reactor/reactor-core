@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -369,7 +369,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
-		return doOnSignal(this, null, null, null, null, afterTerminate, null, null, null);
+		return doOnSignal(this, null, null, null, null, afterTerminate, null, null, null, null);
 	}
 
 	/**
@@ -381,7 +381,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
-		return doOnSignal(this, null, null, null, null, null, null, null, onCancel);
+		return doOnSignal(this, null, null, null, null, null, null, null, null, onCancel);
 	}
 
 	/**
@@ -393,7 +393,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
-		return doOnSignal(this, null, null, null, onComplete, null, null, null, null);
+		return doOnSignal(this, null, null, null, onComplete, null, null, null, null, null);
 	}
 
 	/**
@@ -438,7 +438,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
-		return doOnSignal(this, null, null, onError, null, null, null, null, null);
+		return doOnSignal(this, null, null, onError, null, null, null, null, null, null);
 	}
 
 	/**
@@ -455,7 +455,24 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
-		return doOnSignal(this, null, null, null, null, null, onSubscribe, null, null);
+		return doOnSignal(this, null, null, null, null, null, onSubscribe, null, null, null);
+	}
+
+	/**
+	 * Call the specified callback after a 'rail' receives a Subscription from its
+	 * upstream.
+	 * <p>
+	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
+	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
+	 * to call {@link Disposable#dispose()} on the Disposable returned by {@link ParallelFlux#subscribe()}.
+	 *
+	 * @param afterSubscribe the callback
+	 *
+	 * @return the new {@link ParallelFlux} instance
+	 */
+	public final ParallelFlux<T> doAfterSubscribe(Consumer<? super Subscription> afterSubscribe) {
+		Objects.requireNonNull(afterSubscribe, "afterSubscribe");
+		return doOnSignal(this, null, null, null, null, null, null, afterSubscribe, null, null);
 	}
 
 	/**
@@ -467,7 +484,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
-		return doOnSignal(this, onNext, null, null, null, null, null, null, null);
+		return doOnSignal(this, onNext, null, null, null, null, null, null, null, null);
 	}
 
 	/**
@@ -480,7 +497,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnRequest(LongConsumer onRequest) {
 		Objects.requireNonNull(onRequest, "onRequest");
-		return doOnSignal(this, null, null, null, null, null, null, onRequest, null);
+		return doOnSignal(this, null, null, null, null, null, null, null, onRequest, null);
 	}
 
 	/**
@@ -496,6 +513,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 				null,
 				e -> onTerminate.run(),
 				onTerminate,
+				null,
 				null,
 				null,
 				null,
@@ -1287,6 +1305,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			@Nullable Runnable onComplete,
 			@Nullable Runnable onAfterTerminate,
 			@Nullable Consumer<? super Subscription> onSubscribe,
+		  	@Nullable Consumer<? super Subscription> onAfterSubscribe,
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel) {
 		return onAssembly(new ParallelPeek<>(source,
@@ -1296,6 +1315,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 				onComplete,
 				onAfterTerminate,
 				onSubscribe,
+				onAfterSubscribe,
 				onRequest,
 				onCancel));
 	}

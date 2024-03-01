@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void nullSource() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
-			new FluxPeekFuseable<>(null, null, null, null, null, null, null, null);
+			new FluxPeekFuseable<>(null, null, null, null, null, null, null, null, null);
 		});
 	}
 
@@ -71,6 +71,7 @@ public class FluxPeekFuseableTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -78,9 +79,10 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(Flux.just(1), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeekFuseable<>(Flux.just(1), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext).hasValue((Integer) 1);
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isTrue();
@@ -94,6 +96,7 @@ public class FluxPeekFuseableTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -101,9 +104,10 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(Flux.error(new RuntimeException("forced failure")), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeekFuseable<>(Flux.error(new RuntimeException("forced failure")), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isInstanceOf(RuntimeException.class);
 		assertThat(onComplete.get()).isFalse();
@@ -117,6 +121,7 @@ public class FluxPeekFuseableTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -124,9 +129,10 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(Flux.empty(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeekFuseable<>(Flux.empty(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isTrue();
@@ -140,6 +146,7 @@ public class FluxPeekFuseableTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -147,9 +154,10 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(Flux.never(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeekFuseable<>(Flux.never(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isFalse();
@@ -163,6 +171,7 @@ public class FluxPeekFuseableTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -170,9 +179,10 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(Flux.never(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeekFuseable<>(Flux.never(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isFalse();
@@ -251,7 +261,7 @@ public class FluxPeekFuseableTest {
 	public void errorCallbackError() {
 		IllegalStateException err = new IllegalStateException("test");
 
-		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(Flux.error(new IllegalArgumentException("bar")), null, null, e -> {
+		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(Flux.error(new IllegalArgumentException("bar")), null, null, null, e -> {
 			throw err;
 		}, null, null, null, null);
 
@@ -331,6 +341,7 @@ public class FluxPeekFuseableTest {
 		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(Flux.empty(),
 			null,
 			null,
+			null,
 			errorCallbackCapture::set,
 			null,
 			() -> {
@@ -357,7 +368,7 @@ public class FluxPeekFuseableTest {
 	public void afterTerminateCallbackFatalIsThrownDirectly() {
 		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 		Error fatal = new LinkageError();
-		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(Flux.empty(), null, null, errorCallbackCapture::set, null, () -> {
+		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(Flux.empty(), null, null, null, errorCallbackCapture::set, null, () -> {
 			throw fatal;
 		}, null, null);
 
@@ -378,7 +389,7 @@ public class FluxPeekFuseableTest {
 
 		//same with after error
 		errorCallbackCapture.set(null);
-		flux = new FluxPeekFuseable<>(Flux.error(new NullPointerException()), null, null, errorCallbackCapture::set, null, () -> {
+		flux = new FluxPeekFuseable<>(Flux.error(new NullPointerException()), null, null, null, errorCallbackCapture::set, null, () -> {
 			throw fatal;
 		}, null, null);
 
@@ -404,7 +415,7 @@ public class FluxPeekFuseableTest {
 		IllegalArgumentException error2 = new IllegalArgumentException("error");
 
 		FluxPeekFuseable<String> flux =
-			new FluxPeekFuseable<>(Flux.empty(), null, null, e -> {
+			new FluxPeekFuseable<>(Flux.empty(), null, null, null, e -> {
 				throw error2;
 			}, null, () -> {
 				throw error;
@@ -430,7 +441,7 @@ public class FluxPeekFuseableTest {
 		NullPointerException error2 = new NullPointerException();
 
 		FluxPeekFuseable<String> flux =
-			new FluxPeekFuseable<>(Flux.error(error2), null, null, e -> {
+			new FluxPeekFuseable<>(Flux.error(error2), null, null, null, e -> {
 				throw error;
 			}, null, () -> {
 				throw afterTerminate;
@@ -560,6 +571,41 @@ public class FluxPeekFuseableTest {
 		  .assertComplete();
 
 		assertThat(onTerminate.get()).as("onComplete not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollAfterSubscribeCalled() {
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+		Flux<Integer> f = Flux.just(1)
+				.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+				.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet()));
+		StepVerifier.create(f)
+				.expectFusion()
+				.expectNext(1)
+				.verifyComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void syncPollConditionalAfterSubscribeCalled() {
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+		Flux<Integer> f = Flux.just(1)
+				.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+				.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet()))
+				.filter(v -> true);
+		StepVerifier.create(f)
+				.expectFusion()
+				.expectNext(1)
+				.verifyComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
 	}
 
 	@Test
@@ -862,7 +908,7 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxPeekFuseable<Integer> test = new FluxPeekFuseable<>(parent, s -> {}, s -> {},
+		FluxPeekFuseable<Integer> test = new FluxPeekFuseable<>(parent, s -> {}, s -> {}, s -> {},
 				e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
@@ -874,6 +920,7 @@ public class FluxPeekFuseableTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
 		FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {
+		}, s -> {
 		}, s -> {
 		}, e -> {
 		}, () -> {
@@ -898,6 +945,7 @@ public class FluxPeekFuseableTest {
 	public void scanFuseableConditionalSubscriber() {
 		@SuppressWarnings("unchecked") Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 		FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {
+		}, s -> {
 		}, s -> {
 		}, e -> {
 		}, () -> {
@@ -936,6 +984,12 @@ public class FluxPeekFuseableTest {
 		@Nullable
 		@Override
 		public Consumer<? super Subscription> onSubscribeCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public Consumer<? super Subscription> onAfterSubscribeCall() {
 			return null;
 		}
 

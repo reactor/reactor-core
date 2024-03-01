@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,17 +42,18 @@ import reactor.util.context.Context;
  */
 final class SignalLogger<IN> implements SignalPeek<IN> {
 
-	final static int CONTEXT_PARENT    = 0b0100000000;
-	final static int SUBSCRIBE         = 0b0010000000;
-	final static int ON_SUBSCRIBE      = 0b0001000000;
-	final static int ON_NEXT           = 0b0000100000;
-	final static int ON_ERROR          = 0b0000010000;
-	final static int ON_COMPLETE       = 0b0000001000;
-	final static int REQUEST           = 0b0000000100;
-	final static int CANCEL            = 0b0000000010;
-	final static int AFTER_TERMINATE   = 0b0000000001;
+	final static int CONTEXT_PARENT    = 0b01000000000;
+	final static int SUBSCRIBE         = 0b00100000000;
+	final static int ON_SUBSCRIBE      = 0b00010000000;
+	final static int AFTER_SUBSCRIBE   = 0b00001000000;
+	final static int ON_NEXT           = 0b00000100000;
+	final static int ON_ERROR          = 0b00000010000;
+	final static int ON_COMPLETE       = 0b00000001000;
+	final static int REQUEST           = 0b00000000100;
+	final static int CANCEL            = 0b00000000010;
+	final static int AFTER_TERMINATE   = 0b00000000001;
 	final static int ALL               =
-			CONTEXT_PARENT | CANCEL | ON_COMPLETE | ON_ERROR | REQUEST | ON_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
+			CONTEXT_PARENT | CANCEL | ON_COMPLETE | ON_ERROR | REQUEST | ON_SUBSCRIBE | AFTER_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
 
 	final static AtomicLong IDS = new AtomicLong(1);
 
@@ -134,6 +135,9 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 				}
 				else if (option == SignalType.ON_SUBSCRIBE) {
 					opts |= ON_SUBSCRIBE;
+				}
+				else if (option == SignalType.AFTER_SUBSCRIBE) {
+					opts |= AFTER_SUBSCRIBE;
 				}
 				else if (option == SignalType.REQUEST) {
 					opts |= REQUEST;
@@ -251,6 +255,14 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	public Consumer<? super Subscription> onSubscribeCall() {
 		if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
 			return s -> log(SignalType.ON_SUBSCRIBE, subscriptionAsString(s));
+		}
+		return null;
+	}
+
+	@Override
+	public Consumer<? super Subscription> onAfterSubscribeCall() {
+		if ((options & AFTER_SUBSCRIBE) == AFTER_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
+			return s -> log(SignalType.AFTER_SUBSCRIBE, subscriptionAsString(s));
 		}
 		return null;
 	}

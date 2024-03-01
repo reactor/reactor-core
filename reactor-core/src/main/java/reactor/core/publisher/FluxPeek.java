@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
+	final Consumer<? super Subscription> onAfterSubscribeCall;
+
 	final Consumer<? super T> onNextCall;
 
 	final Consumer<? super Throwable> onErrorCall;
@@ -58,6 +60,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 
 	FluxPeek(Flux<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,
+		 	@Nullable Consumer<? super Subscription> onAfterSubscribeCall,
 			@Nullable Consumer<? super T> onNextCall,
 			@Nullable Consumer<? super Throwable> onErrorCall,
 			@Nullable Runnable onCompleteCall,
@@ -66,6 +69,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 			@Nullable Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
+		this.onAfterSubscribeCall = onAfterSubscribeCall;
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
@@ -169,6 +173,17 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 				}
 				this.s = s;
 				actual.onSubscribe(this);
+
+				final Consumer<? super Subscription> afterSubscribeHook = parent.onAfterSubscribeCall();
+				if (afterSubscribeHook != null) {
+					try {
+						afterSubscribeHook.accept(s);
+					}
+					catch (Throwable e) {
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
+					}
+				}
 			}
 		}
 
@@ -281,6 +296,12 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
+	}
+
+	@Override
+	@Nullable
+	public Consumer<? super Subscription> onAfterSubscribeCall() {
+		return onAfterSubscribeCall;
 	}
 
 	@Override

@@ -2681,7 +2681,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
-		return doOnSignal(this, null, null, null, onCancel);
+		return doOnSignal(this, null, null, null, null, onCancel);
 	}
 
 	/**
@@ -2727,7 +2727,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
-		return doOnSignal(this, null, onNext, null, null);
+		return doOnSignal(this, null, null, onNext, null, null);
 	}
 
 	/**
@@ -2872,7 +2872,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		return doOnSignal(this, null, null, consumer, null);
+		return doOnSignal(this, null, null, null, consumer, null);
 	}
 
 	/**
@@ -2896,7 +2896,29 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
-		return doOnSignal(this, onSubscribe, null, null,  null);
+		return doOnSignal(this, onSubscribe, null, null, null,  null);
+	}
+
+	/**
+	 * Add behavior (side-effect) triggered after the {@link Mono} is being subscribed,
+	 * <p>
+	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
+	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
+	 * to call {@link Disposable#dispose()} on the Disposable returned by {@link Mono#subscribe()}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doAfterSubscribe.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed after the {@link Subscription} is propagated
+	 * downstream to the next subscriber in the chain that is being established.
+	 *
+	 * @param doAfterSubscribe the callback to call after {@link Subscriber#onSubscribe(Subscription)}
+	 *
+	 * @return a new {@link Mono}
+	 * @see #doFirst(Runnable)
+	 */
+	public final Mono<T> doAfterSubscribe(Consumer<? super Subscription> doAfterSubscribe) {
+		Objects.requireNonNull(doAfterSubscribe, "doAfterSubscribe");
+		return doOnSignal(this, null, doAfterSubscribe, null, null,  null);
 	}
 
 	/**
@@ -5361,18 +5383,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	static <T> Mono<T> doOnSignal(Mono<T> source,
 			@Nullable Consumer<? super Subscription> onSubscribe,
+		  	@Nullable Consumer<? super Subscription> onAfterSubscribe,
 			@Nullable Consumer<? super T> onNext,
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel) {
 		if (source instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(source,
 					onSubscribe,
+					onAfterSubscribe,
 					onNext,
 					onRequest,
 					onCancel));
 		}
 		return onAssembly(new MonoPeek<>(source,
 				onSubscribe,
+				onAfterSubscribe,
 				onNext,
 				onRequest,
 				onCancel));

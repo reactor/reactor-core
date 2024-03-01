@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ final class MonoPeekFuseable<T> extends InternalMonoOperator<T, T>
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
+	final Consumer<? super Subscription> onAfterSubscribeCall;
+
 	final Consumer<? super T> onNextCall;
 
 	final LongConsumer onRequestCall;
@@ -44,12 +46,14 @@ final class MonoPeekFuseable<T> extends InternalMonoOperator<T, T>
 
 	MonoPeekFuseable(Mono<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,
+		 	@Nullable Consumer<? super Subscription> onAfterSubscribeCall,
 			@Nullable Consumer<? super T> onNextCall,
 			@Nullable LongConsumer onRequestCall,
 			@Nullable Runnable onCancelCall) {
 		super(source);
 
 		this.onSubscribeCall = onSubscribeCall;
+		this.onAfterSubscribeCall = onAfterSubscribeCall;
 		this.onNextCall = onNextCall;
 		this.onRequestCall = onRequestCall;
 		this.onCancelCall = onCancelCall;
@@ -69,6 +73,12 @@ final class MonoPeekFuseable<T> extends InternalMonoOperator<T, T>
 	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
+	}
+
+	@Override
+	@Nullable
+	public Consumer<? super Subscription> onAfterSubscribeCall() {
+		return onAfterSubscribeCall;
 	}
 
 	@Override

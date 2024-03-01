@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,9 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(scenario(f -> f.doOnSubscribe(s -> {
+				})),
+
+				scenario(f -> f.doAfterSubscribe(s -> {
 				})),
 
 				scenario(f -> f.doOnError(s -> {
@@ -141,6 +144,22 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 							}
 						}),
 
+				scenario(f -> f.doAfterSubscribe(s -> {
+					throw exception();
+				})
+						.doOnError(s -> {
+							throw Exceptions.errorCallbackNotImplemented(new Exception("unsupported"));
+						})).fusionMode(Fuseable.NONE)
+						.verifier(step -> {
+							try {
+								step.verifyErrorMessage("unsupported");
+								fail("Exception expected");
+							}
+							catch (Exception e) {
+								assertThat(Exceptions.unwrap(e).getCause()).hasMessage("unsupported");
+							}
+						}),
+
 				scenario(f -> f.doOnNext(s -> {
 					throw exception();
 				})
@@ -159,7 +178,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 
 				//extra scenarios for coverage using specific combination of fluxpkeek
 				// not necessarily open
-				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, null, s -> {
 					if (s.getMessage()
 							.equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -179,7 +198,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					}
 				}),
 
-				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, null, s -> {
 					if (s.getMessage()
 							.equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -199,7 +218,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					}
 				}),
 
-				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, null, s -> {
 					if (s.getMessage()
 							.equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -226,7 +245,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void nullSource() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
-			new FluxPeek<>(null, null, null, null, null, null, null, null);
+			new FluxPeek<>(null, null, null, null, null, null, null, null, null);
 		});
 	}
 
@@ -235,6 +254,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -243,9 +263,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onCancel = new AtomicBoolean();
 
 		new FluxPeek<>(Flux.just(1)
-				.hide(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+				.hide(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext).hasValue((Integer) 1);
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isTrue();
@@ -259,6 +280,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -266,9 +288,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(new FluxError<>(new RuntimeException("forced failure")), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeek<>(new FluxError<>(new RuntimeException("forced failure")), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isInstanceOf(RuntimeException.class);
 		assertThat(onComplete.get()).isFalse();
@@ -282,6 +305,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -289,9 +313,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.empty(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeek<>(Flux.empty(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isTrue();
@@ -305,6 +330,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -312,9 +338,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.never(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeek<>(Flux.never(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isFalse();
@@ -328,6 +355,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
+		AtomicReference<Subscription> onAfterSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
@@ -335,9 +363,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.never(), onSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
+		new FluxPeek<>(Flux.never(), onSubscribe::set, onAfterSubscribe::set, onNext::set, onError::set, () -> onComplete.set(true), () -> onAfterComplete.set(true), onRequest::set, () -> onCancel.set(true)).subscribe(ts);
 
 		assertThat(onSubscribe.get()).isNotNull();
+		assertThat(onAfterSubscribe.get()).isNotNull();
 		assertThat(onNext.get()).isNull();
 		assertThat(onError.get()).isNull();
 		assertThat(onComplete.get()).isFalse();
@@ -420,7 +449,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void errorCallbackError() {
 		IllegalStateException err = new IllegalStateException("test");
 
-		FluxPeek<String> flux = new FluxPeek<>(Flux.error(new IllegalArgumentException("bar")), null, null, e -> {
+		FluxPeek<String> flux = new FluxPeek<>(Flux.error(new IllegalArgumentException("bar")), null, null, null, e -> {
 			throw err;
 		}, null, null, null, null);
 
@@ -503,6 +532,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(),
 			null,
 			null,
+			null,
 			errorCallbackCapture::set,
 			null,
 			() -> {
@@ -529,7 +559,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void afterTerminateCallbackFatalIsThrownDirectly() {
 		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 		Error fatal = new LinkageError();
-		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, errorCallbackCapture::set, null, () -> {
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, null, errorCallbackCapture::set, null, () -> {
 			throw fatal;
 		}, null, null);
 
@@ -549,7 +579,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 
 		//same with after error
 		errorCallbackCapture.set(null);
-		flux = new FluxPeek<>(Flux.error(new NullPointerException()), null, null, errorCallbackCapture::set, null, () -> {
+		flux = new FluxPeek<>(Flux.error(new NullPointerException()), null, null, null, errorCallbackCapture::set, null, () -> {
 			throw fatal;
 		}, null, null);
 
@@ -574,7 +604,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		IllegalStateException error1 = new IllegalStateException("afterTerminate");
 		IllegalArgumentException error2 = new IllegalArgumentException("error");
 
-		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, e -> {
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, null, e -> {
 			throw error2;
 		}, null, () -> {
 			throw error1;
@@ -599,7 +629,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		IllegalArgumentException error = new IllegalArgumentException("error");
 		NullPointerException ex = new NullPointerException();
 
-		FluxPeek<String> flux = new FluxPeek<>(Flux.error(ex), null, null, e -> {
+		FluxPeek<String> flux = new FluxPeek<>(Flux.error(ex), null, null, null, e -> {
 			throw error;
 		}, null, () -> {
 			throw afterTerminate;
@@ -693,6 +723,70 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		ts.assertNoError()
 		  .assertNoValues()
 		  .assertComplete();
+	}
+
+	@Test
+	public void syncdoAfterSubscribeCalled() {
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Flux.range(1, 2)
+			.hide()
+			.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+			.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet()))
+			.subscribe(ts);
+
+		ts.assertNoError()
+		  .assertValues(1, 2)
+		  .assertComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void syncdoAfterSubscribeCalledEmpty() {
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Flux.empty()
+			.hide()
+			.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+			.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet()))
+			.subscribe(ts);
+
+		ts.assertNoError()
+		  .assertComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void syncdoAfterSubscribeCalledError() {
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger onSubscribe = new AtomicInteger();
+		AtomicInteger afterSubscribe = new AtomicInteger();
+
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Flux.error(new Exception("test"))
+			.hide()
+			.doOnSubscribe(s -> onSubscribe.set(counter.incrementAndGet()))
+			.doAfterSubscribe(s -> afterSubscribe.set(counter.incrementAndGet()))
+			.subscribe(ts);
+
+		ts.assertErrorMessage("test")
+		  .assertNotComplete();
+
+		assertThat(onSubscribe.get()).isEqualTo(1);
+		assertThat(afterSubscribe.get()).isEqualTo(2);
 	}
 
 	@Test
@@ -861,7 +955,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxPeek<Integer> test = new FluxPeek<>(parent, s -> {}, s -> {},
+		FluxPeek<Integer> test = new FluxPeek<>(parent, s -> {}, s -> {}, s -> {},
 				e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
@@ -873,6 +967,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
 		FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {
+		}, s -> {
 		}, s -> {
 		}, e -> {
 		}, () -> {
@@ -903,7 +998,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> source = Flux.just(1, 2)
 								   .hide();
 
-		Flux<Integer> test = new FluxPeek<>(source, null, v -> {
+		Flux<Integer> test = new FluxPeek<>(source, null, null, v -> {
 			throw nextError;
 		}, null, null, null, null, null).hide()
 										.onErrorContinue((t, s) -> {

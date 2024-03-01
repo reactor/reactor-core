@@ -4800,7 +4800,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
-		return doOnSignal(this, null, null, null, null, afterTerminate, null, null);
+		return doOnSignal(this, null, null, null, null, null, afterTerminate, null, null);
 	}
 
 	/**
@@ -4817,7 +4817,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
-		return doOnSignal(this, null, null, null, null, null, null, onCancel);
+		return doOnSignal(this, null, null, null, null, null, null, null, onCancel);
 	}
 
 	/**
@@ -4834,7 +4834,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
-		return doOnSignal(this, null, null, null, onComplete, null, null, null);
+		return doOnSignal(this, null, null, null, null, onComplete, null, null, null);
 	}
 
 	/**
@@ -4908,7 +4908,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
-		return doOnSignal(this, null, null, onError, null, null, null, null);
+		return doOnSignal(this, null, null, null, onError, null, null, null, null);
 	}
 
 	/**
@@ -4978,7 +4978,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
-		return doOnSignal(this, null, onNext, null, null, null, null, null);
+		return doOnSignal(this, null, null, onNext, null, null, null, null, null);
 	}
 
 	/**
@@ -5000,7 +5000,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		return doOnSignal(this, null, null, null, null, null, consumer, null);
+		return doOnSignal(this, null, null, null, null, null, null, consumer, null);
 	}
 
 	/**
@@ -5024,7 +5024,29 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
-		return doOnSignal(this, onSubscribe, null, null, null, null, null, null);
+		return doOnSignal(this, onSubscribe, null, null, null, null, null, null, null);
+	}
+
+	/**
+	 * Add behavior (side-effect) triggered after the {@link Flux} is subscribed.
+	 * <p>
+	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
+	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
+	 * to call {@link Disposable#dispose()} on the Disposable returned by {@link Flux#subscribe()}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doAfterSubscribe.svg" alt="">
+	 * <p>
+	 * The {@link Consumer} is executed after the {@link Subscription} is propagated
+	 * downstream to the next subscriber in the chain that is being established.
+	 *
+	 * @param afterSubscribe the callback to call after {@link Subscriber#onSubscribe}
+	 *
+	 * @return an observed  {@link Flux}
+	 * @see #doFirst(Runnable)
+	 */
+	public final Flux<T> doAfterSubscribe(Consumer<? super Subscription> afterSubscribe) {
+		Objects.requireNonNull(afterSubscribe, "afterSubscribe");
+		return doOnSignal(this, null, afterSubscribe, null, null, null, null, null, null);
 	}
 
 	/**
@@ -5043,6 +5065,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
 		return doOnSignal(this,
+				null,
 				null,
 				null,
 				e -> onTerminate.run(),
@@ -10966,6 +10989,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	static <T> Flux<T> doOnSignal(Flux<T> source,
 			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable Consumer<? super Subscription> onAfterSubscribe,
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,
 			@Nullable Runnable onComplete,
@@ -10975,6 +10999,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (source instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(source,
 					onSubscribe,
+					onAfterSubscribe,
 					onNext,
 					onError,
 					onComplete,
@@ -10984,6 +11009,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		}
 		return onAssembly(new FluxPeek<>(source,
 				onSubscribe,
+				onAfterSubscribe,
 				onNext,
 				onError,
 				onComplete,
