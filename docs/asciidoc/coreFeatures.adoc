@@ -213,8 +213,8 @@ problems and lead to too many threads (see below).
 give a blocking process its own thread so that it does not tie up other resources. This is a better choice for I/O blocking work. See
 <<faq.wrap-blocking>>, but doesn't pressure the system too much with new threads.
 Starting from 3.6.0 this can offer two different implementations depending on the setup:
- - `ExecutorService`-based, which reuses Platform `Thread`s between tasks. This
-implementation is like its predecessor `elastic()` creates new worker pools as needed
+ - `ExecutorService`-based, which reuses platform threads between tasks. This
+implementation, like its predecessor `elastic()`, creates new worker pools as needed
 and reuses idle ones. Worker pools that stay idle for too long (the default is 60s) are
 also disposed. Unlike its `elastic()` predecessor, it has a cap on the number of backing threads it can create (default is number of CPU cores x 10).
 Up to 100 000 tasks submitted after the cap has been reached are enqueued and will be re-scheduled when a thread becomes available
