@@ -1784,7 +1784,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * received or a timeout expires. Returns that value, or null if the Mono completes
 	 * empty. In case the Mono errors, the original exception is thrown (wrapped in a
 	 * {@link RuntimeException} if it was a checked exception).
-	 * If the provided timeout expires, a {@link RuntimeException} is thrown.
+	 * If the provided timeout expires, a {@link RuntimeException} is thrown
+	 * with a {@link TimeoutException} as the cause.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/blockWithTimeout.svg" alt="">
@@ -1793,6 +1794,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * might miss signal from hot publishers.
 	 *
 	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
+	 * with a {@link TimeoutException} as the cause
 	 *
 	 * @return T the result
 	 */
@@ -1836,7 +1838,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Exception via {@link Optional#orElseThrow(Supplier)}.
 	 * In case the Mono itself errors, the original exception is thrown (wrapped in a
 	 * {@link RuntimeException} if it was a checked exception).
-	 * If the provided timeout expires, a {@link RuntimeException} is thrown.
+	 * If the provided timeout expires, a {@link RuntimeException} is thrown
+	 * with a {@link TimeoutException} as the cause.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/blockOptionalWithTimeout.svg" alt="">
@@ -1845,6 +1848,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * might miss signal from hot publishers.
 	 *
 	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
+	 * with a {@link TimeoutException} as the cause
 	 *
 	 * @return T the result
 	 */
