@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -103,7 +104,8 @@ public class BlockingOptionalMonoSubscriberTest {
 		// Using sub-millis timeouts after gh-1734
 		assertThatExceptionOfType(IllegalStateException.class)
 				.isThrownBy(() -> source.blockOptional(Duration.ofNanos(100)))
-				.withMessage("Timeout on blocking read for 100 NANOSECONDS");
+				.withMessage("Timeout on blocking read for 100 NANOSECONDS")
+				.withCause(new TimeoutException("Timeout on blocking read for 100 NANOSECONDS"));
 	}
 
 	@Test
