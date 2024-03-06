@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4236,9 +4236,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Prepare a {@link Mono} which shares this {@link Mono} result similar to {@link Flux#shareNext()}.
 	 * This will effectively turn this {@link Mono} into a hot task when the first
-	 * {@link Subscriber} subscribes using {@link #subscribe()} API. Further {@link Subscriber} will share the same {@link Subscription}
+	 * {@link Subscriber} subscribes using {@link #subscribe()} API.
+	 * Further {@link Subscriber} will share the same {@link Subscription}
 	 * and therefore the same result.
-	 * It's worth noting this is an un-cancellable {@link Subscription}.
+	 * When all subscribers have cancelled it will cancel the source {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/shareForMono.svg" alt="">
 	 *
