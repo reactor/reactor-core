@@ -251,15 +251,9 @@ task japicmp(type: JapicmpTask) {
 	includeSynthetic = true
 	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
-	// TODO after a .0 release, bump the gradle.properties baseline
-	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [
 	]
 	methodExcludes = [
-		"reactor.core.publisher.Flux#using(java.util.concurrent.Callable, java.util.function.Function)",
-		"reactor.core.publisher.Flux#using(java.util.concurrent.Callable, java.util.function.Function, boolean)",
-		"reactor.core.publisher.Mono#using(java.util.concurrent.Callable, java.util.function.Function)",
-		"reactor.core.publisher.Mono#using(java.util.concurrent.Callable, java.util.function.Function, boolean)"
 	]
 }
 
