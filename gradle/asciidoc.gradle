@@ -47,7 +47,7 @@ configure(rootProject) {
 			}
 
 		}
-		outputDir file("$buildDir/docs/asciidoc/html")
+		outputDir layout.buildDirectory.dir("docs/asciidoc/html").get().asFile
 		logDocuments = true
 		attributes stylesdir: "stylesheets/",
 				stylesheet: 'reactor.css',
@@ -65,7 +65,7 @@ configure(rootProject) {
 			include "index.asciidoc"
 		}
 		baseDirFollowsSourceDir()
-		outputDir file("$buildDir/docs/asciidoc/pdf")
+		outputDir layout.buildDirectory.dir("docs/asciidoc/pdf").get().asFile
 		logDocuments = true
 		attributes 'source-highlighter': 'rouge'
 	}

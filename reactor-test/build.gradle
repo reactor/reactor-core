@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ def japicmpReport = tasks.register('japicmpReport') {
 		japicmp.state.failure != null
 	}
 	doLast {
-		def reportFile = file("${project.buildDir}/reports/japi.txt")
+		def reportFile = project.layout.buildDirectory.file("reports/japi.txt").get().asFile
 		if (reportFile.exists()) {
 			println "\n *********************************"
 			println " * /!\\ API compatibility failures *"
@@ -105,7 +105,7 @@ task japicmp(type: JapicmpTask) {
 	onlyModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
-	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	txtOutputFile = project.layout.buildDirectory.file("reports/japi.txt").get().asFile
 	ignoreMissingClasses = true
 	includeSynthetic = true
 	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
