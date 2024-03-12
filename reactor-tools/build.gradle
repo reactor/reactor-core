@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,52 @@
  * limitations under the License.
  */
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.apache.tools.ant.filters.ReplaceTokens
 
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'org.unbroken-dome.test-sets'
+apply plugin: 'jvm-test-suite'
 apply plugin: 'java-library'
 
 description = 'Reactor Tools'
 
-testSets {
-    jarFileTest
-    javaAgentTest
-    buildPluginTest
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+        }
+        jarFileTest(JvmTestSuite) {
+            useJUnitJupiter()
+            sources.java.srcDirs = ['src/jarFileTest/java']
+            dependencies {
+                implementation project()
+            }
+        }
+        javaAgentTest(JvmTestSuite) {
+            useJUnitJupiter()
+            sources.java.srcDirs = ['src/javaAgentTest/java']
+            dependencies {
+                implementation project()
+            }
+        }
+        buildPluginTest(JvmTestSuite) {
+            useJUnitJupiter()
+            sources.java.srcDirs = ['src/buildPluginTest/java']
+            dependencies {
+                implementation project()
+            }
+        }
+    }
 }
 
 configurations {
     shaded
+    jarFileTestApi.extendsFrom testApi
+    jarFileTestImplementation.extendsFrom testImplementation
+    javaAgentTestApi.extendsFrom testApi
+    javaAgentTestImplementation.extendsFrom testImplementation
+    buildPluginTestApi.extendsFrom testApi
+    buildPluginTestImplementation.extendsFrom testImplementation
 }
 
 dependencies {
@@ -87,7 +117,9 @@ jar {
 }
 
 shadowJar {
-    classifier = null
+    enableRelocation true
+    relocationPrefix "reactor.tools.shaded"
+    archiveClassifier.set('')
 
     dependsOn(project.tasks.jar)
     manifest {
@@ -120,13 +152,6 @@ shadowJar {
 }
 
 project.tasks.build.dependsOn(shadowJar)
-
-task relocateShadowJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation) {
-    target = tasks.shadowJar
-    prefix = "reactor.tools.shaded"
-}
-
-tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
 project.tasks.jarFileTest.configure {
     systemProperty("jarFile", shadowJar.outputs.files.singleFile)
@@ -167,7 +192,7 @@ project.tasks.buildPluginTest.mustRunAfter(shadowJar)
 project.tasks.buildPluginTest.dependsOn(shadowJar)
 
 task generateMockGradle(type: Copy) {
-    def coreJar = rootProject.findProject("reactor-core").buildDir.toString() + "/libs/reactor-core-" + version + ".jar"
+    def coreJar = rootProject.findProject("reactor-core").layout.buildDirectory.get().asFile.toString() + "/libs/reactor-core-" + version + ".jar"
     def agentJar = buildDir.toString() + "/libs/reactor-tools-" + version + "-original.jar"
     def mockGradleDir = buildDir.toString() + "/mock-gradle"
 
@@ -183,7 +208,7 @@ task generateMockGradle(type: Copy) {
 }
 
 buildPluginTest {
-    def mockGradleDir = "$buildDir/mock-gradle"
+    def mockGradleDir = layout.buildDirectory.dir("mock-gradle").get().asFile.toString()
     println "will run mock gradle build from $mockGradleDir"
     systemProperty "mock-gradle-dir", mockGradleDir
 }
@@ -191,7 +216,7 @@ buildPluginTest {
 project.tasks.buildPluginTest.dependsOn(generateMockGradle)
 project.tasks.check.dependsOn(buildPluginTest)
 
-tasks.withType(Test).all {
+tasks.withType(Test).matching { !(it.name in testing.suites.names) }.configureEach {
     useJUnitPlatform()
 }
 
