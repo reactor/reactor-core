@@ -245,7 +245,7 @@ javadoc {
 		// work around https://github.com/gradle/gradle/issues/4046
 		copy {
 			from('src/main/java')
-			into "${project.layout.buildDirectory.dir('/docs/javadoc/').get().asFile.toString()}"
+			into "${project.layout.buildDirectory.dir('docs/javadoc/').get().asFile.toString()}"
 			include "**/doc-files/**/*"
 		}
 	}
