@@ -16,7 +16,7 @@ asciidoctor = "4.0.2"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
 micrometer = "1.12.4"
 micrometerDocsGenerator = "1.0.2"
-micrometerTracingTest="1.2.3"
+micrometerTracingTest="1.2.4"
 contextPropagation="1.1.1"
 kotlin = "1.5.32"
 reactiveStreams = "1.0.4"
