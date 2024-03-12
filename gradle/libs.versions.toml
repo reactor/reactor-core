@@ -18,7 +18,7 @@ micrometer = "1.12.4"
 micrometerDocsGenerator = "1.0.2"
 micrometerTracingTest="1.2.4"
 contextPropagation="1.1.1"
-kotlin = "1.5.32"
+kotlin = "1.8.22"
 reactiveStreams = "1.0.4"
 
 [libraries]
