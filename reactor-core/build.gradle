@@ -64,6 +64,22 @@ testing {
 		implementation sourceSets.test.output
 	  }
 	}
+	withMicrometerTest(JvmTestSuite) {
+	  useJUnitJupiter()
+	  sources.java.srcDirs = ['src/withMicrometerTest/java']
+	  dependencies {
+		implementation project()
+		implementation sourceSets.test.output
+	  }
+	}
+	withContextPropagation102Test(JvmTestSuite) {
+	  useJUnitJupiter()
+	  sources.java.srcDirs = ['src/withContextPropagation102Test/java']
+	  dependencies {
+		implementation project()
+		implementation sourceSets.test.output
+	  }
+	}
   }
 }
 
@@ -77,6 +93,12 @@ configurations {
   	tckTestApi.extendsFrom testApi
   	tckTestImplementation.extendsFrom testImplementation
   	tckTestCompileOnly.extendsFrom testCompileOnly
+  	withMicrometerTestApi.extendsFrom testApi
+  	withMicrometerTestImplementation.extendsFrom testImplementation
+  	withMicrometerTestCompileOnly.extendsFrom testCompileOnly
+  	withContextPropagation102TestApi.extendsFrom testApi
+  	withContextPropagation102TestImplementation.extendsFrom testImplementation
+  	withContextPropagation102TestCompileOnly.extendsFrom testCompileOnly
 }
 
 dependencies {
