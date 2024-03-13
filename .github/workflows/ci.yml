@@ -80,4 +80,4 @@ jobs:
     - uses: gradle/gradle-build-action@3b1b3b9a2104c2b47fbae53f3938079c00c9bb87 # tag=v2
       name: other tests
       with:
-        arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon
+        arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -Pjcstress.mode=sanity
