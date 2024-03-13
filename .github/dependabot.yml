@@ -5,32 +5,18 @@ updates:
     schedule:
       interval: "daily"
     labels:
-      "type/enhancement"
-    reviewers:
-      - "reactor/core-team"
-    target-branch: "3.4.x"
-    allow:
-      - dependency-name: "org.reactivestreams:*"
-      - dependency-name: "net.bytebuddy:*"
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    labels:
       - "type/dependency-upgrade"
+      - "status/need-triage"
     reviewers:
       - "reactor/core-team"
-    # updates in oldest maintenance branch, we'll forward-merge up to main
+    # updates in the oldest maintenance branch, we'll forward-merge up to main
     target-branch: "3.4.x"
     ignore:
-      # Updated by the enhancement type grouping
-      - dependency-name: "org.reactivestreams:*"
-      - dependency-name: "net.bytebuddy:*"
       # JSR166 backport is fixed
       - dependency-name: "io.projectreactor:jsr166"
       # JSR305 backport is fixed to last version with annotations (3.0.1)
       - dependency-name: "com.google.code.findbugs:jsr305"
-      # don't update Micrometer
+      # Micrometer is updated manually
       - dependency-name: "io.micrometer:*"
       # Kotlin: stay on 1.8 to allow support for 1.3 target
       - dependency-name: "org.jetbrains.kotlin*"
