@@ -32,7 +32,7 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      uses: gradle/actions/setup-gradle@09bd32c78f4b969b3c4ae979b67ba42fd2b40399 # tag=v3
+      uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
       with:
         arguments: check -Pjunit-tags=!slow -x jcstress
 
@@ -49,7 +49,7 @@ jobs:
           java-version: 8
       - name: run slower tests
         id: slowerTests
-        uses: gradle/actions/setup-gradle@09bd32c78f4b969b3c4ae979b67ba42fd2b40399 # tag=v3
+        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
         with:
           arguments: reactor-core:test -Pjunit-tags=slow -Pjcstress.mode=sanity
 
