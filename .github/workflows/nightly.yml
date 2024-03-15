@@ -20,7 +20,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@3b1b3b9a2104c2b47fbae53f3938079c00c9bb87 # tag=v2
+      - uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
         name: gradle
         with:
           arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true
@@ -39,7 +39,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@3b1b3b9a2104c2b47fbae53f3938079c00c9bb87 # tag=v2
+      - uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
         name: gradle
         with:
           arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true
@@ -58,7 +58,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/gradle-build-action@3b1b3b9a2104c2b47fbae53f3938079c00c9bb87 # tag=v2
+      - uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
         name: other tests
         with:
           arguments: check -x :reactor-core:test -x spotlessCheck --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default
