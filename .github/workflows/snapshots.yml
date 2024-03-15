@@ -53,6 +53,6 @@ jobs:
           distribution: 'temurin'
           java-version: 8
       - name: Run Gradle Tests
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
+        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
         with:
           arguments: ${{ matrix.test-type.arguments }}
