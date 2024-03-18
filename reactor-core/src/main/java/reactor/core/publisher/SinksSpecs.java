@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks.Empty;
@@ -109,17 +110,22 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Sinks.Many<T> onBackpressureBuffer() {
-			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
+			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE, null);
 		}
 
 		@Override
 		public <T> Sinks.Many<T> onBackpressureBuffer(int bufferSize) {
-			return new SinkManyEmitterProcessor<>(true, bufferSize);
+			return new SinkManyEmitterProcessor<>(true, bufferSize, null);
 		}
 
 		@Override
 		public <T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize);
+			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize, null);
+		}
+
+		@Override
+		public <T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel, Consumer<? super T> hook) {
+			return new EmitterProcessor<>(autoCancel, bufferSize, hook);
 		}
 
 		@Override
@@ -179,12 +185,17 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Sinks.ManyWithUpstream<T> multicastOnBackpressureBuffer() {
-			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
+			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE, null);
 		}
 
 		@Override
 		public <T> Sinks.ManyWithUpstream<T> multicastOnBackpressureBuffer(int bufferSize, boolean autoCancel) {
-			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize);
+			return new SinkManyEmitterProcessor<>(autoCancel, bufferSize, null);
+		}
+
+		@Override
+		public <T> Sinks.ManyWithUpstream<T> multicastOnBackpressureBuffer(int bufferSize, boolean autoCancel, Consumer<? super T> hook) {
+			return new EmitterProcessor<>(autoCancel, bufferSize, hook);
 		}
 	}
 
@@ -250,6 +261,13 @@ final class SinksSpecs {
 		@Override
 		public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
 			return wrapMany(new SinkManyEmitterProcessor<>(autoCancel, bufferSize));
+		}
+
+		@Override
+		public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel, Consumer<? super T> onDiscardHook) {
+			@SuppressWarnings("deprecation") // EmitterProcessor will be removed in 3.5.
+			final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize, autoCancel, onDiscardHook);
+			return wrapMany(original);
 		}
 
 		@Override
@@ -351,6 +369,7 @@ final class SinksSpecs {
 		}
 
 		@Override
+
 		public <T> Many<T> onBackpressureBuffer(Queue<T> queue) {
 			final SinkManyUnicast<T> original = SinkManyUnicast.create(queue);
 			return wrapMany(original);

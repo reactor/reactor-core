@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -33,6 +34,8 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -69,6 +72,8 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 @Deprecated
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T>,
 	Sinks.ManyWithUpstream<T> {
+
+	static final Logger log = Loggers.getLogger(EmitterProcessor.class);
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -133,12 +138,31 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	 */
 	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, bufferSize);
+		return new EmitterProcessor<>(autoCancel, bufferSize, null);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using the provided backlog size and auto-cancellation.
+	 *
+	 * @param <E> Type of processed signals
+	 * @param bufferSize the internal buffer size to hold signals
+	 * @param autoCancel automatically cancel
+	 *
+	 * @return a fresh processor
+	 * @deprecated use {@link Sinks.MulticastSpec#onBackpressureBuffer(int, boolean) Sinks.many().multicast().onBackpressureBuffer(bufferSize, autoCancel)}
+	 * (or the unsafe variant if you're sure about external synchronization). To be removed in 3.5.
+	 */
+	@Deprecated
+	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel, Consumer<? super E> onDiscardHook) {
+		return new EmitterProcessor<>(autoCancel, bufferSize, onDiscardHook);
 	}
 
 	final int prefetch;
 
 	final boolean autoCancel;
+
+	@Nullable
+	final Consumer<? super T> onDiscard;
 
 	volatile Subscription s;
 	@SuppressWarnings("rawtypes")
@@ -182,12 +206,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 					Throwable.class,
 					"error");
 
-	EmitterProcessor(boolean autoCancel, int prefetch) {
+	EmitterProcessor(boolean autoCancel, int prefetch, @Nullable Consumer<? super T> onDiscard) {
 		if (prefetch < 1) {
 			throw new IllegalArgumentException("bufferSize must be strictly positive, " + "was: " + prefetch);
 		}
 		this.autoCancel = autoCancel;
 		this.prefetch = prefetch;
+		this.onDiscard = onDiscard;
 		//doesn't use INIT/CANCELLED distinction, contrary to FluxPublish)
 		//see remove()
 		SUBSCRIBERS.lazySet(this, EMPTY);
@@ -200,7 +225,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public Context currentContext() {
-		return Operators.multiSubscribersContext(subscribers);
+		if (onDiscard != null) {
+			return Operators.enableOnDiscard(Operators.multiSubscribersContext(subscribers), onDiscard);
+		}
+		else {
+			return Operators.multiSubscribersContext(subscribers);
+		}
 	}
 
 
@@ -213,9 +243,18 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			done = true;
 			CancellationException detachException = new CancellationException("the ManyWithUpstream sink had a Subscription to an upstream which has been manually cancelled");
 			if (ERROR.compareAndSet(EmitterProcessor.this, null, detachException)) {
+				if (WIP.getAndIncrement(this) != 0) {
+					return true;
+				}
 				Queue<T> q = queue;
 				if (q != null) {
-					q.clear();
+					Consumer<? super T> hook = this.onDiscard;
+					if (hook != null) {
+						discardQueue(q, hook);
+					}
+					else {
+						q.clear();
+					}
 				}
 				for (FluxPublish.PubSubInner<T> inner : terminate()) {
 					inner.actual.onError(detachException);
@@ -250,7 +289,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			if (inner.isCancelled()) {
 				remove(inner);
 			}
-			drain();
+			drain(null);
 		}
 		else {
 			Throwable e = error;
@@ -275,7 +314,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			return EmitResult.FAIL_TERMINATED;
 		}
 		done = true;
-		drain();
+		drain(null);
 		return EmitResult.OK;
 	}
 
@@ -292,7 +331,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 		if (Exceptions.addThrowable(ERROR, this, t)) {
 			done = true;
-			drain();
+			drain(null);
 			return EmitResult.OK;
 		}
 		else {
@@ -303,7 +342,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@Override
 	public void onNext(T t) {
 		if (sourceMode == Fuseable.ASYNC) {
-			drain();
+			drain(t);
 			return;
 		}
 		emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
@@ -340,7 +379,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		if (!q.offer(t)) {
 			return subscribers == EMPTY ? EmitResult.FAIL_ZERO_SUBSCRIBER : EmitResult.FAIL_OVERFLOW;
 		}
-		drain();
+
+		drain(t);
 		return EmitResult.OK;
 	}
 
@@ -387,7 +427,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 				if (m == Fuseable.SYNC) {
 					sourceMode = m;
 					queue = f;
-					drain();
+					drain(null);
 					return;
 				}
 				else if (m == Fuseable.ASYNC) {
@@ -443,8 +483,23 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		return super.scanUnsafe(key);
 	}
 
-	final void drain() {
+	final void drain(@Nullable T dataSignalOfferedBeforeDrain) {
 		if (WIP.getAndIncrement(this) != 0) {
+			Consumer<? super T> discardHook = this.onDiscard;
+			if (dataSignalOfferedBeforeDrain != null) {
+				if (discardHook != null && isCancelled()) {
+					try {
+						discardHook.accept(dataSignalOfferedBeforeDrain);
+					}
+					catch (Throwable t) {
+						log.warn("Error in discard hook", t);
+					}
+				}
+				else if (done) {
+					Operators.onNextDropped(dataSignalOfferedBeforeDrain,
+							currentContext());
+				}
+			}
 			return;
 		}
 
@@ -458,11 +513,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 			boolean empty = q == null || q.isEmpty();
 
-			if (checkTerminated(d, empty)) {
+			if (checkTerminated(d, empty, null)) {
 				return;
 			}
 
 			FluxPublish.PubSubInner<T>[] a = subscribers;
+			Consumer<? super T> onDiscardHook = onDiscard;
 
 			if (a != EMPTY && !empty) {
 				long maxRequested = Long.MAX_VALUE;
@@ -492,8 +548,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 						d = true;
 						v = null;
 					}
-					if (checkTerminated(d, v == null)) {
+					empty = v == null;
+					if (checkTerminated(d, empty, v)) {
 						return;
+					}
+					if (!empty && onDiscardHook != null) {
+						discard(v, onDiscardHook);
 					}
 					if (sourceMode != Fuseable.SYNC) {
 						s.request(1);
@@ -519,7 +579,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 					empty = v == null;
 
-					if (checkTerminated(d, empty)) {
+					if (checkTerminated(d, empty, v)) {
 						return;
 					}
 
@@ -528,7 +588,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 						if (sourceMode == Fuseable.SYNC) {
 							//the q is empty
 							done = true;
-							checkTerminated(true, true);
+							checkTerminated(true, true, null);
 						}
 						break;
 					}
@@ -555,7 +615,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			}
 			else if ( sourceMode == Fuseable.SYNC ) {
 				done = true;
-				if (checkTerminated(true, empty)) { //empty can be true if no subscriber
+				if (checkTerminated(true, empty, null)) { //empty can be true if no subscriber
 					break;
 				}
 			}
@@ -572,13 +632,23 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		return SUBSCRIBERS.getAndSet(this, TERMINATED);
 	}
 
-	boolean checkTerminated(boolean d, boolean empty) {
+	boolean checkTerminated(boolean d, boolean empty, @Nullable T value) {
 		if (s == Operators.cancelledSubscription()) {
 			if (autoCancel) {
 				terminate();
+
 				Queue<T> q = queue;
 				if (q != null) {
-					q.clear();
+					Consumer<? super T> hook = this.onDiscard;
+					if (hook != null) {
+						if (value != null) {
+							discard(value, hook);
+						}
+						discardQueue(q, hook);
+					}
+					else {
+						q.clear();
+					}
 				}
 			}
 			return true;
@@ -588,7 +658,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			if (e != null && e != Exceptions.TERMINATED) {
 				Queue<T> q = queue;
 				if (q != null) {
-					q.clear();
+					Consumer<? super T> hook = this.onDiscard;
+					if (hook != null) {
+						if (value != null) {
+							discard(value, hook);
+						}
+						discardQueue(q, hook);
+					}
+					else {
+						q.clear();
+					}
 				}
 				for (FluxPublish.PubSubInner<T> inner : terminate()) {
 					inner.actual.onError(e);
@@ -603,6 +682,31 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			}
 		}
 		return false;
+	}
+
+	static <T> void discardQueue(Queue<T> q, Consumer<? super T> hook) {
+		for (; ; ) {
+			T toDiscard = q.poll();
+			if (toDiscard == null) {
+				break;
+			}
+
+			try {
+				hook.accept(toDiscard);
+			}
+			catch (Throwable t) {
+				log.warn("Error while discarding a queue element, continuing with next queue element", t);
+			}
+		}
+	}
+
+	static <T> void discard(T value, Consumer<? super T> hook) {
+		try {
+			hook.accept(value);
+		}
+		catch (Throwable t) {
+			log.warn("Error while discarding a queue element, continuing with next queue element", t);
+		}
 	}
 
 	final boolean add(EmitterInner<T> inner) {
@@ -624,7 +728,27 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	final void remove(FluxPublish.PubSubInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
-			if (a == TERMINATED || a == EMPTY) {
+			if (a == EMPTY) {
+				// means cancelled without adding
+				if (autoCancel && Operators.terminate(S, this)) {
+					if (WIP.getAndIncrement(this) != 0) {
+						return;
+					}
+					terminate();
+					Queue<T> q = queue;
+					if (q != null) {
+						Consumer<? super T> hook = this.onDiscard;
+						if (hook != null) {
+							discardQueue(q, hook);
+						}
+						else {
+							q.clear();
+						}
+					}
+				}
+				return;
+			}
+			else if (a == TERMINATED) {
 				return;
 			}
 			int n = a.length;
@@ -659,7 +783,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 					terminate();
 					Queue<T> q = queue;
 					if (q != null) {
-						q.clear();
+						Consumer<? super T> hook = this.onDiscard;
+						if (hook != null) {
+							discardQueue(q, hook);
+						}
+						else {
+							q.clear();
+						}
 					}
 				}
 				return;
@@ -683,13 +813,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 		@Override
 		void drainParent() {
-			parent.drain();
+			parent.drain(null);
 		}
 
 		@Override
 		void removeAndDrainParent() {
 			parent.remove(this);
-			parent.drain();
+			parent.drain(null);
 		}
 	}
 

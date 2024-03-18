@@ -18,6 +18,7 @@ package reactor.test;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -170,6 +171,8 @@ public class MemoryUtils {
 		 */
 		public static final Tracked RELEASED = new Tracked("RELEASED", true);
 
+		final List<String> touches = new ArrayList<>();
+
 		/**
 		 * Check if an arbitrary object is a {@link Tracked}, and if so release it.
 		 *
@@ -216,6 +219,10 @@ public class MemoryUtils {
 	        set(true);
 	    }
 
+		public void touch(String msg) {
+			touches.add(msg);
+		}
+
 		/**
 		 * Check if this {@link Tracked} object has been released.
 		 *
@@ -227,6 +234,10 @@ public class MemoryUtils {
 
 	    @Override
 	    public boolean equals(Object o) {
+		    if (o instanceof String) {
+			    touch(o.toString());
+				return false;
+		    }
 	        if (this == o) return true;
 	        if (o == null || getClass() != o.getClass()) return false;
 
@@ -243,10 +254,16 @@ public class MemoryUtils {
 	    //NOTE: AssertJ has a special representation of AtomicBooleans, so we override it in AssertionsUtils
 	    @Override
 	    public String toString() {
-	        return "Tracked{" +
-	                " id=" + identifier +
-	                " released=" + get() +
-	                " }";
+	        return get()
+			        ? "Tracked{" +
+		                " id=" + identifier +
+		                " released=" + get() +
+		                " }"
+			        : "Tracked{" +
+				        " id=" + identifier +
+				        " released=" + get() +
+				        " touches=" + touches +
+				        " }";
 	    }
 	}
 }

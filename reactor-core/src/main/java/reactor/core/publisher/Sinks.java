@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Queue;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -420,6 +421,31 @@ public final class Sinks {
 		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
 		 */
 		<T> ManyWithUpstream<T> multicastOnBackpressureBuffer(int bufferSize, boolean autoCancel);
+
+		/**
+		 * A {@link Sinks.ManyWithUpstream} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
+		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
+		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
+		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 *     </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
+		 * </ul>
+		 * <p>
+		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
+		 *
+		 * @param bufferSize the maximum queue size
+		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
+		 * @param onDiscardHook should be called when values from queue are cleared
+		 */
+		<T> ManyWithUpstream<T> multicastOnBackpressureBuffer(int bufferSize, boolean autoCancel, Consumer<? super T> onDiscardHook);
 	}
 
 	/**
@@ -556,6 +582,31 @@ public final class Sinks {
 		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
 		 */
 		<T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
+
+		/**
+		 * A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
+		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
+		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
+		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 *     </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
+		 * </ul>
+		 * <p>
+		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
+		 *
+		 * @param bufferSize the maximum queue size
+		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
+		 * @param onDiscardHook should be called when values from queue are cleared
+		 */
+		<T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel, Consumer<? super T> onDiscardHook);
 
 		/**
 		 A {@link Sinks.Many} with the following characteristics:
