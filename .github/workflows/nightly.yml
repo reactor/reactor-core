@@ -17,18 +17,18 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
       - name: Download JDK 9
-        if: ${{ matrix.branch == 'main' }}
+        if: contains('main 3.6.x', matrix.branch)
         run: ${GITHUB_WORKSPACE}/.github/setup.sh
         shell: bash
       - name: Setup JDK 9
-        if: ${{ matrix.branch == 'main' }}
+        if: contains('main 3.6.x', matrix.branch)
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
         with:
           distribution: 'jdkfile'
           java-version: 9.0.4
           jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
       - name: Setup JDK 21
-        if: ${{ matrix.branch == 'main' }}
+        if: contains('main 3.6.x', matrix.branch)
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
         with:
           distribution: 'temurin'
