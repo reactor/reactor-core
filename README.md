@@ -199,7 +199,7 @@ Flux.create(sink -> {
     },
     // Overflow (backpressure) handling, default is BUFFER
     FluxSink.OverflowStrategy.LATEST)
-    .timeout(3)
+    .timeout(Duration.ofSeconds(3))
     .doOnComplete(() -> System.out.println("completed!"))
     .subscribe(System.out::println)
 ```
