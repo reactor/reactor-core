@@ -3,6 +3,7 @@ on:
   push:
     branches: # For branches, better to list them explicitly than regexp include
       - main
+      - 3.6.x
       - 3.5.x
       - 3.4.x
 permissions: read-all
@@ -20,18 +21,18 @@ jobs:
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
@@ -60,18 +61,18 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
       - name: Download JDK 9
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: contains('main 3.6.x', github.ref)
         run: ${GITHUB_WORKSPACE}/.github/setup.sh
         shell: bash
       - name: Setup JDK 9
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: contains('main 3.6.x', github.ref)
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
         with:
           distribution: 'jdkfile'
           java-version: 9.0.4
           jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
       - name: Setup JDK 21
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: contains('main 3.6.x', github.ref)
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
         with:
           distribution: 'temurin'
@@ -97,18 +98,18 @@ jobs:
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
@@ -135,18 +136,18 @@ jobs:
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
@@ -175,18 +176,18 @@ jobs:
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.ref)
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
