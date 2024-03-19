@@ -86,7 +86,7 @@ public class ReactorBlockHoundIntegrationTest {
 				}
 				Disposable disposable = taskScheduler.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
 
-				RaceTestUtils.race(Schedulers.parallel(), disposable::dispose);
+				RaceTestUtils.race(20, Schedulers.parallel(), disposable::dispose);
 			}
 			finally {
 				taskScheduler.dispose();
@@ -109,7 +109,7 @@ public class ReactorBlockHoundIntegrationTest {
 				}
 				Disposable disposable = worker.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
 
-				RaceTestUtils.race(Schedulers.parallel(), disposable::dispose);
+				RaceTestUtils.race(20, Schedulers.parallel(), disposable::dispose);
 			}
 			finally {
 				worker.dispose();
