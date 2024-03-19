@@ -259,7 +259,7 @@ task loops(type: Test, group: 'verification') {
 }
 
 test {
-  maxParallelForks = (int) (Runtime.runtime.availableProcessors() / 2 + 1)
+  maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
   def tags = rootProject.findProperty("junit-tags")
   if (tags != null) {
 	println "junit5 tags for core: $tags"
