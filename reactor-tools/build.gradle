@@ -188,6 +188,7 @@ javaAgentTest {
 }
 project.tasks.check.dependsOn(javaAgentTest)
 
+project.tasks.each {it.mustRunAfter(":reactor-core:blockHoundTest")}
 project.tasks.buildPluginTest.mustRunAfter(shadowJar)
 project.tasks.buildPluginTest.dependsOn(shadowJar)
 
