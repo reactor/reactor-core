@@ -40,7 +40,7 @@ jobs:
   deploySnapshot:
     name: deploySnapshot
     runs-on: ubuntu-20.04
-    needs: [ prepare, slowerChecks ]
+    needs: prepare
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
@@ -60,7 +60,7 @@ jobs:
   deployMilestone:
     name: deployMilestone
     runs-on: ubuntu-20.04
-    needs: [ prepare, slowerChecks ]
+    needs: prepare
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
@@ -82,7 +82,7 @@ jobs:
   deployRelease:
     name: deployRelease
     runs-on: ubuntu-20.04
-    needs: [ prepare, slowerChecks ]
+    needs: prepare
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
