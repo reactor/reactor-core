@@ -12,10 +12,8 @@ jobs:
       matrix:
         branch: [ 3.5.x, main ]
         test-type:
-          - type: core-fast
-            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true"
-          - type: core-slow
-            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true"
+          - type: core
+            arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
           - type: other
             arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default"
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests

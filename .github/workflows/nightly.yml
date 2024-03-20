@@ -5,7 +5,7 @@ on:
     - cron: "0 14 * * 0"
 permissions: read-all
 jobs:
-  core-fast:
+  core:
     name: core fast tests
     runs-on: ubuntu-latest
     strategy:
@@ -23,26 +23,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
         name: gradle
         with:
-          arguments: :reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true
-  core-slow:
-    name: core slower tests
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: [ 3.5.x, main ]
-    steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
-        with:
-          ref: ${{ matrix.branch }}
-      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
-        with:
-          distribution: 'temurin'
-          java-version: 8
-      - uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # tag=v3
-        name: gradle
-        with:
-          arguments: :reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true
+          arguments: :reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true
   other:
     name: other tests
     runs-on: ubuntu-latest
