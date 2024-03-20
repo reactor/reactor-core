@@ -188,6 +188,8 @@ javaAgentTest {
 }
 project.tasks.check.dependsOn(javaAgentTest)
 
+// This is required when org.gradle.parallel=true as tests in this module conflict with
+// concurrently running BlockHound tests.
 project.tasks.each {it.mustRunAfter(":reactor-core:blockHoundTest")}
 project.tasks.buildPluginTest.mustRunAfter(shadowJar)
 project.tasks.buildPluginTest.dependsOn(shadowJar)
