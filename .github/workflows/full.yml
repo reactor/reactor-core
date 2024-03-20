@@ -1,8 +1,8 @@
-name: Snapshots Check
+name: Full Check
 
 on:
   schedule:
-    - cron: "0 20 * * *"
+    - cron: "0 14 * * 0"
 permissions: read-all
 jobs:
   run-tests:
@@ -13,9 +13,11 @@ jobs:
         branch: [ 3.5.x, main ]
         test-type:
           - type: core
-            arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
+            arguments: ":reactor-core:test --no-daemon"
           - type: other
-            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true -Pjcstress.mode=default"
+            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon"
+          - type: jcstress
+            arguments: ":reactor-core:jcstress -Pjcstress.mode=default --no-daemon"
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
     steps:
       - name: Checkout Repository
