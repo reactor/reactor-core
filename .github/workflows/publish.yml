@@ -15,6 +15,7 @@ jobs:
     # This includes the tagging and drafting of release notes. Still, when possible we favor plain run of gradle tasks
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
         test-type:
           - type: core
