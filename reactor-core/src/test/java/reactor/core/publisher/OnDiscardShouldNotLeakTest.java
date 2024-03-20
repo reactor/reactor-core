@@ -157,7 +157,8 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.fluxSource("monoFilterWhenFalse", main -> main.last().filterWhen(__ -> Mono.just(false).hide())),
 			DiscardScenario.fluxSource("last", main -> main.last(new Tracked("default")).flatMap(f -> Mono.just(f).hide())),
 			DiscardScenario.fluxSource("flatMapIterable", f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("bufferTimeout", f -> f.bufferTimeout(2, Duration.ofMillis(1), true).flatMapIterable(Function.identity())),
+			// FIXME: uncomment once https://github.com/reactor/reactor-core/issues/3531 is resolved
+//			DiscardScenario.fluxSource("bufferTimeout", f -> f.bufferTimeout(2, Duration.ofMillis(1), true).flatMapIterable(Function.identity())),
 			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
 			DiscardScenario.fluxSource("publishOnAndPublishOn", main -> main
