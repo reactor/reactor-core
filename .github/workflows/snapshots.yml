@@ -12,18 +12,16 @@ jobs:
       matrix:
         branch: [ 3.5.x, 3.6.x, main ]
         test-type:
-          - type: core-fast
-            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true"
-          - type: core-fast-java21
-            arguments: ":reactor-core:java21Test --no-daemon -Pjunit-tags=!slow -DuseSnapshotMicrometerVersion=true"
-          - type: core-slow
-            arguments: ":reactor-core:test --no-daemon -Pjunit-tags=slow -DuseSnapshotMicrometerVersion=true"
+          - type: core
+            arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
+          - type: core-java21
+            arguments: ":reactor-core:java21Test --no-daemon -DuseSnapshotMicrometerVersion=true"
           - type: other
             arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon -DuseSnapshotMicrometerVersion=true"
         exclude:
           - branch: 3.5.x
             test-type:
-              type: core-fast-java21
+              type: core-java21
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
     steps:
       - name: Checkout Repository
