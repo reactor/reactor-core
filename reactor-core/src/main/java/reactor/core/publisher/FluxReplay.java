@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -155,9 +156,13 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		final Scheduler scheduler;
 		int size;
 
-		volatile TimedNode<T> head;
+		final TimedNode<T> head;
 
-		TimedNode<T> tail;
+		volatile TimedNode<T> tail;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SizeAndTimeBoundReplayBuffer, TimedNode>
+				TAIL = AtomicReferenceFieldUpdater.newUpdater(SizeAndTimeBoundReplayBuffer.class, TimedNode.class, "tail");
 
 		Throwable error;
 		static final long NOT_DONE = Long.MIN_VALUE;
@@ -390,7 +395,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public boolean isEmpty(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			return node.get() == null;
@@ -431,15 +435,26 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void add(T value) {
-			final TimedNode<T> tail = this.tail;
-			final TimedNode<T> valueNode = new TimedNode<>(tail.index + 1,
-					value,
-					scheduler.now(TimeUnit.NANOSECONDS));
+			TimedNode<T> tail;
+			TimedNode<T> valueNode;
+			do {
+				tail = this.tail;
+				valueNode = new TimedNode<>(tail.index + 1,
+						value,
+						scheduler.now(TimeUnit.NANOSECONDS));
+			} while (
+				!TAIL.compareAndSet(this, tail, valueNode)
+			);
 			tail.set(valueNode);
-			this.tail = valueNode;
 			int s = size;
 			if (s == limit) {
-				head = head.get();
+				TimedNode<T> cur, next;
+				do {
+					cur = head.get();
+					if (cur == null)
+						next = null;
+					else next = cur.get();
+				} while (next != null && !head.compareAndSet(cur, next));
 			}
 			else {
 				size = s + 1;
@@ -450,7 +465,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			//we still want to keep the newly added value in order for the immediately following replay
 			//to propagate it to currently registered subscribers.
 			if (maxAge == 0) {
-				head = valueNode;
+				head.set(valueNode);
 				return;
 			}
 
@@ -470,7 +485,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					//otherwise we'd skip removal and re-walk the whole linked list on next add, retaining outdated values for nothing.
 					if (removed != 0) {
 						size = size - removed;
-						head = h;
+						head.set(h.get());
 					}
 					break;
 				}
@@ -481,7 +496,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void replay(ReplaySubscription<T> rs) {
 			if (!rs.enter()) {
 				return;
@@ -776,9 +790,12 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		final int limit;
 		final int indexUpdateLimit;
 
-		volatile Node<T> head;
+		final Node<T> head;
 
-		Node<T> tail;
+		volatile Node<T> tail;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SizeBoundReplayBuffer, Node>
+				TAIL = AtomicReferenceFieldUpdater.newUpdater(SizeBoundReplayBuffer.class, Node.class, "tail");
 
 		int size;
 
@@ -809,15 +826,29 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void add(T value) {
-			final Node<T> tail = this.tail;
-			final Node<T> n = new Node<>(tail.index + 1, value);
+			Node<T> tail;
+			Node<T> n;
+			do {
+			 	tail = this.tail;
+			 	n = new Node<>(tail.index + 1, value);
+			} while (
+				!TAIL.compareAndSet(this, tail, n)
+			);
+			// when tail was successfully updated to 'n'
+			// tail.set(n) will not lose integrity.
+			// replaying between these lines' execution is fine
+			// n will replay on next call to replay, done after this method
 			tail.set(n);
-			this.tail = n;
 			int s = size;
 			if (s == limit) {
-				head = head.get();
-			}
-			else {
+				Node<T> cur, next;
+				do {
+					cur = head.get();
+					if (cur == null)
+						next = null;
+					else next = cur.get();
+				} while (next != null && !head.compareAndSet(cur, next));
+			} else {
 				size = s + 1;
 			}
 		}
