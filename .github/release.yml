@@ -3,6 +3,7 @@ changelog:
     labels:
       - ignore-changelog
       - type/test
+      - type/test/flaky
       - type/chores
       - type/dependency-upgrade
   categories:
