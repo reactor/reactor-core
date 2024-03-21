@@ -1,6 +1,7 @@
 name: Snapshots Check
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 20 * * *"
 permissions: read-all
@@ -14,14 +15,8 @@ jobs:
         test-type:
           - type: core
             arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
-          - type: core-java21
-            arguments: ":reactor-core:java21Test --no-daemon -DuseSnapshotMicrometerVersion=true"
-          - type: other
+          - type: other # includes java21Test and java9Test for 3.6+
             arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress -DuseSnapshotMicrometerVersion=true --no-daemon"
-        exclude:
-          - branch: 3.5.x
-            test-type:
-              type: core-java21
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
     steps:
       - name: Checkout Repository
