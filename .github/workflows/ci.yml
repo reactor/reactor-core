@@ -65,10 +65,12 @@ jobs:
         test-type:
           - type: core
             arguments: ":reactor-core:test --no-daemon"
-          - type: other
-            arguments: "check -x :reactor-core:test -x spotlessCheck -Pjcstress.mode=sanity --no-daemon"
           - type: core-java21
             arguments: ":reactor-core:java21Test --no-daemon"
+          - type: core-java9
+            arguments: ":reactor-core:java9Test --no-daemon"
+          - type: other
+            arguments: "check -x :reactor-core:test -x :reactor-core:java21Test -x :reactor-core:java9Test -x spotlessCheck -Pjcstress.mode=sanity --no-daemon"
     name: ${{ matrix.test-type.type }} tests
     needs: preliminary
     steps:
