@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,6 +204,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
 		done = true;
 		drain();
 		return EmitResult.OK;
@@ -219,6 +222,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		Objects.requireNonNull(t, "tryEmitError must be invoked with a non-null Throwable");
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
+		}
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
 		}
 		if (Exceptions.addThrowable(ERROR, this, t)) {
 			done = true;
@@ -243,6 +249,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	public EmitResult tryEmitNext(T t) {
 		if (done) {
 			return Sinks.EmitResult.FAIL_TERMINATED;
+		}
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
 		}
 
 		Objects.requireNonNull(t, "tryEmitNext must be invoked with a non-null value");
