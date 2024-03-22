@@ -354,7 +354,7 @@ This is one of the most recurring use of `ThreadLocal` in Java, and as a consequ
 
 That might have been a safe assumption to make before Java 8, but with the advent of functional programming elements in the Java language things have changed a bit...
 
-Let's take the example of a API that was imperative and used the template method pattern, then switches to a more functional style.
+Let's take the example of an API that was imperative and used the template method pattern, then switched to a more functional style.
 With the template method pattern, inheritance was at play. Now in its more functional approach, higher order functions are passed to define the "steps" of the algorithm.
 Things are now more declarative than imperative, and that frees the library to make decisions about where each step should run.
 For instance, knowing which steps of the underlying algorithm can be parallelized, the library can use an `ExecutorService` to execute some of the steps in parallel.
