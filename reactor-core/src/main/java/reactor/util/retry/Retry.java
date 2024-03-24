@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,7 +165,7 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#minBackoff(Duration)
 	 */
 	public static RetryBackoffSpec backoff(long maxAttempts, Duration minBackoff) {
-		return new RetryBackoffSpec(Context.empty(), maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers::parallel,
+		return new RetryBackoffSpec(Context.empty(), maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 2, 0.5d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
@@ -187,7 +187,7 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#maxBackoff(Duration)
 	 */
 	public static RetryBackoffSpec fixedDelay(long maxAttempts, Duration fixedDelay) {
-		return new RetryBackoffSpec(Context.empty(), maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers::parallel,
+		return new RetryBackoffSpec(Context.empty(), maxAttempts, t -> true, false, fixedDelay, fixedDelay, 2, 0d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
