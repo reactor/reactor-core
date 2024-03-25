@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ plugins {
 	alias(libs.plugins.asciidoctor.pdf) apply false
 	alias(libs.plugins.japicmp)
 	alias(libs.plugins.download)
-	alias(libs.plugins.testsets)
 	// note: build scan plugin now must be applied in settings.gradle
 	// plugin portal is now outdated due to bintray sunset, at least for artifactory gradle plugin
 	alias(libs.plugins.bnd) apply false
@@ -87,22 +86,6 @@ ext {
 	 */
 }
 
-// only publish scan if a specific gradle entreprise server is passed
-// typically, for local usage, you would temporarily set the env with:
-// `GRADLE_ENTERPRISE_URL=https://myge.example.com/ gradle foo`
-if (System.getenv('GRADLE_ENTERPRISE_URL')) {
-	gradleEnterprise {
-		buildScan {
-			captureTaskInputFiles = true
-			obfuscation {
-				ipAddresses { addresses -> addresses.collect { '0.0.0.0' } }
-			}
-			publishAlways()
-			server = System.getenv('GRADLE_ENTERPRISE_URL')
-		}
-	}
-}
-
 nohttp {
 	source.exclude "docs/asciidoc/highlight/**"
 	source.exclude "**/build/reports/tests/**/*.html"
@@ -124,7 +107,7 @@ spotless {
 		enforceCheck false
 	}
 	else {
-		String spotlessBranch = "origin/main"
+		String spotlessBranch = "origin/3.5.x"
 		println "[Spotless] Local run detected, ratchet from $spotlessBranch"
 		ratchetFrom spotlessBranch
 	}

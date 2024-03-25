@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,17 @@
 package reactor.core.observability.micrometer;
 
 import java.time.Duration;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.core.tck.MeterRegistryAssert;
@@ -37,8 +43,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Simon Baslé
@@ -187,20 +192,25 @@ class TimedSchedulerTest {
 	void schedulePeriodicallyTimesOneRunInActiveAndAllRunsInCompleted() throws InterruptedException {
 		MockClock virtualClock = new MockClock();
 		SimpleMeterRegistry registryWithVirtualClock = new SimpleMeterRegistry(SimpleConfig.DEFAULT, virtualClock);
-		TimedScheduler test = new TimedScheduler(Schedulers.single(), registryWithVirtualClock, "test", Tags.empty());
+		TimedScheduler test = new TimedScheduler(Schedulers.single(), registryWithVirtualClock, "test",
+				Tags.empty());
 
 		//schedule a periodic task for which one run takes 500ms. we cancel after 3 runs
 		CountDownLatch latch = new CountDownLatch(3);
-		Disposable d = test.schedulePeriodically(
-			() -> {
-				try {
-					virtualClock.add(Duration.ofMillis(500));
-				}
-				finally {
-					latch.countDown();
-				}
-			},
-			100, 100, TimeUnit.MILLISECONDS);
+
+		//decrement latch after all task & wrapper actions are performed
+		Schedulers.onScheduleHook("test", task -> () -> {
+			try {
+				task.run();
+			}
+			finally {
+				latch.countDown();
+			}
+		});
+
+		Disposable d = test.schedulePeriodically(() -> virtualClock.add(Duration.ofMillis(500)),
+				100, 100, TimeUnit.MILLISECONDS);
+
 		latch.await(1, TimeUnit.SECONDS);
 		d.dispose();
 
@@ -214,6 +224,9 @@ class TimedSchedulerTest {
 		assertThat(test.completedTasks.totalTime(TimeUnit.MILLISECONDS))
 			.as("total duration of tasks")
 			.isEqualTo(1500);
+
+		Schedulers.resetOnScheduleHook("test");
+		test.disposeGracefully().block(Duration.ofSeconds(1));
 	}
 
 	@Test
@@ -245,7 +258,16 @@ class TimedSchedulerTest {
 		CountDownLatch latch = new CountDownLatch(5);
 		TimedScheduler test = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 
-		Disposable d = test.schedulePeriodically(latch::countDown, 100, 100, TimeUnit.MILLISECONDS);
+		Schedulers.onScheduleHook("test", task -> () -> {
+			try {
+				task.run();
+			}
+			finally {
+				latch.countDown();
+			}
+		});
+
+		Disposable d = test.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
 
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
@@ -259,6 +281,9 @@ class TimedSchedulerTest {
 			.isEqualTo(5)
 			.matches(l -> l == test.submittedDirect.count() + test.submittedDelayed.count()  + test.submittedPeriodicInitial.count()
 				+ test.submittedPeriodicIteration.count(), "completed tasks == sum of all timer counts");
+
+		Schedulers.resetOnScheduleHook("test");
+		test.disposeGracefully().block(Duration.ofSeconds(1));
 	}
 
 	@Test
@@ -302,12 +327,20 @@ class TimedSchedulerTest {
 
 	@Test
 	void workerSchedulePeriodicallyIsCorrectlyMetered() throws InterruptedException {
-		Scheduler original = Schedulers.single();
 		CountDownLatch latch = new CountDownLatch(5);
-		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 		Scheduler.Worker test = testScheduler.createWorker();
 
-		Disposable d = test.schedulePeriodically(latch::countDown, 100, 100, TimeUnit.MILLISECONDS);
+		Schedulers.onScheduleHook("test", task -> () -> {
+			try {
+				task.run();
+			}
+			finally {
+				latch.countDown();
+			}
+		});
+
+		Disposable d = test.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
 
 		latch.await(10, TimeUnit.SECONDS);
 		d.dispose();
@@ -323,5 +356,118 @@ class TimedSchedulerTest {
 				+ testScheduler.submittedDelayed.count()
 				+ testScheduler.submittedPeriodicInitial.count()
 				+ testScheduler.submittedPeriodicIteration.count(), "completed tasks == sum of all timer counts");
+
+		test.dispose();
+		Schedulers.resetOnScheduleHook("test");
+		testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
+	}
+
+	@Test
+	void pendingTaskRemovedOnScheduleRejection() throws InterruptedException {
+		CountDownLatch activeTaskLatch = new CountDownLatch(1);
+		CountDownLatch pendingTaskLatch = new CountDownLatch(1);
+		CountDownLatch countPendingLatch = new CountDownLatch(1);
+		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+				new ArrayBlockingQueue<>(1));
+		Scheduler original = Schedulers.fromExecutorService(executorService);
+		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		testScheduler.init();
+
+		RequiredSearch requiredSearch = registry.get("test.scheduler.tasks.pending");
+		LongTaskTimer longTaskTimer = requiredSearch.longTaskTimer();
+
+		try {
+			Runnable activeTask = () -> {
+				try {
+					countPendingLatch.countDown();
+					activeTaskLatch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			};
+
+			Runnable pendingTask = pendingTaskLatch::countDown;
+			Runnable rejectedTask = () -> {};
+
+			// Schedule two tasks: one will execute, the other will wait in the queue
+			assertThatNoException().isThrownBy(() -> testScheduler.schedule(activeTask));
+			assertThatNoException().isThrownBy(() -> testScheduler.schedule(pendingTask));
+
+			// Wait till first one is picked up -> exactly one is pending now
+			countPendingLatch.await(1, TimeUnit.SECONDS);
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+			                                       .isOne();
+
+			assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(
+					() -> testScheduler.schedule(rejectedTask));
+			assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(
+					() -> testScheduler.schedule(rejectedTask, 0, TimeUnit.SECONDS));
+
+			activeTaskLatch.countDown();
+			pendingTaskLatch.await(1, TimeUnit.SECONDS);
+
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+			                                       .isZero();
+		} finally {
+			testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
+		}
+	}
+
+	@Test
+	void workerPendingTaskRemovedOnScheduleRejection() throws InterruptedException {
+		CountDownLatch activeTaskLatch = new CountDownLatch(1);
+		CountDownLatch pendingTaskLatch = new CountDownLatch(1);
+		CountDownLatch countPendingLatch = new CountDownLatch(1);
+		ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+				new ArrayBlockingQueue<>(1));
+		Scheduler original = Schedulers.fromExecutorService(executorService);
+		TimedScheduler testScheduler = new TimedScheduler(original, registry, "test", Tags.empty());
+		testScheduler.init();
+		Scheduler.Worker worker = testScheduler.createWorker();
+
+		RequiredSearch requiredSearch = registry.get("test.scheduler.tasks.pending");
+		LongTaskTimer longTaskTimer = requiredSearch.longTaskTimer();
+
+		try {
+			Runnable activeTask = () -> {
+				try {
+					countPendingLatch.countDown();
+					activeTaskLatch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			};
+
+			Runnable pendingTask = pendingTaskLatch::countDown;
+			Runnable rejectedTask = () -> {
+			};
+
+			// Schedule two tasks: one will execute, the other will wait in the queue
+			assertThatNoException().isThrownBy(() -> worker.schedule(activeTask));
+			assertThatNoException().isThrownBy(() -> worker.schedule(pendingTask));
+
+			// Wait till first one is picked up -> exactly one is pending now
+			countPendingLatch.await(1, TimeUnit.SECONDS);
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+			                                       .isOne();
+
+			assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(
+					() -> worker.schedule(rejectedTask));
+			assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(
+					() -> worker.schedule(rejectedTask, 0, TimeUnit.SECONDS));
+
+			activeTaskLatch.countDown();
+			pendingTaskLatch.await(1, TimeUnit.SECONDS);
+
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+			                                       .isZero();
+		}
+		finally {
+			worker.dispose();
+			testScheduler.disposeGracefully()
+			             .block(Duration.ofSeconds(1));
+		}
 	}
 }

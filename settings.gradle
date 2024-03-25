@@ -13,24 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-	id "com.gradle.enterprise" version "3.15.1"
-}
 
 rootProject.name = 'reactor'
 
 include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools', 'reactor-core-micrometer'
 
-//libs catalog is declared in ./gradle/libs.versions.toml
-//TODO remove once Version Catalogs are stabilized. It is also activated in buildSrc
-enableFeaturePreview("VERSION_CATALOGS")
 dependencyResolutionManagement {
   versionCatalogs {
 	libs {
 	  if (System.getProperty("useSnapshotMicrometerVersion")) {
-		version('micrometer', '1.10.13-SNAPSHOT')
+		version('micrometer', '1.10.14-SNAPSHOT')
 		version('micrometerDocsGenerator', "1.0.3-SNAPSHOT")
-		version('micrometerTracingTest', "1.0.12-SNAPSHOT")
+		version('micrometerTracingTest', "1.0.13-SNAPSHOT")
 		version('contextPropagation', "1.0.7-SNAPSHOT")
 	  }
 	}

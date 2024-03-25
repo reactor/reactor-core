@@ -2,6 +2,10 @@ changelog:
   exclude:
     labels:
       - ignore-changelog
+      - type/test
+      - type/test/flaky
+      - type/chores
+      - type/dependency-upgrade
   categories:
     - title: ":warning: Update considerations and deprecations"
       labels:
@@ -16,13 +20,9 @@ changelog:
     - title: ":lady_beetle: Bug fixes"
       labels:
         - "type/bug"
-    - title: ":book: Documentation, Tests and Build"
+    - title: ":book: Documentation"
       labels:
         - "type/documentation"
-        - "type/chores"
-    - title: ":up: Dependency Upgrades"
-      labels:
-        - "type/dependency-upgrade"
     - title: ":question: Other Changes"
       labels:
         - "*"

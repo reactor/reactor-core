@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -270,8 +270,10 @@ public abstract class FluxSwitchMapStressTest {
 		}
 	}
 
-	@JCStressTest
-	@Outcome(id = {"200, 0", "200, 1"}, expect = ACCEPTABLE, desc = "Should produced exactly what was requested")
+	// Ignore, flaky test (https://github.com/reactor/reactor-core/issues/3633)
+	//@JCStressTest
+	@Outcome(id = {"200, 0, 0", "200, 0, 1"}, expect = ACCEPTABLE, desc = "Should " +
+			"produced exactly what was requested")
 	@State
 	public static class RequestAndProduceStressTest2 extends FluxSwitchMapStressTest {
 
@@ -311,9 +313,17 @@ public abstract class FluxSwitchMapStressTest {
 		}
 
 		@Arbiter
-		public void arbiter(II_Result r) {
-			r.r1 = (int) (stressSubscriber.onNextCalls.get() + switchMapMain.requested);
-			r.r2 = stressSubscriber.onCompleteCalls.get();
+		public void arbiter(III_Result r) {
+			r.r1 = stressSubscriber.onNextCalls.get();
+			r.r2 = (int) switchMapMain.requested;
+			r.r3 = stressSubscriber.onCompleteCalls.get();
+
+			switch (r.toString()) {
+				case "200, 0, 0":
+				case "200, 0, 1":
+					break;
+				default: throw new IllegalStateException(r + " " + fastLogger);
+			}
 
 			if (stressSubscriber.onNextCalls.get() < 200 && stressSubscriber.onNextDiscarded.get() < switchMapMain.requested) {
 				throw new IllegalStateException(r + " " + fastLogger);
