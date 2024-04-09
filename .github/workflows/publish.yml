@@ -99,7 +99,7 @@ jobs:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
       run: |
-          ./gradlew assemble artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
+          ./gradlew -Dorg.gradle.parallel=false assemble artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
 
   #sign the milestone artifacts and deploy them to Artifactory
   deployMilestone:
@@ -139,7 +139,7 @@ jobs:
         ORG_GRADLE_PROJECT_signingKey: ${{secrets.SIGNING_KEY}}
         ORG_GRADLE_PROJECT_signingPassword: ${{secrets.SIGNING_PASSPHRASE}}
       run: |
-          ./gradlew assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local
+          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local
 
   #sign the release artifacts and deploy them to Artifactory
   deployRelease:
@@ -181,7 +181,7 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
       run: |
-          ./gradlew assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
+          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
 
   tagMilestone:
     name: Tag milestone
