@@ -7,16 +7,16 @@
 
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.6.4"
-baselinePerfCore = "3.6.4"
+baseline-core-api = "3.6.5"
+baselinePerfCore = "3.6.5"
 baselinePerfExtra = "3.5.1"
 
 # Other shared versions
 asciidoctor = "4.0.2"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.12.4"
+micrometer = "1.12.5"
 micrometerDocsGenerator = "1.0.2"
-micrometerTracingTest="1.2.4"
+micrometerTracingTest="1.2.5"
 contextPropagation="1.1.1"
 kotlin = "1.8.22"
 reactiveStreams = "1.0.4"
