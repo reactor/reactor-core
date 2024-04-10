@@ -39,7 +39,7 @@ public class FluxThenManyTest {
 	}
 
 	@Test
-	public void testThenManyFusion() throws InterruptedException {
+	public void testThenManyRepeated() throws InterruptedException {
 		Flux<Integer> test = Flux.just("A", "B")
 		                        .thenMany(Flux.just("C", "D"))
 		                        .thenMany(Flux.just(1, 2));
@@ -66,18 +66,8 @@ public class FluxThenManyTest {
 	}
 
 	@Test
-	void testThenManyOnConcatArrayFused() {
-		Flux.concat(Flux.just("a"), Flux.just("b"))
-		    .thenMany(Flux.just("c"))
-		    .as(StepVerifier::create)
-		    .expectNext("c")
-		    .verifyComplete();
-	}
-
-	@Test
 	void testThenManyOnConcatArray() {
 		Flux.concat(Flux.just("a"), Flux.just("b"))
-			.hide()
 		    .thenMany(Flux.just("c"))
 		    .as(StepVerifier::create)
 		    .expectNext("c")
