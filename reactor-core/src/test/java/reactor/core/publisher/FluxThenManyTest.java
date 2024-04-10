@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.jupiter.api.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +47,7 @@ public class FluxThenManyTest {
 		assertThat(test).isInstanceOf(FluxConcatArray.class);
 		FluxConcatArray<Integer> s = (FluxConcatArray<Integer>)test;
 
-		assertThat(s.array).hasSize(3);
+		assertThat(s.array).hasSize(2);
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		test.subscribe(ts);
@@ -62,5 +63,24 @@ public class FluxThenManyTest {
 		test.subscribe(ts);
 		ts.assertValues("C", "D");
 		ts.assertComplete();
+	}
+
+	@Test
+	void testThenManyOnConcatArrayFused() {
+		Flux.concat(Flux.just("a"), Flux.just("b"))
+		    .thenMany(Flux.just("c"))
+		    .as(StepVerifier::create)
+		    .expectNext("c")
+		    .verifyComplete();
+	}
+
+	@Test
+	void testThenManyOnConcatArray() {
+		Flux.concat(Flux.just("a"), Flux.just("b"))
+			.hide()
+		    .thenMany(Flux.just("c"))
+		    .as(StepVerifier::create)
+		    .expectNext("c")
+		    .verifyComplete();
 	}
 }
