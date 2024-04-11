@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
@@ -468,6 +470,148 @@ class TimedSchedulerTest {
 			worker.dispose();
 			testScheduler.disposeGracefully()
 			             .block(Duration.ofSeconds(1));
+		}
+	}
+
+	@Test
+	void pendingTaskRemovedOnCancellation() {
+		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+		testScheduler.init();
+
+		RequiredSearch tasksPendingSearch = registry.get("test.scheduler.tasks.pending");
+		RequiredSearch tasksActiveSearch = registry.get("test.scheduler.tasks.active");
+		LongTaskTimer tasksPendingLongTaskTimer = tasksPendingSearch.longTaskTimer();
+		LongTaskTimer tasksActiveLongTaskTimer = tasksActiveSearch.longTaskTimer();
+
+		try {
+			// Schedule a running task and a pending task
+			final CountDownLatch taskPause = new CountDownLatch(1);
+			assertThatNoException().isThrownBy(() -> testScheduler.schedule(() -> {
+				try {
+					taskPause.await(1, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+			Disposable.Swap waitingTask = Disposables.swap();
+			assertThatNoException().isThrownBy(() -> waitingTask.update(testScheduler.schedule(() -> {})));
+
+			// One task is pending to be scheduled and one is active
+			assertThat(tasksPendingLongTaskTimer.activeTasks()).as("active pending")
+					.isEqualTo(1);
+			assertThat(tasksActiveLongTaskTimer.activeTasks()).as("active")
+					.isEqualTo(1);
+
+			// E.g. a `Mono#timeout` was never hit, so the task gets disposed.
+			waitingTask.dispose();
+
+			// The task should no longer be considered pending, as it was disposed.
+			assertThat(tasksPendingLongTaskTimer.activeTasks()).as("active pending")
+					.isZero();
+		} finally {
+			testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
+		}
+	}
+
+	@Test
+	void pendingTaskDelayedRemovedOnCancellation() {
+		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+		testScheduler.init();
+
+		RequiredSearch requiredSearch = registry.get("test.scheduler.tasks.pending");
+		LongTaskTimer longTaskTimer = requiredSearch.longTaskTimer();
+
+		try {
+			// Schedule a task far in the future.
+			Disposable.Swap waitingTask = Disposables.swap();
+			assertThatNoException().isThrownBy(() -> waitingTask.update(testScheduler.schedule(() -> {}, 10_000, TimeUnit.SECONDS)));
+
+			// It's pending to be scheduled.
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+					.isOne();
+
+			// E.g. a `Mono#timeout` was never hit, so the task gets disposed.
+			waitingTask.dispose();
+
+			// The task should no longer be considered pending, as it was disposed.
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+					.isZero();
+		} finally {
+			testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
+		}
+	}
+
+	@Test
+	void workerPendingTaskRemovedOnCancellation() {
+		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+		testScheduler.init();
+		Scheduler.Worker worker = testScheduler.createWorker();
+
+		RequiredSearch tasksPendingSearch = registry.get("test.scheduler.tasks.pending");
+		RequiredSearch tasksActiveSearch = registry.get("test.scheduler.tasks.active");
+		LongTaskTimer tasksPendingLongTaskTimer = tasksPendingSearch.longTaskTimer();
+		LongTaskTimer tasksActiveLongTaskTimer = tasksActiveSearch.longTaskTimer();
+
+		try {
+			// Schedule a running task and a pending task
+			final CountDownLatch taskPause = new CountDownLatch(1);
+			assertThatNoException().isThrownBy(() -> worker.schedule(() -> {
+				try {
+					taskPause.await(1, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+			Disposable.Swap waitingTask = Disposables.swap();
+			assertThatNoException().isThrownBy(() -> waitingTask.update(worker.schedule(() -> {})));
+
+			// One task is pending to be scheduled and one is active
+			assertThat(tasksPendingLongTaskTimer.activeTasks()).as("active pending")
+					.isEqualTo(1);
+			assertThat(tasksActiveLongTaskTimer.activeTasks()).as("active")
+					.isEqualTo(1);
+
+			// E.g. a `Mono#timeout` was never hit, so the task gets disposed.
+			waitingTask.dispose();
+
+			// The task should no longer be considered pending, as it was disposed.
+			assertThat(tasksPendingLongTaskTimer.activeTasks()).as("active pending")
+					.isZero();
+		} finally {
+			worker.dispose();
+			testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
+		}
+	}
+
+	@Test
+	void workerPendingTaskDelayedRemovedOnCancellation() {
+		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
+		testScheduler.init();
+		Scheduler.Worker worker = testScheduler.createWorker();
+
+		RequiredSearch requiredSearch = registry.get("test.scheduler.tasks.pending");
+		LongTaskTimer longTaskTimer = requiredSearch.longTaskTimer();
+
+		try {
+			// Schedule a task far in the future.
+			Disposable.Swap waitingTask = Disposables.swap();
+			assertThatNoException().isThrownBy(() -> waitingTask.update(worker.schedule(() -> {}, 10_000, TimeUnit.SECONDS)));
+
+			// It's pending to be scheduled.
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+					.isOne();
+
+			// E.g. a `Mono#timeout` was never hit, so the task gets disposed.
+			waitingTask.dispose();
+
+			// The task should no longer be considered pending, as it was disposed.
+			assertThat(longTaskTimer.activeTasks()).as("active pending")
+					.isZero();
+		} finally {
+			worker.dispose();
+			testScheduler.disposeGracefully().block(Duration.ofSeconds(1));
 		}
 	}
 }
