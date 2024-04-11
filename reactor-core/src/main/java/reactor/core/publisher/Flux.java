@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -9243,12 +9243,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * this Flux completes.
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
-		if (this instanceof FluxConcatArray) {
-			@SuppressWarnings({ "unchecked" })
-			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
-			return fluxConcatArray.concatAdditionalIgnoredLast(other);
-		}
-
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
 		return concat;
