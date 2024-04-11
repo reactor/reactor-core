@@ -9502,11 +9502,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * this Flux completes.
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
-		if (this instanceof FluxConcatArray) {
-			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
-			return fluxConcatArray.concatAdditionalIgnoredLast(other);
-		}
-
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
 		return concat;
