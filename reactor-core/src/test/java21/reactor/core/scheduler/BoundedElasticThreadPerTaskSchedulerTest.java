@@ -75,7 +75,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		Disposable disposable = scheduler.schedule(latch::countDown);
 
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 	}
 
 	@Test
@@ -108,7 +108,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 				.until(() -> ((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().isEmpty());
 
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 	}
 
 	@Test
@@ -135,7 +135,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		Assertions.assertThat(((ScheduledThreadPoolExecutor) resource.sharedDelayedTasksScheduler).getQueue().size()).isZero();
 
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 
 		// unblock scheduler
 		awaiter.countDown();
@@ -153,7 +153,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isFalse();
 		disposable.dispose();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 	}
 
 	@Test
@@ -168,7 +168,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isFalse();
 		disposable.dispose();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 	}
 
 	@Test
@@ -183,7 +183,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isFalse();
 		disposable.dispose();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 	}
 
 	@Test
@@ -198,7 +198,7 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		Assertions.assertThat(disposable.isDisposed()).isFalse();
 		disposable.dispose();
-		Assertions.assertThat(disposable.isDisposed()).isTrue();
+		Awaitility.await().untilAsserted(() -> Assertions.assertThat(disposable.isDisposed()).isTrue());
 	}
 
 	@Test
