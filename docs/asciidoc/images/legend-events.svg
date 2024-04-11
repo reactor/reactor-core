@@ -98,10 +98,10 @@
    <tspan id="tspan1362-2" y="-33.9" x="-441.15" font-weight="400" font-size="3.7" font-family="Tahoma, 'Nimbus Sans L'" fill="#5b1d88" fill-opacity="1" stroke-width=".26">addListener()</tspan>
   </text>
   <text xml:space="preserve" style="line-height:125%" x="-568.79" y="-77.9" id="text20537" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-   u <tspan id="tspan20535" x="-568.79" y="-77.9" stroke-width=".26">upstream signals</tspan>
+   <tspan id="tspan20535" x="-568.79" y="-77.9" stroke-width=".26">upstream signals</tspan>
   </text>
-  <text xml:space="preserve" style="line-height:125%" x="-474.3" y="-66.14" id="text20541" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-   <tspan id="tspan20539" x="-474.3" y="-66.14" stroke-width=".26">vs external API calls</tspan>
+  <text xml:space="preserve" style="line-height:125%" x="-474.3" y="-77.9" id="text20541" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+   <tspan id="tspan20539" x="-474.3" y="-77.9" stroke-width=".26">vs external API calls</tspan>
   </text>
   <g id="g26536" transform="translate(-380.49 71.7)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
    <circle id="ellipse1137" cy="-45.01" cx="-125.42" r="6.09" fill="#6cb33e" stroke="none" stroke-width=".26"/>
