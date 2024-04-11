@@ -100,7 +100,7 @@
   <text xml:space="preserve" style="line-height:125%" x="-568.79" y="-77.9" id="text20537" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
    <tspan id="tspan20535" x="-568.79" y="-77.9" stroke-width=".26">upstream signals</tspan>
   </text>
-  <text xml:space="preserve" style="line-height:125%" x="-474.3" y="-66.14" id="text20541" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+  <text xml:space="preserve" style="line-height:125%" x="-474.3" y="-77.9" id="text20541" font-style="normal" font-weight="400" font-size="10.58" font-family="sans-serif" letter-spacing="0" word-spacing="0" fill="#000" fill-opacity="1" stroke="none" stroke-width=".26" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
    <tspan id="tspan20539" x="-474.3" y="-77.9" stroke-width=".26">vs external API calls</tspan>
   </text>
   <g id="g26536" transform="translate(-380.49 71.7)" fill-opacity="1" stroke-dasharray="none" stroke-opacity="1">
