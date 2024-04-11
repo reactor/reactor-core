@@ -474,7 +474,7 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void pendingTaskRemovedOnCancellation() {
+	void pendingTaskRemovedOnCancellation() throws InterruptedException {
 		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 		testScheduler.init();
 
@@ -486,16 +486,21 @@ class TimedSchedulerTest {
 		try {
 			// Schedule a running task and a pending task
 			final CountDownLatch taskPause = new CountDownLatch(1);
+			final CountDownLatch taskStarted = new CountDownLatch(1);
 			assertThatNoException().isThrownBy(() -> testScheduler.schedule(() -> {
 				try {
-					taskPause.await(1, TimeUnit.SECONDS);
+					taskStarted.countDown();
+					taskPause.await();
 				}
 				catch (InterruptedException e) {
-					throw new RuntimeException(e);
+					// Expected as Scheduler is disposed at the end and the task is interrupted
 				}
 			}));
 			Disposable.Swap waitingTask = Disposables.swap();
 			assertThatNoException().isThrownBy(() -> waitingTask.update(testScheduler.schedule(() -> {})));
+
+			// We need to wait for the task to start to properly account active vs pending
+			assertThat(taskStarted.await(1, TimeUnit.SECONDS)).isTrue();
 
 			// One task is pending to be scheduled and one is active
 			assertThat(tasksPendingLongTaskTimer.activeTasks()).as("active pending")
@@ -543,7 +548,7 @@ class TimedSchedulerTest {
 	}
 
 	@Test
-	void workerPendingTaskRemovedOnCancellation() {
+	void workerPendingTaskRemovedOnCancellation() throws InterruptedException {
 		TimedScheduler testScheduler = new TimedScheduler(Schedulers.single(), registry, "test", Tags.empty());
 		testScheduler.init();
 		Scheduler.Worker worker = testScheduler.createWorker();
@@ -556,16 +561,21 @@ class TimedSchedulerTest {
 		try {
 			// Schedule a running task and a pending task
 			final CountDownLatch taskPause = new CountDownLatch(1);
+			final CountDownLatch taskStarted = new CountDownLatch(1);
 			assertThatNoException().isThrownBy(() -> worker.schedule(() -> {
 				try {
-					taskPause.await(1, TimeUnit.SECONDS);
+					taskStarted.countDown();
+					taskPause.await();
 				}
 				catch (InterruptedException e) {
-					throw new RuntimeException(e);
+					// Expected as Scheduler is disposed at the end and the task is interrupted
 				}
 			}));
 			Disposable.Swap waitingTask = Disposables.swap();
 			assertThatNoException().isThrownBy(() -> waitingTask.update(worker.schedule(() -> {})));
+
+			// We need to wait for the task to start to properly account active vs pending
+			assertThat(taskStarted.await(1, TimeUnit.SECONDS)).isTrue();
 
 			// One task is pending to be scheduled and one is active
 			assertThat(tasksPendingLongTaskTimer.activeTasks()).as("active pending")
