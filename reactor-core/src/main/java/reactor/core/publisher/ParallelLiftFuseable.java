@@ -88,8 +88,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		while (i < subscribers.length) {
 			CoreSubscriber<? super O> actual = s[i];
 			CoreSubscriber<? super I> converted =
-					Objects.requireNonNull(liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual)),
-							"Lifted subscriber MUST NOT be null");
+					Objects.requireNonNull(liftFunction.lifter.apply(source, actual), "Lifted subscriber MUST NOT be null");
 
 			Objects.requireNonNull(converted, "Lifted subscriber MUST NOT be null");
 

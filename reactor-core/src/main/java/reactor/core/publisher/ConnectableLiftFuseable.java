@@ -70,8 +70,7 @@ final class ConnectableLiftFuseable<I, O> extends InternalConnectableFluxOperato
 
 	@Override
 	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super I> input =
-				liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual));
+		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

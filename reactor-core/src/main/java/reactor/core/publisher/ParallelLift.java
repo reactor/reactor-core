@@ -84,8 +84,7 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 		int i = 0;
 		while (i < subscribers.length) {
 			subscribers[i] =
-					Objects.requireNonNull(liftFunction.lifter.apply(source,
-									Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, s[i])),
+					Objects.requireNonNull(liftFunction.lifter.apply(source, s[i]),
 							"Lifted subscriber MUST NOT be null");
 			i++;
 		}

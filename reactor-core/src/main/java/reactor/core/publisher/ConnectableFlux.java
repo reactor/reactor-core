@@ -34,6 +34,13 @@ import reactor.core.scheduler.Schedulers;
  */
 public abstract class ConnectableFlux<T> extends Flux<T> {
 
+	static <T> ConnectableFlux<T> from(ConnectableFlux<T> source) {
+		if (ContextPropagationSupport.shouldWrapPublisher(source)) {
+			return new ConnectableFluxRestoringThreadLocals<>(source);
+		}
+		return source;
+	}
+
 	/**
 	 * Connects this {@link ConnectableFlux} to the upstream source when the first {@link org.reactivestreams.Subscriber}
 	 * subscribes.

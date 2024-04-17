@@ -1072,7 +1072,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			int history,
 			long ttl,
 			@Nullable Scheduler scheduler) {
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = Operators.toFluxOrMono(Objects.requireNonNull(source, "source"));
 		if (source instanceof OptimizableOperator) {
 			@SuppressWarnings("unchecked")
 			OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) source;

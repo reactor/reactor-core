@@ -54,8 +54,8 @@ final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super I> input =
-				liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual));
+		// No need to wrap actual for CP, the Operators$LiftFunction handles it.
+		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
@@ -65,6 +65,6 @@ final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 			input = new FluxHide.SuppressFuseableSubscriber<>(input);
 		}
 		//otherwise QS is not required or user already made a compatible conversion
-		return Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, input);
+		return input;
 	}
 }

@@ -75,7 +75,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("bufferSize > 0 required but it was " + prefetch);
 		}
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = Flux.from(Objects.requireNonNull(source, "source"));
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.resetUponSourceTermination = resetUponSourceTermination;
