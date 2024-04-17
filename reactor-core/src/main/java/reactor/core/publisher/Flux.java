@@ -11132,7 +11132,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			if (!shouldWrap) {
 				return (Flux<I>) source;
 			}
-			return ContextPropagation.fluxRestoreThreadLocals((Flux<? extends I>) source);
+			return ContextPropagation.fluxRestoreThreadLocals(
+					(Flux<? extends I>) source, source instanceof Fuseable);
 		}
 
 		//for scalars we'll instantiate the operators directly to avoid onAssembly
@@ -11151,19 +11152,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		}
 
 		Flux<I> target;
+		boolean fuseable = source instanceof Fuseable;
 		if (source instanceof Mono) {
-			if (source instanceof Fuseable) {
+			if (fuseable) {
 				target = new FluxSourceMonoFuseable<>((Mono<I>) source);
 			} else {
 				target = new FluxSourceMono<>((Mono<I>) source);
 			}
-		} else if (source instanceof Fuseable) {
+		} else if (fuseable) {
 			target = new FluxSourceFuseable<>(source);
 		} else {
 			target = new FluxSource<>(source);
 		}
 		if (shouldWrap) {
-			return ContextPropagation.fluxRestoreThreadLocals(target);
+			return ContextPropagation.fluxRestoreThreadLocals(target, fuseable);
 		}
 		return target;
 	}

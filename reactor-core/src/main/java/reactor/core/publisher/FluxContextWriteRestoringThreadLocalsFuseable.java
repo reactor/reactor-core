@@ -23,15 +23,15 @@ import io.micrometer.context.ContextSnapshot;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> {
+final class FluxContextWriteRestoringThreadLocalsFuseable<T> extends FluxOperator<T, T>
+		implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 
-	FluxContextWriteRestoringThreadLocals(Flux<? extends T> source,
+	FluxContextWriteRestoringThreadLocalsFuseable(Flux<? extends T> source,
 			Function<Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
@@ -43,7 +43,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		Context c = doOnContext.apply(actual.currentContext());
 
 		try (ContextSnapshot.Scope ignored = ContextPropagation.setThreadLocals(c)) {
-			source.subscribe(new ContextWriteRestoringThreadLocalsSubscriber<>(actual, c));
+			source.subscribe(new FuseableContextWriteRestoringThreadLocalsSubscriber<>(actual, c));
 		}
 	}
 
@@ -54,8 +54,9 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		return super.scanUnsafe(key);
 	}
 
-	static class ContextWriteRestoringThreadLocalsSubscriber<T>
-			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
+	static class FuseableContextWriteRestoringThreadLocalsSubscriber<T>
+			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
+			           Fuseable.QueueSubscription<T> {
 
 		final CoreSubscriber<? super T>        actual;
 		final ConditionalSubscriber<? super T> actualConditional;
@@ -64,7 +65,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		Subscription s;
 
 		@SuppressWarnings("unchecked")
-		ContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
+		FuseableContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
 			this.actual = actual;
 			this.context = context;
 			if (actual instanceof ConditionalSubscriber) {
@@ -171,6 +172,31 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 					     ContextPropagation.setThreadLocals(context)) {
 				s.cancel();
 			}
+		}
+
+		@Override
+		public T poll() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public int size() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			throw new UnsupportedOperationException("Nope");
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedOperationException("Nope");
 		}
 	}
 }

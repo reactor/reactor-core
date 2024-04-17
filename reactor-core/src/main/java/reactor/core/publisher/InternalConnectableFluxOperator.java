@@ -59,7 +59,9 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 				}
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
-					operator.source().subscribe(subscriber);
+					CorePublisher operatorSource = operator.source();
+					subscriber = Operators.restoreContextOnSubscriberIfPublisherNonInternal(operatorSource, subscriber);
+					operatorSource.subscribe(subscriber);
 					return;
 				}
 				operator = newSource;

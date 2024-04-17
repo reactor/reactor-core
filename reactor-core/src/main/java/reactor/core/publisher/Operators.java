@@ -1024,7 +1024,7 @@ public abstract class Operators {
 
 	static <T> CoreSubscriber<T> restoreContextOnSubscriber(Publisher<?> publisher, CoreSubscriber<T> subscriber) {
 		if (publisher instanceof Fuseable) {
-			return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+			return new FluxContextWriteRestoringThreadLocalsFuseable.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
 					subscriber, subscriber.currentContext());
 		} else {
 			return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(

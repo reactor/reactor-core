@@ -338,6 +338,10 @@ public class AutomaticContextPropagationTest {
 			return new ThreadSwitchingMono<>("Hello", executorService);
 		}
 
+		private ThreadSwitchingConnectableFlux<String> threadSwitchingConnectableFlux() {
+			return new ThreadSwitchingConnectableFlux<>("Hello", executorService);
+		}
+
 		void assertThreadLocalsPresentInFlux(Supplier<Flux<?>> chainSupplier) {
 			assertThreadLocalsPresentInFlux(chainSupplier, false);
 		}
@@ -1610,6 +1614,21 @@ public class AutomaticContextPropagationTest {
 		}
 
 		// ConnectableFlux tests
+
+		@Test
+		void threadSwitchingAutoConnect() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingConnectableFlux().autoConnect());
+		}
+
+		@Test
+		void threadSwitchingRefCount() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingConnectableFlux().refCount());
+		}
+
+		@Test
+		void threadSwitchingRefCountGrace() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingConnectableFlux().refCount(1, Duration.ofMillis(100)));
+		}
 
 		@Test
 		void threadSwitchingPublishAutoConnect() {

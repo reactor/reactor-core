@@ -31,6 +31,7 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
+import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -60,8 +61,10 @@ final class ContextPropagation {
 		}
 	}
 
-	static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux) {
-		return new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
+	static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux, boolean fuseable) {
+		return fuseable ?
+				new FluxContextWriteRestoringThreadLocalsFuseable<>(flux, Function.identity())
+				: new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
 	}
 
 	static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {
