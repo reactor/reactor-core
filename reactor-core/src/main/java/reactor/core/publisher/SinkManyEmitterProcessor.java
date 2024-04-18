@@ -384,6 +384,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	final void drain() {
 		if (WIP.getAndIncrement(this) != 0) {
+			WIP.decrementAndGet(this);
 			return;
 		}
 
@@ -398,6 +399,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			boolean empty = q == null || q.isEmpty();
 
 			if (checkTerminated(d, empty)) {
+				WIP.addAndGet(this, -missed);
 				return;
 			}
 
@@ -432,6 +434,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 						v = null;
 					}
 					if (checkTerminated(d, v == null)) {
+						WIP.addAndGet(this, -missed);
 						return;
 					}
 					if (sourceMode != Fuseable.SYNC) {
@@ -459,6 +462,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 					empty = v == null;
 
 					if (checkTerminated(d, empty)) {
+						WIP.addAndGet(this, -missed);
 						return;
 					}
 
@@ -593,6 +597,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 				//happens when the removed inner makes the subscribers array EMPTY
 				if (autoCancel && b == EMPTY && Operators.terminate(S, this)) {
 					if (WIP.getAndIncrement(this) != 0) {
+						WIP.decrementAndGet(this);
 						return;
 					}
 					terminate();
@@ -600,6 +605,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 					if (q != null) {
 						q.clear();
 					}
+					WIP.decrementAndGet(this);
 				}
 				return;
 			}

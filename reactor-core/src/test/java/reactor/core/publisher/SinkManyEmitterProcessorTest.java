@@ -921,4 +921,22 @@ class SinkManyEmitterProcessorTest {
 		            .expectTimeout(Duration.ofSeconds(1))
 		            .verify();
 	}
+
+	@Test
+	public void cancelledSinkClearsQueue() {
+		SinkManyEmitterProcessor<Integer> sinkManyEmitterProcessor = new SinkManyEmitterProcessor<>(true, 1);
+		// fill the buffer
+		assertThat(sinkManyEmitterProcessor.tryEmitNext(1)).as("filling buffer").isEqualTo(Sinks.EmitResult.OK);
+		StepVerifier.create(sinkManyEmitterProcessor)
+			.expectNext(1)
+			.expectTimeout(Duration.ofSeconds(1))
+			.verify();
+		sinkManyEmitterProcessor.asFlux().subscribe().dispose();
+
+		// fill the buffer
+		assertThat(sinkManyEmitterProcessor.tryEmitNext(1)).as("filling buffer").isEqualTo(Sinks.EmitResult.OK);
+		StepVerifier.create(sinkManyEmitterProcessor)
+			.verifyComplete();
+		assertThat(sinkManyEmitterProcessor.queue.isEmpty()).as("Buffer should be empty").isTrue();
+	}
 }
