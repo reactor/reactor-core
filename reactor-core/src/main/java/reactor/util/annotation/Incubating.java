@@ -23,8 +23,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This signifies that the feature is currently in a developmental phase.
- * An API marked as {@code @Incubating} is subject to potential modifications without prior notice.
+ * Signifies that the annotated functionality is currently in a developmental phase.
+ * An API marked as {@code @Incubating} is subject to potential modifications (including removal) without prior notice.
  *
  * @author Violeta Georgieva
  * @since 3.7.0
