@@ -14,12 +14,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
-      - uses: gradle/actions/setup-gradle@e24011a3b5db78bd5ab798036042d9312002f252 # tag=v3
+      - uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # tag=v3
         name: spotless (license header)
         if: always()
         with:
           arguments: spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
-      - uses: gradle/actions/setup-gradle@e24011a3b5db78bd5ab798036042d9312002f252 # tag=v3
+      - uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # tag=v3
         name: api compatibility
         if: always()
         with:
@@ -57,7 +57,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 8
-    - uses: gradle/actions/setup-gradle@e24011a3b5db78bd5ab798036042d9312002f252 # tag=v3
+    - uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # tag=v3
       name: Run Gradle Tests
       with:
         arguments: ${{ matrix.test-type.arguments }}
