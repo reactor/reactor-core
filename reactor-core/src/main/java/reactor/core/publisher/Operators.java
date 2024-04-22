@@ -2707,10 +2707,6 @@ public abstract class Operators {
 					// top of a custom Publisher so that user's lifter can also see
 					// have the Context properly restored to ThreadLocal values.
 					(pub, sub) -> {
-//						CoreSubscriber<? super I> userLiftedSub =
-//								lifter.apply(Scannable.from(pub),
-//										restoreContextOnSubscriberIfAutoCPEnabledInLift(pub, sub));
-//						return restoreContextOnSubscriberIfAutoCPEnabledInLift(pub, userLiftedSub);
 						CoreSubscriber<? super I> userLiftedSub =
 								lifter.apply(Scannable.from(pub),
 										restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
