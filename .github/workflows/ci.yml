@@ -7,7 +7,7 @@ jobs:
     name: preliminary sanity checks
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # tag=v4
         with:
           fetch-depth: 0 #needed by spotless
       - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
@@ -52,7 +52,7 @@ jobs:
     name: ${{ matrix.test-type.type }} tests
     needs: preliminary
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
+    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # tag=v4
     - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
