@@ -178,7 +178,7 @@ public static void main(String[] args) throws InterruptedException {
 ----
 <1> The `Mono<String>` is assembled in thread `main`.
 <2> However, it is subscribed to in thread `Thread-0`.
-<3> As a consequence, both the `map` and the `onNext` callback actually run in `Thread-0`
+<3> As a consequence, both the `map` and the `subscribe` callback actually run in `Thread-0`
 ====
 
 The preceding code produces the following output:
