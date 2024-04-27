@@ -15,7 +15,7 @@ Since `3.3.x`, this repository also contains `reactor-tools`, a java agent aimed
 
 ## Getting it
    
-**Reactor 3 requires Java 8 or + to run**.
+**The Minimum requirement for Reactor 3 is Java 8 or higher**.
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 
