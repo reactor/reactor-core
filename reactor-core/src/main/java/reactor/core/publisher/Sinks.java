@@ -810,8 +810,6 @@ public final class Sinks {
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 * <p>
-		 * Note that though historySize of zero is forbidden, the desired equivalent effect can usually be achieved
-		 * with the {@link Duration} based variant: {@link #limit(Duration) limit(Duration.ZERO)}.
 		 *
 		 * @param historySize maximum number of elements able to replayed, strictly positive
 		 */
