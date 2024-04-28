@@ -26,6 +26,7 @@ import reactor.core.publisher.Sinks.Empty;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.publisher.Sinks.One;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 final class SinksSpecs {
@@ -67,9 +68,11 @@ final class SinksSpecs {
 		implements Sinks.RootSpec, Sinks.ManySpec, Sinks.ManyWithUpstreamUnsafeSpec, Sinks.MulticastSpec, Sinks.MulticastReplaySpec {
 
 		final Sinks.UnicastSpec unicastSpec;
+		private final Sinks.MulticastReplayBestEffortSpec replayBestEfffortSpec;
 
 		UnsafeSpecImpl() {
 			this.unicastSpec = new UnicastSpecImpl(false);
+			this.replayBestEfffortSpec = new ReplayBestEffortSpecImpl(false);
 		}
 
 		@Override
@@ -178,6 +181,11 @@ final class SinksSpecs {
 		}
 
 		@Override
+		public Sinks.MulticastReplayBestEffortSpec bestEffort() {
+			return replayBestEfffortSpec;
+		}
+
+		@Override
 		public <T> Sinks.ManyWithUpstream<T> multicastOnBackpressureBuffer() {
 			return new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
 		}
@@ -192,10 +200,12 @@ final class SinksSpecs {
 	static final class DefaultSinksSpecs implements Sinks.ManySpec, Sinks.MulticastSpec, Sinks.MulticastReplaySpec {
 
 		final Sinks.UnicastSpec unicastSpec; //needed because UnicastSpec method names overlap with MulticastSpec
+		private final Sinks.MulticastReplayBestEffortSpec replayBestEffortSpec;
 
 		DefaultSinksSpecs() {
 			//there will only one instance of serialized UnicastSpecImpl as there is only one instance of  SafeRootSpecImpl
 			this.unicastSpec = new UnicastSpecImpl(true);
+			this.replayBestEffortSpec = new ReplayBestEffortSpecImpl(true);
 		}
 
 		<T, EMPTY extends Empty<T> & ContextHolder> Empty<T> wrapEmpty(EMPTY original) {
@@ -327,6 +337,11 @@ final class SinksSpecs {
 			final SinkManyReplayProcessor<T> original = SinkManyReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
 			return wrapMany(original);
 		}
+
+		@Override
+		public Sinks.MulticastReplayBestEffortSpec bestEffort() {
+			return replayBestEffortSpec;
+		}
 	}
 
 	static final class UnicastSpecImpl implements Sinks.UnicastSpec {
@@ -367,5 +382,44 @@ final class SinksSpecs {
 			final SinkManyUnicastNoBackpressure<T> original = SinkManyUnicastNoBackpressure.create();
 			return wrapMany(original);
 		}
+	}
+
+	static final class ReplayBestEffortSpecImpl implements Sinks.MulticastReplayBestEffortSpec {
+
+		private final boolean serialized;
+
+		public ReplayBestEffortSpecImpl(boolean serialized) {
+			this.serialized = serialized;
+		}
+
+		<T, MANY extends Many<T> & ContextHolder> Many<T> wrapMany(MANY original) {
+			if (serialized) {
+				return new SinkManySerialized<>(original, original);
+			}
+			return original;
+		}
+
+		@Override
+		public <T> Many<T> latest() {
+			return wrapMany(SinkManyReplayProcessor.createArrayBounded(1));
+		}
+
+		@Override
+		public <T> Many<T> latestOrDefault(@Nullable T value) {
+			Many<T> latest = latest();
+			if (value != null) {
+				latest.tryEmitNext(value);
+			}
+			return latest;
+		}
+
+		@Override
+		public <T> Many<T> limit(int historySize) {
+			if (historySize <= 0) {
+				throw new IllegalArgumentException("historySize must be > 0");
+			}
+			return wrapMany(SinkManyReplayProcessor.createArrayBounded(historySize));
+		}
+
 	}
 }

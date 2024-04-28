@@ -54,7 +54,7 @@ public final class Sinks {
 	 * It has the following characteristics:
 	 * <ul>
 	 *     <li>Multicast</li>
-	 *     <li>Backpressure : this sink does not need any demand since it can only signal error or completion</li>
+	 *     <li>Backpressure: this sink does not need any demand since it can only signal error or completion</li>
 	 *     <li>Replaying: Replay the terminal signal (error or complete).</li>
 	 * </ul>
 	 * Use {@link Sinks.Empty#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
@@ -303,7 +303,7 @@ public final class Sinks {
 		 * It has the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Backpressure : this sink does not need any demand since it can only signal error or completion</li>
+		 *     <li>Backpressure: this sink does not need any demand since it can only signal error or completion</li>
 		 *     <li>Replaying: Replay the terminal signal (error or complete).</li>
 		 * </ul>
 		 * Use {@link Sinks.Empty#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
@@ -382,7 +382,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
-		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     <li>Backpressure: this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is greater than {@link Queues#SMALL_BUFFER_SIZE}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
 		 * 	        <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
@@ -403,7 +403,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
-		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     <li>Backpressure: this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
 		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
@@ -432,7 +432,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li><strong>Unicast</strong>: contrary to most other {@link Sinks.Many}, the
 		 *     {@link Flux} view rejects {@link Subscriber subscribers} past the first one.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of its single {@link Subscriber}.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of its single {@link Subscriber}.</li>
 		 *     <li>Replaying: non-applicable, since only one {@link Subscriber} can register.</li>
 		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered and will
 		 *     be replayed once the {@link Subscriber} subscribes.</li>
@@ -445,7 +445,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li><strong>Unicast</strong>: contrary to most other {@link Sinks.Many}, the
 		 *     {@link Flux} view rejects {@link Subscriber subscribers} past the first one.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of its single {@link Subscriber}.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of its single {@link Subscriber}.</li>
 		 *     <li>Replaying: non-applicable, since only one {@link Subscriber} can register.</li>
 		 *    <li>Without {@link Subscriber}: depending on the queue, all elements pushed to this sink are remembered and will
 		 * 		  be replayed once the {@link Subscriber} subscribes.</li>
@@ -460,7 +460,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li><strong>Unicast</strong>: contrary to most other {@link Sinks.Many}, the
 		 *     {@link Flux} view rejects {@link Subscriber subscribers} past the first one.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of its single {@link Subscriber}.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of its single {@link Subscriber}.</li>
 		 *     <li>Replaying: non-applicable, since only one {@link Subscriber} can register.</li>
 		 *     <li>Without {@link Subscriber}: depending on the queue, all elements pushed to this sink are remembered and will
 		 *     be replayed once the {@link Subscriber} subscribes.</li>
@@ -476,7 +476,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li><strong>Unicast</strong>: contrary to most other {@link Sinks.Many}, the
 		 *     {@link Flux} view rejects {@link Subscriber subscribers} past the first one.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of the Subscriber, and will emit {@link Subscriber#onError(Throwable)} if there is a mismatch.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of the Subscriber, and will emit {@link Subscriber#onError(Throwable)} if there is a mismatch.</li>
 		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
 		 *     pushed to the sink AFTER this subscriber was subscribed.</li>
 		 * </ul>
@@ -495,7 +495,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
-		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     <li>Backpressure: this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is greater than {@link Queues#SMALL_BUFFER_SIZE}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
 		 * 	        <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
@@ -516,7 +516,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
-		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     <li>Backpressure: this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
 		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
@@ -539,7 +539,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
-		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+		 *     <li>Backpressure: this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
 		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
@@ -562,7 +562,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: fail fast on {@link Many#tryEmitNext(Object) tryEmitNext}.</li>
-		 *     <li>Backpressure : notify the caller with {@link EmitResult#FAIL_OVERFLOW} if any of the subscribers
+		 *     <li>Backpressure: notify the caller with {@link EmitResult#FAIL_OVERFLOW} if any of the subscribers
 		 *     cannot process an element, failing fast and backing off from emitting the element at all (all or nothing).
 		 * 	   From the perspective of subscribers, data is dropped and never seen but they are not terminated.
 		 *     </li>
@@ -583,7 +583,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: fail fast on {@link Many#tryEmitNext(Object) tryEmitNext}.</li>
-		 *     <li>Backpressure : notify the caller with {@link EmitResult#FAIL_OVERFLOW} if <strong>none</strong>
+		 *     <li>Backpressure: notify the caller with {@link EmitResult#FAIL_OVERFLOW} if <strong>none</strong>
 		 *     of the subscribers can process an element. Otherwise, it ignores slow subscribers and emits the
 		 *     element to fast ones as a best effort. From the perspective of slow subscribers, data is dropped
 		 *     and never seen, but they are not terminated.
@@ -602,6 +602,18 @@ public final class Sinks {
 
 	/**
 	 * Provides multicast with history/replay capacity : 1 sink, N {@link Subscriber}
+	 *
+	 * The base implementation offering replay is based on an atomic linked list.
+	 * A competing implementation is available via {@link #bestEffort()} it offers
+	 * replay-functionality using an atomically replaced array.
+	 * The main difference is in the ability to replay otherwise discarded elements.
+	 * The Size-bound replay buffers will replay elements that would have been
+	 * discarded after limits have been reached to a subscriber that has had elements sent.
+	 * As such when a {@link Subscriber} requests any one element and have that demand met,
+	 * the {@link MulticastReplaySpec#limit(int)} flux will still be able to replay all
+	 * items from 1 to N to that subscriber even if N is larger than the limit.
+	 * The bestEffort-implementation will always only hold the stated number of items in the cache
+	 * and subscriptions only know of the index they were at.
 	 */
 	public interface MulticastReplaySpec {
 		/**
@@ -610,7 +622,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered,
 		 *     even when there is no subscriber.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying: all elements pushed to this sink are replayed to new subscribers.</li>
 		 * </ul>
 		 */
@@ -622,7 +634,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered,
 		 *     even when there is no subscriber.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying: all elements pushed to this sink are replayed to new subscribers.</li>
 		 * </ul>
 		 * @param batchSize the underlying buffer will optimize storage by linked arrays of given size
@@ -635,7 +647,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: the latest element pushed to this sink are remembered,
 		 *     even when there is no subscriber. Older elements are discarded</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying: the latest element pushed to this sink is replayed to new subscribers.</li>
 		 * </ul>
 		 */
@@ -647,7 +659,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: the latest element pushed to this sink are remembered,
 		 *     even when there is no subscriber.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying: the latest element pushed to this sink is replayed to new subscribers. If none the default value is replayed</li>
 		 * </ul>
 		 *
@@ -661,7 +673,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
 		 *     even when there is no subscriber. Older elements are discarded</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
@@ -679,7 +691,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered until their {@code maxAge} is reached,
 		 *     even when there is no subscriber. Older elements are discarded</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
@@ -694,7 +706,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered until their {@code maxAge} is reached,
 		 *     even when there is no subscriber. Older elements are discarded</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
@@ -711,7 +723,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
 		 *     until their {@code maxAge} is reached, even when there is no subscriber. Older elements are discarded</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
@@ -731,7 +743,7 @@ public final class Sinks {
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
 		 *     until their {@code maxAge} is reached, even when there is no subscriber. Older elements are discarded.</li>
-		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
@@ -745,6 +757,66 @@ public final class Sinks {
 		 * @param scheduler a {@link Scheduler} to derive the time from
 		 */
 		<T> Sinks.Many<T> limit(int historySize, Duration maxAge, Scheduler scheduler);
+
+		/**
+		 * Use the best-effort implementation to construct a {@link Sinks.Many} with replay capacity
+		 * Similar to this replay-capacity offered in {@link MulticastReplaySpec this} spec,
+		 * but with an implementation difference.
+		 *
+		 * @return {@link MulticastReplayBestEffortSpec}
+		 */
+		MulticastReplayBestEffortSpec bestEffort();
+	}
+
+	/**
+	 * Provides multicast with history/replay capacity : 1 sink, N {@link Subscriber}
+	 */
+	public interface MulticastReplayBestEffortSpec {
+
+		/**
+		 * A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: the latest element pushed to this sink are remembered,
+		 *     even when there is no subscriber. Older elements are discarded</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Replaying: the latest element pushed to this sink is replayed to new subscribers.</li>
+		 * </ul>
+		 */
+		<T> Sinks.Many<T> latest();
+
+		/**
+		 * A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: the latest element pushed to this sink are remembered,
+		 *     even when there is no subscriber.</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Replaying: the latest element pushed to this sink is replayed to new subscribers. If none the default value is replayed</li>
+		 * </ul>
+		 *
+		 * @param value default value if there is no latest element to replay
+		 */
+		<T> Sinks.Many<T> latestOrDefault(T value);
+
+		/**
+		 * A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
+		 *     even when there is no subscriber. Older elements are discarded</li>
+		 *     <li>Backpressure: this sink honors downstream demand of individual subscribers.</li>
+		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
+		 *     Older elements are discarded.</li>
+		 * </ul>
+		 * <p>
+		 * Note that though historySize of zero is forbidden, the desired equivalent effect can usually be achieved
+		 * with the {@link Duration} based variant: {@link #limit(Duration) limit(Duration.ZERO)}.
+		 *
+		 * @param historySize maximum number of elements able to replayed, strictly positive
+		 */
+		<T> Sinks.Many<T> limit(int historySize);
+
 	}
 
 	/**
