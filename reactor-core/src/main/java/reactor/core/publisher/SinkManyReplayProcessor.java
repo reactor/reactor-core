@@ -142,6 +142,30 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 		return new SinkManyReplayProcessor<>(buffer);
 	}
 
+
+	/**
+	 * Creates a {@link SinkManyReplayProcessor} with a buffer based on the {@link FluxReplay.ArraySizeBoundReplayBuffer}
+	 *
+	 * This buffer is similar to the {@link FluxReplay.SizeBoundReplayBuffer}. But is implemented as an atomically replaced array,
+	 * instead of an atomic linked list. The atomic linked list will always be able to replay all items
+	 * no matter the limit, to a subscriber that lack request, and as such lack of request may lead to out of memory issues.
+	 * The {@link FluxReplay.ArraySizeBoundReplayBuffer} is deterministically sized and will only ever be able to
+	 * replay {@param historySize} items; subscribers that lack request will therefore miss any
+	 * items that escaped the cache in the time that they lacked request.
+	 * <br>
+	 * <strong>A note on concurrency:</strong> the buffer is safe for concurrent use, but a small buffer (like the {@link Sinks.MulticastReplayBestEffortSpec#latest() Sinks.unsafe().many().replay().bestEffort().latest()})
+	 * can miss elements as the items can roll over before being replayed. The Atomically <i>latest</i> item added this way will always be replayed.
+	 *
+	 *
+	 * @param historySize the number of items to keep in the buffer
+	 * @return {@link SinkManyReplayProcessor}
+	 * @param <E> the type of pushed elements
+	 */
+	static <E> SinkManyReplayProcessor<E> createArrayBounded(int historySize) {
+		FluxReplay.ReplayBuffer<E> buffer = new FluxReplay.ArraySizeBoundReplayBuffer<>(historySize);
+		return new SinkManyReplayProcessor<>(buffer);
+	}
+
 	/**
 	 * Creates a time-bounded replay processor.
 	 * <p>
