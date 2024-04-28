@@ -948,6 +948,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	enum DoNotPlayErrorsToCancelledSubscription {
+		SIZE(new FluxReplay.SizeBoundReplayBuffer<>(10)),
 		ARRAY(new FluxReplay.ArraySizeBoundReplayBuffer<>(10)),
 		SIZE_TIME(new FluxReplay.SizeAndTimeBoundReplayBuffer<>(10, 1000000000, Schedulers.parallel())),
 		UNBOUND(new FluxReplay.UnboundedReplayBuffer<>(100))
