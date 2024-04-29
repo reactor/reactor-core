@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,14 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
@@ -129,15 +131,22 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final static class BufferTimeoutWithBackpressureSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
-		@Nullable
-		final Logger                    logger;
-		final CoreSubscriber<? super C> actual;
-		final int batchSize;
-		final int prefetch;
-		final long timeSpan;
-		final TimeUnit unit;
-		final Scheduler.Worker timer;
-		final Supplier<C> bufferSupplier;
+		final @Nullable Logger                    logger;
+		final @Nullable StateLogger               stateLogger;
+		final           CoreSubscriber<? super C> actual;
+		final           int                       batchSize;
+		final           int                       prefetch;
+		final           long                      timeSpan;
+		final           TimeUnit                  unit;
+		final           Scheduler.Worker          timer;
+		final           Supplier<C>               bufferSupplier;
+		private final   Disposable.Swap           currentTimeoutTask = Disposables.swap();
+
+		private @Nullable Subscription subscription;
+		private           Queue<T>     queue;
+
+		private @Nullable Throwable error;
+		private           boolean   done;
 
 		// tracks unsatisfied downstream demand (expressed in # of buffers)
 		volatile long requested;
@@ -145,46 +154,30 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		private AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "requested");
 
-		// tracks undelivered values in the current buffer
-		volatile int index;
+		volatile long state;
 		@SuppressWarnings("rawtypes")
-		private AtomicIntegerFieldUpdater<BufferTimeoutWithBackpressureSubscriber> INDEX =
-				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "index");
+		static final AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> STATE =
+				AtomicLongFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "state");
 
-		// tracks # of values requested from upstream but not delivered yet via this
-		// .onNext(v)
-		volatile long outstanding;
-		@SuppressWarnings("rawtypes")
-		private AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> OUTSTANDING =
-				AtomicLongFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "outstanding");
+		static final long CANCELLED_FLAG            =
+				0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long TERMINATED_FLAG           =
+				0b0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long HAS_WORK_IN_PROGRESS_FLAG =
+				0b0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long TIMEOUT_FLAG              =
+				0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long REQUESTED_INDEX_MASK      =
+				0b0000_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000L;
+		static final long OUTSTANDING_MASK          =
+				0b0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000L;
+		static final long INDEX_MASK                =
+				0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111L;
 
-		// indicates some thread is draining
-		volatile int wip;
-		@SuppressWarnings("rawtypes")
-		private AtomicIntegerFieldUpdater<BufferTimeoutWithBackpressureSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "wip");
-
-		private volatile int terminated = NOT_TERMINATED;
-		@SuppressWarnings("rawtypes")
-		private AtomicIntegerFieldUpdater<BufferTimeoutWithBackpressureSubscriber> TERMINATED =
-				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "terminated");
-
-		final static int NOT_TERMINATED          = 0;
-		final static int TERMINATED_WITH_SUCCESS = 1;
-		final static int TERMINATED_WITH_ERROR   = 2;
-		final static int TERMINATED_WITH_CANCEL  = 3;
-
-		@Nullable
-		private Subscription subscription;
-
-		private Queue<T> queue;
-
-		@Nullable
-		Throwable error;
-
-		boolean completed;
-
-		Disposable currentTimeoutTask;
+		static final int INDEX_SHIFT = 0;
+		static final int OUTSTANDING_SHIFT = 20;
+		static final int REQUESTED_INDEX_SHIFT = 40;
+		static final int INDEX_LIMIT = 1 << OUTSTANDING_SHIFT; // 1048576; // 2^20
 
 		public BufferTimeoutWithBackpressureSubscriber(
 				CoreSubscriber<? super C> actual,
@@ -195,12 +188,18 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				Supplier<C> bufferSupplier,
 				@Nullable Logger logger) {
 			this.actual = actual;
+			// TODO: reconsider OUTSTANDING to be taken out of the mask to allow for higher value
+			//  -> this translates to 4MiB of ints
+			if (batchSize >= INDEX_LIMIT) {
+				throw new IllegalArgumentException("Batch size can't exceed " + INDEX_LIMIT + " items");
+			}
 			this.batchSize = batchSize;
 			this.timeSpan = timeSpan;
 			this.unit = unit;
 			this.timer = timer;
 			this.bufferSupplier = bufferSupplier;
 			this.logger = logger;
+			this.stateLogger = logger != null ? new StateLogger(logger) : null;
 			this.prefetch = batchSize << 2;
 			this.queue = Queues.<T>get(prefetch).get();
 		}
@@ -218,326 +217,333 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		@Override
-		public void onNext(T t) {
-			if (logger != null) {
-				trace(logger, "onNext: " + t);
-			}
-			// check if terminated (cancelled / error / completed) -> discard value if so
-
-			// increment index
-			// append to buffer
-			// drain
-
-			if (terminated == NOT_TERMINATED) {
-				// assume no more deliveries than requested
-				if (!queue.offer(t)) {
-					Context ctx = currentContext();
-					Throwable error = Operators.onOperatorError(this.subscription,
-							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-							t, actual.currentContext());
-					this.error = error;
-					if (!TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
-						if (logger != null) {
-							trace(logger, "Failed to transition to error. Discarding " + t);
-						}
-						Operators.onDiscard(t, ctx);
-						Operators.onErrorDropped(error, ctx);
-						return;
-					}
-					Operators.onDiscard(t, ctx);
-					drain();
-					return;
-				}
-
-				boolean shouldDrain = false;
-				for (;;) {
-					int index = this.index;
-					if (INDEX.compareAndSet(this, index, index + 1)) {
-						if (index == 0) {
-							try {
-								if (logger != null) {
-									trace(logger, "timerStart");
-								}
-								currentTimeoutTask = timer.schedule(this::bufferTimedOut,
-										timeSpan,
-										unit);
-							} catch (RejectedExecutionException ree) {
-								if (logger != null) {
-									trace(logger, "Timer rejected for " + t);
-								}
-								Context ctx = actual.currentContext();
-								Throwable error = Operators.onRejectedExecution(ree, subscription, null, t, ctx);
-								this.error = error;
-								if (!TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
-									Operators.onDiscardQueueWithClear(queue, currentContext(), null);
-									Operators.onErrorDropped(error, ctx);
-									return;
-								}
-								if (logger != null) {
-									trace(logger, "Draining upon timer rejection" + t);
-								}
-								drain();
-								return;
-							}
-						}
-						if ((index + 1) % batchSize == 0) {
-							shouldDrain = true;
-						}
-						break;
-					}
-				}
-				if (shouldDrain) {
-					if (currentTimeoutTask != null) {
-						// TODO: it can happen that AFTER I dispose, the timeout
-						//  anyway kicks during/after another onNext(), the buffer is
-						//  delivered, and THEN drain is entered ->
-						//  it would emit a buffer that is too small potentially.
-						//  ALSO:
-						//  It is also possible that here we deliver the buffer, but the
-						//  timeout is happening for a new buffer!
-						currentTimeoutTask.dispose();
-					}
-					this.index = 0;
-				}
-				drain(shouldDrain);
-			} else {
-				if (logger != null) {
-					trace(logger, "Discarding onNext: " + t);
-				}
-				Operators.onDiscard(t, currentContext());
-			}
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			// set error flag
-			// set terminated as error
-
-			// drain (WIP++ ?)
-
-			if (currentTimeoutTask != null) {
-				currentTimeoutTask.dispose();
-			}
-			timer.dispose();
-
-			if (!TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
-				Operators.onErrorDropped(t, currentContext());
-				return;
-			}
-			this.error = t; // wip in drain will publish the error
-			drain();
-		}
-
-		@Override
-		public void onComplete() {
-			// set terminated as completed
-			// drain
-			if (currentTimeoutTask != null) {
-				currentTimeoutTask.dispose();
-			}
-			timer.dispose();
-
-			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_SUCCESS)) {
-				drain();
-			}
-		}
-
-		@Override
 		public CoreSubscriber<? super C> actual() {
 			return this.actual;
 		}
 
 		@Override
 		public void request(long n) {
-			// add cap to currently requested
-			// if previous requested was 0 -> drain first to deliver outdated values
-			// if the cap increased, request more ?
-
-			// drain
-
+			if (logger != null) {
+				trace(logger, "request " + n);
+			}
 			if (Operators.validate(n)) {
-				if (queue.isEmpty() && terminated != NOT_TERMINATED) {
+				long previouslyRequested = Operators.addCap(REQUESTED, this, n);
+				if (previouslyRequested == Long.MAX_VALUE) {
 					return;
 				}
 
-				if (Operators.addCap(REQUESTED, this, n) == 0) {
-					// there was no demand before - try to fulfill the demand if there
-					// are buffered values
-					drain();
-				}
+				long previousState;
+				for (;;) {
+					previousState = this.state;
 
-				if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
-					requestMore(Long.MAX_VALUE);
-				} else {
-					long requestLimit = prefetch;
-					if (requestLimit > outstanding) {
-						if (logger != null) {
-							trace(logger, "requestMore: " + (requestLimit - outstanding) + ", outstanding: " + outstanding);
+					if (queue.isEmpty() && (isTerminated(previousState) || isCancelled(previousState))) {
+						return;
+					}
+
+					if (hasWorkInProgress(previousState)) {
+						// We let the active worker know about a change in demand.
+						long nextState = incrementRequestIndex(previousState);
+						if (STATE.compareAndSet(this, previousState, nextState)) {
+							if (this.stateLogger != null) {
+								this.stateLogger.log(this.toString(), "req", previousState,	nextState);
+							}
+							// If the state was replaced but there was work in progress,
+							// before leaving the protected section the working actor
+							// will notice an update and loop again to pick up the
+							// demand increase. If the active actor was done before our
+							// update, this update would have failed and we'd loop
+							// again to see the current state.
+							return;
 						}
-						requestMore(requestLimit - outstanding);
+						// CAS failed, retry
+						continue;
+					}
+
+					long nextState = previousState | HAS_WORK_IN_PROGRESS_FLAG;
+
+					if (STATE.compareAndSet(this, previousState, nextState)) {
+						if (this.stateLogger != null) {
+							this.stateLogger.log(this.toString(), "req", previousState, nextState);
+						}
+						break;
 					}
 				}
+
+				// if there was no demand before - try to fulfill the demand if there
+				// are buffered values
+				drain(previouslyRequested == 0);
 			}
 		}
 
-		private void requestMore(long n) {
-			Subscription s = this.subscription;
-			if (s != null) {
-				Operators.addCap(OUTSTANDING, this, n);
-				s.request(n);
+		@Override
+		public void onNext(T t) {
+			if (logger != null) {
+				trace(logger, "onNext " + t);
+			}
+			if (this.done) {
+				Operators.onNextDropped(t, this.actual.currentContext());
+				return;
+			}
+
+			boolean enqueued = queue.offer(t);
+			if (!enqueued) {
+				this.error = Operators.onOperatorError(
+						this.subscription,
+						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
+						t,
+						this.actual.currentContext());
+				Operators.onDiscard(t, this.actual.currentContext());
+			}
+			long previousState = this.state;
+
+			if (enqueued) {
+				// Only onNext increments the index. Drain can set it to 0 when it
+				// flushes. However, timeout does not reset it to 0, it has its own
+				// flag.
+				boolean terminated = false;
+				if (getIndex(previousState) == 0) {
+					// fire timer, new buffer starts
+					try {
+						Disposable disposable =
+								timer.schedule(this::bufferTimedOut, timeSpan, unit);
+						currentTimeoutTask.update(disposable);
+					} catch (RejectedExecutionException e) {
+						this.error = Operators.onRejectedExecution(e, subscription, null, t, actual.currentContext());
+						terminated = true;
+					}
+				}
+				if (terminated) {
+					previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+				} else {
+					previousState = forceAddWork(this, state -> incrementIndex(state, 1));
+				}
+			} else {
+				previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+			}
+
+			if (!hasWorkInProgress(previousState)) {
+				drain(false);
+			}
+		}
+
+		void bufferTimedOut() {
+			if (logger != null) {
+				trace(logger, "timedOut");
+			}
+			if (this.done) {
+				return;
+			}
+
+			long previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTimedOut);
+
+			if (!hasWorkInProgress(previousState)) {
+				drain(false);
+			}
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (logger != null) {
+				trace(logger, "onError " + t);
+			}
+			if (this.done) {
+				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+
+			this.error = t;
+			long previousState = forceAddWork(this,
+					BufferTimeoutWithBackpressureSubscriber::setTerminated);
+
+			if (!hasWorkInProgress(previousState)) {
+				drain(false);
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			if (logger != null) {
+				trace(logger, "onComplete");
+			}
+			if (this.done) {
+				return;
+			}
+
+			long previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+
+			if (!hasWorkInProgress(previousState)) {
+				drain(false);
 			}
 		}
 
 		@Override
 		public void cancel() {
-			// set terminated flag
-			// cancel upstream subscription
-			// dispose timer
-			// drain for proper cleanup
-
 			if (logger != null) {
 				trace(logger, "cancel");
 			}
-			TERMINATED.set(this, TERMINATED_WITH_CANCEL);
+			if (this.done || isCancelled(this.state)) {
+				return;
+			}
+
 			if (this.subscription != null) {
-				this.subscription.cancel();
+				subscription.cancel();
 			}
-			if (currentTimeoutTask != null) {
-				currentTimeoutTask.dispose();
+
+			long previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setCancelled);
+
+			if (!hasWorkInProgress(previousState)) {
+				drain(false);
 			}
-			timer.dispose();
-			drain();
 		}
 
-		void bufferTimedOut() {
-			// called when buffer times out
+		// Draining doesn't ensure exclusive access - the caller is responsible for
+		// ensuring that.
+		private void drain(boolean resumeDemand) {
+			for (;;) {
+				if (logger != null) {
+					trace(logger, "drain start");
+				}
+				long previousState = this.state;
+				long currentState = previousState;
 
-			// reset index to 0
-			// drain
-
-			// TODO: try comparing against current reference and see if it was not
-			//  cancelled -> to do this, replace Disposable timeoutTask with volatile
-			//  and use CAS.
-			if (logger != null) {
-				trace(logger, "timerFire");
-			}
-			this.index = 0; // if currently being drained, it means the buffer is
-			// delivered due to reaching the batchSize
-			drain();
-		}
-
-		private void drain() {
-			drain(true);
-		}
-		private void drain(boolean flush) {
-			// entering this should be guarded by WIP getAndIncrement == 0
-			// if we're here it means do a flush if there is downstream demand
-			// regardless of queue size
-
-			// loop:
-			//   if terminated -> check error -> deliver; else complete downstream
-			//   if cancelled
-
-			if (WIP.getAndIncrement(this) == 0) {
-				for (;;) {
-					int wip = this.wip;
+				if (done || isCancelled(currentState)) {
 					if (logger != null) {
-						trace(logger, "drain. wip: " + wip);
+						trace(logger, "Discarding entire queue of " + queue.size());
 					}
-					boolean done = terminated != NOT_TERMINATED;
-					boolean cancelled = terminated == TERMINATED_WITH_CANCEL;
-					if (completed || cancelled) {
-						if (logger != null) {
-							trace(logger, "Discarding entire queue of " + queue.size());
-						}
-						Operators.onDiscardQueueWithClear(queue, currentContext(), null);
-//						return;
-					} else {
-						if (flush) {
-							while (flushABuffer()) {
-								// no-op
-							}
-						}
-					}
-					wip = this.wip;
-					if (wip == 1) {
-						if (done && !cancelled && !completed && queue.isEmpty()) {
-							if (logger != null) {
-								trace(logger, "Completed with " + terminated);
-							}
-							completed = true;
-							if (this.error != null) {
-								actual.onError(this.error);
-							}
-							else {
-								actual.onComplete();
-							}
-						}
-					}
-					if (WIP.decrementAndGet(this) == 0) {
+					Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+					currentState = tryClearWip(this, currentState);
+					if (!hasWorkInProgress(currentState)) {
 						return;
 					}
+				} else {
+					long index = getIndex(currentState);
+					long currentRequest = this.requested;
+					boolean shouldFlush = currentRequest > 0
+							&& (resumeDemand || isTimedOut(currentState) || isTerminated(currentState) || index >= batchSize);
+
+					int consumed = 0;
+					if (logger != null) {
+						trace(logger, "should flush: " + shouldFlush + " currentRequest: " + currentRequest + " index: " + index + " isTerminated: " + isTerminated(currentState) + " isTimedOut: " + isTimedOut(currentState));
+					}
+					if (shouldFlush) {
+						currentTimeoutTask.update(null);
+						for (; ; ) {
+							int consumedNow = flush();
+							if (logger != null) {
+								trace(logger, "flushed: " + consumedNow);
+							}
+							// Need to make sure that if work is added we clear the
+							// resumeDemand with which we entered the drain loop as the
+							// state is now different
+							resumeDemand = false;
+							if (consumedNow == 0) {
+								break;
+							}
+							consumed += consumedNow;
+							if (currentRequest != Long.MAX_VALUE) {
+								currentRequest = REQUESTED.decrementAndGet(this);
+							}
+							if (currentRequest == 0) {
+								break;
+							}
+						}
+
+					}
+
+					boolean terminated = isTerminated(currentState);
+
+					if (consumed > 0) {
+//							currentState = addOutstanding(this, -consumed);
+						long decrement = -consumed;
+						currentState = forceUpdate(this, state -> addOutstanding(state, decrement));
+						previousState = addOutstanding(previousState, decrement);
+					}
+					if (!terminated && currentRequest > 0) {
+						// request more from upstream
+						int remaining = getOutstanding(currentState);
+						int replenishMark = prefetch >> 1; // TODO: create field limit instead
+						if (remaining < replenishMark) {
+							currentState = requestMore(prefetch - remaining);
+							previousState = addOutstanding(previousState, prefetch - remaining);
+						}
+					}
+
+					if (terminated && queue.isEmpty()) {
+						// TODO: make sure we don't do this unless we
+						//  know all the values were delivered first
+						done = true;
+						if (logger != null) {
+							trace(logger, "terminated! error: " + this.error + " queue size: " + queue.size());
+						}
+						if (this.error != null) {
+							Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+							actual.onError(this.error);
+						} else if (queue.isEmpty()) {
+							actual.onComplete();
+						}
+					}
+
+					if (consumed > 0) {
+						int toDecrement = -consumed;
+						currentState = forceUpdate(this, state -> resetTimeout(incrementIndex(state, toDecrement)));
+						previousState = resetTimeout(incrementIndex(previousState, toDecrement));
+					}
+
+					// TODO: If we force an update before we lose the knowledge that
+					//  some other actor modified something in between, so we must make
+					//  sure to track these updates in both current and previous and
+					//  compare.
+					currentState = tryClearWip(this, previousState);
+
+					// If the state changed (e.g. new item arrived, a request was issued,
+					// cancellation, error, completion) we will loop again.
+					if (!hasWorkInProgress(currentState)) {
+						if (logger != null) {
+							trace(logger, "drain done");
+						}
+						return;
+					}
+					if (logger != null) {
+						trace(logger, "drain repeat");
+					}
 				}
 			}
 		}
 
-		boolean flushABuffer() {
-			long requested = this.requested;
-			if (requested != 0) {
-				T element;
-				C buffer;
+		int flush() {
+			T element;
+			C buffer;
 
-				element = queue.poll();
-				if (element == null) {
-					// there is demand, but queue is empty
-					return false;
-				}
-				buffer = bufferSupplier.get();
-				int i = 0;
-				do {
-					buffer.add(element);
-				} while ((++i < batchSize) && ((element = queue.poll()) != null));
-
-				if (requested != Long.MAX_VALUE) {
-					requested = REQUESTED.decrementAndGet(this);
-				}
-
-				if (logger != null) {
-					trace(logger, "flush: " + buffer + ", now requested: " + requested);
-				}
-
-				actual.onNext(buffer);
-
-				if (requested != Long.MAX_VALUE) {
-					if (logger != null) {
-						trace(logger, "outstanding(" + outstanding + ") -= " + i);
-					}
-					long remaining = OUTSTANDING.addAndGet(this, -i);
-					if (terminated == NOT_TERMINATED) {
-						int replenishMark = prefetch >> 1; // TODO: create field limit instead
-						if (remaining < replenishMark) {
-							if (logger != null) {
-								trace(logger, "replenish: " + (prefetch - remaining) + ", outstanding: " + outstanding);
-							}
-							requestMore(prefetch - remaining);
-						}
-					}
-
-					if (requested <= 0) {
-						return false;
-					}
-				}
-				// continue to see if there's more
-				return true;
+			element = queue.poll();
+			if (element == null) {
+				// there is demand, but queue is empty
+				return 0;
 			}
-			return false;
+			buffer = bufferSupplier.get();
+			int i = 0;
+			do {
+				buffer.add(element);
+			} while ((++i < batchSize) && ((element = queue.poll()) != null));
+
+			actual.onNext(buffer);
+
+			return i;
+		}
+
+		private long requestMore(int n) {
+			if (logger != null) {
+				trace(logger, "requestMore " + n);
+			}
+			long currentState = forceUpdate(this, state -> addOutstanding(state, n));
+			Objects.requireNonNull(this.subscription).request(n);
+			return currentState;
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return this.subscription;
-			if (key == Attr.CANCELLED) return terminated == TERMINATED_WITH_CANCEL;
-			if (key == Attr.TERMINATED) return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
+			if (key == Attr.CANCELLED) return isCancelled(this.state);
+			if (key == Attr.TERMINATED) return isTerminated(this.state);
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CAPACITY) return prefetch; // TODO: revise
 			if (key == Attr.BUFFERED) return queue.size();
@@ -545,6 +551,132 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		private static long bitwiseInc(long state, long mask, long shift, int amount) {
+			long shiftAndAdd = ((state & mask) >> shift) + amount;
+			long shiftBackAndLimit = (shiftAndAdd << shift) & mask;
+			long clearedState = state & ~mask;
+			return clearedState | shiftBackAndLimit;
+		}
+
+		private static boolean isTerminated(long state) {
+			return (state & TERMINATED_FLAG) == TERMINATED_FLAG;
+		}
+
+		private static long setTerminated(long state) {
+			return state | TERMINATED_FLAG;
+		}
+
+		private static boolean isCancelled(long state) {
+			return (state & CANCELLED_FLAG) == CANCELLED_FLAG;
+		}
+
+		private static long setCancelled(long state) {
+			return state | CANCELLED_FLAG;
+		}
+
+		private static long incrementRequestIndex(long state) {
+			return bitwiseInc(state, REQUESTED_INDEX_MASK, REQUESTED_INDEX_SHIFT, 1);
+		}
+
+		private static long getIndex(long state) {
+			long l = (state & INDEX_MASK) >> INDEX_SHIFT;
+			return l;
+		}
+
+		private static long incrementIndex(long state, int amount) {
+			return bitwiseInc(state, INDEX_MASK, INDEX_SHIFT, amount);
+		}
+
+		private static boolean hasWorkInProgress(long state) {
+			return (state & HAS_WORK_IN_PROGRESS_FLAG) == HAS_WORK_IN_PROGRESS_FLAG;
+		}
+
+		private static long setWorkInProgress(long state) {
+			return state | HAS_WORK_IN_PROGRESS_FLAG;
+		}
+
+		private static long setTimedOut(long state) {
+			return state | TIMEOUT_FLAG;
+		}
+
+		private static long resetTimeout(long state) {
+			return state & ~TIMEOUT_FLAG;
+		}
+
+		private static long resetIndex(long state) {
+			return state & ~INDEX_MASK;
+		}
+
+		private static boolean isTimedOut(long state) {
+			return (state & TIMEOUT_FLAG) == TIMEOUT_FLAG;
+		}
+
+		private static long forceAddWork(BufferTimeoutWithBackpressureSubscriber<?, ?> instance, Function<Long, Long> f) {
+			for (;;) {
+				long previousState = instance.state;
+				long nextState = f.apply(previousState) | HAS_WORK_IN_PROGRESS_FLAG;
+				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					if (instance.stateLogger != null) {
+						instance.stateLogger.log(instance.toString(),
+								"faw",
+								previousState,
+								nextState);
+					}
+					return previousState;
+				}
+			}
+		}
+
+		private static long forceUpdate(BufferTimeoutWithBackpressureSubscriber<?, ?> instance, Function<Long, Long> f) {
+			for (;;) {
+				long previousState = instance.state;
+				long nextState = f.apply(previousState);
+				if (STATE.compareAndSet(instance, previousState, nextState)) {
+					if (instance.stateLogger != null) {
+						instance.stateLogger.log(instance.toString(),
+								"fup",
+								previousState,
+								nextState);
+					}
+					return nextState;
+				}
+			}
+		}
+
+		private static int getOutstanding(long state) {
+			return (int) ((state & OUTSTANDING_MASK) >> OUTSTANDING_SHIFT);
+		}
+
+		private static long addOutstanding(long state, long amount) {
+			long previousWithOutstandingClear = state &~ OUTSTANDING_MASK;
+			long outstandingMax = OUTSTANDING_MASK >> OUTSTANDING_SHIFT;
+			long current = (state & OUTSTANDING_MASK) >> OUTSTANDING_SHIFT;
+			long added = Math.min(current + amount, outstandingMax);
+			long newOutstanding = ((long) added) << OUTSTANDING_SHIFT;
+			return previousWithOutstandingClear | newOutstanding;
+		}
+
+		private static <T, C extends Collection<? super T>> long tryClearWip(BufferTimeoutWithBackpressureSubscriber<T, C> instance, long expectedState) {
+			for (;;) {
+				final long currentState = instance.state;
+
+				if (expectedState != currentState) {
+					return currentState;
+				}
+
+				long nextState = currentState & ~HAS_WORK_IN_PROGRESS_FLAG;
+				if (STATE.compareAndSet(instance, currentState, nextState)) {
+					if (instance.stateLogger != null) {
+						instance.stateLogger.log(instance.toString(),
+								"wcl",
+								currentState,
+								nextState);
+					}
+					return nextState;
+				}
+			}
 		}
 	}
 

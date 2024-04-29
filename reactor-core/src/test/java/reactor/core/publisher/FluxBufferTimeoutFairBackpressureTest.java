@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.util.stream.LongStream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -62,6 +63,7 @@ public class FluxBufferTimeoutFairBackpressureTest {
 	}
 
 	@Test
+	@Tag("slow")
 	void backpressureSupported() throws InterruptedException {
 		final int eventProducerDelayMillis = 200;
 		// Event Producer emits requested items to downstream with a 200ms delay
@@ -365,7 +367,7 @@ public class FluxBufferTimeoutFairBackpressureTest {
 		            .assertNext(s -> assertThat(s).containsExactly("a"))
 		            .then(() -> assertThat(requestedOutstanding).hasValue(19))
 		            .thenRequest(1)
-		            .then(() -> assertThat(requestedOutstanding).hasValue(20))
+		            .then(() -> assertThat(requestedOutstanding).hasValue(19))
 		            .thenCancel()
 		            .verify();
 	}
@@ -392,6 +394,7 @@ public class FluxBufferTimeoutFairBackpressureTest {
 	@Test
 	public void bufferTimeoutShouldNotRaceWithNext() {
 		Set<Integer> seen = new HashSet<>();
+		AtomicBoolean complete = new AtomicBoolean();
 		Consumer<List<Integer>> consumer = integers -> {
 			for (Integer i : integers) {
 				if (!seen.add(i)) {
@@ -399,7 +402,8 @@ public class FluxBufferTimeoutFairBackpressureTest {
 				}
 			}
 		};
-		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(consumer, null, null, null);
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(
+				consumer, null, () -> complete.set(true), null);
 
 		FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> test =
 				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
@@ -419,6 +423,7 @@ public class FluxBufferTimeoutFairBackpressureTest {
 		test.onComplete();
 
 		assertThat(seen.size()).isEqualTo(500);
+		assertThat(complete.get()).isTrue();
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1247

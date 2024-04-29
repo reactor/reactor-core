@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,9 @@ public class FluxBufferTimeoutStressTest {
 	@Outcome(id = "3, 1", expect = Expect.ACCEPTABLE, desc = "")
 	@Outcome(id = "4, 1", expect = Expect.ACCEPTABLE, desc = "")
 	@Outcome(id = "5, 1", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "3, 2", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "4, 2", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "5, 2", expect = Expect.ACCEPTABLE, desc = "")
 	@State
 	public static class FluxBufferTimeoutStressTestRaceDeliveryAndMoreTimeouts {
 
@@ -169,6 +172,7 @@ public class FluxBufferTimeoutStressTest {
 	@Outcome(id = "5, 0, 3", expect = Expect.ACCEPTABLE, desc = "")
 	@Outcome(id = "5, 0, 4", expect = Expect.ACCEPTABLE, desc = "")
 	@Outcome(id = "5, 0, 5", expect = Expect.ACCEPTABLE, desc = "")
+	@Outcome(id = "5, 0, 1", expect = Expect.ACCEPTABLE, desc = "")
 	@State
 	public static class FluxBufferTimeoutStressTestRaceDeliveryAndMoreTimeoutsPossiblyIncomplete {
 
@@ -242,8 +246,7 @@ public class FluxBufferTimeoutStressTest {
 				}
 			}
 
-			// TODO #onNext < 5 and incomplete => why fail?
-			if (subscriber.onNextCalls.get() < 5 && subscriber.onCompleteCalls.get() == 0) {
+			if (subscriber.onNextCalls.get() < 5) {
 				fail(fastLogger, "incomplete. received: " + subscriber.receivedValues + "; requested=" + requested.get() + "; result=" + result);
 			}
 
