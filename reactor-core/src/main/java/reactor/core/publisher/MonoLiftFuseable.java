@@ -55,6 +55,7 @@ final class MonoLiftFuseable<I, O> extends InternalMonoOperator<I, O>
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+		// No need to wrap actual for CP, the Operators$LiftFunction handles it.
 		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");

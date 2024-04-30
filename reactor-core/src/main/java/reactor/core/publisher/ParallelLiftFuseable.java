@@ -88,6 +88,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		while (i < subscribers.length) {
 			CoreSubscriber<? super O> actual = s[i];
 			CoreSubscriber<? super I> converted =
+					// No need to wrap actual for CP, the Operators$LiftFunction handles it.
 					Objects.requireNonNull(liftFunction.lifter.apply(source, actual), "Lifted subscriber MUST NOT be null");
 
 			Objects.requireNonNull(converted, "Lifted subscriber MUST NOT be null");
