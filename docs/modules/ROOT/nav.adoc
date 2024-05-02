@@ -1,107 +1,29 @@
-= Reactor 3 Reference Guide
-Stephane Maldini <https://twitter.com/smaldini[@smaldini]>; Simon Baslé <https://twitter.com/simonbasle[@simonbasle]>
-ifndef::host-github[:ext-relative: {outfilesuffix}]
-:doctype: book
-:icons: font
-:toc2:
-:sectnums:
-:sectanchors:
+* xref:aboutDoc.adoc[]
+* xref:gettingStarted.adoc[]
+* xref:reactiveProgramming.adoc[]
+* xref:coreFeatures.adoc[]
+** xref:coreFeatures/flux.adoc[]
+** xref:coreFeatures/mono.adoc[]
+** xref:coreFeatures/simple-ways-to-create-a-flux-or-mono-and-subscribe-to-it.adoc[]
+** xref:coreFeatures/programmatically-creating-sequence.adoc[]
+** xref:coreFeatures/schedulers.adoc[]
+** xref:coreFeatures/error-handling.adoc[]
+** xref:coreFeatures/sinks.adoc[]
+* xref:kotlin.adoc[]
+* xref:testing.adoc[]
+* xref:debugging.adoc[]
+* xref:metrics.adoc[]
+* xref:advancedFeatures.adoc[]
+** xref:advancedFeatures/advanced-mutualizing-operator-usage.adoc[]
+** xref:advancedFeatures/reactor-hotCold.adoc[]
+** xref:advancedFeatures/advanced-broadcast-multiple-subscribers-connectableflux.adoc[]
+** xref:advancedFeatures/advanced-three-sorts-batching.adoc[]
+** xref:advancedFeatures/advanced-parallelizing-parralelflux.adoc[]
+** xref:advancedFeatures/scheduler-factory.adoc[]
+** xref:advancedFeatures/hooks.adoc[]
+** xref:advancedFeatures/context.adoc[]
+** xref:advanced-contextPropagation.adoc[]
+** xref:advancedFeatures/cleanup.adoc[]
+** xref:advancedFeatures/null-safety.adoc[]
+* xref:appendices.adoc[]
 
-include::aboutDoc.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<about-doc>>"
-endif::[]
-
-include::gettingStarted.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/gettingStarted.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<getting-started>>"
-endif::[]
-
-include::reactiveProgramming.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/reactiveProgramming.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<intro-reactive>>"
-endif::[]
-
-include::coreFeatures.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/coreFeatures.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<core-features>>"
-endif::[]
-
-//TODO see other sections from consuming.adoc
-
-include::kotlin.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/kotlin.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<kotlin>>"
-endif::[]
-
-include::testing.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/testing.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<testing>>"
-endif::[]
-
-include::debugging.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/debugging.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<debugging>>"
-endif::[]
-
-include::metrics.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/metrics.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<metrics>>"
-endif::[]
-include::metrics-details.adoc[]
-
-include::advancedFeatures.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/advancedFeatures.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<advanced>>"
-endif::[]
-
-
-[appendix]
-include::apdx-operatorChoice.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/apdx-operatorChoice.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<which-operator>>"
-endif::[]
-
-[appendix]
-include::apdx-howtoReadMarbles.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/apdx-howtoReadMarbles.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<howtoReadMarbles>>"
-endif::[]
-
-[appendix]
-include::faq.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/faq.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<faq>>"
-endif::[]
-
-[appendix]
-include::apdx-reactorExtra.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/main/docs/asciidoc/apdx-reactorExtra.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<reactor-extra>>"
-endif::[]
-
-//TODO later add appendices about internals, writing operators, fusion
-//[appendix]
-//include::apdx-implem.adoc[]
-//
-//[appendix]
-//include::apdx-writingOperator.adoc[]
-//[appendix]
-//include::apdx-optimizations.adoc[]
-
-//TODO later add appendix about migrating from RxJava?
-//[appendix]
-//include::apdx-migrating.adoc[]

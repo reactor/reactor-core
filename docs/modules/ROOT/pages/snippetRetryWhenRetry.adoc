@@ -1,6 +1,7 @@
-====
 [source,java]
+[%unbreakable]
 ----
+
 AtomicInteger errorCount = new AtomicInteger();
 Flux<String> flux =
 		Flux.<String>error(new IllegalArgumentException())
@@ -17,4 +18,3 @@ Flux<String> flux =
 <3> To allow for three retries, we consider indexes < 3 and return a value to emit (here we simply return the index).
 <4> In order to terminate the sequence in error, we throw the original exception after
 these three retries.
-====

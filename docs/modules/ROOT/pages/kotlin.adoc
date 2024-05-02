@@ -29,12 +29,10 @@ module with new package names that start with `reactor.kotlin` instead of simply
 As a consequence, Kotlin extensions in `reactor-core` module are deprecated.
 The new dependency's groupId and artifactId are:
 
-====
 [source,gradle]
 ----
 io.projectreactor.kotlin:reactor-kotlin-extensions
 ----
-====
 =====
 
 Thanks to its great https://kotlinlang.org/docs/reference/java-interop.html[Java interoperability]
@@ -52,7 +50,7 @@ provide a workaround for JVM https://docs.oracle.com/javase/tutorial/java/generi
 and Reactor provides some extensions to take advantage of this feature.
 
 The following table compares Reactor with Java against Reactor with Kotlin and extensions:
-
+[%unbreakable]
 |===
 |*Java*|*Kotlin with extensions*
 |`Mono.just("foo")`
@@ -82,8 +80,8 @@ declarations and expressive "`value or no value`" semantics without paying the c
 (Kotlin allows using functional constructs with nullable values. See this
 https://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
 
-Although Java does not let one express null safety in its type-system, Reactor <<null-safety,now
-provides null safety>> of the whole Reactor API through tooling-friendly annotations declared
+Although Java does not let one express null safety in its type-system, Reactor xref:kotlin.adoc#kotlin-null-safety[now provides null safety]
+ of the whole Reactor API through tooling-friendly annotations declared
 in the `reactor.util.annotation` package.
 By default, types from Java APIs used in Kotlin are recognized as
 https://kotlinlang.org/docs/reference/java-interop.html#null-safety-and-platform-types[platform types]

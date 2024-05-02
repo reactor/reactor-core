@@ -1,7 +1,8 @@
-== Automatic optimizations
+[[automatic-optimizations]]
+= Automatic optimizations
 
 [[macrofusion]]
-=== Macro-fusion
+== Macro-fusion
 
 [[microfusion]]
-=== Micro-fusion
+== Micro-fusion

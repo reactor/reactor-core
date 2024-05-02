@@ -4,10 +4,10 @@
 This section contains information that should help you get going with Reactor. It
 includes the following sections:
 
-* <<getting-started-introducing-reactor>>
-* <<prerequisites>>
-* <<getting-started-understanding-bom>>
-* <<getting>>
+* xref:gettingStarted.adoc#getting-started-introducing-reactor[Introducing Reactor]
+* xref:gettingStarted.adoc#prerequisites[Prerequisites]
+* xref:gettingStarted.adoc#getting-started-understanding-bom[Understanding the BOM and versioning scheme]
+* xref:gettingStarted.adoc#getting[Getting Reactor]
 
 [[getting-started-introducing-reactor]]
 == Introducing Reactor
@@ -90,7 +90,7 @@ like YYYY.0.X-SNAPSHOT so we get 1 snapshot per PATCH)
 [[getting]]
 == Getting Reactor
 
-As <<getting-started-understanding-bom,mentioned earlier>>, the easiest way to use Reactor in your core is to use the BOM and
+As xref:gettingStarted.adoc#getting-started-understanding-bom[mentioned earlier], the easiest way to use Reactor in your core is to use the BOM and
 add the relevant dependencies to your project. Note that, when you add such a dependency,
 you must omit the version so that the version gets picked up from the BOM.
 
@@ -103,12 +103,12 @@ release train line is `{reactorReleaseTrain}`, which is what is used in snippets
 There might be newer versions since then (including snapshots, milestones and new release train lines),
 see https://projectreactor.io/docs for the latest artifacts and BOMs.
 
+[[maven-installation]]
 === Maven Installation
 
 Maven natively supports the BOM concept. First, you need to import the BOM by
 adding the following snippet to your `pom.xml`:
 
-====
 [source,xml,subs=attributes+]
 ----
 <dependencyManagement> <1>
@@ -125,14 +125,12 @@ adding the following snippet to your `pom.xml`:
 ----
 <1> Notice the `dependencyManagement` tag. This is in addition to the regular
 `dependencies` section.
-====
 
 If the top section (`dependencyManagement`) already exists in your pom, add only the contents.
 
 Next, add your dependencies to the relevant reactor projects, as usual, except without a
 `<version>`, as follows:
 
-====
 [source,xml]
 ----
 <dependencies>
@@ -151,8 +149,8 @@ Next, add your dependencies to the relevant reactor projects, as usual, except w
 <1> Dependency on the core library.
 <2> No version tag here.
 <3> `reactor-test` provides facilities to unit test reactive streams.
-====
 
+[[gradle-installation]]
 === Gradle Installation
 
 Prior to version 5.0, Gradle has no core support for Maven BOMs, but you can use Spring's
@@ -161,7 +159,6 @@ plugin.
 
 First, apply the plugin from the Gradle Plugin Portal, as follows:
 
-====
 [source,groovy]
 ----
 plugins {
@@ -170,11 +167,9 @@ plugins {
 ----
 <1> as of this writing, 1.0.7.RELEASE is the latest version of the plugin.
 Check for updates.
-====
 
 Then use it to import the BOM, as follows:
 
-====
 [source,groovy,subs=attributes+]
 ----
 dependencyManagement {
@@ -183,11 +178,9 @@ dependencyManagement {
      }
 }
 ----
-====
 
 Finally add a dependency to your project, without a version number, as follows:
 
-====
 [source,groovy]
 ----
 dependencies {
@@ -196,11 +189,9 @@ dependencies {
 ----
 <1> There is no third `:` separated section for the version. It is taken from
 the BOM.
-====
 
 Since Gradle 5.0, you can use the native Gradle support for BOMs:
 
-====
 [source,groovy,subs=attributes+]
 ----
 dependencies {
@@ -210,9 +201,9 @@ dependencies {
 ----
 <1> There is no third `:` separated section for the version. It is taken from
 the BOM.
-====
 
 
+[[milestones-and-snapshots]]
 === Milestones and Snapshots
 
 Milestones and developer previews are distributed through the Spring Milestones
@@ -220,7 +211,6 @@ repository rather than Maven Central. To add it to your build configuration
 file, use the following snippet:
 
 .Milestones in Maven
-====
 [source,xml]
 ----
 <repositories>
@@ -231,12 +221,10 @@ file, use the following snippet:
 	</repository>
 </repositories>
 ----
-====
 
 For Gradle, use the following snippet:
 
 .Milestones in Gradle
-====
 [source,groovy]
 ----
 repositories {
@@ -244,12 +232,10 @@ repositories {
   mavenCentral()
 }
 ----
-====
 
 Similarly, snapshots are also available in a separate dedicated repository, as the following example show:
 
 .-SNAPSHOTs in Maven
-====
 [source,xml]
 ----
 <repositories>
@@ -260,10 +246,8 @@ Similarly, snapshots are also available in a separate dedicated repository, as t
 	</repository>
 </repositories>
 ----
-====
 
 .-SNAPSHOTs in Gradle
-====
 [source,groovy]
 ----
 repositories {
@@ -271,11 +255,10 @@ repositories {
   mavenCentral()
 }
 ----
-====
 
 [[support]]
 == Support and policies
 
 The entries below are mirroring https://github.com/reactor/.github/blob/main/SUPPORT.adoc
 
-include::https://raw.githubusercontent.com/reactor/.github/main/SUPPORT.adoc[leveloffset=3]
+include::partial$SUPPORT.adoc[leveloffset=2]

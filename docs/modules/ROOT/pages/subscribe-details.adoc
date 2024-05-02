@@ -1,47 +1,47 @@
-=== `subscribe` Method Examples
+[[subscribe-method-examples]]
+== `subscribe` Method Examples
 
 This section contains minimal examples of each of the five signatures for the `subscribe`
 method. The following code shows an example of the basic method with no arguments:
 
-====
 [source,java]
+[%unbreakable]
 ----
+
 Flux<Integer> ints = Flux.range(1, 3); <1>
 ints.subscribe(); <2>
 ----
 <1> Set up a `Flux` that produces three values when a subscriber attaches.
 <2> Subscribe in the simplest way.
-====
 
 The preceding code produces no visible output, but it does work. The `Flux` produces
 three values. If we provide a lambda, we can make the values visible. The next example
 for the `subscribe` method shows one way to make the values appear:
 
-====
 [source,java]
+[%unbreakable]
 ----
+
 Flux<Integer> ints = Flux.range(1, 3); <1>
 ints.subscribe(i -> System.out.println(i)); <2>
 ----
 <1> Set up a `Flux` that produces three values when a subscriber attaches.
 <2> Subscribe with a subscriber that will print the values.
-====
 
 The preceding code produces the following output:
 
-====
 [source]
+[%unbreakable]
 ----
+
 1
 2
 3
 ----
-====
 
 To demonstrate the next signature, we intentionally introduce an error, as
 shown in the following example:
 
-====
 [source, java]
 ----
 Flux<Integer> ints = Flux.range(1, 4) <1>
@@ -57,27 +57,27 @@ ints.subscribe(i -> System.out.println(i), <5>
 <3> For most values, return the value.
 <4> For one value, force an error.
 <5> Subscribe with a subscriber that includes an error handler.
-====
 
 We now have two lambda expressions: one for the content we expect and one for
 errors. The preceding code produces the following output:
 
-====
 [source]
+[%unbreakable]
 ----
+
 1
 2
 3
 Error: java.lang.RuntimeException: Got to 4
 ----
-====
 
 The next signature of the `subscribe` method includes both an error handler and
 a handler for completion events, as shown in the following example:
 
-====
 [source,java]
+[%unbreakable]
 ----
+
 Flux<Integer> ints = Flux.range(1, 4); <1>
 ints.subscribe(i -> System.out.println(i),
     error -> System.err.println("Error " + error),
@@ -85,7 +85,6 @@ ints.subscribe(i -> System.out.println(i),
 ----
 <1> Set up a Flux that produces four values when a subscriber attaches.
 <2> Subscribe with a Subscriber that includes a handler for completion events.
-====
 
 Error signals and completion signals are both terminal events and are exclusive of one
 another (you never get both). To make the completion consumer work, we must take care not
@@ -95,18 +94,19 @@ The completion callback has no input, as represented by an empty pair of
 parentheses: It matches the `run` method in the `Runnable` interface. The preceding code
 produces the following output:
 
-====
 [source]
+[%unbreakable]
 ----
+
 1
 2
 3
 4
 Done
 ----
-====
 
-=== Cancelling a `subscribe()` with Its `Disposable`
+[[cancelling-a-subscribe-with-its-disposable]]
+== Cancelling a `subscribe()` with Its `Disposable`
 
 All these lambda-based variants of `subscribe()` have a `Disposable` return type.
 In this case, the `Disposable` interface represents the fact that the subscription
@@ -130,7 +130,8 @@ associated with a service call -- and dispose all of them at once later on.
 Once the composite's `dispose()` method has been called, any attempt to add
 another `Disposable` immediately disposes it.
 
-=== An Alternative to Lambdas: `BaseSubscriber`
+[[an-alternative-to-lambdas-basesubscriber]]
+== An Alternative to Lambdas: `BaseSubscriber`
 
 There is an additional `subscribe` method that is more generic and takes a full-blown
 `Subscriber` rather than composing one out of lambdas. In order to help with writing
@@ -147,21 +148,22 @@ the call to `Publisher#subscribe(Subscriber)`.
 Now we can implement one of these. We call it a `SampleSubscriber`. The following
 example shows how it would be attached to a `Flux`:
 
-====
 [source,java]
+[%unbreakable]
 ----
+
 SampleSubscriber<Integer> ss = new SampleSubscriber<Integer>();
 Flux<Integer> ints = Flux.range(1, 4);
 ints.subscribe(ss);
 ----
-====
 
 The following example shows what `SampleSubscriber` could look like, as a minimalistic
 implementation of a `BaseSubscriber`:
 
-====
 [source,java]
+[%unbreakable]
 ----
+
 package io.projectreactor.samples;
 
 import org.reactivestreams.Subscription;
@@ -183,7 +185,6 @@ public class SampleSubscriber<T> extends BaseSubscriber<T> {
 	}
 }
 ----
-====
 
 The `SampleSubscriber` class extends `BaseSubscriber`, which is the recommended abstract
 class for user-defined `Subscribers` in Reactor. The class offers hooks that can be
@@ -199,16 +200,16 @@ at a time.
 
 The `SampleSubscriber` class produces the following output:
 
-====
 [source]
+[%unbreakable]
 ----
+
 Subscribed
 1
 2
 3
 4
 ----
-====
 
 `BaseSubscriber` also offers a `requestUnbounded()` method to switch to unbounded mode
 (equivalent to `request(Long.MAX_VALUE)`), as well as a `cancel()` method.

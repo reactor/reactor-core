@@ -11,6 +11,7 @@ of your code? Did the failure occur in some library code? If so, what part of yo
 called the library, potentially passing in improper parameters that ultimately caused the
 failure?
 
+[[the-typical-reactor-stack-trace]]
 == The Typical Reactor Stack Trace
 
 When you shift to asynchronous code, things can get much more complicated.
@@ -20,9 +21,10 @@ When you shift to asynchronous code, things can get much more complicated.
 Consider the following stack trace:
 
 .A typical Reactor stack trace
-====
 [source]
+[%unbreakable]
 ----
+
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
     at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
     at reactor.core.publisher.FluxFlatMap$FlatMapMain.tryEmitScalar(FluxFlatMap.java:445)
@@ -44,7 +46,6 @@ java.lang.IndexOutOfBoundsException: Source emitted more than one item
     at reactor.core.publisher.Mono.subscribe(Mono.java:3029)
     at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:995)
 ----
-====
 
 There is a lot going on there. We get an `IndexOutOfBoundsException`, which tells us that
 a `source emitted more than one item`.
@@ -73,24 +74,22 @@ line refers to some of our code. Finally, we are getting close.
 Hold on, though. When we go to the source file, all we see is that a
 pre-existing `Flux` is subscribed to, as follows:
 
-====
 [source,java]
+[%unbreakable]
 ----
 toDebug
     .subscribeOn(Schedulers.immediate())
     .subscribe(System.out::println, Throwable::printStackTrace);
 ----
-====
 
 All of this happened at subscription time, but the `Flux` itself was not
 declared there. Worse, when we go to where the variable is declared, we see the following:
 
-====
 [source,java]
+[%unbreakable]
 ----
 public Mono<String> toDebug; //please overlook the public class attribute
 ----
-====
 
 The variable is not instantiated where it is declared. We must assume a worst-case
 scenario where we find out that there could be a few different code paths that set it in
@@ -108,8 +107,8 @@ the `Flux`.
 
 WARNING: this section describes the easiest but also the slowest way to enable
 the debugging capabilities due to the fact that it captures the stacktrace on every operator.
-See <<checkpoint-alternative>> for a more fine grained way of debugging,
-and <<reactor-tools-debug>> for a more advanced and performant global option.
+See xref:debugging.adoc#checkpoint-alternative[The `checkpoint()` Alternative] for a more fine grained way of debugging,
+and xref:debugging.adoc#reactor-tools-debug[Production-ready Global Debugging] for a more advanced and performant global option.
 
 Even though the stacktrace was still able to convey some information for someone with a
 bit of experience, we can see that it is not ideal by itself in more advanced cases.
@@ -119,12 +118,11 @@ Fortunately, Reactor comes with  assembly-time instrumentation that is designed 
 This is done by activating a global debug mode via the `Hooks.onOperatorDebug()` method at application start (or at
 least before the incriminated `Flux` or `Mono` can be instantiated), as follows:
 
-====
 [source,java]
+[%unbreakable]
 ----
 Hooks.onOperatorDebug();
 ----
-====
 
 This starts instrumenting the calls to Reactor operator methods (where
 they are assembled into the chain) by wrapping the construction of the operator and
@@ -141,6 +139,7 @@ exceptions by Reactor in general) a *traceback*.
 In the next section, we see how the stack trace differs and how to interpret
 that new information.
 
+[[reading-a-stack-trace-in-debug-mode]]
 == Reading a Stack Trace in Debug Mode
 
 When we reuse our initial example but activate the `operatorStacktrace` debug feature,
@@ -156,8 +155,8 @@ several things happen:
 
 The full stack trace, once printed, is as follows:
 
-====
 [source]
+[%unbreakable]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
     at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:127) <1>
@@ -190,7 +189,6 @@ was used. Here we have a "root".
 <6> Here we have a simple part of the chain.
 <7> The rest of the stack trace is moved at the end...
 <8> ...showing a bit of the operator's internals (so we removed a bit of the snippet here).
-====
 
 The captured stack trace is appended to the original error as a
 suppressed `OnAssemblyException`. There are three parts to it, but the first section is the
@@ -201,8 +199,8 @@ exception. Here, it shows that the `single` that caused our issue was actually c
 Now that we are armed with enough information to find the culprit, we can have
 a meaningful look at that `scatterAndGather` method:
 
-====
 [source,java]
+[%unbreakable]
 ----
 private Mono<String> scatterAndGather(Flux<String> urls) {
     return urls.flatMap(url -> doRequest(url))
@@ -210,7 +208,6 @@ private Mono<String> scatterAndGather(Flux<String> urls) {
 }
 ----
 <1> Sure enough, here is our `single`.
-====
 
 Now we can see what the root cause of the error was a `flatMap` that performs
 several HTTP calls to a few URLs but that is chained with `single`, which is too
@@ -221,34 +218,34 @@ We have solved our problem.
 
 Now consider the following section in the stack trace:
 
-====
 [source]
+[%unbreakable]
 ----
+
 Error has been observed at the following site(s):
 ----
-====
 
 That second part of the traceback was not necessarily interesting in
 this particular example, because the error was actually happening in the last
 operator in the chain (the one closest to `subscribe`). Considering another
 example might make it more clear:
 
-====
 [source,java]
+[%unbreakable]
 ----
 FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
               .transform(FakeUtils1.applyFilters)
               .transform(FakeUtils2.enrichUser)
               .blockLast();
 ----
-====
 
 Now imagine that, inside `findAllUserByName`, there is a `map` that fails. Here,
 we would see the following in the second part of the traceback:
 
-====
 [source]
+[%unbreakable]
 ----
+
 Error has been observed at the following site(s):
     *________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)
     |_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)
@@ -257,7 +254,6 @@ Error has been observed at the following site(s):
     |_   Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)
     |_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)
 ----
-====
 
 This corresponds to the section of the chain(s) of operators that gets notified of the error:
 
@@ -277,8 +273,8 @@ If a site is seen several time, there will be an `(observed x times)` after the 
 
 For instance, let us consider the following snippet:
 
-====
 [source,java]
+[%unbreakable]
 ----
 public class MyClass {
     public void myMethod() {
@@ -290,14 +286,14 @@ public class MyClass {
     }
 }
 ----
-====
 
 In the code above, error propagates to the `when`, going through two separate chains `chain1` and `chain2`.
 It would lead to a traceback containing the following:
 
-====
 [source]
+[%unbreakable]
 ----
+
 Error has been observed at the following site(s):
     *_____Flux.error ⇢ at myClass.myMethod(MyClass.java:3) (observed 2 times)
     |_      Flux.map ⇢ at myClass.myMethod(MyClass.java:4)
@@ -307,7 +303,6 @@ Error has been observed at the following site(s):
     |_ Flux.distinct ⇢ at myClass.myMethod(MyClass.java:5)
     *______Mono.when ⇢ at myClass.myMethod(MyClass.java:7)
 ----
-====
 
 We see that:
 
@@ -369,9 +364,10 @@ behavior by using the `checkpoint("description", true)` version. We are now back
 initial message for the traceback, augmented with a `description`, as shown in the
 following example:
 
-====
 [source]
+[%unbreakable]
 ----
+
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
 	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)
 	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
@@ -379,7 +375,6 @@ Error has been observed at the following site(s):
 	|_	ParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 ----
 <1> `descriptionCorrelation1234` is the description provided in the `checkpoint`.
-====
 
 The description could be a static identifier or user-readable description or a wider
 correlation ID (for instance, coming from a header in the case of an HTTP request).
@@ -393,14 +388,13 @@ As a result, the name of heavy checkpoints is not visible in this case.
 == Production-ready Global Debugging
 Project Reactor comes with a separate Java Agent that instruments your code and adds
 debugging info without paying the cost of capturing the stacktrace on every operator call.
-The behaviour is very similar to <<debug-activate>>, but without the runtime performance overhead.
+The behaviour is very similar to xref:debugging.adoc#debug-activate[Activating Debug Mode - aka tracebacks], but without the runtime performance overhead.
 
 To use it in your app, you must add it as a dependency.
 
 The following example shows how to add `reactor-tools` as a dependency in Maven:
 
 .reactor-tools in Maven, in `<dependencies>`
-====
 [source,xml]
 ----
 <dependency>
@@ -409,69 +403,64 @@ The following example shows how to add `reactor-tools` as a dependency in Maven:
     <1>
 </dependency>
 ----
-<1> If you use the <<getting,BOM>>, you do not need to specify a `<version>`.
-====
+<1> If you use the xref:gettingStarted.adoc#getting[BOM], you do not need to specify a `<version>`.
 
 The following example shows how to add `reactor-tools` as a dependency in Gradle:
 
 .reactor-tools in Gradle, amend the `dependencies` block
-====
 [source,groovy]
 ----
 dependencies {
    compile 'io.projectreactor:reactor-tools'
 }
 ----
-====
 
 It also needs to be explicitly initialized with:
-====
 [source,java]
+[%unbreakable]
 ----
 ReactorDebugAgent.init();
 ----
-====
 
 TIP: Since the implementation will instrument your classes when they are loaded,
 the best place to put it is before everything else in your main(String[]) method:
-====
 [source,java]
+[%unbreakable]
 ----
 public static void main(String[] args) {
     ReactorDebugAgent.init();
     SpringApplication.run(Application.class, args);
 }
 ----
-====
 
 You may also re-process existing classes with `processExistingClasses()` if you cannot run the init eagerly. For example, in https://junit.org/junit5/docs/current/user-guide/#launcher-api-listeners-custom[JUnit5 tests from a `TestExecutionListener`] or even in the class `static` initializer block:
-====
 [source,java]
+[%unbreakable]
 ----
 ReactorDebugAgent.init();
 ReactorDebugAgent.processExistingClasses();
 ----
-====
 
 WARNING: Be aware that the re-processing takes a couple of seconds due to the need to iterate over
 all loaded classes and apply the transformation.
 Use it only if you see that some call-sites are not instrumented.
 
+[[limitations]]
 === Limitations
 `ReactorDebugAgent` is implemented as a Java Agent and uses https://bytebuddy.net/#/[ByteBuddy]
 to perform the self-attach.
 Self-attach may not work on some JVMs, please refer to ByteBuddy's documentation for more details.
 
+[[running-reactordebugagent-as-a-java-agent]]
 === Running ReactorDebugAgent as a Java Agent
 If your environment does not support ByteBuddy's self-attachment, you can run `reactor-tools` as a
 Java Agent:
-====
 [source,shell]
 ----
 java -javaagent reactor-tools.jar -jar app.jar
 ----
-====
 
+[[running-reactordebugagent-at-build-time]]
 === Running ReactorDebugAgent at build time
 It is also possible to run `reactor-tools` at build time. To do so, you need to apply it as a
 plugin for ByteBuddy's build instrumentation.
@@ -479,7 +468,6 @@ plugin for ByteBuddy's build instrumentation.
 WARNING: The transformation will only be applied to your project's classes. The classpath libraries will not be instrumented.
 
 .reactor-tools with https://github.com/raphw/byte-buddy/tree/byte-buddy-1.10.9/byte-buddy-maven-plugin[ByteBuddy's Maven plugin]
-====
 [source,xml]
 ----
 <dependencies>
@@ -508,12 +496,10 @@ WARNING: The transformation will only be applied to your project's classes. The 
 	</plugins>
 </build>
 ----
-<1> If you use the <<getting,BOM>>, you do not need to specify a `<version>`.
+<1> If you use the xref:gettingStarted.adoc#getting[BOM], you do not need to specify a `<version>`.
 <2> `classifier` here is important.
-====
 
 .reactor-tools with https://github.com/raphw/byte-buddy/tree/byte-buddy-1.10.9/byte-buddy-gradle-plugin[ByteBuddy's Gradle plugin]
-====
 [source,groovy]
 ----
 plugins {
@@ -540,11 +526,11 @@ byteBuddy {
 	}
 }
 ----
-<1> If you use the <<getting,BOM>>, you do not need to specify a `version`.
+<1> If you use the xref:gettingStarted.adoc#getting[BOM], you do not need to specify a `version`.
 <2> `classifier` here is important.
-====
 
 
+[[logging-a-sequence]]
 == Logging a Sequence
 
 In addition to stack trace debugging and analysis, another powerful tool to have in your
@@ -576,19 +562,17 @@ For instance, suppose we have Logback activated and configured and a chain like
 insight into how it works and what kind of events it propagates upstream to the range,
 as the following example shows:
 
-====
 [source,java]
+[%unbreakable]
 ----
 Flux<Integer> flux = Flux.range(1, 10)
                          .log()
                          .take(3);
 flux.subscribe();
 ----
-====
 
 This prints out the following (through the logger's console appender):
 
-====
 ----
 10:45:20.200 [main] INFO  reactor.Flux.Range.1 - | onSubscribe([Synchronous Fuseable] FluxRange.RangeSubscription) <1>
 10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | request(3) <2>
@@ -614,7 +598,6 @@ synchronous or asynchronous fusion.
 <2> On the second line, we can see that take limited the request to upstream to 3.
 <3> Then the range sends three values in a row.
 <4> On the last line, we see `cancel()`.
-====
 
 The second (2) and last lines (4) are the most interesting. We can see the `take` in action there.
 It leverages backpressure in order to ask the source for exactly the expected amount of elements.

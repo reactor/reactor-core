@@ -1,1 +1,2 @@
-== A Primer on Writing an Operator
+[[a-primer-on-writing-an-operator]]
+= A Primer on Writing an Operator

@@ -1,9 +1,12 @@
+[[sinks]]
+= Sinks
+
 In Reactor a sink is a class that allows safe manual triggering of signals in a standalone fashion, creating a `Publisher`-like structure capable of dealing with multiple `Subscriber` (with the exception of `unicast()` flavors).
 
 Before `3.5.0`, there was also a set of `Processor` implementations which has been phased out.
 
 [[sinks-intro]]
-= Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
+== Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
 
 Default flavors of `Sinks` exposed by reactor-core ensure that multi-threaded usage is detected
 and cannot lead to spec violations or undefined behavior from the perspective of downstream
@@ -35,17 +38,16 @@ Sinks are usually a better alternative.
 The `Sinks` builder provide a guided API to the main supported producer types.
 You will recognize some of the behavior found in `Flux` such as `onBackpressureBuffer`.
 
-====
 [source,java]
+[%unbreakable]
 ----
 Sinks.Many<Integer> replaySink = Sinks.many().replay().all();
 ----
-====
 
 Multiple producer threads may concurrently generate data on the sink by doing the following:
 
-====
 [source,java]
+[%unbreakable]
 ----
 //thread1
 replaySink.emitNext(1, EmitFailureHandler.FAIL_FAST);
@@ -63,7 +65,6 @@ EmitResult result = replaySink.tryEmitNext(4);
 
 
 ----
-====
 
 [NOTE]
 ====
@@ -74,8 +75,8 @@ Also, it is recommended to use a timeout above 100ms since smaller values don’
 
 The `Sinks.Many` can be presented to downstream consumers as a `Flux`, like in the below example:
 
-====
 [source,java]
+[%unbreakable]
 ----
 Flux<Integer> fluxView = replaySink.asFlux();
 fluxView
@@ -83,7 +84,6 @@ fluxView
 	.log()
 	.blockLast();
 ----
-====
 
 Similarly, the `Sinks.Empty` and `Sinks.One` flavors can be viewed as a `Mono` with the `asMono()` method.
 
@@ -97,9 +97,10 @@ The `Sinks` categories are:
 . `empty()`: a sink that will play a terminal signal only to its subscribers (error or complete), but can still be viewed as a `Mono<T>` (notice the generic type `<T>`).
 
 [[sinks-overview]]
-= Overview of Available Sinks
+== Overview of Available Sinks
 
-== Sinks.many().unicast().onBackpressureBuffer(args?)
+[[sinks-many-unicast-onbackpressurebufferargs]]
+=== Sinks.many().unicast().onBackpressureBuffer(args?)
 
 A unicast `Sinks.Many` can deal with backpressure by using an internal buffer.
 The trade-off is that it can have _at most one_ `Subscriber`.
@@ -114,7 +115,8 @@ buffering in the `Sinks.many().unicast().onBackpressureBuffer(Queue)` factory me
 If that queue is bounded, the sink could reject the push of a value when the buffer
 is full and not enough requests from downstream have been received.
 
-== Sinks.many().multicast().onBackpressureBuffer(args?)
+[[sinks-many-multicast-onbackpressurebufferargs]]
+=== Sinks.many().multicast().onBackpressureBuffer(args?)
 
 A multicast `Sinks.Many` can emit to several subscribers while honoring backpressure for each of its subscribers.
 Subscribers receive only the signals pushed through the sink after they have subscribed.
@@ -126,7 +128,8 @@ un-subscribed), it clears its internal buffer and stops accepting new subscriber
 You can tune this by using the `autoCancel` parameter in the `multicast` static factory methods
 under `Sinks.many().multicast()`.
 
-== Sinks.many().multicast().directAllOrNothing()
+[[sinks-many-multicast-directallornothing]]
+=== Sinks.many().multicast().directAllOrNothing()
 
 A multicast `Sinks.Many` with a simplistic handling of backpressure: if *any* of the subscribers
 is too slow (has zero demand), the `onNext` is dropped for *all* subscribers.
@@ -138,7 +141,8 @@ Once the `Sinks.Many` has terminated (usually through its `emitError(Throwable)`
 `emitComplete()` methods being called), it lets more subscribers subscribe but replays the
 termination signal to them immediately.
 
-== Sinks.many().multicast().directBestEffort()
+[[sinks-many-multicast-directbesteffort]]
+=== Sinks.many().multicast().directBestEffort()
 
 A multicast `Sinks.Many` with a best effort handling of backpressure: if a subscriber
 is too slow (has zero demand), the `onNext` is dropped for *this slow subscriber only*.
@@ -150,7 +154,8 @@ Once the `Sinks.Many` has terminated (usually through its `emitError(Throwable)`
 `emitComplete()` methods being called), it lets more subscribers subscribe but replays the
 termination signal to them immediately.
 
-== Sinks.many().replay()
+[[sinks-many-replay]]
+=== Sinks.many().replay()
 
 A replay `Sinks.Many` caches emitted elements and replays them to late subscribers.
 
@@ -163,7 +168,8 @@ It can be created in multiple configurations:
 Additional overloads for fine tuning of the above can also be found under `Sinks.many().replay()`, as well
 as a variant that allows caching of a single element (`latest()` and `latestOrDefault(T)`).
 
-== Sinks.unsafe().many()
+[[sinks-unsafe-many]]
+=== Sinks.unsafe().many()
 
 Advanced users and operators builders might want to consider using `Sinks.unsafe().many()`
 which will provide the same `Sinks.Many` factories _without_ the extra producer thread safety.
@@ -173,7 +179,8 @@ Library developers should not expose unsafe sinks but can use them internally in
 calling environment where they can ensure external synchronization of the calls that lead to
 `onNext`, `onComplete` and `onError` signals, in respect of the Reactive Streams specification.
 
-== Sinks.one()
+[[sinks-one]]
+=== Sinks.one()
 
 This method directly construct a simple instance of `Sinks.One<T>`.
 This flavor of `Sinks` is viewable as a `Mono` (through its `asMono()` view method), and
@@ -186,7 +193,8 @@ has slightly different `emit` methods to better convey this Mono-like semantics:
 `Sinks.one()` accepts _one_ call of any of these methods, effectively generating a `Mono`
 that either completed with a value, completed empty or failed.
 
-== Sinks.empty()
+[[sinks-empty]]
+=== Sinks.empty()
 
 This method directly constructs a simple instance of `Sinks.Empty<T>`.
 This flavor of `Sinks` is like `Sinks.One<T>`, except it doesn't offer the `emitValue` method.

@@ -17,8 +17,8 @@ Reactor-Core supports two modes of operation with `io.micrometer:context-propaga
   Please note that this mode applies only to new subscriptions, so it is recommended to
 enable this hook when the application starts.
 
-Their key differences are discussed in the context of either <<context-writing, writing
-data>> to Reactor `Context`, or <<context-accessing,accessing `ThreadLocal` state>> that
+Their key differences are discussed in the context of either xref:advanced-contextPropagation.adoc#context-writing[writing data]
+ to Reactor `Context`, or xref:advanced-contextPropagation.adoc#context-accessing[accessing `ThreadLocal` state] that
 reflects the contents of the `Context` of currently attached `Subscriber` for reading.
 
 [[context-writing]]
@@ -28,13 +28,14 @@ Depending on the individual application, you might either have to store already 
 `ThreadLocal` state as entries in the `Context`, or might only need to directly populate
 the `Context`.
 
+[[contextwrite-operator]]
 === `contextWrite` Operator
 
 When the values meant to be accessed as `ThreadLocal` are not (or do not need to be)
 present at the time of subscription, they can immediately be stored in the `Context`:
 
-====
 [source,java]
+[%unbreakable]
 ----
 // assuming TL is known to Context-Propagation as key TLKEY.
 static final ThreadLocal<String> TL = new ThreadLocal<>();
@@ -49,8 +50,8 @@ Mono.deferContextual(ctx ->
 .block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
           // returns "delayed ctx[TLKEY]=HELLO, TL=HELLO" in automatic mode
 ----
-====
 
+[[contextcapture-operator]]
 === `contextCapture` Operator
 This operator can be used when one needs to capture `ThreadLocal` value(s) at subscription time and reflect these values in the Reactor `Context` for the benefit of upstream operators.
 
@@ -61,8 +62,8 @@ to populate the Reactor `Context`.
 As a result, if there were any `ThreadLocal` values during subscription phase, for which there is a registered `ThreadLocalAccessor`, their values would now be stored in the Reactor `Context` and visible
 at runtime in upstream operators.
 
-====
 [source,java]
+[%unbreakable]
 ----
 // assuming TL is known to Context-Propagation as key TLKEY.
 static final ThreadLocal<String> TL = new ThreadLocal<>();
@@ -78,7 +79,6 @@ Mono.deferContextual(ctx ->
 .block(); // returns "delayed ctx[TLKEY]=HELLO, TL=null" in default mode
           // returns "delayed ctx[TLKEY]=HELLO, TL=HELLO" in automatic mode
 ----
-====
 
 NOTE: In the **automatic** mode, blocking operators, such as `Flux#blockFirst()`,
 `Flux#blockLast()`, `Flux#toIterable()`, `Mono#block()`, `Mono#blockOptional()`, and
@@ -97,6 +97,7 @@ Reactor-Core performs `ThreadLocal` state restoration using the values
 stored in `Context` and `ThreadLocalAccessor` instances registered in `ContextRegistry`
 that match by key.
 
+[[default-mode-operators-for-snapshot-restoration:-handle-and-tap]]
 === Default mode operators for snapshot restoration: `handle` and `tap`
 
 In the **default** mode, both `Flux` and `Mono` variants of `handle` and `tap` will have
@@ -113,8 +114,8 @@ These operators will ensure restoration is performed around the user-provided co
 The intent is to have a minimalistic set of operators transparently perform restoration.
 As a result we chose operators with rather general and broad applications (one with transformative capabilities, one with side-effect capabilities)
 
-====
 [source,java]
+[%unbreakable]
 ----
 //assuming TL is known to Context-Propagation.
 static final ThreadLocal<String> TL = new ThreadLocal<>();
@@ -130,8 +131,8 @@ Mono.delay(Duration.ofSeconds(1))
   .contextCapture()
   .block(); // prints "null" and returns "handled delayed TL=HELLO"
 ----
-====
 
+[[automatic-mode]]
 === Automatic mode
 
 In the **automatic** mode, all operators restore `ThreadLocal` state across `Thread`
@@ -154,6 +155,7 @@ treat absent keys in the `Context` for registered instances of `ThreadLocalAcces
 signals to clear the corresponding `ThreadLocal` state. This is especially important for
 an empty `Context`, which clears all state for registered `ThreadLocalAccessor` instances.
 
+[[which-mode-should-i-choose]]
 == Which mode should I choose?
 
 Both **default** and **automatic** modes have an impact on performance. Accessing
