@@ -1,0 +1,4 @@
+extends: default
+role:
+    red:
+        font-color: #FF0000
