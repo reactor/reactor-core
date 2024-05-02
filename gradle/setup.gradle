@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,10 +112,28 @@ publishing {
 			artifact javadocJar
 			//consider adding extra artifacts here, conditionally on submodule's name and perhaps in an afterEvaluate block
 			afterEvaluate {
-				if (project.name == 'reactor-core') {
-					artifact rootProject.tasks.docsZip
+				// Find the docs project (it's not a java project, so we need to lookup it)
+				def docsProject = project.findProject(':docs')
+				if (docsProject) {
+					// Access the docsZip task from the docs project
+					def docsZipTask = docsProject.tasks.findByName('docsZip')
+					if (docsZipTask) {
+						// Add the docsZip task as an artifact
+						artifact docsZipTask
+					}
 				}
-				// note that reactor-tools has more involved stuff, so we kept it in the submodule's build:
+				else {
+					// If the current JDK version is JDK8, the docs project is not loaded (see settings.gradle), so
+					// docsTask is not available. In this case, include the docsZip file path directly as an artifact, if it exists.
+					// (it may exist in case the docs have been previously built using a JDK17 compatible JDK).
+					def docsZipFile = file("${rootDir}/docs/build/distributions/reactor-core-${project.version}-docs.zip")
+					if (docsZipFile.exists()) {
+						artifact(docsZipFile) {
+							classifier 'docs'
+						}
+					}
+				}
+				// Note that reactor-tools has more involved stuff, so we kept it in the submodule's build:
 				// (it replaces the original jar with shadow jar and adds the former as -original.jar)
 			}
 
