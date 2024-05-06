@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
+import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -60,8 +61,10 @@ final class ContextPropagation {
 		}
 	}
 
-	static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux) {
-		return new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
+	static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux, boolean fuseable) {
+		return fuseable ?
+				new FluxContextWriteRestoringThreadLocalsFuseable<>(flux, Function.identity())
+				: new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
 	}
 
 	static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,13 @@ import reactor.core.scheduler.Schedulers;
  * @param <T> the input and output value type
  */
 public abstract class ConnectableFlux<T> extends Flux<T> {
+
+	static <T> ConnectableFlux<T> from(ConnectableFlux<T> source) {
+		if (ContextPropagationSupport.shouldWrapPublisher(source)) {
+			return new ConnectableFluxRestoringThreadLocals<>(source);
+		}
+		return source;
+	}
 
 	/**
 	 * Connects this {@link ConnectableFlux} to the upstream source when the first {@link org.reactivestreams.Subscriber}

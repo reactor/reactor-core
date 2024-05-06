@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,8 +84,8 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 		int i = 0;
 		while (i < subscribers.length) {
 			subscribers[i] =
-					Objects.requireNonNull(liftFunction.lifter.apply(source,
-									Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, s[i])),
+					// No need to wrap actual for CP, the Operators$LiftFunction handles it.
+					Objects.requireNonNull(liftFunction.lifter.apply(source, s[i]),
 							"Lifted subscriber MUST NOT be null");
 			i++;
 		}

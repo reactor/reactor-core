@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("bufferSize > 0 required but it was " + prefetch);
 		}
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = Flux.from(Objects.requireNonNull(source, "source"));
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.resetUponSourceTermination = resetUponSourceTermination;
