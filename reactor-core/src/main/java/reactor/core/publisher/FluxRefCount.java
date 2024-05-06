@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > 0 required but it was " + n);
 		}
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = ConnectableFlux.from(Objects.requireNonNull(source, "source"));
 		this.n = n;
 	}
 
@@ -64,6 +64,9 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		RefCountMonitor<T> conn;
 		RefCountInner<T> inner = new RefCountInner<>(actual);
 
+		// This call assumes that inner.onSubscribe(Subscription) is delivered
+		// synchronously, because later inner.setRefCountMonitor() triggers the actual
+		// Subscriber to request.
 		source.subscribe(inner);
 
 		boolean connect = false;
@@ -125,6 +128,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

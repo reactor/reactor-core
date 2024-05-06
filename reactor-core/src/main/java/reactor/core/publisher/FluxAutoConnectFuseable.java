@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > required but it was " + n);
 		}
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = ConnectableFlux.from(Objects.requireNonNull(source, "source"));
 		this.cancelSupport = Objects.requireNonNull(cancelSupport, "cancelSupport");
 		REMAINING.lazySet(this, n);
 	}
@@ -76,6 +76,7 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.CAPACITY) return remaining;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,8 @@ final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable 
 
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super I> input =
-				liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual));
+		// No need to wrap actual for CP, the Operators$LiftFunction handles it.
+		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

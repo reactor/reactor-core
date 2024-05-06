@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.micrometer.context.ContextRegistry;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,10 +49,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
@@ -340,6 +338,10 @@ public class AutomaticContextPropagationTest {
 			return new ThreadSwitchingMono<>("Hello", executorService);
 		}
 
+		private ThreadSwitchingConnectableFlux<String> threadSwitchingConnectableFlux() {
+			return new ThreadSwitchingConnectableFlux<>("Hello", executorService);
+		}
+
 		void assertThreadLocalsPresentInFlux(Supplier<Flux<?>> chainSupplier) {
 			assertThreadLocalsPresentInFlux(chainSupplier, false);
 		}
@@ -391,7 +393,7 @@ public class AutomaticContextPropagationTest {
 				     .contextWrite(Context.of(KEY, "present"))
 				     .blockLast(Duration.ofMillis(5000));
 			} catch (Exception e) {
-				if (e instanceof IllegalStateException) {
+				if (!(e instanceof ExpectedException || e.getCause() instanceof TimeoutException)) {
 					throw e;
 				}
 				assertThat(e).satisfiesAnyOf(
@@ -431,7 +433,7 @@ public class AutomaticContextPropagationTest {
 				     }
 			     })
 			     .contextWrite(Context.of(KEY, "present"))
-			     .onErrorComplete()
+			     .onErrorComplete(e -> e instanceof ExpectedException || e instanceof TimeoutException)
 			     .block();
 
 			if (hadNext.get()) {
@@ -459,7 +461,7 @@ public class AutomaticContextPropagationTest {
 				executorService.submit(asyncAction)
 				               .get(100, TimeUnit.MILLISECONDS);
 
-				if (!subscriberWithContext.latch.await(500, TimeUnit.MILLISECONDS)) {
+				if (!subscriberWithContext.latch.await(2, TimeUnit.SECONDS)) {
 					throw new TimeoutException("timed out");
 				}
 
@@ -472,6 +474,7 @@ public class AutomaticContextPropagationTest {
 					assertThat(subscriberWithContext.complete).isTrue();
 				}
 				else {
+					assertThat(subscriberWithContext.error.get()).isInstanceOfAny(ExpectedException.class, TimeoutException.class);
 					assertThat(subscriberWithContext.valueInOnError.get()).isEqualTo("present");
 				}
 			});
@@ -496,7 +499,7 @@ public class AutomaticContextPropagationTest {
 				executorService.submit(asyncAction)
 				               .get(100, TimeUnit.MILLISECONDS);
 
-				if (!subscriberWithContext.latch.await(500, TimeUnit.MILLISECONDS)) {
+				if (!subscriberWithContext.latch.await(2, TimeUnit.SECONDS)) {
 					throw new TimeoutException("timed out");
 				}
 
@@ -508,6 +511,7 @@ public class AutomaticContextPropagationTest {
 					assertThat(subscriberWithContext.complete).isTrue();
 				}
 				else {
+					assertThat(subscriberWithContext.error.get()).isInstanceOfAny(ExpectedException.class, TimeoutException.class);
 					assertThat(subscriberWithContext.valueInOnError.get()).isEqualTo("present");
 				}
 			});
@@ -660,7 +664,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void fluxRetryWhenSwitchingThread() {
 			assertThreadLocalsPresentInFlux(() ->
-					Flux.error(new RuntimeException("Oops"))
+					Flux.error(new ExpectedException("Oops"))
 					    .retryWhen(Retry.from(f -> threadSwitchingFlux())));
 		}
 
@@ -971,6 +975,20 @@ public class AutomaticContextPropagationTest {
 			});
 		}
 
+		// see https://github.com/reactor/reactor-core/issues/3762
+		@Test
+		void fluxLiftOnEveryOperator() {
+			Function<? super Publisher<Object>, ? extends Publisher<Object>>
+					everyOperatorLift = Operators.lift((a, b) -> b);
+
+			Hooks.onEachOperator("testEveryOperatorLift", everyOperatorLift);
+
+			assertThreadLocalsPresentInFlux(() -> Flux.just("Hello").hide()
+			                                          .publish().refCount().map(s -> s));
+
+			Hooks.resetOnEachOperator();
+		}
+
 		@Test
 		void fluxFlatMapSequential() {
 			assertThreadLocalsPresentInFlux(() ->
@@ -981,7 +999,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void fluxOnErrorResume() {
 			assertThreadLocalsPresentInFlux(() ->
-					Flux.error(new RuntimeException("Oops"))
+					Flux.error(new ExpectedException("Oops"))
 					    .onErrorResume(t -> threadSwitchingFlux()));
 		}
 
@@ -1014,7 +1032,7 @@ public class AutomaticContextPropagationTest {
 			// missing along the way in the chain.
 			assertThreadLocalsPresent(
 					Flux.just("Hello").concatWith(Flux.never())
-					    .sampleFirst(s -> new ThreadSwitchingFlux<>(new RuntimeException("oops"), executorService)));
+					    .sampleFirst(s -> new ThreadSwitchingFlux<>(new ExpectedException("oops"), executorService)));
 		}
 
 		@Test
@@ -1220,7 +1238,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void monoRetryWhenSwitchingThread() {
 			assertThreadLocalsPresentInMono(() ->
-					Mono.error(new RuntimeException("Oops"))
+					Mono.error(new ExpectedException("Oops"))
 					    .retryWhen(Retry.from(f -> threadSwitchingMono())));
 		}
 
@@ -1378,7 +1396,7 @@ public class AutomaticContextPropagationTest {
 		@Test
 		void monoOnErrorResume() {
 			assertThreadLocalsPresentInMono(() ->
-					Mono.error(new RuntimeException("oops"))
+					Mono.error(new ExpectedException("oops"))
 							.onErrorResume(e -> threadSwitchingMono()));
 		}
 
@@ -1593,6 +1611,63 @@ public class AutomaticContextPropagationTest {
 			assertThreadLocalsPresentInFlux(() ->
 					new ThreadSwitchingParallelFlux<>("Hello", executorService)
 							.sorted(Comparator.naturalOrder()));
+		}
+
+		// ConnectableFlux tests
+
+		@Test
+		void threadSwitchingAutoConnect() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingConnectableFlux().autoConnect());
+		}
+
+		@Test
+		void threadSwitchingRefCount() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingConnectableFlux().refCount());
+		}
+
+		@Test
+		void threadSwitchingRefCountGrace() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingConnectableFlux().refCount(1, Duration.ofMillis(100)));
+		}
+
+		@Test
+		void threadSwitchingPublishAutoConnect() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().publish().autoConnect());
+		}
+
+		@Test
+		void threadSwitchingPublishRefCount() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().publish().refCount());
+		}
+
+		@Test
+		void threadSwitchingPublishRefCountGrace() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().publish().refCount(1, Duration.ofMillis(100)));
+		}
+
+		@Test
+		void threadSwitchingMonoPublish() {
+			assertThreadLocalsPresentInMono(() -> threadSwitchingMono().publish(Function.identity()));
+		}
+
+		@Test
+		void threadSwitchingMonoPublishSwitchingThread() {
+			assertThreadLocalsPresentInMono(() -> threadSwitchingMono().publish(m -> threadSwitchingMono()));
+		}
+
+		@Test
+		void threadSwitchingReplayAutoConnect() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().replay(1).autoConnect());
+		}
+
+		@Test
+		void threadSwitchingReplayRefCount() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().replay(1).refCount());
+		}
+
+		@Test
+		void threadSwitchingReplayRefCountGrace() {
+			assertThreadLocalsPresentInFlux(() -> threadSwitchingFlux().replay(1).refCount(1,	Duration.ofMillis(100)));
 		}
 
 		// Sinks tests
@@ -1875,6 +1950,13 @@ public class AutomaticContextPropagationTest {
 			}
 		}
 
+		private class ExpectedException extends RuntimeException {
+
+			public ExpectedException(String message) {
+				super(message);
+			}
+			
+		}
 		private class CoreSubscriberWithContext<T> implements CoreSubscriber<T> {
 
 			final AtomicReference<String>    valueInOnNext;

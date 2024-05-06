@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		while (i < subscribers.length) {
 			CoreSubscriber<? super O> actual = s[i];
 			CoreSubscriber<? super I> converted =
-					Objects.requireNonNull(liftFunction.lifter.apply(source, Operators.restoreContextOnSubscriberIfAutoCPEnabled(source, actual)),
-							"Lifted subscriber MUST NOT be null");
+					// No need to wrap actual for CP, the Operators$LiftFunction handles it.
+					Objects.requireNonNull(liftFunction.lifter.apply(source, actual), "Lifted subscriber MUST NOT be null");
 
 			Objects.requireNonNull(converted, "Lifted subscriber MUST NOT be null");
 

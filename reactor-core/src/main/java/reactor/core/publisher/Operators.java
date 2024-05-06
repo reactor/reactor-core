@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1024,7 +1024,7 @@ public abstract class Operators {
 
 	static <T> CoreSubscriber<T> restoreContextOnSubscriber(Publisher<?> publisher, CoreSubscriber<T> subscriber) {
 		if (publisher instanceof Fuseable) {
-			return new FluxContextWriteRestoringThreadLocals.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+			return new FluxContextWriteRestoringThreadLocalsFuseable.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
 					subscriber, subscriber.currentContext());
 		} else {
 			return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
@@ -2701,7 +2701,17 @@ public abstract class Operators {
 			}
 
 			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-					effectiveLifter = (pub, sub) -> lifter.apply(Scannable.from(pub), restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
+					effectiveLifter =
+					// For CP, we wrap the result that the user-provided lifter
+					// returns, but we also wrap the actual sub if lifting happens on
+					// top of a custom Publisher so that user's lifter can also see
+					// have the Context properly restored to ThreadLocal values.
+					(pub, sub) -> {
+						CoreSubscriber<? super I> userLiftedSub =
+								lifter.apply(Scannable.from(pub),
+										restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
+						return restoreContextOnSubscriberIfPublisherNonInternal(pub, userLiftedSub);
+					};
 
 			return new LiftFunction<>(effectiveFilter, effectiveLifter, lifter.toString());
 		}
@@ -2710,7 +2720,19 @@ public abstract class Operators {
 				@Nullable Predicate<Publisher> filter,
 				BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 			Objects.requireNonNull(lifter, "lifter");
-			return new LiftFunction<>(filter, lifter, lifter.toString());
+			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+					effectiveLifter =
+					// For CP, we wrap the result that the user-provided lifter
+					// returns, but we also wrap the actual sub if lifting happens on
+					// top of a custom Publisher so that user's lifter can also see
+					// have the Context properly restored to ThreadLocal values.
+					(pub, sub) -> {
+						CoreSubscriber<? super I> userLiftedSub =
+								lifter.apply(pub,
+										restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
+						return restoreContextOnSubscriberIfPublisherNonInternal(pub, userLiftedSub);
+					};
+			return new LiftFunction<>(filter, effectiveLifter, lifter.toString());
 		}
 
 		private LiftFunction(@Nullable Predicate<Publisher> filter,
