@@ -1,5 +1,4 @@
 root_level: 0
-#component_versions: '*'
 build:
     publish: false
 asciidoc:
