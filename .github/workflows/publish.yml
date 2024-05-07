@@ -71,7 +71,7 @@ jobs:
 
   # Build the docs-zip antora doc for the current branch, and upload generated docs-zip to workflow run.
   # JDK21 is used because the antora plugin requires a JDK17 compatible version.
-  # Each deploy jobs can then download the docs-zip into ./docs/build/distributions/ in order to let it be included in published artifacts.
+  # Each deploy job can then download the docs-zip to ./docs/build/distributions/ in order to let it be included in published artifacts.
   # (see gradle/setup.gradle publications which includes docs zip file, if found from docs/build/distributions directory)
   build-docs-zip:
     runs-on: ubuntu-20.04
