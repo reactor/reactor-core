@@ -92,7 +92,7 @@ is well explained in the [official docs](https://docs.oracle.com/en/java/javase/
 ### Building the doc
 
 The current active shell JDK version must be compatible with JDK17 or higher for Antora to build successfully.
-So, just ensure that you have installed JDK 21, as previously described and make it as the current one. 
+So, just ensure that you have installed JDK 21, as described above and make it as the current one. 
 
 Then you can build the antora documentation like this:
 ```shell
