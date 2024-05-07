@@ -32,7 +32,7 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      uses: gradle/actions/setup-gradle@e24011a3b5db78bd5ab798036042d9312002f252 # tag=v3
+      uses: gradle/actions/setup-gradle@db19848a5fa7950289d3668fb053140cf3028d43 # tag=v3
       with:
         arguments: check -x jcstress
 
