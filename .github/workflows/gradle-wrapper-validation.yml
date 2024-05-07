@@ -6,5 +6,5 @@ jobs:
     name: "validation"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # tag=v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # tag=v4
       - uses: gradle/wrapper-validation-action@b231772637bb498f11fdbc86052b6e8a8dc9fc92 # tag=v1
