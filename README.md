@@ -99,7 +99,7 @@ Then you can build the antora documentation like this:
 ./gradlew docs
 ```
 
-The documentation is generated in `docs/build/site/index.html` and in `distribution docs/build/distributions/reactor-core-<version-docs.zip` 
+The documentation is generated in `docs/build/site/index.html` and in `docs/build/distributions/reactor-core-<version-docs.zip` 
 
 ## Getting Started
 
