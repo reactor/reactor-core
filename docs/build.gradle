@@ -30,7 +30,6 @@ def isCommandAvailable(String command) {
 }
 
 antora {
-    //version = "$antoraVersion"
     version = libs.versions.antora.version
     playbook = findProperty('antora.playbook') ?: "antora-playbook.yml"
     options = ['--clean', '--stacktrace']
