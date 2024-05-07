@@ -30,7 +30,6 @@ asciidoc:
     hide-uri-scheme: '@'
     tabs-sync-option: '@'
     chomp: 'all'
-    # Adhust the following attributes (they comes from reactor-netty)
     doctype: book
     icons: font
     toc2: true
