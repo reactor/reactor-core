@@ -88,6 +88,7 @@ ext {
 nohttp {
 	source.exclude "docs/modules/ROOT/assets/highlight/**"
 	source.exclude "docs/.gradle/**"
+	source.exclude "docs/build/**"
 	source.exclude "**/build/reports/tests/**/*.html"
 	allowlistFile = project.file('codequality/nohttp/allowlist.lines')
 }
