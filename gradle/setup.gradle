@@ -112,24 +112,26 @@ publishing {
 			artifact javadocJar
 			//consider adding extra artifacts here, conditionally on submodule's name and perhaps in an afterEvaluate block
 			afterEvaluate {
-				// Find the docs project (it's not a java project, so we need to lookup it)
-				def docsProject = project.findProject(':docs')
-				if (docsProject) {
-					// Access the docsZip task from the docs project
-					def docsZipTask = docsProject.tasks.findByName('docsZip')
-					if (docsZipTask) {
-						// Add the docsZip task as an artifact
-						artifact docsZipTask
+				if (project.name == 'reactor-core') {
+					// Find the docs project; if found, include docsZip in published artifacts.
+					// The docs project isn't loaded if the current JDK version is below JDK17,
+					// as it requires a current JDK17+ compatibility for the Antora Gradle plugin (see settings.gradle)
+					def docsProject = project.findProject(':docs')
+					if (docsProject) {
+						artifact docsProject.tasks.docsZip
 					}
-				}
-				else {
-					// If the current JDK version is JDK8, the docs project is not loaded (see settings.gradle), so
-					// docsTask is not available. In this case, include the docsZip file path directly as an artifact, if it exists.
-					// (it may exist in case the docs have been previously built using a JDK17 compatible JDK).
-					def docsZipFile = file("${rootDir}/docs/build/distributions/reactor-core-${project.version}-docs.zip")
-					if (docsZipFile.exists()) {
-						artifact(docsZipFile) {
-							classifier 'docs'
+					else {
+						// docs project not found, indicating a current JDK version below JDK17.
+						// Assuming the docs zip was built with JDK17+ previously, manually check for the docsZip in
+						// docs/build/distributions/, and include it in the published artifact if found
+						def docsZipFile = file("${rootDir}/docs/build/distributions/reactor-core-${project.version}-docs.zip")
+						if (docsZipFile.exists()) {
+							artifact(docsZipFile) {
+								classifier 'docs'
+							}
+						}
+						else {
+							logger.warn("Antora docs zip not found from docs/ project. Use JDK 17+ to include docs in published artifacts.")
 						}
 					}
 				}
