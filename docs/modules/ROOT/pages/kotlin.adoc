@@ -80,7 +80,7 @@ declarations and expressive "`value or no value`" semantics without paying the c
 (Kotlin allows using functional constructs with nullable values. See this
 https://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
 
-Although Java does not let one express null safety in its type-system, Reactor xref:kotlin.adoc#kotlin-null-safety[now provides null safety]
+Although Java does not let one express null safety in its type-system, Reactor xref:advancedFeatures/null-safety.adoc[now provides null safety]
  of the whole Reactor API through tooling-friendly annotations declared
 in the `reactor.util.annotation` package.
 By default, types from Java APIs used in Kotlin are recognized as
