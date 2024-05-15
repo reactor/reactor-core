@@ -198,6 +198,23 @@ configure(subprojects) { p ->
 			}
 		}
 	}
+
+	if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+		// If the JDK version is less than 17, the 'docs' subproject is not loaded, and therefore, the 'antora' or 'docs' tasks are unavailable.
+		// Display a friendly error message indicating that JDK 17 or higher is required
+
+		task antora {
+			doLast {
+				throw new GradleException("antora task requires JDK 17 or higher.")
+			}
+		}
+
+		task docs {
+			doLast {
+				throw new GradleException("docs task requires JDK 17 or higher")
+			}
+		}
+	}
 }
 
 configure(subprojects) { p ->
