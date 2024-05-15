@@ -1,5 +1,6 @@
 [[producing]]
 = Programmatically creating a sequence
+
 In this section, we introduce the creation of a `Flux` or a `Mono` by
 programmatically defining its associated events (`onNext`, `onError`, and
 `onComplete`). All these methods share the fact that they expose an API to
