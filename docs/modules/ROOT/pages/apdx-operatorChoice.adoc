@@ -25,7 +25,7 @@ I want to deal with:
 
 * xref:apdx-operatorChoice.adoc#which.blocking[Going Back to the Synchronous World]
 
-* xref:apdx-operatorChoice.adoc#which.multicasting[Multicasting a {javadoc}/reactor/core/publisher/Flux.html[Flux] to several https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscriber.html?is-external=true[Subscribers]]
+* xref:apdx-operatorChoice.adoc#which.multicasting[Multicasting a Flux to several Subscribers]
 
 [[which.create]]
 === Creating a New Sequence...
