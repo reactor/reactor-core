@@ -1,8 +1,7 @@
-
-= Meters and tags for Reactor-Core-Micrometer module
+== Meters and tags for Reactor-Core-Micrometer module
 
 [[micrometer-details-metrics]]
-== `Micrometer.metrics()`
+=== `Micrometer.metrics()`
 Below is the list of meters used by the metrics tap listener feature, as exposed via
 `Micrometer.metrics(MeterRegistry meterRegistry)`.
 
@@ -10,19 +9,19 @@ IMPORTANT: Please note that metrics below use a dynamic `%s` prefix.
 When applied on a `Flux` or `Mono` that uses the `name(String n)` operator, this is replaced with `n`.
 Otherwise, this is replaced by the default value of `"reactor"`.
 
-include::partial$meterListener_metrics.adoc[leveloffset=2]
+include::partial$meterListener_metrics.adoc[leveloffset=3]
 
 [[micrometer-details-timedScheduler]]
-== `Micrometer.timedScheduler()`
+=== `Micrometer.timedScheduler()`
 Below is the list of meters used by the TimedScheduler feature, as exposed via
 `Micrometer.timedScheduler(Scheduler original, MeterRegistry meterRegistry, String metricsPrefix)`.
 
 IMPORTANT: Please note that metrics below use a dynamic `%s` prefix. This is replaced with the provided `metricsPrefix` in practice.
 
-include::partial$timedScheduler_metrics.adoc[leveloffset=2]
+include::partial$timedScheduler_metrics.adoc[leveloffset=3]
 
 [[micrometer-details-observation]]
-== `Micrometer.observation()`
+=== `Micrometer.observation()`
 Below is the list of meters used by the observation tap listener feature, as exposed via
 `Micrometer.observation(ObservationRegistry registry)`.
 
@@ -32,4 +31,4 @@ NOTE: You can also fully customize Micrometer's Observation via
 `Micrometer.observation(ObservationRegistry registry, Function<ObservationRegistry, Observation> observationSupplier)`
 with your own Observation supplier, allowing to configure its attributes (name, contextual name, low and high cardinality keys, ...).
 
-include::partial$observation_metrics.adoc[leveloffset=2]
+include::partial$observation_metrics.adoc[leveloffset=3]

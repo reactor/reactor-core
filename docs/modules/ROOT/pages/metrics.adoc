@@ -168,4 +168,4 @@ listenToEvents()
 <5> with a custom `ObservationConvention`
 <6> and a custom `Supplier<Context>`.
 
-include::metrics-details.adoc[]
+include::metrics-details.adoc[levelOffset=1]
