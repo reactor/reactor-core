@@ -25,5 +25,16 @@
 ** xref:advanced-contextPropagation.adoc[]
 ** xref:advancedFeatures/cleanup.adoc[]
 ** xref:advancedFeatures/null-safety.adoc[]
-* xref:appendices.adoc[]
+* Appendices
+** xref:apdx-operatorChoice.adoc[Which operator do I need?]
+** xref:apdx-howtoReadMarbles.adoc[How to read marble diagrams?]
+** xref:faq.adoc[FAQ, Best Practices, and "How do I...?]
+** xref:apdx-reactorExtra.adoc[Reactor-Extra]
+//TODO later add appendices about internals, writing operators, fusion
+//include::apdx-implem.adoc[levelOffset=1]
+//include::apdx-writingOperator.adoc[levelOffset=1]
+//include::apdx-optimizations.adoc[levelOffset=1]
+//TODO later add appendix about migrating from RxJava?
+//include::apdx-migrating.adoc[levelOffset=1]
+
 
