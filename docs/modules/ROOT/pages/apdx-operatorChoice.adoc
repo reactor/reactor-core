@@ -21,7 +21,7 @@ I want to deal with:
 
 * xref:apdx-operatorChoice.adoc#which.time[Working with Time]
 
-* xref:apdx-operatorChoice.adoc#which.window[Splitting a {javadoc}/reactor/core/publisher/Flux.html[Flux]]
+* xref:apdx-operatorChoice.adoc#which.window[Splitting a Flux]
 
 * xref:apdx-operatorChoice.adoc#which.blocking[Going Back to the Synchronous World]
 
