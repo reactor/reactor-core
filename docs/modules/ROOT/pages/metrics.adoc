@@ -42,7 +42,7 @@ submitted through the wrapper instance returned by `Micrometer#timedScheduler` a
 
 See xref:metrics-details.adoc#micrometer-details-timedScheduler[Micrometer.timedScheduler()] for produced meters and associated default tags.
 
-FIXME reactor-monitoring-demo won't be in sync with 3.5.0 anymore
+// FIXME reactor-monitoring-demo won't be in sync with 3.5.0 anymore
 //TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/master/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics.
 
 [[publisher-metrics]]
