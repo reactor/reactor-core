@@ -13,9 +13,9 @@ I want to deal with:
 
 * xref:apdx-operatorChoice.adoc#which.values[Transforming an Existing Sequence]
 
-* xref:apdx-operatorChoice.adoc#which.filtering[Filtering a Sequence]
-
 * xref:apdx-operatorChoice.adoc#which.peeking[Peeking into a Sequence]
+
+* xref:apdx-operatorChoice.adoc#which.filtering[Filtering a Sequence]
 
 * xref:apdx-operatorChoice.adoc#which.errors[Handling Errors]
 
