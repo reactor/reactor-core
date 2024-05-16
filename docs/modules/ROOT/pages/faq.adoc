@@ -6,6 +6,7 @@ This section covers the following content:
 * xref:faq.adoc#faq.wrap-blocking[How Do I Wrap a Synchronous, Blocking Call?]
 * xref:faq.adoc#faq.chain[I Used an Operator on my `Flux` but it Doesn't Seem to Apply. What Gives?]
 * xref:faq.adoc#faq.monoThen[My `Mono` `zipWith` or `zipWhen` is never called]
+* xref:faq.adoc#faq.monoZipEmptyCompletion[Using `zip` along with empty-completed publishers]
 * xref:faq.adoc#faq.retryWhen[How to Use `retryWhen` to Emulate `retry(3)`?]
 * xref:faq.adoc#faq.exponentialBackoff[How can I use `retryWhen` for Exponential Backoff?]
 * xref:faq.adoc#faq.thread-affinity-publishon[How Do I Ensure Thread Affinity when I Use `publishOn()`?]
