@@ -1,0 +1,24 @@
+name: reactor
+version: true
+title: Reactor 3 Reference Guide
+start_page: aboutDoc.adoc
+nav:
+  - modules/ROOT/nav.adoc
+ext:
+  collector:
+    run:
+      command: gradlew -q "-Dorg.gradle.jvmargs=-Xmx3g -XX:+HeapDumpOnOutOfMemoryError" :docs:generateAntoraResources
+      local: true
+    scan:
+      dir: ./build/generated-antora-resources
+
+asciidoc:
+  attributes:
+    attribute-missing: 'warn'
+    chomp: 'all'
+    source-language: java
+    reactor-github-repo: 'https://github.com/reactor/reactor-core/tree/main'
+    javadoc: 'https://projectreactor.io/docs/core/{project-version}/api'
+    author:
+      - Stephane Maldini
+      - Simon Baslé

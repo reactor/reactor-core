@@ -1,0 +1,22 @@
+[[core-features]]
+= Reactor Core Features
+
+The Reactor project main artifact is `reactor-core`, a reactive library that focuses on
+the Reactive Streams specification and targets Java 8.
+
+Reactor introduces composable reactive types that implement `Publisher` but also provide
+a rich vocabulary of operators: `Flux` and `Mono`. A `Flux` object
+represents a reactive sequence of 0..N items, while a `Mono` object represents a
+single-value-or-empty (0..1) result.
+
+This distinction carries a bit of semantic information into the type, indicating the
+rough cardinality of the asynchronous processing. For instance, an HTTP request produces
+only one response, so there is not much sense in doing a `count` operation. Expressing
+the result of such an HTTP call as a `Mono<HttpResponse>` thus makes more sense than
+expressing it as a `Flux<HttpResponse>`, as it offers only operators that are relevant to
+a context of zero items or one item.
+
+Operators that change the maximum cardinality of the processing also switch to the
+relevant type. For instance, the `count` operator exists in `Flux`, but it returns a
+`Mono<Long>`.
+

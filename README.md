@@ -89,6 +89,18 @@ When the installations succeed, try to refresh the project and see that it build
 The manual Operation-system specific JDK installation
 is well explained in the [official docs](https://docs.oracle.com/en/java/javase/20/install/overview-jdk-installation.html)
 
+### Building the doc
+
+The current active shell JDK version must be compatible with JDK17 or higher for Antora to build successfully.
+So, just ensure that you have installed JDK 21, as described above and make it as the current one. 
+
+Then you can build the antora documentation like this:
+```shell
+./gradlew docs
+```
+
+The documentation is generated in `docs/build/site/index.html` and in `docs/build/distributions/reactor-core-<version-docs.zip` 
+
 ## Getting Started
 
 New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Core hands-on](https://github.com/reactor/lite-rx-api-hands-on) !

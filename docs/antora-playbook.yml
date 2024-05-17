@@ -1,0 +1,51 @@
+antora:
+  extensions:
+    - '@springio/antora-extensions/partial-build-extension'
+    # atlas-extension must be before latest-version-extension so latest versions are applied to imported versions
+    - '@antora/atlas-extension'
+    - require: '@springio/antora-extensions/latest-version-extension'
+    - require: '@springio/antora-extensions/inject-collector-cache-config-extension'
+    - '@antora/collector-extension'
+    - id: pdf-extension # pdf-extension is enabled from antora-docs.gradle
+      require: '@antora/pdf-extension'
+      enabled: false
+    - require: '@springio/antora-extensions/root-component-extension'
+      root_component_name: 'reactor'
+site:
+  title: Reactor Core Reference Guide
+  url: https://projectreactor.io/docs/core/release/reference
+content:
+  sources:
+    - url: ./..
+      branches: HEAD
+      start_path: docs
+      worktrees: true
+asciidoc:
+  extensions:
+    - '@asciidoctor/tabs'
+    - '@springio/asciidoctor-extensions'
+  attributes:
+    page-stackoverflow-url: https://stackoverflow.com/tags/project-reactor
+    page-pagination: ''
+    hide-uri-scheme: '@'
+    tabs-sync-option: '@'
+    chomp: 'all'
+    doctype: book
+    icons: font
+    toc2: true
+    sectnums: true
+    sectanchors: true
+    source-highlighter: highlightjs
+    highlightjsdir: modules/ROOT/assets/highlight
+    highlightjs-theme: railscasts
+  sourcemap: true
+urls:
+  latest_version_segment: ''
+runtime:
+  log:
+    failure_level: warn
+    format: pretty
+ui:
+  bundle:
+    url: https://github.com/reactor/antora-ui-projectreactor/releases/download/latest/ui-bundle.zip
+    snapshot: true
