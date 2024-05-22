@@ -97,8 +97,4 @@ public class FluxBufferTimeoutBenchmark {
 			countDown();
 		}
 	}
-
-	public static void main(String[] args) {
-
-	}
 }
