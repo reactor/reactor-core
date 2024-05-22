@@ -131,36 +131,52 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final static class BufferTimeoutWithBackpressureSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
-		final @Nullable Logger                    logger;
-		final @Nullable StateLogger               stateLogger;
-		final           CoreSubscriber<? super C> actual;
-		final           int                       batchSize;
-		final           int                       prefetch;
-		final           long                      timeSpan;
-		final           TimeUnit                  unit;
-		final           Scheduler.Worker          timer;
-		final           Supplier<C>               bufferSupplier;
-		private final   Disposable.Swap           currentTimeoutTask = Disposables.swap();
+		private final @Nullable Logger                    logger;
+		private final @Nullable StateLogger               stateLogger;
+		private final           CoreSubscriber<? super C> actual;
+		private final           int                       batchSize;
+		private final           int                       prefetch;
+		private final           int                       replenishMark;
+		private final           long                      timeSpan;
+		private final           TimeUnit                  unit;
+		private final           Scheduler.Worker          timer;
+		private final           Supplier<C>               bufferSupplier;
+		private final           Disposable.Swap           currentTimeoutTask = Disposables.swap();
+		private final           Queue<T>                  queue;
 
 		private @Nullable Subscription subscription;
-		private           Queue<T>     queue;
 
 		private @Nullable Throwable error;
+		/**
+		 * Flag used to mark that the operator is definitely done processing all state
+		 * transitions.
+		 */
 		private           boolean   done;
-		// Access to outstanding is always guarded by volatile access to state so it
-		// needn't be volatile. It is also only ever accessed in the drain method so it
-		// needn't be part of state either.
+		/**
+		 * Access to outstanding is always guarded by volatile access to state, so it
+		 * needn't be volatile. It is also only ever accessed in the drain method, so
+		 * it needn't be part of state either.
+		*/
 		private           int       outstanding;
 
-		// tracks unsatisfied downstream demand (expressed in # of buffers)
+		/**
+		 * Tracks unsatisfied downstream demand (expressed in # of buffers). Package
+		 * visibility for testing purposes.
+		 */
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		private AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> REQUESTED =
+		private static final AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "requested");
 
-		volatile long state;
+		/**
+		 * The state field serves as the coordination point for multiple actors. The
+		 * surrounding implementation works as a state machine that provides mutual
+		 * exclusion with lock-free semantics. It uses bit masks to divide a 64-bit
+		 * long value for multiple concerns while maintaining atomicity with CAS operations.
+		 */
+		private volatile long state;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> STATE =
+		private static final AtomicLongFieldUpdater<BufferTimeoutWithBackpressureSubscriber> STATE =
 				AtomicLongFieldUpdater.newUpdater(BufferTimeoutWithBackpressureSubscriber.class, "state");
 
 		static final long CANCELLED_FLAG            =
@@ -176,8 +192,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		static final long INDEX_MASK                =
 				0b0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_1111_1111_1111_1111_1111_1111L;
 
-		static final int INDEX_SHIFT = 0;
-		static final int REQUESTED_INDEX_SHIFT = 32;
+		private static final int INDEX_SHIFT = 0;
+		private static final int REQUESTED_INDEX_SHIFT = 32;
 
 		public BufferTimeoutWithBackpressureSubscriber(
 				CoreSubscriber<? super C> actual,
@@ -196,10 +212,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.logger = logger;
 			this.stateLogger = logger != null ? new StateLogger(logger) : null;
 			this.prefetch = batchSize << 2;
+			this.replenishMark = batchSize << 1;
 			this.queue = Queues.<T>get(prefetch).get();
 		}
 
-		private void trace(Logger logger, String msg) {
+		private static void trace(Logger logger, String msg) {
 			logger.trace(String.format("[%s][%s]", Thread.currentThread().getId(), msg));
 		}
 
@@ -228,45 +245,13 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				}
 
 				long previousState;
-				for (;;) {
-					previousState = this.state;
-
-					if (queue.isEmpty() && (isTerminated(previousState) || isCancelled(previousState))) {
-						return;
-					}
-
-					if (hasWorkInProgress(previousState)) {
-						// We let the active worker know about a change in demand.
-						long nextState = incrementRequestIndex(previousState);
-						if (STATE.compareAndSet(this, previousState, nextState)) {
-							if (this.stateLogger != null) {
-								this.stateLogger.log(this.toString(), "req", previousState,	nextState);
-							}
-							// If the state was replaced but there was work in progress,
-							// before leaving the protected section the working actor
-							// will notice an update and loop again to pick up the
-							// demand increase. If the active actor was done before our
-							// update, this update would have failed and we'd loop
-							// again to see the current state.
-							return;
-						}
-						// CAS failed, retry
-						continue;
-					}
-
-					long nextState = previousState | HAS_WORK_IN_PROGRESS_FLAG;
-
-					if (STATE.compareAndSet(this, previousState, nextState)) {
-						if (this.stateLogger != null) {
-							this.stateLogger.log(this.toString(), "req", previousState, nextState);
-						}
-						break;
-					}
+				previousState = forceAddWork(this,
+						BufferTimeoutWithBackpressureSubscriber::incrementRequestIndex);
+				if (!hasWorkInProgress(previousState)) {
+					// If there was no demand before - try to fulfill the demand if there
+					// are buffered values.
+					drain(previouslyRequested == 0);
 				}
-
-				// if there was no demand before - try to fulfill the demand if there
-				// are buffered values
-				drain(previouslyRequested == 0);
 			}
 		}
 
@@ -289,14 +274,15 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						this.actual.currentContext());
 				Operators.onDiscard(t, this.actual.currentContext());
 			}
-			long previousState = this.state;
+
+			long previousState;
 
 			if (enqueued) {
 				// Only onNext increments the index. Drain can set it to 0 when it
 				// flushes. However, timeout does not reset it to 0, it has its own
 				// flag.
-				boolean terminated = false;
 				previousState = forceAddWork(this, state -> incrementIndex(state, 1));
+
 				// We can only fire the timer once we increment the index first so that
 				// the timer doesn't fire first as it would consume the element and try
 				// to decrement the index below 0.
@@ -308,11 +294,13 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						currentTimeoutTask.update(disposable);
 					} catch (RejectedExecutionException e) {
 						this.error = Operators.onRejectedExecution(e, subscription, null, t, actual.currentContext());
-						previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+						previousState = forceAddWork(this,
+								BufferTimeoutWithBackpressureSubscriber::setTerminated);
 					}
 				}
 			} else {
-				previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+				previousState = forceAddWork(this,
+						BufferTimeoutWithBackpressureSubscriber::setTerminated);
 			}
 
 			if (!hasWorkInProgress(previousState)) {
@@ -328,7 +316,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				return;
 			}
 
-			long previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTimedOut);
+			long previousState = forceAddWork(this,
+					BufferTimeoutWithBackpressureSubscriber::setTimedOut);
 
 			if (!hasWorkInProgress(previousState)) {
 				drain(false);
@@ -363,7 +352,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				return;
 			}
 
-			long previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+			long previousState = forceAddWork(this,
+					BufferTimeoutWithBackpressureSubscriber::setTerminated);
 
 			if (!hasWorkInProgress(previousState)) {
 				drain(false);
@@ -383,20 +373,27 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				subscription.cancel();
 			}
 
-			long previousState = forceAddWork(this, BufferTimeoutWithBackpressureSubscriber::setCancelled);
+			long previousState = forceAddWork(this,
+					BufferTimeoutWithBackpressureSubscriber::setCancelled);
 
 			if (!hasWorkInProgress(previousState)) {
 				drain(false);
 			}
 		}
 
-		// Draining doesn't ensure exclusive access - the caller is responsible for
-		// ensuring that.
+		/**
+		 * Drain the queue and perform any actions that result from the current state.
+		 * Ths method must only be called when the caller ensured exclusive access.
+		 * That means that it successfully indicated there's work by setting the WIP flag.
+		 *
+		 * @param resumeDemand {@code true} if the previous {@link #requested demand}
+		 *                                      value was 0.
+		 */
 		private void drain(boolean resumeDemand) {
+			if (logger != null) {
+				trace(logger, "drain start");
+			}
 			for (;;) {
-				if (logger != null) {
-					trace(logger, "drain start");
-				}
 				long previousState = this.state;
 				long currentState = previousState;
 
@@ -417,7 +414,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 					int consumed = 0;
 					if (logger != null) {
-						trace(logger, "should flush: " + shouldFlush + " currentRequest: " + currentRequest + " index: " + index + " isTerminated: " + isTerminated(currentState) + " isTimedOut: " + isTimedOut(currentState));
+						trace(logger, "should flush: " + shouldFlush +
+								" currentRequest: " + currentRequest +
+								" index: " + index +
+								" isTerminated: " + isTerminated(currentState) +
+								" isTimedOut: " + isTimedOut(currentState));
 					}
 					if (shouldFlush) {
 						currentTimeoutTask.update(null);
@@ -426,9 +427,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 							if (logger != null) {
 								trace(logger, "flushed: " + consumedNow);
 							}
-							// Need to make sure that if work is added we clear the
+							// We need to make sure that if work is added we clear the
 							// resumeDemand with which we entered the drain loop as the
-							// state is now different
+							// state is now different.
 							resumeDemand = false;
 							if (consumedNow == 0) {
 								break;
@@ -441,7 +442,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 								break;
 							}
 						}
-
 					}
 
 					boolean terminated = isTerminated(currentState);
@@ -450,9 +450,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						outstanding -= consumed;
 					}
 					if (!terminated && currentRequest > 0) {
-						// request more from upstream
+						// Request more from upstream.
 						int remaining = this.outstanding;
-						int replenishMark = prefetch >> 1; // TODO: create field limit instead
 						if (remaining < replenishMark) {
 							requestMore(prefetch - remaining);
 						}
@@ -500,7 +499,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			element = queue.poll();
 			if (element == null) {
-				// there is demand, but queue is empty
+				// There is demand, but the queue is empty.
 				return 0;
 			}
 			buffer = bufferSupplier.get();
@@ -536,7 +535,19 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		private static long bitwiseInc(long state, long mask, long shift, int amount) {
+		/*
+		 Below are bit field operations that aid in transitioning the state machine.
+		 An actual update to the state field is achieved with force* method prefix.
+		 The try* prefix indicates that if an update is unsuccessful it will return with
+		 the current state value instead of the intended one.
+		 In these stateful operations we use the StateLogger to indicate transitions
+		 happening. Below are the 3-letter acronyms used:
+		 - faw = forceAddWork
+		 - fup = forceUpdate
+		 - wcl = WIP cleared (meaning work-in-progress and request fields were cleared)
+		*/
+
+		private static long bitwiseIncrement(long state, long mask, long shift, int amount) {
 			long shiftAndAdd = ((state & mask) >> shift) + amount;
 			long shiftBackAndLimit = (shiftAndAdd << shift) & mask;
 			long clearedState = state & ~mask;
@@ -560,7 +571,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		private static long incrementRequestIndex(long state) {
-			return bitwiseInc(state, REQUESTED_INDEX_MASK, REQUESTED_INDEX_SHIFT, 1);
+			return bitwiseIncrement(state, REQUESTED_INDEX_MASK, REQUESTED_INDEX_SHIFT, 1);
 		}
 
 		private static long getIndex(long state) {
@@ -568,7 +579,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		private static long incrementIndex(long state, int amount) {
-			return bitwiseInc(state, INDEX_MASK, INDEX_SHIFT, amount);
+			return bitwiseIncrement(state, INDEX_MASK, INDEX_SHIFT, amount);
 		}
 
 		private static boolean hasWorkInProgress(long state) {
@@ -591,7 +602,21 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			return (state & TIMEOUT_FLAG) == TIMEOUT_FLAG;
 		}
 
-		private static long forceAddWork(BufferTimeoutWithBackpressureSubscriber<?, ?> instance, Function<Long, Long> f) {
+		/**
+		 * Force a state update and return the state that the update is based upon.
+		 * If the state was replaced but there was work in progress, before leaving the
+		 * protected section the working actor will notice an update and loop again to
+		 * pick up the update (e.g. demand increase). If there was no active actor or
+		 * the active actor was done before our update, the caller of this method is
+		 * obliged to check whether the returned value (the previousState) had WIP flag
+		 * set. In case it was not, it should call the drain procedure.
+		 *
+		 * @param instance target of CAS operations
+		 * @param f transformation to apply to state
+		 * @return state value on which the effective update is based (previousState)
+		 */
+		private static long forceAddWork(
+				BufferTimeoutWithBackpressureSubscriber<?, ?> instance, Function<Long, Long> f) {
 			for (;;) {
 				long previousState = instance.state;
 				long nextState = f.apply(previousState) | HAS_WORK_IN_PROGRESS_FLAG;
@@ -607,7 +632,19 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			}
 		}
 
-		private static long forceUpdate(BufferTimeoutWithBackpressureSubscriber<?, ?> instance, Function<Long, Long> f) {
+		/**
+		 * Unconditionally force the state transition and return the new state instead
+		 * of the old one. The caller has no way to know whether the update happened
+		 * while something else had WIP flag set. Therefore, this method can only be
+		 * used in the drain procedure where the caller knows that the WIP flag is set
+		 * and doesn't need to make that inference.
+		 *
+		 * @param instance target of CAS operations
+		 * @param f transformation to apply to state
+		 * @return effective state value (nextState)
+		 */
+		private static long forceUpdate(
+				BufferTimeoutWithBackpressureSubscriber<?, ?> instance, Function<Long, Long> f) {
 			for (;;) {
 				long previousState = instance.state;
 				long nextState = f.apply(previousState);
@@ -623,7 +660,25 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			}
 		}
 
-		private static <T, C extends Collection<? super T>> long tryClearWip(BufferTimeoutWithBackpressureSubscriber<T, C> instance, long expectedState) {
+		/**
+		 * Attempt to clear the work-in-progress (WIP) flag. If the current state
+		 * doesn't match the expected state, the current state is returned and the flag
+		 * is not cleared. Otherwise, the effective new state is returned that has:
+		 * <ul>
+		 *     <li>WIP cleared</li>
+		 *     <li>Requested index cleared</li>
+		 * </ul>
+		 *
+		 * @param instance target of CAS operations
+		 * @param expectedState the state reading on which the caller bases the
+		 *                            intention to remove the WIP flag. In case it's
+		 *                            currently different, the caller should repeat the
+		 *                            drain procedure to notice any updates.
+		 * @return current state value (currentState in case of expectations
+		 * mismatch or nextState in case of successful WIP clearing)
+		 */
+		private static <T, C extends Collection<? super T>> long tryClearWip(
+				BufferTimeoutWithBackpressureSubscriber<T, C> instance, long expectedState) {
 			for (;;) {
 				final long currentState = instance.state;
 
@@ -631,7 +686,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					return currentState;
 				}
 
-				// remove both WIP and requested_index so that we avoid overflowing
+				// Remove both WIP and requested_index so that we avoid overflowing
 				long nextState = currentState & ~HAS_WORK_IN_PROGRESS_FLAG & ~REQUESTED_INDEX_MASK;
 				if (STATE.compareAndSet(instance, currentState, nextState)) {
 					if (instance.stateLogger != null) {
