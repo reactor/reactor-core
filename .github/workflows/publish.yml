@@ -265,8 +265,9 @@ jobs:
 
   cleanup:
     name: Cleanup docs-zip artifact
-    needs: [ deploySnapshot, tagRelease, tagMilestone ]
-    if: always() # cleanup always run after all needed jobs, regardless of whether they were successful
+    needs: [ prepare, build-docs-zip, deploySnapshot, deployMilestone, deployRelease, tagMilestone, tagRelease ]
+    # Don't cleanup if any dependent job has failed.
+    if: ${{ always() && !contains(join(needs.*.result, ','), 'failure') }}
     runs-on: ubuntu-20.04
     permissions:
       actions: write
