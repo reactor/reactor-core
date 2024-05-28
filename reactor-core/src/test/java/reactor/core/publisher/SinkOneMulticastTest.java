@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscriber;
@@ -324,7 +325,7 @@ class SinkOneMulticastTest {
 		sink.subscribe(scannable);
 
 		assertThat(sink.inners())
-			.asList()
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
 			.as("after subscriptions")
 			.hasSize(2)
 			.extracting(l -> (Object) ((SinkOneMulticast.Inner<?>) l).actual())
