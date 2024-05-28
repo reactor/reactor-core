@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -682,7 +683,7 @@ public class SinkManyReplayProcessorTest {
 		sink.asFlux().subscribe(scannable);
 
 		assertThat(sink.inners())
-				.asList()
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
 				.as("after subscriptions")
 				.hasSize(2)
 				.extracting(l -> (Object) ((SinkManyReplayProcessor.ReplayInner<?>) l).actual)
