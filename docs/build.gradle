@@ -42,7 +42,7 @@ antora {
             logger.log(LogLevel.DEBUG, "enabling antora pdf-extension")
             options.add('--extension=pdf-extension')
         } else {
-            logger.lifecycle("PDF not generated, asciidoctor-pdf not found from the PATH.")
+            throw new GradleException("PDF cannot be generated, asciidoctor-pdf not found from the PATH.")
         }
     }
 
