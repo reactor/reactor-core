@@ -95,7 +95,7 @@ jobs:
         with:
           name: ${{ env.DOCS_ZIP }}
           path: ${{ env.DOCS_ZIP_PATH }}
-          retention-days: 1
+          retention-days: 3
           if-no-files-found: error
 
   #deploy the snapshot artifacts to Artifactory
@@ -265,9 +265,8 @@ jobs:
 
   cleanup:
     name: Cleanup docs-zip artifact
-    needs: [ prepare, build-docs-zip, deploySnapshot, deployMilestone, deployRelease, tagMilestone, tagRelease ]
-    # Don't cleanup if any dependent job has failed.
-    if: ${{ always() && !contains(join(needs.*.result, ','), 'failure') }}
+    needs: [ deploySnapshot, tagRelease, tagMilestone ]
+    if: always() && (needs.deploySnapshot.result == 'success' || needs.tagRelease.result == 'success' || needs.tagMilestone.result == 'success')
     runs-on: ubuntu-20.04
     permissions:
       actions: write
