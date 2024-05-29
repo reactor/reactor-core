@@ -99,7 +99,18 @@ Then you can build the antora documentation like this:
 ./gradlew docs
 ```
 
-The documentation is generated in `docs/build/site/index.html` and in `docs/build/distributions/reactor-core-<version-docs.zip` 
+The documentation is generated in `docs/build/site/index.html` and in `docs/build/distributions/reactor-core-<version>-docs.zip` 
+If a PDF file should also be included in the generated docs zip file, then you need to specify `-PforcePdf` option:
+
+```shell
+./gradlew docs -PforcePdf
+```
+Notice that PDF generation requires the `asciidoctor-pdf` command to be available in the PATH. 
+For example, on Mac OS, you can install such command like this:
+
+```shell
+brew install asciidoctor
+```
 
 ## Getting Started
 
