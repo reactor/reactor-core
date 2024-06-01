@@ -19,9 +19,13 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -407,6 +411,17 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void supplierUsesSet() {
+		Flux.just(1, 1, 2)
+			.<Set<Integer>>buffer(2, HashSet::new)
+			.take(1, true)
+			.as(StepVerifier::create)
+			.expectNext(Stream.of(1, 2).collect(Collectors.toSet()))
+			.expectComplete()
+			.verify(Duration.ofSeconds(2));
 	}
 
 	@Test
