@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class StateLogger {
 					formatState(committedState, 64)), new RuntimeException());
 		}
 		else {
-			this.logger.trace(String.format("[%s][%s][%s][%s-%s]",
+			this.logger.trace(String.format("[%s][%s][%s][\n\t%s\n\t%s]",
 					instance,
 					action,
 					Thread.currentThread()
