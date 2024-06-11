@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -914,6 +914,8 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final FlatMapMain<?, R> parent;
 
+		final Context context;
+
 		final int prefetch;
 
 		final int limit;
@@ -943,6 +945,8 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			this.prefetch = prefetch;
 //			this.limit = prefetch >> 2;
 			this.limit = Operators.unboundedOrLimit(prefetch);
+			this.context = parent == null ? null : parent.currentContext();
+
 		}
 
 		@Override
@@ -1018,7 +1022,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return context;
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,17 +314,20 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
+		final Context context;
+
 		final Operators.MultiSubscriptionSubscriber<T, T> arbiter;
 
 		TimeoutOtherSubscriber(CoreSubscriber<? super T> actual,
 				Operators.MultiSubscriptionSubscriber<T, T> arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;
+			this.context = actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return actual.currentContext();
+			return context;
 		}
 
 		@Override
@@ -381,6 +384,8 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		final TimeoutMainSubscriber<?, ?> main;
 
+		final Context context;
+
 		final long index;
 
 		volatile Subscription s;
@@ -392,12 +397,13 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		TimeoutTimeoutSubscriber(TimeoutMainSubscriber<?, ?> main, long index) {
 			this.main = main;
+			this.context = main.currentContext();
 			this.index = index;
 		}
 
 		@Override
 		public Context currentContext() {
-			return main.currentContext();
+			return context;
 		}
 
 		@Override

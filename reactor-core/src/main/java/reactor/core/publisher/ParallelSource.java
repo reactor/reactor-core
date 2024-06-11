@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,8 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 	static final class ParallelSourceMain<T> implements InnerConsumer<T> {
 
 		final CoreSubscriber<? super T>[] subscribers;
+
+		final Context context;
 		
 		final AtomicLongArray requests;
 
@@ -137,6 +139,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 		ParallelSourceMain(CoreSubscriber<? super T>[] subscribers, int prefetch,
 				Supplier<Queue<T>> queueSupplier) {
 			this.subscribers = subscribers;
+			this.context = subscribers[0].currentContext();
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
 			this.limit = Operators.unboundedOrLimit(prefetch);
@@ -165,7 +168,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 
 		@Override
 		public Context currentContext() {
-			return subscribers[0].currentContext();
+			return context;
 		}
 
 		@Override

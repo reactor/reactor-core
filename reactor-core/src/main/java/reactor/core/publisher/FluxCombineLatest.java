@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -567,6 +567,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 
 		final CombineLatestCoordinator<T, ?> parent;
 
+		final Context context;
+
 		final int index;
 
 		final int prefetch;
@@ -586,6 +588,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 				int index,
 				int prefetch) {
 			this.parent = parent;
+			this.context = (parent == null || parent.actual == null) ? null : parent.actual.currentContext();
 			this.index = index;
 			this.prefetch = prefetch;
 			this.limit = Operators.unboundedOrLimit(prefetch);
@@ -593,7 +596,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 		
 		@Override
 		public Context currentContext() {
-			return parent.actual.currentContext();
+			return context;
 		}
 
 		@Override

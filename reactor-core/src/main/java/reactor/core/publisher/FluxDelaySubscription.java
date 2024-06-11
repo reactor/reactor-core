@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,8 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 
 		final CoreSubscriber<? super T> actual;
 
+		final Context context;
+
 		Subscription s;
 
 		boolean done;
@@ -80,11 +82,12 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 				Consumer<FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U>> source) {
 			this.actual = actual;
 			this.source = source;
+			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return actual.currentContext();
+			return context;
 		}
 
 		@Override
@@ -159,15 +162,18 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 
 		final DelaySubscriptionOtherSubscriber<?, ?> arbiter;
 
+		final Context context;
+
 		DelaySubscriptionMainSubscriber(CoreSubscriber<? super T> actual,
 				DelaySubscriptionOtherSubscriber<?, ?> arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;
+			this.context = arbiter == null ? null : arbiter.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return arbiter.currentContext();
+			return context;
 		}
 
 		@Override

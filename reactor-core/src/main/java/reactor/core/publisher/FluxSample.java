@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -233,8 +233,11 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 	static final class SampleOther<T, U> implements InnerConsumer<U> {
 		final SampleMainSubscriber<T> main;
 
+		final Context context;
+
 		SampleOther(SampleMainSubscriber<T> main) {
 			this.main = main;
+			this.context = main.currentContext();
 		}
 
 		@Override
@@ -251,7 +254,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return main.currentContext();
+			return context;
 		}
 
 		@Override

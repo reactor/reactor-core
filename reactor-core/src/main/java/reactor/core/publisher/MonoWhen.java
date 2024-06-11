@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -355,6 +355,8 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 		final WhenCoordinator parent;
 
+		final Context context;
+
 		volatile Subscription s;
 		static final AtomicReferenceFieldUpdater<WhenInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(WhenInner.class,
@@ -364,6 +366,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 		WhenInner(WhenCoordinator parent) {
 			this.parent = parent;
+			this.context = parent.actual.currentContext();
 		}
 
 		@Override
@@ -390,7 +393,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 		@Override
 		public Context currentContext() {
-			return parent.actual.currentContext();
+			return context;
 		}
 
 		@Override
