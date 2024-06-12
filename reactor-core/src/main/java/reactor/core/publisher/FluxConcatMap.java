@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -837,19 +837,16 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final FluxConcatMapSupport<?, R> parent;
 
-		final Context context;
-
 		long produced;
 
 		ConcatMapInner(FluxConcatMapSupport<?, R> parent) {
 			super(Operators.emptySubscriber());
 			this.parent = parent;
-			this.context = parent == null ? null : parent.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Nullable

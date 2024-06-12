@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -490,8 +490,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final JoinSupport<?> parent;
 
-		final Context context;
-
 		final boolean isLeft;
 
 		volatile Subscription subscription;
@@ -505,8 +503,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		LeftRightSubscriber(JoinSupport<?> parent, boolean isLeft) {
 			this.parent = parent;
 			this.isLeft = isLeft;
-			this.context = (parent == null || parent.actual() == null) ? null :
-					parent.actual().currentContext();
 		}
 
 		@Override
@@ -516,7 +512,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.actual().currentContext();
 		}
 
 		@Override
@@ -564,8 +560,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final JoinSupport<?> parent;
 
-		final Context context;
-
 		final boolean isLeft;
 
 		final int index;
@@ -580,7 +574,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		LeftRightEndSubscriber(JoinSupport<?> parent, boolean isLeft, int index) {
 			this.parent = parent;
-			this.context = (parent == null || parent.actual() == null) ? null : parent.actual().currentContext();
 			this.isLeft = isLeft;
 			this.index = index;
 		}
@@ -631,7 +624,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.actual().currentContext();
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,11 +303,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			implements InnerConsumer<U> {
 
 		final BufferBoundaryMain<?, U, ?> main;
-		final Context context;
 
 		BufferBoundaryOther(BufferBoundaryMain<?, U, ?> main) {
 			this.main = main;
-			this.context = main == null ? null : main.currentContext();
 		}
 
 		@Override
@@ -319,7 +317,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return main.currentContext();
 		}
 
 		@Override

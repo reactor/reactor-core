@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,18 +219,15 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 		final CoreSubscriber<? super R> actual;
 
-		final Context context;
-
 		FlatMapManyInner(FlatMapManyMain<?, R> parent,
 				CoreSubscriber<? super R> actual) {
 			this.parent = parent;
 			this.actual = actual;
-			this.context = actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override

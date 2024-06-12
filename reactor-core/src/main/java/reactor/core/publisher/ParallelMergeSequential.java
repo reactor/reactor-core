@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -349,8 +349,6 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	static final class MergeSequentialInner<T> implements InnerConsumer<T> {
 		
 		final MergeSequentialMain<T> parent;
-
-		final Context context;
 		
 		final int prefetch;
 		
@@ -369,7 +367,6 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		
 		MergeSequentialInner(MergeSequentialMain<T> parent, int prefetch) {
 			this.parent = parent;
-			this.context = parent.actual.currentContext();
 			this.prefetch = prefetch ;
 			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
@@ -390,7 +387,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.actual.currentContext();
 		}
 
 		@Override

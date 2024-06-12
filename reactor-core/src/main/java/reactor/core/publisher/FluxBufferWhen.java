@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -444,16 +444,14 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenOpenSubscriber.class, Subscription.class, "subscription");
 
 		final BufferWhenMainSubscriber<?, OPEN, ?, ?> parent;
-		final Context context;
 
 		BufferWhenOpenSubscriber(BufferWhenMainSubscriber<?, OPEN, ?, ?> parent) {
 			this.parent = parent;
-			this.context = parent == null ? null : parent.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Override
@@ -512,18 +510,16 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 
 		final BufferWhenMainSubscriber<T, ?, ?, BUFFER> parent;
 		final long                                      index;
-		final Context context;
 
 
 		BufferWhenCloseSubscriber(BufferWhenMainSubscriber<T, ?, ?, BUFFER> parent, long index) {
 			this.parent = parent;
 			this.index = index;
-			this.context = parent == null ? null : parent.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Override

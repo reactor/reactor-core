@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,6 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 			           SynchronousSink<R> {
 
 		final CoreSubscriber<? super R>                 actual;
-		final Context                                   context;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
@@ -81,7 +80,6 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
@@ -97,13 +95,11 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		@Deprecated
 		public Context currentContext() {
 			return actual.currentContext();
-//			return context;
 		}
 
 		@Override
 		public ContextView contextView() {
 			return actual.currentContext();
-//			return context;
 		}
 
 		@Override
@@ -285,9 +281,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 	static final class HandleConditionalSubscriber<T, R>
 			implements Fuseable.ConditionalSubscriber<T>, InnerOperator<T, R>,
 			           SynchronousSink<R> {
-
 		final Fuseable.ConditionalSubscriber<? super R> actual;
-		final Context                                   context;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
@@ -300,18 +294,17 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
 		@Deprecated
 		public Context currentContext() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override
 		public ContextView contextView() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override

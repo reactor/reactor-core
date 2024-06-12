@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,22 +36,19 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
 	final Publisher<OUT> downstream;
 	final Subscriber<IN> upstream;
-	final Context context;
 
 	DelegateProcessor(Publisher<OUT> downstream,
 			Subscriber<IN> upstream) {
 		this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
 		this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
-		if(upstream instanceof CoreSubscriber){
-			this.context = ((CoreSubscriber<?>)upstream).currentContext();
-		} else {
-			this.context = Context.empty();
-		}
 	}
 
 	@Override
 	public Context currentContext() {
-		return this.context;
+		if(upstream instanceof CoreSubscriber){
+			return ((CoreSubscriber<?>)upstream).currentContext();
+		}
+		return Context.empty();
 	}
 
 	@Override

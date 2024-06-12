@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -415,7 +415,6 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 	static final class FilterWhenInner implements InnerConsumer<Boolean> {
 
 		final FluxFilterWhenSubscriber<?> parent;
-		final Context                     context;
 		final boolean                     cancelOnNext;
 
 		boolean done;
@@ -428,12 +427,11 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		FilterWhenInner(FluxFilterWhenSubscriber<?> parent, boolean cancelOnNext) {
 			this.parent = parent;
 			this.cancelOnNext = cancelOnNext;
-			this.context = parent == null ? null : parent.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Override

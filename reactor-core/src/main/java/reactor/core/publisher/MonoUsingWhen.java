@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,6 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 	static class ResourceSubscriber<S, T> extends DeferredSubscription implements InnerConsumer<S> {
 
 		final CoreSubscriber<? super T>                                        actual;
-		final Context                                                          context;
 		final Function<? super S, ? extends Mono<? extends T>>                 resourceClosure;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
@@ -159,7 +158,6 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel,
 				boolean isMonoSource) {
 			this.actual = Objects.requireNonNull(actual, "actual");
-			this.context = actual.currentContext();
 			this.resourceClosure = Objects.requireNonNull(resourceClosure, "resourceClosure");
 			this.asyncComplete = Objects.requireNonNull(asyncComplete, "asyncComplete");
 			this.asyncError = Objects.requireNonNull(asyncError, "asyncError");
@@ -169,7 +167,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override

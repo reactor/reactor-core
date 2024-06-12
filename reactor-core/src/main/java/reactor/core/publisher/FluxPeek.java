@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,8 +94,6 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 
 		final CoreSubscriber<? super T> actual;
 
-		final Context context;
-
 		final SignalPeek<T> parent;
 
 		Subscription s;
@@ -105,7 +103,6 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 		PeekSubscriber(CoreSubscriber<? super T> actual, SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
@@ -120,7 +117,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 
 		@Override
 		public Context currentContext() {
-			Context c = context;
+			Context c = actual.currentContext();
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
 				parent.onCurrentContextCall().accept(c);
 			}

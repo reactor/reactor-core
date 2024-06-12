@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,9 +291,6 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 	static final class FilterWhenInner<T> implements InnerConsumer<Boolean> {
 
 		final MonoFilterWhenMain<T> parent;
-
-		final Context context;
-
 		/** should the filter publisher be cancelled once we received the first value? */
 		final boolean               cancelOnNext;
 
@@ -305,7 +302,6 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 
 		FilterWhenInner(MonoFilterWhenMain<T> parent, boolean cancelOnNext, T value) {
 			this.parent = parent;
-			this.context = parent == null ? null : parent.currentContext();
 			this.cancelOnNext = cancelOnNext;
 			this.value = value;
 		}
@@ -361,7 +357,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -439,8 +439,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final SwitchMapMain<?, R> parent;
 
-		final Context context;
-
 		final int prefetch;
 
 		final int limit;
@@ -463,7 +461,6 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		SwitchMapInner(SwitchMapMain<?, R> parent, int prefetch, long index) {
 			this.parent = parent;
-			this.context = parent == null ? null : parent.currentContext();
 			this.prefetch = prefetch;
 			this.limit = Operators.unboundedOrLimit(prefetch);
 			this.index = index;
@@ -471,7 +468,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Override

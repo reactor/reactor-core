@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -290,7 +290,6 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 	static final class EqualSubscriber<T>
 			implements InnerConsumer<T> {
 		final EqualCoordinator<T> parent;
-		final Context             context;
 		final Queue<T>            queue;
 		final int                 prefetch;
 
@@ -305,14 +304,13 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 
 		EqualSubscriber(EqualCoordinator<T> parent, int prefetch) {
 			this.parent = parent;
-			this.context = parent.actual.currentContext();
 			this.prefetch = prefetch;
 			this.queue = Queues.<T>get(prefetch).get();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.actual.currentContext();
 		}
 
 		@Override

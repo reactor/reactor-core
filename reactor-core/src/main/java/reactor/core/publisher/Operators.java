@@ -2640,16 +2640,13 @@ public abstract class Operators {
 
 		final CoreSubscriber<T> delegate;
 
-		final Context context;
-
 		ConditionalSubscriberAdapter(CoreSubscriber<T> delegate) {
 			this.delegate = delegate;
-			this.context = delegate.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return delegate.currentContext();
 		}
 
 		@Override
@@ -2789,9 +2786,7 @@ public abstract class Operators {
 	/*package*/ static class MonoInnerProducerBase<O>
 			implements InnerProducer<O> {
 
-		final CoreSubscriber<? super O> actual;
-
-		final Context context;
+		private final CoreSubscriber<? super O> actual;
 
 		/**
 		 * The value stored by this Mono operator.
@@ -2805,7 +2800,6 @@ public abstract class Operators {
 
 		public MonoInnerProducerBase(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
-			this.context = actual.currentContext();
 		}
 
 		@Override

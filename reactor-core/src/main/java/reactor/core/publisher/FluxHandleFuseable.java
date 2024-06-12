@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,6 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 			           SynchronousSink<R> {
 
 		final CoreSubscriber<? super R>                 actual;
-		final Context                                   context;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean   done;
@@ -96,18 +95,17 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
 		@Deprecated
 		public Context currentContext() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override
 		public ContextView contextView() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override
@@ -439,7 +437,6 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 			           QueueSubscription<R>, SynchronousSink<R> {
 
 		final ConditionalSubscriber<? super R>          actual;
-		final Context                                   context;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean   done;
@@ -455,18 +452,17 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
 		@Deprecated
 		public Context currentContext() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@Override
 		public ContextView contextView() {
-			return context;
+			return actual.currentContext();
 		}
 
 		@SuppressWarnings("unchecked")

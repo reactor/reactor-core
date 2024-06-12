@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -591,8 +591,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final ZipSingleCoordinator<T, ?> parent;
 
-		final Context context;
-
 		final int index;
 
 		volatile Subscription s;
@@ -607,13 +605,12 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		ZipSingleSubscriber(ZipSingleCoordinator<T, ?> parent, int index) {
 			this.parent = parent;
-			this.context = parent.currentContext();
 			this.index = index;
 		}
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.currentContext();
 		}
 
 		@Override
@@ -1047,8 +1044,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final ZipCoordinator<T, ?> parent;
 
-		final Context context;
-
 		final int prefetch;
 
 		final int limit;
@@ -1077,7 +1072,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				int index,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.parent = parent;
-			this.context = parent.actual.currentContext();
 			this.prefetch = prefetch;
 			this.index = index;
 			this.queueSupplier = queueSupplier;
@@ -1131,7 +1125,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return parent.actual.currentContext();
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,8 +96,6 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 
 		final CoreSubscriber<? super T> actual;
 
-		final Context context;
-
 		final SignalPeek<T> parent;
 
 		QueueSubscription<T> s;
@@ -120,12 +118,11 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			Context c = context;
+			Context c = actual.currentContext();
 			final Consumer<? super Context> contextHook = parent.onCurrentContextCall();
 			if(!c.isEmpty() && contextHook != null) {
 				contextHook.accept(c);
@@ -392,8 +389,6 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 
 		final ConditionalSubscriber<? super T> actual;
 
-		final Context context;
-
 		final SignalPeek<T> parent;
 
 		QueueSubscription<T> s;
@@ -406,12 +401,11 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
-			this.context = actual == null ? null : actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			Context c = context;
+			Context c = actual.currentContext();
 			final Consumer<? super Context> contextHook = parent.onCurrentContextCall();
 			if(!c.isEmpty() && contextHook != null) {
 				contextHook.accept(c);
@@ -754,8 +748,6 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 
 		final ConditionalSubscriber<? super T> actual;
 
-		final Context context;
-
 		final SignalPeek<T> parent;
 
 		Subscription s;
@@ -766,12 +758,11 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
-			this.context = actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			Context c = context;
+			Context c = actual.currentContext();
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
 				parent.onCurrentContextCall().accept(c);
 			}
