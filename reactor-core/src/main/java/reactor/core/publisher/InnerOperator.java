@@ -30,6 +30,7 @@ interface InnerOperator<I, O>
 
 	@Override
 	default Context currentContext() {
-		return actual().currentContext();
+		return Context.empty();
+//		return actual().currentContext();
 	}
 }
