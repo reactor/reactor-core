@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -464,12 +464,14 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 	static final class WeakScalarSubscription<T> implements Subscription {
 
 		final CoreSubscriber<? super T> actual;
+		final Context context;
 		final T                     value;
 		boolean once;
 
 		WeakScalarSubscription(T value, CoreSubscriber<? super T> actual) {
 			this.value = value;
 			this.actual = actual;
+			this.context = actual.currentContext();
 		}
 
 		@Override
@@ -484,7 +486,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void cancel() {
-			Operators.onDiscard(value, actual.currentContext());
+			Operators.onDiscard(value, this.context);
 		}
 	}
 
@@ -492,6 +494,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 			implements FluxConcatMapSupport<T, R> {
 
 		final CoreSubscriber<? super R> actual;
+
+		final Context context;
 
 		final ConcatMapInner<R> inner;
 
@@ -536,6 +540,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 				Supplier<? extends Queue<T>> queueSupplier,
 				int prefetch, boolean veryEnd) {
 			this.actual = actual;
+			this.context = actual.currentContext();
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
@@ -609,10 +614,9 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 				drain();
 			}
 			else if (!queue.offer(t)) {
-				Context ctx = actual.currentContext();
 				onError(Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
-						ctx));
-				Operators.onDiscard(t, ctx);
+						this.context));
+				Operators.onDiscard(t, this.context);
 			}
 			else {
 				drain();
@@ -626,7 +630,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.context);
 			}
 		}
 
@@ -649,7 +653,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void innerError(Throwable e) {
-			e = Operators.onNextInnerError(e, currentContext(), s);
+			e = Operators.onNextInnerError(e, this.context, s);
 			if(e != null) {
 				if (Exceptions.addThrowable(ERROR, this, e)) {
 					if (!veryEnd) {
@@ -660,7 +664,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 					drain();
 				}
 				else {
-					Operators.onErrorDropped(e, actual.currentContext());
+					Operators.onErrorDropped(e, this.context);
 				}
 			}
 			else {
@@ -680,7 +684,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 				inner.cancel();
 				s.cancel();
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				Operators.onDiscardQueueWithClear(queue, this.context, null);
 			}
 		}
 
@@ -713,7 +717,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 							v = queue.poll();
 						}
 						catch (Throwable e) {
-							actual.onError(Operators.onOperatorError(s, e, actual.currentContext()));
+							actual.onError(Operators.onOperatorError(s, e, this.context));
 							return;
 						}
 
@@ -739,7 +743,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 							}
 							catch (Throwable e) {
 								if (ctx == null) {
-									ctx = actual.currentContext();
+									ctx = this.context;
 								}
 								Operators.onDiscard(v, ctx);
 								Throwable e_ = Operators.onNextError(v, e, ctx, s);
@@ -775,7 +779,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 								catch (Throwable e) {
 									//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
 									if (ctx == null) {
-										ctx = actual.currentContext();
+										ctx = this.context;
 									}
 									Throwable e_ = Operators.onNextError(v, e, ctx);
 									if (e_ == null) {
@@ -836,17 +840,19 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
 		final FluxConcatMapSupport<?, R> parent;
+		final Context context;
 
 		long produced;
 
 		ConcatMapInner(FluxConcatMapSupport<?, R> parent) {
 			super(Operators.emptySubscriber());
 			this.parent = parent;
+			this.context = parent.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return this.context;
 		}
 
 		@Nullable

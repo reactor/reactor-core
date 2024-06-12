@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 /**
@@ -206,6 +207,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			implements InnerProducer<T>, SynchronousSubscription<T>, Consumer<T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context context;
 
 		final Spliterator<? extends T> spliterator;
 		final boolean knownToBeFinite;
@@ -250,6 +252,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		IterableSubscription(CoreSubscriber<? super T> actual,
 							 Spliterator<? extends T> spliterator, boolean knownToBeFinite, @Nullable Runnable onClose) {
 			this.actual = actual;
+			this.context = actual.currentContext();
 			this.spliterator = spliterator;
 			this.knownToBeFinite = knownToBeFinite;
 			this.onClose = onClose;
@@ -303,7 +306,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					onClose.run();
 				}
 				catch (Throwable t) {
-					Operators.onErrorDropped(t, actual.currentContext());
+					Operators.onErrorDropped(t, this.context);
 				}
 			}
 		}
@@ -432,8 +435,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		public void cancel() {
 			onCloseWithDropError();
 			cancelled = true;
-			Operators.onDiscard(nextElement, actual.currentContext());
-			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, actual.currentContext());
+			Operators.onDiscard(nextElement, this.context);
+			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, this.context);
 		}
 
 		@Override
@@ -454,8 +457,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		@Override
 		public void clear() {
-			Operators.onDiscard(nextElement, actual.currentContext());
-			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, actual.currentContext());
+			Operators.onDiscard(nextElement, this.context);
+			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, this.context);
 			state = STATE_NO_NEXT;
 		}
 
@@ -535,6 +538,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			implements InnerProducer<T>, SynchronousSubscription<T>, Consumer<T> {
 
 		final ConditionalSubscriber<? super T> actual;
+		final Context context;
 
 		final Spliterator<? extends T> spliterator;
 		final boolean               knownToBeFinite;
@@ -579,6 +583,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
 										Spliterator<? extends T> spliterator, boolean knownToBeFinite, @Nullable Runnable onClose) {
 			this.actual = actual;
+			this.context = actual.currentContext();
 			this.spliterator = spliterator;
 			this.knownToBeFinite = knownToBeFinite;
 			this.onClose = onClose;
@@ -632,7 +637,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					onClose.run();
 				}
 				catch (Throwable t) {
-					Operators.onErrorDropped(t, actual.currentContext());
+					Operators.onErrorDropped(t, this.context);
 				}
 			}
 		}
@@ -763,8 +768,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		public void cancel() {
 			onCloseWithDropError();
 			cancelled = true;
-			Operators.onDiscard(this.nextElement, actual.currentContext());
-			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, actual.currentContext());
+			Operators.onDiscard(this.nextElement, this.context);
+			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, this.context);
 		}
 
 		@Override
@@ -785,8 +790,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		@Override
 		public void clear() {
-			Operators.onDiscard(this.nextElement, actual.currentContext());
-			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, actual.currentContext());
+			Operators.onDiscard(this.nextElement, this.context);
+			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, this.context);
 			state = STATE_NO_NEXT;
 		}
 
