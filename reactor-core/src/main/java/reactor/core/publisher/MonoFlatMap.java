@@ -268,7 +268,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		FlatMapInner(FlatMapMain<?, R> parent) {
 			this.parent = parent;
-			this.context = parent.currentContext();
+			this.context = parent != null ? parent.currentContext() : null;
 		}
 
 		@Override
