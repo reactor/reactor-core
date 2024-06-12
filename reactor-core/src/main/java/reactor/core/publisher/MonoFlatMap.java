@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,8 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		final CoreSubscriber<? super R> actual;
 
+		final Context context;
+
 		boolean done;
 
 		Subscription s;
@@ -84,6 +86,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		FlatMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Mono<? extends R>> mapper) {
 			this.actual = actual;
+			this.context = actual.currentContext();
 			this.mapper = mapper;
 		}
 
@@ -121,7 +124,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.context);
 				return;
 			}
 			done = true;
@@ -134,7 +137,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			}
 			catch (Throwable ex) {
 				actual.onError(Operators.onOperatorError(s, ex, t,
-						actual.currentContext()));
+						this.context));
 				return;
 			}
 
@@ -147,7 +150,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 				}
 				catch (Throwable ex) {
 					actual.onError(Operators.onOperatorError(s, ex, t,
-							actual.currentContext()));
+							this.context));
 					return;
 				}
 
@@ -166,14 +169,14 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			}
 			catch (Throwable e) {
 				actual.onError(Operators.onOperatorError(this, e, t,
-						actual.currentContext()));
+						this.context));
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.context);
 				return;
 			}
 			done = true;
@@ -257,17 +260,20 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		final FlatMapMain<?, R> parent;
 
+		final Context context;
+
 		Subscription s;
 
 		boolean done;
 
 		FlatMapInner(FlatMapMain<?, R> parent) {
 			this.parent = parent;
+			this.context = parent.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return this.context;
 		}
 
 		@Nullable
@@ -298,7 +304,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		@Override
 		public void onNext(R t) {
 			if (done) {
-				Operators.onNextDropped(t, parent.currentContext());
+				Operators.onNextDropped(t, this.context);
 				return;
 			}
 			done = true;
@@ -308,7 +314,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, parent.currentContext());
+				Operators.onErrorDropped(t, this.context);
 				return;
 			}
 			done = true;

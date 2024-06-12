@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -229,6 +229,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		final Supplier<? extends Queue<R>>                          mainQueueSupplier;
 		final Supplier<? extends Queue<R>>                          innerQueueSupplier;
 		final CoreSubscriber<? super R>                             actual;
+		final Context                                               context;
 
 		volatile Queue<R> scalarQueue;
 
@@ -274,6 +275,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				int prefetch,
 				Supplier<? extends Queue<R>> innerQueueSupplier) {
 			this.actual = actual;
+			this.context = actual.currentContext();
 			this.mapper = mapper;
 			this.delayError = delayError;
 			this.maxConcurrency = maxConcurrency;
@@ -356,7 +358,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				cancelled = true;
 
 				if (WIP.getAndIncrement(this) == 0) {
-					Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
+					Operators.onDiscardQueueWithClear(scalarQueue, this.context, null);
 					scalarQueue = null;
 					s.cancel();
 					unsubscribe();
@@ -378,7 +380,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.context);
 				return;
 			}
 
@@ -389,7 +391,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
-				Context ctx = actual.currentContext();
+				Context ctx = this.context;
 				Throwable e_ = Operators.onNextError(t, e, ctx, s);
 				Operators.onDiscard(t, ctx);
 				if (e_ != null) {
@@ -407,7 +409,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
-					Context ctx = actual.currentContext();
+					Context ctx = this.context;
 					//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
 					Throwable e_ = Operators.onNextError(t, e, ctx);
 					if (e_ == null) {
@@ -429,7 +431,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					p = Operators.toFluxOrMono(p);
 					p.subscribe(inner);
 				} else {
-					Operators.onDiscard(t, actual.currentContext());
+					Operators.onDiscard(t, this.context);
 				}
 			}
 
@@ -447,7 +449,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.context);
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -455,7 +457,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				drain(null);
 			}
 			else {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.context);
 			}
 		}
 
@@ -519,7 +521,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				}
 				if (WIP.decrementAndGet(this) == 0) {
 					if (cancelled) {
-						Operators.onDiscard(v, actual.currentContext());
+						Operators.onDiscard(v, this.context);
 					}
 					return;
 				}
@@ -565,7 +567,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				}
 				if (WIP.decrementAndGet(this) == 0) {
 					if (cancelled) {
-						Operators.onDiscard(v, actual.currentContext());
+						Operators.onDiscard(v, this.context);
 					}
 					return;
 				}
@@ -585,7 +587,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		void drain(@Nullable R dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
 				if (dataSignal != null && cancelled) {
-					Operators.onDiscard(dataSignal, actual.currentContext());
+					Operators.onDiscard(dataSignal, this.context);
 				}
 				return;
 			}
@@ -660,7 +662,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
-							Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(scalarQueue, this.context, null);
 							scalarQueue = null;
 							s.cancel();
 							unsubscribe();
@@ -687,10 +689,10 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 									}
 									catch (Throwable ex) {
 										ex = Operators.onOperatorError(inner, ex,
-												actual.currentContext());
+												this.context);
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
 											Operators.onErrorDropped(ex,
-													actual.currentContext());
+													this.context);
 										}
 										v = null;
 										d = true;
@@ -761,7 +763,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
-							Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
+							Operators.onDiscardQueueWithClear(scalarQueue, this.context, null);
 							scalarQueue = null;
 							s.cancel();
 							unsubscribe();
@@ -807,7 +809,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable R value) {
 			if (cancelled) {
-				Context ctx = actual.currentContext();
+				Context ctx = this.context;
 				Operators.onDiscard(value, ctx);
 				Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 				scalarQueue = null;
@@ -836,7 +838,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					Throwable e = error;
 					if (e != null && e != Exceptions.TERMINATED) {
 						e = Exceptions.terminate(ERROR, this);
-						Context ctx = actual.currentContext();
+						Context ctx = this.context;
 						Operators.onDiscard(value, ctx);
 						Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 						scalarQueue = null;
@@ -857,7 +859,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		void innerError(FlatMapInner<R> inner, Throwable e) {
-			e = Operators.onNextInnerError(e, currentContext(), s);
+			e = Operators.onNextInnerError(e, this.context, s);
 			if (e != null) {
 				if (Exceptions.addThrowable(ERROR, this, e)) {
 					if (!delayError) {
@@ -868,7 +870,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				}
 				else {
 					inner.done = true;
-					Operators.onErrorDropped(e, actual.currentContext());
+					Operators.onErrorDropped(e, this.context);
 				}
 			}
 			else {
@@ -880,12 +882,12 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		boolean failOverflow(R v, Subscription toCancel){
 			Throwable e = Operators.onOperatorError(toCancel,
 					Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-					v, actual.currentContext());
+					v, this.context);
 
-			Operators.onDiscard(v, actual.currentContext());
+			Operators.onDiscard(v, this.context);
 
 			if (!Exceptions.addThrowable(ERROR, this, e)) {
-				Operators.onErrorDropped(e, actual.currentContext());
+				Operators.onErrorDropped(e, this.context);
 				return false;
 			}
 			return true;
@@ -914,6 +916,8 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final FlatMapMain<?, R> parent;
 
+		final Context context;
+
 		final int prefetch;
 
 		final int limit;
@@ -940,6 +944,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		FlatMapInner(FlatMapMain<?, R> parent, int prefetch) {
 			this.parent = parent;
+			this.context = parent.currentContext();
 			this.prefetch = prefetch;
 //			this.limit = prefetch >> 2;
 			this.limit = Operators.unboundedOrLimit(prefetch);
@@ -976,12 +981,12 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, parent.currentContext());
+					Operators.onNextDropped(t, this.context);
 					return;
 				}
 
 				if (s == Operators.cancelledSubscription()) {
-					Operators.onDiscard(t, parent.currentContext());
+					Operators.onDiscard(t, this.context);
 					return;
 				}
 
@@ -1018,13 +1023,13 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return this.context;
 		}
 
 		@Override
 		public void cancel() {
 			Operators.terminate(S, this);
-			Operators.onDiscardQueueWithClear(queue, parent.currentContext(), null);
+			Operators.onDiscardQueueWithClear(queue, this.context, null);
 		}
 
 		@Override
