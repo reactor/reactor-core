@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.assertj.core.data.Offset;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -42,6 +45,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.MemoryUtils;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -327,13 +331,13 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	}
 
-	@Test
+	@ParameterizedTestWithName
+	@CsvSource(value = {"1", "2", "3", "4", "0x7fffffff"})
 	@Tag("VirtualTime")
-	public void cacheFluxFused() {
-
+	public void cacheFluxFused(int history) {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
-		                                         .replay()
+		                                         .replay(history)
 		                                         .autoConnect()
 		                                         .elapsed();
 
@@ -345,14 +349,16 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
 		            .verifyComplete();
 
-		StepVerifier.create(source)
-		            .expectFusion(Fuseable.ANY)
-		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
-		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 1)
-		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
-		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
-		            .verifyComplete();
-
+		StepVerifier.Step<Tuple2<Long, Integer>> verifier = StepVerifier.create(source)
+				.expectFusion(Fuseable.ANY)
+				.then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+		for (int i = Math.min(history, 3); i > 0; i--) {
+			int iCpy = 4 - i;
+			verifier.expectNextMatches(
+					t -> t.getT1() == 0 && t.getT2() == iCpy
+			);
+		}
+		verifier.verifyComplete();
 	}
 
 	@Test
@@ -632,9 +638,10 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		ts.assertValueCount(8); //despite unbounded, as it was late it only sees the replay capacity
 	}
 
-	@Test
-	public void cancel() {
-		ConnectableFlux<Integer> replay = Sinks.many().unicast().<Integer>onBackpressureBuffer().asFlux().replay(2);
+	@ParameterizedTestWithName
+	@CsvSource(value = {"1", "2"})
+	public void cancel(int num) {
+		ConnectableFlux<Integer> replay = Sinks.many().unicast().<Integer>onBackpressureBuffer().asFlux().replay(num);
 
 		replay.subscribe(v -> {}, e -> { throw Exceptions.propagate(e); });
 
@@ -727,10 +734,11 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		assertThat(listFromStream).hasSize(1000);
 	}
 
-	@Test
-	public void cacheNotOverrunByMaxPrefetch() {
+	@ParameterizedTestWithName
+	@CsvSource(value = {"1", "5"})
+	public void cacheNotOverrunByMaxPrefetch(int history) {
 		Flux<Integer> s = Flux.range(1, 30)
-		                      .cache(5);
+		                      .cache(history);
 
 		StepVerifier.create(s, 10)
 		    .expectNextCount(10)
@@ -739,14 +747,16 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		    .verifyComplete();
 
 		StepVerifier.create(s)
-		            .expectNextCount(5)
+		            .expectNextCount(history)
 		            .verifyComplete();
 	}
 
-	@Test
-	public void ifSubscribeBeforeConnectThenTrackFurtherRequests() {
-		ConnectableFlux<Long> connectableFlux = Flux.just(1L, 2L, 3L, 4L)
-		                                            .replay(2);
+	@ParameterizedTestWithName
+	@CsvSource(value = {"1","2","3","4"})
+	public void ifSubscribeBeforeConnectThenTrackFurtherRequests(int num) {
+		Long[] nums = {1L, 2L, 3L, 4L};
+		ConnectableFlux<Long> connectableFlux = Flux.fromArray(nums)
+				.replay(num);
 
 		StepVerifier.create(connectableFlux, 1)
 		            .expectSubscription()
@@ -758,29 +768,83 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(10));
 
-		StepVerifier.create(connectableFlux, 1)
-		            .expectNext(3L)
-		            .thenRequest(10)
-		            .expectNext(4L)
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(10));
+		StepVerifier.Step<Long> verifier = StepVerifier.create(connectableFlux, 1)
+				.expectNext(nums[nums.length-num])
+				.thenRequest(10);
+		for (int i=num-1; i > 0; i--) {
+			verifier = verifier.expectNext(nums[nums.length-i]);
+		}
+		verifier.expectComplete()
+				.verify(Duration.ofSeconds(10));
 	}
 
-	@Test
-	public void ifNoSubscriptionBeforeConnectThenPrefetches() {
+	enum NoSubscribtionTestEnum {
+		replay1(
+				1,
+				new Integer[]{24},
+				new Long[]{1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L}
+		),
+		replay2(
+				2,
+				new Integer[]{23, 24},
+				new Long[]{2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L}
+		),
+		replay3(
+				3,
+				new Integer[]{22, 23, 24},
+				new Long[]{3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L}
+		),
+		replay4(
+				4,
+				new Integer[]{21, 22, 23, 24},
+				new Long[]{4L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L}
+		),
+		replay5(
+				5,
+				new Integer[]{20, 21, 22, 23, 24},
+				new Long[]{5L, 4L, 4L, 4L, 4L, 4L, 4L}
+		),
+		replay6(
+				6,
+				new Integer[]{19, 20, 21, 22, 23, 24},
+				new Long[]{6L, 5L, 5L, 5L, 5L}
+		),
+		replay7(
+				7,
+				new Integer[]{18, 19, 20, 21, 22, 23, 24},
+				new Long[]{7L, 6L, 6L, 6L, 6L}
+		),
+		replay8(
+				8,
+				new Integer[]{17, 18, 19, 20, 21, 22, 23, 24},
+				new Long[]{8L, 6L, 6L, 6L, 6L}
+		);
+		final int history;
+		final Integer[] expected;
+		final Long[] requestQueue;
+		NoSubscribtionTestEnum(int history, Integer[] expected, Long[] requestQueue) {
+			this.history = history;
+			this.expected = expected;
+			this.requestQueue = requestQueue;
+		}
+	}
+
+	@ParameterizedTestWithName
+	@EnumSource(NoSubscribtionTestEnum.class)
+	public void ifNoSubscriptionBeforeConnectThenPrefetches(NoSubscribtionTestEnum testdata) {
 		Queue<Long> totalRequested = new ArrayBlockingQueue<>(10);
 		ConnectableFlux<Integer> connectable = Flux.range(1, 24)
 		                                           .doOnRequest(totalRequested::offer)
-		                                           .replay(8);
+		                                           .replay(testdata.history);
 
 		connectable.connect();
 
 		StepVerifier.create(connectable)
-		            .expectNext(17, 18, 19, 20, 21, 22, 23, 24)
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(10));
+					.expectNext(testdata.expected)
+					.expectComplete()
+					.verify(Duration.ofSeconds(10));
 
-		assertThat(totalRequested).containsExactly(8L, 6L, 6L, 6L, 6L);
+		assertThat(totalRequested).containsExactly(testdata.requestQueue);
 	}
 
 	private static final class TwoRequestsSubscriber extends BaseSubscriber<Integer> {
@@ -806,4 +870,58 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		}
 	}
 
+	@Test
+	public void testReplayCacheDoesNotLeak() {
+		FluxReplay.SizeBoundReplayBuffer<Integer> buffer = new FluxReplay.SizeBoundReplayBuffer<>(1);
+		buffer.add(1);
+		assertThat(buffer.head.value).isNull();
+		assertThat(buffer.head.get()).isSameAs(buffer.tail);
+		assertThat(buffer.tail.value).isEqualTo(1);
+		assertThat(buffer.tail.get()).isNull();
+		buffer.add(2);
+		assertThat(buffer.head.value).isNull();
+		assertThat(buffer.head.get()).isSameAs(buffer.tail);
+		assertThat(buffer.tail.value).isEqualTo(2);
+		assertThat(buffer.tail.get()).isNull();
+	}
+
+	static final int UNSET = -1;
+	enum SizeAndCapacityTestData {
+		sizeandtime( i ->
+				new FluxReplay.SizeAndTimeBoundReplayBuffer<>(i, Long.MAX_VALUE, Schedulers.single()),
+				UNSET, UNSET),
+		size( i ->
+				new FluxReplay.SizeBoundReplayBuffer<>(i),
+				UNSET, UNSET),
+		unbounded( i ->
+				new FluxReplay.UnboundedReplayBuffer<>(2),
+				Integer.MAX_VALUE, Integer.MAX_VALUE);
+		final Function<Integer, FluxReplay.ReplayBuffer<Integer>> bufferClass;
+		final int maxSize;
+		final int capacity;
+		SizeAndCapacityTestData(Function<Integer, FluxReplay.ReplayBuffer<Integer>> bufferClass, int maxSize, int capacity) {
+			this.bufferClass = bufferClass;
+			this.maxSize = maxSize;
+			this.capacity = capacity;
+		}
+	}
+
+	@ParameterizedTestWithName
+	@EnumSource(SizeAndCapacityTestData.class)
+	public void sizeAndCapacityTest(SizeAndCapacityTestData testData) {
+		for (int input : new Integer[]{1, 2, 3, 10}) {
+			FluxReplay.ReplaySubscription<Integer> rs = new FluxReplay.ReplayInner<>(null, null);
+			FluxReplay.ReplayBuffer<Integer> buffer = testData.bufferClass.apply(input);
+			assertThat(buffer.capacity()).isEqualTo(testData.capacity == UNSET ? input : testData.capacity);
+
+			assertThat(buffer.size()).isEqualTo(0); // no data added
+			assertThat(buffer.size(rs)).isEqualTo(0); // no data added
+			for (int i = 1; i < input; i++){
+				buffer.add(0);
+				int expectedSize = testData.maxSize != UNSET ? testData.maxSize : i;
+				assertThat(buffer.size()).isEqualTo(Math.min(expectedSize, i));
+				assertThat(buffer.size(rs)).isEqualTo(Math.min(expectedSize, i));
+			}
+		}
+	}
 }
