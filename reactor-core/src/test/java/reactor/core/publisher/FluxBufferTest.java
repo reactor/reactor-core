@@ -421,7 +421,8 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 			.as(StepVerifier::create)
 			.expectNext(Stream.of(1, 2).collect(Collectors.toSet()))
 			.expectComplete()
-			.verify(Duration.ofSeconds(2));
+			.verifyThenAssertThat(Duration.ofSeconds(2))
+			.hasDiscardedExactly(1);
 	}
 
 	@Test
