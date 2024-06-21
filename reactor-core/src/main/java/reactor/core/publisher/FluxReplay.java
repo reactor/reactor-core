@@ -1377,6 +1377,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void dispose() {
+			CONNECTION.compareAndSet(parent, this, null);
 			final long previousState = markDisposed(this);
 			if (isDisposed(previousState)) {
 				return;
@@ -1385,8 +1386,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			if (isSubscribed(previousState)) {
 				s.cancel();
 			}
-
-			CONNECTION.lazySet(parent, null);
 
 			final CancellationException ex = new CancellationException("Disconnected");
 			final ReplayBuffer<T> buffer = this.buffer;
