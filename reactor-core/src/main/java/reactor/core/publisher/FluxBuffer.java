@@ -307,8 +307,11 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 			}
 
 			if (b != null) {
-				b.add(t);
-				if (b.size() == size) {
+				if (!b.add(t)) {
+					Operators.onDiscard(t, this.ctx);
+					s.request(1);
+					return;
+				} else if (b.size() == size) {
 					buffer = null;
 					actual.onNext(b);
 				}
@@ -478,6 +481,19 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 				return;
 			}
 
+			C b0 = peek();
+
+			for (C b : this) {
+				// It should never be the case that an element can be added to the first open
+				// buffer and not all of them. Otherwise, the buffer behavior is non-deterministic,
+				// and this operator's behavior is undefined.
+				if (!b.add(t) && b == b0) {
+					Operators.onDiscard(t, actual.currentContext());
+					s.request(1);
+					return;
+				}
+			}
+
 			long i = index;
 
 			if (i % skip == 0L) {
@@ -494,23 +510,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 					return;
 				}
 
+				b.add(t);
 				offer(b);
 			}
 
-			C b = peek();
-
-			if (b != null && b.size() + 1 == size) {
+			if (b0 != null && b0.size() == size) {
 				poll();
-
-				b.add(t);
-
-				actual.onNext(b);
-
+				actual.onNext(b0);
 				produced++;
-			}
-
-			for (C b0 : this) {
-				b0.add(t);
 			}
 
 			index = i + 1;
