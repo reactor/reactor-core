@@ -2882,6 +2882,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * will be emitted by the returned {@link Flux} each time the given max size is reached
 	 * or once this Flux completes.
 	 * <p>
+	 * Note that if buffers provided by the bufferSupplier return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)} for a given element, that element will be discarded.
+	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSize.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal,
@@ -2944,6 +2947,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSizeGreaterThanSkipSize.svg" alt="">
 	 * <p>
 	 * When maxSize == skip : exact buffers
+	 * <p>
+	 * Note that if buffers provided by the bufferSupplier return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)} for a given element, that element will be discarded.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSizeEqualsSkipSize.svg" alt="">
 	 *
@@ -3123,6 +3129,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses.
 	 * <p>
+	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
+	 * less than the specified max size.
+	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
@@ -3162,6 +3172,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
+	 * <p>
+	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
+	 * less than the specified max size.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
@@ -3230,6 +3244,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses.
 	 * <p>
+	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
+	 * less than the specified max size.
+	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
@@ -3253,6 +3271,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
+	 * <p>
+	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
+	 * less than the specified max size.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
