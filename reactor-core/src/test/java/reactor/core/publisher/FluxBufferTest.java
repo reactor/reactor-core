@@ -692,8 +692,8 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
             .verifyThenAssertThat(Duration.ofSeconds(2));
 
         if (discard == null) {
-			assertions.hasNotDiscardedElements();
-		} else {
+            assertions.hasNotDiscardedElements();
+        } else {
             assertions.hasDiscardedExactly((Object[]) discard.split("\\|"));
         }
     }
@@ -716,16 +716,16 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
         StepVerifier.Assertions assertions = Flux.just(input.split("\\|"))
             .<Collection<Object>>buffer(2, 3, HashSet::new)
-			.as(it -> StepVerifier.create(it, outputs.size()))
+            .as(it -> StepVerifier.create(it, outputs.size()))
             .expectNextSequence(outputs)
-			.thenCancel()
+            .thenCancel()
             .verifyThenAssertThat(Duration.ofSeconds(2));
 
-		if (discard == null) {
-			assertions.hasNotDiscardedElements();
-		} else {
-			assertions.hasDiscardedExactly((Object[]) discard.split("\\|"));
-		}
+        if (discard == null) {
+            assertions.hasNotDiscardedElements();
+        } else {
+            assertions.hasDiscardedExactly((Object[]) discard.split("\\|"));
+        }
     }
 
     @ParameterizedTestWithName
@@ -738,7 +738,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
         "1|2|1|3|3|4, 1|2|3|4;3|4, 1|3",
         "1|1|2|3,     1|2|3;3,       1",
         "2|1|1|3,     2|1|3;3,       1",
-		"1|2|1|2|3,   1|2|3;3,     1|2"
+        "1|2|1|2|3,   1|2|3;3,     1|2"
     })
     public void bufferOverlapWithMax4Skip2SupplierUsesSet(String input, String output, @Nullable String discard) {
         List<Set<Object>> outputs = Arrays.stream(output.split(";"))
@@ -747,15 +747,15 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
         StepVerifier.Assertions assertions = Flux.just(input.split("\\|"))
             .<Collection<Object>>buffer(4, 2, HashSet::new)
-			.as(it -> StepVerifier.create(it, outputs.size()))
+            .as(it -> StepVerifier.create(it, outputs.size()))
             .expectNextSequence(outputs)
             .expectComplete()
             .verifyThenAssertThat(Duration.ofSeconds(2));
 
-		if (discard == null) {
-			assertions.hasNotDiscardedElements();
-		} else {
-			assertions.hasDiscardedExactly((Object[]) discard.split("\\|"));
-		}
+        if (discard == null) {
+            assertions.hasNotDiscardedElements();
+        } else {
+            assertions.hasDiscardedExactly((Object[]) discard.split("\\|"));
+        }
     }
 }

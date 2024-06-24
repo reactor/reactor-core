@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -420,5 +421,15 @@ public class FluxBufferTimeoutTest {
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void bufferSupplierUsesSet() {
+        Flux.just(1, 1, 1, 1, 1, 1, 1)
+			.<Set<Object>>bufferTimeout(3, Duration.ofSeconds(2), HashSet::new)
+			.as(it -> StepVerifier.create(it, 3))
+			.expectNext(Collections.singleton(1), Collections.singleton(1), Collections.singleton(1))
+			.expectComplete()
+			.verify(Duration.ofSeconds(2));
 	}
 }
