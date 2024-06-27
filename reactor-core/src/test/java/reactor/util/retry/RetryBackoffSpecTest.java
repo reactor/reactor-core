@@ -46,6 +46,7 @@ public class RetryBackoffSpecTest {
 		assertThat(init)
 				.isNotSameAs(init.minBackoff(Duration.ofSeconds(1)))
 				.isNotSameAs(init.maxBackoff(Duration.ZERO))
+				.isNotSameAs(init.multiplier(2))
 				.isNotSameAs(init.jitter(0.5d))
 				.isNotSameAs(init.scheduler(Schedulers.parallel()))
 				.isNotSameAs(init.maxAttempts(10))
