@@ -1068,6 +1068,256 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 	}
 
+	static final class ArraySizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
+
+		private static final class StampedBuffer {
+			final int index;
+			final Object[] arr;
+
+			private StampedBuffer(int index, Object[] arr) {
+				this.index = index;
+				this.arr = arr;
+			}
+		}
+
+		volatile StampedBuffer buffer;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ArraySizeBoundReplayBuffer, StampedBuffer> BUFF =
+				AtomicReferenceFieldUpdater.newUpdater(ArraySizeBoundReplayBuffer.class, StampedBuffer.class, "buffer");
+
+		final int indexUpdateLimit;
+		final int cap;
+
+		volatile boolean done;
+		Throwable error;
+
+		ArraySizeBoundReplayBuffer(int size) {
+			if (size < 0) {
+				throw new IllegalArgumentException("Limit cannot be negative");
+			}
+			this.buffer = new StampedBuffer(0, new Object[size]);
+			this.indexUpdateLimit = Operators.unboundedOrLimit(size);
+			this.cap = size;
+		}
+
+
+		@Override
+		public void add(T value) {
+			StampedBuffer buff, next;
+			do {
+				buff = BUFF.get(this);
+				next = new StampedBuffer(buff.index + 1, new Object[cap]);
+				System.arraycopy(buff.arr, 1, next.arr, 0, cap-1);
+				next.arr[cap-1] = value;
+			} while (!BUFF.compareAndSet(this, buff, next));
+		}
+
+		@Override
+		public void onError(Throwable ex) {
+			error = ex;
+			done = true;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public void onComplete() {
+			done = true;
+		}
+
+		void replayNormal(ReplaySubscription<T> rs) {
+			final Subscriber<? super T> a = rs.actual();
+
+			int missed = 1;
+			for (; ; ) {
+
+				long r = rs.requested();
+				long e = 0L;
+
+				StampedBuffer curr = BUFF.get(this);
+				int nodeIdx = rs.index();
+				for (int i = minIndex(nodeIdx, curr); i < cap; i++) {
+
+					if (rs.isCancelled()) {
+						clear(rs);
+						return;
+					}
+
+					if (e == r) {
+						break; // lack of request
+					}
+
+					@SuppressWarnings("unchecked") T next = (T) curr.arr[i];
+					a.onNext(next);
+
+					e++;
+					int logicalNextIdx = curr.index - (cap - i) + 1;
+					rs.index(logicalNextIdx);
+
+					if ((logicalNextIdx) % indexUpdateLimit == 0) {
+						rs.requestMore(logicalNextIdx);
+					}
+				}
+
+				if (done && isEmpty(rs)) {
+					clear(rs);
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					} else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				if (e == r) {
+					if (rs.isCancelled()) {
+						rs.index(0);
+						return;
+					}
+
+					if (done && isEmpty(rs)) {
+						clear(rs);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						} else {
+							a.onComplete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0L) {
+					if (r != Long.MAX_VALUE) {
+						rs.produced(e);
+					}
+				}
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		int minIndex(int rsNodeIdx, StampedBuffer buf) {
+			if (rsNodeIdx > buf.index) {
+				return cap;
+			}
+			return Math.max(cap-(buf.index - rsNodeIdx), 0);
+		}
+
+		void replayFused(ReplaySubscription<T> rs) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rs.actual();
+
+			for (; ; ) {
+
+				if (rs.isCancelled()) {
+					clear(rs);
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					} else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
+				return;
+			}
+
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
+			} else {
+				replayFused(rs);
+			}
+		}
+
+		@Override
+		public boolean isDone() {
+			return done;
+		}
+
+		@Override
+		public T poll(ReplaySubscription<T> rs) {
+			StampedBuffer curr = BUFF.get(this);
+			int nodeIdx = rs.index();
+
+			int idx = minIndex(nodeIdx, curr);
+			if (idx == cap) {
+				return null;
+			}
+			@SuppressWarnings("unchecked") T next = (T) curr.arr[idx];
+
+			int logicalNextIdx = curr.index - (cap - idx) + 1;
+			rs.index(logicalNextIdx);
+
+			if ((logicalNextIdx) % indexUpdateLimit == 0) {
+				rs.requestMore(logicalNextIdx);
+			}
+
+			return next;
+		}
+
+		@Override
+		public void clear(ReplaySubscription<T> rs) {
+			rs.index(0);
+		}
+
+		@Override
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			int nodeIdx = rs.index();
+			StampedBuffer curr = BUFF.get(this);
+			return nodeIdx == curr.index;
+		}
+
+		@Override
+		public int size(ReplaySubscription<T> rs) {
+			return Math.min(capacity(), BUFF.get(this).index - rs.index());
+		}
+
+		@Override
+		public int size() {
+			return Math.min(capacity(), BUFF.get(this).index);
+		}
+
+		@Override
+		public int capacity() {
+			return cap;
+		}
+
+		@Override
+		public boolean isExpired() {
+			return false;
+		}
+	}
+
+
 	FluxReplay(CorePublisher<T> source,
 			int history,
 			long ttl,
@@ -1209,7 +1459,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	@Override
 	@Nullable
-	public Object scanUnsafe(Scannable.Attr key) {
+	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_ON) return scheduler;
