@@ -7,7 +7,7 @@ jobs:
     name: preliminary sanity checks
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # tag=v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
         with:
           fetch-depth: 0 #needed by spotless
       - name: Download JDK 9
@@ -74,7 +74,7 @@ jobs:
     name: ${{ matrix.test-type.type }} tests
     needs: preliminary
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # tag=v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
     - name: Download Java 9
       if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
