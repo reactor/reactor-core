@@ -82,11 +82,12 @@ public abstract class FluxReplayStressTest {
 					" and onError instead of onComplete. The second connect call may still" +
 					" happen, since ConnectableFlux.subscribe happens before the check of" +
 					" the current connection value in FluxRefCnt")
-	@Outcome(id = {"0, 0, 0, 0, 0, 1, 2"}, expect = ACCEPTABLE_INTERESTING, desc =
+	@Outcome(id = {"0, 0, 0, 0, 0, 1, [1,2]"}, expect = ACCEPTABLE_INTERESTING, desc =
 			"Expected corner case when the second subscriber still joins the first" +
 					" subscription, but due to natural concurrency, cancellation of the" +
 					" first subscriber happens before the value is delivered. In that case" +
-					" onError is delivered instead of any values")
+					" onError is delivered instead of any values. The second connect" +
+					" call may still happen.")
 	@State
 	public static class RefCntRaceSubscribeAndCancelNoTimeoutStressTest {
 
