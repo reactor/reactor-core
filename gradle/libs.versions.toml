@@ -15,7 +15,7 @@ baselinePerfExtra = "3.5.1"
 asciidoctor = "4.0.2"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
 micrometer = "1.10.13"
-micrometerDocsGenerator = "1.0.2"
+micrometerDocsGenerator = "1.0.3"
 micrometerTracingTest="1.0.12"
 contextPropagation="1.0.6"
 kotlin = "1.8.22"
