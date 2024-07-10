@@ -2,7 +2,7 @@ ext {
     // Library versions that Dependabot will monitor (in alphabetical order)
     // See also gradle/libs.versions.toml for manually maintained dependencies and Gradle plugins
     archUnitVersion = "0.23.1"
-    assertjVersion = "3.26.0"
+    assertjVersion = "3.26.3"
     awaitilityVersion = "4.2.1"
     blockhoundVersion = "1.0.9.RELEASE"
     byteBuddyVersion = "1.14.17"
