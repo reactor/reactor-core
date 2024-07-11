@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.micrometer.context.ContextRegistry;
+import io.micrometer.context.ThreadLocalAccessor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -2451,6 +2453,126 @@ public class AutomaticContextPropagationTest {
 
 			// Now let's find out that it was automatically transferred.
 			assertThat(value.get()).isEqualTo("present");
+		}
+	}
+
+	@Nested
+	class SpecialContextAlteringOperators {
+
+		// The cases here consider operators like doOnDiscard(), which underneath
+		// utilize contextWrite() for its purpose. They are special in that we use them
+		// internally and do not anticipate the registered keys to be corresponding to
+		// any ThreadLocal values. That expectation is reasonable in user facing code
+		// as we don't know what keys are used and whether a ThreadLocalAccessor is
+		// registered for these keys. Therefore, in specific cases that are internal to
+		// reactor-core, we can skip ThreadLocal restoration in fragments of the chain.
+
+		// Explanation of GET/SET operations on TL in the scenarios here:
+		// When going UP, we use the value "present".
+		// When going DOWN, we clear the value or restore a captured empty value.
+		//
+		//   1 x GET in block() with implicit context capture
+		//
+		//   1 x GET going UP from contextWrite (read current to restore later)
+		// + 2 x SET going UP from contextWrite + SET restoring current later
+		//
+		//   1 x GET going DOWN from contextWrite with subscription (read current)
+		// + 2 x SET going DOWN from contextWrite + SET restoring current later
+		//
+		//   1 x GET going UP to request (read current)
+		// + 2 x SET going UP from contextWrite + SET restoring current later
+		//
+		//   1 x GET going DOWN to deliver onComplete (read current)
+		// + 2 x SET going DOWN from contextWrite + SET restoring current later
+
+		@Test
+		void discardFlux() {
+			CountingThreadLocalAccessor accessor = new CountingThreadLocalAccessor();
+			ContextRegistry.getInstance().registerThreadLocalAccessor(accessor);
+
+			AtomicInteger tlPresent = new AtomicInteger();
+			AtomicInteger discards = new AtomicInteger();
+
+			Flux.just("a")
+			    .doOnEach(signal -> {
+				    if (CountingThreadLocalAccessor.TL.get().equals("present")) {
+					    tlPresent.incrementAndGet();
+				    }
+			    })
+			    .filter(s -> false)
+			    .doOnDiscard(String.class, s -> discards.incrementAndGet())
+			    .count()
+			    .contextWrite(ctx -> ctx.put(CountingThreadLocalAccessor.KEY, "present"))
+			    .block();
+
+			assertThat(tlPresent.get()).isEqualTo(2); // 1 x onNext + 1 x onComplete
+			assertThat(discards.get()).isEqualTo(1);
+			// 5 with doOnDiscard skipping TL restoration, 9 with restoring
+			assertThat(accessor.reads.get()).isEqualTo(5);
+			// 8 with doOnDiscard skipping TL restoration, 16 with restoring
+			assertThat(accessor.writes.get()).isEqualTo(8);
+
+			ContextRegistry.getInstance().removeThreadLocalAccessor(CountingThreadLocalAccessor.KEY);
+		}
+
+		@Test
+		void discardMono() {
+			CountingThreadLocalAccessor accessor = new CountingThreadLocalAccessor();
+			ContextRegistry.getInstance().registerThreadLocalAccessor(accessor);
+
+			AtomicInteger tlPresent = new AtomicInteger();
+			AtomicInteger discards = new AtomicInteger();
+
+			Mono.just("a")
+			    .doOnEach(signal -> {
+				    if (CountingThreadLocalAccessor.TL.get().equals("present")) {
+					    tlPresent.incrementAndGet();
+				    }
+			    })
+			    .filter(s -> false)
+			    .doOnDiscard(String.class, s -> discards.incrementAndGet())
+			    .contextWrite(ctx -> ctx.put(CountingThreadLocalAccessor.KEY, "present"))
+			    .block();
+
+			assertThat(tlPresent.get()).isEqualTo(2); // 1 x onNext + 1 x onComplete
+			assertThat(discards.get()).isEqualTo(1);
+			// 5 with doOnDiscard skipping TL restoration, 9 with restoring
+			assertThat(accessor.reads.get()).isEqualTo(5);
+			// 8 with doOnDiscard skipping TL restoration, 16 with restoring
+			assertThat(accessor.writes.get()).isEqualTo(8);
+
+			ContextRegistry.getInstance().removeThreadLocalAccessor(CountingThreadLocalAccessor.KEY);
+		}
+	}
+
+	private static class CountingThreadLocalAccessor implements ThreadLocalAccessor<String> {
+		static final String KEY = "CTLA";
+		static final ThreadLocal<String> TL = new ThreadLocal<>();
+
+		AtomicInteger reads = new AtomicInteger();
+		AtomicInteger writes = new AtomicInteger();
+
+		@Override
+		public Object key() {
+			return KEY;
+		}
+
+		@Override
+		public String getValue() {
+			reads.incrementAndGet();
+			return TL.get();
+		}
+
+		@Override
+		public void setValue(String s) {
+			writes.incrementAndGet();
+			TL.set(s);
+		}
+
+		@Override
+		public void setValue() {
+			writes.incrementAndGet();
+			TL.remove();
 		}
 	}
 }
