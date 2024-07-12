@@ -2424,6 +2424,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return onAssembly(new MonoContextWrite<>(this, contextModifier));
 	}
 
+	private final Mono<T> contextWriteSkippingContextPropagation(ContextView contextToAppend) {
+		return contextWriteSkippingContextPropagation(c -> c.putAll(contextToAppend));
+	}
+
+	private final Mono<T> contextWriteSkippingContextPropagation(Function<Context, Context> contextModifier) {
+		return onAssembly(new MonoContextWrite<>(this, contextModifier));
+	}
+
 	/**
 	 * Provide a default single value if this mono is completed without any data
 	 *
@@ -2713,7 +2721,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Mono<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return contextWrite(Operators.discardLocalAdapter(type, discardHook));
+		return contextWriteSkippingContextPropagation(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**
@@ -3712,7 +3720,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
-		return contextWrite(Context.of(
+		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
 		));
@@ -3802,7 +3810,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
 		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
-		return contextWrite(Context.of(
+		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
 		));
@@ -3819,7 +3827,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * was used downstream
 	 */
 	public final Mono<T> onErrorStop() {
-		return contextWrite(Context.of(
+		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.stop()));
 	}

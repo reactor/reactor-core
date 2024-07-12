@@ -4393,6 +4393,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxContextWrite<>(this, contextModifier));
 	}
 
+	private final Flux<T> contextWriteSkippingContextPropagation(ContextView contextToAppend) {
+		return contextWriteSkippingContextPropagation(c -> c.putAll(contextToAppend));
+	}
+
+	private final Flux<T> contextWriteSkippingContextPropagation(Function<Context, Context> contextModifier) {
+		return onAssembly(new FluxContextWrite<>(this, contextModifier));
+	}
+
 	/**
 	 * Counts the number of values in this {@link Flux}.
 	 * The count will be emitted when onComplete is observed.
@@ -4866,7 +4874,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Flux<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return contextWrite(Operators.discardLocalAdapter(type, discardHook));
+		return contextWriteSkippingContextPropagation(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**
@@ -7147,7 +7155,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
-		return contextWrite(Context.of(
+		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
 		));
@@ -7231,7 +7239,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
 		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
-		return contextWrite(Context.of(
+		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
 		));
@@ -7248,7 +7256,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * was used downstream
 	 */
 	public final Flux<T> onErrorStop() {
-		return contextWrite(Context.of(
+		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.stop()));
 	}
