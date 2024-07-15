@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -120,6 +121,10 @@ public abstract class Schedulers {
 			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticOnVirtualThreads"))
 			        .map(Boolean::parseBoolean)
 			        .orElse(false);
+
+	static final Predicate<Thread> DEFAULT_NON_BLOCKING_THREAD_PREDICATE = thread -> false;
+
+	static Predicate<Thread> nonBlockingThreadPredicate = DEFAULT_NON_BLOCKING_THREAD_PREDICATE;
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -659,24 +664,50 @@ public abstract class Schedulers {
 
 	/**
 	 * Check if calling a Reactor blocking API in the current {@link Thread} is forbidden
-	 * or not, by checking if the thread implements {@link NonBlocking} (in which case it is
-	 * forbidden and this method returns {@code true}).
+	 * or not. This method returns {@code true} and will forbid the Reactor blocking API if
+	 * any of the following conditions meet:
+	 * <ul>
+	 *   <li>the thread implements {@link NonBlocking}; or</li>
+	 *   <li>any of the {@link Predicate}s registered via {@link #registerNonBlockingThreadPredicate(Predicate)}
+	 *       returns {@code true}.</li>
+	 * </ul>
 	 *
 	 * @return {@code true} if blocking is forbidden in this thread, {@code false} otherwise
 	 */
 	public static boolean isInNonBlockingThread() {
-		return Thread.currentThread() instanceof NonBlocking;
+		return isNonBlockingThread(Thread.currentThread());
 	}
 
 	/**
 	 * Check if calling a Reactor blocking API in the given {@link Thread} is forbidden
-	 * or not, by checking if the thread implements {@link NonBlocking} (in which case it is
-	 * forbidden and this method returns {@code true}).
+	 * or not. This method returns {@code true} and will forbid the Reactor blocking API if
+	 * any of the following conditions meet:
+	 * <ul>
+	 *   <li>the thread implements {@link NonBlocking}; or</li>
+	 *   <li>any of the {@link Predicate}s registered via {@link #registerNonBlockingThreadPredicate(Predicate)}
+	 *       returns {@code true}.</li>
+	 * </ul>
 	 *
 	 * @return {@code true} if blocking is forbidden in that thread, {@code false} otherwise
 	 */
 	public static boolean isNonBlockingThread(Thread t) {
-		return t instanceof NonBlocking;
+		return t instanceof NonBlocking || nonBlockingThreadPredicate.test(t);
+	}
+
+	/**
+	 * Registers the specified {@link Predicate} that determines whether it is forbidden to call
+	 * a Reactor blocking API in a given {@link Thread} or not.
+	 */
+	public static void registerNonBlockingThreadPredicate(Predicate<Thread> predicate) {
+		nonBlockingThreadPredicate = nonBlockingThreadPredicate.or(predicate);
+	}
+
+	/**
+	 * Unregisters all the {@link Predicate}s registered so far via
+	 * {@link #registerNonBlockingThreadPredicate(Predicate)}.
+	 */
+	public static void resetNonBlockingThreadPredicate() {
+		nonBlockingThreadPredicate = DEFAULT_NON_BLOCKING_THREAD_PREDICATE;
 	}
 
 	/**

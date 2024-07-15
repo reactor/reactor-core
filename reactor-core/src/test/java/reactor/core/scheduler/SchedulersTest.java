@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -359,10 +360,53 @@ public class SchedulersTest {
 
 	@Test
 	public void isInNonBlockingThreadTrue() {
-		new ReactorThreadFactory.NonBlockingThread(() -> assertThat(Schedulers.isInNonBlockingThread())
-				.as("isInNonBlockingThread")
-				.isFalse(),
-				"isInNonBlockingThreadTrue");
+		assertNonBlockingThread(ReactorThreadFactory.NonBlockingThread::new, true);
+	}
+
+	@Test
+	public void customNonBlockingThreadPredicate() {
+		assertThat(Schedulers.nonBlockingThreadPredicate)
+				.as("nonBlockingThreadPredicate")
+				.isSameAs(Schedulers.DEFAULT_NON_BLOCKING_THREAD_PREDICATE);
+
+		// The custom `Predicate` is not registered yet,
+		// so `CustomNonBlockingThread` will be considered blocking.
+		assertNonBlockingThread(CustomNonBlockingThread::new, false);
+
+		// Now register the `Predicate` and ensure `CustomNonBlockingThread` is non-blocking.
+		Schedulers.registerNonBlockingThreadPredicate(t -> t instanceof CustomNonBlockingThread);
+		try {
+			assertNonBlockingThread(CustomNonBlockingThread::new, true);
+		} finally {
+			// Restore the global predicate.
+			Schedulers.resetNonBlockingThreadPredicate();
+		}
+
+		assertThat(Schedulers.nonBlockingThreadPredicate)
+				.as("nonBlockingThreadPredicate (after reset)")
+				.isSameAs(Schedulers.DEFAULT_NON_BLOCKING_THREAD_PREDICATE);
+	}
+
+	private static void assertNonBlockingThread(BiFunction<Runnable, String, Thread> threadFactory,
+												boolean expectedNonBlocking) {
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		Thread thread = threadFactory.apply(() -> {
+			try {
+				assertThat(Schedulers.isInNonBlockingThread())
+						.as("isInNonBlockingThread")
+						.isEqualTo(expectedNonBlocking);
+				future.complete(null);
+			} catch (Throwable cause) {
+				future.completeExceptionally(cause);
+			}
+		}, "assertNonBlockingThread");
+
+		assertThat(Schedulers.isNonBlockingThread(thread))
+				.as("isNonBlockingThread")
+				.isEqualTo(expectedNonBlocking);
+
+		thread.start();
+		future.join();
 	}
 
 	@Test
@@ -1455,6 +1499,12 @@ public class SchedulersTest {
 			@Override
 			public void dispose() {
 			}
+		}
+	}
+
+	final static class CustomNonBlockingThread extends Thread {
+		CustomNonBlockingThread(Runnable target, String name) {
+			super(target, name);
 		}
 	}
 }
