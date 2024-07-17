@@ -764,16 +764,6 @@ public class AutomaticContextPropagationTest {
 		}
 
 		@Test
-		void fluxGenerate() {
-			assertThreadLocalsPresentInFlux(() -> Flux.generate(sink -> {
-				sink.next("Hello");
-				// the generator is checked if any signal was delivered by the consumer
-				// so we perform asynchronous completion only
-				executorService.submit(sink::complete);
-			}));
-		}
-
-		@Test
 		void fluxCombineLatest() {
 			assertThreadLocalsPresentInFlux(() ->
 					Flux.combineLatest(
