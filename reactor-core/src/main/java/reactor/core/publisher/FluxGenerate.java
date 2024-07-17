@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,18 +74,15 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> wrapped =
-				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
-
 		S state;
 
 		try {
 			state = stateSupplier.call();
 		} catch (Throwable e) {
-			Operators.error(wrapped, Operators.onOperatorError(e, wrapped.currentContext()));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
-		wrapped.onSubscribe(new GenerateSubscription<>(wrapped, state, generator, stateConsumer));
+		actual.onSubscribe(new GenerateSubscription<>(actual, state, generator, stateConsumer));
 	}
 
 	@Override
