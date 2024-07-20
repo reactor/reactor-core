@@ -730,15 +730,17 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
     @ParameterizedTestWithName
     @CsvSource({
-        "1|2,         1|2,            ",
-        "1|1|1,       1,           1|1",
-        "1|1|2,       1|2,           1",
-        "1|2|1,       1|2,           1",
-        "1|2|1|3,     1|2|3;3,       1",
-        "1|2|1|3|3|4, 1|2|3|4;3|4, 1|3",
-        "1|1|2|3,     1|2|3;3,       1",
-        "2|1|1|3,     2|1|3;3,       1",
-        "1|2|1|2|3,   1|2|3;3,     1|2"
+        "1|2,             1|2,                        ",
+        "1|1|1,           1,                       1|1",
+        "1|1|2,           1|2,                       1",
+        "1|2|1,           1|2,                       1",
+        "1|2|1|3,         1|2|3;3,                   1",
+        "1|2|1|3|3|4,     1|2|3|4;3|4,             1|3",
+        "1|2|3|1|3|4,     1|2|3|4;3|1|4;4,           3",
+        "3|2|1|2|3|2|3|4, 3|2|1|4;1|2|3|4;3|2|4;4,   3",
+        "1|1|2|3,         1|2|3;3,                   1",
+        "2|1|1|3,         2|1|3;3,                   1",
+        "1|2|1|2|3,       1|2|3;3,                 1|2"
     })
     public void bufferOverlapWithMax4Skip2SupplierUsesSet(String input, String output, @Nullable String discard) {
         List<Set<Object>> outputs = Arrays.stream(output.split(";"))
