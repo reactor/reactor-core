@@ -379,12 +379,16 @@ public class SchedulersTest {
 			assertNonBlockingThread(CustomNonBlockingThread::new, true);
 		} finally {
 			// Restore the global predicate.
-			Schedulers.nonBlockingThreadPredicate = Schedulers.DEFAULT_NON_BLOCKING_THREAD_PREDICATE;
+			Schedulers.resetNonBlockingThreadPredicate();
 		}
+
+		assertThat(Schedulers.nonBlockingThreadPredicate)
+				.as("nonBlockingThreadPredicate (after reset)")
+				.isSameAs(Schedulers.DEFAULT_NON_BLOCKING_THREAD_PREDICATE);
 	}
 
-	private void assertNonBlockingThread(BiFunction<Runnable, String, Thread> threadFactory,
-										 boolean expectedNonBlocking) {
+	private static void assertNonBlockingThread(BiFunction<Runnable, String, Thread> threadFactory,
+												boolean expectedNonBlocking) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		Thread thread = threadFactory.apply(() -> {
 			try {

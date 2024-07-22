@@ -703,6 +703,14 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * Unregisters all the {@link Predicate}s registered so far via
+	 * {@link #registerNonBlockingThreadPredicate(Predicate)}.
+	 */
+	public static void resetNonBlockingThreadPredicate() {
+		nonBlockingThreadPredicate = DEFAULT_NON_BLOCKING_THREAD_PREDICATE;
+	}
+
+	/**
 	 * If Micrometer is available, set-up a decorator that will instrument any
 	 * {@link ExecutorService} that backs a {@link Scheduler}.
 	 * No-op if Micrometer isn't available.
