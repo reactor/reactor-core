@@ -16,6 +16,7 @@
 
 package reactor.core.observability.micrometer;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -24,10 +25,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.internal.DefaultLongTaskTimer;
 import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -35,12 +38,14 @@ import io.micrometer.core.tck.MeterRegistryAssert;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingExtension;
@@ -75,6 +80,80 @@ class TimedSchedulerTest {
 			.map(m -> m.getId().getName())
 			.isNotEmpty()
 			.allSatisfy(name -> assertThat(name).startsWith("noDot."));
+	}
+
+	@Test
+	@Tag("slow")
+	// see https://github.com/reactor/reactor-core/issues/3844
+	void cancellationClearsPendingTasks() throws Exception {
+		TimedScheduler scheduler = (TimedScheduler) Micrometer.timedScheduler(
+				Schedulers.newSingle("single-test-scheduler"),
+				new SimpleMeterRegistry(),
+				"test");
+
+		AtomicLong totalCalls = new AtomicLong();
+		AtomicLong errorCalls = new AtomicLong();
+
+		int iterations = 500_000;
+
+		new Thread(() -> {
+			for (int i = 0; i < iterations; i++) {
+				Mono.delay(Duration.ofMillis(5))
+						.subscribeOn(scheduler)
+						.timeout(Duration.ofMillis(20), scheduler)
+						.subscribe(
+								__ -> totalCalls.incrementAndGet(),
+								__ -> {
+									totalCalls.incrementAndGet();
+									errorCalls.incrementAndGet();
+								});
+			}
+		}).start();
+
+		while (totalCalls.get() < iterations) {
+			Thread.sleep(100);
+			System.out.printf("Progress: %.1f\n", 100d / iterations * totalCalls.get());
+		}
+
+		scheduler.dispose();
+
+		System.out.println("Pending tasks: " + scheduler.pendingTasks.activeTasks());
+		System.out.println("Error calls: " + errorCalls.get());
+
+		assertThat(scheduler.pendingTasks.activeTasks()).isEqualTo(0);
+	}
+
+	@Test
+	// see https://github.com/reactor/reactor-core/issues/3844
+	void disposeClearsPendingTasksInWorker() throws Exception {
+		TimedScheduler scheduler = (TimedScheduler) Micrometer.timedScheduler(
+				Schedulers.newSingle("ttt"),
+				new SimpleMeterRegistry(),
+				"test");
+
+		TimedScheduler.TimedWorker worker = (TimedScheduler.TimedWorker) scheduler.createWorker();
+
+		worker.schedule(() -> {
+			try {
+				System.out.println("First task run");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				System.out.println("First task interrupted");
+			}
+		});
+
+		worker.schedule(() -> {
+			try {
+				System.out.println("Second task run");
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				System.out.println("Second task interrupted");
+			}
+		});
+
+		worker.dispose();
+
+		assertThat(scheduler.pendingTasks.activeTasks()).isEqualTo(0);
 	}
 
 	@Test
