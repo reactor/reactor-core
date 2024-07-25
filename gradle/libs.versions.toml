@@ -12,7 +12,7 @@ baselinePerfCore = "3.5.19"
 baselinePerfExtra = "3.5.1"
 
 # Other shared versions
-asciidoctor = "4.0.2"
+asciidoctor = "4.0.3"
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
 micrometer = "1.10.13"
 micrometerDocsGenerator = "1.0.3"
