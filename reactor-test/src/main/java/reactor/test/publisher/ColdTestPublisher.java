@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,6 +103,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 
 		s.onSubscribe(p); // will trigger drain() via request()
+		p.drain(); // ensures that empty source terminal signal is propagated without waiting for a request from the subscriber
 	}
 
 	boolean add(ColdTestPublisherSubscription<T> s) {
@@ -315,7 +316,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		 * @return true if the TestPublisher was terminated, false otherwise
 		 */
 		private boolean emitTerminalSignalIfAny() {
-			if (parent.done) {
+			if (parent.done && this.parent.values.size() == index) {
 				parent.remove(this);
 
 				final Throwable t = parent.error;

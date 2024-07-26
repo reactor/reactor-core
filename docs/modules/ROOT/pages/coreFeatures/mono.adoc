@@ -1,0 +1,27 @@
+[[mono]]
+= Mono, an Asynchronous 0-1 Result
+
+The following image shows how a `Mono` transforms an item:
+
+image::mono.svg[Mono]
+
+A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item _via_ the
+`onNext` signal then terminates with an `onComplete` signal (successful `Mono`,
+with or without value), or only emits a single `onError` signal (failed `Mono`).
+
+
+Most `Mono` implementations are expected to immediately call `onComplete` on their
+`Subscriber` after having called `onNext`. `Mono.never()` is an outlier: it doesn't
+emit any signal, which is not technically forbidden although not terribly useful outside
+of tests. On the other hand, a combination of `onNext` and `onError` is explicitly forbidden.
+
+`Mono` offers only a subset of the operators that are available for a `Flux`, and
+some operators (notably those that combine the `Mono` with another `Publisher`)
+switch to a `Flux`.
+For example, `Mono#concatWith(Publisher)` returns a `Flux` while `Mono#then(Mono)`
+returns another `Mono`.
+
+Note that you can use a `Mono` to represent no-value asynchronous processes that only
+have the concept of completion (similar to a `Runnable`). To create one, you can use an empty
+`Mono<Void>`.
+

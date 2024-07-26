@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,11 +188,14 @@ javaAgentTest {
 }
 project.tasks.check.dependsOn(javaAgentTest)
 
+// This is required when org.gradle.parallel=true as tests in this module conflict with
+// concurrently running BlockHound tests.
+project.tasks.each {it.mustRunAfter(":reactor-core:blockHoundTest")}
 project.tasks.buildPluginTest.mustRunAfter(shadowJar)
 project.tasks.buildPluginTest.dependsOn(shadowJar)
 
 task generateMockGradle(type: Copy) {
-    def coreJar = rootProject.findProject("reactor-core").buildDir.toString() + "/libs/reactor-core-" + version + ".jar"
+    def coreJar = rootProject.findProject("reactor-core").layout.buildDirectory.get().asFile.toString() + "/libs/reactor-core-" + version + ".jar"
     def agentJar = buildDir.toString() + "/libs/reactor-tools-" + version + "-original.jar"
     def mockGradleDir = buildDir.toString() + "/mock-gradle"
 
@@ -208,7 +211,7 @@ task generateMockGradle(type: Copy) {
 }
 
 buildPluginTest {
-    def mockGradleDir = "$buildDir/mock-gradle"
+    def mockGradleDir = layout.buildDirectory.dir("mock-gradle").get().asFile.toString()
     println "will run mock gradle build from $mockGradleDir"
     systemProperty "mock-gradle-dir", mockGradleDir
 }

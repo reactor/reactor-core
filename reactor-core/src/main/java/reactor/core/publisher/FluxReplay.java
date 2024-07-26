@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1072,7 +1072,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			int history,
 			long ttl,
 			@Nullable Scheduler scheduler) {
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = Operators.toFluxOrMono(Objects.requireNonNull(source, "source"));
 		if (source instanceof OptimizableOperator) {
 			@SuppressWarnings("unchecked")
 			OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) source;
@@ -1214,6 +1214,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_ON) return scheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}
@@ -1376,6 +1377,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void dispose() {
+			CONNECTION.compareAndSet(parent, this, null);
 			final long previousState = markDisposed(this);
 			if (isDisposed(previousState)) {
 				return;
@@ -1384,8 +1386,6 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			if (isSubscribed(previousState)) {
 				s.cancel();
 			}
-
-			CONNECTION.lazySet(parent, null);
 
 			final CancellationException ex = new CancellationException("Disconnected");
 			final ReplayBuffer<T> buffer = this.buffer;

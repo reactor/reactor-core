@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,6 +124,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 		if (key == Attr.TERMINATED) return isTerminated(subscribers);
 		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}
@@ -196,8 +197,10 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 	//redefined in SinkOneMulticast
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
-		Inner<T> as = new VoidInner<>(actual, this);
-		actual.onSubscribe(as);
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+		Inner<T> as = new VoidInner<>(wrapped, this);
+		wrapped.onSubscribe(as);
 		final int addedState = add(as);
 		if (addedState == STATE_ADDED) {
 			if (as.isCancelled()) {
@@ -207,7 +210,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 		else if (addedState == STATE_ERROR) {
 			Throwable ex = error;
 
-			actual.onError(ex);
+			wrapped.onError(ex);
 		}
 		else {
 			as.complete();

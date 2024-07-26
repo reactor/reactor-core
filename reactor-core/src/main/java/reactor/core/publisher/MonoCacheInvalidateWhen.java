@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -282,6 +282,9 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.complete(value);
 				}
+				// even though the trigger can deliver values on different threads,
+				// it's not causing any delivery to downstream, so we don't need to
+				// wrap it
 				invalidateTrigger.subscribe(new TriggerSubscriber(this.main));
 			}
 		}

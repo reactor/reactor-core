@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 
 import reactor.core.publisher.Flux;
 import reactor.util.Logger;
@@ -34,6 +35,7 @@ import reactor.util.retry.Retry;
  * Global Reactor Core Exception handling and utils to operate on.
  *
  * @author Stephane Maldini
+ * @author Injae Kim
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 public abstract class Exceptions {
@@ -860,5 +862,17 @@ public abstract class Exceptions {
 			super(cause.toString(), cause, false, false);
 		}
 	}
+
+	/**
+	 * A general-purpose {@link Consumer} that closes {@link AutoCloseable} resource.
+	 * If exception is thrown during closing the resource, it will be propagated by {@link Exceptions#propagate(Throwable)}.
+	 */
+	public static final Consumer<? super AutoCloseable> AUTO_CLOSE = resource -> {
+		try {
+			resource.close();
+		} catch (Throwable t) {
+			throw Exceptions.propagate(t);
+		}
+	};
 
 }

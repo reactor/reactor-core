@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -806,7 +807,7 @@ class SinkManyEmitterProcessorTest {
 		sink.asFlux().subscribe(scannable);
 
 		assertThat(sink.inners())
-				.asList()
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
 				.as("after subscriptions")
 				.hasSize(2)
 				.extracting(l -> (Object) ((SinkManyEmitterProcessor.EmitterInner<?>) l).actual)

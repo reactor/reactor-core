@@ -1,43 +1,59 @@
 name: publish
 on:
   push:
-    branches: # For branches, better to list them explicitly than regexp include
+    branches:
+      # For branches, better to list them explicitly than regexp include.
+      # Older branches are triggered using workflows present there
       - main
-      - 3.5.x
-      - 3.4.x
+      - 3.6.x
 permissions: read-all
+
+env:
+  DOCS_ZIP: docs-zip
+  DOCS_ZIP_PATH: docs/build/distributions
+
 jobs:
   # General job notes: we DON'T want to cancel any previous runs, especially in the case of a "back to snapshots" build right after a release push
   # We specify the ubuntu version to minimize the chances we have to deal with a migration during a release
   prepare:
     # Notes on prepare: this job has no access to secrets, only github token. As a result, all non-core actions are centralized here
     # This includes the tagging and drafting of release notes. Still, when possible we favor plain run of gradle tasks
-    name: prepare
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type:
+          - type: core
+            arguments: ":reactor-core:test --no-daemon"
+          - type: core-java21
+            arguments: ":reactor-core:java21Test --no-daemon"
+          - type: other
+            arguments: "check -x :reactor-core:test -x :reactor-core:java9Test -x :reactor-core:java21Test -x spotlessCheck -x :reactor-core:jcstress --no-daemon"
+    name: prepare - ${{ matrix.test-type.type }} tests
     outputs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
-        java-version: 21-ea
+        java-version: 21
     - name: Setup JDK 8
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
@@ -49,113 +65,118 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
-      uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
+      uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # tag=v3
       with:
-        arguments: check -x :reactor-core:java21Test -Pjunit-tags=!slow -x jcstress
+        arguments: ${{ matrix.test-type.arguments }}
 
-  slowerChecks:
-    # similar limitations as in prepare, but we parallelize slower tests here
-    name: slowerChecks
+  # Build the docs-zip antora doc for the current branch, and upload generated docs-zip to workflow run.
+  # JDK21 is used because the antora plugin requires a JDK17 compatible version.
+  # Each deploy job can then download the docs-zip to ./docs/build/distributions/ in order to let it be included in published artifacts.
+  # (see gradle/setup.gradle publications which includes docs zip file, if found from docs/build/distributions directory)
+  build-docs-zip:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
-      - name: Download JDK 9
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: ${GITHUB_WORKSPACE}/.github/setup.sh
-        shell: bash
-      - name: Setup JDK 9
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Set up Ruby for asciidoctor-pdf
+        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
         with:
-          distribution: 'jdkfile'
-          java-version: 9.0.4
-          jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
-      - name: Setup JDK 21
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+          ruby-version: 3.3.0
+      - name: Install asciidoctor-pdf / rouge
+        run: gem install asciidoctor-pdf rouge
+      - name: Setup java 21 for antora
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'temurin'
-          java-version: 21-ea
-      - name: Setup JDK 8
-        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+          java-version: '21'
+      - name: Build antora docs zip distribution for the current branch
+        run: ./gradlew docs
+      - name: Upload docs/build to current workflow run
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
-          distribution: 'temurin'
-          java-version: 8
-      - name: run slower tests
-        id: slowerTests
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # tag=v2
-        with:
-          arguments: reactor-core:test -Pjunit-tags=slow
+          name: ${{ env.DOCS_ZIP }}
+          path: ${{ env.DOCS_ZIP_PATH }}
+          retention-days: 3
+          if-no-files-found: error
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
     name: deploySnapshot
     runs-on: ubuntu-20.04
-    needs: [ prepare, slowerChecks ]
+    needs: [prepare, build-docs-zip]
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
-        java-version: 21-ea
+        java-version: 21
     - name: Setup JDK 8
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
+    - name: Download antora docs-zip
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
+      with:
+        name: ${{ env.DOCS_ZIP }}
+        path: ${{ env.DOCS_ZIP_PATH }}
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
       run: |
-          ./gradlew assemble artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
+          ./gradlew -Dorg.gradle.parallel=false assemble artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
 
   #sign the milestone artifacts and deploy them to Artifactory
   deployMilestone:
     name: deployMilestone
     runs-on: ubuntu-20.04
-    needs: [ prepare, slowerChecks ]
+    needs: [prepare, build-docs-zip]
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
-        java-version: 21-ea
+        java-version: 21
     - name: Setup JDK 8
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
+    - name: Download antora docs-zip
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
+      with:
+        name: ${{ env.DOCS_ZIP }}
+        path: ${{ env.DOCS_ZIP_PATH }}
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
@@ -163,39 +184,44 @@ jobs:
         ORG_GRADLE_PROJECT_signingKey: ${{secrets.SIGNING_KEY}}
         ORG_GRADLE_PROJECT_signingPassword: ${{secrets.SIGNING_PASSPHRASE}}
       run: |
-          ./gradlew assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local
+          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local
 
   #sign the release artifacts and deploy them to Artifactory
   deployRelease:
     name: deployRelease
     runs-on: ubuntu-20.04
-    needs: [ prepare, slowerChecks ]
+    needs: [prepare, build-docs-zip]
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
     - name: Download JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'jdkfile'
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup JDK 21
-      if: ${{ github.ref == 'refs/heads/main' }}
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      if: contains('main 3.6.x', github.base_ref)
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
-        java-version: 21-ea
+        java-version: 21
     - name: Setup JDK 8
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # tag=v3
+      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
       with:
         distribution: 'temurin'
         java-version: 8
+    - name: Download antora docs/build
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
+      with:
+        name: ${{ env.DOCS_ZIP }}
+        path: ${{ env.DOCS_ZIP_PATH }}
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
@@ -205,7 +231,7 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
       run: |
-          ./gradlew assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
+          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
 
   tagMilestone:
     name: Tag milestone
@@ -214,7 +240,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
@@ -229,13 +255,31 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # tag=v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
           git config --local user.email '32325210+reactorbot@users.noreply.github.com'
           git tag -m "Release version ${{ needs.prepare.outputs.fullVersion }}" v${{ needs.prepare.outputs.fullVersion }} ${{ github.sha }}
           git push --tags
+
+  cleanup:
+    name: Cleanup docs-zip artifact
+    needs: [ deploySnapshot, tagRelease, tagMilestone ]
+    if: always() && (needs.deploySnapshot.result == 'success' || needs.tagRelease.result == 'success' || needs.tagMilestone.result == 'success')
+    runs-on: ubuntu-20.04
+    permissions:
+      actions: write
+    steps:
+      - name: delete antora docs-zip artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          ARTIFACTS_URL="/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts"
+          ARTIFACT_ID=$(gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' $ARTIFACTS_URL | jq -r '.artifacts[] | select(.name == "'$DOCS_ZIP'") | .id // ""')
+          if [ -n "$ARTIFACT_ID" ]; then
+            gh api --method DELETE -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' /repos/${{github.repository}}/actions/artifacts/$ARTIFACT_ID}
+          fi
 
 # For Gradle configuration of signing, see https://docs.gradle.org/current/userguide/signing_plugin.html#sec:in-memory-keys
 # publishMavenJavaPublicationToSonatypeRepository only sends to a staging repository

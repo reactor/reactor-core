@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,6 +130,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyUnicast.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
+	volatile boolean subscriptionDelivered;
 	Throwable error;
 
 	boolean hasDownstream; //important to not loose the downstream too early and miss discard hook, while having relevant hasDownstreams()
@@ -183,6 +184,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		if (Attr.CANCELLED == key) return cancelled;
 		if (Attr.TERMINATED == key) return done;
 		if (Attr.ERROR == key) return error;
+		if (InternalProducerAttr.INSTANCE == key) return true;
 
 		return null;
 	}
@@ -355,9 +357,8 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		int missed = 1;
 
 		for (;;) {
-			CoreSubscriber<? super T> a = actual;
-			if (a != null) {
-
+			if (subscriptionDelivered) {
+			    CoreSubscriber<? super T> a = actual;
 				if (outputFused) {
 					drainFused(a);
 				} else {
@@ -408,18 +409,21 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 			this.hasDownstream = true;
-			actual.onSubscribe(this);
-			this.actual = actual;
+			this.actual = wrapped;
+			wrapped.onSubscribe(this);
+			subscriptionDelivered = true;
 			if (cancelled) {
 				this.hasDownstream = false;
 			} else {
 				drain(null);
 			}
 		} else {
-			Operators.error(actual, new IllegalStateException("Sinks.many().unicast() sinks only allow a single Subscriber"));
+			Operators.error(wrapped, new IllegalStateException("Sinks.many().unicast() sinks only allow a single Subscriber"));
 		}
 	}
 

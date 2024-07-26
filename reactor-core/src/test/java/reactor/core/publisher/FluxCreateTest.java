@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -56,6 +57,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 class FluxCreateTest {
+
+	@Test
+	//https://github.com/reactor/reactor-core/issues/3569
+	void ensuresRequestMaxPlusOneDoesNotFailOnNoRequestConsumer() {
+		Flux.create(sink -> {
+			    sink.next("1");
+			    sink.next("2");
+			    sink.next("3");
+			    sink.complete();
+		    })
+		    .as(StepVerifier::create)
+			.expectNext("1")
+			.thenRequest(1)
+			.expectNext("2")
+			.thenRequest(1)
+			.expectNext("3")
+			.thenRequest(1)
+		    .expectComplete()
+		    .verify(Duration.ofMillis(1000));
+	}
 
 	@Test
 	//https://github.com/reactor/reactor-core/issues/1949

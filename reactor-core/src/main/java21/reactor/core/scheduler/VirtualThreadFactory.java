@@ -18,14 +18,13 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
  * The {@link VirtualThread} Reactor {@link ThreadFactory} to be used with
- * {@link ThreadPerTaskBoundedElasticScheduler}, delegates all allocations to real {@link
+ * {@link BoundedElasticThreadPerTaskScheduler}, delegates all allocations to real {@link
  * java.lang.ThreadBuilders.VirtualThreadFactory}
  *
  * @author Oleh Dokuka

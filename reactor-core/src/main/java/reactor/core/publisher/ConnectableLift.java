@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,8 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
 		if (key == Attr.LIFTER) return liftFunction.name;
-		return null;
+
+		return super.scanUnsafe(key);
 	}
 
 	@Override
@@ -67,8 +68,8 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 
 	@Override
 	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super I> input =
-				liftFunction.lifter.apply(source, actual);
+		// No need to wrap actual for CP, the Operators$LiftFunction handles it.
+		CoreSubscriber<? super I> input = liftFunction.lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

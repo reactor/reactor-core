@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -810,7 +811,7 @@ class NextProcessorTest {
 		sink.subscribe(scannable);
 
 		assertThat(sink.inners())
-				.asList()
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
 				.as("after subscriptions")
 				.hasSize(2)
 				.extracting(l -> (Object) ((NextProcessor.NextInner<?>) l).actual)

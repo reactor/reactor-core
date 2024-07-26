@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 	final OptimizableOperator<?, T> optimizableOperator;
 
 	MonoIgnorePublisher(Publisher<? extends T> source) {
-		this.source = Objects.requireNonNull(source, "publisher");
+		this.source = Operators.toFluxOrMono(Objects.requireNonNull(source, "publisher"));
 		if (source instanceof OptimizableOperator) {
 			@SuppressWarnings("unchecked")
 			OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) source;
@@ -85,6 +85,9 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 		}
 		if (key == Attr.RUN_STYLE) {
 			return Attr.RunStyle.SYNC;
+		}
+		if (key == InternalProducerAttr.INSTANCE) {
+			return true;
 		}
 		return null;
 	}

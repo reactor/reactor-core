@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 
 import org.reactivestreams.Publisher;
-import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
@@ -51,6 +47,7 @@ public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.PARENT) return source;
+		if (key == InternalProducerAttr.INSTANCE) return false; // public class!
 		return null;
 	}
 

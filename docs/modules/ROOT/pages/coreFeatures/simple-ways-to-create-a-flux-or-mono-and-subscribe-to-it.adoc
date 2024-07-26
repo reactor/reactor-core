@@ -1,0 +1,75 @@
+[[simple-ways-to-create-a-flux-or-mono-and-subscribe-to-it]]
+= Simple Ways to Create a Flux or Mono and Subscribe to It
+
+The easiest way to get started with `Flux` and `Mono` is to use one of the numerous
+factory methods found in their respective classes.
+
+For instance, to create a sequence of `String`, you can either enumerate them or put them
+in a collection and create the Flux from it, as follows:
+
+[source,java]
+[%unbreakable]
+----
+Flux<String> seq1 = Flux.just("foo", "bar", "foobar");
+
+List<String> iterable = Arrays.asList("foo", "bar", "foobar");
+Flux<String> seq2 = Flux.fromIterable(iterable);
+----
+
+Other examples of factory methods include the following:
+
+[source,java]
+[%unbreakable]
+----
+Mono<String> noData = Mono.empty(); <1>
+
+Mono<String> data = Mono.just("foo");
+
+Flux<Integer> numbersFromFiveToSeven = Flux.range(5, 3); <2>
+----
+<1> Notice the factory method honors the generic type even though it has no value.
+<2> The first parameter is the start of the range, while the second parameter is the
+number of items to produce.
+
+When it comes to subscribing, `Flux` and `Mono` make use of Java 8 lambdas. You
+have a wide choice of `.subscribe()` variants that take lambdas for different
+combinations of callbacks, as shown in the following method signatures:
+
+[[subscribeMethods]]
+.Lambda-based subscribe variants for `Flux`
+[source,java]
+[%unbreakable]
+----
+subscribe(); <1>
+
+subscribe(Consumer<? super T> consumer); <2>
+
+subscribe(Consumer<? super T> consumer,
+          Consumer<? super Throwable> errorConsumer); <3>
+
+subscribe(Consumer<? super T> consumer,
+          Consumer<? super Throwable> errorConsumer,
+          Runnable completeConsumer); <4>
+
+subscribe(Consumer<? super T> consumer,
+          Consumer<? super Throwable> errorConsumer,
+          Runnable completeConsumer,
+          Consumer<? super Subscription> subscriptionConsumer); <5>
+----
+<1> Subscribe and trigger the sequence.
+<2> Do something with each produced value.
+<3> Deal with values but also react to an error.
+<4> Deal with values and errors but also run some code when the sequence successfully
+completes.
+<5> Deal with values and errors and successful completion but also do something with the
+`Subscription` produced by this `subscribe` call.
+
+TIP: These variants return a reference to the subscription that you can use to cancel the
+subscription when no more data is needed. Upon cancellation, the source should stop
+producing values and clean up any resources it created. This cancel-and-clean-up behavior
+is represented in Reactor by the general-purpose `Disposable` interface.
+
+include::../subscribe-details.adoc[]
+
+include::../subscribe-backpressure.adoc[]
+

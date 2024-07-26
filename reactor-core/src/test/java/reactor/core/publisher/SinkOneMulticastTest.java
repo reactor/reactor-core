@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscriber;
@@ -247,7 +249,8 @@ class SinkOneMulticastTest {
 
 		assertThatExceptionOfType(IllegalStateException.class)
 			.isThrownBy(() -> sink.block(Duration.ofNanos(-1)))
-			.withMessage("Timeout on blocking read for 0 NANOSECONDS");
+			.withMessage("Timeout on blocking read for 0 NANOSECONDS")
+			.withCause(new TimeoutException("Timeout on blocking read for 0 NANOSECONDS"));
 
 		assertThat(Duration.ofNanos(System.nanoTime() - start))
 			.isLessThan(Duration.ofMillis(500));
@@ -260,7 +263,8 @@ class SinkOneMulticastTest {
 
 		assertThatExceptionOfType(IllegalStateException.class)
 			.isThrownBy(() -> sink.block(Duration.ZERO))
-			.withMessage("Timeout on blocking read for 0 NANOSECONDS");
+			.withMessage("Timeout on blocking read for 0 NANOSECONDS")
+			.withCause(new TimeoutException("Timeout on blocking read for 0 NANOSECONDS"));
 
 		assertThat(Duration.ofNanos(System.nanoTime() - start))
 			.isLessThan(Duration.ofMillis(500));
@@ -321,7 +325,7 @@ class SinkOneMulticastTest {
 		sink.subscribe(scannable);
 
 		assertThat(sink.inners())
-			.asList()
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
 			.as("after subscriptions")
 			.hasSize(2)
 			.extracting(l -> (Object) ((SinkOneMulticast.Inner<?>) l).actual())

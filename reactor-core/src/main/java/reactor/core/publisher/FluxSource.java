@@ -68,11 +68,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super I> actual) {
-		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-			source.subscribe(new FluxSourceRestoringThreadLocalsSubscriber<>(actual));
-		} else {
-			source.subscribe(actual);
-		}
+		source.subscribe(actual);
 	}
 
 	@Override
@@ -96,97 +92,6 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
-		return null;
-	}
-
-	static final class FluxSourceRestoringThreadLocalsSubscriber<T>
-			implements Fuseable.ConditionalSubscriber<T>, InnerConsumer<T> {
-
-		final CoreSubscriber<? super T>                 actual;
-		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
-
-		Subscription s;
-
-		@SuppressWarnings("unchecked")
-		FluxSourceRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual) {
-			this.actual = actual;
-			if (actual instanceof Fuseable.ConditionalSubscriber) {
-				this.actualConditional = (Fuseable.ConditionalSubscriber<? super T>) actual;
-			}
-			else {
-				this.actualConditional = null;
-			}
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return s;
-			}
-			if (key == Attr.RUN_STYLE) {
-				return Attr.RunStyle.SYNC;
-			}
-			if (key == Attr.ACTUAL) {
-				return actual;
-			}
-			return null;
-		}
-
-		@Override
-		public Context currentContext() {
-			return actual.currentContext();
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onSubscribe(Subscription s) {
-			// This is needed, as the downstream can then switch threads,
-			// continue the subscription using different primitives and omit this operator
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onSubscribe(s);
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onNext(T t) {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onNext(t);
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public boolean tryOnNext(T t) {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				if (actualConditional != null) {
-					return actualConditional.tryOnNext(t);
-				}
-				actual.onNext(t);
-				return true;
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onError(Throwable t) {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onError(t);
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onComplete() {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onComplete();
-			}
-		}
+		return SourceProducer.super.scanUnsafe(key);
 	}
 }

@@ -88,9 +88,11 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		BaseSink<T> sink = createSink(actual, backpressure);
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+		BaseSink<T> sink = createSink(wrapped, backpressure);
 
-		actual.onSubscribe(sink);
+		wrapped.onSubscribe(sink);
 		try {
 			source.accept(
 					createMode == CreateMode.PUSH_PULL ? new SerializedFluxSink<>(sink) :
@@ -98,14 +100,14 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
-			sink.error(Operators.onOperatorError(ex, actual.currentContext()));
+			sink.error(Operators.onOperatorError(ex, wrapped.currentContext()));
 		}
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	/**
@@ -652,7 +654,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				s = instance.requested;
 				r = s & Long.MAX_VALUE;
 				if (r == Long.MAX_VALUE) {
-					return Long.MAX_VALUE;
+					return s;
 				}
 				u = Operators.addCap(r, toAdd);
 				if (REQUESTED.compareAndSet(instance, s, u | (s & Long.MIN_VALUE))) {

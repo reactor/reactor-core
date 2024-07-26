@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.reactivestreams.Publisher;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 
@@ -114,7 +115,9 @@ final class FluxRetry<T> extends InternalFluxOperator<T, T> {
 						produced(c);
 					}
 
-					source.subscribe(this);
+					// Not wrapping source, but just the subscriber due to requirements
+					// in TailCallSubscribeTest#retry
+					source.subscribe(Operators.restoreContextOnSubscriberIfPublisherNonInternal(source, this));
 
 				} while (WIP.decrementAndGet(this) != 0);
 			}

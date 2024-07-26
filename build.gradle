@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@ buildscript {
 plugins {
 	alias(libs.plugins.artifactory)
 	alias(libs.plugins.shadow)
-	alias(libs.plugins.asciidoctor.convert) apply false
-	alias(libs.plugins.asciidoctor.pdf) apply false
 	alias(libs.plugins.japicmp)
 	alias(libs.plugins.download)
 	// note: build scan plugin now must be applied in settings.gradle
@@ -42,7 +40,6 @@ plugins {
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
-apply from: "gradle/asciidoc.gradle" // asciidoc (which is generated from root dir)
 apply from: "gradle/releaser.gradle"
 apply from: "gradle/dependencies.gradle"
 apply from: "gradle/toolchains.gradle"
@@ -88,24 +85,10 @@ ext {
 	 */
 }
 
-// only publish scan if a specific gradle entreprise server is passed
-// typically, for local usage, you would temporarily set the env with:
-// `GRADLE_ENTERPRISE_URL=https://myge.example.com/ gradle foo`
-if (System.getenv('GRADLE_ENTERPRISE_URL')) {
-	gradleEnterprise {
-		buildScan {
-			captureTaskInputFiles = true
-			obfuscation {
-				ipAddresses { addresses -> addresses.collect { '0.0.0.0' } }
-			}
-			publishAlways()
-			server = System.getenv('GRADLE_ENTERPRISE_URL')
-		}
-	}
-}
-
 nohttp {
-	source.exclude "docs/asciidoc/highlight/**"
+	source.exclude "docs/modules/ROOT/assets/highlight/**"
+	source.exclude "docs/.gradle/**"
+	source.exclude "docs/build/**"
 	source.exclude "**/build/reports/tests/**/*.html"
 	allowlistFile = project.file('codequality/nohttp/allowlist.lines')
 }
@@ -215,9 +198,24 @@ configure(subprojects) { p ->
 			}
 		}
 	}
-}
 
-assemble.dependsOn docsZip
+	if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+		// If the JDK version is less than 17, the 'docs' subproject is not loaded, and therefore, the 'antora' or 'docs' tasks are unavailable.
+		// Display a friendly error message indicating that JDK 17 or higher is required
+
+		task antora {
+			doLast {
+				throw new GradleException("antora task requires JDK 17 or higher.")
+			}
+		}
+
+		task docs {
+			doLast {
+				throw new GradleException("docs task requires JDK 17 or higher")
+			}
+		}
+	}
+}
 
 configure(subprojects) { p ->
 	// these apply once the above configure is done, but before project-specific build.gradle have applied

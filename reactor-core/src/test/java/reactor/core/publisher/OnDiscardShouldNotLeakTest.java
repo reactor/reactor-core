@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,7 +184,6 @@ public class OnDiscardShouldNotLeakTest {
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                               .thenReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("collectList", f -> f.collectList()
-			                                                   .doOnSuccess(l -> l.forEach(Tracked::safeRelease))
 			                                                   .thenReturn(Tracked.RELEASED)),
 			DiscardScenario.fluxSource("streamCollector", f -> f.collect(Collectors.toList())
 			                                               .doOnSuccess(l -> l.forEach(Tracked::safeRelease))

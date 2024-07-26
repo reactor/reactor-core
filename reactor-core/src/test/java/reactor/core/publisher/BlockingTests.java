@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -87,7 +88,8 @@ public class BlockingTests {
 		assertThatIllegalStateException().isThrownBy(() ->
 				Flux.just(1).delayElements(Duration.ofSeconds(1))
 				.blockFirst(Duration.ofMillis(1)))
-			.withMessage("Timeout on blocking read for 1000000 NANOSECONDS");
+			.withMessage("Timeout on blocking read for 1000000 NANOSECONDS")
+			.withCause(new TimeoutException("Timeout on blocking read for 1000000 NANOSECONDS"));
 	}
 
 	@Test
@@ -115,7 +117,8 @@ public class BlockingTests {
 		assertThatIllegalStateException().isThrownBy(() ->
 				Flux.just(1).delayElements(Duration.ofMillis(100))
 						.blockLast(Duration.ofNanos(50)))
-				.withMessage("Timeout on blocking read for 50 NANOSECONDS");
+				.withMessage("Timeout on blocking read for 50 NANOSECONDS")
+				.withCause(new TimeoutException("Timeout on blocking read for 50 NANOSECONDS"));
 	}
 
 
@@ -287,7 +290,8 @@ public class BlockingTests {
 	@Test
 	public void monoBlockSupportsNanos() {
 		assertThatIllegalStateException().isThrownBy(() -> Mono.never().block(Duration.ofNanos(9_000L)))
-				.withMessage("Timeout on blocking read for 9000 NANOSECONDS");
+				.withMessage("Timeout on blocking read for 9000 NANOSECONDS")
+				.withCause(new TimeoutException("Timeout on blocking read for 9000 NANOSECONDS"));
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,12 +53,14 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 	static <T> void subscribe(CoreSubscriber<? super T> s,
 			Retry whenSourceFactory,
 			CorePublisher<? extends T> source) {
+		CorePublisher<? extends T> wrapped = Operators.toFluxOrMono(source);
+
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
 
 		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		RetryWhenMainSubscriber<T> main =
-				new RetryWhenMainSubscriber<>(serial, other.completionSignal, source, whenSourceFactory.retryContext());
+				new RetryWhenMainSubscriber<>(serial, other.completionSignal, wrapped, whenSourceFactory.retryContext());
 
 		other.main = main;
 		serial.onSubscribe(main);
@@ -71,10 +73,12 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 			s.onError(Operators.onOperatorError(e, s.currentContext()));
 			return;
 		}
+
+		p = Operators.toFluxOrMono(p);
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			source.subscribe(main);
+			wrapped.subscribe(main);
 		}
 	}
 
@@ -255,6 +259,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.PARENT) return main.otherArbiter;
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == InternalProducerAttr.INSTANCE) return true;
 
 			return null;
 		}

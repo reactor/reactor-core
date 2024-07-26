@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 
@@ -31,6 +33,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.MockUtils;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -40,6 +43,246 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxUsingTest extends FluxOperatorTest<String, String> {
+
+	public static List<CleanupCase<Integer>> sourcesNonEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("sourceNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> Flux.range(1, 10), false);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> sourcesEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("sourceEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set);
+					}
+				},
+				new CleanupCase<Integer>("sourceEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> Flux.range(1, 10));
+					}
+				},
+				new CleanupCase<Integer>("autocloseableEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> Flux.range(1, 10), true);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> sourcesFailNonEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("sourceFailNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.error(new RuntimeException("forced failure")), cleanup::set, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableFailNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> Flux.error(new RuntimeException("forced failure")), false);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> sourcesFailEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("sourceFailEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.error(new RuntimeException("forced failure")), cleanup::set);
+					}
+				},
+				new CleanupCase<Integer>("sourceFailEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.error(new RuntimeException("forced failure")), cleanup::set, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableFailEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> Flux.error(new RuntimeException("forced failure")));
+					}
+				},
+				new CleanupCase<Integer>("autocloseableFailEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> Flux.error(new RuntimeException("forced failure")), true);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> resourcesThrow() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(r, 10), cleanup::set, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(1, 10), false);
+					}
+				},
+				new CleanupCase<Integer>("resourceThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(r, 10), cleanup::set);
+					}
+				},
+				new CleanupCase<Integer>("resourceThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(r, 10), cleanup::set, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(1, 10));
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> { throw new RuntimeException("forced failure"); }, r -> Flux.range(1, 10), true);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> sourcesThrowNonEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("sourceThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }, false);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> sourcesThrowEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("sourceThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set);
+					}
+				},
+				new CleanupCase<Integer>("sourceThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> { throw new RuntimeException("forced failure"); }, cleanup::set, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); });
+					}
+				},
+				new CleanupCase<Integer>("autocloseableThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> cleanup::incrementAndGet, r -> { throw new RuntimeException("forced failure"); }, true);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> resourcesCleanupThrowNonEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceCleanupThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), r -> { throw new IllegalStateException("resourceCleanup"); }, false);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowNonEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Flux.range(1, 10), false);
+					}
+				}
+		);
+	}
+
+	public static List<CleanupCase<Integer>> resourcesCleanupThrowEager() {
+		return Arrays.asList(
+				new CleanupCase<Integer>("resourceCleanupThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), r -> { throw new IllegalStateException("resourceCleanup"); });
+					}
+				},
+				new CleanupCase<Integer>("resourceCleanupThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> 1, r -> Flux.range(r, 10), r -> { throw new IllegalStateException("resourceCleanup"); }, true);
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowEager") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Flux.range(1, 10));
+					}
+				},
+				new CleanupCase<Integer>("autocloseableResourceCleanupThrowEagerFlag") {
+					@Override
+					public Flux<Integer> get() {
+						return Flux.using(() -> new AutoCloseable() {
+							@Override
+							public void close() {
+								throw new IllegalStateException("resourceCleanup");
+							}
+						}, r -> Flux.range(1, 10), true);
+					}
+				}
+		);
+	}
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -114,63 +357,55 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		});
 	}
 
-	@Test
-	public void normal() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesNonEager")
+	public void normal(CleanupCase<Integer> cleanupCase) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, false)
-		    .subscribe(ts);
+		cleanupCase.get().doAfterTerminate(() -> assertThat(cleanupCase.cleanup).hasValue(0)).subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertComplete()
 		  .assertNoError();
 
-		assertThat(cleanup).hasValue(1);
+		assertThat(cleanupCase.cleanup).hasValue(1);
 	}
 
-	@Test
-	public void normalEager() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesEager")
+	public void normalEager(CleanupCase<Integer> cleanupCase) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set)
-		    .subscribe(ts);
+		cleanupCase.get()
+				   .doFinally(event -> assertThat(cleanupCase.cleanup).hasValue(0))
+				   .doOnTerminate(() -> assertThat(cleanupCase.cleanup).hasValue(1))
+			       .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertComplete()
 		  .assertNoError();
 
-		assertThat(cleanup).hasValue(1);
+		assertThat(cleanupCase.cleanup).hasValue(1);
 	}
 
-	void checkCleanupExecutionTime(boolean eager, boolean fail) {
-		AtomicInteger cleanup = new AtomicInteger();
+	void checkCleanupExecutionTime(CleanupCase<Integer> cleanupCase, boolean eager, boolean fail) {
 		AtomicBoolean before = new AtomicBoolean();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>() {
 			@Override
 			public void onError(Throwable t) {
 				super.onError(t);
-				before.set(cleanup.get() != 0);
+				before.set(cleanupCase.cleanup.get() != 0);
 			}
 
 			@Override
 			public void onComplete() {
 				super.onComplete();
-				before.set(cleanup.get() != 0);
+				before.set(cleanupCase.cleanup.get() != 0);
 			}
 		};
 
-		Flux.using(() -> 1, r -> {
-			if (fail) {
-				return Flux.error(new RuntimeException("forced failure"));
-			}
-			return Flux.range(r, 10);
-		}, cleanup::set, eager)
-		    .subscribe(ts);
+		cleanupCase.get().subscribe(ts);
 
 		if (fail) {
 			ts.assertNoValues()
@@ -184,66 +419,110 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 			  .assertNoError();
 		}
 
-		assertThat(cleanup).hasValue(1);
+		assertThat(cleanupCase.cleanup).hasValue(1);
 		assertThat(before.get()).isEqualTo(eager);
 	}
 
-	@Test
-	public void checkNonEager() {
-		checkCleanupExecutionTime(false, false);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesNonEager")
+	public void checkNonEager(CleanupCase<Integer> cleanupCase) {
+		checkCleanupExecutionTime(cleanupCase, false, false);
 	}
 
-	@Test
-	public void checkEager() {
-		checkCleanupExecutionTime(true, false);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesEager")
+	public void checkEager(CleanupCase<Integer> cleanupCase) {
+		checkCleanupExecutionTime(cleanupCase, true, false);
 	}
 
-	@Test
-	public void checkErrorNonEager() {
-		checkCleanupExecutionTime(false, true);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFailNonEager")
+	public void checkErrorNonEager(CleanupCase<Integer> cleanupCase) {
+		checkCleanupExecutionTime(cleanupCase, false, true);
 	}
 
-	@Test
-	public void checkErrorEager() {
-		checkCleanupExecutionTime(true, true);
+	@ParameterizedTestWithName
+	@MethodSource("sourcesFailEager")
+	public void checkErrorEager(CleanupCase<Integer> cleanupCase) {
+		checkCleanupExecutionTime(cleanupCase, true, true);
 	}
 
-	@Test
-	public void resourceThrowsEager() {
+	@ParameterizedTestWithName
+	@MethodSource("resourcesThrow")
+	public void resourceThrows(CleanupCase<Integer> cleanupCase) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> {
-			throw new RuntimeException("forced failure");
-		}, r -> Flux.range(1, 10), cleanup::set, false)
-		    .subscribe(ts);
+		cleanupCase.get().subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
-		assertThat(cleanup).hasValue(0);
+		assertThat(cleanupCase.cleanup).hasValue(0);
 	}
 
-	@Test
-	public void factoryThrowsEager() {
+	@ParameterizedTestWithName
+	@MethodSource("sourcesThrowNonEager")
+	public void factoryThrowsNonEager(CleanupCase<Integer> cleanupCase) {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		AtomicInteger cleanup = new AtomicInteger();
-
-		Flux.using(() -> 1, r -> {
-			throw new RuntimeException("forced failure");
-		}, cleanup::set, false)
-		    .subscribe(ts);
+		cleanupCase.get().doAfterTerminate(() -> assertThat(cleanupCase.cleanup).hasValue(0)).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
-		assertThat(cleanup).hasValue(1);
+		assertThat(cleanupCase.cleanup).hasValue(1);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("sourcesThrowEager")
+	public void factoryThrowsEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		cleanupCase.get()
+				   .doFinally(event -> assertThat(cleanupCase.cleanup).hasValue(0))
+			  	   .doOnTerminate(() -> assertThat(cleanupCase.cleanup).hasValue(1))
+			  	   .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+
+		assertThat(cleanupCase.cleanup).hasValue(1);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("resourcesCleanupThrowNonEager")
+	public void resourcesCleanupThrowNonEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		cleanupCase.get().subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertComplete()
+		  .assertNoError();
+
+		assertThat(cleanupCase.cleanup).hasValue(0);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("resourcesCleanupThrowEager")
+	public void resourcesCleanupThrowEager(CleanupCase<Integer> cleanupCase) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		cleanupCase.get().subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertErrorWith(e -> {
+			  assertThat(e).hasMessage("resourceCleanup");
+			  assertThat(e).isExactlyInstanceOf(IllegalStateException.class);
+		  });
+
+		assertThat(cleanupCase.cleanup).hasValue(0);
 	}
 
 	@Test
@@ -385,5 +664,20 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	static abstract class CleanupCase<T> implements Supplier<Flux<T>> {
+
+		final AtomicInteger cleanup = new AtomicInteger();
+		final String name;
+
+		CleanupCase(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
 
 }

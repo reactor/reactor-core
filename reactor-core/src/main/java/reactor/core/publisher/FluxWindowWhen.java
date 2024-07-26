@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 			Function<? super U, ? extends Publisher<V>> end,
 			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
-		this.start = Objects.requireNonNull(start, "start");
+		this.start = Operators.toFluxOrMono(Objects.requireNonNull(start, "start"));
 		this.end = Objects.requireNonNull(end, "end");
 		this.processorQueueSupplier =
 				Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
@@ -308,7 +308,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						if (resources.add(cl)) {
 							OPEN_WINDOW_COUNT.getAndIncrement(this);
 
-							p.subscribe(cl);
+							Operators.toFluxOrMono(p).subscribe(cl);
 						}
 
 						continue;

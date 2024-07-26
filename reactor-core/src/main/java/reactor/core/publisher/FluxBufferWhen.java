@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			Supplier<BUFFER> bufferSupplier,
 			Supplier<? extends Queue<BUFFER>> queueSupplier) {
 		super(source);
-		this.start = Objects.requireNonNull(start, "start");
+		this.start = Operators.toFluxOrMono(Objects.requireNonNull(start, "start"));
 		this.end = Objects.requireNonNull(end, "end");
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
@@ -360,6 +360,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 
 			BufferWhenCloseSubscriber<T, BUFFER> bc = new BufferWhenCloseSubscriber<>(this, idx);
 			subscribers.add(bc);
+			p = Operators.toFluxOrMono(p);
 			p.subscribe(bc);
 		}
 
@@ -431,7 +432,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			if (key == Attr.ERROR) return errors;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
-			return null;
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 

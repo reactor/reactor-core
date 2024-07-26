@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
@@ -124,7 +125,8 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 			try {
 				if (!await(timeout, unit)) {
 					dispose();
-					throw new IllegalStateException("Timeout on blocking read for " + timeout + " " + unit);
+					String errorMessage = "Timeout on blocking read for " + timeout + " " + unit;
+					throw new IllegalStateException(errorMessage, new TimeoutException(errorMessage));
 				}
 			}
 			catch (InterruptedException ex) {

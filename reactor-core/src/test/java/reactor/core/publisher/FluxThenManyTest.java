@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.jupiter.api.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +39,7 @@ public class FluxThenManyTest {
 	}
 
 	@Test
-	public void testThenManyFusion() throws InterruptedException {
+	public void testThenManyRepeated() throws InterruptedException {
 		Flux<Integer> test = Flux.just("A", "B")
 		                        .thenMany(Flux.just("C", "D"))
 		                        .thenMany(Flux.just(1, 2));
@@ -46,7 +47,7 @@ public class FluxThenManyTest {
 		assertThat(test).isInstanceOf(FluxConcatArray.class);
 		FluxConcatArray<Integer> s = (FluxConcatArray<Integer>)test;
 
-		assertThat(s.array).hasSize(3);
+		assertThat(s.array).hasSize(2);
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		test.subscribe(ts);
@@ -62,5 +63,14 @@ public class FluxThenManyTest {
 		test.subscribe(ts);
 		ts.assertValues("C", "D");
 		ts.assertComplete();
+	}
+
+	@Test
+	void testThenManyOnConcatArray() {
+		Flux.concat(Flux.just("a"), Flux.just("b"))
+		    .thenMany(Flux.just("c"))
+		    .as(StepVerifier::create)
+		    .expectNext("c")
+		    .verifyComplete();
 	}
 }

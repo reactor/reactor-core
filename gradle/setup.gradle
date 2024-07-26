@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ publishing {
 	repositories {
 		maven {
 			name = "mock"
-			url = "${rootProject.buildDir}/repo"
+			url = "${rootProject.layout.buildDirectory.get().asFile.toString()}/repo"
 		}
 		if (qualifyVersion("$version") == "RELEASE") {
 			maven {
@@ -113,9 +113,29 @@ publishing {
 			//consider adding extra artifacts here, conditionally on submodule's name and perhaps in an afterEvaluate block
 			afterEvaluate {
 				if (project.name == 'reactor-core') {
-					artifact rootProject.tasks.docsZip
+					// Find the docs project; if found, include docsZip in published artifacts.
+					// The docs project isn't loaded if the current JDK version is below JDK17,
+					// as it requires a current JDK17+ compatibility for the Antora Gradle plugin (see settings.gradle)
+					def docsProject = project.findProject(':docs')
+					if (docsProject) {
+						artifact docsProject.tasks.docsZip
+					}
+					else {
+						// docs project not found, indicating a current JDK version below JDK17.
+						// Assuming the docs zip was built with JDK17+ previously, manually check for the docsZip in
+						// docs/build/distributions/, and include it in the published artifact if found
+						def docsZipFile = file("${rootDir}/docs/build/distributions/reactor-core-${project.version}-docs.zip")
+						if (docsZipFile.exists()) {
+							artifact(docsZipFile) {
+								classifier 'docs'
+							}
+						}
+						else {
+							logger.warn("Antora docs zip not found from docs/ project. Use JDK 17+ to include docs in published artifacts.")
+						}
+					}
 				}
-				// note that reactor-tools has more involved stuff, so we kept it in the submodule's build:
+				// Note that reactor-tools has more involved stuff, so we kept it in the submodule's build:
 				// (it replaces the original jar with shadow jar and adds the former as -original.jar)
 			}
 

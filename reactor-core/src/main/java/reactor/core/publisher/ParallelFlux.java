@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,13 @@ import reactor.util.context.Context;
  * @param <T> the value type
  */
 public abstract class ParallelFlux<T> implements CorePublisher<T> {
+
+	static <T> ParallelFlux<T> from(ParallelFlux<T> source) {
+		if (ContextPropagationSupport.shouldWrapPublisher(source)) {
+			return new ParallelFluxRestoringThreadLocals<>(source);
+		}
+		return source;
+	}
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)

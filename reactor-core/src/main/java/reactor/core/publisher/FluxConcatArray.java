@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			if (p == null) {
 				Operators.error(actual, new NullPointerException("The single source Publisher is null"));
 			} else {
+				p = Operators.toFluxOrMono(p);
 				p.subscribe(actual);
 			}
 			return;
@@ -83,7 +84,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	/**
@@ -102,28 +103,6 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		System.arraycopy(array, 0, newArray, 0, n);
 		newArray[n] = source;
 		
-		return new FluxConcatArray<>(delayError, newArray);
-	}
-
-	/**
-	 * Returns a new instance which has the additional source to be merged together with
-	 * the current array of sources.
-	 * <p>
-	 * This operation doesn't change the current FluxMerge instance.
-	 *
-	 * @param source the new source to merge with the others
-	 * @return the new FluxConcatArray instance
-	 */
-	@SuppressWarnings("unchecked")
-	<V> FluxConcatArray<V> concatAdditionalIgnoredLast(Publisher<? extends V>
-			source) {
-		int n = array.length;
-		Publisher<? extends V>[] newArray = new Publisher[n + 1];
-		//noinspection SuspiciousSystemArraycopy
-		System.arraycopy(array, 0, newArray, 0, n);
-		newArray[n - 1] = Mono.ignoreElements(newArray[n - 1]);
-		newArray[n] = source;
-
 		return new FluxConcatArray<>(delayError, newArray);
 	}
 
@@ -255,6 +234,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				if (this.cancelled) {
 					return;
 				}
+				p = Operators.toFluxOrMono(p);
 				p.subscribe(this);
 
 				final Object state = this.get();
@@ -404,7 +384,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
-				final Publisher<? extends T> p = a[i];
+				Publisher<? extends T> p = a[i];
 
 				if (p == null) {
 					this.remove();
@@ -440,6 +420,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					return;
 				}
 
+				p = Operators.toFluxOrMono(p);
 				p.subscribe(this);
 
 				final Object state = this.get();

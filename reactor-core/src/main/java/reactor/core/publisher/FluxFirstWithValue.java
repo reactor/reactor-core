@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 			return;
 		}
 		if (n == 1) {
-			Publisher<? extends T> p = a[0];
+			Publisher<? extends T> p = Flux.from(a[0]);
 
 			if (p == null) {
 				Operators.error(actual,
@@ -178,7 +178,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class RaceValuesCoordinator<T>
@@ -226,6 +226,8 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 			}
 
 			actual.onSubscribe(this);
+
+			Operators.toFluxOrMono(sources);
 
 			for (int i = 0; i < n; i++) {
 				if (cancelled || winner != Integer.MIN_VALUE) {

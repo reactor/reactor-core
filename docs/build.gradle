@@ -1,0 +1,213 @@
+/*
+ * Copyright (c) 2024 VMware, Inc. or its affiliates, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+    alias(libs.plugins.antora)
+    alias(libs.plugins.antora.yml)
+}
+
+def isCommandAvailable(String command) {
+    def result = exec {
+        commandLine 'which', command
+        ignoreExitValue true
+        standardOutput = new ByteArrayOutputStream()
+        errorOutput = new ByteArrayOutputStream()
+    }
+    return result.exitValue == 0
+}
+
+antora {
+    version = libs.versions.antora.version
+    playbook = findProperty('antora.playbook') ?: "antora-playbook.yml"
+    options = ['--clean', '--stacktrace']
+
+    def version = project.version
+    def forcePdf = project.hasProperty('forcePdf')
+
+    if (!version.endsWith("-SNAPSHOT") || forcePdf) {
+        if (isCommandAvailable('asciidoctor-pdf')) {
+            logger.log(LogLevel.DEBUG, "enabling antora pdf-extension")
+            options.add('--extension=pdf-extension')
+        } else {
+            throw new GradleException("PDF cannot be generated, asciidoctor-pdf not found from the PATH.")
+        }
+    }
+
+    environment = [
+            'ALGOLIA_API_KEY'   : 'd4bf9918bfc7d63ae68fbf92d69c2f49',
+            'ALGOLIA_APP_ID'    : '82SNR5M8HE',
+            'ALGOLIA_INDEX_NAME': 'projectreactor'
+    ]
+
+    dependencies = [
+            '@antora/atlas-extension'         : "${libs.versions.antora.atlas.extension.get()}",
+            '@antora/pdf-extension'           : "${libs.versions.antora.pdf.extension.get()}",
+            '@antora/collector-extension'     : "${libs.versions.antora.collector.extension.get()}",
+            '@asciidoctor/tabs'               : "${libs.versions.antora.tabs.extension.get()}",
+            '@springio/antora-extensions'     : "${libs.versions.antora.springio.antora.extension.get()}",
+            '@springio/asciidoctor-extensions': "${libs.versions.antora.asciidoctor.extension.get()}"
+    ]
+}
+
+jar {
+    enabled = false
+}
+
+javadoc {
+    enabled = false
+}
+
+tasks.withType(AbstractPublishToMaven).configureEach {
+    enabled = false
+}
+
+configurations {
+    adoc
+}
+
+dependencies {
+    adoc(libs.micrometer.docsGenerator)
+}
+
+task generateObservabilityDocs(dependsOn: [
+        "generateMeterListenerDocs",
+        "generateTimedSchedulerDocs",
+        "generateObservationDocs",
+        "polishGeneratedMetricsDocs"]) {
+    outputs.dir(project.layout.buildDirectory.dir("documentedMetrics/").get().asFile.absolutePath)
+}
+
+task generateMeterListenerDocs(type: JavaExec) {
+    def outputDir = project.layout.buildDirectory.dir("generatedMetricsDocs/meterListener").get().asFile.absolutePath
+    outputs.dir(outputDir)
+    mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
+    classpath configurations.adoc
+    args project.rootDir.getAbsolutePath(),
+            ".*MicrometerMeterListenerDocumentation.*.java",
+            outputDir
+}
+
+task generateTimedSchedulerDocs(type: JavaExec) {
+    def outputDir = project.layout.buildDirectory.dir("generatedMetricsDocs/timedScheduler").get().asFile.absolutePath
+    outputs.dir(outputDir)
+    mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
+    classpath configurations.adoc
+    args project.rootDir.getAbsolutePath(), ".*TimedSchedulerMeterDocumentation.*.java",
+            outputDir
+}
+
+task generateObservationDocs(type: JavaExec) {
+    def outputDir = project.layout.buildDirectory.dir("generatedMetricsDocs/observation").get().asFile.absolutePath
+    outputs.dir(outputDir)
+    mainClass.set("io.micrometer.docs.DocsGeneratorCommand")
+    classpath configurations.adoc
+    args project.rootDir.getAbsolutePath(),
+            ".*MicrometerObservationListenerDocumentation.*.java",
+            outputDir
+}
+
+task polishGeneratedMetricsDocs(type: Copy) {
+    mustRunAfter "generateMeterListenerDocs"
+    mustRunAfter "generateTimedSchedulerDocs"
+    mustRunAfter "generateObservationDocs"
+    outputs.dir(project.layout.buildDirectory.dir("documentedMetrics").get().asFile.absolutePath)
+
+    from(project.layout.buildDirectory.get().asFile.toString() + "/generatedMetricsDocs/meterListener/") {
+        include "_*.adoc"
+        rename '_(.*).adoc', 'meterListener_$1.adoc'
+    }
+    from(project.layout.buildDirectory.get().asFile.toString() + "/generatedMetricsDocs/timedScheduler/") {
+        include "_*.adoc"
+        rename '_(.*).adoc', 'timedScheduler_$1.adoc'
+    }
+    from(project.layout.buildDirectory.get().asFile.toString() + "/generatedMetricsDocs/observation/") {
+        include "_*.adoc"
+        rename '_(.*).adoc', 'observation_$1.adoc'
+    }
+    into project.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics"
+    filter { String line ->
+        line.startsWith('[[observability-metrics]]') ||
+                line.startsWith('=== Observability - Metrics') ||
+                line.startsWith('Below you can find a list of all ') ||
+                line.startsWith("Fully qualified name of the enclosing class ")
+                ? null : line
+    }
+    filter { String line -> line.startsWith("====") ? line.replaceFirst("====", "=") : line }
+    doLast {
+        //since these are the files that get explicitly included in asciidoc, smoke test they exist
+        assert file(project.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics/meterListener_metrics.adoc").exists()
+        assert file(project.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics/timedScheduler_metrics.adoc").exists()
+        assert file(project.layout.buildDirectory.get().asFile.toString() + "/documentedMetrics/observation_metrics.adoc").exists()
+    }
+}
+
+tasks.create(name: 'createAntoraPartials', type: Sync) {
+    from { project(":docs").tasks.generateObservabilityDocs.outputs }
+
+    // Download and include SUPPORT.adoc
+    doLast {
+        def url = 'https://raw.githubusercontent.com/reactor/.github/main/SUPPORT.adoc'
+        def outputFile = file("${buildDir}/generated-antora-resources/modules/ROOT/partials/SUPPORT.adoc")
+        ant.get(src: url, dest: outputFile)
+    }
+    into layout.buildDirectory.dir('generated-antora-resources/modules/ROOT/partials')
+}
+
+tasks.named("generateAntoraYml") {
+    asciidocAttributes = project.provider({ generateAttributes() })
+    baseAntoraYmlFile = file("antora.yml")
+}
+
+tasks.create('generateAntoraResources') {
+    dependsOn 'createAntoraPartials'
+    dependsOn 'generateAntoraYml'
+}
+
+def generateAttributes() {
+    return ['is-snapshot-version': project.version.endsWith("-SNAPSHOT"),
+            'project-version'    : project.version,
+            'reactorReleaseTrain': bomVersion
+    ]
+}
+
+task docsZip(type: Zip, dependsOn: ':docs:antora') {
+    archiveBaseName.set("reactor-core")
+    archiveClassifier.set('docs')
+
+    def isSnapshot = project.version.endsWith('-SNAPSHOT')
+    def version = isSnapshot ? project.version.takeWhile { it != '-' } : project.version
+    boolean forcePdf = project.hasProperty('forcePdf')
+
+    from('build/site') {
+        into 'docs'
+    }
+
+    if (!isSnapshot || forcePdf) {
+        def pdfFile = file("build/assembler/reactor/${version}/reactor-3-reference-guide.pdf")
+        logger.lifecycle("${pdfFile} will be included in docs zip")
+        from(pdfFile) {
+            rename { fileName ->
+                "docs/reactor-core-reference-guide-${project.version}.pdf"
+            }
+        }
+    }
+}
+
+description = "Reactor 3 Antora Docs"
+
+assemble.dependsOn docsZip
+
+// docsZip is added to publication in gradle/setup.gradle, see publications -> mavenJava -> afterEvaluate

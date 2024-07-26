@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("bufferSize > 0 required but it was " + prefetch);
 		}
-		this.source = Objects.requireNonNull(source, "source");
+		this.source = Flux.from(Objects.requireNonNull(source, "source"));
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.resetUponSourceTermination = resetUponSourceTermination;
@@ -159,6 +159,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}
@@ -316,10 +317,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 
-			done = true;
 			if (!Exceptions.addThrowable(ERROR, this, t)) {
 				Operators.onErrorDroppedMulticast(t, subscribers);
+				return;
 			}
+
+			done = true;
 
 			long previousState = markTerminated(this);
 			if (isTerminated(previousState) || isCancelled(previousState)) {

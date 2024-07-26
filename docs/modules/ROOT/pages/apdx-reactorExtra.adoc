@@ -1,0 +1,61 @@
+[[reactor-extra]]
+== Reactor-Extra
+
+The `reactor-extra` artifact contains additional operators and utilities that are for
+users of `reactor-core` with advanced needs, or incubating operators.
+
+As this is a separate artifact, you need to explicitly add it to your build. The following
+example shows how to do so in Gradle:
+
+[source,groovy]
+----
+dependencies {
+     compile 'io.projectreactor:reactor-core'
+     compile 'io.projectreactor.addons:reactor-extra' <1>
+}
+----
+<1> Add the reactor extra artifact in addition to core. See xref:gettingStarted.adoc#getting[Getting Reactor] for details
+about why you do not need to specify a version if you use the BOM, usage in Maven, and other details.
+
+[[extra-tuples]]
+=== `TupleUtils` and Functional Interfaces
+
+The `reactor.function` package contains functional interfaces that complement the Java 8
+`Function`, `Predicate`, and `Consumer` interfaces, for three to eight values.
+
+`TupleUtils` offers static methods that act as a bridge between lambdas of these functional
+interfaces to a similar interface on the corresponding `Tuple`.
+
+This lets you easily work with independent parts of any `Tuple`, as the following example shows:
+
+[source,java]
+[%unbreakable]
+----
+.map(tuple -> {
+  String firstName = tuple.getT1();
+  String lastName = tuple.getT2();
+  String address = tuple.getT3();
+
+  return new Customer(firstName, lastName, address);
+});
+----
+
+You can rewrite the preceding example as follows:
+
+[source,java]
+[%unbreakable]
+----
+.map(TupleUtils.function(Customer::new)); // <1>
+----
+<1> (as `Customer` constructor conforms to `Function3` functional interface signature)
+
+[[extra-math]]
+=== Math Operators With `MathFlux`
+
+The `reactor.math` package contains a `MathFlux` specialized version of `Flux` that offers
+mathematical operators, including `max`, `min`, `sumInt`, `averageDouble`, and others.
+
+[[extra-schedulers]]
+=== Schedulers
+
+Reactor-extra comes with the `ForkJoinPoolScheduler` (in the `reactor.scheduler.forkjoin` package): it uses the Java `ForkJoinPool` to execute tasks.

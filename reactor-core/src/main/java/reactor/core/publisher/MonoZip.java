@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,6 +122,10 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			return;
 		}
 
+		for (int i = 0; i < n; i++) {
+			a[i] = Mono.fromDirect(a[i]);
+		}
+
 		actual.onSubscribe(new ZipCoordinator<>(a, actual, n, delayError, zipper));
 	}
 
@@ -129,7 +133,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class ZipCoordinator<R> implements InnerProducer<R>,

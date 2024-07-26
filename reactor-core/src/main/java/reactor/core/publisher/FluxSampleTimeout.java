@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,6 +207,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 			SampleTimeoutOther<T, U> os = new SampleTimeoutOther<>(this, t, idx);
 
 			if (Operators.replace(OTHER, this, os)) {
+				p = Operators.toFluxOrMono(p);
 				p.subscribe(os);
 			}
 		}

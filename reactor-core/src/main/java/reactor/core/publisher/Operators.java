@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -991,6 +991,57 @@ public abstract class Operators {
 		}
 	}
 
+	public static <T> CorePublisher<T> toFluxOrMono(Publisher<T> publisher) {
+		if (publisher instanceof Mono) {
+			return Mono.fromDirect(publisher);
+		}
+		return Flux.from(publisher);
+	}
+
+	public static <T> void toFluxOrMono(Publisher<? extends T>[] sources) {
+		for (int i = 0; i < sources.length; i++) {
+			if (sources[i] != null) {
+				sources[i] = toFluxOrMono(sources[i]);
+			}
+		}
+	}
+
+	static <T> CoreSubscriber<T> restoreContextOnSubscriberIfPublisherNonInternal(
+			Publisher<?> publisher, CoreSubscriber<T> subscriber) {
+		if (ContextPropagationSupport.shouldWrapPublisher(publisher)) {
+			return restoreContextOnSubscriber(publisher, subscriber);
+		}
+		return subscriber;
+	}
+
+	static <T> CoreSubscriber<? super T> restoreContextOnSubscriberIfAutoCPEnabled(
+			Publisher<?> publisher, CoreSubscriber<? super T> subscriber) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			return restoreContextOnSubscriber(publisher, subscriber);
+		}
+		return subscriber;
+	}
+
+	static <T> CoreSubscriber<T> restoreContextOnSubscriber(Publisher<?> publisher, CoreSubscriber<T> subscriber) {
+		if (publisher instanceof Fuseable) {
+			return new FluxContextWriteRestoringThreadLocalsFuseable.FuseableContextWriteRestoringThreadLocalsSubscriber<>(
+					subscriber, subscriber.currentContext());
+		} else {
+			return new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
+					subscriber,
+					subscriber.currentContext());
+		}
+	}
+
+	static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribers(
+			Publisher<?> publisher, CoreSubscriber<? super T>[] subscribers) {
+		CoreSubscriber<? super T>[] actualSubscribers = new CoreSubscriber[subscribers.length];
+		for (int i = 0; i < subscribers.length; i++) {
+			actualSubscribers[i] = restoreContextOnSubscriber(publisher, subscribers[i]);
+		}
+		return actualSubscribers;
+	}
+
 	private static Throwable unwrapOnNextError(Throwable error) {
 		return Exceptions.isBubbling(error) ? error : Exceptions.unwrap(error);
 	}
@@ -1476,24 +1527,14 @@ public abstract class Operators {
 	Operators() {
 	}
 
-	static final class CorePublisherAdapter<T> implements CorePublisher<T>,
-	                                                      OptimizableOperator<T, T> {
+	static final class CorePublisherAdapter<T> implements CorePublisher<T> {
 
 		final Publisher<T> publisher;
 
-		@Nullable
-		final OptimizableOperator<?, T> optimizableOperator;
-
 		CorePublisherAdapter(Publisher<T> publisher) {
 			this.publisher = publisher;
-			if (publisher instanceof OptimizableOperator) {
-				@SuppressWarnings("unchecked")
-				OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) publisher;
-				this.optimizableOperator = optimSource;
-			}
-			else {
-				this.optimizableOperator = null;
-			}
+			// note: if publisher is not CorePublisher it can't be an
+			// OptimizableOperator, which extends CorePublisher
 		}
 
 		@Override
@@ -1504,21 +1545,6 @@ public abstract class Operators {
 		@Override
 		public void subscribe(Subscriber<? super T> s) {
 			publisher.subscribe(s);
-		}
-
-		@Override
-		public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-			return actual;
-		}
-
-		@Override
-		public final CorePublisher<? extends T> source() {
-			return this;
-		}
-
-		@Override
-		public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
-			return optimizableOperator;
 		}
 	}
 
@@ -2656,6 +2682,11 @@ public abstract class Operators {
 		final Predicate<Publisher> filter;
 		final String name;
 
+		// TODO: this leaks to the users of LiftFunction, encapsulation is broken
+		//  consider: liftFunction.lifter.apply could go through encapsulation
+		//  like: liftFunction.applyLifter() where what lifter.apply returns is wrapped
+		//  unconditionally; otherwise -> all lift* operators need to be considered as
+		//  NOT INTERNAL_PRODUCER sources
 		final BiFunction<Publisher, ? super CoreSubscriber<? super O>,
 				? extends CoreSubscriber<? super I>> lifter;
 
@@ -2670,7 +2701,17 @@ public abstract class Operators {
 			}
 
 			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
-					effectiveLifter = (pub, sub) -> lifter.apply(Scannable.from(pub), sub);
+					effectiveLifter =
+					// For CP, we wrap the result that the user-provided lifter
+					// returns, but we also wrap the actual sub if lifting happens on
+					// top of a custom Publisher so that user's lifter can also see
+					// have the Context properly restored to ThreadLocal values.
+					(pub, sub) -> {
+						CoreSubscriber<? super I> userLiftedSub =
+								lifter.apply(Scannable.from(pub),
+										restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
+						return restoreContextOnSubscriberIfPublisherNonInternal(pub, userLiftedSub);
+					};
 
 			return new LiftFunction<>(effectiveFilter, effectiveLifter, lifter.toString());
 		}
@@ -2679,7 +2720,19 @@ public abstract class Operators {
 				@Nullable Predicate<Publisher> filter,
 				BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 			Objects.requireNonNull(lifter, "lifter");
-			return new LiftFunction<>(filter, lifter, lifter.toString());
+			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+					effectiveLifter =
+					// For CP, we wrap the result that the user-provided lifter
+					// returns, but we also wrap the actual sub if lifting happens on
+					// top of a custom Publisher so that user's lifter can also see
+					// have the Context properly restored to ThreadLocal values.
+					(pub, sub) -> {
+						CoreSubscriber<? super I> userLiftedSub =
+								lifter.apply(pub,
+										restoreContextOnSubscriberIfAutoCPEnabled(pub, sub));
+						return restoreContextOnSubscriberIfPublisherNonInternal(pub, userLiftedSub);
+					};
+			return new LiftFunction<>(filter, effectiveLifter, lifter.toString());
 		}
 
 		private LiftFunction(@Nullable Predicate<Publisher> filter,

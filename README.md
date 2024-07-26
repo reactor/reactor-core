@@ -31,15 +31,15 @@ repositories {
 }
 
 dependencies {
-    compile "io.projectreactor:reactor-core:3.6.0-M3"
-    testCompile "io.projectreactor:reactor-test:3.6.0-M3"
+    compile "io.projectreactor:reactor-core:3.7.0-M4"
+    testCompile "io.projectreactor:reactor-test:3.7.0-M4"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.6.0-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.6.0-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.7.0-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.7.0-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.6.0-M3"
+    // implementation "io.projectreactor:reactor-tools:3.7.0-M4"
 }
 ```
 
@@ -89,6 +89,29 @@ When the installations succeed, try to refresh the project and see that it build
 The manual Operation-system specific JDK installation
 is well explained in the [official docs](https://docs.oracle.com/en/java/javase/20/install/overview-jdk-installation.html)
 
+### Building the doc
+
+The current active shell JDK version must be compatible with JDK17 or higher for Antora to build successfully.
+So, just ensure that you have installed JDK 21, as described above and make it as the current one. 
+
+Then you can build the antora documentation like this:
+```shell
+./gradlew docs
+```
+
+The documentation is generated in `docs/build/site/index.html` and in `docs/build/distributions/reactor-core-<version>-docs.zip` 
+If a PDF file should also be included in the generated docs zip file, then you need to specify `-PforcePdf` option:
+
+```shell
+./gradlew docs -PforcePdf
+```
+Notice that PDF generation requires the `asciidoctor-pdf` command to be available in the PATH. 
+For example, on Mac OS, you can install such command like this:
+
+```shell
+brew install asciidoctor
+```
+
 ## Getting Started
 
 New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Core hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
@@ -133,12 +156,11 @@ Mono.fromCallable(System::currentTimeMillis)
 ```
 
 Blocking Mono result :
-```java    
-Tuple2<Long, Long> nowAndLater = 
-        Mono.zip(
-                Mono.just(System.currentTimeMillis()),
-                Flux.just(1).delay(1).map(i -> System.currentTimeMillis()))
-            .block();
+```java
+Tuple2<Instant, Instant> nowAndLater = Mono.zip(
+    Mono.just(Instant.now()),
+    Mono.delay(Duration.ofSeconds(1)).then(Mono.fromCallable(Instant::now)))
+  .block();
 ```
 
 ## Schedulers
@@ -199,7 +221,7 @@ Flux.create(sink -> {
     },
     // Overflow (backpressure) handling, default is BUFFER
     FluxSink.OverflowStrategy.LATEST)
-    .timeout(3)
+    .timeout(Duration.ofSeconds(3))
     .doOnComplete(() -> System.out.println("completed!"))
     .subscribe(System.out::println)
 ```

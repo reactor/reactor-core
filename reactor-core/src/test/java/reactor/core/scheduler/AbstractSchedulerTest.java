@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,12 +144,18 @@ public abstract class AbstractSchedulerTest {
 		Scheduler s = scheduler();
 		s.dispose();
 		// TODO: in 3.6.x: remove restart capability and this validation
-		s.start();
 
 		if (supportsRestart) {
+			s.start();
 			assertThat(s.isDisposed()).as("restart supported").isFalse();
 		}
 		else {
+			try {
+				s.start();
+			} catch (Exception e) {
+				assertThat(e).isInstanceOf(UnsupportedOperationException.class).as(
+						"start not supported for " + s.getClass().getName());
+			}
 			assertThat(s.isDisposed()).as("restart not supported").isTrue();
 		}
 	}
@@ -348,9 +354,7 @@ public abstract class AbstractSchedulerTest {
 
 	@Test
 	void multipleRestarts() {
-		if (!shouldCheckSupportRestart()) {
-			return;
-		}
+		Assumptions.assumeThat(shouldCheckSupportRestart()).as("scheduler supports restart").isTrue();
 
 		Scheduler s = scheduler();
 

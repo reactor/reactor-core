@@ -1,0 +1,51 @@
+name: Snapshots Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 20 * * *"
+permissions: read-all
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 3.5.x, 3.6.x, main ]
+        test-type:
+          - type: core
+            arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
+          - type: other # includes java21Test and java9Test for 3.6+
+            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress -DuseSnapshotMicrometerVersion=true --no-daemon"
+    name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4
+        with:
+          ref: ${{ matrix.branch }}
+      - name: Download Java 9
+        if: contains('main 3.6.x', matrix.branch)
+        run: ${GITHUB_WORKSPACE}/.github/setup.sh
+        shell: bash
+      - name: Setup Java 9
+        if: contains('main 3.6.x', matrix.branch)
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
+        with:
+          distribution: 'jdkfile'
+          java-version: 9.0.4
+          jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+      - name: Setup Java 21
+        if: contains('main 3.6.x', matrix.branch)
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Setup Java 8
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # tag=v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+      - name: Run Gradle Tests
+        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # tag=v3
+        with:
+          arguments: ${{ matrix.test-type.arguments }}

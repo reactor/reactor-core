@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -201,20 +201,24 @@ def japicmpReport = tasks.register('japicmpReport') {
 		japicmp.state.failure != null
 	}
 	doLast {
-		def reportFile = file("${project.buildDir}/reports/japi.txt")
-		if (reportFile.exists()) {
-			println "\n **********************************"
-			println " * /!\\ API compatibility failures *"
-			println " **********************************"
-			println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
-			reportFile.eachLine {
-				if (it.contains("*") && (!it.contains("***") || it.contains("****")))
-					println "source incompatible change: $it"
-				else if (it.contains("!"))
-					println "binary incompatible change: $it"
-			}
+		def reportFile = project.layout.buildDirectory.file("reports/japi.txt").get().asFile
+	  if (reportFile.exists()) {
+		println "\n **********************************"
+		println " * /!\\ API compatibility failures *"
+		println " **********************************"
+		println "Japicmp report was filtered and interpreted to find the following incompatibilities:"
+		reportFile.eachLine {
+		  if (it.contains("*") && (!it.contains("***") || it.contains("****"))) {
+			println "source incompatible change: $it"
+		  }
+		  else if (it.contains("!")) {
+			println "binary incompatible change: $it"
+		  }
 		}
-		else println "No incompatible change to report"
+	  }
+	  else {
+		println "No incompatible change to report"
+	  }
 	}
 }
 
@@ -242,13 +246,11 @@ task japicmp(type: JapicmpTask) {
 	onlyModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
-	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	txtOutputFile = project.layout.buildDirectory.file("reports/japi.txt").get().asFile
 	ignoreMissingClasses = true
 	includeSynthetic = true
 	compatibilityChangeExcludes = [ "METHOD_NEW_DEFAULT" ]
 
-	// TODO after a .0 release, bump the gradle.properties baseline
-	// TODO after a .0 release, remove the reactor-core exclusions below if any
 	classExcludes = [
 	]
 	methodExcludes = [
@@ -258,7 +260,7 @@ task japicmp(type: JapicmpTask) {
 gradle.taskGraph.afterTask { task, state ->
 	if (task instanceof JapicmpTask && state.failure && ((JapicmpTask) task).richReport == null) {
 		//FIXME print the rich report somehow on console ?
-		print file("${project.buildDir}/reports/japi.txt").getText()
+		print project.layout.buildDirectory.file("reports/japi.txt").get().asFile.getText()
 	}
 }
 
@@ -273,7 +275,7 @@ javadoc {
 		// work around https://github.com/gradle/gradle/issues/4046
 		copy {
 			from('src/main/java')
-			into "$project.buildDir/docs/javadoc/"
+			into "${project.layout.buildDirectory.dir('docs/javadoc/').get().asFile.toString()}"
 			include "**/doc-files/**/*"
 		}
 	}
@@ -287,6 +289,7 @@ task loops(type: Test, group: 'verification') {
 }
 
 test {
+  maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
   def tags = rootProject.findProperty("junit-tags")
   if (tags != null) {
 	println "junit5 tags for core: $tags"
@@ -299,7 +302,12 @@ test {
   }
 }
 
+java9Test {
+  maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
+}
+
 java21Test {
+  maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
   println("Available number of processors is " + Runtime.getRuntime().availableProcessors())
   if (Runtime.getRuntime().availableProcessors() <= 2) {
 	systemProperty "jdk.virtualThreadScheduler.parallelism", "6"
@@ -335,7 +343,7 @@ blockHoundTest {
 }
 
 jcstress {
-	mode = 'quick' //quick, default, tough
+	mode = project.hasProperty('jcstress.mode') ? project.getProperty('jcstress.mode') : 'quick' //sanity, quick, default, tough
     jcstressDependency 'org.openjdk.jcstress:jcstress-core:0.16'
 	heapPerFork = 512
 }

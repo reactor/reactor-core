@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,13 +76,17 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+
 		if (!STATE.compareAndSet(this, State.INITIAL, State.SUBSCRIBED)) {
-			Operators.reportThrowInSubscribe(actual, new IllegalStateException("Unicast Sinks.Many allows only a single Subscriber"));
+			Operators.reportThrowInSubscribe(wrapped, new IllegalStateException(
+					"Unicast Sinks.Many allows only a single Subscriber"));
 			return;
 		}
 
-		this.actual = actual;
-		actual.onSubscribe(this);
+		this.actual = wrapped;
+		wrapped.onSubscribe(this);
 	}
 
 	@Override
@@ -190,6 +194,7 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 		if (key == Attr.ACTUAL) return actual;
 		if (key == Attr.TERMINATED) return state == State.TERMINATED;
 		if (key == Attr.CANCELLED) return state == State.CANCELLED;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}

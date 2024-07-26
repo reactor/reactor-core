@@ -51,7 +51,7 @@ task copyReadme(type: Copy, group: "releaser helpers", description: "copies the 
 	from(rootProject.rootDir) {
 		include "README.md"
 	}
-	into rootProject.buildDir
+	into rootProject.layout.buildDirectory.get().asFile.toString()
 }
 
 task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "replaces versions in README") {
@@ -66,7 +66,7 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
 	doLast {
 		println "Will replace $oldVersion with $currentVersion and $oldSnapshot with $nextVersion"
 	}
-	from(rootProject.buildDir) {
+	from(rootProject.layout.buildDirectory.get().asFile.toString()) {
 		include 'README.md'
 	}
 	into rootProject.rootDir

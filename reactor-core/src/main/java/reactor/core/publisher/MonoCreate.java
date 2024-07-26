@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,22 +50,26 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(actual);
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
 
-		actual.onSubscribe(emitter);
+		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(wrapped);
+
+		wrapped.onSubscribe(emitter);
 
 		try {
 			callback.accept(emitter);
 		}
 		catch (Throwable ex) {
-			emitter.error(Operators.onOperatorError(ex, actual.currentContext()));
+			emitter.error(Operators.onOperatorError(ex, wrapped.currentContext()));
 		}
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
-		return null;
+		if (key == InternalProducerAttr.INSTANCE) return true;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class DefaultMonoSink<T> extends AtomicBoolean

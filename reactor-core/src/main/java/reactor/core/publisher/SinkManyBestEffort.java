@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
 		if (key == Attr.ERROR) return error;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}
@@ -191,8 +192,11 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe(null) is forbidden");
 
-		DirectInner<T> p = new DirectInner<>(actual, this);
-		actual.onSubscribe(p);
+		CoreSubscriber<? super T> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+
+		DirectInner<T> p = new DirectInner<>(wrapped, this);
+		wrapped.onSubscribe(p);
 
 		if (p.isCancelled()) {
 			return;
@@ -206,10 +210,10 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		else {
 			Throwable e = error;
 			if (e != null) {
-				actual.onError(e);
+				wrapped.onError(e);
 			}
 			else {
-				actual.onComplete();
+				wrapped.onComplete();
 			}
 		}
 	}

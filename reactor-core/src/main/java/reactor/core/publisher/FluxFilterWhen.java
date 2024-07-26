@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -279,6 +279,7 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 								FilterWhenInner inner = new FilterWhenInner(this, !(p instanceof Mono));
 								if (CURRENT.compareAndSet(this,null, inner)) {
 									state = STATE_RUNNING;
+									p = Operators.toFluxOrMono(p);
 									p.subscribe(inner);
 									break;
 								}

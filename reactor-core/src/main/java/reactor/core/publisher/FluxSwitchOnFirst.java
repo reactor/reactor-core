@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -519,7 +519,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
-				final Publisher<? extends R> outboundPublisher;
+				Publisher<? extends R> outboundPublisher;
 				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
@@ -542,6 +542,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
+				outboundPublisher = Operators.toFluxOrMono(outboundPublisher);
 				outboundPublisher.subscribe(o);
 				return;
 			}
@@ -575,7 +576,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
-				final Publisher<? extends R> result;
+				Publisher<? extends R> result;
 				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 				try {
 					final Signal<T> signal = Signal.error(t, o.currentContext());
@@ -586,6 +587,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
+				result = Operators.toFluxOrMono(result);
 				result.subscribe(o);
 			}
 		}
@@ -611,7 +613,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			if (!hasFirstValueReceived(previousState)) {
-				final Publisher<? extends R> result;
+				Publisher<? extends R> result;
 				final CoreSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
@@ -623,6 +625,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return;
 				}
 
+				result = Operators.toFluxOrMono(result);
 				result.subscribe(o);
 			}
 		}
@@ -844,7 +847,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return true;
 				}
 
-				final Publisher<? extends R> result;
+				Publisher<? extends R> result;
 				final SwitchOnFirstControlSubscriber<? super R> o = this.outboundSubscriber;
 
 				try {
@@ -868,6 +871,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 					return true;
 				}
 
+				result = Operators.toFluxOrMono(result);
 				result.subscribe(o);
 				return true;
 			}
@@ -1013,7 +1017,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.CANCELLED) return hasOutboundCancelled(this.parent.state);
 			if (key == Attr.TERMINATED) return hasOutboundTerminated(this.parent.state);
 
-			return null;
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 

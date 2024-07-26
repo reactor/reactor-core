@@ -1,0 +1,9 @@
+root_level: 0
+build:
+    publish: false
+asciidoc:
+    build:
+        command: bundle exec asciidoctor-pdf -n -d book
+    attributes:
+        source-highlighter: rouge
+        pdf-theme: ./pdf-theme.yml

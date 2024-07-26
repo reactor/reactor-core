@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public interface Scheduler extends Disposable {
 	 *
 	 * @param task the task to execute
 	 *
-	 * @return the {@link Disposable} instance that let's one cancel this particular task.
+	 * @return the {@link Disposable} instance that lets one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
 	 */
 	Disposable schedule(Runnable task);
@@ -62,7 +62,7 @@ public interface Scheduler extends Disposable {
 	 * @param task the task to schedule
 	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 	 * @param unit the unit of measure of the delay amount
-	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+	 * @return the {@link Disposable} that lets one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling with delay.
 	 */
 	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
@@ -84,7 +84,7 @@ public interface Scheduler extends Disposable {
 	 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
 	 * @param period the period at which the task should be re-executed
 	 * @param unit the unit of measure of the delay amount
-	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+	 * @return the {@link Disposable} that lets one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
@@ -133,7 +133,7 @@ public interface Scheduler extends Disposable {
 	 *
 	 * <p>The Scheduler may choose to ignore this instruction.
 	 * <p>When used in combination with {@link #disposeGracefully()}
-	 * there are no guarantees that all resources will be forcefully shutdown.
+	 * there are no guarantees that all resources will be forcefully shut down.
 	 * When a graceful disposal has started, the references to the underlying
 	 * {@link java.util.concurrent.Executor}s might have already been lost.
 	 */
@@ -199,7 +199,7 @@ public interface Scheduler extends Disposable {
 		/**
 		 * Schedules the task for immediate execution on this worker.
 		 * @param task the task to schedule
-		 * @return the {@link Disposable} instance that let's one cancel this particular task.
+		 * @return the {@link Disposable} instance that lets one cancel this particular task.
 		 * If the Scheduler has been shut down, a {@link RejectedExecutionException} is thrown.
 		 */
 		Disposable schedule(Runnable task);
@@ -209,14 +209,14 @@ public interface Scheduler extends Disposable {
 		 *
 		 * <p>
 		 * This method is safe to be called from multiple threads and tasks are executed in
-		 * some total order. Two tasks scheduled at a same time with the same delay will be
+		 * some total order. Two tasks scheduled at the same time with the same delay will be
 		 * ordered in FIFO order if the schedule() was called from the same thread or
 		 * in arbitrary order if the schedule() was called from different threads.
 		 *
 		 * @param task the task to schedule
 		 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 		 * @param unit the unit of measure of the delay amount
-		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+		 * @return the {@link Disposable} that lets one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
 		 */
 		default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
@@ -237,7 +237,7 @@ public interface Scheduler extends Disposable {
 		 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
 		 * @param period the period at which the task should be re-executed
 		 * @param unit the unit of measure of the delay amount
-		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+		 * @return the {@link Disposable} that lets one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
 		 */
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {

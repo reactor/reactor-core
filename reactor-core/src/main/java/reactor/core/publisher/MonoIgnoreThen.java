@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
     @Override
     public Object scanUnsafe(Attr key) {
         if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        if (key == InternalProducerAttr.INSTANCE) return true;
         return null;
     }
     
@@ -237,19 +238,19 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         }
                         onComplete();
                     } else {
-                        m.subscribe(this);
+                        Operators.toFluxOrMono(m).subscribe(this);
                     }
                     return;
                 } else {
-                    final Publisher<?> m = a[i];
+                    Publisher<?> p = a[i];
 
-                    if (m instanceof Callable) {
+                    if (p instanceof Callable) {
                         if (isCancelled(this.state)) {
                             //NB: in the non-callable case, this is handled by activeSubscription.cancel()
                             return;
                         }
                         try {
-                            Operators.onDiscard(((Callable<?>) m).call(), currentContext());
+                            Operators.onDiscard(((Callable<?>) p).call(), currentContext());
                         }
                         catch (Throwable ex) {
                             onError(Operators.onOperatorError(ex, currentContext()));
@@ -260,7 +261,8 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         continue;
                     }
 
-                    m.subscribe((CoreSubscriber) this);
+                    p = Operators.toFluxOrMono(p);
+                    p.subscribe((CoreSubscriber) this);
                     return;
                 }
             }

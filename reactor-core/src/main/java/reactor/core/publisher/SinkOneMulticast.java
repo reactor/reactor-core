@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Objects;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Sinks.EmitResult;
@@ -75,14 +74,17 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 		if (key == Attr.TERMINATED) return isTerminated(subscribers);
 		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == InternalProducerAttr.INSTANCE) return true;
 
 		return null;
 	}
 
 	@Override
 	public void subscribe(final CoreSubscriber<? super O> actual) {
-		NextInner<O> as = new NextInner<>(actual, this);
-		actual.onSubscribe(as);
+		CoreSubscriber<? super O> wrapped =
+				Operators.restoreContextOnSubscriberIfAutoCPEnabled(this, actual);
+		NextInner<O> as = new NextInner<>(wrapped, this);
+		wrapped.onSubscribe(as);
 		final int addState = add(as);
 		if (addState == STATE_ADDED) {
 			if (as.isCancelled()) {
@@ -90,7 +92,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 			}
 		}
 		else if (addState == STATE_ERROR) {
-			actual.onError(error);
+			wrapped.onError(error);
 		}
 		else if (addState == STATE_EMPTY) {
 			as.complete();

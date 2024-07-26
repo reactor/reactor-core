@@ -1,0 +1,171 @@
+[[metrics]]
+= Exposing Reactor metrics
+
+Project Reactor is a library designed for performance and better utilization of resources.
+But to truly understand the performance of a system, it is best to be able to monitor its various components.
+
+This is why Reactor provides a built-in integration with https://micrometer.io[Micrometer] via the `reactor-core-micrometer` module.
+Introduced in the `2022.0 BOM` release, the module provides an explicit dependency to Micrometer, which allows it to offer fine-tuned APIs for metrics and observations.
+
+NOTE: Up to Reactor-Core `3.5.0`, metrics were implemented as operators that would be no-op if Micrometer wasn't on the classpath.
+
+The `reactor-core-micrometer` APIs require the user to provide a form of _registry_ explicitly instead of relying on a hardcoded global registry.
+When applying instrumentation to classes that have a NATIVE notion of naming or tags, these APIs will attempt to discover such elements in the reactive chain.
+Otherwise, the API will expect that a _prefix_ for naming meters is provided alongside the registry.
+
+[[scheduler-metrics]]
+== Scheduler metrics
+
+Every async operation in Reactor is done via the Scheduler abstraction described in xref:coreFeatures/schedulers#schedulers[Threading and Schedulers].
+This is why it is important to monitor your schedulers, watch out for key metrics that start to look suspicious and react accordingly.
+
+The `reactor-core-micrometer` module offers a "timed" `Scheduler` wrapper that perform measurements around tasks submitted through it, which can be used as follows:
+[source,java]
+[%unbreakable]
+----
+Scheduler originalScheduler = Schedulers.newParallel("test", 4);
+
+Scheduler schedulerWithMetrics = Micrometer.timedScheduler(
+	originalScheduler, // <1>
+	applicationDefinedMeterRegistry, // <2>
+	"testingMetrics", // <3>
+	Tags.of(Tag.of("additionalTag", "yes")) // <4>
+);
+----
+<1> the `Scheduler` to wrap
+<2> the `MeterRegistry` in which to publish metrics
+<3> the prefix to use in naming meters. This would for example lead to a `testingMetrics.scheduler.tasks.completed` meter being created.
+<4> optional tags to add to all the meters created for that wrapping `Scheduler`
+
+IMPORTANT: When wrapping a common `Scheduler` (eg. `Schedulers.single()`) or a `Scheduler` that is used in multiple places, only the `Runnable` tasks that are
+submitted through the wrapper instance returned by `Micrometer#timedScheduler` are going to be instrumented.
+
+See xref:metrics-details.adoc#micrometer-details-timedScheduler[Micrometer.timedScheduler()] for produced meters and associated default tags.
+
+// FIXME reactor-monitoring-demo won't be in sync with 3.5.0 anymore
+//TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/master/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics.
+
+[[publisher-metrics]]
+== Publisher metrics
+Sometimes it is useful to be able to record metrics at some stage in your reactive pipeline.
+
+One way to do it would be to manually push the values to your metrics backend of choice from a custom `SignalListener`
+provided to the `tap` operator.
+
+An out-of-the-box implementation is actually provided by the `reactor-core-micrometer` module, via `Micrometer#metrics` APIs.
+Consider the following pipeline:
+[source,java]
+[%unbreakable]
+----
+listenToEvents()
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+
+To enable the metrics for this source `Flux` (returned from `listenToEvents()`), we need to turn on the metrics collection:
+
+[source,java]
+[%unbreakable]
+----
+listenToEvents()
+    .name("events") // <1>
+    .tap(Micrometer.metrics( // <2>
+        applicationDefinedMeterRegistry // <3>
+    ))
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> Every metric at this stage of the reactive pipeline will use "events" as a naming prefix (optional, defaults to `reactor` prefix).
+<2> We use the `tap` operator combined with a `SignalListener` implementation provided in `reactor-core-micrometer` for metrics collection.
+<3> As with other APIs in that module, the `MeterRegistry` into which to publish metrics needs to be explicitly provided.
+
+The detail of the exposed metrics is available in xref:metrics-details.adoc#micrometer-details-metrics[Micrometer.metrics()].
+
+//TODO update and reintroduce tips for using the metrics
+//Want to know how many times your event processing has restarted due to some error? Read `[name].subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
+//
+//Interested in "events per second" metric? Measure the rate of `[name].onNext.delay` 's count.
+//
+//Want to be alerted when the listener throws an error? `[name].flow.duration` with `status=error` tag is your friend.
+//Similarly, `status=completed` and `status=completedEmpty` will allow you to distinguish sequences that completed with elements from sequences that completed empty.
+//
+//Please note that when giving a name to a sequence, this sequence could not be aggregated with others anymore. As a compromise if you want to identify your sequence but still make it possible to aggregate with other views, you can use a <<Tags>> for the name by calling `(tag("flow", "events"))` for example.
+
+[[tags]]
+=== Tags
+
+In addition to the common tags described in xref:metrics-details.adoc#micrometer-details-metrics[Micrometer.metrics()], users can add custom tags to their reactive chains via the `tag` operator:
+[source,java]
+[%unbreakable]
+----
+listenToEvents()
+    .name("events") // <1>
+    .tag("source", "kafka") // <2>
+    .tap(Micrometer.metrics(applicationDefinedRegistry)) // <3>
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> Every metric at this stage will be identified with the "events" prefix.
+<2> Set a custom tag "source" to value "kafka".
+<3> All reported metrics will have `source=kafka` tag assigned in addition to the common tags.
+
+Please note that depending on the monitoring system you're using, using a name can be considered mandatory when using tags, since it would otherwise result in a different set of tags between two default-named sequences.
+Some systems like Prometheus might also require to have the exact same set of tags for each metric with the same name.
+
+[[observation]]
+=== Observation
+In addition to full metrics, the `reactor-core-micrometer` module offers an alternative based on Micrometer's `Observation`.
+Depending on the configuration and runtime classpath, an `Observation` could translate to timers, spans, logging statements or any combination.
+
+A reactive chain can be observed via the `tap` operator and `Micrometer.observation` utility, as follows:
+[source,java]
+[%unbreakable]
+----
+listenToEvents()
+    .name("events") // <1>
+    .tap(Micrometer.observation( // <2>
+		applicationDefinedRegistry)) // <3>
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> The `Observation` for this pipeline will be identified with the "events" prefix.
+<2> We use the `tap` operator with the `observation` utility.
+<3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
+
+The detail of the observation and its tags is provided in xref:metrics-details.adoc#micrometer-details-observation[Micrometer.observation()].
+
+You can also fully customize Micrometer's Observation via
+`Micrometer.observation(ObservationRegistry registry, Function<ObservationRegistry, Observation> observationSupplier)`
+with your own Observation supplier, as follows:
+[source,java]
+[%unbreakable]
+----
+listenToEvents()
+    .name("events") // <1>
+    .tap(Micrometer.observation( // <2>
+    	applicationDefinedRegistry, // <3>
+    	registry -> Observation.createNotStarted( // <4>
+    		myConvention, // <5>
+            myContextSupplier, // <6>
+            registry)))
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> The `Observation` for this pipeline will be identified with the "events" prefix.
+<2> We use the `tap` operator with the `observation` utility.
+<3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
+<4> We provide our own function to create the Observation
+<5> with a custom `ObservationConvention`
+<6> and a custom `Supplier<Context>`.
+
+include::metrics-details.adoc[levelOffset=1]

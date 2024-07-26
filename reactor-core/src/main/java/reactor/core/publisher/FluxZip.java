@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -294,6 +294,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			@Nullable Object[] scalars,
 			int n,
 			int sc) {
+		Operators.toFluxOrMono(srcs);
+
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
@@ -321,7 +323,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return SourceProducer.super.scanUnsafe(key);
 	}
 
 	static final class ZipScalarCoordinator<R> implements InnerProducer<R>,

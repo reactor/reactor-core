@@ -16,6 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Function;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.CorePublisher;
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -28,24 +35,36 @@ final class ContextPropagationSupport {
     // Ultimately the long term solution should be provided by Reactor Core.
     static final boolean isContextPropagationOnClasspath;
     static final boolean isContextPropagation103OnClasspath;
+    static final boolean isContextPropagation101OnClasspath;
     static boolean       propagateContextToThreadLocals = false;
 
     static {
         boolean contextPropagation = false;
         boolean contextPropagation103 = false;
+        boolean contextPropagation101 = false;
         try {
             Class.forName("io.micrometer.context.ContextRegistry");
             contextPropagation = true;
+            Class.forName("io.micrometer.context.ThreadLocalAccessor").getDeclaredMethod("restore", Object.class);
+            contextPropagation101 = true;
             Class.forName("io.micrometer.context.ContextSnapshotFactory");
             contextPropagation103 = true;
         } catch (ClassNotFoundException notFound) {
+        } catch (NoSuchMethodException notFound) {
         } catch (LinkageError linkageErr) {
         } catch (Throwable err) {
             LOGGER.error("Unexpected exception while detecting ContextPropagation feature." +
                     " The feature is considered disabled due to this:", err);
         }
         isContextPropagationOnClasspath = contextPropagation;
+        isContextPropagation101OnClasspath = contextPropagation101;
         isContextPropagation103OnClasspath = contextPropagation103;
+
+        if (isContextPropagationOnClasspath && !isContextPropagation103OnClasspath) {
+            LOGGER.warn("context-propagation version below 1.0.3 can cause memory leaks" +
+                    " when working with scope-based ThreadLocalAccessors, please " +
+                    "upgrade!");
+        }
     }
 
     /**
@@ -57,12 +76,21 @@ final class ContextPropagationSupport {
         return isContextPropagationOnClasspath;
     }
 
+    static boolean isContextPropagation101Available() {
+        return isContextPropagation101OnClasspath;
+    }
+
     static boolean isContextPropagation103Available() {
         return isContextPropagation103OnClasspath;
     }
 
     static boolean shouldPropagateContextToThreadLocals() {
         return isContextPropagationOnClasspath && propagateContextToThreadLocals;
+    }
+
+    static boolean shouldWrapPublisher(Publisher<?> publisher) {
+        return shouldPropagateContextToThreadLocals() &&
+                !Scannable.from(publisher).scanOrDefault(InternalProducerAttr.INSTANCE, false);
     }
 
     static boolean shouldRestoreThreadLocalsInSomeOperators() {

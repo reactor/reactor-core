@@ -1,0 +1,19 @@
+[[flux]]
+= Flux, an Asynchronous Sequence of 0-N Items
+
+The following image shows how a `Flux` transforms items:
+
+image::flux.svg[Flux]
+
+A `Flux<T>` is a standard `Publisher<T>` that represents an asynchronous sequence of 0 to N
+emitted items, optionally terminated by either a completion signal or an error.
+As in the Reactive Streams spec, these three types of signal translate to calls to a downstream
+Subscriber's `onNext`, `onComplete`, and `onError` methods.
+
+With this large scope of possible signals, `Flux` is the general-purpose reactive type.
+Note that all events, even terminating ones, are optional: no `onNext` event but an
+`onComplete` event represents an _empty_ finite sequence, but remove the `onComplete` and
+you have an _infinite_ empty sequence (not particularly useful, except for tests around cancellation).
+Similarly, infinite sequences are not necessarily empty. For example, `Flux.interval(Duration)`
+produces a `Flux<Long>` that is infinite and emits regular ticks from a clock.
+

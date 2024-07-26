@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 			return null;
 		}
 
+		p = Operators.toFluxOrMono(p);
 		p.subscribe(other);
 
 		if (!main.cancelled) {
@@ -225,6 +226,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.PARENT) return main.otherArbiter;
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			if (key == InternalProducerAttr.INSTANCE) return true;
 
 			return null;
 		}

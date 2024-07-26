@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		MonoPublishMulticaster<T> multicast = new MonoPublishMulticaster<>(actual.currentContext());
 
-		Mono<? extends R> out = Objects.requireNonNull(transform.apply(fromDirect(multicast)),
-				"The transform returned a null Mono");
+		Mono<? extends R> out = fromDirect(
+				Objects.requireNonNull(transform.apply(fromDirect(multicast)), "The transform returned a null Mono"));
 
 		if (out instanceof Fuseable) {
 			out.subscribe(new FluxPublishMulticast.CancelFuseableMulticaster<>(actual, multicast));

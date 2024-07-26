@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
+import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -60,6 +61,16 @@ final class ContextPropagation {
 		}
 	}
 
+	static <T> Flux<T> fluxRestoreThreadLocals(Flux<? extends T> flux, boolean fuseable) {
+		return fuseable ?
+				new FluxContextWriteRestoringThreadLocalsFuseable<>(flux, Function.identity())
+				: new FluxContextWriteRestoringThreadLocals<>(flux, Function.identity());
+	}
+
+	static <T> Mono<T> monoRestoreThreadLocals(Mono<? extends T> mono) {
+		return new MonoContextWriteRestoringThreadLocals<>(mono, Function.identity());
+	}
+
 	static void configureContextSnapshotFactory(boolean clearMissing) {
 		if (ContextPropagationSupport.isContextPropagation103OnClasspath) {
 			globalContextSnapshotFactory = ContextSnapshotFactory.builder()
@@ -82,7 +93,10 @@ final class ContextPropagation {
 				Object value = ((ContextAccessor<C, ?>) contextAccessor).readValue((C) context, key);
 				previousValues = setThreadLocal(key, value, threadLocalAccessor, previousValues);
 			}
-			return ReactorScopeImpl.from(previousValues, registry);
+			if (ContextPropagationSupport.isContextPropagation101Available()) {
+				return ReactorScopeImpl.from(previousValues, registry);
+			}
+			return ReactorScopeImpl100.from(previousValues, registry);
 		}
 	}
 
@@ -116,6 +130,8 @@ final class ContextPropagation {
 			return contextSnapshot.wrap(delegate);
 		};
 	}
+
+
 
 	/**
 	 * Create a support function that takes a snapshot of thread locals and merges them with the
@@ -488,6 +504,44 @@ final class ContextPropagation {
 
 		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
 			return (previousValues != null ? new ReactorScopeImpl(previousValues, registry) : () -> {
+			});
+		}
+	}
+
+	private static class ReactorScopeImpl100 implements ContextSnapshot.Scope {
+
+		private final Map<Object, Object> previousValues;
+
+		private final ContextRegistry contextRegistry;
+
+		private ReactorScopeImpl100(Map<Object, Object> previousValues,
+				ContextRegistry contextRegistry) {
+			this.previousValues = previousValues;
+			this.contextRegistry = contextRegistry;
+		}
+
+		@Override
+		public void close() {
+			for (ThreadLocalAccessor<?> accessor : this.contextRegistry.getThreadLocalAccessors()) {
+				if (this.previousValues.containsKey(accessor.key())) {
+					Object previousValue = this.previousValues.get(accessor.key());
+					resetThreadLocalValue(accessor, previousValue);
+				}
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
+			if (previousValue != null) {
+				((ThreadLocalAccessor<V>) accessor).setValue(previousValue);
+			}
+			else {
+				accessor.reset();
+			}
+		}
+
+		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
+			return (previousValues != null ? new ReactorScopeImpl100(previousValues, registry) : () -> {
 			});
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import reactor.util.context.ContextView;
  *
  * <p>
  *     Calling a {@link SynchronousSink} outside of a generator consumer or function, e.g.
- *     using an async callback, is forbidden. You can {@link FluxSink} or
+ *     using an async callback, is forbidden. You can use {@link FluxSink} or
  *     {@link MonoSink} based generators for these situations.
  *
  * @param <T> the output value type

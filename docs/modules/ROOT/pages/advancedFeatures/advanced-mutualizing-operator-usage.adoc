@@ -1,0 +1,101 @@
+[[advanced-mutualizing-operator-usage]]
+= Mutualizing Operator Usage
+
+From a clean-code perspective, code reuse is generally a good thing. Reactor offers a few
+patterns that can help you reuse and mutualize code, notably for operators or combinations
+of operators that you might want to apply regularly in your codebase. If you think of a
+chain of operators as a recipe, you can create a "`cookbook`" of operator recipes.
+
+[[using-the-transform-operator]]
+== Using the `transform` Operator
+
+The `transform` operator lets you encapsulate a piece of an operator chain into a
+function. That function is applied to an original operator chain at assembly time to
+augment it with the encapsulated operators. Doing so applies the same operations to all
+the subscribers of a sequence and is basically equivalent to chaining the operators
+directly. The following code shows an example:
+
+[source,java]
+[%unbreakable]
+----
+Function<Flux<String>, Flux<String>> filterAndMap =
+f -> f.filter(color -> !color.equals("orange"))
+      .map(String::toUpperCase);
+
+Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+	.doOnNext(System.out::println)
+	.transform(filterAndMap)
+	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
+----
+
+The following image shows how the `transform` operator encapsulates flows:
+
+image::gs-transform.png[Transform Operator : encapsulate flows]
+
+The preceding example produces the following output:
+
+----
+blue
+Subscriber to Transformed MapAndFilter: BLUE
+green
+Subscriber to Transformed MapAndFilter: GREEN
+orange
+purple
+Subscriber to Transformed MapAndFilter: PURPLE
+----
+
+[[using-the-transformdeferred-operator]]
+== Using the `transformDeferred` Operator
+
+The `transformDeferred` operator is similar to `transform` and also lets you encapsulate operators
+in a function. The major difference is that this function is applied to the original
+sequence _on a per-subscriber basis_. It means that the function can actually produce a
+different operator chain for each subscription (by maintaining some state). The
+following code shows an example:
+
+[source,java]
+[%unbreakable]
+----
+AtomicInteger ai = new AtomicInteger();
+Function<Flux<String>, Flux<String>> filterAndMap = f -> {
+	if (ai.incrementAndGet() == 1) {
+return f.filter(color -> !color.equals("orange"))
+        .map(String::toUpperCase);
+	}
+	return f.filter(color -> !color.equals("purple"))
+	        .map(String::toUpperCase);
+};
+
+Flux<String> composedFlux =
+Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+    .doOnNext(System.out::println)
+    .transformDeferred(filterAndMap);
+
+composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
+composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
+----
+
+The following image shows how the `transformDeferred` operator works with per-subscriber transformations:
+
+image::gs-compose.png[Compose Operator : Per Subscriber transformation]
+
+The preceding example produces the following output:
+
+[%unbreakable]
+----
+blue
+Subscriber 1 to Composed MapAndFilter :BLUE
+green
+Subscriber 1 to Composed MapAndFilter :GREEN
+orange
+purple
+Subscriber 1 to Composed MapAndFilter :PURPLE
+blue
+Subscriber 2 to Composed MapAndFilter: BLUE
+green
+Subscriber 2 to Composed MapAndFilter: GREEN
+orange
+Subscriber 2 to Composed MapAndFilter: ORANGE
+purple
+----
+

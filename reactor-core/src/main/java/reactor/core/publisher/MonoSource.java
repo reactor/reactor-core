@@ -65,11 +65,7 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	 */
 	@Override
 	public void subscribe(CoreSubscriber<? super I> actual) {
-		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-			source.subscribe(new MonoSourceRestoringThreadLocalsSubscriber<>(actual));
-		} else {
-			source.subscribe(actual);
-		}
+		source.subscribe(actual);
 	}
 
 	@Override
@@ -96,92 +92,6 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 		if (key == Attr.RUN_STYLE) {
 			return Scannable.from(source).scanUnsafe(key);
 		}
-		return null;
-	}
-
-	static final class MonoSourceRestoringThreadLocalsSubscriber<T>
-			implements InnerConsumer<T> {
-
-		final CoreSubscriber<? super T> actual;
-
-		Subscription s;
-		boolean      done;
-
-		MonoSourceRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual) {
-			this.actual = actual;
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return s;
-			}
-			if (key == Attr.RUN_STYLE) {
-				return Attr.RunStyle.SYNC;
-			}
-			if (key == Attr.ACTUAL) {
-				return actual;
-			}
-			return null;
-		}
-
-		@Override
-		public Context currentContext() {
-			return actual.currentContext();
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onSubscribe(Subscription s) {
-			// This is needed, as the downstream can then switch threads,
-			// continue the subscription using different primitives and omit this operator
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onSubscribe(s);
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onNext(T t) {
-			this.done = true;
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onNext(t);
-				actual.onComplete();
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onError(Throwable t) {
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				if (this.done) {
-					Operators.onErrorDropped(t, actual.currentContext());
-					return;
-				}
-
-				this.done = true;
-
-				actual.onError(t);
-			}
-		}
-
-		@SuppressWarnings("try")
-		@Override
-		public void onComplete() {
-			if (this.done) {
-				return;
-			}
-
-			this.done = true;
-
-			try (ContextSnapshot.Scope ignored =
-					     ContextPropagation.setThreadLocals(actual.currentContext())) {
-				actual.onComplete();
-			}
-		}
+		return SourceProducer.super.scanUnsafe(key);
 	}
 }
