@@ -32,6 +32,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -774,5 +776,83 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		// Note +10 means that 10 tasks are in fly blocked, and they are not included
 		// in the capacity counting since they don't occupy a queue
 		Assertions.assertThat(scheduler.estimateRemainingTaskCapacity()).isEqualTo(10L * (Integer.MAX_VALUE / 10 + 1) - 1000 + 10);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void allTasksExecuteInParallelWhenMaxProvided(boolean useWorker) throws Exception {
+		int total = 2 * Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE;
+
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(total, total);
+		scheduler.init();
+
+		CountDownLatch latch = new CountDownLatch(total);
+
+		try {
+			for (int i = 0; i < total; i++) {
+				Runnable task = () -> {
+					try {
+						latch.countDown();
+						latch.await();
+					}
+					catch (InterruptedException e) {
+						// ignore
+					}
+				};
+				if (useWorker) {
+					scheduler.createWorker().schedule(task);
+				} else {
+					scheduler.schedule(task);
+				}
+			}
+
+			Assertions.assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+		} finally {
+			scheduler.dispose();
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void allTasksExecuteInParallelWhenUsingDefaultMax(boolean useWorker) throws Exception {
+		int parallelTasks = Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE;
+		int total = 2 * parallelTasks;
+
+		Scheduler scheduler = Schedulers.boundedElastic();
+		scheduler.init();
+
+		CountDownLatch allScheduled = new CountDownLatch(1);
+
+		CountDownLatch secondBatch = new CountDownLatch(parallelTasks);
+
+		try {
+			for (int i = 0; i < total; i++) {
+				final int taskIndex = i;
+				Runnable task = () -> {
+					try {
+						System.out.println("Task #" + taskIndex);
+						allScheduled.await();
+						if (taskIndex >= parallelTasks) {
+							secondBatch.countDown();
+							secondBatch.await();
+						}
+					}
+					catch (InterruptedException e) {
+						// ignore
+					}
+				};
+				if (useWorker) {
+					scheduler.createWorker().schedule(task);
+				} else {
+					scheduler.schedule(task);
+				}
+			}
+
+			allScheduled.countDown();
+
+			Assertions.assertThat(secondBatch.await(1, TimeUnit.SECONDS)).isTrue();
+		} finally {
+			scheduler.dispose();
+		}
 	}
 }

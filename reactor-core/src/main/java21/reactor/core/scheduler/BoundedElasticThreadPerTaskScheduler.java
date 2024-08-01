@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -882,7 +882,7 @@ final class BoundedElasticThreadPerTaskScheduler
 
 		static long incrementRefCnt(long state) {
 			long rawRefCnt = state & REF_CNT_MASK;
-			return (rawRefCnt) == REF_CNT_MASK ? state : (rawRefCnt >> 31 + 1) << 31 | (state &~ REF_CNT_MASK);
+			return (rawRefCnt) == REF_CNT_MASK ? state : ((rawRefCnt >> 31) + 1) << 31 | (state &~ REF_CNT_MASK);
 		}
 
 		static long release(SequentialThreadPerTaskExecutor instance) {
