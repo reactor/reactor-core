@@ -882,7 +882,7 @@ final class BoundedElasticThreadPerTaskScheduler
 
 		static long incrementRefCnt(long state) {
 			long rawRefCnt = state & REF_CNT_MASK;
-			return (rawRefCnt) == REF_CNT_MASK ? state : (rawRefCnt >> 31 + 1) << 31 | (state &~ REF_CNT_MASK);
+			return (rawRefCnt) == REF_CNT_MASK ? state : ((rawRefCnt >> 31) + 1) << 31 | (state &~ REF_CNT_MASK);
 		}
 
 		static long release(SequentialThreadPerTaskExecutor instance) {
