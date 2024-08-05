@@ -153,12 +153,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 				buffer = b;
 			}
 
-			if (!b.add(t)) {
+			if (b.add(t)) {
+				if (b.size() == size) {
+					buffer = null;
+					actual.onNext(b);
+				}
+			} else {
 				Operators.onDiscard(t, actual.currentContext());
 				s.request(1);
-			} else if (b.size() == size) {
-				buffer = null;
-				actual.onNext(b);
 			}
 		}
 

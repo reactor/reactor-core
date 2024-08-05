@@ -700,14 +700,14 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
     @ParameterizedTestWithName
     @CsvSource({
-        "1|2,       1|2,          ",
-        "1|1|1,     1,         1|1",
-        "1|1|2,     1|2,         1",
-        "1|2|1,     1|2,          ",
-        "1|2|1|3,   1|2;3,       1",
-        "1|2|1|1|3, 1|2;1|3,     1",
-        "1|1|2|3,   1|2,         1",
-        "2|1|1|3,   2|1;3,       1"
+        "1|2,       1|2,        ",
+        "1|1|1,     1,       1|1",
+        "1|1|2,     1|2,       1",
+        "1|2|1,     1|2,        ",
+        "1|2|1|3,   1|2;3,     1",
+        "1|2|1|1|3, 1|2;1|3,   1",
+        "1|1|2|3|3, 1|2;3,   1|3",
+        "2|1|1|3,   2|1;3,     1"
     })
     public void bufferSkipWithMax2Skip3SupplierUsesSet(String input, String output, @Nullable String discard) {
         List<Set<Object>> outputs = Arrays.stream(output.split(";"))
