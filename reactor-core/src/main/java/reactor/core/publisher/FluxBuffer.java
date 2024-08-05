@@ -309,11 +309,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 			}
 
 			if (b != null) {
-				if (!b.add(t)) {
-					Operators.onDiscard(t, this.ctx);
-					s.request(1);
-					return;
-				} else if (b.size() == size) {
+				b.add(t);
+				if (b.size() == size) {
 					buffer = null;
 					actual.onNext(b);
 				}
@@ -483,17 +480,6 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 				return;
 			}
 
-			boolean added = isEmpty();
-			for (C b : this) {
-				added |= b.add(t);
-			}
-
-			if (!added) {
-				Operators.onDiscard(t, actual.currentContext());
-				s.request(1);
-				return;
-			}
-
 			long i = index;
 
 			if (i % skip == 0L) {
@@ -510,19 +496,23 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 					return;
 				}
 
-				b.add(t);
 				offer(b);
 			}
 
-			for (C b : this) {
-				if (b.size() == size) {
-					poll();
-					actual.onNext(b);
-					produced++;
-				} else {
-					// Safe to break as soon as we find a buffer that's not yet at size
-					break;
-				}
+			C b = peek();
+
+			if (b != null && b.size() + 1 == size) {
+				poll();
+
+				b.add(t);
+
+				actual.onNext(b);
+
+				produced++;
+			}
+
+			for (C b0 : this) {
+				b0.add(t);
 			}
 
 			index = i + 1;
