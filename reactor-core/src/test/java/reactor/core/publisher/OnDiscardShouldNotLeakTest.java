@@ -157,7 +157,9 @@ public class OnDiscardShouldNotLeakTest {
 			DiscardScenario.fluxSource("monoFilterWhenFalse", main -> main.last().filterWhen(__ -> Mono.just(false).hide())),
 			DiscardScenario.fluxSource("last", main -> main.last(new Tracked("default")).flatMap(f -> Mono.just(f).hide())),
 			DiscardScenario.fluxSource("flatMapIterable", f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("bufferTimeout", f -> f.bufferTimeout(2, Duration.ofMillis(1), true).flatMapIterable(Function.identity())),
+			// no asynchronicity is supported in these tests so long timeout is used to be
+			// effectively disabled in bufferTimeout test:
+			DiscardScenario.fluxSource("bufferTimeout", f -> f.bufferTimeout(2, Duration.ofDays(1), true).flatMapIterable(Function.identity())),
 			DiscardScenario.fluxSource("publishOnDelayErrors", f -> f.publishOn(Schedulers.immediate())),
 			DiscardScenario.fluxSource("publishOnImmediateErrors", f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
 			DiscardScenario.fluxSource("publishOnAndPublishOn", main -> main
