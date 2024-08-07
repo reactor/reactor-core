@@ -142,6 +142,16 @@ listenToEvents()
 
 The detail of the observation and its tags is provided in xref:metrics-details.adoc#micrometer-details-observation[Micrometer.observation()].
 
+WARNING: The set of meters collected with
+  xref:metrics-details.adoc#micrometer-details-observation[`Micrometer.observation()`]
+  differs from the set of meters that
+  xref:metrics-details.adoc#micrometer-details-metrics[`Micrometer.metrics()`] provides.
+  `Micrometer.observation()` covers the lifecycle of an entire reactive chain, while
+  `Micrometer.metrics()` provides some insight into individual signals within the chain.
+  Due to the generic nature of `Micrometer.observation()` (like providing traces aside
+  from metrics) it might require wrapping unitsof work, like `Mono.just(processedItem)`
+  and observing a sub-chain using a `flatMap`-like operator.
+
 You can also fully customize Micrometer's Observation via
 `Micrometer.observation(ObservationRegistry registry, Function<ObservationRegistry, Observation> observationSupplier)`
 with your own Observation supplier, as follows:
