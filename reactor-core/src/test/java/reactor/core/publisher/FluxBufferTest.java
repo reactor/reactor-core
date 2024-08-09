@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,24 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -661,4 +668,33 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1, 2, 3, 3); //we already opened a 2nd buffer
 	}
+
+    @ParameterizedTestWithName
+    @CsvSource({
+        "1|2,     1|2,        ",
+        "1|1|1,   1,       1|1",
+        "1|1|2,   1|2,       1",
+        "1|2|1,   1|2;1,      ",
+        "1|2|1|3, 1|2;1|3,    ",
+        "1|1|2|3, 1|2;3,     1",
+        "2|1|1|3, 2|1;1|3,    "
+    })
+    public void bufferExactSupplierUsesSet(String input, String output, @Nullable String discard) {
+        List<Set<Object>> outputs = Arrays.stream(output.split(";"))
+            .map(it -> Arrays.<Object>stream(it.split("\\|")).collect(Collectors.toSet()))
+            .collect(Collectors.toList());
+
+        StepVerifier.Assertions assertions = Flux.just(input.split("\\|"))
+            .<Collection<Object>>buffer(2, HashSet::new)
+            .as(it -> StepVerifier.create(it, outputs.size()))
+            .expectNextSequence(outputs)
+            .expectComplete()
+            .verifyThenAssertThat(Duration.ofSeconds(2));
+
+        if (discard == null) {
+            assertions.hasNotDiscardedElements();
+        } else {
+            assertions.hasDiscardedExactly((Object[]) discard.split("\\|"));
+        }
+    }
 }
