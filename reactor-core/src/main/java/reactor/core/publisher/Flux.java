@@ -123,7 +123,7 @@ import reactor.util.retry.Retry;
  *
  * @see Mono
  */
-public abstract class Flux<T> implements CorePublisher<T> {
+public abstract class Flux<T> implements CorePublisher<T>, CoreContext {
 
 //	 ==============================================================================================================
 //	 Static Generators

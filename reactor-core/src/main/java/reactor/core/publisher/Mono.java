@@ -118,7 +118,7 @@ import reactor.util.retry.Retry;
  * @author Injae Kim
  * @see Flux
  */
-public abstract class Mono<T> implements CorePublisher<T> {
+public abstract class Mono<T> implements CorePublisher<T>, CoreContext {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -2415,14 +2415,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a contextualized {@link Mono}
 	 * @see Context
 	 */
-	public final Mono<T> contextWrite(Function<Context, Context> contextModifier) {
-		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
-			return onAssembly(new MonoContextWriteRestoringThreadLocals<>(
-					this, contextModifier
-			));
-		}
-		return onAssembly(new MonoContextWrite<>(this, contextModifier));
-	}
+	oCoreCon
 
 	private final Mono<T> contextWriteSkippingContextPropagation(ContextView contextToAppend) {
 		return contextWriteSkippingContextPropagation(c -> c.putAll(contextToAppend));
