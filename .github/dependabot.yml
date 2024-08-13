@@ -10,7 +10,7 @@ updates:
     reviewers:
       - "reactor/core-team"
     # updates in the oldest maintenance branch, we'll forward-merge up to main
-    target-branch: "3.4.x"
+    target-branch: "3.6.x"
     ignore:
       # JSR166 backport is fixed
       - dependency-name: "io.projectreactor:jsr166"
@@ -59,4 +59,4 @@ updates:
     reviewers:
       - "reactor/core-team"
     # updates in oldest maintenance branch, we'll forward-merge up to main
-    target-branch: "3.4.x"
+    target-branch: "3.6.x"
