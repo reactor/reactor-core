@@ -2035,7 +2035,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link SinkManyAbstractBase} accepting publishers and producing T
+	 * @return a {@link Flux} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
 		return onAssembly(new FluxSwitchMapNoPrefetch<>(from(mergedPublishers),
@@ -2056,7 +2056,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param prefetch the inner source request size
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link SinkManyAbstractBase} accepting publishers and producing T
+	 * @return a {@link Flux} accepting publishers and producing T
 	 *
 	 * @deprecated to be removed in 3.6.0 at the earliest. In 3.5.0, you should replace
 	 * calls with prefetch=0 with calls to switchOnNext(mergedPublishers), as the default
