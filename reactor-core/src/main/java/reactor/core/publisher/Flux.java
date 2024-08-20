@@ -2882,10 +2882,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * will be emitted by the returned {@link Flux} each time the given max size is reached
 	 * or once this Flux completes.
 	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSize.svg" alt="">
+	 * <p>
 	 * Note that if buffers provided by the bufferSupplier return {@literal false} upon invocation
 	 * of {@link Collection#add(Object)} for a given element, that element will be discarded.
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSize.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal,
 	 * as well as latest unbuffered element if the bufferSupplier fails.
@@ -2949,6 +2949,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * When maxSize == skip : exact buffers
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSizeEqualsSkipSize.svg" alt="">
+	 *
+	 * <p>
+	 * Note for exact buffers: If buffers provided by the bufferSupplier return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)} for a given element, that element will be discarded.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements in between buffers (in the case of
 	 * dropping buffers). It also discards the currently open buffer upon cancellation or error triggered by a data signal.
@@ -3126,10 +3130,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses.
 	 * <p>
-	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
-	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
-	 * less than the specified max size. The element will be discarded in such a case.
-	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
@@ -3169,10 +3169,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
-	 * <p>
-	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
-	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
-	 * less than the specified max size. The element will be discarded in such a case.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
@@ -3241,10 +3237,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses.
 	 * <p>
-	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
-	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
-	 * less than the specified max size. The element will be discarded in such a case.
-	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
@@ -3268,10 +3260,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
 	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
-	 * <p>
-	 * Note that if buffers provided by bufferSupplier may return {@literal false} upon invocation
-	 * of {@link Collection#add(Object)}, buffer emission may be triggered when the buffer size is
-	 * less than the specified max size. The element will be discarded in such a case.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferTimeoutWithMaxSizeAndTimespan.svg" alt="">
 	 *
