@@ -135,6 +135,11 @@ final class TimedScheduler implements Scheduler {
 		delegate.start();
 	}
 
+	@Override
+	public void init() {
+		delegate.init();
+	}
+
 	static final class TimedWorker implements Worker {
 
 		final TimedScheduler parent;
