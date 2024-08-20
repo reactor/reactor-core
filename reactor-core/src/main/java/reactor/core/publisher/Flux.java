@@ -5924,13 +5924,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
-	 *<p>
+	 * <p>
   	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
-	 * greater than or equal to the cardinality of groups created. In this case every group would have
-	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
-	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
-	 * the subscribers should be designed with caution, because if the rate of consumption 
-	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
+	 * greater than or equal to the number of groups created. In that case every group
+	 * has its own subscriber and progress can be made, even when the data publish pattern
+	 * is arbitrary. Otherwise, when the number of groups exceeds downstream concurrency,
+	 * the subscribers should be designed with caution, because if the consumption
+	 * pattern doesn't match what can be accommodated in its producer buffer,
+	 * the process may enter deadlock due to backpressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
@@ -5963,13 +5964,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
  	 *
-	 *<p>
-  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
-	 * greater than or equal to the cardinality of groups created. In this case every group would have
-	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
-	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
-	 * the subscribers should be designed with caution, because if the rate of consumption 
-	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
+	 * <p>
+	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be
+	 * greater than or equal to the number of groups created. In that case every group
+	 * has its own subscriber and progress can be made, even when the data publish pattern
+	 * is arbitrary. Otherwise, when the number of groups exceeds downstream concurrency,
+	 * the subscribers should be designed with caution, because if the consumption
+	 * pattern doesn't match what can be accommodated in its producer buffer,
+	 * the process may enter deadlock due to backpressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
@@ -6004,13 +6006,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
   	 *
-	 *<p>
-  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
-	 * greater than or equal to the cardinality of groups created. In this case every group would have
-	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
-	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
-	 * the subscribers should be designed with caution, because if the rate of consumption 
-	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
+	 * <p>
+	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be
+	 * greater than or equal to the number of groups created. In that case every group
+	 * has its own subscriber and progress can be made, even when the data publish pattern
+	 * is arbitrary. Otherwise, when the number of groups exceeds downstream concurrency,
+	 * the subscribers should be designed with caution, because if the consumption
+	 * pattern doesn't match what can be accommodated in its producer buffer,
+	 * the process may enter deadlock due to backpressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
@@ -6048,13 +6051,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
-	 *<p>
-  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
-	 * greater than or equal to the cardinality of groups created. In this case every group would have
-	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
-	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
-	 * the subscribers should be designed with caution, because if the rate of consumption 
-	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
+	 * <p>
+	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be
+	 * greater than or equal to the number of groups created. In that case every group
+	 * has its own subscriber and progress can be made, even when the data publish pattern
+	 * is arbitrary. Otherwise, when the number of groups exceeds downstream concurrency,
+	 * the subscribers should be designed with caution, because if the consumption
+	 * pattern doesn't match what can be accommodated in its producer buffer,
+	 * the process may enter deadlock due to backpressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
