@@ -5924,6 +5924,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
+	 *<p>
+  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
+	 * greater than or equal to the cardinality of groups created. In this case every group would have
+	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
+	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
+	 * the subscribers should be designed with caution, because if the rate of consumption 
+	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
+	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
 	 * and as such their lifecycle is tied to that source. As a result, it is not possible
@@ -5954,6 +5962,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
+ 	 *
+	 *<p>
+  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
+	 * greater than or equal to the cardinality of groups created. In this case every group would have
+	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
+	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
+	 * the subscribers should be designed with caution, because if the rate of consumption 
+	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
@@ -5987,6 +6003,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
+  	 *
+	 *<p>
+  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
+	 * greater than or equal to the cardinality of groups created. In this case every group would have
+	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
+	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
+	 * the subscribers should be designed with caution, because if the rate of consumption 
+	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
@@ -6023,6 +6047,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
 	 * with a {@code maxConcurrency} parameter that is set too low).
+	 *
+	 *<p>
+  	 * To avoid deadlock, the concurrency of the subscriber to groupBy should be 
+	 * greater than or equal to the cardinality of groups created. In this case every group would have
+	 * its own subscriber and there would be no deadlocks, even when the data publish pattern is random.
+	 * In the other scenario, where cardinality > concurrency (no.of groups > no. of subscribers),
+	 * the subscribers should be designed with caution, because if the rate of consumption 
+	 * is less than what can be accommodated in its producer buffer, the process will enter deadlock due to back pressure.
 	 *
 	 * <p>
 	 * Note that groups are a live view of part of the underlying source publisher,
