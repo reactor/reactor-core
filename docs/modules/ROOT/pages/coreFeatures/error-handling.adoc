@@ -189,9 +189,8 @@ The following example shows the Reactor equivalent:
 [%unbreakable]
 ----
 Flux.just("key1", "key2")
-    .flatMap(k -> callExternalService(k) // <1>
-        .onErrorResume(e -> getFromCache(k)) // <2>
-    );
+    .flatMap(k -> callExternalService(k)) // <1>
+    .onErrorResume(e -> getFromCache(e)); // <2>    
 ----
 <1> For each key, asynchronously call the external service.
 <2> If the external service call fails, fall back to the cache for that key. Note that
