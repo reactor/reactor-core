@@ -2883,6 +2883,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * or once this Flux completes.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSize.svg" alt="">
+	 * <p>
+	 * Note that if buffers provided by the bufferSupplier return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)} for a given element, that element will be discarded.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the currently open buffer upon cancellation or error triggered by a data signal,
 	 * as well as latest unbuffered element if the bufferSupplier fails.
@@ -2946,6 +2949,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * When maxSize == skip : exact buffers
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferWithMaxSizeEqualsSkipSize.svg" alt="">
+	 *
+	 * <p>
+	 * Note for exact buffers: If buffers provided by the bufferSupplier return {@literal false} upon invocation
+	 * of {@link Collection#add(Object)} for a given element, that element will be discarded.
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards elements in between buffers (in the case of
 	 * dropping buffers). It also discards the currently open buffer upon cancellation or error triggered by a data signal.
