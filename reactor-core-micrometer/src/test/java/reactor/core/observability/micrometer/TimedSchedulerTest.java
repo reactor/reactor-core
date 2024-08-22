@@ -16,12 +16,10 @@
 
 package reactor.core.observability.micrometer;
 
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.internal.DefaultLongTaskTimer;
 import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -70,6 +67,60 @@ class TimedSchedulerTest {
 	@AfterEach
 	void closeRegistry() {
 		registry.close();
+	}
+
+	@Test
+	void supportsBothDeprecatedAndNonRestartableSchedulers() {
+		Scheduler deprecatedScheduler = new Scheduler() {
+
+			@Override
+			public Disposable schedule(Runnable task) {
+				return Disposables.disposed();
+			}
+
+			@Override
+			public Worker createWorker() {
+				throw new UnsupportedOperationException();
+			}
+		};
+
+		Scheduler nonRestartableScheduler = new Scheduler() {
+			@Override
+			public Disposable schedule(Runnable task) {
+				return Disposables.disposed();
+			}
+
+			@Override
+			public Worker createWorker() {
+				throw new UnsupportedOperationException();
+			}
+
+			@SuppressWarnings("deprecation")
+			@Override
+			public void start() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void init() {
+			}
+		};
+
+		TimedScheduler timedDeprecatedScheduler =
+				new TimedScheduler(deprecatedScheduler, registry, "test", Tags.empty());
+
+		TimedScheduler timedNonRestartableScheduler =
+				new TimedScheduler(nonRestartableScheduler, registry, "test", Tags.empty());
+
+		assertThatNoException().isThrownBy(() -> {
+			timedDeprecatedScheduler.init();
+			timedDeprecatedScheduler.start();
+		});
+
+		assertThatNoException().isThrownBy(timedNonRestartableScheduler::init);
+
+		assertThatExceptionOfType(UnsupportedOperationException.class)
+				.isThrownBy(timedNonRestartableScheduler::start);
 	}
 
 	@Test
