@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,12 @@ public final class RetryBackoffSpec extends Retry {
 	public final Duration  maxBackoff;
 
 	/**
+	 * The configured multiplier, as a {@code double}.
+	 * @see #multiplier(double)
+	 */
+	public final double    multiplier;
+
+	/**
 	 * The configured jitter factor, as a {@code double}.
 	 * @see #jitter(double)
 	 */
@@ -130,7 +136,8 @@ public final class RetryBackoffSpec extends Retry {
 			long max,
 			Predicate<? super Throwable> aThrowablePredicate,
 			boolean isTransientErrors,
-			Duration minBackoff, Duration maxBackoff, double jitterFactor,
+			Duration minBackoff, Duration maxBackoff,
+			double multiplier, double jitterFactor,
 			Supplier<Scheduler> backoffSchedulerSupplier,
 			Consumer<RetrySignal> doPreRetry,
 			Consumer<RetrySignal> doPostRetry,
@@ -143,6 +150,7 @@ public final class RetryBackoffSpec extends Retry {
 		this.isTransientErrors = isTransientErrors;
 		this.minBackoff = minBackoff;
 		this.maxBackoff = maxBackoff;
+		this.multiplier = multiplier > 1.0 ? multiplier : 1;
 		this.jitterFactor = jitterFactor;
 		this.backoffSchedulerSupplier = backoffSchedulerSupplier;
 		this.syncPreRetry = doPreRetry;
@@ -166,6 +174,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -191,6 +200,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -216,6 +226,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -256,6 +267,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -283,6 +295,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry.andThen(doBeforeRetry),
@@ -309,6 +322,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -334,6 +348,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -359,6 +374,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -389,6 +405,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -419,6 +436,7 @@ public final class RetryBackoffSpec extends Retry {
 				isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -444,6 +462,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -469,6 +488,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
@@ -495,7 +515,34 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				jitterFactor,
+				this.backoffSchedulerSupplier,
+				this.syncPreRetry,
+				this.syncPostRetry,
+				this.asyncPreRetry,
+				this.asyncPostRetry,
+				this.retryExhaustedGenerator);
+	}
+
+	/**
+	 * Set a multiplier for exponential backoffs that is used as the base for each backoff. This method switches to an
+	 * exponential backoff strategy with a zero minimum backoff if not already a backoff strategy.
+	 * Defaults to {@code 2}.
+	 *
+	 * @param multiplier the new multiplier as a {@code double}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
+	 */
+	public RetryBackoffSpec multiplier(double multiplier) {
+		return new RetryBackoffSpec(
+				this.retryContext,
+				this.maxAttempts,
+				this.errorFilter,
+				this.isTransientErrors,
+				this.minBackoff,
+				this.maxBackoff,
+				multiplier,
+				this.jitterFactor,
 				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
@@ -520,6 +567,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.isTransientErrors,
 				this.minBackoff,
 				this.maxBackoff,
+				this.multiplier,
 				this.jitterFactor,
 				backoffScheduler == null ? Schedulers::parallel : () -> backoffScheduler,
 				this.syncPreRetry,
@@ -562,7 +610,7 @@ public final class RetryBackoffSpec extends Retry {
 
 				Duration nextBackoff;
 				try {
-					nextBackoff = minBackoff.multipliedBy((long) Math.pow(2, iteration));
+					nextBackoff = minBackoff.multipliedBy((long) Math.pow(multiplier, iteration));
 					if (nextBackoff.compareTo(maxBackoff) > 0) {
 						nextBackoff = maxBackoff;
 					}

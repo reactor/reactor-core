@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -830,6 +830,40 @@ public class FluxRetryWhenTest {
 				.isCloseTo(400, Percentage.withPercentage(50));
 		assertThat(elapsedList, LongAssert.class).element(4)
 				.isCloseTo(800, Percentage.withPercentage(50));
+	}
+
+	@Test
+	public void fluxRetryRandomBackoffMaxDurationWithMultiplier() {
+		Exception exception = new IOException("boom retry");
+		List<Long> elapsedList = new ArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+				            Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				                .retryWhen(Retry.backoff(4, Duration.ofMillis(100))
+				                                .multiplier(5))
+				                .elapsed()
+				                .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+				                .map(Tuple2::getT2)
+		            )
+		            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
+		            .expectNext(0, 1) //normal output
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
+
+		assertThat(elapsedList).hasSize(5);
+		assertThat(elapsedList, LongAssert.class).first()
+		                                         .isEqualTo(0L);
+		assertThat(elapsedList, LongAssert.class).element(1)
+		                                         .isCloseTo(100, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(2)
+		                                         .isCloseTo(500, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(3)
+		                                         .isCloseTo(2500, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(4)
+		                                         .isCloseTo(12500, Percentage.withPercentage(50));
 	}
 
 	@Test

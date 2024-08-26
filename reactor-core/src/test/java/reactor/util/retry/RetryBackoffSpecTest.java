@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ public class RetryBackoffSpecTest {
 		assertThat(init)
 				.isNotSameAs(init.minBackoff(Duration.ofSeconds(1)))
 				.isNotSameAs(init.maxBackoff(Duration.ZERO))
+				.isNotSameAs(init.multiplier(2))
 				.isNotSameAs(init.jitter(0.5d))
 				.isNotSameAs(init.scheduler(Schedulers.parallel()))
 				.isNotSameAs(init.maxAttempts(10))
