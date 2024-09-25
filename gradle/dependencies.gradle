@@ -14,5 +14,5 @@ ext {
     mockitoVersion = "4.11.0"
     slf4jVersion = "1.7.36"
     testngVersion = "7.5.1" // since 7.6 JDK8 is unsupported, don't bump
-    throwingFunctionVersion = "1.5.1"
+    throwingFunctionVersion = "1.6.0"
 }
