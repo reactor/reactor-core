@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.Spliterator;
@@ -2071,6 +2072,26 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
 				identityFunction(),
 				Queues.unbounded(prefetch), prefetch));
+	}
+
+	/**
+	 * Creates a {@link Flux} that uses a function `f` to produce elements of type `T`
+	 * and update an internal state of type `S`.
+	 *
+	 * @param init State initial value
+	 * @param f    Computes the next element (or returns empty {@link Optional} to signal the end of the sequence)
+	 * @param <T>  Type of the elements
+	 * @param <S>  Type of the internal state
+	 *
+	 * @return a {@link Flux} that produces elements using `f` until `f` returns empty {@link Optional}
+	 */
+	public static <T, S> Flux<T> unfold(S init, Function<S, Optional<Tuple2<T, S>>> f) {
+		return Flux.generate(() -> init, (s, sink) -> {
+			Optional<Tuple2<T, S>> res = f.apply(s);
+			if (!res.isPresent()) sink.complete();
+			else sink.next(res.get().getT1());
+			return res.get().getT2();
+		});
 	}
 
 	/**
