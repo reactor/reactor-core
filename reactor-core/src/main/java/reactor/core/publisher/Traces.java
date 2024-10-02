@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 package reactor.core.publisher;
 
-import java.util.List;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import reactor.util.annotation.Nullable;
 
 /**
  * Utilities around manipulating stack traces and displaying assembly traces.
@@ -29,6 +28,7 @@ import java.util.stream.Stream;
  * @author Sergei Egorov
  */
 final class Traces {
+	private static final String PUBLISHER_PACKAGE_PREFIX = "reactor.core.publisher.";
 
 	/**
 	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
@@ -57,7 +57,6 @@ final class Traces {
 	static boolean shouldSanitize(String stackTraceRow) {
 		return stackTraceRow.startsWith("java.util.function")
 				|| stackTraceRow.startsWith("reactor.core.publisher.Mono.onAssembly")
-				|| stackTraceRow.equals("reactor.core.publisher.Mono.onAssembly")
 				|| stackTraceRow.equals("reactor.core.publisher.Flux.onAssembly")
 				|| stackTraceRow.equals("reactor.core.publisher.ParallelFlux.onAssembly")
 				|| stackTraceRow.startsWith("reactor.core.publisher.SignalLogger")
@@ -103,7 +102,7 @@ final class Traces {
 	}
 
 	static boolean isUserCode(String line) {
-		return !line.startsWith("reactor.core.publisher") || line.contains("Test");
+		return !line.startsWith(PUBLISHER_PACKAGE_PREFIX) || line.contains("Test");
 	}
 
 	/**
@@ -129,48 +128,92 @@ final class Traces {
 	 * from the assembly stack trace.
 	 */
 	static String[] extractOperatorAssemblyInformationParts(String source) {
-		String[] uncleanTraces = source.split("\n");
-		final List<String> traces = Stream.of(uncleanTraces)
-		                                  .map(String::trim)
-		                                  .filter(s -> !s.isEmpty())
-		                                  .collect(Collectors.toList());
+		Iterator<String> traces = trimmedNonemptyLines(source);
 
-		if (traces.isEmpty()) {
+		if (!traces.hasNext()) {
 			return new String[0];
 		}
 
-		int i = 0;
-		while (i < traces.size() && !isUserCode(traces.get(i))) {
-			i++;
+		String prevLine = null;
+		String currentLine = traces.next();
+
+		if (isUserCode(currentLine)) {
+			// No line is a Reactor API line.
+			return new String[]{currentLine};
 		}
 
-		String apiLine;
-		String userCodeLine;
-		if (i == 0) {
-			//no line was a reactor API line
-			apiLine = "";
-			userCodeLine = traces.get(0);
-		}
-		else if (i == traces.size()) {
-			//we skipped ALL lines, meaning they're all reactor API lines. We'll fully display the last one
-			apiLine = "";
-			userCodeLine = traces.get(i-1).replaceFirst("reactor.core.publisher.", "");
-		}
-		else {
-			//currently on user code line, previous one is API
-			apiLine = traces.get(i - 1);
-			userCodeLine = traces.get(i);
+		while (traces.hasNext()) {
+			prevLine = currentLine;
+			currentLine = traces.next();
+
+			if (isUserCode(currentLine)) {
+				// Currently on user code line, previous one is API. Attempt to create something in the form
+				// "Flux.map ⇢ user.code.Class.method(Class.java:123)".
+				int linePartIndex = prevLine.indexOf('(');
+				String apiLine = linePartIndex > 0 ?
+					prevLine.substring(0, linePartIndex) :
+					prevLine;
+
+				return new String[]{dropPublisherPackagePrefix(apiLine), "at " + currentLine};
+			}
 		}
 
-		//now we want something in the form "Flux.map ⇢ user.code.Class.method(Class.java:123)"
-		if (apiLine.isEmpty()) return new String[] { userCodeLine };
+		// We skipped ALL lines, meaning they're all Reactor API lines. We'll fully display the last
+		// one.
+		return new String[]{dropPublisherPackagePrefix(currentLine)};
+	}
 
-		int linePartIndex = apiLine.indexOf('(');
-		if (linePartIndex > 0) {
-			apiLine = apiLine.substring(0, linePartIndex);
-		}
-		apiLine = apiLine.replaceFirst("reactor.core.publisher.", "");
+	private static String dropPublisherPackagePrefix(String line) {
+		return line.startsWith(PUBLISHER_PACKAGE_PREFIX)
+			? line.substring(PUBLISHER_PACKAGE_PREFIX.length())
+			: line;
+	}
 
-		return new String[] { apiLine, "at " + userCodeLine };
+	/**
+	 * Returns an iterator over all trimmed non-empty lines in the given source string.
+	 *
+	 * @implNote This implementation attempts to minimize allocations.
+	 */
+	private static Iterator<String> trimmedNonemptyLines(String source) {
+		return new Iterator<String>() {
+			private int index = 0;
+			@Nullable
+			private String next = getNextLine();
+
+			@Override
+			public boolean hasNext() {
+				return next != null;
+			}
+
+			@Override
+			public String next() {
+				String current = next;
+				if (current == null) {
+					throw new NoSuchElementException();
+				}
+				next = getNextLine();
+				return current;
+			}
+
+			@Nullable
+			private String getNextLine() {
+				if (index >= source.length()) {
+					return null;
+				}
+
+				while (index < source.length()) {
+					int end = source.indexOf('\n', index);
+					if (end == -1) {
+						end = source.length();
+					}
+					String line = source.substring(index, end).trim();
+					index = end + 1;
+					if (!line.isEmpty()) {
+						return line;
+					}
+				}
+				return null;
+			}
+		};
 	}
 }
