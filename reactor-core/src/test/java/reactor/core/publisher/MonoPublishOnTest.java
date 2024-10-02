@@ -55,7 +55,6 @@ public class MonoPublishOnTest {
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
 		try {
-
 			CountDownLatch finallyLatch = new CountDownLatch(1);
 			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
@@ -82,7 +81,6 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutor(executor))
 			    .doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
-
 
 			inOnNextLatch.await();
 			executor.shutdownNow();
@@ -130,7 +128,7 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
-						inOnNextLatch.countDown();
+					    inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
@@ -138,9 +136,8 @@ public class MonoPublishOnTest {
 				    }
 			    })
 			    .publishOn(fromExecutor(executor))
-				.doFinally(s -> finallyLatch.countDown())
+			    .doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
-
 
 			inOnNextLatch.await();
 			executor.shutdownNow();
@@ -170,7 +167,6 @@ public class MonoPublishOnTest {
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
 		try {
-
 			CountDownLatch finallyLatch = new CountDownLatch(1);
 			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
@@ -188,14 +184,14 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
-						inOnNextLatch.countDown();
+					    inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
 				    }
 			    })
 			    .publishOn(fromExecutorService(executor))
-				.doFinally(s -> finallyLatch.countDown())
+			    .doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
 
 			inOnNextLatch.await();
@@ -227,7 +223,6 @@ public class MonoPublishOnTest {
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
 		try {
-
 			CountDownLatch finallyLatch = new CountDownLatch(1);
 			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
@@ -245,7 +240,7 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
-						inOnNextLatch.countDown();
+					    inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
