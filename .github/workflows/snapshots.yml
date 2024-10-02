@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ 3.5.x, 3.6.x, main ]
+        branch: [ 3.6.x, main ]
         test-type:
           - type: core
             arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
