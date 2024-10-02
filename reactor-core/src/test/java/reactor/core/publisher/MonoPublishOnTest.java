@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,12 @@ public class MonoPublishOnTest {
 
 		try {
 
-			CountDownLatch hookLatch = new CountDownLatch(1);
+			CountDownLatch finallyLatch = new CountDownLatch(1);
+			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
 			Hooks.onOperatorError((t, d) -> {
 				throwableInOnOperatorError.set(t);
 				dataInOnOperatorError.set(d);
-				hookLatch.countDown();
 				return t;
 			});
 
@@ -73,21 +73,25 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
+					    inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
 				    }
 			    })
 			    .publishOn(fromExecutor(executor))
+			    .doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
 
+
+			inOnNextLatch.await();
 			executor.shutdownNow();
 
-			assertSubscriber.assertNoValues()
-			                .assertNoError()
-			                .assertNotComplete();
+			finallyLatch.await();
 
-			hookLatch.await();
+			assertSubscriber.assertNoValues()
+			                .assertError(RejectedExecutionException.class)
+			                .assertNotComplete();
 
 			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
 			assertThat(data).isSameAs(dataInOnOperatorError.get());
@@ -109,13 +113,12 @@ public class MonoPublishOnTest {
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
 		try {
-
-			CountDownLatch hookLatch = new CountDownLatch(2);
+			CountDownLatch finallyLatch = new CountDownLatch(1);
+			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
 			Hooks.onOperatorError((t, d) -> {
 				throwableInOnOperatorError.set(t);
 				dataInOnOperatorError.set(d);
-				hookLatch.countDown();
 				return t;
 			});
 
@@ -127,6 +130,7 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
+						inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
@@ -134,15 +138,17 @@ public class MonoPublishOnTest {
 				    }
 			    })
 			    .publishOn(fromExecutor(executor))
+				.doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
 
+
+			inOnNextLatch.await();
 			executor.shutdownNow();
 
+			finallyLatch.await();
 			assertSubscriber.assertNoValues()
-			                .assertNoError()
+			                .assertError(RejectedExecutionException.class)
 			                .assertNotComplete();
-
-			hookLatch.await();
 
 			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
 			assertThat(exception).isSameAs(throwableInOnOperatorError.get()
@@ -165,12 +171,12 @@ public class MonoPublishOnTest {
 
 		try {
 
-			CountDownLatch hookLatch = new CountDownLatch(1);
+			CountDownLatch finallyLatch = new CountDownLatch(1);
+			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
 			Hooks.onOperatorError((t, d) -> {
 				throwableInOnOperatorError.set(t);
 				dataInOnOperatorError.set(d);
-				hookLatch.countDown();
 				return t;
 			});
 
@@ -182,21 +188,24 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
+						inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
 				    }
 			    })
 			    .publishOn(fromExecutorService(executor))
+				.doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
+
+			inOnNextLatch.await();
 
 			executor.shutdownNow();
 
+			finallyLatch.await();
 			assertSubscriber.assertNoValues()
-			                .assertNoError()
+			                .assertError(RejectedExecutionException.class)
 			                .assertNotComplete();
-
-			hookLatch.await();
 
 			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
 			assertThat(data).isSameAs(dataInOnOperatorError.get());
@@ -219,12 +228,12 @@ public class MonoPublishOnTest {
 
 		try {
 
-			CountDownLatch hookLatch = new CountDownLatch(2);
+			CountDownLatch finallyLatch = new CountDownLatch(1);
+			CountDownLatch inOnNextLatch = new CountDownLatch(1);
 
 			Hooks.onOperatorError((t, d) -> {
 				throwableInOnOperatorError.set(t);
 				dataInOnOperatorError.set(d);
-				hookLatch.countDown();
 				return t;
 			});
 
@@ -236,6 +245,7 @@ public class MonoPublishOnTest {
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
+						inOnNextLatch.countDown();
 					    latch.await();
 				    }
 				    catch (InterruptedException e) {
@@ -243,15 +253,17 @@ public class MonoPublishOnTest {
 				    }
 			    })
 			    .publishOn(fromExecutorService(executor))
+			    .doFinally(s -> finallyLatch.countDown())
 			    .subscribe(assertSubscriber);
+
+			inOnNextLatch.await();
 
 			executor.shutdownNow();
 
+			finallyLatch.await();
 			assertSubscriber.assertNoValues()
-			                .assertNoError()
+			                .assertError(RejectedExecutionException.class)
 			                .assertNotComplete();
-
-			hookLatch.await();
 
 			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
 			assertThat(exception).isSameAs(throwableInOnOperatorError.get()
