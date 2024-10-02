@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ public class MonoAllBenchmark {
 
 	@SuppressWarnings("unused")
 	@Benchmark
-	public void measureThroughput() {
-		Flux.range(0, rangeSize)
+	public Boolean measureThroughput() {
+		return Flux.range(0, rangeSize)
 			.all(i -> i < Integer.MAX_VALUE)
 			.block();
 	}
