@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -449,7 +449,7 @@ public interface Scannable {
 				.map(s -> s.scan(Attr.NAME))
 				.filter(Objects::nonNull)
 				.findFirst()
-				.orElse(stepName());
+				.orElseGet(this::stepName);
 	}
 
 	/**
