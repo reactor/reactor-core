@@ -2088,9 +2088,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public static <T, S> Flux<T> unfold(S init, Function<S, Optional<Tuple2<T, S>>> f) {
 		return Flux.generate(() -> init, (s, sink) -> {
 			Optional<Tuple2<T, S>> res = f.apply(s);
-			if (!res.isPresent()) sink.complete();
-			else sink.next(res.get().getT1());
-			return res.get().getT2();
+			if (!res.isPresent()) {
+				sink.complete();
+				return s;
+			} else {
+				sink.next(res.get().getT1());
+				return res.get().getT2();
+			}
 		});
 	}
 
