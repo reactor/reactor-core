@@ -93,6 +93,7 @@ final class MicrometerMeterListenerConfiguration {
 		Scannable scannable = Scannable.from(source);
 
 		if (scannable.isScanAvailable()) {
+			// `Tags#and` deduplicates tags by key, retaining the last value as required.
 			List<Tag> discoveredTags = scannable.tags()
 				.map(t -> Tag.of(t.getT1(), t.getT2()))
 				.collect(Collectors.toList());

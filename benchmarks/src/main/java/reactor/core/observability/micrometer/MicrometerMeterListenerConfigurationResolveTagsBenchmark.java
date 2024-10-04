@@ -40,16 +40,17 @@ import reactor.core.publisher.Mono;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 public class MicrometerMeterListenerConfigurationResolveTagsBenchmark {
-	@Param({"1", "2", "5", "10"})
-	private int distinctTagCount;
-
-	@Param({"1", "2", "5", "10"})
-	private int totalTagCount;
+	@Param({"1|1", "1|2", "1|5", "1|10", "2|2", "2|5", "2|10", "5|5", "5|10", "10|10"})
+	private String testCase;
 
 	private Publisher<Void> publisher;
 
 	@Setup(Level.Iteration)
 	public void setup() {
+		String[] arguments = testCase.split("\\|", -1);
+		int distinctTagCount = Integer.parseInt(arguments[0]);
+		int totalTagCount = Integer.parseInt(arguments[1]);
+
 		publisher = addTags(Mono.empty(), distinctTagCount, totalTagCount);
 	}
 
