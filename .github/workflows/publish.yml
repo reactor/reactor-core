@@ -34,7 +34,7 @@ jobs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
-    - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
       if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -76,7 +76,7 @@ jobs:
   build-docs-zip:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Set up Ruby for asciidoctor-pdf
         uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
         with:
@@ -106,7 +106,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
-    - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
       if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -149,7 +149,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
-    - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
       if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -194,7 +194,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
-    - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
       if: contains('main 3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
@@ -240,7 +240,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
@@ -255,7 +255,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # tag=v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
