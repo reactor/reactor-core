@@ -28,6 +28,9 @@ dependencies {
   baseline libs.reactor.perfBaseline.core, {
     changing = true
   }
+  baseline libs.reactor.perfBaseline.coreMicrometer, {
+    changing = true
+  }
 }
 
 task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {
