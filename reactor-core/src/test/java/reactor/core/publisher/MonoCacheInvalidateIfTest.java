@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
 import reactor.core.Disposable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -152,5 +156,58 @@ class MonoCacheInvalidateIfTest {
 
 		sub3.dispose();
 		source.assertCancelled(1);
+	}
+
+	// See https://github.com/reactor/reactor-core/issues/3907
+	@Test
+	public void cancelBeforeUpstreamSubscribeDoesntFail() throws Exception {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicInteger upstreamCalled = new AtomicInteger();
+
+		CountDownLatch cancelled = new CountDownLatch(1);
+		CountDownLatch cacheInvalidateInnerSubscribed = new CountDownLatch(1);
+		CountDownLatch mainChainDone = new CountDownLatch(1);
+
+		Mono<String> cachedMono = Mono.fromSupplier(() -> {
+			                              upstreamCalled.incrementAndGet();
+			                              return "foobar";
+		                              })
+		                              .cacheInvalidateIf(c -> true);
+
+		Mono<String> mono = Mono.defer(() -> Mono.just("foo"))
+		                        .flatMap(x -> {
+			                        return cachedMono
+			                                          .doOnSubscribe(s -> {
+				                                          cacheInvalidateInnerSubscribed.countDown();
+				                                          try { cancelled.await(1, TimeUnit.SECONDS); } catch (Exception e) {}
+			                                          })
+			                                          .subscribeOn(Schedulers.boundedElastic());
+		                        })
+		                        .doOnError(error::set)
+		                        .doFinally(s -> mainChainDone.countDown());
+
+		Disposable d = mono.subscribe();
+
+		assertThat(cacheInvalidateInnerSubscribed.await(1, TimeUnit.SECONDS))
+				.as("Should assemble the chain")
+				.isTrue();
+
+		d.dispose();
+		cancelled.countDown();
+
+
+		assertThat(mainChainDone.await(1, TimeUnit.SECONDS))
+				.as("Should finish in time")
+				.isTrue();
+
+		// Force an actual upstream subscription to validate the count
+		cachedMono.block();
+
+		assertThat(upstreamCalled.get())
+				.as("No upstream subscription expected")
+				.isEqualTo(1);
+		assertThat(error.get())
+				.as("No errors expected")
+				.isNull();
 	}
 }
