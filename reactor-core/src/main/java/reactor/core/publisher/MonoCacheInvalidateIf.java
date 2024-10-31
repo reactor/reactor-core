@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -269,8 +267,12 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 
 				if (n == 1) {
 					if (SUBSCRIBERS.compareAndSet(this, a, COORDINATOR_DONE)) {
-						//cancel the subscription no matter what, at this point coordinator is done and cannot accept new subscribers
-						this.upstream.cancel();
+						// Cancel the subscription if it has been established.
+						// At this point coordinator is done and cannot accept new subscribers.
+						Subscription upstream = UPSTREAM.getAndSet(this, Operators.cancelledSubscription());
+						if (upstream != null) {
+							upstream.cancel();
+						}
 						//only switch to EMPTY_STATE if the current state is this coordinator
 						STATE.compareAndSet(this.main, this, EMPTY_STATE);
 						return;
@@ -294,7 +296,12 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 			if (old != null && old != Operators.cancelledSubscription()) {
 				old.cancel();
 			}
-			source.subscribe(this);
+			// Only trigger the upstream subscription if the coordinator has not been
+			// aborted. This can happen when meanwhile all the downstream Subscribers
+			// have been cancelled.
+			if (SUBSCRIBERS.get(this) != COORDINATOR_DONE) {
+				source.subscribe(this);
+			}
 		}
 
 		@Override
