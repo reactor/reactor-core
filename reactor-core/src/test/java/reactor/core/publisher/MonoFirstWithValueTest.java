@@ -176,28 +176,28 @@ class MonoFirstWithValueTest {
 	}
 	@Test
 	void cancelInflightMono() {
-		AtomicLong inflightMonos = new AtomicLong(0);
+		AtomicLong cancelledInflightMonos = new AtomicLong(0);
 		Mono<Integer> inflightMono1 = Mono.fromCallable(() -> {
 			Thread.sleep(300);
 			return 1;
-		}).doOnCancel(inflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
+		}).doOnCancel(cancelledInflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
 
 		Mono<Integer> inflightMono2 = Mono.fromCallable(() -> {
 			Thread.sleep(400);
 			return 2;
-		}).doOnCancel(inflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
+		}).doOnCancel(cancelledInflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
 
 		Mono<Integer> completedMono = Mono.fromCallable(() -> {
 			Thread.sleep(100);
 			return 3;
-		}).doOnCancel(inflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
+		}).doOnCancel(cancelledInflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
 
 		StepVerifier.withVirtualTime(() -> Mono.firstWithValue(inflightMono1, inflightMono2, completedMono))
 				.thenAwait(Duration.ofMillis(100))
 				.expectNext(3)
 				.verifyComplete();
 
-		assertThat(inflightMonos).hasValue(2);
+		assertThat(cancelledInflightMonos).hasValue(2);
 	}
 
 	@Test
