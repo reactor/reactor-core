@@ -97,7 +97,7 @@ test {
     maxParallelForks = 1
     jvmArgs = [
             "-Xverify:all",
-            JavaVersion.current().isJava9Compatible()
+            javaLauncher.get().metadata.languageVersion.canCompileOrRun(9)
                     ? "-Xlog:redefine+class*=warning"
                     : "-XX:TraceRedefineClasses=2"
     ]
@@ -181,7 +181,7 @@ javaAgentTest {
     jvmArgs = [
             "-javaagent:${shadowJar.outputs.files.singleFile}",
             "-Xverify:all",
-            JavaVersion.current().isJava9Compatible()
+            javaLauncher.get().metadata.languageVersion.canCompileOrRun(9)
                     ? "-Xlog:redefine+class*=warning"
                     : "-XX:TraceRedefineClasses=2"
     ]
