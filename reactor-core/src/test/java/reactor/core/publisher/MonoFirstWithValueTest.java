@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
@@ -177,23 +178,27 @@ class MonoFirstWithValueTest {
 	@Test
 	void cancelInflightMono() {
 		AtomicLong cancelledInflightMonos = new AtomicLong(0);
+		CountDownLatch inflightMonoLatch = new CountDownLatch(1);
+		CountDownLatch completedMonoLatch = new CountDownLatch(1);
 		Mono<Integer> inflightMono1 = Mono.fromCallable(() -> {
-			Thread.sleep(300);
+			inflightMonoLatch.await();
 			return 1;
 		}).doOnCancel(cancelledInflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
 
 		Mono<Integer> inflightMono2 = Mono.fromCallable(() -> {
-			Thread.sleep(400);
+			inflightMonoLatch.await();
 			return 2;
 		}).doOnCancel(cancelledInflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
 
 		Mono<Integer> completedMono = Mono.fromCallable(() -> {
-			Thread.sleep(100);
+			completedMonoLatch.await();
 			return 3;
 		}).doOnCancel(cancelledInflightMonos::getAndIncrement).subscribeOn(Schedulers.boundedElastic());
 
-		StepVerifier.withVirtualTime(() -> Mono.firstWithValue(inflightMono1, inflightMono2, completedMono))
-				.thenAwait(Duration.ofMillis(100))
+		StepVerifier.create(Mono.firstWithValue(inflightMono1, inflightMono2, completedMono))
+				.then(() -> {
+					completedMonoLatch.countDown();
+				})
 				.expectNext(3)
 				.verifyComplete();
 
