@@ -88,6 +88,8 @@ testing {
 }
 
 configurations {
+	java21Api.extendsFrom(api)
+	java21Implementation.extendsFrom(implementation)
 	compileOnly.extendsFrom jsr166backport
 	testCompileOnly.extendsFrom jsr166backport
 

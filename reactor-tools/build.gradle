@@ -53,6 +53,8 @@ testing {
 }
 
 configurations {
+    java21Api.extendsFrom(api)
+    java21Implementation.extendsFrom(implementation)
     shaded
     jarFileTestApi.extendsFrom testApi
     jarFileTestImplementation.extendsFrom testImplementation
@@ -112,6 +114,7 @@ jar {
                 'Can-Retransform-Classes': 'true',
                 'Can-Redefine-Classes': 'true',
                 'Premain-Class': 'reactor.tools.agent.ReactorDebugAgent',
+                'Multi-Release': 'true',
         )
     }
 }
@@ -146,7 +149,10 @@ shadowJar {
             }
         }
     }
-    exclude 'META-INF/**'
+    exclude 'META-INF/NOTICE'
+    exclude 'META-INF/licenses/'
+    exclude 'META-INF/maven*/**'
+
     // TODO discuss with ByteBuddy folks how to shade it
     exclude 'win32-x86*/**'
 }
