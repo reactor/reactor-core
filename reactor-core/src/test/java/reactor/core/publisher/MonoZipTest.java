@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
@@ -39,6 +41,31 @@ public class MonoZipTest {
 	public void allEmpty() {
 		assertThat(Mono.zip(Mono.empty(), Mono.empty())
 		                      .block()).isNull();
+	}
+
+	@Test
+	public void bug_Test() {
+		final int numItem = 1000000;
+		Flux<?> fluxToTest = Flux.range(1, numItem)
+				.doOnNext(i -> System.out.println("Iteration " + i))
+		                     .flatMap(ignored -> {
+			                     Mono<?> mono1 = Mono.empty()
+			                                     .publishOn(Schedulers.parallel()) // would
+			                                              // pass the test if not run in parallel scheduler
+			                                     .map(Optional::of)
+			                                     .defaultIfEmpty(Optional.empty());
+
+			                     Mono<?> mono2 =
+					                     Mono.error(new NullPointerException())
+			                                     .map(Optional::of)
+			                                     .defaultIfEmpty(Optional.empty());
+
+			                     return Flux.zip(mono1, mono2).log().collectList().log().onErrorResume(e -> Mono.empty());
+		                     })
+		                     // expect upstream will emit error signal only
+		                     .flatMap(evt -> Mono.error(new RuntimeException("Unexpected empty list return by collectList of size " + evt.size()))
+		                     );
+		StepVerifier.create(fluxToTest).expectNextCount(0).verifyComplete();
 	}
 
 	@Test
