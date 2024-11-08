@@ -5,7 +5,6 @@ on:
       # For branches, better to list them explicitly than regexp include.
       # Older branches are triggered using workflows present there
       - main
-      - 3.6.x
 permissions: read-all
 
 env:
