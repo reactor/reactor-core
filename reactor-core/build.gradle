@@ -369,10 +369,10 @@ if (!JavaVersion.current().isJava9Compatible()) {
 	}
 }
 
-if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
-  blockHoundTest {
-		jvmArgs = ["-XX:+AllowRedefinitionToAddDeleteMethods"]
-  }
+blockHoundTest {
+	if (javaLauncher.get().metadata.languageVersion.canCompileOrRun(13)) {
+	  jvmArgs = ["-XX:+AllowRedefinitionToAddDeleteMethods"]
+	}
 }
 
 jar {
