@@ -27,24 +27,19 @@ jobs:
           - type: core-java21
             arguments: ":reactor-core:java21Test --no-daemon"
           - type: other
-            arguments: "check -x :reactor-core:test -x :reactor-core:java9Test -x :reactor-core:java21Test -x spotlessCheck -x :reactor-core:jcstress --no-daemon"
+            arguments: "check -x :reactor-core:test -x :reactor-core:java11Test -x :reactor-core:java21Test -x spotlessCheck -x :reactor-core:jcstress --no-daemon"
     name: prepare - ${{ matrix.test-type.type }} tests
     outputs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
-    - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
-      run: ${GITHUB_WORKSPACE}/.github/setup.sh
-      shell: bash
-    - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+    - name: Setup JDK 11
+      if: contains('main', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
-        distribution: 'jdkfile'
-        java-version: 9.0.4
-        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+        distribution: 'temurin'
+        java-version: 11
     - name: Setup JDK 21
       if: contains('main 3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
@@ -106,17 +101,12 @@ jobs:
     environment: snapshots
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
-    - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
-      run: ${GITHUB_WORKSPACE}/.github/setup.sh
-      shell: bash
-    - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+    - name: Setup JDK 11
+      if: contains('main', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
-        distribution: 'jdkfile'
-        java-version: 9.0.4
-        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+        distribution: 'temurin'
+        java-version: 11
     - name: Setup JDK 21
       if: contains('main 3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
@@ -149,17 +139,12 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
-    - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
-      run: ${GITHUB_WORKSPACE}/.github/setup.sh
-      shell: bash
-    - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+    - name: Setup JDK 11
+      if: contains('main', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
-        distribution: 'jdkfile'
-        java-version: 9.0.4
-        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+        distribution: 'temurin'
+        java-version: 11
     - name: Setup JDK 21
       if: contains('main 3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
@@ -194,17 +179,12 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
-    - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
-      run: ${GITHUB_WORKSPACE}/.github/setup.sh
-      shell: bash
-    - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+    - name: Setup JDK 11
+      if: contains('main', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
-        distribution: 'jdkfile'
-        java-version: 9.0.4
-        jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
+        distribution: 'temurin'
+        java-version: 11
     - name: Setup JDK 21
       if: contains('main 3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
