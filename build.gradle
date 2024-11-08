@@ -114,7 +114,7 @@ spotless {
 	}
 	java {
 		target '**/*.java'
-		targetExclude '**/java8stubs/**/*', '**/java9stubs/**/*', '**/scrabble/**/*',
+		targetExclude '**/java8stubs/**/*', '**/java11stubs/**/*', '**/scrabble/**/*',
 			'reactor-core/src/main/java/reactor/util/annotation/NonNull.java',
 			'reactor-core/src/main/java/reactor/util/annotation/NonNullApi.java',
 			'reactor-core/src/main/java/reactor/util/annotation/Nullable.java'

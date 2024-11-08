@@ -45,7 +45,7 @@ ext {
 }
 
 multiRelease {
-  targetVersions 8, 9, 21
+  targetVersions 8, 11, 21
 }
 
 testing {
@@ -302,7 +302,7 @@ test {
   }
 }
 
-java9Test {
+java11Test {
   maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
 }
 

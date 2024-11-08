@@ -26,11 +26,11 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
       - name: Download Java 9
-        if: contains('main 3.6.x', matrix.branch)
+        if: contains('3.6.x', matrix.branch)
         run: ${GITHUB_WORKSPACE}/.github/setup.sh
         shell: bash
       - name: Setup Java 9
-        if: contains('main 3.6.x', matrix.branch)
+        if: contains('3.6.x', matrix.branch)
         uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
         with:
           distribution: 'jdkfile'
