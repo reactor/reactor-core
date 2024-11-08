@@ -7,7 +7,7 @@ jobs:
     name: preliminary sanity checks
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
         with:
           fetch-depth: 0 #needed by spotless
       - name: Setup JDK 11
@@ -67,7 +67,7 @@ jobs:
     name: ${{ matrix.test-type.type }} tests
     needs: preliminary
     steps:
-    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
     - name: Setup JDK 11
       if: contains('main', github.base_ref)
       uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # tag=v3
