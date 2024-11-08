@@ -4,7 +4,6 @@ on:
     branches:
       # For branches, better to list them explicitly than regexp include.
       # Older branches are triggered using workflows present there
-      - main
       - 3.6.x
 permissions: read-all
 jobs:
@@ -31,11 +30,11 @@ jobs:
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
         distribution: 'jdkfile'
@@ -73,11 +72,11 @@ jobs:
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
         distribution: 'jdkfile'
@@ -111,11 +110,11 @@ jobs:
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
         distribution: 'jdkfile'
@@ -151,11 +150,11 @@ jobs:
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # tag=v4
     - name: Download JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       run: ${GITHUB_WORKSPACE}/.github/setup.sh
       shell: bash
     - name: Setup JDK 9
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('3.6.x', github.base_ref)
       uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # tag=v3
       with:
         distribution: 'jdkfile'
