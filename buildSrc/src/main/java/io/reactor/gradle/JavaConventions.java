@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 /**
  * @author Simon Baslé
@@ -38,15 +38,22 @@ public class JavaConventions implements Plugin<Project> {
 	}
 
 	private void applyJavaConvention(Project project) {
-		JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
-		java.setSourceCompatibility(JavaVersion.VERSION_1_8);
-		java.setTargetCompatibility(JavaVersion.VERSION_1_8);
+		project.getExtensions().getByType(JavaPluginExtension.class).toolchain(toolchain -> {
+			toolchain.getLanguageVersion().set(JavaLanguageVersion.of(8));
+		});
 
 		project.getTasks()
 			.withType(JavaCompile.class)
 			.forEach(compileTask -> {
 				compileTask.getOptions().setEncoding("UTF-8");
-				compileTask.getOptions().setCompilerArgs(Arrays.asList(
+
+				List<String> compilerArgs = new ArrayList<>(
+						compileTask.getOptions().getCompilerArgs());
+
+				if (compileTask.getName().endsWith("TestJava")) {
+					compilerArgs.add("-parameters");
+				}
+				compilerArgs.addAll(Arrays.asList(
 					"-Xlint:-varargs", // intentionally disabled
 					"-Xlint:cast",
 					"-Xlint:classfile",
@@ -67,17 +74,8 @@ public class JavaConventions implements Plugin<Project> {
 					"-Xmaxerrs", "500",
 					"-Xmaxwarns", "1000"
 				));
-			});
 
-		if (JavaVersion.current().isJava8Compatible()) {
-			project.getTasks().withType(JavaCompile.class, t -> {
-				if (t.getName().endsWith("TestJava")) {
-					List<String> args = new ArrayList<>(t.getOptions().getCompilerArgs());
-					args.add("-parameters");
-					t.getOptions().setCompilerArgs(args);
-				}
+				compileTask.getOptions().setCompilerArgs(compilerArgs);
 			});
-		}
-
 	}
 }
