@@ -61,7 +61,7 @@ Subscriber 2: PURPLE
 
 The following image shows the replay behavior:
 
-image::gs-cold.png[Replaying behavior]
+image::gs-cold.png[Replaying behavior, role="invert-dark"]
 
 Both subscribers catch all four colors, because each subscriber causes the
 process defined by the operators on the `Flux` to run.
@@ -105,7 +105,7 @@ Subscriber 2 to Hot Source: PURPLE
 
 The following image shows how a subscription is broadcast:
 
-image::gs-hot.png[Broadcasting a subscription]
+image::gs-hot.png[Broadcasting a subscription, role="invert-dark"]
 
 Subscriber 1 catches all four colors. Subscriber 2, having been created after the first
 two colors were produced, catches only the last two colors. This difference accounts for

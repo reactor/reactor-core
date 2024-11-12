@@ -30,7 +30,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 
 The following image shows how the `transform` operator encapsulates flows:
 
-image::gs-transform.png[Transform Operator : encapsulate flows]
+image::gs-transform.png[Transform Operator : encapsulate flows, role="invert-dark"]
 
 The preceding example produces the following output:
 
@@ -77,7 +77,7 @@ composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndF
 
 The following image shows how the `transformDeferred` operator works with per-subscriber transformations:
 
-image::gs-compose.png[Compose Operator : Per Subscriber transformation]
+image::gs-compose.png[Compose Operator : Per Subscriber transformation, role="invert-dark"]
 
 The preceding example produces the following output:
 
