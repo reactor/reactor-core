@@ -3,7 +3,7 @@
 
 The following image shows how a `Flux` transforms items:
 
-image::flux.svg[Flux]
+image::flux.svg[Flux, role="invert-dark"]
 
 A `Flux<T>` is a standard `Publisher<T>` that represents an asynchronous sequence of 0 to N
 emitted items, optionally terminated by either a completion signal or an error.
