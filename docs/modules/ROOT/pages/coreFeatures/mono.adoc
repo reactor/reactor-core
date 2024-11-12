@@ -3,7 +3,7 @@
 
 The following image shows how a `Mono` transforms an item:
 
-image::mono.svg[Mono]
+image::mono.svg[Mono, role="invert-dark"]
 
 A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item _via_ the
 `onNext` signal then terminates with an `onComplete` signal (successful `Mono`,

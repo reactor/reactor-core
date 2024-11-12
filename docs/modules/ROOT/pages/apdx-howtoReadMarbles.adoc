@@ -9,41 +9,41 @@ First, let's see how the most common patterns of operators are represented.
 
 Some operators are instance methods: their output is produced by calling a method on a source `Flux` instance (like `Flux<T> output = source.fluxOperator()`):
 
-image::legend-operator-method.svg[A common operator]
+image::legend-operator-method.svg[A common operator, role="invert-dark"]
 
 Other operators are static methods. They can still take a source as an input parameter, like in `Flux<T> output = Flux.merge(sourceFlux1, sourcePublisher2)`.
 These are represented like below:
 
-image::legend-operator-static.svg[A static operator]
+image::legend-operator-static.svg[A static operator, role="invert-dark"]
 
 Note that sometimes we represent multiple variants or behaviors depending on the operator's input, in which case there's a single operator "box", but the source and output variants are separated like below:
 
-image::legend-operator-double-source.svg[An operator with two examples of input]
+image::legend-operator-double-source.svg[An operator with two examples of input, role="invert-dark"]
 
 These are the basic cases, yet some operators display slightly more advanced patterns.
 
 For instance, `ParallelFlux` creates multiple rails so they have multiple output `Flux`.
 These are represented one below the other, like in the following diagram:
 
-image::legend-operator-parallel.svg[A parallel operator]
+image::legend-operator-parallel.svg[A parallel operator, role="invert-dark"]
 
 Windowing operators produce a `Flux<Flux<T>>`: the main `Flux` notifies of each window opening, while inner `Flux` represent the windows content and termination.
 Windows are represented as branching out of the main `Flux`, like in the following diagram:
 
-image::legend-operator-windowing.svg[The output of a windowing operator]
+image::legend-operator-windowing.svg[The output of a windowing operator, role="invert-dark"]
 
 Sometimes, operators take a "companion publisher" as input (a `Flux`, `Mono` or arbitrary Reactive Stream `Publisher`).
 Such companion publishers help to customize the operator's behavior, which will use some of the companion's signals as trigger for its own internal behavior.
 They are represented like in the following diagram:
 
-image::legend-operator-companion.svg[An operator with a companion Publisher]
+image::legend-operator-companion.svg[An operator with a companion Publisher, role="invert-dark"]
 
 Now that we've seen the most common operator patterns, let's show the graphical representation of all the different signals, events and elements that can occur in a `Flux` or `Mono`:
 
-image::legend-events.svg[All types of signals and events]
+image::legend-events.svg[All types of signals and events, role="invert-dark"]
 
 Finally, in the same vein we have the graphical representation of _side effects_, which occur alongside the Reactive Stream signals:
 
-image::legend-sideEffects1.svg[Side effects: representation of doOn* handlers]
-image::legend-sideEffects2.svg[Side effects: in a diagram]
+image::legend-sideEffects1.svg[Side effects: representation of doOn* handlers, role="invert-dark"]
+image::legend-sideEffects2.svg[Side effects: in a diagram, role="invert-dark"]
 
