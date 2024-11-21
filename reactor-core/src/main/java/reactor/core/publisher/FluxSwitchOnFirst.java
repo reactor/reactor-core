@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -716,7 +716,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
-			if (hasInboundClosedPrematurely(previousState)) {
+			if (hasInboundCancelled(previousState) ||hasInboundClosedPrematurely(previousState)) {
 				Operators.error(inboundSubscriber, new CancellationException("FluxSwitchOnFirst has already been cancelled"));
 				return;
 			}

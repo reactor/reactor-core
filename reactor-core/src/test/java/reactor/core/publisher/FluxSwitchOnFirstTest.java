@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
@@ -1385,6 +1386,35 @@ public class FluxSwitchOnFirstTest {
 
         assertThat(testPublisher.wasCancelled()).isTrue();
     }
+
+	@Test
+	void shouldErrorWhenResubscribingAfterCancel() {
+		TestPublisher<Long> testPublisher = TestPublisher.create();
+
+		AtomicReference<Flux<Long>> intercepted = new AtomicReference<>();
+
+		Flux<Flux<Long>> flux =
+				testPublisher.flux().switchOnFirst((s, f) -> {
+					intercepted.set(f);
+					// Due to wrapping we can avoid subscribing to f and subscribe later
+					// (re-subscribing is not allowed)
+					return Mono.just(f);
+				});
+
+		StepVerifier.create(flux)
+		            .expectSubscription()
+		            .then(() -> testPublisher.next(1L))
+					.thenCancel()
+		            .verify(Duration.ofSeconds(2));
+
+		Flux<Long> switchOnFirstMain = intercepted.get();
+
+		StepVerifier.create(switchOnFirstMain,
+				            StepVerifierOptions.create()
+				                               .scenarioName("Expect immediate onError from SwitchOnFirstMain as the outer operator has completed"))
+		            .expectError(IllegalStateException.class)
+		            .verify(Duration.ofSeconds(1));
+	}
 
     @Test
     public void scanOperator(){
