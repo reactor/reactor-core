@@ -384,8 +384,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 				.findFirst()
 				.orElse(null);
 
-			int thisId = System.identityHashCode(currentAssembly);
-			int parentId = System.identityHashCode(parentAssembly);
+			int thisId = currentAssembly.toString().hashCode();
 
 			ObservedAtInformationNode thisNode;
 			synchronized (nodesPerId) {
@@ -402,6 +401,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 					root.addNode(thisNode);
 				}
 				else {
+					int parentId = parentAssembly.toString().hashCode();
 					ObservedAtInformationNode parentNode = nodesPerId.get(parentId);
 					if (parentNode != null) {
 						parentNode.addNode(thisNode);
