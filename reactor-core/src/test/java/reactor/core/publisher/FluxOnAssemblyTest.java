@@ -547,6 +547,7 @@ class FluxOnAssemblyTest {
 			assertThat(debugStack)
 				.contains("Assembly trace from producer [reactor.core.publisher.FluxMap] :")
 				.contains("*__ParallelFlux.transformGroups ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForParallel(")
+				.contains("(observed 2 times)")
 				.contains("checkpoint() ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointEmptyForParallel(");
 		}
 		else {
@@ -584,6 +585,7 @@ class FluxOnAssemblyTest {
 			assertThat(debugStack)
 				.contains("Assembly trace from producer [reactor.core.publisher.FluxMap] :")
 				.contains("*__ParallelFlux.transformGroups ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForParallel(")
+				.contains("(observed 2 times)")
 				.contains("checkpoint(heavy) ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointDescriptionAndForceStackForParallel(");
 		}
 		else {
@@ -621,6 +623,7 @@ class FluxOnAssemblyTest {
 			assertThat(debugStack)
 				.contains("Assembly trace from producer [reactor.core.publisher.FluxMap] :")
 				.contains("*__ParallelFlux.transformGroups ⇢ at reactor.core.publisher.FluxOnAssemblyTest.checkpointWithDescriptionIsLightForParallel(")
+				.contains("(observed 2 times)")
 				.contains("checkpoint ⇢ light");
 		}
 		else {
