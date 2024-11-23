@@ -441,6 +441,15 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 					return super.getMessage();
 				}
 
+				if (Hooks.GLOBAL_TRACE) {
+					// attach dangling node, without a parent, to root
+					nodesPerId.forEach((id, node) -> {
+						if (node.parent == null && !node.children.isEmpty()) {
+							root.children.add(node);
+						}
+					});
+				}
+
 				StringBuilder sb = new StringBuilder(super.getMessage())
 					.append(System.lineSeparator())
 					.append("Error has been observed at the following site(s):")
