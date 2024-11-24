@@ -385,6 +385,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 				.orElse(null);
 
 			int thisId = currentAssembly.toString().hashCode();
+			int parentId = parentAssembly == null ? 0 : parentAssembly.toString().hashCode();
 
 			ObservedAtInformationNode thisNode;
 			synchronized (nodesPerId) {
@@ -401,7 +402,6 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 					root.addNode(thisNode);
 				}
 				else {
-					int parentId = parentAssembly.toString().hashCode();
 					ObservedAtInformationNode parentNode = nodesPerId.get(parentId);
 					if (parentNode != null) {
 						parentNode.addNode(thisNode);
