@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -627,7 +627,9 @@ public interface Scannable {
 	 *
 	 * @return a {@link Map} of deduplicated tags from this {@link Scannable} and its reachable parents
 	 * @see #tags()
+	 * @deprecated Micrometer APIs generally deduplicate tags and key-value pairs by default, so for related use cases prefer {@link #tags()}.
 	 */
+	@Deprecated
 	default Map<String, String> tagsDeduplicated() {
 		return tags().collect(Collectors.toMap(Tuple2::getT1, Tuple2::getT2,
 			(s1, s2) -> s2, LinkedHashMap::new));

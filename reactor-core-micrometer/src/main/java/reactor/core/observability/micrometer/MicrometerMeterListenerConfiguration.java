@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,9 +93,9 @@ final class MicrometerMeterListenerConfiguration {
 		Scannable scannable = Scannable.from(source);
 
 		if (scannable.isScanAvailable()) {
-			List<Tag> discoveredTags = scannable.tagsDeduplicated()
-				.entrySet().stream()
-				.map(e -> Tag.of(e.getKey(), e.getValue()))
+			// `Tags#and` deduplicates tags by key, retaining the last value as required.
+			List<Tag> discoveredTags = scannable.tags()
+				.map(t -> Tag.of(t.getT1(), t.getT2()))
 				.collect(Collectors.toList());
 			return tags.and(discoveredTags);
 		}
