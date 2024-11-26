@@ -37,17 +37,17 @@ import org.openjdk.jmh.annotations.Warmup;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 public class TracesBenchmark {
-	@Param({"0", "10", "100", "1000"})
+	@Param({"0", "1", "2"})
 	private int reactorLeadingLines;
 
-	@Param({"0", "10", "100", "1000"})
+	@Param({"0", "1", "2"})
 	private int trailingLines;
 
 	private String stackTrace;
 
 	@Setup(Level.Iteration)
 	public void setup() {
-		stackTrace = createLargeStackTrace(reactorLeadingLines, trailingLines);
+		stackTrace = createStackTrace(reactorLeadingLines, trailingLines);
 	}
 
 	@SuppressWarnings("unused")
@@ -56,7 +56,7 @@ public class TracesBenchmark {
 		return Traces.extractOperatorAssemblyInformation(stackTrace);
 	}
 
-	private static String createLargeStackTrace(int reactorLeadingLines, int trailingLines) {
+	private static String createStackTrace(int reactorLeadingLines, int trailingLines) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < reactorLeadingLines; i++) {
 			sb.append("\tat reactor.core.publisher.Flux.someOperation(Flux.java:42)\n");
