@@ -57,8 +57,8 @@ final class Traces {
 	static boolean shouldSanitize(String stackTraceRow) {
 		return stackTraceRow.startsWith("java.util.function")
 				|| stackTraceRow.startsWith("reactor.core.publisher.Mono.onAssembly")
-				|| stackTraceRow.equals("reactor.core.publisher.Flux.onAssembly")
-				|| stackTraceRow.equals("reactor.core.publisher.ParallelFlux.onAssembly")
+				|| stackTraceRow.startsWith("reactor.core.publisher.Flux.onAssembly")
+				|| stackTraceRow.startsWith("reactor.core.publisher.ParallelFlux.onAssembly")
 				|| stackTraceRow.startsWith("reactor.core.publisher.SignalLogger")
 				|| stackTraceRow.startsWith("reactor.core.publisher.FluxOnAssembly")
 				|| stackTraceRow.startsWith("reactor.core.publisher.MonoOnAssembly.")
@@ -197,10 +197,6 @@ final class Traces {
 
 			@Nullable
 			private String getNextLine() {
-				if (index >= source.length()) {
-					return null;
-				}
-
 				while (index < source.length()) {
 					int end = source.indexOf('\n', index);
 					if (end == -1) {
