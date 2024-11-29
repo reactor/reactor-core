@@ -95,8 +95,12 @@ final class Traces {
 		switch (parts.length) {
 			case 0:
 				return "[no operator assembly information]";
+			case 1:
+				return parts[0];
+			case 2:
+				return parts[0] + CALL_SITE_GLUE + parts[1];
 			default:
-				return String.join(CALL_SITE_GLUE, parts);
+				throw new IllegalStateException("Unexpected number of assembly info parts: " + parts.length);
 		}
 	}
 
