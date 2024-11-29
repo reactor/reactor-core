@@ -194,13 +194,24 @@ final class Traces {
 					if (end == -1) {
 						end = source.length();
 					}
-					String line = source.substring(index, end).trim();
+					String line = trimmedSubstring(source, index, end);
 					index = end + 1;
 					if (!line.isEmpty()) {
 						return line;
 					}
 				}
 				return null;
+			}
+
+			// Equivalent to source.substring(start, end).trim(), but avoids allocation of a new array.
+			private String trimmedSubstring(String source, int start, int end) {
+				while (start < end && source.charAt(start) <= ' ') {
+					start++;
+				}
+				while (end > start && source.charAt(end - 1) <= ' ') {
+					end--;
+				}
+				return source.substring(start, end);
 			}
 		};
 	}
