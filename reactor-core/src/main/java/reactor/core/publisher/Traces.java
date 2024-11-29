@@ -28,8 +28,6 @@ import reactor.util.annotation.Nullable;
  * @author Sergei Egorov
  */
 final class Traces {
-	private static final String PUBLISHER_PACKAGE_PREFIX = "reactor.core.publisher.";
-
 	/**
 	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
 	 * instead of the sanitized version.
@@ -46,6 +44,8 @@ final class Traces {
 	 * newline.
 	 */
 	static final Supplier<Supplier<String>> callSiteSupplierFactory = new CallSiteSupplierFactory();
+
+	private static final String PUBLISHER_PACKAGE_PREFIX = "reactor.core.publisher.";
 
 	/**
 	 * Return true for strings (usually from a stack trace element) that should be
@@ -71,7 +71,7 @@ final class Traces {
 	}
 
 	/**
-	 * Extract operator information out of an assembly stack trace in {@link String} form
+	 * Extracts operator information out of an assembly stack trace in {@link String} form
 	 * (see {@link Traces#callSiteSupplierFactory}).
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},
@@ -82,10 +82,9 @@ final class Traces {
 	 *     (eg. {@code "Flux.map"})</li>
 	 *     <li>The next stacktrace element is considered user code and is appended to the
 	 *     result with a {@code ⇢} separator. (eg. {@code " ⇢ user.code.Class.method(Class.java:123)"})</li>
-	 *     <li>If no user code is found in the sanitized stack, then the API reference is outputed in the later format only.</li>
+	 *     <li>If no user code is found in the sanitized stack, then the API reference is output in the later format only.</li>
 	 *     <li>If the sanitized stack is empty, returns {@code "[no operator assembly information]"}</li>
 	 * </ol>
-	 *
 	 *
 	 * @param source the sanitized assembly stacktrace in String format.
 	 * @return a {@link String} representing operator and operator assembly site extracted
@@ -106,26 +105,15 @@ final class Traces {
 	}
 
 	/**
-	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link Traces#callSiteSupplierFactory}) which potentially
-	 * has a header line that one can skip by setting {@code skipFirst} to {@code true}.
+	 * Extracts operator information out of an assembly stack trace in {@link String} array form
+	 * (see {@link Traces#callSiteSupplierFactory}).
 	 * <p>
-	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},
-	 * that is:
-	 * <ol>
-	 *     <li>The top of the stack is inspected for Reactor API references, and the deepest
-	 *     one is kept, since multiple API references generally denote an alias operator.
-	 *     (eg. {@code "Flux.map"})</li>
-	 *     <li>The next stacktrace element is considered user code and is appended to the
-	 *     result with a {@code ⇢} separator. (eg. {@code " ⇢ user.code.Class.method(Class.java:123)"})</li>
-	 *     <li>If no user code is found in the sanitized stack, then the API reference is outputed in the later format only.</li>
-	 *     <li>If the sanitized stack is empty, returns {@code "[no operator assembly information]"}</li>
-	 * </ol>
-	 *
+	 * The returned array will contain 0, 1 or 2 elements, extracted in a manner as described by
+	 * {@link #extractOperatorAssemblyInformation(String)}.
 	 *
 	 * @param source the sanitized assembly stacktrace in String format.
-	 * @return a {@link String} representing operator and operator assembly site extracted
-	 * from the assembly stack trace.
+	 * @return a 0-2 element string array containing the operator and operator assembly site extracted
+	 * from the assembly stack trace
 	 */
 	static String[] extractOperatorAssemblyInformationParts(String source) {
 		Iterator<String> traces = trimmedNonemptyLines(source);
