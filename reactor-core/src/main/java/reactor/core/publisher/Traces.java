@@ -120,45 +120,36 @@ final class Traces {
 	 * from the assembly stack trace
 	 */
 	static String[] extractOperatorAssemblyInformationParts(String source) {
-		Iterator<String> traces = trimmedNonemptyLines(source);
+		Iterator<Substring> traces = trimmedNonemptyLines(source);
 
 		if (!traces.hasNext()) {
 			return new String[0];
 		}
 
-		String prevLine = null;
-		String currentLine = traces.next();
+		Substring prevLine = null;
+		Substring currentLine = traces.next();
 
-		if (isUserCode(currentLine)) {
+		if (currentLine.isUserCode()) {
 			// No line is a Reactor API line.
-			return new String[]{currentLine};
+			return new String[]{currentLine.toString()};
 		}
 
 		while (traces.hasNext()) {
 			prevLine = currentLine;
 			currentLine = traces.next();
 
-			if (isUserCode(currentLine)) {
+			if (currentLine.isUserCode()) {
 				// Currently on user code line, previous one is API. Attempt to create something in the form
 				// "Flux.map ⇢ user.code.Class.method(Class.java:123)".
-				int linePartIndex = prevLine.indexOf('(');
-				String apiLine = linePartIndex > 0 ?
-					prevLine.substring(0, linePartIndex) :
-					prevLine;
-
-				return new String[]{dropPublisherPackagePrefix(apiLine), "at " + currentLine};
+				return new String[]{
+					prevLine.withoutPublisherPackagePrefix().withoutLocationSuffix().toString(),
+					"at " + currentLine};
 			}
 		}
 
 		// We skipped ALL lines, meaning they're all Reactor API lines. We'll fully display the last
 		// one.
-		return new String[]{dropPublisherPackagePrefix(currentLine)};
-	}
-
-	private static String dropPublisherPackagePrefix(String line) {
-		return line.startsWith(PUBLISHER_PACKAGE_PREFIX)
-			? line.substring(PUBLISHER_PACKAGE_PREFIX.length())
-			: line;
+		return new String[]{currentLine.withoutPublisherPackagePrefix().toString()};
 	}
 
 	/**
@@ -166,11 +157,11 @@ final class Traces {
 	 *
 	 * @implNote This implementation attempts to minimize allocations.
 	 */
-	private static Iterator<String> trimmedNonemptyLines(String source) {
-		return new Iterator<String>() {
+	private static Iterator<Substring> trimmedNonemptyLines(String source) {
+		return new Iterator<Substring>() {
 			private int index = 0;
 			@Nullable
-			private String next = getNextLine();
+			private Substring next = getNextLine();
 
 			@Override
 			public boolean hasNext() {
@@ -178,8 +169,8 @@ final class Traces {
 			}
 
 			@Override
-			public String next() {
-				String current = next;
+			public Substring next() {
+				Substring current = next;
 				if (current == null) {
 					throw new NoSuchElementException();
 				}
@@ -188,13 +179,13 @@ final class Traces {
 			}
 
 			@Nullable
-			private String getNextLine() {
+			private Substring getNextLine() {
 				while (index < source.length()) {
 					int end = source.indexOf('\n', index);
 					if (end == -1) {
 						end = source.length();
 					}
-					String line = trimmedSubstring(source, index, end);
+					Substring line = new Substring(source, index, end).trim();
 					index = end + 1;
 					if (!line.isEmpty()) {
 						return line;
@@ -202,17 +193,66 @@ final class Traces {
 				}
 				return null;
 			}
-
-			// Equivalent to source.substring(start, end).trim(), but avoids allocation of a new array.
-			private String trimmedSubstring(String source, int start, int end) {
-				while (start < end && source.charAt(start) <= ' ') {
-					start++;
-				}
-				while (end > start && source.charAt(end - 1) <= ' ') {
-					end--;
-				}
-				return source.substring(start, end);
-			}
 		};
+	}
+
+	// XXX: Explain.
+	private static final class Substring {
+		private final String str;
+		private final int start;
+		private final int end;
+
+		Substring(String str, int start, int end) {
+			this.str = str;
+			this.start = start;
+			this.end = end;
+		}
+
+		Substring trim() {
+			int newStart = start;
+			while (newStart < end && str.charAt(newStart) <= ' ') {
+				newStart++;
+			}
+			int newEnd = end;
+			while (newEnd > newStart && str.charAt(newEnd - 1) <= ' ') {
+				newEnd--;
+			}
+			return newStart == start && newEnd == end ? this : new Substring(str, newStart, newEnd);
+		}
+
+		boolean isEmpty() {
+			return start == end;
+		}
+
+		boolean startsWith(String prefix) {
+			return str.startsWith(prefix, start);
+		}
+
+		boolean contains(String substring) {
+			int index = str.indexOf(substring, start);
+			return index >= 0 && index < end;
+		}
+
+		boolean isUserCode() {
+			return !startsWith(PUBLISHER_PACKAGE_PREFIX) || contains("Test");
+		}
+
+		Substring withoutLocationSuffix() {
+			int linePartIndex = str.indexOf('(', start);
+			return linePartIndex > 0 && linePartIndex < end
+				? new Substring(str, start, linePartIndex)
+				: this;
+		}
+
+		Substring withoutPublisherPackagePrefix() {
+			return startsWith(PUBLISHER_PACKAGE_PREFIX)
+				? new Substring(str, start + PUBLISHER_PACKAGE_PREFIX.length(), end)
+				: this;
+		}
+
+		@Override
+		public String toString() {
+			return str.substring(start, end);
+		}
 	}
 }
