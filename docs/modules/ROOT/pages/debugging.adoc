@@ -324,6 +324,20 @@ If that is somehow not desirable, tracebacks can be identified thanks to `Except
 check, and excluded from such an unwrap by using `Exceptions.unwrapMultipleExcludingTracebacks(Throwable)`
 instead.
 
+WARNING: *Static exceptions*:
+Optimizing exception handling sometimes involves reusing exceptions via pre-creating
+global static instances instead of creating new instances upon an exceptional state
+occuring. With such reused exceptions, tracebacks will start to accumulate as
+appended suppressed exceptions and inevitably lead to memory leaks. In most
+circumstances static exceptions are used in combination with disabling stacktrace
+capturing which is the biggest contributor to the cost of creating exceptions. However,
+exceptions can be created dynamically without a stack trace with only the marginal cost
+of memory allocation and no need for static instances. In case your code still needs to
+rely on static instances of exceptions, the way to avoid memory leaks with tracebacks is to
+https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#Throwable-java.lang.String-java.lang.Throwable-boolean-boolean-[disable suppression]
+at the expense of not being able to see tracebacks if these exceptions are propagated
+down the reactive chain.
+
 We deal with a form of instrumentation here, and creating a stack trace is costly. That
 is why this debugging feature should only be activated in a controlled manner, as a last
 resort.
