@@ -51,7 +51,7 @@ reactor-perfBaseline-coreMicrometer = { module = "io.projectreactor:reactor-core
 reactor-perfBaseline-extra = { module = "io.projectreactor.addons:reactor-extra", version.ref = "baselinePerfExtra" }
 
 [plugins]
-artifactory = { id = "com.jfrog.artifactory", version = "4.31.0" }
+artifactory = { id = "com.jfrog.artifactory", version = "4.33.1" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.4.0" }
 download = { id = "de.undercouch.download", version = "5.6.0" }
 japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.5" }
