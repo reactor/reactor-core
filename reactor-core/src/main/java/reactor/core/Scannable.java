@@ -449,7 +449,7 @@ public interface Scannable {
 				.map(s -> s.scan(Attr.NAME))
 				.filter(Objects::nonNull)
 				.findFirst()
-				.orElse(stepName());
+				.orElseGet(this::stepName);
 	}
 
 	/**
