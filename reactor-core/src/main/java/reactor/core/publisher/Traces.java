@@ -120,14 +120,14 @@ final class Traces {
 	 * from the assembly stack trace
 	 */
 	static String[] extractOperatorAssemblyInformationParts(String source) {
-		Iterator<Substring> traces = trimmedNonemptyLines(source);
+		Iterator<StackLineView> traces = trimmedNonemptyLines(source);
 
 		if (!traces.hasNext()) {
 			return new String[0];
 		}
 
-		Substring prevLine = null;
-		Substring currentLine = traces.next();
+		StackLineView prevLine = null;
+		StackLineView currentLine = traces.next();
 
 		if (currentLine.isUserCode()) {
 			// No line is a Reactor API line.
@@ -157,11 +157,11 @@ final class Traces {
 	 *
 	 * @implNote This implementation attempts to minimize allocations.
 	 */
-	private static Iterator<Substring> trimmedNonemptyLines(String source) {
-		return new Iterator<Substring>() {
-			private int index = 0;
+	private static Iterator<StackLineView> trimmedNonemptyLines(String source) {
+		return new Iterator<StackLineView>() {
+			private int           index = 0;
 			@Nullable
-			private Substring next = getNextLine();
+			private StackLineView next  = getNextLine();
 
 			@Override
 			public boolean hasNext() {
@@ -169,8 +169,8 @@ final class Traces {
 			}
 
 			@Override
-			public Substring next() {
-				Substring current = next;
+			public StackLineView next() {
+				StackLineView current = next;
 				if (current == null) {
 					throw new NoSuchElementException();
 				}
@@ -179,13 +179,13 @@ final class Traces {
 			}
 
 			@Nullable
-			private Substring getNextLine() {
+			private StackLineView getNextLine() {
 				while (index < source.length()) {
 					int end = source.indexOf('\n', index);
 					if (end == -1) {
 						end = source.length();
 					}
-					Substring line = new Substring(source, index, end).trim();
+					StackLineView line = new StackLineView(source, index, end).trim();
 					index = end + 1;
 					if (!line.isEmpty()) {
 						return line;
@@ -196,28 +196,34 @@ final class Traces {
 		};
 	}
 
-	// XXX: Explain.
-	private static final class Substring {
-		private final String str;
-		private final int start;
-		private final int end;
+	/**
+	 * Provides optimized access to underlying {@link String} with common operations to
+	 * view the stack trace line without unnecessary allocation of temporary
+	 * {@code String} objects.
+	 */
+	static final class StackLineView {
 
-		Substring(String str, int start, int end) {
-			this.str = str;
+		private final String underlying;
+		private final int    start;
+		private final int    end;
+
+		StackLineView(String underlying, int start, int end) {
+			this.underlying = underlying;
 			this.start = start;
 			this.end = end;
 		}
 
-		Substring trim() {
+		StackLineView trim() {
 			int newStart = start;
-			while (newStart < end && str.charAt(newStart) <= ' ') {
+			while (newStart < end && underlying.charAt(newStart) <= ' ') {
 				newStart++;
 			}
 			int newEnd = end;
-			while (newEnd > newStart && str.charAt(newEnd - 1) <= ' ') {
+			while (newEnd > newStart && underlying.charAt(newEnd - 1) <= ' ') {
 				newEnd--;
 			}
-			return newStart == start && newEnd == end ? this : new Substring(str, newStart, newEnd);
+			return newStart == start && newEnd == end ? this : new StackLineView(
+					underlying, newStart, newEnd);
 		}
 
 		boolean isEmpty() {
@@ -225,34 +231,35 @@ final class Traces {
 		}
 
 		boolean startsWith(String prefix) {
-			return str.startsWith(prefix, start);
+			boolean canFit = end - start >= prefix.length();
+			return canFit && underlying.startsWith(prefix, start);
 		}
 
 		boolean contains(String substring) {
-			int index = str.indexOf(substring, start);
-			return index >= 0 && index < end;
+			int index = underlying.indexOf(substring, start);
+			return index >= start && (index + (substring.length() - 1) < end);
 		}
 
 		boolean isUserCode() {
 			return !startsWith(PUBLISHER_PACKAGE_PREFIX) || contains("Test");
 		}
 
-		Substring withoutLocationSuffix() {
-			int linePartIndex = str.indexOf('(', start);
+		StackLineView withoutLocationSuffix() {
+			int linePartIndex = underlying.indexOf('(', start);
 			return linePartIndex > 0 && linePartIndex < end
-				? new Substring(str, start, linePartIndex)
+				? new StackLineView(underlying, start, linePartIndex)
 				: this;
 		}
 
-		Substring withoutPublisherPackagePrefix() {
+		StackLineView withoutPublisherPackagePrefix() {
 			return startsWith(PUBLISHER_PACKAGE_PREFIX)
-				? new Substring(str, start + PUBLISHER_PACKAGE_PREFIX.length(), end)
+				? new StackLineView(underlying, start + PUBLISHER_PACKAGE_PREFIX.length(), end)
 				: this;
 		}
 
 		@Override
 		public String toString() {
-			return str.substring(start, end);
+			return underlying.substring(start, end);
 		}
 	}
 }
