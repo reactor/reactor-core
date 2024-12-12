@@ -22,7 +22,7 @@ public static void main(String[] args) throws InterruptedException {
       .subscribe(v -> //<2>
           System.out.println(v + Thread.currentThread().getName()) //<3>
       )
-  )
+  );
   t.start();
   t.join();
 
