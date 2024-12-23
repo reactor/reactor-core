@@ -52,6 +52,6 @@ jobs:
           distribution: 'temurin'
           java-version: 8
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d156388eb19639ec20ade50009f3d199ce1e2808
+        uses: gradle/actions/setup-gradle@0bdd871935719febd78681f197cd39af5b6e16a6
       - name: Run Gradle Tests
         run: ./gradlew ${{ matrix.test-type.arguments }}
