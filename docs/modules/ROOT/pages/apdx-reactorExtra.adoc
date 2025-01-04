@@ -45,7 +45,7 @@ You can rewrite the preceding example as follows:
 [source,java]
 [%unbreakable]
 ----
-.map(TupleUtils.function(Customer::new)); // <1>
+.map(TupleUtils.Function3(Customer::new)); // <1>
 ----
 <1> (as `Customer` constructor conforms to `Function3` functional interface signature)
 
