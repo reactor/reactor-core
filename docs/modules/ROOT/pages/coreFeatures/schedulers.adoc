@@ -155,7 +155,7 @@ final Flux<String> flux = Flux
     .publishOn(s)  //<3>
     .map(i -> "value " + i);  //<4>
 
-new Thread(() -> flux.subscribe(System.out::println));  //<5>
+new Thread(() -> flux.subscribe(System.out::println)).start();  //<5>
 ----
 <1> Creates a new `Scheduler` backed by four `Thread` instances.
 <2> The first `map` runs on the anonymous thread in <5>.
@@ -196,7 +196,7 @@ final Flux<String> flux = Flux
     .subscribeOn(s)  //<3>
     .map(i -> "value " + i);  //<4>
 
-new Thread(() -> flux.subscribe(System.out::println));  //<5>
+new Thread(() -> flux.subscribe(System.out::println)).start();  //<5>
 ----
 <1> Creates a new `Scheduler` backed by four `Thread`.
 <2> The first `map` runs on one of these four threads...
