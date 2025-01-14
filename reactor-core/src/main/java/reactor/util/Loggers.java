@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.util;
 
 import java.io.PrintStream;
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
@@ -353,7 +354,7 @@ public abstract class Loggers {
 
 		@Override
 		public void trace(String format, Object... arguments) {
-			logger.log(Level.FINEST, format(format, arguments));
+			logWithOptionalThrowable(Level.FINEST, format, arguments);
 		}
 
 		@Override
@@ -373,7 +374,7 @@ public abstract class Loggers {
 
 		@Override
 		public void debug(String format, Object... arguments) {
-			logger.log(Level.FINE, format(format, arguments));
+			logWithOptionalThrowable(Level.FINE, format, arguments);
 		}
 
 		@Override
@@ -393,7 +394,7 @@ public abstract class Loggers {
 
 		@Override
 		public void info(String format, Object... arguments) {
-			logger.log(Level.INFO, format(format, arguments));
+			logWithOptionalThrowable(Level.INFO, format, arguments);
 		}
 
 		@Override
@@ -413,7 +414,7 @@ public abstract class Loggers {
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			logger.log(Level.WARNING, format(format, arguments));
+			logWithOptionalThrowable(Level.WARNING, format, arguments);
 		}
 
 		@Override
@@ -433,7 +434,7 @@ public abstract class Loggers {
 
 		@Override
 		public void error(String format, Object... arguments) {
-			logger.log(Level.SEVERE, format(format, arguments));
+			logWithOptionalThrowable(Level.SEVERE, format, arguments);
 		}
 
 		@Override
@@ -453,6 +454,24 @@ public abstract class Loggers {
 				return computed;
 			}
 			return null;
+		}
+
+		private void logWithOptionalThrowable(Level level, String format, Object... arguments) {
+			if(isLastElementThrowable(arguments)) {
+				int lastIndex = arguments.length - 1;
+				Object[] args = Arrays.copyOfRange(arguments, 0, lastIndex);
+				Throwable t = (Throwable) arguments[lastIndex];
+
+				logger.log(level, format(format, args), t);
+				return;
+			}
+
+			logger.log(level, format(format, arguments));
+		}
+
+		private boolean isLastElementThrowable(Object... arguments) {
+			int length = arguments.length;
+			return length > 0 && arguments[length - 1] instanceof Throwable;
 		}
 	}
 
@@ -507,6 +526,39 @@ public abstract class Loggers {
 			return null;
 		}
 
+		private synchronized void logWithOptionalThrowable(String level, String format, Object... arguments) {
+			if(isLastElementThrowable(arguments)) {
+				int lastIndex = arguments.length - 1;
+				Object[] args = Arrays.copyOfRange(arguments, 0, lastIndex);
+				Throwable t = (Throwable) arguments[lastIndex];
+
+				this.log.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, args));
+				t.printStackTrace(this.log);
+				return;
+			}
+
+			this.log.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, arguments));
+		}
+
+		private synchronized void logErrorWithOptionalThrowable(String level, String format, Object... arguments) {
+			if(isLastElementThrowable(arguments)) {
+				int lastIndex = arguments.length - 1;
+				Object[] args = Arrays.copyOfRange(arguments, 0, lastIndex);
+				Throwable t = (Throwable) arguments[lastIndex];
+
+				this.err.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, args));
+				t.printStackTrace(this.err);
+				return;
+			}
+
+			this.err.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, arguments));
+		}
+
+		private boolean isLastElementThrowable(Object... arguments) {
+			int length = arguments.length;
+			return length > 0 && arguments[length - 1] instanceof Throwable;
+		}
+
 		@Override
 		public boolean isTraceEnabled() {
 			return identifier.verbose;
@@ -521,11 +573,11 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void trace(String format, Object... arguments) {
+		public void trace(String format, Object... arguments) {
 			if (!identifier.verbose) {
 				return;
 			}
-			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+			logWithOptionalThrowable("TRACE", format, arguments);
 		}
 		@Override
 		public synchronized void trace(String msg, Throwable t) {
@@ -550,11 +602,11 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void debug(String format, Object... arguments) {
+		public void debug(String format, Object... arguments) {
 			if (!identifier.verbose) {
 				return;
 			}
-			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+			logWithOptionalThrowable("DEBUG", format, arguments);
 		}
 
 		@Override
@@ -573,17 +625,17 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void info(String msg) {
-			this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), msg);
+			this.log.format("[INFO] (%s) %s\n", Thread.currentThread().getName(), msg);
 		}
 
 		@Override
-		public synchronized void info(String format, Object... arguments) {
-			this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		public void info(String format, Object... arguments) {
+			logWithOptionalThrowable("INFO", format, arguments);
 		}
 
 		@Override
 		public synchronized void info(String msg, Throwable t) {
-			this.log.format("[ INFO] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+			this.log.format("[INFO] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.log);
 		}
 
@@ -594,17 +646,17 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void warn(String msg) {
-			this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), msg);
+			this.err.format("[WARN] (%s) %s\n", Thread.currentThread().getName(), msg);
 		}
 
 		@Override
-		public synchronized void warn(String format, Object... arguments) {
-			this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		public void warn(String format, Object... arguments) {
+			logErrorWithOptionalThrowable("WARN", format, arguments);
 		}
 
 		@Override
 		public synchronized void warn(String msg, Throwable t) {
-			this.err.format("[ WARN] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+			this.err.format("[WARN] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.err);
 		}
 
@@ -619,8 +671,8 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void error(String format, Object... arguments) {
-			this.err.format("[ERROR] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		public void error(String format, Object... arguments) {
+			logErrorWithOptionalThrowable("ERROR", format, arguments);
 		}
 
 		@Override
