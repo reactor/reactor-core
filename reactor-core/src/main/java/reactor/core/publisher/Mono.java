@@ -4577,7 +4577,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		}
 		catch (Throwable e) {
 			Operators.reportThrowInSubscribe(subscriber, e);
-			return;
 		}
 	}
 
