@@ -471,7 +471,7 @@ If your environment does not support ByteBuddy's self-attachment, you can run `r
 Java Agent:
 [source,shell]
 ----
-java -javaagent reactor-tools.jar -jar app.jar
+java -javaagent:reactor-tools.jar -jar app.jar
 ----
 
 [[running-reactordebugagent-at-build-time]]
