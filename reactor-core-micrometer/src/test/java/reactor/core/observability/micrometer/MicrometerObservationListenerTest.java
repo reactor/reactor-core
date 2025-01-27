@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,14 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.test.ParameterizedTestWithName;
+import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -244,6 +246,21 @@ class MicrometerObservationListenerTest {
 			.hasLowCardinalityKeyValue("reactor.type", "Flux")
 			.hasLowCardinalityKeyValue("reactor.status",  "completed")
 			.hasKeyValuesCount(4);
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/3972
+	@ParameterizedTestWithName
+	@ValueSource(booleans =  {true, false})
+	void tapMonoCancelAfterNext(boolean automatic) {
+		if (automatic) {
+			Hooks.enableAutomaticContextPropagation();
+		}
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		Mono<Integer> mono = Mono.just(1).tap(Micrometer.observation(observationRegistry));
+		StepVerifier.create(Flux.from(mono).take(1).single())
+		            .expectNext(1)
+		            .expectComplete()
+		            .verify();
 	}
 
 	@ParameterizedTestWithName
@@ -476,10 +493,7 @@ class MicrometerObservationListenerTest {
 			registry,
 			true);
 
-		final String expectedStatus = "completedOnNext";
-
-		//we use a test-oriented constructor to force the onNext completion case to have a different tag value
-		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, expectedStatus, null);
+		MicrometerObservationListener<Integer> listener = new MicrometerObservationListener<>(subscriberContext, configuration, null);
 
 		listener.doFirst(); // forces observation start
 		listener.doOnNext(1); // emulates onNext, should stop observation
@@ -491,16 +505,14 @@ class MicrometerObservationListenerTest {
 			.hasBeenStarted()
 			.hasBeenStopped()
 			.hasLowCardinalityKeyValue("forcedType", "Mono")
-			.hasLowCardinalityKeyValue("reactor.status", expectedStatus)
+			.hasLowCardinalityKeyValue("reactor.status", "completed")
 			.doesNotHaveError();
 
+		// Should this fail, an io.micrometer.observation.tck.InvalidObservationException
+		// would have been thrown with
+		// "Invalid stop: Observation 'valuedMono' has already been stopped" message
+		// (Starting from Micrometer 1.14.0)
 		listener.doOnComplete();
-
-		//if the test in doOnComplete was bugged, the status key would be associated with "completed" now
-		assertThat(registry)
-			.hasSingleObservationThat()
-			.as("post-doOnComplete")
-			.hasLowCardinalityKeyValue("reactor.status",  expectedStatus);
 	}
 
 	@ParameterizedTestWithName
