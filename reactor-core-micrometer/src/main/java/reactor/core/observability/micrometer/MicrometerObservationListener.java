@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
 import reactor.core.observability.SignalListener;
-import reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags;
 import reactor.core.publisher.SignalType;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -28,6 +27,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 
 import static reactor.core.observability.micrometer.MicrometerObservationListenerDocumentation.ObservationTags.STATUS;
@@ -57,12 +57,6 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	 */
 	static final String CONTEXT_KEY_OBSERVATION = "micrometer.observation";
 
-	/**
-	 * A value for the status tag, to be used when a Mono completes from onNext.
-	 * In production, this is set to {@link ObservationTags#TAG_STATUS_COMPLETED}.
-	 * In some tests, this can be overridden as a way to assert {@link #doOnComplete()} is no-op.
-	 */
-	final String                                     completedOnNextStatus;
 	final MicrometerObservationListenerConfiguration configuration;
 	final ContextView originalContext;
 	final Observation tapObservation;
@@ -72,6 +66,17 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	boolean valued;
 
+	volatile int status = STATUS_INCOMPLETE;
+	@SuppressWarnings("rawtypes")
+	static final AtomicIntegerFieldUpdater<MicrometerObservationListener> STATUS_UPDATER =
+			AtomicIntegerFieldUpdater.newUpdater(MicrometerObservationListener.class, "status");
+
+	static final int STATUS_INCOMPLETE = 0;
+	static final int STATUS_CANCELLED  = 1;
+	static final int STATUS_COMPLETED_IN_ON_NEXT = 2;
+	static final int STATUS_COMPLETED = 3;
+	static final int STATUS_ERROR = 4;
+
 	MicrometerObservationListener(ContextView subscriberContext, MicrometerObservationListenerConfiguration configuration) {
 		this(subscriberContext, configuration, null);
 	}
@@ -79,19 +84,8 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	MicrometerObservationListener(ContextView subscriberContext,
 			MicrometerObservationListenerConfiguration configuration,
 			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
-		this(subscriberContext, configuration, TAG_STATUS_COMPLETED, observationSupplier);
-	}
-
-	//for test purposes, we can pass in a value for the status tag, to be used when a Mono completes from onNext
-	MicrometerObservationListener(ContextView subscriberContext,
-			MicrometerObservationListenerConfiguration configuration,
-			String completedOnNextStatus,
-			@Nullable Function<ObservationRegistry, Observation> observationSupplier) {
 		this.configuration = configuration;
 		this.originalContext = subscriberContext;
-		this.completedOnNextStatus = completedOnNextStatus;
-
-		this.valued = false;
 
 		//creation of the listener matches subscription (Publisher.subscribe(Subscriber) / doFirst)
 		//while doOnSubscription matches the moment where the Publisher acknowledges said subscription
@@ -179,27 +173,25 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doOnCancel() {
-		Observation observation = tapObservation
-			.lowCardinalityKeyValue(STATUS.asString(), TAG_STATUS_CANCELLED);
+		if (STATUS_UPDATER.compareAndSet(this, STATUS_INCOMPLETE, STATUS_CANCELLED)) {
+			Observation observation =
+					tapObservation.lowCardinalityKeyValue(STATUS.asString(),
+							TAG_STATUS_CANCELLED);
 
-		observation.stop();
+			observation.stop();
+		}
 	}
 
 	@Override
 	public void doOnComplete() {
-		// We differentiate between empty completion and value completion via tags.
-		String status = null;
-		if (!valued) {
-			status = TAG_STATUS_COMPLETED_EMPTY;
-		}
-		else if (!configuration.isMono) {
-			status = TAG_STATUS_COMPLETED;
-		}
-
-		// if status == null, recording with OnComplete tag is done directly in onNext for the Mono(valued) case
-		if (status != null) {
+		// The comparison can fail if the Publisher was terminated by error,
+		// cancellation, or recording with OnComplete tag was done directly in onNext for
+		// the Mono(valued) case
+		if (STATUS_UPDATER.compareAndSet(this, STATUS_INCOMPLETE, STATUS_COMPLETED)) {
+			// We differentiate between empty completion and value completion via tags.
+			String status = valued ? TAG_STATUS_COMPLETED : TAG_STATUS_COMPLETED_EMPTY;
 			Observation completeObservation = tapObservation
-				.lowCardinalityKeyValue(STATUS.asString(), status);
+					.lowCardinalityKeyValue(STATUS.asString(), status);
 
 			completeObservation.stop();
 		}
@@ -207,20 +199,23 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 
 	@Override
 	public void doOnError(Throwable e) {
-		Observation errorObservation = tapObservation
-			.lowCardinalityKeyValue(STATUS.asString(), TAG_STATUS_ERROR)
-			.error(e);
+		if (STATUS_UPDATER.compareAndSet(this, STATUS_INCOMPLETE, STATUS_ERROR)) {
+			Observation errorObservation =
+					tapObservation.lowCardinalityKeyValue(STATUS.asString(), TAG_STATUS_ERROR)
+					              .error(e);
 
-		errorObservation.stop();
+			errorObservation.stop();
+		}
 	}
 
 	@Override
 	public void doOnNext(T t) {
 		valued = true;
-		if (configuration.isMono) {
+		if (configuration.isMono
+				&& STATUS_UPDATER.compareAndSet(this, STATUS_INCOMPLETE, STATUS_COMPLETED_IN_ON_NEXT)) {
 			//record valued completion directly
 			Observation completeObservation = tapObservation
-				.lowCardinalityKeyValue(STATUS.asString(), completedOnNextStatus);
+				.lowCardinalityKeyValue(STATUS.asString(), TAG_STATUS_COMPLETED);
 
 			completeObservation.stop();
 		}
