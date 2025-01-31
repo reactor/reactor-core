@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,19 @@
 
 package reactor.util;
 
+import java.io.PrintStream;
+import java.util.logging.Level;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-
 import reactor.ReactorLauncherSessionListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class LoggersTest {
 
@@ -111,4 +118,145 @@ class LoggersTest {
 		}
 	}
 
+	@Test
+	void logWhenUsingJdkLoggers() {
+		java.util.logging.Logger jdkLogger = mock(java.util.logging.Logger.class);
+		Loggers.JdkLogger log = new Loggers.JdkLogger(jdkLogger);
+
+		log.warn("message: {}, {}", "foo", "bar");
+
+		verify(jdkLogger, times(1))
+				.log(
+						Level.WARNING,
+						"message: foo, bar"
+				);
+	}
+
+	@Test
+	void logWithThrowableWhenUsingJdkLoggers() {
+		java.util.logging.Logger jdkLogger = mock(java.util.logging.Logger.class);
+		Loggers.JdkLogger log = new Loggers.JdkLogger(jdkLogger);
+
+		Throwable t = new IllegalAccessError();
+		log.warn("message: {}, {}", "foo", "bar", t);
+
+		verify(jdkLogger, times(1))
+				.log(
+						Level.WARNING,
+						"message: foo, bar",
+						t
+				);
+	}
+
+	@Test
+	void logWarnWhenUsingConsoleLoggers() {
+		PrintStream logConsoleLogger = mock(PrintStream.class);
+		PrintStream errorConsoleLogger = mock(PrintStream.class);
+		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
+				"test",
+				logConsoleLogger,
+				errorConsoleLogger,
+				true
+		);
+
+		log.warn("message: {}, {}", "foo", "bar");
+
+		verify(errorConsoleLogger, times(1))
+				.format(
+						"[%s] (%s) %s\n",
+						" WARN",
+						Thread.currentThread().getName(),
+						"message: foo, bar"
+				);
+	}
+
+	@Test
+	void logWarnWithThrowableWhenUsingConsoleLoggers() {
+		PrintStream logConsoleLogger = mock(PrintStream.class);
+		PrintStream errorConsoleLogger = mock(PrintStream.class);
+		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
+				"test",
+				logConsoleLogger,
+				errorConsoleLogger,
+				true
+		);
+
+		Throwable t = mock(IllegalAccessError.class);
+		log.warn("message: {}, {}", "foo", "bar", t);
+
+		verify(logConsoleLogger, never())
+				.format(
+						anyString(),
+						anyString(),
+						anyString(),
+						anyString()
+				);
+
+		verify(errorConsoleLogger, times(1))
+				.format(
+						"[%s] (%s) %s\n",
+						" WARN",
+						Thread.currentThread().getName(),
+						"message: foo, bar"
+				);
+
+		verify(t, times(1))
+				.printStackTrace(errorConsoleLogger);
+	}
+
+	@Test
+	void logInfoWhenUsingConsoleLoggers() {
+		PrintStream logConsoleLogger = mock(PrintStream.class);
+		PrintStream errorConsoleLogger = mock(PrintStream.class);
+		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
+				"test",
+				logConsoleLogger,
+				errorConsoleLogger,
+				true
+		);
+
+		log.info("message: {}, {}", "foo", "bar");
+
+		verify(logConsoleLogger, times(1))
+				.format(
+						"[%s] (%s) %s\n",
+						" INFO",
+						Thread.currentThread().getName(),
+						"message: foo, bar"
+				);
+	}
+
+	@Test
+	void logInfoWithThrowableWhenUsingConsoleLoggers() {
+		PrintStream logConsoleLogger = mock(PrintStream.class);
+		PrintStream errorConsoleLogger = mock(PrintStream.class);
+		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
+				"test",
+				logConsoleLogger,
+				errorConsoleLogger,
+				true
+		);
+
+		Throwable t = mock(IllegalAccessError.class);
+		log.info("message: {}, {}", "foo", "bar", t);
+
+		verify(errorConsoleLogger, never())
+				.format(
+						anyString(),
+						anyString(),
+						anyString(),
+						anyString()
+				);
+
+		verify(logConsoleLogger, times(1))
+				.format(
+						"[%s] (%s) %s\n",
+						" INFO",
+						Thread.currentThread().getName(),
+						"message: foo, bar"
+				);
+
+		verify(t, times(1))
+				.printStackTrace(logConsoleLogger);
+	}
 }
