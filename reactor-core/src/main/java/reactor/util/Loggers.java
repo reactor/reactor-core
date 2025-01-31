@@ -625,17 +625,17 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void info(String msg) {
-			this.log.format("[INFO] (%s) %s\n", Thread.currentThread().getName(), msg);
+			this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), msg);
 		}
 
 		@Override
 		public void info(String format, Object... arguments) {
-			logWithOptionalThrowable("INFO", format, arguments);
+			logWithOptionalThrowable(" INFO", format, arguments);
 		}
 
 		@Override
 		public synchronized void info(String msg, Throwable t) {
-			this.log.format("[INFO] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+			this.log.format("[ INFO] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.log);
 		}
 
@@ -646,17 +646,17 @@ public abstract class Loggers {
 
 		@Override
 		public synchronized void warn(String msg) {
-			this.err.format("[WARN] (%s) %s\n", Thread.currentThread().getName(), msg);
+			this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), msg);
 		}
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			logErrorWithOptionalThrowable("WARN", format, arguments);
+			logErrorWithOptionalThrowable(" WARN", format, arguments);
 		}
 
 		@Override
 		public synchronized void warn(String msg, Throwable t) {
-			this.err.format("[WARN] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
+			this.err.format("[ WARN] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.err);
 		}
 
