@@ -18,7 +18,6 @@ package reactor.util;
 
 import java.io.PrintStream;
 import java.lang.ref.WeakReference;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
@@ -354,7 +353,7 @@ public abstract class Loggers {
 
 		@Override
 		public void trace(String format, Object... arguments) {
-			logWithOptionalThrowable(Level.FINEST, format, arguments);
+			logWithPotentialThrowable(Level.FINEST, format, arguments);
 		}
 
 		@Override
@@ -374,7 +373,7 @@ public abstract class Loggers {
 
 		@Override
 		public void debug(String format, Object... arguments) {
-			logWithOptionalThrowable(Level.FINE, format, arguments);
+			logWithPotentialThrowable(Level.FINE, format, arguments);
 		}
 
 		@Override
@@ -394,7 +393,7 @@ public abstract class Loggers {
 
 		@Override
 		public void info(String format, Object... arguments) {
-			logWithOptionalThrowable(Level.INFO, format, arguments);
+			logWithPotentialThrowable(Level.INFO, format, arguments);
 		}
 
 		@Override
@@ -414,7 +413,7 @@ public abstract class Loggers {
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			logWithOptionalThrowable(Level.WARNING, format, arguments);
+			logWithPotentialThrowable(Level.WARNING, format, arguments);
 		}
 
 		@Override
@@ -434,7 +433,7 @@ public abstract class Loggers {
 
 		@Override
 		public void error(String format, Object... arguments) {
-			logWithOptionalThrowable(Level.SEVERE, format, arguments);
+			logWithPotentialThrowable(Level.SEVERE, format, arguments);
 		}
 
 		@Override
@@ -443,12 +442,19 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		final String format(@Nullable String from, @Nullable Object... arguments){
-			if(from != null) {
+		String format(@Nullable String from, @Nullable Object... arguments) {
+			return format(from, false, arguments);
+		}
+
+		@Nullable
+		private String format(@Nullable String from, boolean skipLast, @Nullable Object... arguments) {
+			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
-					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
+					int lastIndex = arguments.length;
+					if (skipLast) --lastIndex;
+					for (int index = 0; index < lastIndex; ++index) {
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(arguments[index])));
 					}
 				}
 				return computed;
@@ -456,22 +462,24 @@ public abstract class Loggers {
 			return null;
 		}
 
-		private void logWithOptionalThrowable(Level level, String format, Object... arguments) {
-			if(isLastElementThrowable(arguments)) {
-				int lastIndex = arguments.length - 1;
-				Object[] args = Arrays.copyOfRange(arguments, 0, lastIndex);
-				Throwable t = (Throwable) arguments[lastIndex];
-
-				logger.log(level, format(format, args), t);
+		private void logWithPotentialThrowable(Level level, String format, Object... arguments) {
+			Throwable t = getPotentialThrowable(arguments);
+			if (t != null) {
+				logger.log(level, format(format, true, arguments), t);
 				return;
 			}
 
 			logger.log(level, format(format, arguments));
 		}
 
-		private boolean isLastElementThrowable(Object... arguments) {
+		@Nullable
+		private static Throwable getPotentialThrowable(Object... arguments) {
 			int length = arguments.length;
-			return length > 0 && arguments[length - 1] instanceof Throwable;
+			if (length > 0 && arguments[length - 1] instanceof Throwable) {
+				return (Throwable) arguments[length - 1];
+			}
+
+			return null;
 		}
 	}
 
@@ -513,12 +521,19 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		final String format(@Nullable String from, @Nullable Object... arguments){
-			if(from != null) {
+		String format(@Nullable String from, @Nullable Object... arguments) {
+			return format(from, false, arguments);
+		}
+
+		@Nullable
+		private String format(@Nullable String from, boolean skipLast, @Nullable Object... arguments) {
+			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
-					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
+					int lastIndex = arguments.length;
+					if (skipLast) --lastIndex;
+					for (int index = 0; index < lastIndex; ++index) {
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(arguments[index])));
 					}
 				}
 				return computed;
@@ -526,37 +541,35 @@ public abstract class Loggers {
 			return null;
 		}
 
-		private synchronized void logWithOptionalThrowable(String level, String format, Object... arguments) {
-			if(isLastElementThrowable(arguments)) {
-				int lastIndex = arguments.length - 1;
-				Object[] args = Arrays.copyOfRange(arguments, 0, lastIndex);
-				Throwable t = (Throwable) arguments[lastIndex];
-
-				this.log.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, args));
-				t.printStackTrace(this.log);
+		private synchronized void logWithPotentialThrowable(PrintStream logger, String level, String format, Object... arguments) {
+			Throwable t = getPotentialThrowable(arguments);
+			if (t != null) {
+				logger.format(
+						"[%s] (%s) %s\n",
+						level.toUpperCase(),
+						Thread.currentThread().getName(),
+						format(format, true, arguments)
+				);
+				t.printStackTrace(logger);
 				return;
 			}
 
-			this.log.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, arguments));
+			logger.format(
+					"[%s] (%s) %s\n",
+					level.toUpperCase(),
+					Thread.currentThread().getName(),
+					format(format, arguments)
+			);
 		}
 
-		private synchronized void logErrorWithOptionalThrowable(String level, String format, Object... arguments) {
-			if(isLastElementThrowable(arguments)) {
-				int lastIndex = arguments.length - 1;
-				Object[] args = Arrays.copyOfRange(arguments, 0, lastIndex);
-				Throwable t = (Throwable) arguments[lastIndex];
-
-				this.err.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, args));
-				t.printStackTrace(this.err);
-				return;
-			}
-
-			this.err.format("[%s] (%s) %s\n", level.toUpperCase(), Thread.currentThread().getName(), format(format, arguments));
-		}
-
-		private boolean isLastElementThrowable(Object... arguments) {
+		@Nullable
+		private static Throwable getPotentialThrowable(Object... arguments) {
 			int length = arguments.length;
-			return length > 0 && arguments[length - 1] instanceof Throwable;
+			if (length > 0 && arguments[length - 1] instanceof Throwable) {
+				return (Throwable) arguments[length - 1];
+			}
+
+			return null;
 		}
 
 		@Override
@@ -577,8 +590,9 @@ public abstract class Loggers {
 			if (!identifier.verbose) {
 				return;
 			}
-			logWithOptionalThrowable("TRACE", format, arguments);
+			logWithPotentialThrowable(this.log, "TRACE", format, arguments);
 		}
+
 		@Override
 		public synchronized void trace(String msg, Throwable t) {
 			if (!identifier.verbose) {
@@ -606,7 +620,7 @@ public abstract class Loggers {
 			if (!identifier.verbose) {
 				return;
 			}
-			logWithOptionalThrowable("DEBUG", format, arguments);
+			logWithPotentialThrowable(this.log, "DEBUG", format, arguments);
 		}
 
 		@Override
@@ -630,7 +644,7 @@ public abstract class Loggers {
 
 		@Override
 		public void info(String format, Object... arguments) {
-			logWithOptionalThrowable(" INFO", format, arguments);
+			logWithPotentialThrowable(this.log, " INFO", format, arguments);
 		}
 
 		@Override
@@ -651,7 +665,7 @@ public abstract class Loggers {
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			logErrorWithOptionalThrowable(" WARN", format, arguments);
+			logWithPotentialThrowable(this.err, " WARN", format, arguments);
 		}
 
 		@Override
@@ -672,7 +686,7 @@ public abstract class Loggers {
 
 		@Override
 		public void error(String format, Object... arguments) {
-			logErrorWithOptionalThrowable("ERROR", format, arguments);
+			logWithPotentialThrowable(this.err, "ERROR", format, arguments);
 		}
 
 		@Override
