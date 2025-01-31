@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -854,5 +856,72 @@ class BoundedElasticThreadPerTaskSchedulerTest {
 		} finally {
 			scheduler.dispose();
 		}
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/3948
+	@Test
+	void currentTaskDisposalDoesNotInterruptCurrentThread() {
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(1, 1);
+		scheduler.init();
+
+		AtomicReference<Disposable> disposable = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Exception> exception = new AtomicReference<>();
+		AtomicBoolean interrupted = new AtomicBoolean();
+		Runnable task = () -> {
+			try {
+				if (latch.await(1, TimeUnit.SECONDS)) {
+					disposable.get().dispose();
+				}
+				interrupted.set(Thread.interrupted());
+			} catch (InterruptedException e) {
+				exception.set(e);
+			}
+		};
+
+		Disposable futureTask = scheduler.schedule(task);
+
+		disposable.set(futureTask);
+		latch.countDown();
+
+		Assertions.assertThat(exception.get()).isNull();
+		Assertions.assertThat(interrupted.get()).isFalse();
+		Assertions.assertThat(Thread.interrupted()).isFalse();
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/3948
+	@Test
+	void externalTaskDisposalDoesInterruptsExecutingThread() throws InterruptedException {
+		BoundedElasticThreadPerTaskScheduler scheduler = newScheduler(1, 1);
+		scheduler.init();
+
+		CountDownLatch taskRunning = new CountDownLatch(1);
+		CountDownLatch taskDone = new CountDownLatch(1);
+		CountDownLatch taskCanFinish = new CountDownLatch(1);
+		AtomicReference<Exception> exception = new AtomicReference<>();
+		AtomicBoolean interrupted = new AtomicBoolean();
+
+		Runnable task = () -> {
+			try {
+				taskRunning.countDown();
+				taskCanFinish.await(1, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				interrupted.set(Thread.interrupted());
+				exception.set(e);
+				taskDone.countDown();
+			}
+		};
+
+		Disposable futureTask = scheduler.schedule(task);
+
+		Assertions.assertThat(taskRunning.await(1, TimeUnit.SECONDS)).isTrue();
+
+		futureTask.dispose();
+
+		Assertions.assertThat(taskDone.await(1, TimeUnit.SECONDS)).isTrue();
+
+		Assertions.assertThat(exception.get()).isInstanceOf(InterruptedException.class);
+		Assertions.assertThat(interrupted.get()).isFalse();
+		Assertions.assertThat(Thread.interrupted()).isFalse();
 	}
 }
