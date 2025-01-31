@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,7 +230,8 @@ class FluxOnAssemblyTest {
 				assertThat(t)
 					.matches(Exceptions::isRetryExhausted, "isRetryExhausted")
 					.hasMessage("Retries exhausted: 3/3")
-					.hasCauseReference(reusedException);
+					.cause()
+					.isSameAs(reusedException);
 				assertThat(Arrays.asList(t.getCause().getSuppressed()))
 					.as("backtrace as suppressed on the cause")
 					.hasSize(1)
@@ -258,7 +259,8 @@ class FluxOnAssemblyTest {
 				assertThat(t)
 					.matches(Exceptions::isRetryExhausted, "isRetryExhausted")
 					.hasMessage("Retries exhausted: 2/2")
-					.hasCauseReference(reusedException);
+					.cause()
+					.isSameAs(reusedException);
 				assertThat(Arrays.asList(t.getCause().getSuppressed()))
 					.as("backtrace as suppressed on the cause")
 					.hasSize(1)
