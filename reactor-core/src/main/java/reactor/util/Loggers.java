@@ -476,7 +476,11 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private static Throwable getPotentialThrowable(Object... arguments) {
+		private Throwable getPotentialThrowable(Object... arguments) {
+			if (arguments == null) {
+				return null;
+			}
+
 			int length = arguments.length;
 			if (length > 0 && arguments[length - 1] instanceof Throwable) {
 				return (Throwable) arguments[length - 1];
@@ -570,6 +574,10 @@ public abstract class Loggers {
 
 		@Nullable
 		private static Throwable getPotentialThrowable(Object... arguments) {
+			if (arguments == null) {
+				return null;
+			}
+
 			int length = arguments.length;
 			if (length > 0 && arguments[length - 1] instanceof Throwable) {
 				return (Throwable) arguments[length - 1];
