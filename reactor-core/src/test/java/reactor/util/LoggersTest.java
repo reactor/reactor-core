@@ -18,6 +18,7 @@ package reactor.util;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+
 import reactor.ReactorLauncherSessionListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,4 +110,5 @@ class LoggersTest {
 			Loggers.resetLoggerFactory();
 		}
 	}
+
 }
