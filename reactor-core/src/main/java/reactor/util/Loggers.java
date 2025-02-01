@@ -442,12 +442,12 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		String format(@Nullable String from, @Nullable Object... arguments) {
-			return format(from, false, arguments);
+		private String format(@Nullable String from, @Nullable Object[] arguments) {
+			return format(from, arguments, false);
 		}
 
 		@Nullable
-		private String format(@Nullable String from, boolean skipLast, @Nullable Object... arguments) {
+		private String format(@Nullable String from, @Nullable Object[] arguments, boolean skipLast) {
 			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -465,7 +465,7 @@ public abstract class Loggers {
 		private void logWithPotentialThrowable(Level level, String format, Object... arguments) {
 			Throwable t = getPotentialThrowable(arguments);
 			if (t != null) {
-				logger.log(level, format(format, true, arguments), t);
+				logger.log(level, format(format, arguments, true), t);
 				return;
 			}
 
@@ -521,12 +521,12 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		String format(@Nullable String from, @Nullable Object... arguments) {
-			return format(from, false, arguments);
+		private String format(@Nullable String from, @Nullable Object[] arguments) {
+			return format(from, arguments, false);
 		}
 
 		@Nullable
-		private String format(@Nullable String from, boolean skipLast, @Nullable Object... arguments) {
+		private String format(@Nullable String from, @Nullable Object[] arguments, boolean skipLast) {
 			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -548,7 +548,7 @@ public abstract class Loggers {
 						"[%s] (%s) %s\n",
 						level.toUpperCase(),
 						Thread.currentThread().getName(),
-						format(format, true, arguments)
+						format(format, arguments, true)
 				);
 				t.printStackTrace(logger);
 				return;
