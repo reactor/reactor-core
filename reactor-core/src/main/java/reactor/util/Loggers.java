@@ -452,7 +452,10 @@ public abstract class Loggers {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
 					int lastIndex = arguments.length;
-					if (skipLast) --lastIndex;
+					if (skipLast) {
+						--lastIndex;
+					}
+
 					for (int index = 0; index < lastIndex; ++index) {
 						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(arguments[index])));
 					}
@@ -531,7 +534,10 @@ public abstract class Loggers {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
 					int lastIndex = arguments.length;
-					if (skipLast) --lastIndex;
+					if (skipLast) {
+						--lastIndex;
+					}
+
 					for (int index = 0; index < lastIndex; ++index) {
 						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(arguments[index])));
 					}
