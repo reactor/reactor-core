@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,8 @@ import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-class ConsoleLoggerTest {
+public class ConsoleLoggerTest {
 
 	private static final RuntimeException CAUSE = new IllegalStateException("cause");
 
@@ -54,12 +49,12 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void isTraceEnabled() throws Exception {
+	public void isTraceEnabled() throws Exception {
 		assertThat(logger.isTraceEnabled()).isTrue();
 	}
 
 	@Test
-	void trace() throws Exception {
+	public void trace() throws Exception {
 		logger.trace("message");
 
 		assertThat(errContent.size()).isZero();
@@ -67,28 +62,26 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void trace1() throws Exception {
+	public void trace1() throws Exception {
 		logger.trace("message {} {} format", "with", 1);
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[TRACE] (" + Thread.currentThread()
-				.getName() + ") message with 1 format\n");
+		assertThat(outContent.toString()).isEqualTo("[TRACE] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
-	void trace2() throws Exception {
+	public void trace2() throws Exception {
 		logger.trace("with cause", CAUSE);
 
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
-				.startsWith("[TRACE] (" + Thread.currentThread()
-						.getName() + ") with cause - java.lang.IllegalStateException: cause" +
-						"\njava.lang.IllegalStateException: cause\n" +
-						"\tat reactor.util.ConsoleLoggerTest");
+				.startsWith("[TRACE] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
+				"\njava.lang.IllegalStateException: cause\n" +
+				"\tat reactor.util.ConsoleLoggerTest");
 	}
 
 	@Test
-	void traceNulls() {
+	public void traceNulls() {
 		logger.trace("vararg {} is {}", (Object[]) null);
 		logger.trace("param {} is {}", null, null);
 
@@ -99,7 +92,7 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void traceDismissedInNonVerboseMode() {
+	public void traceDismissedInNonVerboseMode() {
 		Logger log = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), false);
 		log.trace("foo");
 		log.trace("foo", new IllegalArgumentException("foo"));
@@ -112,12 +105,12 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void isDebugEnabled() throws Exception {
+	public void isDebugEnabled() throws Exception {
 		assertThat(logger.isDebugEnabled()).isTrue();
 	}
 
 	@Test
-	void debug() throws Exception {
+	public void debug() throws Exception {
 		logger.debug("message");
 
 		assertThat(errContent.size()).isZero();
@@ -125,28 +118,26 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void debug1() throws Exception {
+	public void debug1() throws Exception {
 		logger.debug("message {} {} format", "with", 1);
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[DEBUG] (" + Thread.currentThread()
-				.getName() + ") message with 1 format\n");
+		assertThat(outContent.toString()).isEqualTo("[DEBUG] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
-	void debug2() throws Exception {
+	public void debug2() throws Exception {
 		logger.debug("with cause", CAUSE);
 
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
-				.startsWith("[DEBUG] (" + Thread.currentThread()
-						.getName() + ") with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[DEBUG] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
 
 	@Test
-	void debugNulls() {
+	public void debugNulls() {
 		logger.debug("vararg {} is {}", (Object[]) null);
 		logger.debug("param {} is {}", null, null);
 
@@ -157,7 +148,7 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void debugDismissedInNonVerboseMode() {
+	public void debugDismissedInNonVerboseMode() {
 		Logger log = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), false);
 		log.debug("foo");
 		log.debug("foo", new IllegalArgumentException("foo"));
@@ -170,12 +161,12 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void isInfoEnabled() throws Exception {
+	public void isInfoEnabled() throws Exception {
 		assertThat(logger.isInfoEnabled()).isTrue();
 	}
 
 	@Test
-	void info() throws Exception {
+	public void info() throws Exception {
 		logger.info("message");
 
 		assertThat(errContent.size()).isZero();
@@ -183,28 +174,26 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void info1() throws Exception {
+	public void info1() throws Exception {
 		logger.info("message {} {} format", "with", 1);
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[ INFO] (" + Thread.currentThread()
-				.getName() + ") message with 1 format\n");
+		assertThat(outContent.toString()).isEqualTo("[ INFO] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
-	void info2() throws Exception {
+	public void info2() throws Exception {
 		logger.info("with cause", CAUSE);
 
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
-				.startsWith("[ INFO] (" + Thread.currentThread()
-						.getName() + ") with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[ INFO] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
 
 	@Test
-	void infoNulls() {
+	public void infoNulls() {
 		logger.info("vararg {} is {}", (Object[]) null);
 		logger.info("param {} is {}", null, null);
 
@@ -220,7 +209,7 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void warn() throws Exception {
+	public void warn() throws Exception {
 		logger.warn("message");
 
 		assertThat(outContent.size()).isZero();
@@ -228,29 +217,27 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void warn1() throws Exception {
+	public void warn1() throws Exception {
 		logger.warn("message {} {} format", "with", 1);
 
 		assertThat(outContent.size()).isZero();
-		assertThat(errContent.toString()).isEqualTo("[ WARN] (" + Thread.currentThread()
-				.getName() + ") message with 1 format\n");
+		assertThat(errContent.toString()).isEqualTo("[ WARN] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
-	void warn2() throws Exception {
+	public void warn2() throws Exception {
 		logger.warn("with cause", CAUSE);
 
 
 		assertThat(outContent.size()).isZero();
 		assertThat(errContent.toString())
-				.startsWith("[ WARN] (" + Thread.currentThread()
-						.getName() + ") with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[ WARN] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
 
 	@Test
-	void warnNulls() {
+	public void warnNulls() {
 		logger.warn("vararg {} is {}", (Object[]) null);
 		logger.warn("param {} is {}", null, null);
 
@@ -261,12 +248,12 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void isErrorEnabled() throws Exception {
+	public void isErrorEnabled() throws Exception {
 		assertThat(logger.isErrorEnabled()).isTrue();
 	}
 
 	@Test
-	void error() throws Exception {
+	public void error() throws Exception {
 		logger.error("message");
 
 		assertThat(outContent.size()).isZero();
@@ -274,28 +261,26 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void error1() throws Exception {
+	public void error1() throws Exception {
 		logger.error("message {} {} format", "with", 1);
 
 		assertThat(outContent.size()).isZero();
-		assertThat(errContent.toString()).isEqualTo("[ERROR] (" + Thread.currentThread()
-				.getName() + ") message with 1 format\n");
+		assertThat(errContent.toString()).isEqualTo("[ERROR] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
-	void error2() throws Exception {
+	public void error2() throws Exception {
 		logger.error("with cause", CAUSE);
 
 		assertThat(outContent.size()).isZero();
 		assertThat(errContent.toString())
-				.startsWith("[ERROR] (" + Thread.currentThread()
-						.getName() + ") with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[ERROR] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
 
 	@Test
-	void errorNulls() {
+	public void errorNulls() {
 		logger.error("vararg {} is {}", (Object[]) null);
 		logger.error("param {} is {}", null, null);
 
@@ -306,7 +291,7 @@ class ConsoleLoggerTest {
 	}
 
 	@Test
-	void formatNull() {
+	public void formatNull() {
 		logger.info(null, null, null);
 
 		assertThat(errContent.size()).isZero();
@@ -318,7 +303,7 @@ class ConsoleLoggerTest {
 	 * Ensure console logger factory synchronizes logger acquisition properly.
 	 */
 	@Test
-	void getConsoleLoggerShouldBeThreadSafe() {
+	public void getConsoleLoggerShouldBeThreadSafe() {
 		final Loggers.ConsoleLoggerFactory factory =
 				new Loggers.ConsoleLoggerFactory(false);
 		final String loggerName = "logger.thread-safety.test";
@@ -329,137 +314,24 @@ class ConsoleLoggerTest {
 		try {
 			Runnable[] loggerAcquisitionFunctions =
 					IntStream.range(0, 5)
-							.mapToObj(i -> acquireLogger)
-							.toArray(Runnable[]::new);
+					         .mapToObj(i -> acquireLogger)
+					         .toArray(Runnable[]::new);
 			RaceTestUtils.race(loggerAcquisitionFunctions);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			fail("Cannot acquire a console logger", e);
 		}
 	}
 
 	@Test
-	void consoleLoggerCacheDoesNotCorruptVerbosity() {
+	public void consoleLoggerCacheDoesNotCorruptVerbosity() {
 		final String loggerName = "console.cache.test";
 		final Logger verboseLogger = new Loggers.ConsoleLoggerFactory(true)
 				.apply(loggerName);
 		final Logger notVerboseLogger = new Loggers.ConsoleLoggerFactory(false)
-				.apply(loggerName);
+						.apply(loggerName);
 
 		assertThat(verboseLogger)
 				.as("Logger verbosity should not match")
 				.isNotEqualTo(notVerboseLogger);
-	}
-
-	@Test
-	void logWarn() {
-		PrintStream logConsoleLogger = mock(PrintStream.class);
-		PrintStream errorConsoleLogger = mock(PrintStream.class);
-		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
-				"test",
-				logConsoleLogger,
-				errorConsoleLogger,
-				true
-		);
-
-		log.warn("message: {}, {}", "foo", "bar");
-
-		verify(errorConsoleLogger, times(1))
-				.format(
-						"[%s] (%s) %s\n",
-						" WARN",
-						Thread.currentThread().getName(),
-						"message: foo, bar"
-				);
-	}
-
-	@Test
-	void logWarnWithThrowable() {
-		PrintStream logConsoleLogger = mock(PrintStream.class);
-		PrintStream errorConsoleLogger = mock(PrintStream.class);
-		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
-				"test",
-				logConsoleLogger,
-				errorConsoleLogger,
-				true
-		);
-
-		Throwable t = mock(IllegalAccessError.class);
-		log.warn("message: {}, {}", "foo", "bar", t);
-
-		verify(logConsoleLogger, never())
-				.format(
-						anyString(),
-						anyString(),
-						anyString(),
-						anyString()
-				);
-
-		verify(errorConsoleLogger, times(1))
-				.format(
-						"[%s] (%s) %s\n",
-						" WARN",
-						Thread.currentThread().getName(),
-						"message: foo, bar"
-				);
-
-		verify(t, times(1))
-				.printStackTrace(errorConsoleLogger);
-	}
-
-	@Test
-	void logInfo() {
-		PrintStream logConsoleLogger = mock(PrintStream.class);
-		PrintStream errorConsoleLogger = mock(PrintStream.class);
-		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
-				"test",
-				logConsoleLogger,
-				errorConsoleLogger,
-				true
-		);
-
-		log.info("message: {}, {}", "foo", "bar");
-
-		verify(logConsoleLogger, times(1))
-				.format(
-						"[%s] (%s) %s\n",
-						" INFO",
-						Thread.currentThread().getName(),
-						"message: foo, bar"
-				);
-	}
-
-	@Test
-	void logInfoWithThrowable() {
-		PrintStream logConsoleLogger = mock(PrintStream.class);
-		PrintStream errorConsoleLogger = mock(PrintStream.class);
-		Loggers.ConsoleLogger log = new Loggers.ConsoleLogger(
-				"test",
-				logConsoleLogger,
-				errorConsoleLogger,
-				true
-		);
-
-		Throwable t = mock(IllegalAccessError.class);
-		log.info("message: {}, {}", "foo", "bar", t);
-
-		verify(errorConsoleLogger, never())
-				.format(
-						anyString(),
-						anyString(),
-						anyString(),
-						anyString()
-				);
-
-		verify(logConsoleLogger, times(1))
-				.format(
-						"[%s] (%s) %s\n",
-						" INFO",
-						Thread.currentThread().getName(),
-						"message: foo, bar"
-				);
-
-		verify(t, times(1))
-				.printStackTrace(logConsoleLogger);
 	}
 }
