@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,17 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void traceWithThrowable() throws Exception {
+		logger.trace("{} with cause {}", "test", CAUSE);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.startsWith("[TRACE] (" + Thread.currentThread().getName() + ") test with cause {}" +
+						"\njava.lang.IllegalStateException: cause\n" +
+						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
 	public void traceNulls() {
 		logger.trace("vararg {} is {}", (Object[]) null);
 		logger.trace("param {} is {}", null, null);
@@ -132,6 +143,17 @@ public class ConsoleLoggerTest {
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
 				.startsWith("[DEBUG] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
+						"\njava.lang.IllegalStateException: cause\n" +
+						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
+	public void debugWithThrowable() throws Exception {
+		logger.debug("{} with cause {}", "test", CAUSE);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.startsWith("[DEBUG] (" + Thread.currentThread().getName() + ") test with cause {}" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
@@ -193,6 +215,17 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void infoWithThrowable() throws Exception {
+		logger.info("{} with cause {}", "test", CAUSE);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.startsWith("[ INFO] (" + Thread.currentThread().getName() + ") test with cause {}" +
+						"\njava.lang.IllegalStateException: cause\n" +
+						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
 	public void infoNulls() {
 		logger.info("vararg {} is {}", (Object[]) null);
 		logger.info("param {} is {}", null, null);
@@ -237,6 +270,17 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void warnWithThrowable() throws Exception {
+		logger.warn("{} with cause {}", "test", CAUSE);
+
+		assertThat(outContent.size()).isZero();
+		assertThat(errContent.toString())
+				.startsWith("[ WARN] (" + Thread.currentThread().getName() + ") test with cause {}" +
+						"\njava.lang.IllegalStateException: cause\n" +
+						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
 	public void warnNulls() {
 		logger.warn("vararg {} is {}", (Object[]) null);
 		logger.warn("param {} is {}", null, null);
@@ -275,6 +319,17 @@ public class ConsoleLoggerTest {
 		assertThat(outContent.size()).isZero();
 		assertThat(errContent.toString())
 				.startsWith("[ERROR] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
+						"\njava.lang.IllegalStateException: cause\n" +
+						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
+	public void errorWithThrowable() throws Exception {
+		logger.error("{} with cause {}", "test", CAUSE);
+
+		assertThat(outContent.size()).isZero();
+		assertThat(errContent.toString())
+				.startsWith("[ERROR] (" + Thread.currentThread().getName() + ") test with cause {}" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
