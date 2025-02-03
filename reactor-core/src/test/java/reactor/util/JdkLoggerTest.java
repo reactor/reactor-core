@@ -30,23 +30,7 @@ public class JdkLoggerTest {
 	@Test
 	public void formatNullFormat() {
 		StringBuilder log = new StringBuilder();
-		Logger underlyingLogger = Logger.getAnonymousLogger();
-		underlyingLogger.setLevel(Level.FINE);
-		underlyingLogger.addHandler(
-				new Handler() {
-					@Override
-					public void publish(LogRecord record) {
-						log.append(record.getMessage());
-					}
-
-					@Override
-					public void flush() { }
-
-					@Override
-					public void close() throws SecurityException { }
-				});
-
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINE);
 
 		jdkLogger.debug(null, (Object[]) null);
 
@@ -56,23 +40,7 @@ public class JdkLoggerTest {
 	@Test
 	public void nullFormatIsAcceptedByUnderlyingLogger() {
 		StringBuilder log = new StringBuilder();
-		Logger underlyingLogger = Logger.getAnonymousLogger();
-		underlyingLogger.setLevel(Level.FINEST);
-		underlyingLogger.addHandler(
-				new Handler() {
-					@Override
-					public void publish(LogRecord record) {
-						log.append(record.getMessage());
-					}
-
-					@Override
-					public void flush() { }
-
-					@Override
-					public void close() throws SecurityException { }
-				});
-
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINEST);
 
 		jdkLogger.trace(null, null, null);
 
@@ -82,23 +50,7 @@ public class JdkLoggerTest {
 	@Test
 	public void formatNullVararg() {
 		StringBuilder log = new StringBuilder();
-		Logger underlyingLogger = Logger.getAnonymousLogger();
-		underlyingLogger.setLevel(Level.INFO);
-		underlyingLogger.addHandler(
-				new Handler() {
-					@Override
-					public void publish(LogRecord record) {
-						log.append(record.getMessage());
-					}
-
-					@Override
-					public void flush() { }
-
-					@Override
-					public void close() throws SecurityException { }
-				});
-
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.INFO);
 
 		jdkLogger.info("test {} is {}", (Object[]) null);
 
@@ -108,23 +60,7 @@ public class JdkLoggerTest {
 	@Test
 	public void formatNullParamInVararg() {
 		StringBuilder log = new StringBuilder();
-		Logger underlyingLogger = Logger.getAnonymousLogger();
-		underlyingLogger.setLevel(Level.FINEST);
-		underlyingLogger.addHandler(
-				new Handler() {
-					@Override
-					public void publish(LogRecord record) {
-						log.append(record.getMessage());
-					}
-
-					@Override
-					public void flush() { }
-
-					@Override
-					public void close() throws SecurityException { }
-				});
-
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINEST);
 
 		jdkLogger.trace("test {} is {}", null, null);
 
@@ -132,41 +68,135 @@ public class JdkLoggerTest {
 	}
 
 	@Test
-	public void logWarnLevel() {
+	public void trace() {
 		StringBuilder log = new StringBuilder();
-		Logger underlyingLogger = Logger.getAnonymousLogger();
-		underlyingLogger.setLevel(Level.WARNING);
-		underlyingLogger.addHandler(
-				new Handler() {
-					@Override
-					public void publish(LogRecord record) {
-						log.append(record.getMessage());
-					}
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINEST);
 
-					@Override
-					public void flush() { }
+		jdkLogger.trace("test {} is {}", "foo", "bar");
 
-					@Override
-					public void close() throws SecurityException { }
-				});
-
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
-
-		jdkLogger.warn("message: {}, {}", "foo", "bar");
-
-		assertThat(log.toString()).isEqualTo("message: foo, bar");
+		assertThat(log.toString()).isEqualTo("test foo is bar");
 	}
 
 	@Test
-	public void logWithThrowable() {
+	public void traceWithThrowable() {
 		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINEST);
+
+		Throwable t = new IllegalAccessError();
+		jdkLogger.trace("test {} is {}", "foo", "bar", t);
+
+		assertThat(log.toString()).startsWith("test foo is bar"
+				+ "\njava.lang.IllegalAccessError\n"
+				+ "\tat reactor.util.JdkLoggerTest.traceWithThrowable");
+	}
+
+	@Test
+	public void debug() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINE);
+
+		jdkLogger.debug("test {} is {}", "foo", "bar");
+
+		assertThat(log.toString()).isEqualTo("test foo is bar");
+	}
+
+	@Test
+	public void debugWithThrowable() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINE);
+
+		Throwable t = new IllegalAccessError();
+		jdkLogger.debug("test {} is {}", "foo", "bar", t);
+
+		assertThat(log.toString()).startsWith("test foo is bar"
+				+ "\njava.lang.IllegalAccessError\n"
+				+ "\tat reactor.util.JdkLoggerTest.debugWithThrowable");
+	}
+
+	@Test
+	public void info() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINE);
+
+		jdkLogger.info("test {} is {}", "foo", "bar");
+
+		assertThat(log.toString()).isEqualTo("test foo is bar");
+	}
+
+	@Test
+	public void infoWithThrowable() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.FINE);
+
+		Throwable t = new IllegalAccessError();
+		jdkLogger.info("test {} is {}", "foo", "bar", t);
+
+		assertThat(log.toString()).startsWith("test foo is bar"
+				+ "\njava.lang.IllegalAccessError\n"
+				+ "\tat reactor.util.JdkLoggerTest.infoWithThrowable");
+	}
+
+	@Test
+	public void warn() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.WARNING);
+
+		jdkLogger.warn("test {} is {}", "foo", "bar");
+
+		assertThat(log.toString()).isEqualTo("test foo is bar");
+	}
+
+	@Test
+	public void warnWithThrowable() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.WARNING);
+
+		Throwable t = new IllegalAccessError();
+		jdkLogger.warn("test {} is {}", "foo", "bar", t);
+
+		assertThat(log.toString()).startsWith("test foo is bar"
+				+ "\njava.lang.IllegalAccessError\n"
+				+ "\tat reactor.util.JdkLoggerTest.warnWithThrowable");
+	}
+
+	@Test
+	public void error() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.SEVERE);
+
+		jdkLogger.error("test {} is {}", "foo", "bar");
+
+		assertThat(log.toString()).isEqualTo("test foo is bar");
+	}
+
+	@Test
+	public void errorWithThrowable() {
+		StringBuilder log = new StringBuilder();
+		Loggers.JdkLogger jdkLogger = getJdkLogger(log, Level.SEVERE);
+
+		Throwable t = new IllegalAccessError();
+		jdkLogger.error("test {} is {}", "foo", "bar", t);
+
+		assertThat(log.toString()).startsWith("test foo is bar"
+				+ "\njava.lang.IllegalAccessError\n"
+				+ "\tat reactor.util.JdkLoggerTest.errorWithThrowable");
+	}
+
+	private Loggers.JdkLogger getJdkLogger(StringBuilder log, Level level) {
 		Logger underlyingLogger = Logger.getAnonymousLogger();
-		underlyingLogger.setLevel(Level.WARNING);
+		underlyingLogger.setLevel(level);
 		underlyingLogger.addHandler(
 				new Handler() {
 					@Override
 					public void publish(LogRecord record) {
 						log.append(record.getMessage());
+
+						if (record.getThrown() != null) {
+							log.append("\n").append(record.getThrown().toString());
+							for (StackTraceElement element : record.getThrown().getStackTrace()) {
+								log.append("\n\tat ").append(element.toString());
+							}
+						}
 					}
 
 					@Override
@@ -176,11 +206,6 @@ public class JdkLoggerTest {
 					public void close() throws SecurityException { }
 				});
 
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
-
-		Throwable t = new IllegalAccessError();
-		jdkLogger.warn("message: {}, {}", "foo", "bar", t);
-
-		assertThat(log.toString()).isEqualTo("message: foo, bar");
+		return new Loggers.JdkLogger(underlyingLogger);
 	}
 }
