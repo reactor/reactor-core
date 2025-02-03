@@ -22,28 +22,39 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-class JdkLoggerTest {
+public class JdkLoggerTest {
 
 	@Test
-	void formatNullFormat() {
-		Logger logger = Mockito.mock(Logger.class);
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(logger);
+	public void formatNullFormat() {
+		StringBuilder log = new StringBuilder();
+		Logger underlyingLogger = Logger.getAnonymousLogger();
+		underlyingLogger.setLevel(Level.FINE);
+		underlyingLogger.addHandler(
+				new Handler() {
+					@Override
+					public void publish(LogRecord record) {
+						log.append(record.getMessage());
+					}
+
+					@Override
+					public void flush() { }
+
+					@Override
+					public void close() throws SecurityException { }
+				});
+
+		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
 
 		jdkLogger.debug(null, (Object[]) null);
 
-		verify(logger, times(1))
-				.log(Level.FINE, (String) null);
+		assertThat(log.toString()).isEqualTo("null");
 	}
 
 	@Test
-	void nullFormatIsAcceptedByUnderlyingLogger() {
+	public void nullFormatIsAcceptedByUnderlyingLogger() {
 		StringBuilder log = new StringBuilder();
 		Logger underlyingLogger = Logger.getAnonymousLogger();
 		underlyingLogger.setLevel(Level.FINEST);
@@ -55,12 +66,10 @@ class JdkLoggerTest {
 					}
 
 					@Override
-					public void flush() {
-					}
+					public void flush() { }
 
 					@Override
-					public void close() throws SecurityException {
-					}
+					public void close() throws SecurityException { }
 				});
 
 		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
@@ -71,54 +80,107 @@ class JdkLoggerTest {
 	}
 
 	@Test
-	void formatNullVararg() {
-		Logger logger = Mockito.mock(Logger.class);
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(logger);
+	public void formatNullVararg() {
+		StringBuilder log = new StringBuilder();
+		Logger underlyingLogger = Logger.getAnonymousLogger();
+		underlyingLogger.setLevel(Level.INFO);
+		underlyingLogger.addHandler(
+				new Handler() {
+					@Override
+					public void publish(LogRecord record) {
+						log.append(record.getMessage());
+					}
+
+					@Override
+					public void flush() { }
+
+					@Override
+					public void close() throws SecurityException { }
+				});
+
+		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
 
 		jdkLogger.info("test {} is {}", (Object[]) null);
 
-		verify(logger, times(1))
-				.log(Level.INFO, "test {} is {}");
+		assertThat(log.toString()).isEqualTo("test {} is {}");
 	}
 
 	@Test
-	void formatNullParamInVararg() {
-		Logger logger = Mockito.mock(Logger.class);
-		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(logger);
+	public void formatNullParamInVararg() {
+		StringBuilder log = new StringBuilder();
+		Logger underlyingLogger = Logger.getAnonymousLogger();
+		underlyingLogger.setLevel(Level.FINEST);
+		underlyingLogger.addHandler(
+				new Handler() {
+					@Override
+					public void publish(LogRecord record) {
+						log.append(record.getMessage());
+					}
+
+					@Override
+					public void flush() { }
+
+					@Override
+					public void close() throws SecurityException { }
+				});
+
+		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
 
 		jdkLogger.trace("test {} is {}", null, null);
 
-		verify(logger, times(1))
-				.log(Level.FINEST, "test null is null");
+		assertThat(log.toString()).isEqualTo("test null is null");
 	}
 
 	@Test
-	void logWarnLevel() {
-		java.util.logging.Logger jdkLogger = mock(java.util.logging.Logger.class);
-		Loggers.JdkLogger log = new Loggers.JdkLogger(jdkLogger);
+	public void logWarnLevel() {
+		StringBuilder log = new StringBuilder();
+		Logger underlyingLogger = Logger.getAnonymousLogger();
+		underlyingLogger.setLevel(Level.WARNING);
+		underlyingLogger.addHandler(
+				new Handler() {
+					@Override
+					public void publish(LogRecord record) {
+						log.append(record.getMessage());
+					}
 
-		log.warn("message: {}, {}", "foo", "bar");
+					@Override
+					public void flush() { }
 
-		verify(jdkLogger, times(1))
-				.log(
-						Level.WARNING,
-						"message: foo, bar"
-				);
+					@Override
+					public void close() throws SecurityException { }
+				});
+
+		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
+
+		jdkLogger.warn("message: {}, {}", "foo", "bar");
+
+		assertThat(log.toString()).isEqualTo("message: foo, bar");
 	}
 
 	@Test
-	void logWithThrowable() {
-		java.util.logging.Logger jdkLogger = mock(java.util.logging.Logger.class);
-		Loggers.JdkLogger log = new Loggers.JdkLogger(jdkLogger);
+	public void logWithThrowable() {
+		StringBuilder log = new StringBuilder();
+		Logger underlyingLogger = Logger.getAnonymousLogger();
+		underlyingLogger.setLevel(Level.WARNING);
+		underlyingLogger.addHandler(
+				new Handler() {
+					@Override
+					public void publish(LogRecord record) {
+						log.append(record.getMessage());
+					}
+
+					@Override
+					public void flush() { }
+
+					@Override
+					public void close() throws SecurityException { }
+				});
+
+		Loggers.JdkLogger jdkLogger = new Loggers.JdkLogger(underlyingLogger);
 
 		Throwable t = new IllegalAccessError();
-		log.warn("message: {}, {}", "foo", "bar", t);
+		jdkLogger.warn("message: {}, {}", "foo", "bar", t);
 
-		verify(jdkLogger, times(1))
-				.log(
-						Level.WARNING,
-						"message: foo, bar",
-						t
-				);
+		assertThat(log.toString()).isEqualTo("message: foo, bar");
 	}
 }
