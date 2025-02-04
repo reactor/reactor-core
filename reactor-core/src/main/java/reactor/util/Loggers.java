@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -353,7 +353,7 @@ public abstract class Loggers {
 
 		@Override
 		public void trace(String format, Object... arguments) {
-			logger.log(Level.FINEST, format(format, arguments));
+			logWithPotentialThrowable(Level.FINEST, format, arguments);
 		}
 
 		@Override
@@ -373,7 +373,7 @@ public abstract class Loggers {
 
 		@Override
 		public void debug(String format, Object... arguments) {
-			logger.log(Level.FINE, format(format, arguments));
+			logWithPotentialThrowable(Level.FINE, format, arguments);
 		}
 
 		@Override
@@ -393,7 +393,7 @@ public abstract class Loggers {
 
 		@Override
 		public void info(String format, Object... arguments) {
-			logger.log(Level.INFO, format(format, arguments));
+			logWithPotentialThrowable(Level.INFO, format, arguments);
 		}
 
 		@Override
@@ -413,7 +413,7 @@ public abstract class Loggers {
 
 		@Override
 		public void warn(String format, Object... arguments) {
-			logger.log(Level.WARNING, format(format, arguments));
+			logWithPotentialThrowable(Level.WARNING, format, arguments);
 		}
 
 		@Override
@@ -433,7 +433,7 @@ public abstract class Loggers {
 
 		@Override
 		public void error(String format, Object... arguments) {
-			logger.log(Level.SEVERE, format(format, arguments));
+			logWithPotentialThrowable(Level.SEVERE, format, arguments);
 		}
 
 		@Override
@@ -442,16 +442,50 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		final String format(@Nullable String from, @Nullable Object... arguments){
-			if(from != null) {
+		private String format(@Nullable String from, @Nullable Object[] arguments) {
+			return format(from, arguments, false);
+		}
+
+		@Nullable
+		private String format(@Nullable String from, @Nullable Object[] arguments, boolean skipLast) {
+			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
-					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
+					int lastIndex = arguments.length;
+					if (skipLast) {
+						--lastIndex;
+					}
+
+					for (int index = 0; index < lastIndex; ++index) {
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(arguments[index])));
 					}
 				}
 				return computed;
 			}
+			return null;
+		}
+
+		private void logWithPotentialThrowable(Level level, String format, Object... arguments) {
+			Throwable t = getPotentialThrowable(arguments);
+			if (t != null) {
+				logger.log(level, format(format, arguments, true), t);
+				return;
+			}
+
+			logger.log(level, format(format, arguments));
+		}
+
+		@Nullable
+		private Throwable getPotentialThrowable(Object... arguments) {
+			if (arguments == null) {
+				return null;
+			}
+
+			int length = arguments.length;
+			if (length > 0 && arguments[length - 1] instanceof Throwable) {
+				return (Throwable) arguments[length - 1];
+			}
+
 			return null;
 		}
 	}
@@ -494,16 +528,61 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		final String format(@Nullable String from, @Nullable Object... arguments){
-			if(from != null) {
+		private String format(@Nullable String from, @Nullable Object[] arguments) {
+			return format(from, arguments, false);
+		}
+
+		@Nullable
+		private String format(@Nullable String from, @Nullable Object[] arguments, boolean skipLast) {
+			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
-					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
+					int lastIndex = arguments.length;
+					if (skipLast) {
+						--lastIndex;
+					}
+
+					for (int index = 0; index < lastIndex; ++index) {
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(arguments[index])));
 					}
 				}
 				return computed;
 			}
+			return null;
+		}
+
+		private synchronized void logWithPotentialThrowable(PrintStream logger, String level, String format, Object... arguments) {
+			Throwable t = getPotentialThrowable(arguments);
+			if (t != null) {
+				logger.format(
+						"[%s] (%s) %s\n",
+						level.toUpperCase(),
+						Thread.currentThread().getName(),
+						format(format, arguments, true)
+				);
+				t.printStackTrace(logger);
+				return;
+			}
+
+			logger.format(
+					"[%s] (%s) %s\n",
+					level.toUpperCase(),
+					Thread.currentThread().getName(),
+					format(format, arguments)
+			);
+		}
+
+		@Nullable
+		private static Throwable getPotentialThrowable(Object... arguments) {
+			if (arguments == null) {
+				return null;
+			}
+
+			int length = arguments.length;
+			if (length > 0 && arguments[length - 1] instanceof Throwable) {
+				return (Throwable) arguments[length - 1];
+			}
+
 			return null;
 		}
 
@@ -521,12 +600,13 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void trace(String format, Object... arguments) {
+		public void trace(String format, Object... arguments) {
 			if (!identifier.verbose) {
 				return;
 			}
-			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+			logWithPotentialThrowable(this.log, "TRACE", format, arguments);
 		}
+
 		@Override
 		public synchronized void trace(String msg, Throwable t) {
 			if (!identifier.verbose) {
@@ -550,11 +630,11 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void debug(String format, Object... arguments) {
+		public void debug(String format, Object... arguments) {
 			if (!identifier.verbose) {
 				return;
 			}
-			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+			logWithPotentialThrowable(this.log, "DEBUG", format, arguments);
 		}
 
 		@Override
@@ -577,8 +657,8 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void info(String format, Object... arguments) {
-			this.log.format("[ INFO] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		public void info(String format, Object... arguments) {
+			logWithPotentialThrowable(this.log, " INFO", format, arguments);
 		}
 
 		@Override
@@ -598,8 +678,8 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void warn(String format, Object... arguments) {
-			this.err.format("[ WARN] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		public void warn(String format, Object... arguments) {
+			logWithPotentialThrowable(this.err, " WARN", format, arguments);
 		}
 
 		@Override
@@ -619,8 +699,8 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public synchronized void error(String format, Object... arguments) {
-			this.err.format("[ERROR] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
+		public void error(String format, Object... arguments) {
+			logWithPotentialThrowable(this.err, "ERROR", format, arguments);
 		}
 
 		@Override
