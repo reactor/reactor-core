@@ -5427,7 +5427,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		}
 
 		if (source instanceof Flux && source instanceof Callable) {
-			return Flux.wrapToMono((Callable<T>) source);
+			@SuppressWarnings("unchecked")
+			Callable<T> callable = (Callable<T>) source;
+			return Flux.wrapToMono(callable);
 		}
 
 		Mono<T> target = createMonoSource(source, enforceMonoContract);
