@@ -5411,56 +5411,45 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a wrapped {@link Mono}
 	 */
 	static <T> Mono<T> wrap(Publisher<T> source, boolean enforceMonoContract) {
-		//some sources can be considered already assembled monos
-		//all conversion methods (from, fromDirect, wrap) must accommodate for this
 		boolean shouldWrap = ContextPropagationSupport.shouldWrapPublisher(source);
+
 		if (source instanceof Mono) {
-			if (!shouldWrap) {
-				return (Mono<T>) source;
-			}
-			return ContextPropagation.monoRestoreThreadLocals((Mono<? extends T>) source);
+			return shouldWrap
+					? ContextPropagation.monoRestoreThreadLocals((Mono<? extends T>) source)
+					: (Mono<T>) source;
 		}
 
 		if (source instanceof FluxSourceMono || source instanceof FluxSourceMonoFuseable) {
-			@SuppressWarnings("unchecked") Mono<T> extracted =
-					(Mono<T>) ((FluxFromMonoOperator<T, T>) source).source;
-			boolean shouldWrapExtracted =
-					ContextPropagationSupport.shouldWrapPublisher(extracted);
-			if (!shouldWrapExtracted) {
-				return extracted;
-			}
-			return ContextPropagation.monoRestoreThreadLocals(extracted);
+			@SuppressWarnings("unchecked") Mono<T> extracted = (Mono<T>) ((FluxFromMonoOperator<T, T>) source).source;
+			return ContextPropagationSupport.shouldWrapPublisher(extracted)
+					? ContextPropagation.monoRestoreThreadLocals(extracted)
+					: extracted;
 		}
 
 		if (source instanceof Flux && source instanceof Callable) {
-			@SuppressWarnings("unchecked") Callable<T> m = (Callable<T>) source;
-			return Flux.wrapToMono(m);
+			return Flux.wrapToMono((Callable<T>) source);
 		}
 
-		Mono<T> target;
+		Mono<T> target = createMonoSource(source, enforceMonoContract);
 
-		//equivalent to what from used to be, without assembly hooks
+		return shouldWrap ? ContextPropagation.monoRestoreThreadLocals(target) : target;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> Mono<T> createMonoSource(Publisher<T> source, boolean enforceMonoContract) {
 		if (enforceMonoContract) {
-			if (source instanceof Flux) {
-				target = new MonoNext<>((Flux<T>) source);
-			} else {
-				target = new MonoFromPublisher<>(source);
-			}
-		//equivalent to what fromDirect used to be without onAssembly
-		} else if (source instanceof Flux && source instanceof Fuseable) {
-			target = new MonoSourceFluxFuseable<>((Flux<T>) source);
-		} else if (source instanceof Flux) {
-			target = new MonoSourceFlux<>((Flux<T>) source);
-		} else if (source instanceof Fuseable) {
-			target = new MonoSourceFuseable<>(source);
-		} else {
-			target = new MonoSource<>(source);
+			return source instanceof Flux ? new MonoNext<>((Flux<T>) source) : new MonoFromPublisher<>(source);
 		}
-
-		if (shouldWrap) {
-			return ContextPropagation.monoRestoreThreadLocals(target);
+		if (source instanceof Flux && source instanceof Fuseable) {
+			return new MonoSourceFluxFuseable<>((Flux<T>) source);
 		}
-		return target;
+		if (source instanceof Flux) {
+			return new MonoSourceFlux<>((Flux<T>) source);
+		}
+		if (source instanceof Fuseable) {
+			return new MonoSourceFuseable<>(source);
+		}
+		return new MonoSource<>(source);
 	}
 
 	@SuppressWarnings("unchecked")
