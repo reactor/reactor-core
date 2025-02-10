@@ -5439,7 +5439,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return shouldWrap ? ContextPropagation.monoRestoreThreadLocals(target) : target;
 	}
 
-	@SuppressWarnings("unchecked")
 	private static <T> Mono<T> createMonoSource(Publisher<T> source, boolean enforceMonoContract) {
 		if (enforceMonoContract) {
 			return source instanceof Flux ? new MonoNext<>((Flux<T>) source) : new MonoFromPublisher<>(source);
