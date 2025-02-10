@@ -5434,25 +5434,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			return Flux.wrapToMono(callable);
 		}
 
-		Mono<T> target = createMonoSource(source, enforceMonoContract);
+		Mono<T> target;
+		//equivalent to what from used to be, without assembly hooks
+		if (enforceMonoContract) {
+			target = source instanceof Flux ? new MonoNext<>((Flux<T>) source) : new MonoFromPublisher<>(source);
+		} else if (source instanceof Flux && source instanceof Fuseable) {
+			target = new MonoSourceFluxFuseable<>((Flux<T>) source);
+		} else if (source instanceof Flux) {
+			target = new MonoSourceFlux<>((Flux<T>) source);
+		} else if (source instanceof Fuseable) {
+			target = new MonoSourceFuseable<>(source);
+		} else {
+			target = new MonoSource<>(source);
+		}
 
 		return shouldWrap ? ContextPropagation.monoRestoreThreadLocals(target) : target;
-	}
-
-	private static <T> Mono<T> createMonoSource(Publisher<T> source, boolean enforceMonoContract) {
-		if (enforceMonoContract) {
-			return source instanceof Flux ? new MonoNext<>((Flux<T>) source) : new MonoFromPublisher<>(source);
-		}
-		if (source instanceof Flux && source instanceof Fuseable) {
-			return new MonoSourceFluxFuseable<>((Flux<T>) source);
-		}
-		if (source instanceof Flux) {
-			return new MonoSourceFlux<>((Flux<T>) source);
-		}
-		if (source instanceof Fuseable) {
-			return new MonoSourceFuseable<>(source);
-		}
-		return new MonoSource<>(source);
 	}
 
 	@SuppressWarnings("unchecked")
