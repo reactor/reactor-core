@@ -1089,13 +1089,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static Mono<Void> when(Publisher<?>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return empty(sources[0]);
-		}
-		return onAssembly(new MonoWhen(false, sources));
+		return switch (sources.length) {
+			case 0 -> empty();
+			case 1 -> empty(sources[0]);
+			default -> onAssembly(new MonoWhen(false, sources));
+		};
 	}
 
 
@@ -1148,13 +1146,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static Mono<Void> whenDelayError(Publisher<?>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return empty(sources[0]);
-		}
-		return onAssembly(new MonoWhen(true, sources));
+		return switch (sources.length) {
+			case 0 -> empty();
+			case 1 -> empty(sources[0]);
+			default -> onAssembly(new MonoWhen(true, sources));
+		};
 	}
 
 	/**
