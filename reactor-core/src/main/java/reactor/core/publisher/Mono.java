@@ -596,12 +596,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Mono<I> extracted = (Mono<I>) wrapper.source;
 			boolean shouldWrapExtracted =
 					ContextPropagationSupport.shouldWrapPublisher(extracted);
-			if (!shouldWrapExtracted) {
-				return extracted;
-			} else {
-				// Skip assembly hook
-				return wrap(extracted, false);
-			}
+			return shouldWrapExtracted ? wrap(extracted, false) : extracted;
 		}
 
 		//we delegate to `wrap` and apply assembly hooks
