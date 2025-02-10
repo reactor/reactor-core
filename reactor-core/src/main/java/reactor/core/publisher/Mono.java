@@ -5411,6 +5411,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a wrapped {@link Mono}
 	 */
 	static <T> Mono<T> wrap(Publisher<T> source, boolean enforceMonoContract) {
+		//some sources can be considered already assembled monos
+		//all conversion methods (from, fromDirect, wrap) must accommodate for this
 		boolean shouldWrap = ContextPropagationSupport.shouldWrapPublisher(source);
 
 		if (source instanceof Mono) {
