@@ -14,9 +14,9 @@ baselinePerfExtra = "3.5.2"
 
 # Other shared versions
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.14.3"
+micrometer = "1.14.4"
 micrometerDocsGenerator = "1.0.4"
-micrometerTracingTest="1.4.2"
+micrometerTracingTest="1.4.3"
 contextPropagation="1.1.2"
 kotlin = "1.8.22"
 reactiveStreams = "1.0.4"
