@@ -11,7 +11,7 @@ jobs:
         with:
           fetch-depth: 0 #needed by spotless
       - name: Setup JDK 11
-        if: contains('main', github.base_ref)
+        if: contains('main 3.7.x', github.base_ref)
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
         with:
           distribution: 'temurin'
@@ -69,7 +69,7 @@ jobs:
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
     - name: Setup JDK 11
-      if: contains('main', github.base_ref)
+      if: contains('main 3.7.x', github.base_ref)
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
         distribution: 'temurin'
