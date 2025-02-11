@@ -22,7 +22,7 @@ jobs:
           java-version: 9.0.4
           jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
       - name: Setup JDK 21
-        if: contains('main 3.6.x', github.base_ref)
+        if: contains('main 3.6.x 3.7.x', github.base_ref)
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
         with:
           distribution: 'temurin'
@@ -85,7 +85,7 @@ jobs:
         java-version: 9.0.4
         jdkFile: /opt/openjdk/java9/OpenJDK9U-jdk_x64_linux_hotspot_9.0.4_11.tar.gz
     - name: Setup Java 21
-      if: contains('main 3.6.x', github.base_ref)
+      if: contains('main 3.6.x 3.7.x', github.base_ref)
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
         distribution: 'temurin'

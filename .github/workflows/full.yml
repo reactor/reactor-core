@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ 3.6.x, main ]
+        branch: [ 3.6.x, 3.7.x, main ]
         test-type:
           - type: core
             arguments: ":reactor-core:test --no-daemon"
@@ -43,7 +43,7 @@ jobs:
           distribution: 'temurin'
           java-version: 11
       - name: Setup Java 21
-        if: contains('main 3.6.x', matrix.branch)
+        if: contains('main 3.6.x 3.7.x', matrix.branch)
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
         with:
           distribution: 'temurin'
