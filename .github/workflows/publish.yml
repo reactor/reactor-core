@@ -68,7 +68,7 @@ jobs:
   # Each deploy job can then download the docs-zip to ./docs/build/distributions/ in order to let it be included in published artifacts.
   # (see gradle/setup.gradle publications which includes docs zip file, if found from docs/build/distributions directory)
   build-docs-zip:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Set up Ruby for asciidoctor-pdf
