@@ -34,6 +34,11 @@ jobs:
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Setup JDK 8
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 8
     - name: Setup JDK 11
       if: contains('main 3.7.x', github.base_ref)
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
@@ -46,11 +51,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-    - name: Setup JDK 8
-      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
-      with:
-        distribution: 'temurin'
-        java-version: 8
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
     - name: interpret version
@@ -101,6 +101,11 @@ jobs:
     environment: snapshots
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Setup JDK 8
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 8
     - name: Setup JDK 11
       if: contains('main 3.7.x', github.base_ref)
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
@@ -113,11 +118,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-    - name: Setup JDK 8
-      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
-      with:
-        distribution: 'temurin'
-        java-version: 8
     - name: Download antora docs-zip
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
       with:
@@ -139,6 +139,11 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Setup JDK 8
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 8
     - name: Setup JDK 11
       if: contains('main 3.7.x', github.base_ref)
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
@@ -151,11 +156,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-    - name: Setup JDK 8
-      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
-      with:
-        distribution: 'temurin'
-        java-version: 8
     - name: Download antora docs-zip
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
       with:
@@ -179,6 +179,11 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Setup JDK 8
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
+      with:
+        distribution: 'temurin'
+        java-version: 8
     - name: Setup JDK 11
       if: contains('main 3.7.x', github.base_ref)
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
@@ -191,11 +196,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-    - name: Setup JDK 8
-      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
-      with:
-        distribution: 'temurin'
-        java-version: 8
     - name: Download antora docs/build
       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
       with:
