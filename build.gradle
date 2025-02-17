@@ -45,7 +45,6 @@ apply plugin: "io.reactor.gradle.detect-ci"
 apply from: "gradle/asciidoc.gradle" // asciidoc (which is generated from root dir)
 apply from: "gradle/releaser.gradle"
 apply from: "gradle/dependencies.gradle"
-apply from: "gradle/toolchains.gradle"
 
 repositories { //needed at root for asciidoctor and nohttp-checkstyle
 	mavenCentral()
@@ -73,11 +72,8 @@ def osgiVersion(String v) {
 }
 
 ext {
-	jdk = JavaVersion.current().majorVersion
-	jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
-	if (JavaVersion.current().isJava11Compatible()) {
-		jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
-	}
+	latestLteJdk = JavaVersion.VERSION_21.majorVersion
+	jdkJavadoc = "https://docs.oracle.com/en/java/javase/$latestLteJdk/docs/api/"
 	println "JDK Javadoc link for this build is ${rootProject.jdkJavadoc}"
 
 	osgiVersion = osgiVersion(version.toString())
@@ -129,10 +125,15 @@ configure(subprojects) { p ->
 	apply plugin: 'java'
 	apply plugin: 'jacoco'
 	apply from: "${rootDir}/gradle/setup.gradle"
-    apply from: "${rootDir}/gradle/toolchains.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
 	group = 'io.projectreactor'
+
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(8)
+		}
+	}
 
 	repositories {
 		mavenCentral()
@@ -179,10 +180,7 @@ configure(subprojects) { p ->
 			}
 		}
 
-		if (JavaVersion.current().isJava9Compatible()) {
-			println "Java ${JavaVersion.current()}: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
-			jvmArgs = ["-XX:MaxGCPauseMillis=20"]
-		}
+		jvmArgs = ["-XX:MaxGCPauseMillis=20"]
 
 		systemProperty("java.awt.headless", "true")
 		systemProperty("testGroups", p.properties.get("testGroups"))
