@@ -96,7 +96,8 @@ jobs:
   deploySnapshot:
     name: deploySnapshot
     runs-on: ubuntu-22.04
-    needs: [prepare, build-docs-zip]
+#    needs: [prepare, build-docs-zip]
+    needs: [prepare]
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
