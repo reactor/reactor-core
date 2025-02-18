@@ -97,7 +97,7 @@ task printBuildNumber() {
 	}
 }
 
-if (project.hasProperty("artifactory_publish_password")) {
+if (project.hasProperty("artifactory_publish_password") && project.hasProperty("artifactory_publish_contextUrl")) {
 	configure(rootProject) { p ->
 		apply plugin: "com.jfrog.artifactory"
 		def buildNumber = getOrGenerateBuildNumber()
