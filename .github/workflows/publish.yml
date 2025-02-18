@@ -7,10 +7,6 @@ on:
       - 3.7.x
 permissions: read-all
 
-env:
-  DOCS_ZIP: docs-zip
-  DOCS_ZIP_PATH: docs/build/distributions
-
 jobs:
   # General job notes: we DON'T want to cancel any previous runs, especially in the case of a "back to snapshots" build right after a release push
   # We specify the ubuntu version to minimize the chances we have to deal with a migration during a release
@@ -63,40 +59,10 @@ jobs:
       id: checks
       run: ./gradlew ${{ matrix.test-type.arguments }}
 
-  # Build the docs-zip antora doc for the current branch, and upload generated docs-zip to workflow run.
-  # JDK21 is used because the antora plugin requires a JDK17 compatible version.
-  # Each deploy job can then download the docs-zip to ./docs/build/distributions/ in order to let it be included in published artifacts.
-  # (see gradle/setup.gradle publications which includes docs zip file, if found from docs/build/distributions directory)
-#  build-docs-zip:
-#    runs-on: ubuntu-22.04
-#    steps:
-#      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-#      - name: Set up Ruby for asciidoctor-pdf
-#        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
-#        with:
-#          ruby-version: 3.3.0
-#      - name: Install asciidoctor-pdf / rouge
-#        run: gem install asciidoctor-pdf rouge
-#      - name: Setup java 21 for antora
-#        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
-#        with:
-#          distribution: 'temurin'
-#          java-version: '21'
-#      - name: Build antora docs zip distribution for the current branch
-#        run: ./gradlew docs
-#      - name: Upload docs/build to current workflow run
-#        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
-#        with:
-#          name: ${{ env.DOCS_ZIP }}
-#          path: ${{ env.DOCS_ZIP_PATH }}
-#          retention-days: 3
-#          if-no-files-found: error
-
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
     name: deploySnapshot
     runs-on: ubuntu-22.04
-#    needs: [prepare, build-docs-zip]
     needs: [prepare]
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
@@ -108,7 +74,6 @@ jobs:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
       run: gem install asciidoctor-pdf rouge
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
@@ -126,11 +91,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-#    - name: Download antora docs-zip
-#      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
-#      with:
-#        name: ${{ env.DOCS_ZIP }}
-#        path: ${{ env.DOCS_ZIP_PATH }}
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
@@ -142,11 +102,17 @@ jobs:
   deployMilestone:
     name: deployMilestone
     runs-on: ubuntu-22.04
-    needs: [prepare, build-docs-zip]
+    needs: [prepare]
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Set up Ruby for asciidoctor-pdf
+      uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
+      with:
+        ruby-version: 3.3.0
+    - name: Install asciidoctor-pdf / rouge
+      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
@@ -164,11 +130,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-    - name: Download antora docs-zip
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
-      with:
-        name: ${{ env.DOCS_ZIP }}
-        path: ${{ env.DOCS_ZIP_PATH }}
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
@@ -182,11 +143,17 @@ jobs:
   deployRelease:
     name: deployRelease
     runs-on: ubuntu-22.04
-    needs: [prepare, build-docs-zip]
+    needs: [prepare]
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Set up Ruby for asciidoctor-pdf
+      uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
+      with:
+        ruby-version: 3.3.0
+    - name: Install asciidoctor-pdf / rouge
+      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
@@ -204,11 +171,6 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
-    - name: Download antora docs/build
-      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
-      with:
-        name: ${{ env.DOCS_ZIP }}
-        path: ${{ env.DOCS_ZIP_PATH }}
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
@@ -249,24 +211,5 @@ jobs:
           git config --local user.email '32325210+reactorbot@users.noreply.github.com'
           git tag -m "Release version ${{ needs.prepare.outputs.fullVersion }}" v${{ needs.prepare.outputs.fullVersion }} ${{ github.sha }}
           git push --tags
-
-  cleanup:
-    name: Cleanup docs-zip artifact
-    needs: [ deploySnapshot, tagRelease, tagMilestone ]
-    if: always() && (needs.deploySnapshot.result == 'success' || needs.tagRelease.result == 'success' || needs.tagMilestone.result == 'success')
-    runs-on: ubuntu-20.04
-    permissions:
-      actions: write
-    steps:
-      - name: delete antora docs-zip artifact
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |-
-          ARTIFACTS_URL="/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts"
-          ARTIFACT_ID=$(gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' $ARTIFACTS_URL | jq -r '.artifacts[] | select(.name == "'$DOCS_ZIP'") | .id // ""')
-          if [ -n "$ARTIFACT_ID" ]; then
-            gh api --method DELETE -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' /repos/${{github.repository}}/actions/artifacts/$ARTIFACT_ID}
-          fi
-
 # For Gradle configuration of signing, see https://docs.gradle.org/current/userguide/signing_plugin.html#sec:in-memory-keys
 # publishMavenJavaPublicationToSonatypeRepository only sends to a staging repository
