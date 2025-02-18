@@ -7,7 +7,7 @@ nav:
 ext:
   collector:
     run:
-      command: gradlew -q -Dorg.gradle.jvmargs="-Xmx3g -XX:+HeapDumpOnOutOfMemoryError" :docs:generateAntoraResources
+      command: gradlew -q -Dorg.gradle.jvmargs="-Xmx3g -XX:+HeapDumpOnOutOfMemoryError" :docs:generateAntoraResources --debug
       local: true
     scan:
       dir: ./build/generated-antora-resources
