@@ -128,7 +128,7 @@ configure(subprojects) { p ->
 
 	java {
 		toolchain {
-			languageVersion = JavaLanguageVersion.of(8)
+			languageVersion = JavaLanguageVersion.of(name == "docs" ? 21 : 8)
 		}
 	}
 
