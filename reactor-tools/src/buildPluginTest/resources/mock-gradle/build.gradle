@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ dependencies {
 
 	testImplementation platform("org.junit:junit-bom:@JUNIT_BOM_VERSION@")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
 	testImplementation "org.assertj:assertj-core:3.23.1"
