@@ -142,6 +142,8 @@ configure(subprojects) { p ->
 			maven { url 'https://repo.spring.io/release' }
 			maven { url 'https://repo.spring.io/snapshot' }
 		}
+		// Spring Milestone repository is required for io.projectreactor:jsr166:1.0.0.RELEASE
+		maven { url 'https://repo.spring.io/milestone' }
 	}
 
 	jacocoTestReport {
