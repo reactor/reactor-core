@@ -3,7 +3,7 @@ ext {
     // See also gradle/libs.versions.toml for manually maintained dependencies and Gradle plugins
     archUnitVersion = "0.23.1"
     assertjVersion = "3.27.3"
-    awaitilityVersion = "4.2.2"
+    awaitilityVersion = "4.3.0"
     blockhoundVersion = "1.0.10.RELEASE"
     byteBuddyVersion = "1.17.0"
     cglibVersion = "3.3.0"
