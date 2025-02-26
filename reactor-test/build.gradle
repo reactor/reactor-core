@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ dependencies {
 	testImplementation platform("org.junit:junit-bom:$junitVersion")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 
 	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
