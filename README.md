@@ -20,9 +20,6 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 repositories {
     mavenCentral()
 
-    // Uncomment to get access to Milestones
-    // maven { url "https://repo.spring.io/milestone" }
-
     // Uncomment to get access to Snapshots
     // maven { url "https://repo.spring.io/snapshot" }
 }

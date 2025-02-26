@@ -136,8 +136,10 @@ jobs:
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
         ORG_GRADLE_PROJECT_signingKey: ${{secrets.SIGNING_KEY}}
         ORG_GRADLE_PROJECT_signingPassword: ${{secrets.SIGNING_PASSPHRASE}}
+        ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
+        ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
       run: |
-          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local
+          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local publishMavenJavaPublicationToSonatypeRepository
 
   #sign the release artifacts and deploy them to Artifactory
   deployRelease:
