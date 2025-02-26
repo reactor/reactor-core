@@ -206,34 +206,13 @@ the BOM.
 [[milestones-and-snapshots]]
 === Milestones and Snapshots
 
-Milestones and developer previews are distributed through the Spring Milestones
-repository rather than Maven Central. To add it to your build configuration
-file, use the following snippet:
+Milestones and release candidates are distributed through `Maven Central`.
 
-.Milestones in Maven
-[source,xml]
-----
-<repositories>
-	<repository>
-		<id>spring-milestones</id>
-		<name>Spring Milestones Repository</name>
-		<url>https://repo.spring.io/milestone</url>
-	</repository>
-</repositories>
-----
+NOTE: Milestone and release candidate releases are for testing purposes and are not intended for production use.
 
-For Gradle, use the following snippet:
-
-.Milestones in Gradle
-[source,groovy]
-----
-repositories {
-  maven { url 'https://repo.spring.io/milestone' }
-  mavenCentral()
-}
-----
-
-Similarly, snapshots are also available in a separate dedicated repository, as the following example show:
+Snapshots are distributed through the `Spring Snapshots` repository rather than `Maven Central`.
+To add it to your build configuration file, use the following snippet:
+(for both Maven and Gradle):
 
 .-SNAPSHOTs in Maven
 [source,xml]
