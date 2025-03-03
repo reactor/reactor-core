@@ -19,7 +19,11 @@ plugins {
 
 rootProject.name = 'reactor'
 
-include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools', 'reactor-core-micrometer', 'docs'
+include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools', 'reactor-core-micrometer'
+
+if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+	include 'docs'
+}
 
 dependencyResolutionManagement {
   versionCatalogs {
