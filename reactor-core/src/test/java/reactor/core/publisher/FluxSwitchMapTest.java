@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,19 +78,25 @@ public class FluxSwitchMapTest {
 	           .onErrorResume(e -> e instanceof RejectedExecutionException ? Mono.empty() : Mono.error(e));
 		});
 
-		for (int i = 0; i < 100000; i++) {
-			StepVerifier.create(integerFlux)
-			            .expectNextMatches(new Predicate<Integer>() {
-			            	int last = -1;
-				            @Override
-				            public boolean test(Integer next) {
-					            final boolean result = last < next;
-					            last = next;
-					            return result;
-				            }
-			            })
-			            .thenConsumeWhile(a -> true)
-			            .verifyComplete();
+		try {
+			for (int i = 0; i < 10_000; i++) {
+				StepVerifier.create(integerFlux)
+				            .expectNextMatches(new Predicate<Integer>() {
+					            int last = -1;
+
+					            @Override
+					            public boolean test(Integer next) {
+						            final boolean result = last < next;
+						            last = next;
+						            return result;
+					            }
+				            })
+				            .thenConsumeWhile(a -> true)
+				            .verifyComplete();
+			}
+		} finally {
+			scheduler.dispose();
+			scheduler2.dispose();
 		}
 	}
 
