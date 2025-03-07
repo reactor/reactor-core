@@ -1,5 +1,5 @@
 [[reactor-extra]]
-== Reactor-Extra
+= Reactor-Extra
 
 The `reactor-extra` artifact contains additional operators and utilities that are for
 users of `reactor-core` with advanced needs, or incubating operators.
@@ -18,7 +18,7 @@ dependencies {
 about why you do not need to specify a version if you use the BOM, usage in Maven, and other details.
 
 [[extra-tuples]]
-=== `TupleUtils` and Functional Interfaces
+== `TupleUtils` and Functional Interfaces
 
 The `reactor.function` package contains functional interfaces that complement the Java 8
 `Function`, `Predicate`, and `Consumer` interfaces, for three to eight values.
@@ -50,12 +50,12 @@ You can rewrite the preceding example as follows:
 <1> (as `Customer` constructor conforms to `Function3` functional interface signature)
 
 [[extra-math]]
-=== Math Operators With `MathFlux`
+== Math Operators With `MathFlux`
 
 The `reactor.math` package contains a `MathFlux` specialized version of `Flux` that offers
 mathematical operators, including `max`, `min`, `sumInt`, `averageDouble`, and others.
 
 [[extra-schedulers]]
-=== Schedulers
+== Schedulers
 
 Reactor-extra comes with the `ForkJoinPoolScheduler` (in the `reactor.scheduler.forkjoin` package): it uses the Java `ForkJoinPool` to execute tasks.

@@ -1,5 +1,5 @@
 [[which-operator]]
-== Which operator do I need?
+= Which operator do I need?
 
 TIP: In this section, if an operator is specific to {javadoc}/reactor/core/publisher/Flux.html[Flux] or {javadoc}/reactor/core/publisher/Mono.html[Mono], it is prefixed and linked accordingly, like this: {javadoc}/reactor/core/publisher/Flux.html#fromArray-T:A-[Flux#fromArray]. Common operators have no prefix, and links to both implementations are provided, for example: `just` ({javadoc}/reactor/core/publisher/Flux.html#just-T%2E%2E%2E-[Flux]|link:{javadoc}/reactor/core/publisher/Mono.html#just-T-[Mono]). When a specific use case is covered by a combination of operators, it is presented as a method call, with a leading dot and parameters in parentheses, as follows: `.methodCall(parameter)`.
 
@@ -28,7 +28,7 @@ I want to deal with:
 * xref:apdx-operatorChoice.adoc#which.multicasting[Multicasting a Flux to several Subscribers]
 
 [[which.create]]
-=== Creating a New Sequence...
+== Creating a New Sequence...
 
 * that emits a `T`, and I already have: `just` ({javadoc}/reactor/core/publisher/Flux.html#just-T%2E%2E%2E-[Flux]|link:{javadoc}/reactor/core/publisher/Mono.html#just-T-[Mono])
 ** ...from an https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html[Optional<T>]: {javadoc}/reactor/core/publisher/Mono.html#justOrEmpty-java.util.Optional-[Mono#justOrEmpty(Optional<T>)]
@@ -57,7 +57,7 @@ I want to deal with:
 ({javadoc}/reactor/core/publisher/Mono.html#create-java.util.function.Consumer-[Mono#create] as well, without the multiple emission aspect)
 
 [[which.values]]
-=== Transforming an Existing Sequence
+== Transforming an Existing Sequence
 
 * I want to transform existing data:
 ** on a 1-to-1 basis (eg. strings to their length): `map` ({javadoc}/reactor/core/publisher/Flux.html#map-java.util.function.Function-[Flux]|link:{javadoc}/reactor/core/publisher/Mono.html#map-java.util.function.Function-[Mono])
@@ -131,7 +131,7 @@ I want to deal with:
 ** ...expanding the graph depth first: `expandDeep(Function)` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#expandDeep-java.util.function.Function-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#expandDeep-java.util.function.Function-[Mono])
 
 [[which.peeking]]
-=== Peeking into a Sequence
+== Peeking into a Sequence
 
 * Without modifying the final sequence, I want to:
 ** get notified of / execute additional behavior (sometimes referred to as "side-effects") on:
@@ -159,7 +159,7 @@ I want to deal with:
 ** as a line in a log: `log` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#log--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#log--[Mono])
 
 [[which.filtering]]
-=== Filtering a Sequence
+== Filtering a Sequence
 
 * I want to filter a sequence:
 ** based on an arbitrary criteria: `filter` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#filter-java.util.function.Predicate-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#filter-java.util.function.Predicate-[Mono])
@@ -204,7 +204,7 @@ I want to deal with:
 
 
 [[which.errors]]
-=== Handling Errors
+== Handling Errors
 
 * I want to create an erroring sequence: `error` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#error-java.lang.Throwable-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#error-java.lang.Throwable-[Mono])...
 ** ...to replace the completion of a successful https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux]: `.concat(Flux.error(e))`
@@ -240,7 +240,7 @@ I want to deal with:
 *** ...and applying a strategy when bounded buffer also overflows: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#onBackpressureBuffer-int-reactor.core.publisher.BufferOverflowStrategy-[Flux#onBackpressureBuffer] with a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/BufferOverflowStrategy.html[BufferOverflowStrategy]
 
 [[which.time]]
-=== Working with Time
+== Working with Time
 
 * I want to associate emissions with a timing measured...
 ** ...with best available precision and versatility of provided data: `timed` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#timed--[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#timed--[Mono])
@@ -264,7 +264,7 @@ I want to deal with:
 ** before the subscription happens: `delaySubscription` (https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#delaySubscription-java.time.Duration-[Flux]|link:https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#delaySubscription-java.time.Duration-[Mono])
 
 [[which.window]]
-=== Splitting a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux]
+== Splitting a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux]
 
 * I want to split a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux<T>] into a `Flux<Flux<T>>`, by a boundary criteria:
 ** of size: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#window-int-[window(int)]
@@ -294,7 +294,7 @@ I want to deal with:
 TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner https://projectreactor.io/docs/core/release/api/reactor/core/publisher/GroupedFlux.html[GroupedFlux] shares the same `K` key accessible through https://projectreactor.io/docs/core/release/api/reactor/core/publisher/GroupedFlux.html#key--[key()].
 
 [[which.blocking]]
-=== Going Back to the Synchronous World
+== Going Back to the Synchronous World
 
 Note: all of these methods except https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#toFuture--[Mono#toFuture] will throw an https://docs.oracle.com/javase/8/docs/api/java/lang/UnsupportedOperationException.html?is-external=true[UnsupportedOperatorException] if called from
 within a https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html[Scheduler] marked as "non-blocking only" (by default https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#parallel--[parallel()] and https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#single--[single()]).
@@ -313,7 +313,7 @@ within a https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/
 ** a https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture<T>]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#toFuture--[Mono#toFuture]
 
 [[which.multicasting]]
-=== Multicasting a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux] to several https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscriber.html?is-external=true[Subscribers]
+== Multicasting a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux] to several https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscriber.html?is-external=true[Subscribers]
 
 * I want to connect multiple https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Subscriber.html?is-external=true[Subscriber] to a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html[Flux]:
 ** and decide when to trigger the source with https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ConnectableFlux.html#connect--[connect()]: https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html#publish--[publish()] (returns a https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ConnectableFlux.html[ConnectableFlux])

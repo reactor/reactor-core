@@ -1,5 +1,5 @@
 [[howtoReadMarbles]]
-== How to read marble diagrams?
+= How to read marble diagrams?
 
 When we introduced `Flux` and `Mono`, we showed an example of a "marble diagram".
 These are found throughout the javadoc in order to explain the behavior of an operator in a more visual way.

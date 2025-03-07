@@ -1,5 +1,5 @@
 [[faq]]
-== FAQ, Best Practices, and "How do I...?"
+= FAQ, Best Practices, and "How do I...?"
 
 This section covers the following content:
 
@@ -13,7 +13,7 @@ This section covers the following content:
 * xref:faq.adoc#faq.mdc[What Is a Good Pattern for Contextual Logging? (MDC)]
 
 [[faq.wrap-blocking]]
-=== How Do I Wrap a Synchronous, Blocking Call?
+== How Do I Wrap a Synchronous, Blocking Call?
 
 It is often the case that a source of information is synchronous and blocking.
 To deal with such sources in your Reactor applications, apply the following
@@ -45,7 +45,7 @@ Also, note that `subscribeOn` operator should immediately follow the source and 
 further operators are defined after the `subscribeOn` wrapper.
 
 [[faq.chain]]
-=== I Used an Operator on my `Flux` but it Doesn't Seem to Apply. What Gives?
+== I Used an Operator on my `Flux` but it Doesn't Seem to Apply. What Gives?
 
 Make sure that the variable you `.subscribe()` to has been affected by the
 operators you think should have been applied to it.
@@ -108,7 +108,7 @@ Received: *****
 ----
 
 [[faq.monoThen]]
-=== My `Mono` `zipWith` or `zipWhen` is never called
+== My `Mono` `zipWith` or `zipWhen` is never called
 
 Consider the following example:
 
@@ -153,7 +153,7 @@ myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
 ----
 
 [[faq.monoZipEmptyCompletion]]
-=== Using `zip` along with empty-completed publishers
+== Using `zip` along with empty-completed publishers
 
 When using the `zip` operator along with empty-completed publishers (i.e., publishers completing without emitting an item), it is important to be aware of the following behavior.
 
@@ -240,7 +240,7 @@ public void testZipOptionalAllSubscribed() {
 ----
 
 [[faq.retryWhen]]
-=== How to Use `retryWhen` to Emulate `retry(3)`?
+== How to Use `retryWhen` to Emulate `retry(3)`?
 
 The `retryWhen` operator can be quite complex. Hopefully the following snippet of code
 can help you understand how it works by attempting to emulate a simpler
@@ -249,7 +249,7 @@ can help you understand how it works by attempting to emulate a simpler
 include::snippetRetryWhenRetry.adoc[]
 
 [[faq.exponentialBackoff]]
-=== How can I use `retryWhen` for Exponential Backoff?
+== How can I use `retryWhen` for Exponential Backoff?
 
 Exponential backoff produces retry attempts with a growing delay between each
 of the attempts, so as not to overload the source systems and risk an all-out
@@ -304,7 +304,7 @@ java.lang.IllegalStateException: boom at 00:00:00.702
 <3> Third retry after about 400ms
 
 [[faq.thread-affinity-publishon]]
-=== How Do I Ensure Thread Affinity when I Use `publishOn()`?
+== How Do I Ensure Thread Affinity when I Use `publishOn()`?
 
 As described in xref:apdx-reactorExtra.adoc#extra-schedulers[Schedulers], `publishOn()` can be used to switch
 execution contexts. The `publishOn` operator influences the threading context
@@ -336,7 +336,7 @@ chain or for different subscribers.
 
 
 [[faq.mdc]]
-=== What Is a Good Pattern for Contextual Logging? (MDC)
+== What Is a Good Pattern for Contextual Logging? (MDC)
 Most logging frameworks allow contextual logging, letting users store variables that are reflected in the logging pattern, generally by way of a `Map` called the MDC ("Mapped Diagnostic Context").
 This is one of the most recurring use of `ThreadLocal` in Java, and as a consequence this pattern assumes that the code being logged is tied in a one-to-one relationship with a `Thread`.
 
