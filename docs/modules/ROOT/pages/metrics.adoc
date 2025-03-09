@@ -137,7 +137,7 @@ listenToEvents()
     .subscribe();
 ----
 <1> The `Observation` for this pipeline will be identified with the "events" prefix.
-<2> We use the `tap` operator with the `observation` utility.
+<2> We use the `tap` operator with the `observation` utility, making an anonymous `observation` available to upstream operators - in this case, the `listenToEvents()` chain.
 <3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
 
 The detail of the observation and its tags is provided in xref:metrics-details.adoc#micrometer-details-observation[Micrometer.observation()].
@@ -172,7 +172,7 @@ listenToEvents()
     .subscribe();
 ----
 <1> The `Observation` for this pipeline will be identified with the "events" prefix.
-<2> We use the `tap` operator with the `observation` utility.
+<2> We use the `tap` operator with the `observation` utility, making a custom `observation` available to upstream operators - in this case, the `listenToEvents()` chain.
 <3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
 <4> We provide our own function to create the Observation
 <5> with a custom `ObservationConvention`
