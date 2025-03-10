@@ -129,15 +129,15 @@ A reactive chain can be observed via the `tap` operator and `Micrometer.observat
 ----
 listenToEvents()
     .name("events") // <1>
-    .tap(Micrometer.observation( // <2>
-		applicationDefinedRegistry)) // <3>
     .doOnNext(event -> log.info("Received {}", event))
     .delayUntil(this::processEvent)
+    .tap(Micrometer.observation( // <2>
+		applicationDefinedRegistry)) // <3>
     .retry()
     .subscribe();
 ----
 <1> The `Observation` for this pipeline will be identified with the "events" prefix.
-<2> We use the `tap` operator with the `observation` utility.
+<2> We use the `tap` operator with the `observation` utility, making an anonymous `observation` available to upstream operators.
 <3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
 
 The detail of the observation and its tags is provided in xref:metrics-details.adoc#micrometer-details-observation[Micrometer.observation()].
@@ -160,19 +160,19 @@ with your own Observation supplier, as follows:
 ----
 listenToEvents()
     .name("events") // <1>
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
     .tap(Micrometer.observation( // <2>
     	applicationDefinedRegistry, // <3>
     	registry -> Observation.createNotStarted( // <4>
     		myConvention, // <5>
             myContextSupplier, // <6>
             registry)))
-    .doOnNext(event -> log.info("Received {}", event))
-    .delayUntil(this::processEvent)
     .retry()
     .subscribe();
 ----
 <1> The `Observation` for this pipeline will be identified with the "events" prefix.
-<2> We use the `tap` operator with the `observation` utility.
+<2> We use the `tap` operator with the `observation` utility, making a custom `observation` available to upstream operators.
 <3> A registry must be provided into which to publish the observation results. Note this is an `ObservationRegistry`.
 <4> We provide our own function to create the Observation
 <5> with a custom `ObservationConvention`
