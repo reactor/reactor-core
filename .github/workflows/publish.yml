@@ -30,6 +30,12 @@ jobs:
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - name: Set up Ruby for asciidoctor-pdf
+      uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
+      with:
+        ruby-version: 3.3.0
+    - name: Install asciidoctor-pdf / rouge
+      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
@@ -68,12 +74,6 @@ jobs:
     environment: snapshots
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-    - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
-      with:
-        ruby-version: 3.3.0
-    - name: Install asciidoctor-pdf / rouge
-      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
@@ -107,12 +107,6 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
-    - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
-      with:
-        ruby-version: 3.3.0
-    - name: Install asciidoctor-pdf / rouge
-      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
@@ -148,12 +142,6 @@ jobs:
     environment: releases
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
-    - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1
-      with:
-        ruby-version: 3.3.0
-    - name: Install asciidoctor-pdf / rouge
-      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # tag=v3
       with:
