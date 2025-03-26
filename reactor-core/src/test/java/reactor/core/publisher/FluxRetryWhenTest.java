@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.LongAssert;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -53,7 +52,7 @@ import reactor.util.retry.RetrySpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.BDDMockito.given;
+import static org.assertj.core.api.InstanceOfAssertFactories.LONG;
 
 public class FluxRetryWhenTest {
 
@@ -751,15 +750,16 @@ public class FluxRetryWhenTest {
 		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
-		assertThat(elapsedList, LongAssert.class).first()
+
+		assertThat(elapsedList).first(LONG)
 				.isEqualTo(0L);
-		assertThat(elapsedList, LongAssert.class).element(1)
+		assertThat(elapsedList).element(1, LONG)
 				.isCloseTo(100, Percentage.withPercentage(10));
-		assertThat(elapsedList, LongAssert.class).element(2)
+		assertThat(elapsedList).element(2, LONG)
 				.isCloseTo(200, Percentage.withPercentage(10));
-		assertThat(elapsedList, LongAssert.class).element(3)
+		assertThat(elapsedList).element(3, LONG)
 				.isCloseTo(400, Percentage.withPercentage(10));
-		assertThat(elapsedList, LongAssert.class).element(4)
+		assertThat(elapsedList).element(4, LONG)
 				.isCloseTo(800, Percentage.withPercentage(10));
 	}
 
@@ -787,15 +787,15 @@ public class FluxRetryWhenTest {
 		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
-		assertThat(elapsedList, LongAssert.class).first()
+		assertThat(elapsedList).first(LONG)
 				.isEqualTo(0L);
-		assertThat(elapsedList, LongAssert.class).element(1)
+		assertThat(elapsedList).element(1, LONG)
 				.isCloseTo(100, Percentage.withPercentage(50));
-		assertThat(elapsedList, LongAssert.class).element(2)
+		assertThat(elapsedList).element(2, LONG)
 				.isCloseTo(200, Percentage.withPercentage(50));
-		assertThat(elapsedList, LongAssert.class).element(3)
+		assertThat(elapsedList).element(3, LONG)
 				.isCloseTo(400, Percentage.withPercentage(50));
-		assertThat(elapsedList, LongAssert.class).element(4)
+		assertThat(elapsedList).element(4, LONG)
 				.isCloseTo(800, Percentage.withPercentage(50));
 	}
 
@@ -820,15 +820,15 @@ public class FluxRetryWhenTest {
 		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
-		assertThat(elapsedList, LongAssert.class).first()
+		assertThat(elapsedList).first(LONG)
 				.isEqualTo(0L);
-		assertThat(elapsedList, LongAssert.class).element(1)
+		assertThat(elapsedList).element(1, LONG)
 				.isCloseTo(100, Percentage.withPercentage(50));
-		assertThat(elapsedList, LongAssert.class).element(2)
+		assertThat(elapsedList).element(2, LONG)
 				.isCloseTo(200, Percentage.withPercentage(50));
-		assertThat(elapsedList, LongAssert.class).element(3)
+		assertThat(elapsedList).element(3, LONG)
 				.isCloseTo(400, Percentage.withPercentage(50));
-		assertThat(elapsedList, LongAssert.class).element(4)
+		assertThat(elapsedList).element(4, LONG)
 				.isCloseTo(800, Percentage.withPercentage(50));
 	}
 
@@ -857,24 +857,19 @@ public class FluxRetryWhenTest {
 		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
-		assertThat(elapsedList, LongAssert.class)
-				.first()
+		assertThat(elapsedList).first(LONG)
 				.isEqualTo(0L);
-		assertThat(elapsedList, LongAssert.class)
-				.element(1)
+		assertThat(elapsedList).element(1, LONG)
 				.isGreaterThanOrEqualTo(100) //min backoff
 				.isCloseTo(100, Percentage.withPercentage(90));
-		assertThat(elapsedList, LongAssert.class)
-				.element(2)
+		assertThat(elapsedList).element(2, LONG)
 				.isCloseTo(200, Percentage.withPercentage(90))
 				.isGreaterThanOrEqualTo(100)
 				.isLessThanOrEqualTo(220);
-		assertThat(elapsedList, LongAssert.class)
-				.element(3)
+		assertThat(elapsedList).element(3, LONG)
 				.isGreaterThanOrEqualTo(100)
 				.isLessThanOrEqualTo(220);
-		assertThat(elapsedList, LongAssert.class)
-				.element(4)
+		assertThat(elapsedList).element(4, LONG)
 				.isGreaterThanOrEqualTo(100)
 				.isLessThanOrEqualTo(220);
 	}
@@ -905,11 +900,9 @@ public class FluxRetryWhenTest {
 			            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 			assertThat(elapsedList).hasSize(2);
-			assertThat(elapsedList, LongAssert.class)
-					.first()
+			assertThat(elapsedList).first(LONG)
 					.isEqualTo(0L);
-			assertThat(elapsedList, LongAssert.class)
-					.element(1)
+			assertThat(elapsedList).element(1, LONG)
 					.isGreaterThanOrEqualTo(100) //min backoff
 					.isCloseTo(100, Percentage.withPercentage(90));
 		}

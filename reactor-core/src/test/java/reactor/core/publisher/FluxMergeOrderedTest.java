@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import reactor.util.function.Tuple2;
 import static org.assertj.core.api.Assertions.*;
 
 @Timeout(5)
+@SuppressWarnings("deprecation")
 class FluxMergeOrderedTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1958

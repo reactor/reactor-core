@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -252,9 +252,10 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		boolean cacheLoadFailure(State<T> expected, Throwable failure) {
 			if (STATE.compareAndSet(main, expected, EMPTY_STATE)) {
-				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.onError(failure);
 				}
 				//no need to invalidate, EMPTY_STATE swap above is equivalent for our purpose
@@ -263,6 +264,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			return false;
 		}
 
+		@SuppressWarnings("unchecked")
 		void cacheLoad(T value) {
 			State<T> valueState = new MonoCacheInvalidateIf.ValueState<>(value);
 			if (STATE.compareAndSet(main, this, valueState)) {
@@ -279,7 +281,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 					return;
 				}
 
-				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.complete(value);
 				}
 				// even though the trigger can deliver values on different threads,

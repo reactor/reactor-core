@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -610,6 +610,7 @@ public abstract class Schedulers {
 	 * @param subHook the new {@link BiConsumer} to set as the hook's anonymous part.
 	 * @see #onHandleError(String, BiConsumer)
 	 */
+	@SuppressWarnings("unchecked")
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> subHook) {
 		Objects.requireNonNull(subHook, "onHandleError");
 		if (LOGGER.isDebugEnabled()) {
@@ -1329,6 +1330,7 @@ public abstract class Schedulers {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void start() {
 			cached.start();
 		}

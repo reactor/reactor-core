@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
+@SuppressWarnings("unchecked")
 public abstract class MonoDelayElementStressTest {
 
 	@JCStressTest
@@ -51,7 +52,9 @@ public abstract class MonoDelayElementStressTest {
 			monoDelay = new MonoDelayElement<>(Mono.never(), 0L,
 					TimeUnit.MILLISECONDS,
 					virtualTimeScheduler);
-			monoDelay.doOnSubscribe(s -> subscription = ((MonoDelayElement.DelayElementSubscriber) s)).subscribe(subscriber);
+
+			monoDelay.doOnSubscribe(s -> subscription =
+					((MonoDelayElement.DelayElementSubscriber<Object>) s)).subscribe(subscriber);
 		}
 
 		@Actor

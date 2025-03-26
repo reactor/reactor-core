@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -313,6 +313,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void onNext(T t) {
 			if (main.state != this || done) {
 				Operators.onNextDropped(t, currentContext());
@@ -322,33 +323,35 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 			//note the predicate is not applied upon reception of the value to be cached. only late subscribers will trigger revalidation.
 			State<T> valueState = new ValueState<>(t);
 			if (STATE.compareAndSet(main, this, valueState)) {
-				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.complete(t);
 				}
 			}
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void onError(Throwable t) {
 			if (main.state != this || done) {
 				Operators.onErrorDropped(t, currentContext());
 				return;
 			}
 			if (STATE.compareAndSet(main, this, EMPTY_STATE)) {
-				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.onError(t);
 				}
 			}
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void onComplete() {
 			if (done) {
 				done = false;
 				return;
 			}
 			if (STATE.compareAndSet(main, this, EMPTY_STATE)) {
-				for (@SuppressWarnings("unchecked") CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
 					inner.onError(new NoSuchElementException("cacheInvalidateWhen expects a value, source completed empty"));
 				}
 			}

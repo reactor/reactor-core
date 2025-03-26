@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public void start() {
 		//TODO SingleTimedScheduler didn't implement start, check if any particular reason?
 		SchedulerState<ScheduledExecutorService> a = this.state;

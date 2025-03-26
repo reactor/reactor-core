@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import reactor.core.Disposable;
 
 public abstract class BasicSchedulersStressTest {
 
+	@SuppressWarnings("deprecation")
 	private static void restart(Scheduler scheduler) {
 		scheduler.disposeGracefully().block(Duration.ofMillis(500));
 		// TODO: in 3.6.x: remove restart capability and this validation

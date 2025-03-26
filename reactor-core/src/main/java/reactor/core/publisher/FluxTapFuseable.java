@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				if (!(s instanceof QueueSubscription)) {

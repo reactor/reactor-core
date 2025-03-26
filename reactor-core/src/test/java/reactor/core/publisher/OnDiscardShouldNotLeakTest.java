@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ public class OnDiscardShouldNotLeakTest {
 
 	private static final int NB_ITERATIONS = 100;
 	// add DiscardScenarios here to test more operators
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	private static final DiscardScenario[] SCENARIOS = new DiscardScenario[] {
 			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
 			DiscardScenario.allFluxSourceArray("when", 4,
@@ -78,7 +79,8 @@ public class OnDiscardShouldNotLeakTest {
 					               .thenReturn(Tracked.RELEASED)),
 			DiscardScenario.allFluxSourceArray("zip", 4,
 					sources -> {
-						Publisher<Tracked>[] sources1 = sources.toArray(new Publisher[0]);
+						Publisher<Tracked>[] sources1 =
+								sources.toArray(new Publisher[0]);
 						return Flux.zip(Tuples::fromArray, sources1)
 						           .doOnNext(l -> {
 							           for (Object o : (Iterable<Object>) l) {

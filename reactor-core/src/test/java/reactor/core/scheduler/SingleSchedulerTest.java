@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,6 +264,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 
 	@ParameterizedTestWithName
 	@ValueSource(booleans = {true, false})
+	@SuppressWarnings("deprecation")
 	void restartSupported(boolean disposeGracefully) {
 		Scheduler s = Schedulers.newSingle("restartSupported");
 		if (disposeGracefully) {
