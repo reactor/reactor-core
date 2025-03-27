@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import static reactor.core.publisher.FluxMetrics.*;
 import static reactor.core.publisher.FluxMetrics.TAG_ON_COMPLETE_EMPTY;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
+@SuppressWarnings("deprecation")
 public class FluxMetricsTest {
 
 	private MeterRegistry registry;

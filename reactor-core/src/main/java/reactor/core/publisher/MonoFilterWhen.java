@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,9 +82,9 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, FilterWhenInner> ASYNC_FILTER =
 				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenMain.class, FilterWhenInner.class, "asyncFilter");
 
-		@SuppressWarnings({"ConstantConditions", "rawtypes"})
+		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked"})
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false, null);
-		@SuppressWarnings({"ConstantConditions", "rawtypes"})
+		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked"})
 		static final FilterWhenInner INNER_TERMINATED = new FilterWhenInner(null, false, null);
 
 		MonoFilterWhenMain(CoreSubscriber<? super T> actual, Function<? super T, ?

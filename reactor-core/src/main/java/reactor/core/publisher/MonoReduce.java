@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,8 +206,9 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 			final T r;
 			synchronized (this) {
 				r = this.aggregate;
-				//noinspection unchecked
-				this.aggregate = (T) CANCELLED;
+				@SuppressWarnings("unchecked")
+				T cancelled = (T) CANCELLED;
+				this.aggregate = cancelled;
 			}
 
 			if (r == null || r == CANCELLED) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,7 @@ class ContextPropagationTest {
 
 		@EnumSource(Cases.class)
 		@ParameterizedTestWithName
+		@SuppressWarnings("unchecked")
 		void properWrappingForFluxTap(Cases characteristics) {
 			SignalListener<String> originalListener = Mockito.mock(SignalListener.class);
 			SignalListenerFactory<String, Void> originalFactory = new SignalListenerFactory<String, Void>() {
@@ -247,6 +248,7 @@ class ContextPropagationTest {
 
 		@EnumSource(Cases.class)
 		@ParameterizedTestWithName
+		@SuppressWarnings("unchecked")
 		void properWrappingForMonoTap(Cases characteristics) {
 			SignalListener<String> originalListener = Mockito.mock(SignalListener.class);
 			SignalListenerFactory<String, Void> originalFactory = new SignalListenerFactory<String, Void>() {
@@ -320,6 +322,7 @@ class ContextPropagationTest {
 		}
 
 		@Test
+		@SuppressWarnings("unchecked")
 		void threadLocalRestoredInSignalListener() throws InterruptedException {
 			REF1.set(null);
 			Context context = Context.of(KEY1, "expected");
@@ -418,6 +421,7 @@ class ContextPropagationTest {
 		}
 
 		@Test
+		@SuppressWarnings("unchecked")
 		void classContextRestoreHandleConsumerRestoresThreadLocal() {
 			BiConsumer<String, SynchronousSink<String>> originalHandler = (v, sink) -> {
 				if (v.equals("bar")) {

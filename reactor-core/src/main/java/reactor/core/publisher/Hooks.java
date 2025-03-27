@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -562,7 +562,7 @@ public abstract class Hooks {
 	}
 
 	@Nullable
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
 		Function<Publisher, Publisher> composite = null;
 		for (Function<? super Publisher<Object>, ? extends Publisher<Object>> function : hooks) {
@@ -703,6 +703,7 @@ public abstract class Hooks {
 		return addAssemblyInfo(publisher, new AssemblySnapshot(callSite));
 	}
 
+	@SuppressWarnings("unchecked")
 	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
 		if (publisher instanceof Callable) {
 			if (publisher instanceof Mono) {

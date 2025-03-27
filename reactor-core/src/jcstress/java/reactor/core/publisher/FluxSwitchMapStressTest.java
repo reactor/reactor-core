@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import org.openjdk.jcstress.infra.results.I_Result;
 import org.openjdk.jcstress.infra.results.JI_Result;
 import org.openjdk.jcstress.infra.results.JJJJJJJ_Result;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxSwitchMapNoPrefetch.SwitchMapMain;
@@ -37,13 +39,16 @@ import reactor.test.publisher.TestPublisher;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class FluxSwitchMapStressTest {
+
+	private static final CoreSubscriber<Object> DUMMY_SUBSCRIBER = Operators.emptySubscriber();
 
 	final FastLogger fastLogger = new FastLogger(this.getClass().getSimpleName());
 	final StateLogger logger = new StateLogger(fastLogger);
 
 	final StressSubscriber<Object> stressSubscriber = new StressSubscriber<>(0);
-	final StressSubscription stressSubscription = new StressSubscription(null);
+	final StressSubscription stressSubscription = new StressSubscription(DUMMY_SUBSCRIBER);
 
 	final SwitchMapMain<Object, Object> switchMapMain =
 			new SwitchMapMain<>(stressSubscriber, this::handle, logger);
@@ -149,7 +154,7 @@ public abstract class FluxSwitchMapStressTest {
 		Publisher<Object> handle(Object value) {
 			return s -> {
 				final StressSubscription subscription =
-						new StressSubscription<>((CoreSubscriber) s);
+						new StressSubscription<>((CoreSubscriber<?>) s);
 				this.subscription = subscription;
 				s.onSubscribe(subscription);
 			};
