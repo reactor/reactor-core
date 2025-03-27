@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Simon Baslé
@@ -629,7 +630,8 @@ class ContextPropagationTest {
 		@EnumSource(Cases.class)
 		@ParameterizedTestWithName
 		void properWrappingForFluxTap(Cases characteristics) {
-			SignalListener<String> originalListener = Mockito.mock(SignalListener.class);
+			@SuppressWarnings("unchecked")
+			SignalListener<String> originalListener = mock(SignalListener.class);
 			SignalListenerFactory<String, Void> originalFactory = new SignalListenerFactory<String, Void>() {
 				@Override
 				public Void initializePublisherState(Publisher<? extends String> source) {
@@ -705,7 +707,8 @@ class ContextPropagationTest {
 		@EnumSource(Cases.class)
 		@ParameterizedTestWithName
 		void properWrappingForMonoTap(Cases characteristics) {
-			SignalListener<String> originalListener = Mockito.mock(SignalListener.class);
+			@SuppressWarnings("unchecked")
+			SignalListener<String> originalListener = mock(SignalListener.class);
 			SignalListenerFactory<String, Void> originalFactory = new SignalListenerFactory<String, Void>() {
 				@Override
 				public Void initializePublisherState(Publisher<? extends String> source) {
@@ -782,7 +785,8 @@ class ContextPropagationTest {
 			Context context = Context.of(KEY1, "expected");
 			List<String> list = new ArrayList<>();
 
-			SignalListener<Object> tlReadingListener = Mockito.mock(SignalListener.class, invocation -> {
+			@SuppressWarnings("unchecked")
+			SignalListener<Object> tlReadingListener = mock(SignalListener.class, invocation -> {
 				list.add(invocation.getMethod().getName() + ": " + REF1.get());
 				return null;
 			});
@@ -884,7 +888,8 @@ class ContextPropagationTest {
 			BiConsumer<String, SynchronousSink<String>> decoratedHandler = ContextPropagationSupport.shouldRestoreThreadLocalsInSomeOperators() ?
 					ContextPropagation.contextRestoreForHandle(originalHandler, () -> context) : originalHandler;
 
-			SynchronousSink<String> mockSink = Mockito.mock(SynchronousSink.class);
+			@SuppressWarnings("unchecked")
+			SynchronousSink<String> mockSink = mock(SynchronousSink.class);
 			decoratedHandler.accept("bar", mockSink);
 			Mockito.verify(mockSink, Mockito.times(1)).next(expected);
 		}

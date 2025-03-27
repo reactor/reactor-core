@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
+	@SuppressWarnings("try")
 	void emptyContextWorksInMono() {
 		ScopedValue scopedValue = ScopedValue.create("hello");
 		try (Scope scope = Scope.open(scopedValue)) {
@@ -105,6 +106,7 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
+	@SuppressWarnings("try")
 	void subscribeMonoElsewhere() {
 		AtomicReference<ScopedValue> valueInNewThread = new AtomicReference<>();
 
@@ -130,6 +132,7 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
+	@SuppressWarnings("try")
 	void subscribeFluxElsewhere() {
 		AtomicReference<ScopedValue> valueInNewThread = new AtomicReference<>();
 
@@ -155,6 +158,7 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
+	@SuppressWarnings("try")
 	void multiLevelScopesWithDifferentValuesAndFlux() {
 		ScopedValue v1 = ScopedValue.create("val1");
 		ScopedValue v2 = ScopedValue.create("val2");
@@ -201,6 +205,7 @@ class ContextPropagationWithScopesTest {
 	}
 
 	@Test
+	@SuppressWarnings("try")
 	void multiLevelScopesWithDifferentValuesAndMono() {
 		ScopedValue v1 = ScopedValue.create("val1");
 		ScopedValue v2 = ScopedValue.create("val2");

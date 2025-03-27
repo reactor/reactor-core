@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 	}
 
 	@Override
+	@SuppressWarnings("try")
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
@@ -141,6 +142,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		 * @param listenerError the exception thrown from a handler method before the subscription was set
 		 * @param toCancel      the {@link Subscription} that was prepared but not sent downstream
 		 */
+		@SuppressWarnings("try")
 		protected void handleListenerErrorPreSubscription(Throwable listenerError, Subscription toCancel) {
 			toCancel.cancel();
 			listener.handleListenerError(listenerError);
@@ -156,6 +158,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		 *
 		 * @param listenerError the exception thrown from a handler method
 		 */
+		@SuppressWarnings("try")
 		protected void handleListenerErrorAndTerminate(Throwable listenerError) {
 			s.cancel();
 			listener.handleListenerError(listenerError);
@@ -173,6 +176,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		 * @param listenerError the exception thrown from a handler method
 		 * @param originalError the exception that was about to occur when handler was invoked
 		 */
+		@SuppressWarnings("try")
 		protected void handleListenerErrorMultipleAndTerminate(Throwable listenerError, Throwable originalError) {
 			s.cancel();
 			listener.handleListenerError(listenerError);
@@ -195,6 +199,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
@@ -213,6 +218,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public void onNext(T t) {
 			if (done) {
 				try {
@@ -237,6 +243,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public boolean tryOnNext(T t) {
 			try (ContextSnapshot.Scope ignored =
 						 ContextPropagation.setThreadLocals(actual.currentContext())) {
@@ -257,6 +264,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public void onError(Throwable t) {
 			if (done) {
 				try {
@@ -292,6 +300,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public void onComplete() {
 			if (done) {
 				try {
@@ -324,6 +333,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public void request(long n) {
 			try (ContextSnapshot.Scope ignored =
 						 ContextPropagation.setThreadLocals(this.context)) {
@@ -340,6 +350,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public void cancel() {
 			try (ContextSnapshot.Scope ignored =
 						 ContextPropagation.setThreadLocals(this.context)) {

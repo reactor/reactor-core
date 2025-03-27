@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,14 @@ import reactor.util.context.Context;
 /**
  * @author Simon Baslé
  */
+@SuppressWarnings("deprecation")
 final class SinkManyBestEffort<T> extends Flux<T>
 		implements InternalManySink<T>, Scannable, DirectInnerContainer<T> {
 
+	@SuppressWarnings("rawtypes")
 	static final DirectInner[] EMPTY      = new DirectInner[0];
+
+	@SuppressWarnings("rawtypes")
 	static final DirectInner[] TERMINATED = new DirectInner[0];
 
 	static final <T> SinkManyBestEffort<T> createBestEffort() {
@@ -299,6 +303,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	static class DirectInner<T> extends AtomicBoolean implements InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
+		@SuppressWarnings("deprecation")
 		final DirectInnerContainer<T>   parent;
 
 		volatile     long                                requested;

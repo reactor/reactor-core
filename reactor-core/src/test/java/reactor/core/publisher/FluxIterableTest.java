@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public class FluxIterableTest {
 
 	final Iterable<Integer> source = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	static Stream<Function<Flux, Flux>> factory() {
 		return Stream.of(new Function<Flux, Flux>() {
 			@Override
@@ -128,6 +129,7 @@ public class FluxIterableTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("factory")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void testFluxIterableEmptyCase(Function<Flux, Flux> fn) {
 		Iterable<String> iterable = mock(Iterable.class);
 		Mockito.when(iterable.spliterator())
@@ -145,6 +147,7 @@ public class FluxIterableTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("factory")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void testFluxIterableErrorHasNext(Function<Flux, Flux> fn) {
 		Iterable<String> iterable = mock(Iterable.class);
 		Spliterator mock = mock(Spliterator.class);

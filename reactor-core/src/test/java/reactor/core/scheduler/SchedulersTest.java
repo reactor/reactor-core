@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -748,6 +748,7 @@ public class SchedulersTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void testCachedSchedulerDelegates() {
 		Scheduler mock = new Scheduler() {
 			@Override
@@ -1077,6 +1078,7 @@ public class SchedulersTest {
 		restart(Schedulers.newSingle("test"));
 	}
 
+	@SuppressWarnings("deprecation")
 	void restart(Scheduler s){
 		Thread t = Mono.fromCallable(Thread::currentThread)
 		               .subscribeOn(s)
@@ -1095,6 +1097,7 @@ public class SchedulersTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void testDefaultMethods(){
 		EmptyScheduler s = new EmptyScheduler();
 
