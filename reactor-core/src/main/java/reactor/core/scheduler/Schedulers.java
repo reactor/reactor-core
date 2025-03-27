@@ -610,14 +610,15 @@ public abstract class Schedulers {
 	 * @param subHook the new {@link BiConsumer} to set as the hook's anonymous part.
 	 * @see #onHandleError(String, BiConsumer)
 	 */
-	@SuppressWarnings("unchecked")
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> subHook) {
 		Objects.requireNonNull(subHook, "onHandleError");
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("Hooking onHandleError anonymous part");
 		}
 		synchronized (LOGGER) {
-			onHandleErrorHooks.put(Schedulers.class.getName() + ".ON_HANDLE_ERROR_ANONYMOUS_PART", (BiConsumer<Thread, Throwable>) subHook);
+			@SuppressWarnings("unchecked")
+			BiConsumer<Thread, Throwable> _subHook = (BiConsumer<Thread, Throwable>) subHook;
+			onHandleErrorHooks.put(Schedulers.class.getName() + ".ON_HANDLE_ERROR_ANONYMOUS_PART", _subHook);
 			onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
 		}
 	}
@@ -636,7 +637,6 @@ public abstract class Schedulers {
 	 * @param key the {@link String} key identifying the hook part to set/replace.
 	 * @param subHook the new hook part to set for the given key.
 	 */
-	@SuppressWarnings("unchecked")
 	public static void onHandleError(String key, BiConsumer<Thread, ? super Throwable> subHook) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(subHook, "onHandleError");
@@ -644,7 +644,9 @@ public abstract class Schedulers {
 			LOGGER.debug("Hooking onHandleError part with key {}", key);
 		}
 		synchronized (LOGGER) {
-			onHandleErrorHooks.put(key, (BiConsumer<Thread, Throwable>) subHook);
+			@SuppressWarnings("unchecked")
+			BiConsumer<Thread, Throwable> _subHook = (BiConsumer<Thread, Throwable>) subHook;
+			onHandleErrorHooks.put(key, _subHook);
 			onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
 		}
 	}

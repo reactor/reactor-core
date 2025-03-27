@@ -200,15 +200,15 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void cancel() {
 			s.cancel();
 
 			final T r;
 			synchronized (this) {
 				r = this.aggregate;
-				//noinspection unchecked
-				this.aggregate = (T) CANCELLED;
+				@SuppressWarnings("unchecked")
+				T cancelled = (T) CANCELLED;
+				this.aggregate = cancelled;
 			}
 
 			if (r == null || r == CANCELLED) {

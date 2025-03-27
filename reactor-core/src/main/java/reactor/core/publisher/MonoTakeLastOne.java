@@ -163,15 +163,15 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void cancel() {
 			s.cancel();
 
 			final T v;
 			synchronized (this) {
 				v = this.value;
-				//noinspection unchecked
-				this.value = (T) CANCELLED;
+				@SuppressWarnings("unchecked")
+				T cancelled = (T) CANCELLED;
+				this.value = cancelled;
 			}
 
 			if (v != null) {

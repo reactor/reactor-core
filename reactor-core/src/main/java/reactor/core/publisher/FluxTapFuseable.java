@@ -140,7 +140,6 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				if (!(s instanceof QueueSubscription)) {
@@ -148,8 +147,11 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 					return;
 				}
 				this.s = s;
-				//noinspection unchecked
-				this.qs = (QueueSubscription<T>) s;
+
+				@SuppressWarnings("unchecked")
+				QueueSubscription<T> qs = (QueueSubscription<T>) s;
+
+				this.qs = qs;
 
 				try {
 					listener.doOnSubscription();

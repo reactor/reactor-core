@@ -31,7 +31,6 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
-import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -164,7 +163,7 @@ final class ContextPropagation {
 	 * @param <T> type of handled values
 	 * @param <R> the transformed type
 	 */
-	@SuppressWarnings({"deprecation", "try"})
+	@SuppressWarnings("try")
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
 		if (ContextPropagationSupport.shouldRestoreThreadLocalsInSomeOperators()) {
 			final Context ctx = contextSupplier.get();
@@ -174,14 +173,15 @@ final class ContextPropagation {
 
 			if (ContextPropagationSupport.isContextPropagation103OnClasspath) {
 				return (v, sink) -> {
-					try (ContextSnapshot.Scope ignored = globalContextSnapshotFactory.setThreadLocalsFrom(ctx)) {
+					try (ContextSnapshot.Scope ignored =
+							globalContextSnapshotFactory.setThreadLocalsFrom(ctx)) {
 						handler.accept(v, sink);
 					}
 				};
 			}
 			else {
 				return (v, sink) -> {
-					try (ContextSnapshot.Scope ignored =
+					try (@SuppressWarnings("deprecation") ContextSnapshot.Scope ignored =
 							     ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
 						handler.accept(v, sink);
 					}
@@ -512,10 +512,12 @@ final class ContextPropagation {
 			}
 		}
 
-		@SuppressWarnings({"unchecked", "deprecation"})
+		@SuppressWarnings("deprecation")
 		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
 			if (previousValue != null) {
-				((ThreadLocalAccessor<V>) accessor).restore(previousValue);
+				@SuppressWarnings("unchecked")
+				ThreadLocalAccessor<V> typedAccessor = (ThreadLocalAccessor<V>) accessor;
+				typedAccessor.restore(previousValue);
 			}
 			else {
 				accessor.reset();
@@ -550,10 +552,12 @@ final class ContextPropagation {
 			}
 		}
 
-		@SuppressWarnings({"unchecked", "deprecation"})
+		@SuppressWarnings("deprecation")
 		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
 			if (previousValue != null) {
-				((ThreadLocalAccessor<V>) accessor).setValue(previousValue);
+				@SuppressWarnings("unchecked")
+				ThreadLocalAccessor<V> typedAccessor = (ThreadLocalAccessor<V>) accessor;
+				typedAccessor.setValue(previousValue);
 			}
 			else {
 				accessor.reset();

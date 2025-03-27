@@ -203,11 +203,12 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		@SuppressWarnings("rawtypes")
 		private static final CacheMonoSubscriber[] COORDINATOR_INIT = new CacheMonoSubscriber[0];
 
-		@SuppressWarnings("unchecked")
 		CoordinatorSubscriber(MonoCacheInvalidateIf<T> main, Mono<? extends T> source) {
 			this.main = main;
 			this.source = source;
-			this.subscribers = COORDINATOR_INIT;
+			@SuppressWarnings("unchecked")
+			CacheMonoSubscriber<T>[] init = COORDINATOR_INIT;
+			this.subscribers = init;
 		}
 
 		/**
@@ -313,7 +314,6 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void onNext(T t) {
 			if (main.state != this || done) {
 				Operators.onNextDropped(t, currentContext());
@@ -323,36 +323,43 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 			//note the predicate is not applied upon reception of the value to be cached. only late subscribers will trigger revalidation.
 			State<T> valueState = new ValueState<>(t);
 			if (STATE.compareAndSet(main, this, valueState)) {
-				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-					inner.complete(t);
+				for (@SuppressWarnings("rawtypes") CacheMonoSubscriber inner :
+						SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					@SuppressWarnings("unchecked")
+					CacheMonoSubscriber<T> _inner = (CacheMonoSubscriber<T>) inner;
+					_inner.complete(t);
 				}
 			}
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void onError(Throwable t) {
 			if (main.state != this || done) {
 				Operators.onErrorDropped(t, currentContext());
 				return;
 			}
 			if (STATE.compareAndSet(main, this, EMPTY_STATE)) {
-				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-					inner.onError(t);
+				for (@SuppressWarnings("rawtypes") CacheMonoSubscriber inner :
+						SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					@SuppressWarnings("unchecked")
+					CacheMonoSubscriber<T> _inner = (CacheMonoSubscriber<T>) inner;
+					_inner.onError(t);
 				}
 			}
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void onComplete() {
 			if (done) {
 				done = false;
 				return;
 			}
 			if (STATE.compareAndSet(main, this, EMPTY_STATE)) {
-				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-					inner.onError(new NoSuchElementException("cacheInvalidateWhen expects a value, source completed empty"));
+				for (@SuppressWarnings("rawtypes") CacheMonoSubscriber inner :
+						SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					@SuppressWarnings("unchecked")
+					CacheMonoSubscriber<T> _inner = (CacheMonoSubscriber<T>) inner;
+					_inner.onError(new NoSuchElementException("cacheInvalidateWhen expects a value, source completed empty"));
 				}
 			}
 		}

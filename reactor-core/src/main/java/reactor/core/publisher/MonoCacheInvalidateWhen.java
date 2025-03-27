@@ -162,10 +162,11 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		@SuppressWarnings("rawtypes")
 		private static final CacheMonoSubscriber[] COORDINATOR_INIT = new CacheMonoSubscriber[0];
 
-		@SuppressWarnings("unchecked")
 		CoordinatorSubscriber(MonoCacheInvalidateWhen<T> main) {
 			this.main = main;
-			this.subscribers = COORDINATOR_INIT;
+			@SuppressWarnings("unchecked")
+			CacheMonoSubscriber<T>[] init = (CacheMonoSubscriber<T>[]) COORDINATOR_INIT;
+			this.subscribers = init;
 		}
 
 		/**
@@ -252,11 +253,13 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			}
 		}
 
-		@SuppressWarnings("unchecked")
 		boolean cacheLoadFailure(State<T> expected, Throwable failure) {
 			if (STATE.compareAndSet(main, expected, EMPTY_STATE)) {
-				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-					inner.onError(failure);
+				for (@SuppressWarnings("rawtypes") CacheMonoSubscriber inner :
+						SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					@SuppressWarnings("unchecked")
+					CacheMonoSubscriber<T> _inner = (CacheMonoSubscriber<T>) inner;
+					_inner.onError(failure);
 				}
 				//no need to invalidate, EMPTY_STATE swap above is equivalent for our purpose
 				return true;
@@ -264,7 +267,6 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			return false;
 		}
 
-		@SuppressWarnings("unchecked")
 		void cacheLoad(T value) {
 			State<T> valueState = new MonoCacheInvalidateIf.ValueState<>(value);
 			if (STATE.compareAndSet(main, this, valueState)) {
@@ -281,8 +283,11 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 					return;
 				}
 
-				for (CacheMonoSubscriber<T> inner : SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
-					inner.complete(value);
+				for (@SuppressWarnings("rawtypes") CacheMonoSubscriber inner :
+						SUBSCRIBERS.getAndSet(this, COORDINATOR_DONE)) {
+					@SuppressWarnings("unchecked")
+					CacheMonoSubscriber<T> _inner = (CacheMonoSubscriber<T>) inner;
+					_inner.complete(value);
 				}
 				// even though the trigger can deliver values on different threads,
 				// it's not causing any delivery to downstream, so we don't need to

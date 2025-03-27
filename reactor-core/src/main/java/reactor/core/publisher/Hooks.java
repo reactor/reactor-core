@@ -562,7 +562,7 @@ public abstract class Hooks {
 	}
 
 	@Nullable
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
 		Function<Publisher, Publisher> composite = null;
 		for (Function<? super Publisher<Object>, ? extends Publisher<Object>> function : hooks) {

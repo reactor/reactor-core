@@ -28,7 +28,6 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
-@SuppressWarnings("unchecked")
 public abstract class MonoDelayElementStressTest {
 
 	@JCStressTest
@@ -53,8 +52,12 @@ public abstract class MonoDelayElementStressTest {
 					TimeUnit.MILLISECONDS,
 					virtualTimeScheduler);
 
-			monoDelay.doOnSubscribe(s -> subscription =
-					((MonoDelayElement.DelayElementSubscriber<Object>) s)).subscribe(subscriber);
+			monoDelay.doOnSubscribe(s -> {
+				@SuppressWarnings("unchecked")
+				MonoDelayElement.DelayElementSubscriber<Object> elementSubscriber =
+						(MonoDelayElement.DelayElementSubscriber<Object>) s;
+				subscription = elementSubscriber;
+			}).subscribe(subscriber);
 		}
 
 		@Actor
