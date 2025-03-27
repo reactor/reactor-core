@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -616,7 +616,9 @@ public abstract class Schedulers {
 			LOGGER.debug("Hooking onHandleError anonymous part");
 		}
 		synchronized (LOGGER) {
-			onHandleErrorHooks.put(Schedulers.class.getName() + ".ON_HANDLE_ERROR_ANONYMOUS_PART", (BiConsumer<Thread, Throwable>) subHook);
+			@SuppressWarnings("unchecked")
+			BiConsumer<Thread, Throwable> _subHook = (BiConsumer<Thread, Throwable>) subHook;
+			onHandleErrorHooks.put(Schedulers.class.getName() + ".ON_HANDLE_ERROR_ANONYMOUS_PART", _subHook);
 			onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
 		}
 	}
@@ -635,7 +637,6 @@ public abstract class Schedulers {
 	 * @param key the {@link String} key identifying the hook part to set/replace.
 	 * @param subHook the new hook part to set for the given key.
 	 */
-	@SuppressWarnings("unchecked")
 	public static void onHandleError(String key, BiConsumer<Thread, ? super Throwable> subHook) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(subHook, "onHandleError");
@@ -643,7 +644,9 @@ public abstract class Schedulers {
 			LOGGER.debug("Hooking onHandleError part with key {}", key);
 		}
 		synchronized (LOGGER) {
-			onHandleErrorHooks.put(key, (BiConsumer<Thread, Throwable>) subHook);
+			@SuppressWarnings("unchecked")
+			BiConsumer<Thread, Throwable> _subHook = (BiConsumer<Thread, Throwable>) subHook;
+			onHandleErrorHooks.put(key, _subHook);
 			onHandleErrorHook = createOrAppendHandleError(onHandleErrorHooks.values());
 		}
 	}
@@ -1329,6 +1332,7 @@ public abstract class Schedulers {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void start() {
 			cached.start();
 		}

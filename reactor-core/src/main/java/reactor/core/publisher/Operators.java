@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1035,6 +1035,7 @@ public abstract class Operators {
 
 	static <T> CoreSubscriber<? super T>[] restoreContextOnSubscribers(
 			Publisher<?> publisher, CoreSubscriber<? super T>[] subscribers) {
+		@SuppressWarnings("unchecked")
 		CoreSubscriber<? super T>[] actualSubscribers = new CoreSubscriber[subscribers.length];
 		for (int i = 0; i < subscribers.length; i++) {
 			actualSubscribers[i] = restoreContextOnSubscriber(publisher, subscribers[i]);
@@ -1374,7 +1375,6 @@ public abstract class Operators {
 	 * @param actual the {@link Subscriber} to apply hook on
 	 * @return an eventually transformed {@link Subscriber}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> CoreSubscriber<? super T> toCoreSubscriber(Subscriber<? super T> actual) {
 
 		Objects.requireNonNull(actual, "actual");
@@ -1403,7 +1403,6 @@ public abstract class Operators {
 	 * @param actual the {@link Subscriber} to adapt
 	 * @return a potentially adapted {@link reactor.core.Fuseable.ConditionalSubscriber}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Fuseable.ConditionalSubscriber<? super  T> toConditionalSubscriber(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "actual");
 
@@ -2744,10 +2743,11 @@ public abstract class Operators {
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public Publisher<O> apply(Publisher<I> publisher) {
 			if (filter != null && !filter.test(publisher)) {
-				return (Publisher<O>)publisher;
+				@SuppressWarnings("unchecked")
+				Publisher<O> _publisher = (Publisher<O>) publisher;
+				return _publisher;
 			}
 
 			if (publisher instanceof Fuseable) {

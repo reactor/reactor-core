@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
-import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -100,7 +99,7 @@ final class ContextPropagation {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "deprecation"})
 	private static <V> Map<Object, Object> setThreadLocal(Object key, @Nullable V value,
 			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, Object> previousValues) {
 
@@ -115,6 +114,7 @@ final class ContextPropagation {
 		return previousValues;
 	}
 
+	@SuppressWarnings("deprecation")
 	static ContextSnapshot captureThreadLocals() {
 		if (ContextPropagationSupport.isContextPropagation103OnClasspath) {
 			return globalContextSnapshotFactory.captureAll();
@@ -163,6 +163,7 @@ final class ContextPropagation {
 	 * @param <T> type of handled values
 	 * @param <R> the transformed type
 	 */
+	@SuppressWarnings("try")
 	static <T, R> BiConsumer<T, SynchronousSink<R>> contextRestoreForHandle(BiConsumer<T, SynchronousSink<R>> handler, Supplier<Context> contextSupplier) {
 		if (ContextPropagationSupport.shouldRestoreThreadLocalsInSomeOperators()) {
 			final Context ctx = contextSupplier.get();
@@ -172,14 +173,16 @@ final class ContextPropagation {
 
 			if (ContextPropagationSupport.isContextPropagation103OnClasspath) {
 				return (v, sink) -> {
-					try (ContextSnapshot.Scope ignored = globalContextSnapshotFactory.setThreadLocalsFrom(ctx)) {
+					try (ContextSnapshot.Scope ignored =
+							globalContextSnapshotFactory.setThreadLocalsFrom(ctx)) {
 						handler.accept(v, sink);
 					}
 				};
 			}
 			else {
 				return (v, sink) -> {
-					try (ContextSnapshot.Scope ignored = ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
+					try (@SuppressWarnings("deprecation") ContextSnapshot.Scope ignored =
+							     ContextSnapshot.setAllThreadLocalsFrom(ctx)) {
 						handler.accept(v, sink);
 					}
 				};
@@ -234,11 +237,13 @@ final class ContextPropagation {
 			this.context = context;
 		}
 
+		@SuppressWarnings("deprecation")
 		ContextSnapshot.Scope restoreThreadLocals() {
 			return ContextSnapshot.setAllThreadLocalsFrom(this.context);
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doFirst() throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doFirst();
@@ -246,6 +251,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doFinally(SignalType terminationType) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doFinally(terminationType);
@@ -253,6 +259,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnSubscription() throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnSubscription();
@@ -260,6 +267,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnFusion(int negotiatedFusion) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnFusion(negotiatedFusion);
@@ -267,6 +275,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnRequest(long requested) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnRequest(requested);
@@ -274,6 +283,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnCancel() throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnCancel();
@@ -281,6 +291,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnNext(T value) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnNext(value);
@@ -288,6 +299,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnComplete() throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnComplete();
@@ -295,6 +307,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnError(Throwable error) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnError(error);
@@ -302,6 +315,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doAfterComplete() throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doAfterComplete();
@@ -309,6 +323,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doAfterError(Throwable error) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doAfterError(error);
@@ -316,6 +331,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnMalformedOnNext(T value) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnMalformedOnNext(value);
@@ -323,6 +339,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnMalformedOnError(Throwable error) throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnMalformedOnError(error);
@@ -330,6 +347,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void doOnMalformedOnComplete() throws Throwable {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.doOnMalformedOnComplete();
@@ -337,6 +355,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final void handleListenerError(Throwable listenerError) {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				original.handleListenerError(listenerError);
@@ -344,6 +363,7 @@ final class ContextPropagation {
 		}
 
 		@Override
+		@SuppressWarnings("try")
 		public final Context addToContext(Context originalContext) {
 			try (ContextSnapshot.Scope ignored = restoreThreadLocals()) {
 				return original.addToContext(originalContext);
@@ -492,10 +512,12 @@ final class ContextPropagation {
 			}
 		}
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings("deprecation")
 		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
 			if (previousValue != null) {
-				((ThreadLocalAccessor<V>) accessor).restore(previousValue);
+				@SuppressWarnings("unchecked")
+				ThreadLocalAccessor<V> typedAccessor = (ThreadLocalAccessor<V>) accessor;
+				typedAccessor.restore(previousValue);
 			}
 			else {
 				accessor.reset();
@@ -530,10 +552,12 @@ final class ContextPropagation {
 			}
 		}
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings("deprecation")
 		private <V> void resetThreadLocalValue(ThreadLocalAccessor<?> accessor, @Nullable V previousValue) {
 			if (previousValue != null) {
-				((ThreadLocalAccessor<V>) accessor).setValue(previousValue);
+				@SuppressWarnings("unchecked")
+				ThreadLocalAccessor<V> typedAccessor = (ThreadLocalAccessor<V>) accessor;
+				typedAccessor.setValue(previousValue);
 			}
 			else {
 				accessor.reset();
