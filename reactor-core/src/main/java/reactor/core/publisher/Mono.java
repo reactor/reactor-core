@@ -61,7 +61,7 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;

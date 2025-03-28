@@ -21,7 +21,7 @@ import java.util.Objects;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.

@@ -108,6 +108,9 @@ configurations {
 dependencies {
 	// Reactive Streams
 	api libs.reactiveStreams
+	api libs.jspecify
+
+	java21Implementation libs.jspecify
 	java21Implementation libs.reactiveStreams
 	tckTestImplementation (libs.reactiveStreams.tck) {
 		/*

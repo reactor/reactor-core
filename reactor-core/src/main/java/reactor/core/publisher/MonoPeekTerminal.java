@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Peeks the value of a {@link Mono} and execute terminal callbacks accordingly, allowing
@@ -92,9 +92,8 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		final MonoPeekTerminal<T> parent;
 
 		//TODO could go into a common base for all-in-one subscribers? (as well as actual above)
-		Subscription                  s;
-		@Nullable
-		Fuseable.QueueSubscription<T> queueSubscription;
+		Subscription                            s;
+		Fuseable.@Nullable QueueSubscription<T> queueSubscription;
 
 		int sourceMode;
 

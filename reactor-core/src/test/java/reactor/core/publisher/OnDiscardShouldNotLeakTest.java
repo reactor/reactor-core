@@ -47,7 +47,7 @@ import reactor.test.MemoryUtils.Tracked;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuples;
 

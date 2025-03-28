@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.IIIIII_Result;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.openjdk.jcstress.infra.results.III_Result;
 import reactor.core.Disposable;
 

@@ -39,11 +39,14 @@ import javax.annotation.meta.TypeQualifierDefault;
  * @since 3.1.0
  * @see Nullable
  * @see NonNull
+ * @deprecated Since 3.8.0 Project Reactor uses {@link org.jspecify.annotations.NullMarked}
+ * from the JSpecify project.
  */
 @Target(ElementType.PACKAGE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull
 @TypeQualifierDefault({ElementType.METHOD, ElementType.PARAMETER})
+@Deprecated
 public @interface NonNullApi {
 }

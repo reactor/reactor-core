@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import io.micrometer.core.instrument.Timer;
 
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.CommonTags.*;
 import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.TerminationTags.*;

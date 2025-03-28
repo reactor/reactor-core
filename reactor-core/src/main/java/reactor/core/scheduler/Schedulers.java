@@ -44,7 +44,7 @@ import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
 

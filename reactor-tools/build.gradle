@@ -65,8 +65,7 @@ configurations {
 dependencies {
     api project(":reactor-core")
 
-    compileOnly libs.jsr305
-    compileOnly libs.jsr305
+	api libs.jspecify
 
     shaded "net.bytebuddy:byte-buddy:$byteBuddyVersion"
     shaded "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"

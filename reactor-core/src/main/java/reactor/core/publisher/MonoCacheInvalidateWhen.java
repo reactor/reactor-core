@@ -28,7 +28,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.publisher.MonoCacheInvalidateIf.State;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.publisher.MonoCacheInvalidateIf.EMPTY_STATE;

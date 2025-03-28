@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import reactor.core.publisher.FluxConcatMap.ConcatMapInner;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxConcatMap.FluxConcatMapSupport;
 import reactor.core.publisher.FluxConcatMap.WeakScalarSubscription;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.context.Context;
 
 /**

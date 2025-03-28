@@ -44,11 +44,14 @@ import javax.annotation.meta.TypeQualifierNickname;
  * @since 3.1.0
  * @see NonNullApi
  * @see Nullable
+ * @deprecated Since 3.8.0 Project Reactor uses {@link org.jspecify.annotations.NonNull}
+ * from the JSpecify project.
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull
 @TypeQualifierNickname
+@Deprecated
 public @interface NonNull {
 }

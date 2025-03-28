@@ -20,6 +20,7 @@ micrometerTracingTest="1.5.0-M3"
 contextPropagation="1.1.2"
 kotlin = "1.8.22"
 reactiveStreams = "1.0.4"
+jspecifyVersion = "1.0.0"
 antora = "1.0.0"
 antora-yml = "0.0.1"
 antora-version = "3.2.0-alpha.4"
@@ -33,6 +34,7 @@ antora-asciidoctor-extension = "1.0.0-alpha.10"
 [libraries]
 jsr166backport = "io.projectreactor:jsr166:1.0.0.RELEASE"
 jsr305 = "com.google.code.findbugs:jsr305:3.0.1"
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecifyVersion" }
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version.ref = "micrometer" }
 micrometer102Compatible-bom = { module = "io.micrometer:micrometer-bom", version = "1.10.7" }
 micrometer-commons = { module = "io.micrometer:micrometer-commons" }

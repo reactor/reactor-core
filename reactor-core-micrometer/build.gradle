@@ -42,7 +42,7 @@ ext {
 
 dependencies {
 	api project(":reactor-core")
-	compileOnly libs.jsr305
+	api libs.jspecify
 
 	implementation platform(libs.micrometer.bom)
 	api libs.micrometer.core

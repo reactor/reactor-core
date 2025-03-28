@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.EmissionException;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 

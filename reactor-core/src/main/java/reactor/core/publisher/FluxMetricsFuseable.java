@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static reactor.core.publisher.FluxMetrics.*;
 
@@ -77,8 +77,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 
 		int mode;
 
-		@Nullable
-		Fuseable.QueueSubscription<T> qs;
+		Fuseable.@Nullable QueueSubscription<T> qs;
 
 		MetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,
