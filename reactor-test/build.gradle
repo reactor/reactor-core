@@ -38,7 +38,7 @@ ext {
 
 dependencies {
 	api project(":reactor-core")
-	compileOnly libs.jsr305
+	api libs.jspecify
 
 	testImplementation platform("org.junit:junit-bom:$junitVersion")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"

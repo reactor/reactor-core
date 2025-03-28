@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package reactor.core.scheduler;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The {@link VirtualThread} Reactor {@link ThreadFactory} to be used with

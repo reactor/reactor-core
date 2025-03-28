@@ -18,7 +18,7 @@
  * Components supporting the creation of test-oriented
  * {@link reactor.core.scheduler.Scheduler Schedulers}.
  */
-@NonNullApi
+@NullMarked
 package reactor.test.scheduler;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

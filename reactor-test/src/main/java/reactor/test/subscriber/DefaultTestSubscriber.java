@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -49,8 +49,8 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final int                                     expectedFusionMode;
 
 	Subscription s;
-	@Nullable
-	Fuseable.QueueSubscription<T> qs;
+
+	Fuseable.@Nullable QueueSubscription<T> qs;
 	int fusionMode = -1;
 
 	// state tracking
