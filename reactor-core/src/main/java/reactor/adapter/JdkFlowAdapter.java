@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Convert a Java 9+ {@literal Flow.Publisher} to/from a Reactive Streams {@link Publisher}.
@@ -53,6 +54,15 @@ public abstract class JdkFlowAdapter {
 	 * @return a {@link Flux} from a java {@code Flow.Publisher}
 	 */
 	public static <T> Flux<T> flowPublisherToFlux(Flow.Publisher<T> publisher) {
+		if (publisher instanceof PublisherAsFlowPublisher) {
+			PublisherAsFlowPublisher<T> rsPublisher = (PublisherAsFlowPublisher<T>) publisher;
+			if (rsPublisher.pub instanceof Flux) {
+				return (Flux<T>) rsPublisher.pub;
+			}
+			if (rsPublisher.pub instanceof Mono) {
+				return ((Mono<T>) rsPublisher.pub).flux();
+			}
+		}
 		return new FlowPublisherAsFlux<>(publisher);
 	}
 
