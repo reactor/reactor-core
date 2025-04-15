@@ -18,7 +18,7 @@
  * Components supporting the creation of test-oriented
  * {@link org.reactivestreams.Subscriber Subscribers}.
  */
-@NonNullApi
+@NullMarked
 package reactor.test.subscriber;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

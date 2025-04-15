@@ -17,7 +17,7 @@
 /**
  * {@link reactor.util.function.Tuples Tuples} provide a type-safe way to specify multiple parameters.
  */
-@NonNullApi
+@NullMarked
 package reactor.util.function;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

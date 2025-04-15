@@ -30,7 +30,7 @@ import reactor.core.publisher.FluxOnAssembly.MethodReturnSnapshot;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
