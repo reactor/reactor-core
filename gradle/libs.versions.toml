@@ -7,17 +7,17 @@
 
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.7.4"
-baselinePerfCore = "3.7.4"
-baselinePerfCoreMicrometer = "1.2.4"
+baseline-core-api = "3.7.5"
+baselinePerfCore = "3.7.5"
+baselinePerfCoreMicrometer = "1.2.5"
 baselinePerfExtra = "3.5.2"
 
 # Other shared versions
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.15.0-M3"
+micrometer = "1.15.0-RC1"
 micrometerDocsGenerator = "1.0.4"
-micrometerTracingTest="1.5.0-M3"
-contextPropagation="1.1.2"
+micrometerTracingTest="1.5.0-RC1"
+contextPropagation="1.1.3"
 kotlin = "1.8.22"
 reactiveStreams = "1.0.4"
 antora = "1.0.0"
