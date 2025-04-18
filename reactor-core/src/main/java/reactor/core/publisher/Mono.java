@@ -3132,10 +3132,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> filter(final Predicate<? super T> tester) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoFilterFuseable<>(this, tester));
-		}
-		return onAssembly(new MonoFilter<>(this, tester));
+    return onAssembly(this instanceof Fuseable
+        ? new MonoFilterFuseable<>(this, tester)
+        : new MonoFilter<>(this, tester));
 	}
 
 	/**
@@ -3291,10 +3290,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a transformed {@link Mono}
 	 */
 	public final <R> Mono<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoHandleFuseable<>(this, handler));
-		}
-		return onAssembly(new MonoHandle<>(this, handler));
+		return (this instanceof Fuseable)
+				? onAssembly(new MonoHandleFuseable<>(this, handler))
+				: onAssembly(new MonoHandle<>(this, handler));
 	}
 
 	/**
@@ -3418,10 +3416,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		SignalLogger<T> log = new SignalLogger<>(this, category, level,
 				showOperatorLine, options);
 
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoLogFuseable<>(this, log));
-		}
-		return onAssembly(new MonoLog<>(this, log));
+		return (this instanceof Fuseable)
+				? onAssembly(new MonoLogFuseable<>(this, log))
+				: onAssembly(new MonoLog<>(this, log));
 	}
 
 
@@ -3468,10 +3465,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 				s -> logger,
 				options);
 
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoLogFuseable<>(this, log));
-		}
-		return onAssembly(new MonoLog<>(this, log));
+		return (this instanceof Fuseable)
+				? onAssembly(new MonoLogFuseable<>(this, log))
+				: onAssembly(new MonoLog<>(this, log));
 	}
 
 	/**
@@ -3486,10 +3482,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoMapFuseable<>(this, mapper));
-		}
-		return onAssembly(new MonoMap<>(this, mapper));
+		return (this instanceof Fuseable)
+				? onAssembly(new MonoMapFuseable<>(this, mapper))
+				: onAssembly(new MonoMap<>(this, mapper));
 	}
 
 	/**
@@ -3574,11 +3569,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		if (!Metrics.isInstrumentationAvailable()) {
 			return this;
 		}
-
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoMetricsFuseable<>(this));
-		}
-		return onAssembly(new MonoMetrics<>(this));
+		
+		return (this instanceof Fuseable)
+				? onAssembly(new MonoMetricsFuseable<>(this))
+				: onAssembly(new MonoMetrics<>(this));
 	}
 
 	/**
