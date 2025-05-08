@@ -44,7 +44,7 @@ import reactor.test.MockUtils;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 
