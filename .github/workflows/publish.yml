@@ -181,6 +181,21 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
       run: |
           ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
+    - name: Stage the release
+      env:
+        ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
+        ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
+      run: |
+          GRADLE_PUBLISH_MAVEN_AUTHORIZATION=$(echo "${ORG_GRADLE_PROJECT_sonatypeUsername}:${ORG_GRADLE_PROJECT_sonatypePassword}" | base64)
+          echo "Searching for opened repository..."
+          REPOSITORY_RESPONSE=$(curl -s -X GET \
+          -H "Authorization: Bearer ${GRADLE_PUBLISH_MAVEN_AUTHORIZATION}" \
+          "https://ossrh-staging-api.central.sonatype.com/manual/search/repositories?state=open")
+          REPOSITORY_KEY=$(echo "${REPOSITORY_RESPONSE}" | grep -o '"key":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
+          echo "Triggering uploading..."
+          curl -s -X POST \
+          -H "Authorization: Bearer ${GRADLE_PUBLISH_MAVEN_AUTHORIZATION}" \
+          "https://ossrh-staging-api.central.sonatype.com/manual/upload/repository/${REPOSITORY_KEY}?publishing_type=user_managed"
 
   tagMilestone:
     name: Tag milestone
