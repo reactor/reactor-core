@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static reactor.core.Exceptions.wrapSource;
@@ -353,7 +353,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	static final class WindowOperation<T, U> {
 		final Sinks.Many<T> w;
 		final U             open;
-		WindowOperation(@Nullable Sinks.Many<T> w, @Nullable U open) {
+		WindowOperation(Sinks.@Nullable Many<T> w, @Nullable U open) {
 			this.w = w;
 			this.open = open;
 		}

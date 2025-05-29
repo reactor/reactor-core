@@ -20,7 +20,7 @@ import io.micrometer.context.ContextSnapshot;
 import reactor.core.CoreSubscriber;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.context.Context;
 
 /**

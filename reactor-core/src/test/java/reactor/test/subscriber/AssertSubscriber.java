@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -385,18 +386,18 @@ public class AssertSubscriber<T>
 		assertNotComplete();
 		int s = errors.size();
 		if (s == 0) {
-			assertionError("No error", null);
+			assertionError("No error");
 		}
 		if (s == 1) {
 			if (!Objects.equals(message,
 					errors.get(0)
 					      .getMessage())) {
 				assertionError("Error class incompatible: expected = \"" + message +
-						"\", actual = \"" + errors.get(0).getMessage() + "\"", null);
+						"\", actual = \"" + errors.get(0).getMessage() + "\"");
 			}
 		}
 		if (s > 1) {
-			assertionError("Multiple errors: " + s, null);
+			assertionError("Multiple errors: " + s);
 		}
 
 		return this;
@@ -955,7 +956,7 @@ public class AssertSubscriber<T>
 	}
 
 	@Override
-	@Nonnull
+	@NonNull
 	public Context currentContext() {
 		return context;
 	}
@@ -1081,11 +1082,10 @@ public class AssertSubscriber<T>
 	 * active state and the potential errors so far.
 	 *
 	 * @param message the message
-	 * @param cause the optional Throwable cause
 	 *
 	 * @throws AssertionError as expected
 	 */
-	protected final void assertionError(String message, Throwable cause) {
+	protected final void assertionError(String message) {
 		StringBuilder b = new StringBuilder();
 
 		if (cdl.getCount() != 0) {
@@ -1099,7 +1099,7 @@ public class AssertSubscriber<T>
 			 .append(err.size())
 			 .append(" errors)");
 		}
-		AssertionError e = new AssertionError(b.toString(), cause);
+		AssertionError e = new AssertionError(b.toString());
 
 		for (Throwable t : err) {
 			e.addSuppressed(t);
@@ -1108,7 +1108,7 @@ public class AssertSubscriber<T>
 		throw e;
 	}
 
-	protected final String valueAndClass(Object o) {
+	protected final @Nullable String valueAndClass(@Nullable Object o) {
 		if (o == null) {
 			return null;
 		}
