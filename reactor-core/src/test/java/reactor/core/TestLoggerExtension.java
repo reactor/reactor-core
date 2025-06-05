@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 import reactor.util.Logger;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A JUnit5 extension that installs a {@link TestLogger} as the capturing instance via {@link LoggerUtils#enableCaptureWith(Logger)},

@@ -17,7 +17,7 @@
 /**
  * Support of Micrometer 1.10+ instrumentation on reactor-core classes.
  */
-@NonNullApi
+@NullMarked
 package reactor.core.observability.micrometer;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;
