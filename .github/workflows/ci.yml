@@ -22,7 +22,7 @@ jobs:
           distribution: 'temurin'
           java-version: 11
       - name: Setup JDK 21
-        if: contains('main 3.6.x 3.7.x', github.base_ref)
+        if: contains('main 3.7.x', github.base_ref)
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # tag=v3
         with:
           distribution: 'temurin'
@@ -80,7 +80,7 @@ jobs:
         distribution: 'temurin'
         java-version: 11
     - name: Setup Java 21
-      if: contains('main 3.6.x 3.7.x', github.base_ref)
+      if: contains('main 3.7.x', github.base_ref)
       uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # tag=v3
       with:
         distribution: 'temurin'
