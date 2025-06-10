@@ -16,13 +16,11 @@ on:
     branches:
       - main
       - 3.7.x
-      - 3.6.x
   pull_request:
     # The branches below must be a subset of the branches above
     branches:
       - main
       - 3.7.x
-      - 3.6.x
   schedule:
     - cron: '0 12 * * 6'
 permissions: read-all
