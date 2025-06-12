@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,9 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 	final boolean eager;
 
 	MonoUsing(Callable<S> resourceSupplier,
-			Function<? super S, ? extends Mono<? extends T>> sourceFactory,
-			Consumer<? super S> resourceCleanup,
-			boolean eager) {
+			  Function<? super S, ? extends Mono<? extends T>> sourceFactory,
+			  Consumer<? super S> resourceCleanup,
+			  boolean eager) {
 		this.resourceSupplier =
 				Objects.requireNonNull(resourceSupplier, "resourceSupplier");
 		this.sourceFactory = Objects.requireNonNull(sourceFactory, "sourceFactory");
@@ -127,7 +127,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 
 		final Consumer<? super S> resourceCleanup;
 
-		final S resource;
+		S resource;
 
 		final boolean eager;
 		final boolean allowFusion;
@@ -145,10 +145,10 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		boolean valued;
 
 		MonoUsingSubscriber(CoreSubscriber<? super T> actual,
-				Consumer<? super S> resourceCleanup,
-				S resource,
-				boolean eager,
-				boolean allowFusion) {
+							Consumer<? super S> resourceCleanup,
+							S resource,
+							boolean eager,
+							boolean allowFusion) {
 			this.actual = actual;
 			this.resourceCleanup = resourceCleanup;
 			this.resource = resource;
@@ -187,11 +187,15 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		}
 
 		void cleanup() {
-			try {
-				resourceCleanup.accept(resource);
-			}
-			catch (Throwable e) {
-				Operators.onErrorDropped(e, actual.currentContext());
+			S resourceRef = this.resource;
+			if (resourceRef != null) {
+				this.resource = null;
+				try {
+					resourceCleanup.accept(resourceRef);
+				}
+				catch (Throwable e) {
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
 			}
 		}
 
@@ -217,14 +221,18 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			this.valued = true;
 
 			if (eager && WIP.compareAndSet(this, 0, 1)) {
-				try {
-					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
-					Context ctx = actual.currentContext();
-					actual.onError(Operators.onOperatorError(e, ctx));
-					Operators.onDiscard(t, ctx);
-					return;
+				S resourceRef = this.resource;
+				if (resourceRef != null) {
+					this.resource = null;
+					try {
+						resourceCleanup.accept(resourceRef);
+					}
+					catch (Throwable e) {
+						Context ctx = actual.currentContext();
+						actual.onError(Operators.onOperatorError(e, ctx));
+						Operators.onDiscard(t, ctx);
+						return;
+					}
 				}
 			}
 
@@ -232,12 +240,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			actual.onComplete();
 
 			if (!eager && WIP.compareAndSet(this, 0, 1)) {
-				try {
-					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
-					Operators.onErrorDropped(e, actual.currentContext());
-				}
+				cleanup();
 			}
 		}
 
@@ -248,12 +251,16 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 				return;
 			}
 			if (eager && WIP.compareAndSet(this, 0, 1)) {
-				try {
-					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-					t = Exceptions.addSuppressed(_e, t);
+				S resourceRef = this.resource;
+				if (resourceRef != null) {
+					this.resource = null;
+					try {
+						resourceCleanup.accept(resourceRef);
+					}
+					catch (Throwable e) {
+						Throwable _e = Operators.onOperatorError(e, actual.currentContext());
+						t = Exceptions.addSuppressed(_e, t);
+					}
 				}
 			}
 
@@ -271,24 +278,24 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			}
 			//this should only happen in the empty case
 			if (eager && WIP.compareAndSet(this, 0, 1)) {
-				try {
-					resourceCleanup.accept(resource);
+				S resourceRef = this.resource;
+				if (resourceRef != null) {
+					this.resource = null;
+					try {
+						resourceCleanup.accept(resourceRef);
+					}
+					catch (Throwable e) {
+						actual.onError(Operators.onOperatorError(e, actual.currentContext()));
+						return;
+					}
 				}
-				catch (Throwable e) {
-					actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-					return;
-				}
+
 			}
 
 			actual.onComplete();
 
 			if (!eager && WIP.compareAndSet(this, 0, 1)) {
-				try {
-					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
-					Operators.onErrorDropped(e, actual.currentContext());
-				}
+				cleanup();
 			}
 		}
 
@@ -297,6 +304,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			if (qs != null) {
 				qs.clear();
 			}
+			this.resource = null;
 		}
 
 		@Override
@@ -316,24 +324,32 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			if (v != null) {
 				valued = true;
 				if (eager && WIP.compareAndSet(this, 0, 1)) {
-					try {
-						resourceCleanup.accept(resource); //throws upwards
-					}
-					catch (Throwable t) {
-						Operators.onDiscard(v, actual.currentContext());
-						throw t;
+					S resourceRef = this.resource;
+					if (resourceRef != null) {
+						this.resource = null;
+						try {
+							resourceCleanup.accept(resourceRef); //throws upwards
+						}
+						catch (Throwable t) {
+							Operators.onDiscard(v, actual.currentContext());
+							throw t;
+						}
 					}
 				}
 			}
 			else if (mode == SYNC) {
 				if (!eager && WIP.compareAndSet(this, 0, 1)) {
-					try {
-						resourceCleanup.accept(resource);
-					}
-					catch (Throwable t) {
-						if (!valued) throw t;
-						else Operators.onErrorDropped(t, actual.currentContext());
-						//returns null, ie onComplete, in the second case
+					S resourceRef = this.resource;
+					if (resourceRef != null) {
+						this.resource = null;
+						try {
+							resourceCleanup.accept(resourceRef);
+						}
+						catch (Throwable t) {
+							if (!valued) throw t;
+							else Operators.onErrorDropped(t, actual.currentContext());
+							//returns null, ie onComplete, in the second case
+						}
 					}
 				}
 			}

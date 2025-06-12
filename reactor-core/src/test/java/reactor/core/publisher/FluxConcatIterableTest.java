@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -26,8 +23,12 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxConcatIterableTest {
 
@@ -125,5 +126,39 @@ public class FluxConcatIterableTest {
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
 
+	}
+
+	static class TrackableIterable implements Iterable<Flux<String>> {
+		private final List<Flux<String>> publishers;
+
+		TrackableIterable() {
+			this.publishers = Arrays.asList(
+					Flux.just("A", "B"),
+					Flux.just("C", "D"),
+					Flux.just("E", "F")
+			);
+		}
+
+		@Override
+		public java.util.Iterator<Flux<String>> iterator() {
+			return publishers.iterator();
+		}
+	}
+
+	@Test
+	void testIterableResourceIsReleasedWhenFluxIsReleased() throws InterruptedException {
+		TrackableIterable trackableIterable = new TrackableIterable();
+		WeakReference<TrackableIterable> resourceRef = new WeakReference<>(trackableIterable);
+
+		Flux<String> concatenated = Flux.concat(trackableIterable);
+		concatenated.blockLast();
+
+		trackableIterable = null;
+		concatenated = null;
+
+		System.gc();
+		Thread.sleep(100);
+
+		assertThat(resourceRef.get()).isNull();
 	}
 }

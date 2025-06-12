@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -30,7 +24,14 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.lang.ref.WeakReference;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -311,4 +312,82 @@ public class FluxZipIterableTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 
+	private static class LargeResourceIterable implements Iterable<Integer> {
+		private final byte[] largeBuffer = new byte[10 * 1024 * 1024];
+
+		@Override
+		public Iterator<Integer> iterator() {
+			return new Iterator<Integer>() {
+				private int count = 0;
+				@Override
+				public boolean hasNext() {
+					return count < 2;
+				}
+
+				@Override
+				public Integer next() {
+					if (!hasNext()) throw new NoSuchElementException();
+					return count++;
+				}
+			};
+		}
+	}
+
+	@Test
+	void testZipWithIterableResourceIsReleasedWhenFluxAndSubscriptionAreReleased() throws InterruptedException {
+		AtomicReference<WeakReference<LargeResourceIterable>> resourceRef = new AtomicReference<>();
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+		CountDownLatch completionLatch = new CountDownLatch(1);
+
+		{
+			LargeResourceIterable resourceIterable = new LargeResourceIterable();
+			resourceRef.set(new WeakReference<>(resourceIterable));
+
+			Flux<Tuple2<String, Integer>> fluxToZip = Flux.just("A", "B")
+					.zipWithIterable(resourceIterable);
+
+			fluxToZip.subscribe(new CoreSubscriber<Tuple2<String, Integer>>() {
+				@Override
+				public void onSubscribe(Subscription s) {
+					subscriptionHolder.set(s);
+					s.request(Long.MAX_VALUE);
+				}
+
+				@Override
+				public void onNext(Tuple2<String, Integer> value) {
+				}
+
+				@Override
+				public void onError(Throwable t) {
+					completionLatch.countDown();
+				}
+
+				@Override
+				public void onComplete() {
+					completionLatch.countDown();
+				}
+			});
+		}
+
+		boolean completed = completionLatch.await(5, TimeUnit.SECONDS);
+		assertThat(completed).isTrue();
+
+		Subscription s = subscriptionHolder.get();
+		if (s != null) {
+			s.cancel();
+		}
+		subscriptionHolder.set(null);
+
+		forceGc();
+
+		assertThat(resourceRef.get().get()).isNull();
+	}
+
+
+	private void forceGc() throws InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			System.gc();
+			Thread.sleep(100);
+		}
+	}
 }
