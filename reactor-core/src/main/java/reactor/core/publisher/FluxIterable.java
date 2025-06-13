@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final CoreSubscriber<? super T> actual;
 
-		final Spliterator<? extends T> spliterator;
+		Spliterator<? extends T> spliterator;
 		final boolean knownToBeFinite;
 		final Runnable onClose;
 
@@ -323,6 +323,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 								"The iterator returned a null value");
 					}
 					catch (Throwable ex) {
+						this.spliterator = null;
 						s.onError(ex);
 						onCloseWithDropError();
 						return;
@@ -344,6 +345,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 						b = hasNext();
 					}
 					catch (Throwable ex) {
+						this.spliterator = null;
 						s.onError(ex);
 						onCloseWithDropError();
 						return;
@@ -354,6 +356,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					}
 
 					if (!b) {
+						this.spliterator = null;
 						s.onComplete();
 						onCloseWithDropError();
 						return;
@@ -390,6 +393,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 							"The iterator returned a null value");
 				}
 				catch (Exception ex) {
+					this.spliterator = null;
 					s.onError(ex);
 					onCloseWithDropError();
 					return;
@@ -411,6 +415,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					b = hasNext();
 				}
 				catch (Exception ex) {
+					this.spliterator = null;
 					s.onError(ex);
 					onCloseWithDropError();
 					return;
@@ -421,6 +426,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 				}
 
 				if (!b) {
+					this.spliterator = null;
 					s.onComplete();
 					onCloseWithDropError();
 					return;
@@ -433,7 +439,11 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			onCloseWithDropError();
 			cancelled = true;
 			Operators.onDiscard(nextElement, actual.currentContext());
-			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, actual.currentContext());
+			Spliterator<? extends T> sp = this.spliterator;
+			if (sp != null) {
+				this.spliterator = null;
+				Operators.onDiscardMultiple(sp, this.knownToBeFinite, actual.currentContext());
+			}
 		}
 
 		@Override
@@ -536,7 +546,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final ConditionalSubscriber<? super T> actual;
 
-		final Spliterator<? extends T> spliterator;
+		Spliterator<? extends T> spliterator;
 		final boolean               knownToBeFinite;
 		final Runnable              onClose;
 
@@ -652,6 +662,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 								"The iterator returned a null value");
 					}
 					catch (Throwable ex) {
+						this.spliterator = null;
 						s.onError(ex);
 						onCloseWithDropError();
 						return;
@@ -673,6 +684,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 						b = hasNext();
 					}
 					catch (Throwable ex) {
+						this.spliterator = null;
 						s.onError(ex);
 						onCloseWithDropError();
 						return;
@@ -683,6 +695,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					}
 
 					if (!b) {
+						this.spliterator = null;
 						s.onComplete();
 						onCloseWithDropError();
 						return;
@@ -721,6 +734,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 							"The iterator returned a null value");
 				}
 				catch (Exception ex) {
+					this.spliterator = null;
 					s.onError(ex);
 					onCloseWithDropError();
 					return;
@@ -742,6 +756,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 					b = hasNext();
 				}
 				catch (Exception ex) {
+					this.spliterator = null;
 					s.onError(ex);
 					onCloseWithDropError();
 					return;
@@ -752,6 +767,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 				}
 
 				if (!b) {
+					this.spliterator = null;
 					s.onComplete();
 					onCloseWithDropError();
 					return;
@@ -764,7 +780,11 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			onCloseWithDropError();
 			cancelled = true;
 			Operators.onDiscard(this.nextElement, actual.currentContext());
-			Operators.onDiscardMultiple(this.spliterator, this.knownToBeFinite, actual.currentContext());
+			Spliterator<? extends T> sp = this.spliterator;
+			if (sp != null) {
+				this.spliterator = null;
+				Operators.onDiscardMultiple(sp, this.knownToBeFinite, actual.currentContext());
+			}
 		}
 
 		@Override

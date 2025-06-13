@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,6 +30,15 @@ import reactor.test.publisher.TestPublisher;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.context.Context;
+
+import java.lang.ref.WeakReference;
+import java.time.Duration;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -498,6 +499,80 @@ public class MonoUsingWhenTest {
 		assertThat(op.scan(Attr.RUN_STYLE)).isEqualTo(Attr.RunStyle.SYNC);
 
 		assertThat(op.scanUnsafe(Attr.CANCELLED)).as("CANCELLED not supported").isNull();
+	}
+
+	static class TestResource {
+		private final String name;
+		private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
+
+		TestResource(String name) {
+			this.name = name;
+		}
+
+		public void performCleanup() {
+			this.cleanedUp.set(true);
+		}
+
+		@Override
+		public String toString() {
+			return "TestResource{name='" + name + "'}";
+		}
+	}
+
+	@Test
+	void monoUsingWhenShouldNotHoldReferenceToTheResourceAfterAsyncCleanup() throws InterruptedException {
+		AtomicReference<WeakReference<TestResource>> weakResourceRef = new AtomicReference<>();
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+		AtomicBoolean cleanupRan = new AtomicBoolean(false);
+
+		CountDownLatch mainTerminationLatch = new CountDownLatch(1);
+		CountDownLatch cleanupTerminationLatch = new CountDownLatch(1);
+
+		Mono<String> usingWhenMono = Mono.usingWhen(
+				Mono.fromCallable(() -> {
+					TestResource resource = new TestResource("testResource");
+					weakResourceRef.set(new WeakReference<>(resource));
+					return resource;
+				}),
+				resource -> Mono.just(resource.name),
+				resource -> Mono.fromRunnable(() -> {
+					resource.performCleanup();
+					cleanupRan.set(true);
+					cleanupTerminationLatch.countDown();
+				}),
+				(resource, error) -> Mono.empty(),
+				(resource) -> Mono.empty()
+		);
+
+		usingWhenMono.subscribe(
+				data -> {},
+				error -> mainTerminationLatch.countDown(),
+                mainTerminationLatch::countDown,
+				s -> {
+					subscriptionHolder.set(s);
+					s.request(Long.MAX_VALUE);
+				}
+		);
+
+		boolean mainTerminated = mainTerminationLatch.await(5, TimeUnit.SECONDS);
+		boolean cleanupTerminated = cleanupTerminationLatch.await(5, TimeUnit.SECONDS);
+
+		assertThat(mainTerminated).isTrue();
+		assertThat(cleanupTerminated).isTrue();
+		assertThat(subscriptionHolder.get()).isNotNull();
+
+		assertThat(cleanupRan.get()).isTrue();
+
+		forceGc();
+
+		assertThat(weakResourceRef.get().get()).isNull();
+	}
+
+	private void forceGc() throws InterruptedException {
+		for (int i = 0; i < 3; i++) {
+			System.gc();
+			Thread.sleep(100);
+		}
 	}
 
 }
