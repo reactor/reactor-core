@@ -32,7 +32,7 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.observability.micrometer.TimedSchedulerMeterDocumentation.SubmittedTags;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import static reactor.core.observability.micrometer.TimedSchedulerMeterDocumentation.*;
 

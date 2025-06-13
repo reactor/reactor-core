@@ -44,11 +44,14 @@ import javax.annotation.meta.When;
  * @since 3.1.0
  * @see NonNullApi
  * @see NonNull
+ * @deprecated Since 3.8.0 Project Reactor uses {@link org.jspecify.annotations.Nullable}
+ * from the JSpecify project.
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull(when = When.MAYBE)
 @TypeQualifierNickname
+@Deprecated
 public @interface Nullable {
 }

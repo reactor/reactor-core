@@ -23,7 +23,7 @@
  *
  * @author Stephane Maldini
  */
-@NonNullApi
+@NullMarked
 package reactor.adapter;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

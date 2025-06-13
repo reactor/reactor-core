@@ -14,7 +14,7 @@ dependencies {
   // Use the baseline to avoid using new APIs in the benchmarks
   compileOnly libs.reactor.perfBaseline.core
   compileOnly libs.reactor.perfBaseline.coreMicrometer
-  compileOnly libs.jsr305
+  implementation libs.jspecify
 
   implementation "org.openjdk.jmh:jmh-core:$jmhVersion"
   implementation libs.reactor.perfBaseline.extra, {

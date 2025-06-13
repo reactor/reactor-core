@@ -44,7 +44,7 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static reactor.core.scheduler.BoundedElasticThreadPerTaskScheduler.BoundedServices.CREATING;
