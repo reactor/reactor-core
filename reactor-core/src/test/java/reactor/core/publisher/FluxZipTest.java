@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,6 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.TestLoggerExtension;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -1428,4 +1430,27 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void testZipCorrectlyPropagatesTheErrorEmittedByAConcurrentSource() {
+		Flux<Integer> fluxToTest = Flux.range(1, 10)
+				.flatMap(ignored -> {
+					Mono<Optional<Object>> mono1 = Mono.empty()
+							.publishOn(Schedulers.parallel())
+							.map(Optional::of)
+							.defaultIfEmpty(Optional.empty());
+
+					Mono<Optional<Object>> mono2 = Mono.error(new NullPointerException())
+							.map(Optional::of)
+							.defaultIfEmpty(Optional.empty());
+
+					return Flux.zip(mono1, mono2)
+							.collectList()
+							.onErrorResume(e -> Mono.empty());
+				})
+				.flatMap(evt ->
+						Mono.error(new RuntimeException(String.format("Unexpected empty list return by collectList of size %s", evt.size())))
+				);
+		StepVerifier.create(fluxToTest).expectNextCount(0).verifyComplete();
+	}
 }
