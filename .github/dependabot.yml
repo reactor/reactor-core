@@ -78,7 +78,7 @@ updates:
       - dependency-name: "io.projectreactor.tools:blockhound"
       - dependency-name: "org.assertj:assertj-core"
       - dependency-name: "org.awaitility:awaitility"
-      - dependency-name: "org.junit:*"
+      - dependency-name: "org.junit:junit-bom"
       - dependency-name: "org.junit.jupiter:*"
       - dependency-name: "org.junit.platform:*"
       - dependency-name: "org.mockito:mockito-core"
