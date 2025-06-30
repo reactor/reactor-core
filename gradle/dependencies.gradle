@@ -9,7 +9,7 @@ ext {
     cglibVersion = "3.3.0"
     javaObjectLayoutVersion = "0.17"
     jmhVersion = "1.37"
-    junitVersion = "5.13.1"
+    junitVersion = "5.13.2"
     logbackVersion = "1.2.13"
     mockitoVersion = "4.11.0"
     slf4jVersion = "1.7.36"
