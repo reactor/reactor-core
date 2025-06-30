@@ -23,13 +23,11 @@ repositories {
 	gradlePluginPortal()
 }
 
-apply from: "../gradle/dependencies.gradle"
-
 dependencies {
-	testImplementation "org.assertj:assertj-core:$assertjVersion"
-	testImplementation platform("org.junit:junit-bom:$junitVersion")
-	testImplementation "org.junit.jupiter:junit-jupiter-api"
-	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+	testImplementation libs.assertJ
+	testImplementation platform(libs.junit.bom)
+	testImplementation libs.junit.jupiterApi
+	testRuntimeOnly libs.junit.jupiterEngine
 }
 
 test {

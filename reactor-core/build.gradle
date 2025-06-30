@@ -124,15 +124,15 @@ dependencies {
 		*/
 		exclude group: 'junit', module: 'junit'
 	}
-	tckTestImplementation "org.testng:testng:$testngVersion"
+	tckTestImplementation libs.testng
 
 	// JSR-305 annotations
 	compileOnly libs.jsr305
 	testCompileOnly libs.jsr305
 
 	// Optional Logging Operator
-	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
-	testCompileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+	compileOnly libs.slf4j
+	testCompileOnly libs.slf4j
 
 	// Optional Metrics
 	compileOnly platform(libs.micrometer.bom)
@@ -143,29 +143,29 @@ dependencies {
 	compileOnly libs.micrometer.contextPropagation
 
 	// Optional BlockHound support
-	compileOnly "io.projectreactor.tools:blockhound:$blockhoundVersion"
+	compileOnly libs.blockhound
 	// Also make BlockHound visible in the CP of dedicated testset
-	blockHoundTestImplementation "io.projectreactor.tools:blockhound:$blockhoundVersion"
+	blockHoundTestImplementation libs.blockhound
 
 	// Optional JDK 9 Converter
 	jsr166backport libs.jsr166backport
 
 	// Testing
-	testImplementation platform("org.junit:junit-bom:$junitVersion")
-	testImplementation "org.junit.jupiter:junit-jupiter-api"
-	testImplementation "org.junit.platform:junit-platform-launcher"
-	testImplementation "org.junit.jupiter:junit-jupiter-params"
-	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+	testImplementation platform(libs.junit.bom)
+	testImplementation libs.junit.jupiterApi
+	testImplementation libs.junit.jupiterLauncher
+	testImplementation libs.junit.jupiterParams
+	testRuntimeOnly libs.junit.jupiterEngine
 	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
-	testImplementation "ch.qos.logback:logback-classic:$logbackVersion" //need to access API to decrease some tests verbosity
-	testImplementation "org.assertj:assertj-core:$assertjVersion"
-	testImplementation "org.mockito:mockito-core:$mockitoVersion"
-	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
-	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
-	testImplementation "com.pivovarit:throwing-function:$throwingFunctionVersion"
-	testImplementation "com.tngtech.archunit:archunit:$archUnitVersion"
+	testImplementation libs.logback //need to access API to decrease some tests verbosity
+	testImplementation libs.assertJ
+	testImplementation libs.mockito
+	testImplementation libs.javaObjectLayout
+	testImplementation libs.awaitility
+	testImplementation libs.throwingFunction
+	testImplementation libs.archUnit
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
@@ -184,7 +184,7 @@ dependencies {
 	jcstressImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
-	jcstressImplementation "ch.qos.logback:logback-classic:$logbackVersion"
+	jcstressImplementation libs.logback
 
 }
 
