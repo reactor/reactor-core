@@ -47,11 +47,11 @@ dependencies {
 	implementation platform(libs.micrometer.bom)
 	api libs.micrometer.core
 
-	testImplementation platform("org.junit:junit-bom:$junitVersion")
-	testImplementation "org.junit.jupiter:junit-jupiter-api"
-	testImplementation "org.junit.platform:junit-platform-launcher"
-	testImplementation "org.junit.jupiter:junit-jupiter-params"
-	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+	testImplementation platform(libs.junit.bom)
+	testImplementation libs.junit.jupiterApi
+	testImplementation libs.junit.jupiterLauncher
+	testImplementation libs.junit.jupiterParams
+	testRuntimeOnly libs.junit.jupiterEngine
 
 	testImplementation platform(libs.micrometer.bom)
 	testImplementation (libs.micrometer.core) {
@@ -77,10 +77,10 @@ dependencies {
 	// Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
 	testImplementation project(":reactor-core").sourceSets.test.output
 
-	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion" //need to access API to decrease some tests verbosity
-	testImplementation "org.assertj:assertj-core:$assertjVersion"
-	testImplementation "org.mockito:mockito-core:$mockitoVersion"
-	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
+	testRuntimeOnly libs.logback //need to access API to decrease some tests verbosity
+	testImplementation libs.assertJ
+	testImplementation libs.mockito
+	testImplementation libs.awaitility
 }
 
 tasks.withType(Test).all {
