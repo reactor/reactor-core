@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -34,6 +25,17 @@ import reactor.core.Scannable;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import java.lang.ref.WeakReference;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -660,6 +662,76 @@ public class MonoUsingTest {
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
+
+	static class TestResource {
+		private final String name;
+
+		TestResource(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+	}
+
+
+	@Test
+	void monoUsingShouldNotHoldReferenceToTheResourceAfterCleanup() throws InterruptedException {
+		AtomicReference<WeakReference<TestResource>> weakResourceRef = new AtomicReference<>();
+		AtomicBoolean cleanupRan = new AtomicBoolean(false);
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+
+		CountDownLatch onCompleteLatch = new CountDownLatch(1);
+
+		Mono<String> usingMono = Mono.using(
+				() -> {
+					TestResource resource = new TestResource("testResource");
+					weakResourceRef.set(new WeakReference<>(resource));
+					return resource;
+				},
+				resource -> Mono.just(resource.getName()),
+				resource -> cleanupRan.set(true)
+		);
+
+		usingMono.subscribe(
+				data -> {},
+				error -> onCompleteLatch.countDown(),
+                onCompleteLatch::countDown,
+				s -> {
+					subscriptionHolder.set(s);
+					s.request(Long.MAX_VALUE);
+				}
+		);
+
+		onCompleteLatch.await(2, TimeUnit.SECONDS);
+
+		assertThat(cleanupRan.get()).isTrue();
+		assertThat(subscriptionHolder.get()).isNotNull();
+
+		forceGc();
+
+		assertThat(weakResourceRef.get().get()).isNull();
+
+		// release the strong reference to the Subscription.
+		subscriptionHolder.set(null);
+
+		forceGc();
+
+		// With the reference released, the MonoUsingSubscriber and the resource
+		// should now be eligible for garbage collection.
+		assertThat(weakResourceRef.get().get()).isNull();
+	}
+
+
+	private void forceGc() throws InterruptedException {
+		for (int i = 0; i < 3; i++) {
+			System.gc();
+			Thread.sleep(100);
+		}
+	}
+
 
 	static abstract class CleanupCase<T> implements Supplier<Mono<T>> {
 
