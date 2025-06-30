@@ -16,12 +16,12 @@ dependencies {
   compileOnly libs.reactor.perfBaseline.coreMicrometer
   compileOnly libs.jsr305
 
-  implementation "org.openjdk.jmh:jmh-core:$jmhVersion"
+  implementation libs.jmh.core
   implementation libs.reactor.perfBaseline.extra, {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
   implementation platform(libs.micrometer.bom)
-  annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:$jmhVersion"
+  annotationProcessor libs.jmh.generatorAnnprocess
 
   current project(':reactor-core')
   current project(':reactor-core-micrometer')
