@@ -50,6 +50,53 @@ updates:
       - dependency-name: "com.jfrog.artifactory"
         versions:
           - "[5.a, 6]"
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "type/dependency-upgrade"
+      - "status/need-triage"
+    reviewers:
+      - "reactor/core-team"
+    target-branch: "main"
+    ignore:
+      # JSR166 backport is fixed
+      - dependency-name: "io.projectreactor:jsr166"
+      # JSR305 backport is fixed to last version with annotations (3.0.1)
+      - dependency-name: "com.google.code.findbugs:jsr305"
+      # Micrometer is updated manually
+      - dependency-name: "io.micrometer:*"
+      # Kotlin: stay on 1.8 to allow support for 1.3 target
+      - dependency-name: "org.jetbrains.kotlin*"
+        versions:
+          - ">= 1.9.a"
+      # Dependencies updated by forward merging 3.7.x branch
+      - dependency-name: "ch.qos.logback:logback-classic"
+      - dependency-name: "com.pivovarit:throwing-function"
+      - dependency-name: "com.tngtech.archunit:archunit"
+      - dependency-name: "io.projectreactor.tools:blockhound"
+      - dependency-name: "org.assertj:assertj-core"
+      - dependency-name: "org.awaitility:awaitility"
+      - dependency-name: "org.junit:*"
+      - dependency-name: "org.junit.jupiter:*"
+      - dependency-name: "org.junit.platform:*"
+      - dependency-name: "org.mockito:mockito-core"
+      - dependency-name: "org.openjdk.jol:jol-core"
+      - dependency-name: "org.reactivestreams:*"
+      - dependency-name: "org.slf4j:slf4j-api"
+      # Plugins updated by forward merging 3.7.x branch
+      - dependency-name: "biz.aQute.bnd.builder"
+      - dependency-name: "com.diffplug.spotless"
+      - dependency-name: "com.gradleup.shadow"
+      - dependency-name: "com.jfrog.artifactory"
+      - dependency-name: "de.undercouch.download"
+      - dependency-name: "io.github.reyerizo.gradle.jcstress"
+      - dependency-name: "io.spring.antora.generate-antora-yml"
+      - dependency-name: "io.spring.nohttp"
+      - dependency-name: "me.champeau.gradle.japicmp"
+      - dependency-name: "me.champeau.mrjar"
+      - dependency-name: "org.antora"
   - package-ecosystem: "github-actions"
     directory: ".github/workflows"
     schedule:
