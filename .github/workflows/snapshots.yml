@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 20 * * *"
-permissions: read-all
+permissions: {}
 jobs:
   run-tests:
     runs-on: ubuntu-22.04
