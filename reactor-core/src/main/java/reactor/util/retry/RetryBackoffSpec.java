@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
@@ -610,7 +609,9 @@ public final class RetryBackoffSpec extends Retry {
 
 				Duration nextBackoff;
 				try {
-					nextBackoff = minBackoff.multipliedBy((long) Math.pow(multiplier, iteration));
+					long minBackoffLong = minBackoff.toNanos();
+					long nextBackoffLong = (long) (minBackoffLong * Math.pow(multiplier, iteration));
+					nextBackoff = Duration.ofNanos(nextBackoffLong);
 					if (nextBackoff.compareTo(maxBackoff) > 0) {
 						nextBackoff = maxBackoff;
 					}
