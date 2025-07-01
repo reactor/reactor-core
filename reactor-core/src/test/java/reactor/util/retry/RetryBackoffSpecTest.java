@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package reactor.util.retry;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -259,6 +258,54 @@ public class RetryBackoffSpecTest {
 
 		StepVerifier.create(retryBuilder.generateCompanion(Flux.just(sig1, sig2, sig3).hide()))
 		            .expectNext(1L, 2L, 3L)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void companionDelaysRetriesWithDefaultMultiplier() {
+		IllegalArgumentException ignored = new IllegalArgumentException("ignored");
+		Retry.RetrySignal sig1 = new ImmutableRetrySignal(1, 1, ignored);
+		Retry.RetrySignal sig2 = new ImmutableRetrySignal(2, 1, ignored);
+		Retry.RetrySignal sig3 = new ImmutableRetrySignal(3, 1, ignored);
+
+		RetryBackoffSpec retryBuilder =
+				Retry.backoff(4, Duration.ofMillis(1))
+				     // 1/1_000_000 means 0 jitter since the resolution is in milliseconds
+					.jitter(0.000001d);
+
+		StepVerifier.withVirtualTime(() -> retryBuilder.generateCompanion(Flux.just(sig1, sig2, sig3)))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(2))
+		            .expectNextCount(1)
+		            .expectNoEvent(Duration.ofMillis(4))
+		            .expectNextCount(1)
+		            .expectNoEvent(Duration.ofMillis(8))
+		            .expectNextCount(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void companionDelaysRetriesWithFractionalMultiplier() {
+		IllegalArgumentException ignored = new IllegalArgumentException("ignored");
+		Retry.RetrySignal sig1 = new ImmutableRetrySignal(1, 1, ignored);
+		Retry.RetrySignal sig2 = new ImmutableRetrySignal(2, 1, ignored);
+		Retry.RetrySignal sig3 = new ImmutableRetrySignal(3, 1, ignored);
+
+		RetryBackoffSpec retryBuilder =
+				Retry.backoff(4, Duration.ofMillis(1))
+				     // 1/1_000_000 means 0 jitter since the resolution is in milliseconds
+				     .jitter(0.000001d)
+				     // 1.5x yields 1.5ms, 2.25ms, 3.375ms
+				     .multiplier(1.5d);
+
+		StepVerifier.withVirtualTime(() -> retryBuilder.generateCompanion(Flux.just(sig1, sig2, sig3)))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofNanos(1_500_000))
+		            .expectNextCount(1)
+		            .expectNoEvent(Duration.ofNanos(2_250_000))
+		            .expectNextCount(1)
+		            .expectNoEvent(Duration.ofNanos(3_375_000))
+		            .expectNextCount(1)
 		            .verifyComplete();
 	}
 
