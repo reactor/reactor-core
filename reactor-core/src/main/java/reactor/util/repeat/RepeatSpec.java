@@ -19,6 +19,7 @@ package reactor.util.repeat;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
@@ -46,16 +47,21 @@ import reactor.util.context.ContextView;
  *   <li>Context propagation via {@link #withRepeatContext(ContextView)}</li>
  * </ul>
  * This strategy does not retry based on error signals, but rather repeats a successful sequence (until termination condition is met).
+ * <p>
+ * The companion {@code Flux<Long>} represents repeat signals, and each value corresponds to a repeat attempt.
+ * This class transforms the repeat signals into a {@link Publisher} that determines whether to trigger a repeat.
  *
  * @author Daeho Kwon
  */
-public final class RepeatSpec extends Repeat {
+public final class RepeatSpec implements Function<Flux<Long>, Publisher<?>> {
 
 	private static final Predicate<RepeatSignal> ALWAYS_TRUE    = __ -> true;
 	private static final Consumer<RepeatSignal>  NO_OP_CONSUMER = rs -> {
 	};
 	private static final RepeatSignal            TERMINATE      =
 			new ImmutableRepeatSignal(-1, -1L, Duration.ZERO, Context.empty());
+
+	final ContextView repeatContext;
 
 	final long                    maxRepeats;
 	final Predicate<RepeatSignal> repeatPredicate;
@@ -76,7 +82,7 @@ public final class RepeatSpec extends Repeat {
 			Duration fixedDelay,
 			Scheduler scheduler,
 			double jitterFactor) {
-		super(repeatContext);
+		this.repeatContext = repeatContext;
 		this.maxRepeats = maxRepeats;
 		this.repeatPredicate = repeatPredicate;
 		this.beforeRepeatHook = beforeRepeatHook;
@@ -135,12 +141,12 @@ public final class RepeatSpec extends Repeat {
 	}
 
 	/**
-	 * Set the user provided {@link Repeat#repeatContext() context} that can be used to
+	 * Set the user provided {@link ContextView contextView} that can be used to
 	 * manipulate state on retries.
 	 *
 	 * @param repeatContext a new snapshot of user provided data
-	 * @return a new copy of the {@link RepeatSpec} which can either be further configured
-	 * or used as {@link Repeat}
+	 * @return a new copy of the {@link RepeatSpec} which can either be further
+	 * configured.
 	 */
 	public RepeatSpec withRepeatContext(ContextView repeatContext) {
 		return new RepeatSpec(repeatContext,
@@ -260,44 +266,50 @@ public final class RepeatSpec extends Repeat {
 	}
 
 	@Override
+	public Publisher<?> apply(Flux<Long> signals) {
+		return generateCompanion(signals);
+	}
+
+	/**
+	 * Generates the companion publisher responsible for reacting to incoming repeat signals,
+	 * effectively deciding whether to trigger another repeat cycle.
+	 *
+	 * @param signals the incoming repeat signals, where each {@link Long} value indicates the iteration index
+	 * @return the companion publisher that determines if a repeat should occur
+	 */
 	public Publisher<Long> generateCompanion(Flux<Long> signals) {
-		return Flux.deferContextual(cv -> signals.index()
-		                                         .contextWrite(cv)
-		                                         .map(tuple -> {
-			                                         long iter = tuple.getT1();
-			                                         long companionValue = tuple.getT2();
+		return signals.index()
+		              .map(tuple -> {
+			              long iter = tuple.getT1();
+			              long companionValue = tuple.getT2();
 
-			                                         RepeatSignal signal =
-					                                         new ImmutableRepeatSignal(
-							                                         iter,
-							                                         companionValue,
-							                                         calculateDelay(),
-							                                         repeatContext());
+			              RepeatSignal signal = new ImmutableRepeatSignal(iter,
+					              companionValue,
+					              calculateDelay(),
+					              this.repeatContext);
 
-			                                         if (iter >= maxRepeats || !repeatPredicate.test(
-					                                         signal)) {
-				                                         return TERMINATE;
-			                                         }
-			                                         return signal;
-		                                         })
-		                                         .takeWhile(signal -> signal != TERMINATE)
-		                                         .concatMap(signal -> {
-			                                         try {
-				                                         beforeRepeatHook.accept(signal);
-			                                         }
-			                                         catch (Throwable e) {
-				                                         return Mono.error(e);
-			                                         }
+			              if (iter >= maxRepeats || !repeatPredicate.test(signal)) {
+				              return TERMINATE;
+			              }
+			              return signal;
+		              })
+		              .takeWhile(signal -> signal != TERMINATE)
+		              .concatMap(signal -> {
+			              try {
+				              beforeRepeatHook.accept(signal);
+			              }
+			              catch (Throwable e) {
+				              return Mono.error(e);
+			              }
 
-			                                         Duration delay = signal.backoff();
-			                                         Mono<Long> trigger = delay.isZero() ?
-					                                         Mono.just(signal.companionValue()) :
-					                                         Mono.delay(delay, scheduler)
-					                                             .thenReturn(signal.companionValue());
+			              Duration delay = signal.backoff();
+			              Mono<Long> trigger =
+					              delay.isZero() ? Mono.just(signal.companionValue()) :
+							              Mono.delay(delay, scheduler)
+							                  .thenReturn(signal.companionValue());
 
-			                                         return trigger.doOnSuccess(v -> afterRepeatHook.accept(
-					                                         signal));
-		                                         }));
+			              return trigger.doOnSuccess(v -> afterRepeatHook.accept(signal));
+		              });
 	}
 
 	Duration calculateDelay() {
@@ -310,5 +322,46 @@ public final class RepeatSpec extends Repeat {
 			actual = Duration.ofMillis(Math.max(0, base + offset));
 		}
 		return actual;
+	}
+
+	/**
+	 * State information associated with each repeat signal, used in repeat strategies.
+	 */
+	public interface RepeatSignal {
+
+		/**
+		 * Returns the current iteration count, starting from 0.
+		 *
+		 * @return the iteration index
+		 */
+		long iteration();
+
+		/**
+		 * Returns the value from the companion publisher that triggered this repeat signal.
+		 *
+		 * @return the companion value
+		 */
+		Long companionValue();
+
+		/**
+		 * Returns the delay before the next repeat attempt.
+		 *
+		 * @return the backoff duration
+		 */
+		Duration backoff();
+
+		/**
+		 * Returns the read-only context associated with this repeat signal.
+		 *
+		 * @return the repeat context view
+		 */
+		ContextView repeatContextView();
+
+		/**
+		 * Returns an immutable copy of this {@link RepeatSignal}, capturing the current state.
+		 *
+		 * @return an immutable copy of the signal
+		 */
+		RepeatSignal copy();
 	}
 }

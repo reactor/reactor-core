@@ -17,6 +17,7 @@
 package reactor.util.repeat;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
@@ -50,10 +51,10 @@ class RepeatSpecTest {
 		                                  .onlyIf(signal -> signal.iteration() < 5)
 		                                  .onlyIf(signal -> signal.iteration() == 0);
 
-		Repeat.RepeatSignal acceptSignal =
+		RepeatSpec.RepeatSignal acceptSignal =
 				new ImmutableRepeatSignal(0, 123L, Duration.ofMillis(0), Context.empty());
 
-		Repeat.RepeatSignal rejectSignal =
+		RepeatSpec.RepeatSignal rejectSignal =
 				new ImmutableRepeatSignal(4, 123L, Duration.ofMillis(0), Context.empty());
 
 		assertThat(repeatSpec.repeatPredicate).accepts(acceptSignal)
@@ -64,7 +65,7 @@ class RepeatSpecTest {
 	void doBeforeRepeatIsCumulative() {
 		AtomicInteger counter = new AtomicInteger();
 
-		Repeat.RepeatSignal dummySignal =
+		RepeatSpec.RepeatSignal dummySignal =
 				new ImmutableRepeatSignal(0, 0L, Duration.ZERO, Context.empty());
 
 		RepeatSpec repeatSpec = RepeatSpec.times(1)
@@ -80,7 +81,7 @@ class RepeatSpecTest {
 	void doAfterRepeatIsCumulative() {
 		AtomicInteger counter = new AtomicInteger();
 
-		Repeat.RepeatSignal dummySignal =
+		RepeatSpec.RepeatSignal dummySignal =
 				new ImmutableRepeatSignal(0, 0L, Duration.ZERO, Context.empty());
 
 		RepeatSpec repeatSpec = RepeatSpec.times(1)
@@ -170,16 +171,16 @@ class RepeatSpecTest {
 
 	@Test
 	void repeatContextCanInfluencePredicate() {
-		RepeatSpec repeatSpec = RepeatSpec.times(5)
-		                                  .withRepeatContext(Context.of("stopAfterOne",
-				                                  true))
-		                                  .onlyIf(signal -> {
-			                                  boolean stopAfterOne =
-					                                  signal.repeatContextView()
-					                                        .getOrDefault("stopAfterOne",
-							                                        false);
-			                                  return !stopAfterOne || signal.iteration() == 0;
-		                                  });
+		RepeatSpec repeatSpec =
+				RepeatSpec.times(5)
+				          .withRepeatContext(Context.of("stopAfterOne", true))
+				          .onlyIf(signal -> {
+							  Boolean contextEntry =
+									  signal.repeatContextView()
+									        .getOrDefault("stopAfterOne", Boolean.FALSE);
+							  boolean stopAfterOne = Boolean.TRUE.equals(contextEntry);
+							  return !stopAfterOne || signal.iteration() == 0;
+						  });
 
 		AtomicInteger subscriptionCount = new AtomicInteger();
 		Flux<String> source = Flux.defer(() -> {

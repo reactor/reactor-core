@@ -21,12 +21,12 @@ import reactor.util.context.ContextView;
 import java.time.Duration;
 
 /**
- * An immutable {@link reactor.util.repeat.Repeat.RepeatSignal} that can be used for
+ * An immutable {@link reactor.util.repeat.RepeatSpec.RepeatSignal} that can be used for
  * retained copies of mutable implementations.
  *
  * @author Daeho Kwon
  */
-final class ImmutableRepeatSignal implements Repeat.RepeatSignal {
+final class ImmutableRepeatSignal implements RepeatSpec.RepeatSignal {
 
 	private final long        iteration;
 	private final Long        companionValue;
@@ -64,7 +64,7 @@ final class ImmutableRepeatSignal implements Repeat.RepeatSignal {
 	}
 
 	@Override
-	public Repeat.RepeatSignal copy() {
+	public RepeatSpec.RepeatSignal copy() {
 		return this;
 	}
 
