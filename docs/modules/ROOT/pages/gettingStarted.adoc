@@ -238,4 +238,6 @@ repositories {
 [[support]]
 == Support and policies
 
-Support information can be found on the https://projectreactor.io/support[Reactor Support] page.
+The entries below are mirroring https://github.com/reactor/.github/blob/main/SUPPORT.adoc
+
+include::partial$SUPPORT.adoc[leveloffset=2]
