@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -128,11 +129,16 @@ class SinksTest {
 	class OptimisticEmitFailureHandlerTest {
 		@Test
 		void shouldRetryOptimistically() {
+			final AtomicInteger attemptCounter = new AtomicInteger(0);
+			final int attemptsToFail = 5;
+
 			Sinks.One<Object> sink = new InternalOneSinkTest.InternalOneSinkAdapter<Object>() {
-				final long duration = Duration.ofMillis(1000).toNanos() + System.nanoTime();
 				@Override
 				public Sinks.EmitResult tryEmitValue(Object value) {
-					return System.nanoTime() > duration ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_NON_SERIALIZED;
+					if (attemptCounter.incrementAndGet() < attemptsToFail) {
+						return Sinks.EmitResult.FAIL_NON_SERIALIZED;
+					}
+					return Sinks.EmitResult.OK;
 				}
 
 				@Override
@@ -145,10 +151,11 @@ class SinksTest {
 					throw new IllegalStateException();
 				}
 			};
-			assertThatNoException().isThrownBy(() -> {
-				sink.emitValue("Hello",
-						Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(1000)));
-			});
+
+			assertThatNoException().isThrownBy(() -> sink.emitValue("Hello",
+                    Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(500))));
+
+			assertThat(attemptCounter.get()).isEqualTo(attemptsToFail);
 		}
 
 		@Test
