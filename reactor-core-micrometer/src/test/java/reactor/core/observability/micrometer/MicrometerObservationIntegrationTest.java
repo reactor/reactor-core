@@ -90,7 +90,7 @@ public class MicrometerObservationIntegrationTest {
                         .blockLast();
 
                 SpansAssert spansAssert = SpansAssert.assertThat(bb.getFinishedSpans());
-                SpansAssert.SpansAssertReturningAssert assertThatMain = spansAssert.assertThatASpanWithNameEqualTo("test-flux");
+                SpansAssert.SpansAssertReturningAssert assertThatMain = spansAssert.assertThatASpanWithNameEqualTo("testFlux");
                 SpansAssert.SpansAssertReturningAssert assertThatQuery2 = spansAssert.assertThatASpanWithNameEqualTo("query2");
 
                 spansAssert.hasSize(4);
