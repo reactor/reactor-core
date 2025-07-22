@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.stream.Stream;
-
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,7 +23,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -46,10 +35,20 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.util.TestLogger;
-import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
+
+import java.lang.ref.WeakReference;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -1439,6 +1438,206 @@ public class FluxUsingWhenTest {
 					.map(it -> it.get(String.class))
 					.map(it -> { throw new IllegalStateException("boom"); })))
 		);
+	}
+
+
+	private static class ExpensiveResource {
+		private final byte[] expensiveData = new byte[1024 * 1024];
+		private final String id = "Resource-" + System.nanoTime();
+
+		@Override
+		public String toString() {
+			return id;
+		}
+	}
+
+	@Test
+	void fluxUsingWhenShouldHoldResourceUntilAsyncCleanupCompletes() throws InterruptedException {
+		AtomicReference<WeakReference<ExpensiveResource>> resourceRef = new AtomicReference<>();
+		CountDownLatch mainFluxLatch = new CountDownLatch(1);
+		CountDownLatch cleanupLatch = new CountDownLatch(1);
+
+		Flux<Integer> flux = Flux.usingWhen(
+				Mono.fromCallable(() -> {
+					ExpensiveResource resource = new ExpensiveResource();
+					resourceRef.set(new WeakReference<>(resource));
+					return resource;
+				}),
+				resource -> Flux.range(1, 3),
+				resource -> Mono.delay(Duration.ofMillis(200))
+						.then(Mono.fromRunnable(cleanupLatch::countDown)),
+				(resource, error) -> Mono.empty(),
+				resource -> Mono.empty()
+		);
+
+		flux.subscribe(v -> {}, e -> {}, mainFluxLatch::countDown);
+
+		assertThat(mainFluxLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+		forceGc();
+		assertThat(resourceRef.get().get()).isNull();
+
+		assertThat(cleanupLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+		forceGc();
+		assertThat(resourceRef.get().get()).isNull();
+	}
+
+	@Test
+	void fluxUsingWhenShouldNotHoldReferenceToTheResourceAfterOnComplete() throws InterruptedException {
+		AtomicReference<WeakReference<ExpensiveResource>> resourceRef = new AtomicReference<>();
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+		CountDownLatch mainLatch = new CountDownLatch(1);
+		CountDownLatch cleanupLatch = new CountDownLatch(1);
+
+		Flux<Integer> flux = Flux.usingWhen(
+				Mono.fromCallable(() -> {
+					ExpensiveResource resource = new ExpensiveResource();
+					resourceRef.set(new WeakReference<>(resource));
+					return resource;
+				}),
+				resource -> Flux.range(1, 3),
+				resource -> Mono.fromRunnable(cleanupLatch::countDown),
+				(resource, error) -> Mono.empty(),
+				resource -> Mono.empty()
+		);
+
+		flux.subscribe(new CoreSubscriber<Integer>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+				subscriptionHolder.set(s);
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(Integer value) {
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				mainLatch.countDown();
+			}
+
+			@Override
+			public void onComplete() {
+				mainLatch.countDown();
+			}
+		});
+
+		assertThat(mainLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(cleanupLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+		forceGc();
+
+		assertThat(resourceRef.get().get()).isNull();
+	}
+
+	@Test
+	void fluxUsingWhenShouldNotHoldReferenceToTheResourceAfterOnError() throws InterruptedException {
+		AtomicReference<WeakReference<ExpensiveResource>> resourceRef = new AtomicReference<>();
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+		CountDownLatch mainLatch = new CountDownLatch(1);
+		CountDownLatch cleanupLatch = new CountDownLatch(1);
+
+		Flux<Integer> flux = Flux.usingWhen(
+				Mono.fromCallable(() -> {
+					ExpensiveResource resource = new ExpensiveResource();
+					resourceRef.set(new WeakReference<>(resource));
+					return resource;
+				}),
+				resource -> Flux.range(1, 3).concatWith(Mono.error(new RuntimeException("Test Error"))),
+				resource -> Mono.empty(),
+				(resource, error) -> Mono.fromRunnable(cleanupLatch::countDown),
+				resource -> Mono.empty()
+		);
+
+		flux.subscribe(new CoreSubscriber<Integer>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+				subscriptionHolder.set(s);
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(Integer value) {
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				mainLatch.countDown();
+			}
+
+			@Override
+			public void onComplete() {
+				mainLatch.countDown();
+			}
+		});
+
+		assertThat(mainLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(cleanupLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+		forceGc();
+
+		assertThat(resourceRef.get().get()).isNull();
+	}
+
+
+	@Test
+	void fluxUsingWhenShouldNotHoldReferenceToTheResourceAfterCancelling() throws InterruptedException {
+		AtomicReference<WeakReference<ExpensiveResource>> resourceRef = new AtomicReference<>();
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+		CountDownLatch cleanupLatch = new CountDownLatch(1);
+
+		Flux<Integer> flux = Flux.usingWhen(
+				Mono.fromCallable(() -> {
+					ExpensiveResource resource = new ExpensiveResource();
+					resourceRef.set(new WeakReference<>(resource));
+					return resource;
+				}),
+				resource -> Flux.interval(Duration.ofMillis(50)).map(Long::intValue),
+				resource -> Mono.empty(),
+				(resource, error) -> Mono.empty(),
+				resource -> Mono.fromRunnable(cleanupLatch::countDown)
+		);
+
+		flux.subscribe(new CoreSubscriber<Integer>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+				subscriptionHolder.set(s);
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(Integer value) {
+				if (value == 0) {
+					Subscription sub = subscriptionHolder.get();
+					if (sub != null) {
+						sub.cancel();
+					}
+				}
+			}
+
+			@Override
+			public void onError(Throwable t) {
+			}
+
+			@Override
+			public void onComplete() {
+			}
+		});
+
+		assertThat(cleanupLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+		forceGc();
+
+		assertThat(resourceRef.get().get()).isNull();
+	}
+
+	private void forceGc() throws InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			System.gc();
+			Thread.sleep(100);
+		}
 	}
 
 }
