@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 	static final class ConcatIterableSubscriber<T>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
-		final Iterator<? extends Publisher<? extends T>> it;
+		Iterator<? extends Publisher<? extends T>> it;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -99,6 +99,12 @@ final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 				Iterator<? extends Publisher<? extends T>> a = this.it;
 				do {
 					if (isCancelled()) {
+						this.it = null;
+						return;
+					}
+
+					if (a == null) {
+						actual.onComplete();
 						return;
 					}
 
@@ -108,16 +114,19 @@ final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 						b = a.hasNext();
 					}
 					catch (Throwable e) {
+						this.it = null;
 						onError(Operators.onOperatorError(this, e,
 								actual.currentContext()));
 						return;
 					}
 
 					if (isCancelled()) {
+						this.it = null;
 						return;
 					}
 
 					if (!b) {
+						this.it = null;
 						actual.onComplete();
 						return;
 					}
@@ -129,12 +138,14 @@ final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 								"The Publisher returned by the iterator is null");
 					}
 					catch (Throwable e) {
+						this.it = null;
 						actual.onError(Operators.onOperatorError(this, e,
 								actual.currentContext()));
 						return;
 					}
 
 					if (isCancelled()) {
+						this.it = null;
 						return;
 					}
 
@@ -148,6 +159,7 @@ final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 					p.subscribe(this);
 
 					if (isCancelled()) {
+						this.it = null;
 						return;
 					}
 
