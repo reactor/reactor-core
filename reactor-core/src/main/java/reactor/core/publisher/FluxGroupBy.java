@@ -237,8 +237,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -437,8 +436,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		@Override
-		@Nullable
-		public GroupedFlux<K, V> poll() {
+		public @Nullable GroupedFlux<K, V> poll() {
 			return queue.poll();
 		}
 
@@ -748,8 +746,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		@Override
-		@Nullable
-		public V poll() {
+		public @Nullable V poll() {
 			V v = queue.poll();
 			if (v != null) {
 				produced++;
@@ -809,8 +806,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;

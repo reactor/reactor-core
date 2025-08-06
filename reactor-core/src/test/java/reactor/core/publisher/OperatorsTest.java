@@ -533,9 +533,8 @@ public class OperatorsTest {
 				return true;
 			}
 
-			@Nullable
 			@Override
-			public Throwable process(Throwable error, @Nullable Object value,
+			public @Nullable Throwable process(Throwable error, @Nullable Object value,
 					Context context) {
 				return null;
 			}

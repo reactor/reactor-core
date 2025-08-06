@@ -59,8 +59,7 @@ class DefaultTestSubscriberTest {
 	private static final Logger LOGGER = Loggers.getLogger(DefaultTestSubscriberTest.class);
 	private static final int RACE_DETECTION_LOOPS = 1000;
 
-	@Nullable
-	static Throwable captureThrow(Runnable r) {
+	static @Nullable Throwable captureThrow(Runnable r) {
 		try {
 			r.run();
 			return null;
@@ -368,9 +367,8 @@ class DefaultTestSubscriberTest {
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC);
 		Mockito.when(mock.poll())
 				.thenAnswer(new Answer<Integer>() {
-					@Override
-					@Nullable
-					public Integer answer(InvocationOnMock invocation) {
+			@Override
+			public @Nullable Integer answer(InvocationOnMock invocation) {
 						int value = source.incrementAndGet();
 						if (value == 4) {
 							//emulate a precisely concurrent cancellation
@@ -407,9 +405,8 @@ class DefaultTestSubscriberTest {
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.ASYNC);
 		Mockito.when(mock.poll())
 				.thenAnswer(new Answer<Integer>() {
-					@Override
-					@Nullable
-					public Integer answer(InvocationOnMock invocation) throws Throwable {
+			@Override
+			public @Nullable Integer answer(InvocationOnMock invocation) throws Throwable {
 						int value = source.incrementAndGet();
 						if (value == 4) {
 							//emulate a precisely concurrent cancellation

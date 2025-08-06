@@ -55,8 +55,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 * @return the value of this {@link NextProcessor}
 	 */
 	@Override
-	@Nullable
-	public O block() {
+	public @Nullable O block() {
 		return block(null);
 	}
 
@@ -129,9 +128,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 *
 	 * @throws RuntimeException if the {@link NextProcessor} was completed with an error
 	 */
-	@Nullable
 	@Override
-	public O peek() {
+	public @Nullable O peek() {
 		if (!isTerminated()) {
 			return null;
 		}
@@ -159,8 +157,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 		 * not completed
 		 */
 	@Override
-	@Nullable
-	public O block(@Nullable Duration timeout) {
+	public @Nullable O block(@Nullable Duration timeout) {
 		try {
 			if (isTerminated()) {
 				return peek();
@@ -361,9 +358,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 		return EmitResult.OK;
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT)
 			return subscription;
 		//touch guard
@@ -472,9 +468,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 *
 	 * @return the produced {@link Throwable} error if any or null
 	 */
-	@Nullable
 	@Override
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return error;
 	}
 

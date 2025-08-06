@@ -59,8 +59,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == InternalProducerAttr.INSTANCE) return true;
@@ -95,8 +94,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 	}
 
 	@Override
-	@Nullable
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
+	public abstract @Nullable CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
 
 	@Override
 	public final CorePublisher<? extends I> source() {

@@ -207,8 +207,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return this;
 	}
 
-	@Nullable
-	final Consumer<StepVerifier.Step<O>> verifier() {
+	final @Nullable Consumer<StepVerifier.Step<O>> verifier() {
 		return verifier;
 	}
 
@@ -271,8 +270,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return step;
 	}
 
-	@Nullable
-	final Function<PI, ? extends PO> body() {
+	final @Nullable Function<PI, ? extends PO> body() {
 		return body;
 	}
 

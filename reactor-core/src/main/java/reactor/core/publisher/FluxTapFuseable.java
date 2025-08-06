@@ -92,9 +92,8 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		return new TapFuseableSubscriber<>(actual, signalListener, ctx);
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);
@@ -198,8 +197,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs == null) {
 				return null;
 			}

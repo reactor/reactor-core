@@ -178,8 +178,7 @@ public final class ValueFormatters {
 		 * contained in the target
 		 * @return the {@link String} representation of the target, customized as needed
 		 */
-		@Nullable
-		default String apply(Object target, Function<Object, String> contentFormatter) {
+		default @Nullable String apply(Object target, Function<Object, String> contentFormatter) {
 			Class<CONTAINER> containerClass = getTargetClass();
 			if (containerClass.isInstance(target)) {
 				CONTAINER container = containerClass.cast(target);

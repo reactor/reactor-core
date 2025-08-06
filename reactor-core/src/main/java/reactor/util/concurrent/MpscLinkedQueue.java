@@ -133,9 +133,8 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	 *
 	 * @see java.util.Queue#poll()
 	 */
-	@Nullable
 	@Override
-	public E poll() {
+	public @Nullable E poll() {
 		LinkedQueueNode<E> currConsumerNode = consumerNode; // don't load twice, it's alright
 		LinkedQueueNode<E> nextNode = currConsumerNode.lvNext();
 
@@ -170,9 +169,8 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 		return null;
 	}
 
-	@Nullable
 	@Override
-	public E peek() {
+	public @Nullable E peek() {
 		LinkedQueueNode<E> currConsumerNode = consumerNode; // don't load twice, it's alright
 		LinkedQueueNode<E> nextNode = currConsumerNode.lvNext();
 
@@ -260,16 +258,14 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 		 *
 		 * @return value
 		 */
-		@Nullable
-		public E getAndNullValue()
+		public @Nullable E getAndNullValue()
 		{
 			E temp = lpValue();
 			spValue(null);
 			return temp;
 		}
 
-		@Nullable
-		public E lpValue()
+		public @Nullable E lpValue()
 		{
 			return value;
 		}
@@ -284,8 +280,7 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 			NEXT_UPDATER.lazySet(this, n);
 		}
 
-		@Nullable
-		public LinkedQueueNode<E> lvNext()
+		public @Nullable LinkedQueueNode<E> lvNext()
 		{
 			return next;
 		}

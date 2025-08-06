@@ -94,8 +94,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public I poll() {
+		public @Nullable I poll() {
 			T v = s.poll();
 			if (v != null) {
 				long i = this.index;
@@ -195,8 +194,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -236,8 +234,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public I poll() {
+		public @Nullable I poll() {
 			T v = s.poll();
 			if (v != null) {
 				long i = this.index;
@@ -358,8 +355,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

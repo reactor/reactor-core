@@ -331,9 +331,8 @@ public class CompositeDisposableHashcodeBenchmark {
 			             .map(Scannable::from);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) {
 				return isDisposed();
 			}

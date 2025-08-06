@@ -65,9 +65,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 			this.value = value;
 		}
 
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			return value;
 		}
 
@@ -82,9 +81,9 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	 * pre-subscription, when no caching has been requested.
 	 */
 	static final State<?> EMPTY_STATE = new State<Object>() {
-		@Nullable
+
 		@Override
-		public Object get() {
+		public @Nullable Object get() {
 			return null;
 		}
 
@@ -215,9 +214,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		 * unused in this context as the {@link State} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			throw new UnsupportedOperationException("coordinator State#get shouldn't be used");
 		}
 
@@ -369,9 +367,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 			return Operators.multiSubscribersContext(subscribers);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return null;
 		}

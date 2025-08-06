@@ -76,8 +76,7 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return main.other == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return main.other;
 			if (key == Attr.ACTUAL) return main;
@@ -163,8 +162,7 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return main;
 			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

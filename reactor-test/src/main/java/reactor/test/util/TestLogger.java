@@ -72,8 +72,7 @@ public class TestLogger implements Logger {
 		this.logContent.reset();
 	}
 
-	@Nullable
-	private String format(@Nullable String from, @Nullable Object... arguments){
+	private @Nullable String format(@Nullable String from, @Nullable Object... arguments) {
 		if(from != null) {
 			String computed = from;
 			if (arguments != null && arguments.length != 0) {

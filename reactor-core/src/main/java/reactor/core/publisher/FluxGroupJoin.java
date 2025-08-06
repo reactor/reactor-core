@@ -219,8 +219,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CANCELLED) return cancellations.isDisposed();
 			if (key == Attr.BUFFERED) return queue.size() / 2;
@@ -516,8 +515,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.ACTUAL ) return parent;
 			if (key == Attr.CANCELLED) return isDisposed();
@@ -584,8 +582,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.CANCELLED) return isDisposed();
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

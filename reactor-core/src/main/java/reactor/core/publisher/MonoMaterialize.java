@@ -74,9 +74,8 @@ final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 			return this.actual;
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

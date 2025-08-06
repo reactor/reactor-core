@@ -651,8 +651,7 @@ public abstract class Schedulers {
 		}
 	}
 
-	@Nullable
-	private static BiConsumer<Thread, ? super Throwable> createOrAppendHandleError(Collection<BiConsumer<Thread, Throwable>> subHooks) {
+	private static @Nullable BiConsumer<Thread, ? super Throwable> createOrAppendHandleError(Collection<BiConsumer<Thread, Throwable>> subHooks) {
 		BiConsumer<Thread, Throwable> composite = null;
 		for (BiConsumer<Thread, Throwable> value : subHooks) {
 			if (composite != null) {
@@ -1533,8 +1532,7 @@ public abstract class Schedulers {
 	 * @return an equivalent of {@link Scannable#scanUnsafe(Scannable.Attr)} but that can
 	 * also work on some implementations of {@link Executor}
 	 */
-	@Nullable
-	static final Object scanExecutor(Executor executor, Scannable.Attr key) {
+	static final @Nullable Object scanExecutor(Executor executor, Scannable.Attr key) {
 		if (executor instanceof DelegateServiceScheduler.UnsupportedScheduledExecutorService) {
 			executor = ((DelegateServiceScheduler.UnsupportedScheduledExecutorService) executor).get();
 		}

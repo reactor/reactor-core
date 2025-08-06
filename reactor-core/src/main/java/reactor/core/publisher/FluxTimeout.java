@@ -81,8 +81,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		return new TimeoutMainSubscriber<>(actual, firstTimeout, itemTimeout, other, timeoutDescription);
 	}
 
-	@Nullable
-	static String addNameToTimeoutDescription(Publisher<?> source,
+	static @Nullable String addNameToTimeoutDescription(Publisher<?> source,
 			@Nullable  String timeoutDescription) {
 		if (timeoutDescription == null) {
 			return null;

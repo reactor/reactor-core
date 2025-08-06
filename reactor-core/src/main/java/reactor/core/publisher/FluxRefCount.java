@@ -123,8 +123,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -191,8 +190,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return isTerminated(state);
 			if (key == Attr.CANCELLED) return isCancelled(state);
@@ -318,8 +316,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return qs.poll();
 		}
 

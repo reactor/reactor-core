@@ -417,8 +417,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -489,8 +488,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
@@ -569,8 +567,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;

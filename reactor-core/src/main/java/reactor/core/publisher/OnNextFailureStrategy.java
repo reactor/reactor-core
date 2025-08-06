@@ -47,8 +47,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	String KEY_ON_NEXT_ERROR_STRATEGY = "reactor.onNextError.localStrategy";
 
 	@Override
-	@Nullable
-	default Throwable apply(Throwable throwable, @Nullable Object o) {
+	default @Nullable Throwable apply(Throwable throwable, @Nullable Object o) {
 		return process(throwable, o, Context.empty());
 	}
 
@@ -178,8 +177,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		}
 
 		@Override
-		@Nullable
-		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+		public @Nullable Throwable process(Throwable error, @Nullable Object value, Context context) {
 			if (errorPredicate == null) {
 				Exceptions.throwIfFatal(error);
 			}
@@ -211,8 +209,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		}
 
 		@Override
-		@Nullable
-		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+		public @Nullable Throwable process(Throwable error, @Nullable Object value, Context context) {
 			if (errorPredicate == null) {
 				Exceptions.throwIfFatal(error);
 			}
@@ -256,8 +253,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		}
 
 		@Override
-		@Nullable
-		public Throwable process(Throwable error, @Nullable Object value, Context ignored) {
+		public @Nullable Throwable process(Throwable error, @Nullable Object value, Context ignored) {
 			return delegateProcessor.apply(error, value);
 		}
 	}

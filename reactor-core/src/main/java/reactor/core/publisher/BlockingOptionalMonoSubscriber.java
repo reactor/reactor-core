@@ -175,8 +175,7 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return getCount() == 0;
 		if (key == Attr.PARENT) return  s;
 		if (key == Attr.CANCELLED) return cancelled;

@@ -58,8 +58,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return !done && list == null;
 

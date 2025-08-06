@@ -196,8 +196,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.BUFFERED) {
@@ -361,8 +360,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CAPACITY) return size;
@@ -560,8 +558,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;

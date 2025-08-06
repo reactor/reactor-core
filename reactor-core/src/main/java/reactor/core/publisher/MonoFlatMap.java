@@ -98,8 +98,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.CANCELLED) return second == FlatMapInner.CANCELLED;
@@ -270,9 +269,8 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			return parent.currentContext();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.TERMINATED) return done;

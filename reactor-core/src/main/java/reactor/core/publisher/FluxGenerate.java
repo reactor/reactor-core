@@ -140,8 +140,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return terminate;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -333,10 +332,9 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			}
 			return Fuseable.NONE;
 		}
-		
+
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			S s = state;
 
 			if (terminate) {

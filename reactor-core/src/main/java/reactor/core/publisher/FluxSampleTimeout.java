@@ -143,8 +143,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.PARENT) return s;
@@ -366,8 +365,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return once == 1;
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

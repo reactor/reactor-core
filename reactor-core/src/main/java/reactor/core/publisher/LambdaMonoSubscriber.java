@@ -187,8 +187,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 			return subscription;
 		}

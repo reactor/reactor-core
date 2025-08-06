@@ -184,8 +184,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
@@ -744,8 +743,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			Spliterator<? extends R> sp = current;
 			boolean itFinite;
 			for (; ; ) {

@@ -76,8 +76,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}

@@ -324,8 +324,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Throwable getError() {
+		public @Nullable Throwable getError() {
 			return error;
 		}
 
@@ -358,8 +357,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll(ReplaySubscription<T> rs) {
+		public @Nullable T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
 			long now = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
@@ -526,8 +524,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Throwable getError() {
+		public @Nullable Throwable getError() {
 			return error;
 		}
 
@@ -719,8 +716,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll(ReplaySubscription<T> rs) {
+		public @Nullable T poll(ReplaySubscription<T> rs) {
 			int index = rs.index();
 			if (index == size) {
 				return null;
@@ -970,8 +966,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Throwable getError() {
+		public @Nullable Throwable getError() {
 			return error;
 		}
 
@@ -1000,8 +995,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll(ReplaySubscription<T> rs) {
+		public @Nullable T poll(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 			if (node == null) {
 				node = head;
@@ -1208,8 +1202,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Scannable.Attr key) {
+	public @Nullable Object scanUnsafe(Scannable.Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_ON) return scheduler;
@@ -1484,8 +1477,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.CAPACITY) return buffer.capacity();
@@ -1714,8 +1706,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
 			}
@@ -1773,8 +1764,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return parent.buffer.poll(this);
 		}
 
@@ -1804,8 +1794,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object node() {
+		public @Nullable Object node() {
 			return node;
 		}
 

@@ -236,8 +236,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.TERMINATED) {
@@ -361,8 +360,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.TERMINATED) return done;

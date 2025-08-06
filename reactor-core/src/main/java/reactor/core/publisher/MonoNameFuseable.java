@@ -51,9 +51,8 @@ final class MonoNameFuseable<T> extends InternalMonoOperator<T, T> implements Fu
 		return actual;
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.NAME) {
 			return name;
 		}

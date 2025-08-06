@@ -111,8 +111,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * @return the value of this {@code MonoProcessor}
 	 */
 	@Override
-	@Nullable
-	public O block() {
+	public @Nullable O block() {
 		return block(null);
 	}
 
@@ -126,8 +125,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * not completed
 	 */
 	@Override
-	@Nullable
-	public O block(@Nullable Duration timeout) {
+	public @Nullable O block(@Nullable Duration timeout) {
 		return peek();
 	}
 
@@ -136,8 +134,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return the produced {@link Throwable} error if any or null
 	 */
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return null;
 	}
 
@@ -183,9 +180,8 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
 	 * @deprecated this method is discouraged, consider peeking into a MonoProcessor by {@link Mono#toFuture() turning it into a CompletableFuture}
 	 */
-	@Nullable
 	@Deprecated
-	public O peek() {
+	public @Nullable O peek() {
 		return null;
 	}
 
@@ -200,8 +196,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		//touch guard
 		boolean t = isTerminated();
 

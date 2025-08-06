@@ -574,18 +574,16 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
 	static class NullFunction<T, R> implements Function<T, R> {
 
-		@Nullable
 		@Override
-		public R apply(T t) {
+		public @Nullable R apply(T t) {
 			return null;
 		}
 	}
 
 	static class NullSupplier<T> implements Supplier<T> {
 
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			return null;
 		}
 	}

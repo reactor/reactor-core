@@ -294,8 +294,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.ERROR) return error;
@@ -1028,8 +1027,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.TERMINATED) return done && (queue == null || queue.isEmpty());

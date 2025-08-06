@@ -82,8 +82,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 
 			return super.scanUnsafe(key);

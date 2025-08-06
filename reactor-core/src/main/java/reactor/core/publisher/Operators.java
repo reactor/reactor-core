@@ -98,6 +98,7 @@ public abstract class Operators {
 			}
 		}
 	}
+
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.
@@ -105,8 +106,7 @@ public abstract class Operators {
 	 * @return the QueueSubscription instance or null
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
-	public static <T> QueueSubscription<T> as(Subscription s) {
+	public static <T> @Nullable QueueSubscription<T> as(Subscription s) {
 		if (s instanceof QueueSubscription) {
 			return (QueueSubscription<T>) s;
 		}
@@ -851,8 +851,7 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
-	@Nullable
-	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
+	public static <T> @Nullable Throwable onNextError(@Nullable T value, Throwable error, Context context,
 			Subscription subscriptionForCancel) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
@@ -886,8 +885,7 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is terminal, null if not.
 	 * @see #onNextError(Object, Throwable, Context, Subscription)
 	 */
-	@Nullable
-	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context) {
+	public static <T> @Nullable Throwable onNextError(@Nullable T value, Throwable error, Context context) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {
@@ -950,8 +948,7 @@ public abstract class Operators {
 	 * the strategy, null if not.
 	 * @see #onNextError(Object, Throwable, Context)
 	 */
-	@Nullable
-	public static <T> RuntimeException onNextPollError(@Nullable T value, Throwable error, Context context) {
+	public static <T> @Nullable RuntimeException onNextPollError(@Nullable T value, Throwable error, Context context) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {
@@ -1590,8 +1587,7 @@ public abstract class Operators {
 		static final CancelledSubscription INSTANCE = new CancelledSubscription();
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) {
 				return true;
 			}
@@ -1634,8 +1630,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object poll() {
+		public @Nullable Object poll() {
 			return null;
 		}
 
@@ -1650,8 +1645,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return true;
 			return null;
 		}
@@ -1701,8 +1695,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			long requested = this.requested; // volatile read to see subscription
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested < 0 ? 0 : requested;
@@ -1826,8 +1819,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelled();
 			if (key == Attr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -1923,8 +1915,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public final O poll() {
+		public final @Nullable O poll() {
 			return null;
 		}
 
@@ -2028,8 +2019,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Scannable.Attr key) {
+		public @Nullable Object scanUnsafe(Scannable.Attr key) {
 			if (key == Scannable.Attr.PREFETCH) return 0;
 			if (key == Scannable.Attr.PARENT) return s;
 			if (key == Scannable.Attr.RUN_STYLE) return Scannable.Attr.RunStyle.SYNC;
@@ -2124,8 +2114,7 @@ public abstract class Operators {
 		 *
 		 * @return accumulated/default value or null if cancelled before
 		 */
-		@Nullable
-		abstract O accumulatedValue();
+		abstract @Nullable O accumulatedValue();
 
 		@Override
 		public final I poll() {
@@ -2206,8 +2195,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT)
 				return missedSubscription != null ? missedSubscription : subscription;
 			if (key == Attr.CANCELLED) return isCancelled();
@@ -2543,8 +2531,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (once == 0) {
 				ONCE.lazySet(this, 1);
 				return value;
@@ -2553,8 +2540,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return once == 1;
 			if (key == Attr.CANCELLED) return once == 2;
 			if (key == Attr.RUN_STYLE) return RunStyle.SYNC;
@@ -2802,9 +2788,8 @@ public abstract class Operators {
 			this.actual = actual;
 		}
 
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+	@Override
+	public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelled();
 			if (key == Attr.TERMINATED) return hasCompleted(state);
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;

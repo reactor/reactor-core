@@ -74,8 +74,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done && value == null;
 			if (key == Attr.CANCELLED) return value == CANCELLED;
 

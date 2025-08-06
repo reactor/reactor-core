@@ -74,8 +74,7 @@ final class FluxContextWrite<T> extends InternalFluxOperator<T, T> implements Fu
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -150,8 +149,7 @@ final class FluxContextWrite<T> extends InternalFluxOperator<T, T> implements Fu
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs != null) {
 				return qs.poll();
 			}

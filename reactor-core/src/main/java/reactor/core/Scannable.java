@@ -256,8 +256,7 @@ public interface Scannable {
 		 *
 		 * @return the default value applicable to all components or null if none.
 		 */
-		@Nullable
-		public T defaultValue(){
+		public @Nullable T defaultValue() {
 			return defaultValue;
 		}
 
@@ -558,8 +557,7 @@ public interface Scannable {
 	 * @return a value associated to the key or null if unmatched or unresolved
 	 *
 	 */
-	@Nullable
-	default <T> T scan(Attr<T> key) {
+	default <T> @Nullable T scan(Attr<T> key) {
 		//note tryConvert will just plain cast most of the time
 		//except e.g. for Attr<Scannable>
 		T value = key.tryConvert(scanUnsafe(key));

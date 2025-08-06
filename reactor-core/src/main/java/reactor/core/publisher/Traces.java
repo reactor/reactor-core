@@ -179,8 +179,7 @@ final class Traces {
 				return current;
 			}
 
-			@Nullable
-			private StackLineView getNextLine() {
+			private @Nullable StackLineView getNextLine() {
 				while (index < source.length()) {
 					int end = source.indexOf('\n', index);
 					if (end == -1) {

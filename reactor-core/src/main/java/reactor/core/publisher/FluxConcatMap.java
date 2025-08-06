@@ -187,8 +187,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done || error == TERMINATED;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -550,8 +549,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -849,9 +847,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 			return parent.currentContext();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

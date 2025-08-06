@@ -168,8 +168,7 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return subscription;
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();

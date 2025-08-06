@@ -88,8 +88,7 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.TERMINATED) return done;
@@ -171,8 +170,7 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

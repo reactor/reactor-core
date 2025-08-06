@@ -60,9 +60,8 @@ final class MonoFirstWithValue<T> extends Mono<T> implements SourceProducer<T> {
 	 *
 	 * @return the new {@link MonoFirstWithValue} instance or null if new sources cannot be added (backed by an Iterable)
 	 */
-	@Nullable
 	@SafeVarargs
-	final MonoFirstWithValue<T> firstValuedAdditionalSources(Mono<? extends T>... others) {
+	final @Nullable MonoFirstWithValue<T> firstValuedAdditionalSources(Mono<? extends T>... others) {
 		Objects.requireNonNull(others, "others");
 		if (others.length == 0) {
 			return this;

@@ -56,20 +56,17 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 	}
 
 	@Override
-	@Nullable
-	public Throwable getThrowable() {
+	public @Nullable Throwable getThrowable() {
 		return throwable;
 	}
 
 	@Override
-	@Nullable
-	public Subscription getSubscription() {
+	public @Nullable Subscription getSubscription() {
 		return subscription;
 	}
 
 	@Override
-	@Nullable
-	public T get() {
+	public @Nullable T get() {
 		return value;
 	}
 

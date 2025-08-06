@@ -80,8 +80,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return !done && aggregate == CANCELLED;
 			if (key == Attr.PREFETCH) return 0;

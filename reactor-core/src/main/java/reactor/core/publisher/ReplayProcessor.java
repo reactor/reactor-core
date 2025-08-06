@@ -338,14 +338,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return buffer.getError();
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT){
 			return subscription;
 		}
@@ -586,8 +584,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return buffer.poll(this);
 		}
 
@@ -643,8 +640,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object node() {
+		public @Nullable Object node() {
 			return node;
 		}
 

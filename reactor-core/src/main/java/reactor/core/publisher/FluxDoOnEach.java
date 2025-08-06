@@ -127,8 +127,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -227,21 +226,18 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			return actual;
 		}
 
-		@Nullable
 		@Override
-		public Throwable getThrowable() {
+		public @Nullable Throwable getThrowable() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Subscription getSubscription() {
+		public @Nullable Subscription getSubscription() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			return t;
 		}
 
@@ -305,8 +301,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs == null) {
 				return null;
 			}

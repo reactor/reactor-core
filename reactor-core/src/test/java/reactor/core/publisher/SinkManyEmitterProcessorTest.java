@@ -598,8 +598,7 @@ class SinkManyEmitterProcessorTest {
 					.assertComplete();
 		}
 
-		@Nullable
-		public Throwable getLastException() {
+		public @Nullable Throwable getLastException() {
 			return lastException;
 		}
 

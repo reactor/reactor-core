@@ -52,24 +52,20 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<Void>, SourcePro
             actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
         }
     }
-    
-    @Override
-    @Nullable
-    public T block(Duration m) {
+	@Override
+	public @Nullable T block(Duration m) {
         run.run();
         return null;
     }
 
-    @Override
-    @Nullable
-    public T block() {
+	@Override
+	public @Nullable T block() {
         run.run();
         return null;
     }
 
-    @Override
-    @Nullable
-    public Void call() throws Exception {
+	@Override
+	public @Nullable Void call() throws Exception {
         run.run();
         return null;
     }

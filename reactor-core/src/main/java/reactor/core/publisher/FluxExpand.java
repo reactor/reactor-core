@@ -185,9 +185,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			}
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -430,9 +429,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			drainQueue();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return this.requested;
 			if (key == Attr.ERROR) return this.error;
@@ -493,9 +491,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			Operators.terminate(S, this);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent.actual;
 			if (key == Attr.TERMINATED) return this.done;

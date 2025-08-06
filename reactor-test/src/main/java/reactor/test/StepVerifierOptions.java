@@ -149,8 +149,7 @@ public class StepVerifierOptions {
 	 *
 	 * @return the custom value formatter, or null if no specific formatting has been defined.
 	 */
-	@Nullable
-	public ToStringConverter getValueFormatter() {
+	public @Nullable ToStringConverter getValueFormatter() {
 		return this.objectFormatter;
 	}
 
@@ -208,8 +207,7 @@ public class StepVerifierOptions {
 	 * {@link StepVerifier} receiving these options.
 	 *
 	 */
-	@Nullable
-	public Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
+	public @Nullable Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
 		return vtsLookup;
 	}
 
@@ -228,8 +226,7 @@ public class StepVerifierOptions {
 	/**
 	 * @return the {@link Context} to be propagated initially by the {@link StepVerifier}.
 	 */
-	@Nullable
-	public Context getInitialContext() {
+	public @Nullable Context getInitialContext() {
 		return this.initialContext;
 	}
 
@@ -250,8 +247,7 @@ public class StepVerifierOptions {
 	/**
 	 * @return the name given to the configured {@link StepVerifier}, or null if none.
 	 */
-	@Nullable
-	public String getScenarioName() {
+	public @Nullable String getScenarioName() {
 		return this.scenarioName;
 	}
 }

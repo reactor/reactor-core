@@ -41,8 +41,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, So
 	}
 
 	@Override
-	@Nullable
-	public T call() throws Exception {
+	public @Nullable T call() throws Exception {
 		return callable.call();
 	}
 

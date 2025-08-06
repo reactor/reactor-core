@@ -51,8 +51,7 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 
 			return super.scanUnsafe(key);

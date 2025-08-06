@@ -1335,8 +1335,7 @@ public class FluxUsingWhenTest {
 			return commitProbe.flux();
 		}
 
-		@Nullable
-		public Flux<Integer> commitNull() {
+		public @Nullable Flux<Integer> commitNull() {
 			return null;
 		}
 
@@ -1364,8 +1363,7 @@ public class FluxUsingWhenTest {
 			return rollbackProbe.flux();
 		}
 
-		@Nullable
-		public Flux<Integer> rollbackNull(Throwable error) {
+		public @Nullable Flux<Integer> rollbackNull(Throwable error) {
 			return null;
 		}
 
@@ -1385,8 +1383,7 @@ public class FluxUsingWhenTest {
 			return cancelProbe.flux();
 		}
 
-		@Nullable
-		public Flux<Integer> cancelNull() {
+		public @Nullable Flux<Integer> cancelNull() {
 			return null;
 		}
 	}

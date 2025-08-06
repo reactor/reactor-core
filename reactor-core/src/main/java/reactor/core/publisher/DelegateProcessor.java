@@ -100,8 +100,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	}
 
 	@Override
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .scanOrDefault(Attr.ERROR, super.getError());
@@ -115,8 +114,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 			return downstream;
 		}

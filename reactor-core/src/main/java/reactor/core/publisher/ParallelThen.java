@@ -38,8 +38,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		if (key == InternalProducerAttr.INSTANCE) return true;
@@ -94,8 +93,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return innersCompletedCount(this.state) == source.parallelism();
 			if (key == Attr.CANCELLED) return isCancelled(this.state) && innersCompletedCount(this.state) != source.parallelism();
 			if (key == Attr.PREFETCH) return 0;
@@ -268,8 +266,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;

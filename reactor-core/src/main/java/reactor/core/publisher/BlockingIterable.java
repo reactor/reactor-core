@@ -70,8 +70,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be forced to int?
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -278,8 +277,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return  s;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();

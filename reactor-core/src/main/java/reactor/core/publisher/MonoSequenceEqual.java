@@ -108,8 +108,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -314,8 +313,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.ERROR) return error;

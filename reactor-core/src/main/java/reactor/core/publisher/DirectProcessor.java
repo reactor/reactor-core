@@ -348,8 +348,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		if (subscribers == SinkManyBestEffort.TERMINATED) {
 			return error;
 		}

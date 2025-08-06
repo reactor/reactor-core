@@ -89,8 +89,7 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return once == 1;

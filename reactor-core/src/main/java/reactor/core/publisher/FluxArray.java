@@ -182,8 +182,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable, SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			int i = index;
 			T[] a = array;
 			if (i != a.length) {
@@ -216,8 +215,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable, SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return isEmpty();
 			if (key == Attr.BUFFERED) return size();
 			if (key == Attr.CANCELLED) return cancelled;
@@ -350,8 +348,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable, SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return isEmpty();
 			if (key == Attr.BUFFERED) return size();
 			if (key == Attr.CANCELLED) return cancelled;
@@ -361,8 +358,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable, SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			int i = index;
 			T[] a = array;
 			if (i != a.length) {

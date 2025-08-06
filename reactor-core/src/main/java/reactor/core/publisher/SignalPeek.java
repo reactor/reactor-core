@@ -94,8 +94,7 @@ interface SignalPeek<T> extends Scannable {
 	 * A task that will run after (finally) {@link Subscriber#onNext(Object)}
 	 * @return A task that will run after (finally) {@link Subscriber#onNext(Object)}
 	 */
-	@Nullable
-	default Consumer<? super T> onAfterNextCall(){
+	default @Nullable Consumer<? super T> onAfterNextCall() {
 		return null;
 	}
 
@@ -103,8 +102,7 @@ interface SignalPeek<T> extends Scannable {
 	 * A task that will run on {@link Context} read from downstream to upstream
 	 * @return A task that will run on {@link Context} propagation from upstream to downstream
 	 */
-	@Nullable
-	default Consumer<? super Context> onCurrentContextCall(){
+	default @Nullable Consumer<? super Context> onCurrentContextCall() {
 		return null;
 	}
 }

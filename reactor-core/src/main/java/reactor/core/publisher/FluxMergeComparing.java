@@ -107,8 +107,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return sources.length > 0 ? sources[0] : null;
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.DELAY_ERROR) return delayError;
@@ -484,8 +483,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key){
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return parent; //TODO does that check out?
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return prefetch;

@@ -51,8 +51,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 			return source;
 		}

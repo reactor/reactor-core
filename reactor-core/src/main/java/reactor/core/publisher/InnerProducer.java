@@ -38,8 +38,7 @@ interface InnerProducer<O>
 	CoreSubscriber<? super O> actual();
 
 	@Override
-	@Nullable
-	default Object scanUnsafe(Attr key){
+	default @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL) {
 			return actual();
 		}

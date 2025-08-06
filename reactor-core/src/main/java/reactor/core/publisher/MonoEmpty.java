@@ -58,20 +58,17 @@ extends Mono<Object>
 	}
 
 	@Override
-	@Nullable
-	public Object call() throws Exception {
+	public @Nullable Object call() throws Exception {
 		return null; /* Scalar optimizations on empty */
 	}
 
 	@Override
-	@Nullable
-	public Object block(Duration m) {
+	public @Nullable Object block(Duration m) {
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public Object block() {
+	public @Nullable Object block() {
 		return null;
 	}
 

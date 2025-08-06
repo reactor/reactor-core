@@ -245,9 +245,8 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        @Nullable
-        public R poll() {
+		@Override
+		public @Nullable R poll() {
             R v = value;
             if (v != null) {
                 value = null;
@@ -256,9 +255,8 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
             return null;
         }
 
-	    @Override
-	    @Nullable
-	    public Object scanUnsafe(Attr key) {
+		@Override
+		public @Nullable Object scanUnsafe(Attr key) {
 		    if (key == Attr.PARENT) return s;
 		    if (key == Attr.TERMINATED) return done;
 		    if (key == Attr.CANCELLED) return getAsBoolean();
@@ -269,9 +267,8 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 		    return InnerOperator.super.scanUnsafe(key);
 	    }
 
-	    @Override
-	    @Nullable
-        public R peek() {
+		@Override
+		public @Nullable R peek() {
             return value;
         }
 

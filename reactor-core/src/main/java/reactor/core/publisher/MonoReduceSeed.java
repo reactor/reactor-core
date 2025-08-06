@@ -79,8 +79,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return !done && seed == null;
 

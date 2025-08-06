@@ -121,8 +121,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs == null) {
 				return null;
 			}

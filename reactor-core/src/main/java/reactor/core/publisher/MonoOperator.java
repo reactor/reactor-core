@@ -43,8 +43,7 @@ public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.PARENT) return source;
 		if (key == InternalProducerAttr.INSTANCE) return false; // public class!

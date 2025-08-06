@@ -367,8 +367,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return s;
 		if (key == Attr.BUFFERED) return getPending();
 		if (key == Attr.CANCELLED) return isCancelled();

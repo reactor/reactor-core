@@ -151,8 +151,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return wip == 1;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -257,8 +256,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 
@@ -300,8 +298,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
 			if (key == Attr.PARENT) return s;
@@ -402,8 +399,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			T v = s.poll();
 
 			if (v == null && mode == SYNC) {
@@ -458,8 +454,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
 			if (key == Attr.PARENT) return s;
@@ -570,8 +565,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

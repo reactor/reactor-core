@@ -87,9 +87,8 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 		return new Tuple3<>(t1, t2, mapper.apply(t3));
 	}
 
-	@Nullable
 	@Override
-	public Object get(int index) {
+	public @Nullable Object get(int index) {
 		switch (index) {
 			case 0:
 				return t1;

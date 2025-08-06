@@ -122,8 +122,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.PARENT) return main;
 			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
@@ -238,8 +237,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return main.other;
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.CANCELLED) return main.other == Operators.cancelledSubscription();

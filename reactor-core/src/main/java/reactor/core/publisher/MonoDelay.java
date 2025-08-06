@@ -236,8 +236,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return wasDelayDone(this.state) && wasRequested(this.state);
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return wasRequested(this.state) ? 1L : 0L;
 			if (key == Attr.CANCELLED) return wasCancelled(this.state);

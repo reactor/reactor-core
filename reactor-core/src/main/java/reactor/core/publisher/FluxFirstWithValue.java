@@ -75,8 +75,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 	 * @return the new {@link FluxFirstWithValue} instance or null if new sources cannot be added (backed by an Iterable)
 	 */
 	@SafeVarargs
-	@Nullable
-	final FluxFirstWithValue<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
+	final @Nullable FluxFirstWithValue<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
 		Objects.requireNonNull(others, "others");
 		if (others.length == 0) {
 			return this;
@@ -310,8 +309,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return parent.cancelled;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

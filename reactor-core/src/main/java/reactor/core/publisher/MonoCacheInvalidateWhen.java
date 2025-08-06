@@ -173,9 +173,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		 * unused in this context as the {@link State} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			throw new UnsupportedOperationException("coordinator State#get shouldn't be used");
 		}
 
@@ -328,9 +327,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			return Operators.multiSubscribersContext(subscribers);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return null;
 		}
@@ -397,9 +395,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			return Context.empty();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return main;
 			//this is an approximation of TERMINATED, the trigger should only be active AFTER an actual value has been set as STATE
 			if (key == Attr.TERMINATED) return main.state == EMPTY_STATE || main.state instanceof CoordinatorSubscriber;

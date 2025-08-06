@@ -109,8 +109,7 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;

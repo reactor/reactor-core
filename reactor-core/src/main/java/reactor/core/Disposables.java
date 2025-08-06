@@ -289,9 +289,8 @@ public final class Disposables {
 			           .map(Scannable::from);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) {
 				return isDisposed();
 			}
@@ -323,8 +322,7 @@ static final class SwapDisposable implements Disposable.Swap {
 	}
 
 	@Override
-	@Nullable
-	public Disposable get() {
+	public @Nullable Disposable get() {
 		return inner;
 	}
 

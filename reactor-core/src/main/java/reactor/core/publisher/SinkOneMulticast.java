@@ -130,9 +130,8 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 		}
 	}
 
-	@Nullable
 	@Override
-	public O block(Duration timeout) {
+	public @Nullable O block(Duration timeout) {
 		if (timeout.isNegative()) {
 			return super.block(Duration.ZERO);
 		}

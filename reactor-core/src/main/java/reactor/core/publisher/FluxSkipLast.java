@@ -100,10 +100,8 @@ final class FluxSkipLast<T> extends InternalFluxOperator<T, T> {
 			Operators.onDiscardQueueWithClear(this, actual.currentContext(), null);
 		}
 
-
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return n;
 			if (key == Attr.BUFFERED) return size();

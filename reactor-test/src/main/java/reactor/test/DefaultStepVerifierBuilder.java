@@ -1346,8 +1346,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.completeLatch.countDown();
 		}
 
-		@Nullable
-		final Subscription cancel() {
+		final @Nullable Subscription cancel() {
 			Subscription s =
 					this.getAndSet(Operators.cancelledSubscription());
 			if (s != null && s != Operators.cancelledSubscription()) {

@@ -50,16 +50,14 @@ final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 	}
 
 	@Override
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		//duration is ignored below
 		return block(Duration.ZERO);
 	}
 
 	@Override
-	@Nullable
 	@SuppressWarnings("unchecked")
-	public T block(Duration timeout) {
+	public @Nullable T block(Duration timeout) {
 		try {
 			return ((Callable<T>) source).call();
 		}
@@ -86,8 +84,7 @@ final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public T call() throws Exception {
+	public @Nullable T call() throws Exception {
 		return ((Callable<T>) source).call();
 	}
 

@@ -933,45 +933,38 @@ public class FluxPeekFuseableTest {
 			};
 		}
 
-		@Nullable
 		@Override
-		public Consumer<? super Subscription> onSubscribeCall() {
+		public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Consumer<? super Throwable> onErrorCall() {
+		public @Nullable Consumer<? super Throwable> onErrorCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Runnable onCompleteCall() {
+		public @Nullable Runnable onCompleteCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Runnable onAfterTerminateCall() {
+		public @Nullable Runnable onAfterTerminateCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public LongConsumer onRequestCall() {
+		public @Nullable LongConsumer onRequestCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Runnable onCancelCall() {
+		public @Nullable Runnable onCancelCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return null;
 		}
 	}
@@ -1079,9 +1072,8 @@ public class FluxPeekFuseableTest {
 			return q.element();
 		}
 
-		@Nullable
 		@Override
-		public T peek() {
+		public @Nullable T peek() {
 			return q.peek();
 		}
 

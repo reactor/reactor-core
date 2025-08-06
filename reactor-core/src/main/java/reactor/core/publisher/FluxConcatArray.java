@@ -469,8 +469,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.DELAY_ERROR) return true;
 			if (key == Attr.TERMINATED) return this.error == Exceptions.TERMINATED;
 			if (key == Attr.ERROR) return this.error != Exceptions.TERMINATED ? this.error : null;
@@ -507,8 +506,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 	}
 
-	@Nullable
-	static <T extends SubscriptionAware> Subscription addCapAndGetSubscription(long n, AtomicLongFieldUpdater<T> updater, T instance) {
+	static <T extends SubscriptionAware> @Nullable Subscription addCapAndGetSubscription(long n, AtomicLongFieldUpdater<T> updater, T instance) {
 		for (;;) {
 			final long state = updater.get(instance);
 			final Subscription s = instance.upstream();

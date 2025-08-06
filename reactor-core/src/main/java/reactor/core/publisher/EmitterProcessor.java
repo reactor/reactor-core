@@ -405,8 +405,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	}
 
 	@Override
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return error;
 	}
 
@@ -433,8 +432,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return s;
 		if (key == Attr.BUFFERED) return getPending();
 		if (key == Attr.CANCELLED) return isCancelled();

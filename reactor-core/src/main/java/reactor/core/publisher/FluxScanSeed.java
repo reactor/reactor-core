@@ -251,8 +251,7 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}

@@ -70,8 +70,7 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_ON) return scheduler;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -141,8 +140,7 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 		}
 
 		@Override
-		@Nullable
-		public Tuple2<Long, T> poll() {
+		public @Nullable Tuple2<Long, T> poll() {
 			T data = qs.poll();
 			if(data != null){
 				return snapshot(data);

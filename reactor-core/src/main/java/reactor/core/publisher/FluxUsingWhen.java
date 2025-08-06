@@ -305,8 +305,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			return this.actual;
 		}
 
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return error != null;
 			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
 			if (key == Attr.CANCELLED) return callbackApplied == 3;

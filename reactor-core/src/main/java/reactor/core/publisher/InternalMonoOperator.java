@@ -85,8 +85,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 		}
 	}
 
-	@Nullable
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
+	public abstract @Nullable CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
 
 	@Override
 	public final CorePublisher<? extends I> source() {

@@ -69,8 +69,7 @@ public class CoreTest {
 		}
 
 		@Override
-		@Nullable
-		public Integer poll() {
+		public @Nullable Integer poll() {
 			return null;
 		}
 

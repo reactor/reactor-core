@@ -567,8 +567,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	@Nullable
-	public T poll() {
+	public @Nullable T poll() {
 		return queue.poll();
 	}
 
@@ -629,8 +628,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return error;
 	}
 

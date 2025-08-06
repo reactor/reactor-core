@@ -114,8 +114,7 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			T t = qs.poll();
 			if (t != null) {
 				// Make it easier to debug

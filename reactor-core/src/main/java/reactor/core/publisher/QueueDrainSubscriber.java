@@ -175,8 +175,7 @@ abstract class QueueDrainSubscriber<T, U, V> extends QueueDrainSubscriberPad4
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return done;
 		if (key == Attr.CANCELLED) return cancelled;
 		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;

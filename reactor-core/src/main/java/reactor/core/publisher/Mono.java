@@ -1765,8 +1765,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return T the result
 	 */
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
@@ -1793,8 +1792,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return T the result
 	 */
-	@Nullable
-	public T block(Duration timeout) {
+	public @Nullable T block(Duration timeout) {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);

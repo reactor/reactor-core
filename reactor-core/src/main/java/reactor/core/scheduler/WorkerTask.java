@@ -76,8 +76,7 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 	}
 
 	@Override
-	@Nullable
-	public Void call() {
+	public @Nullable Void call() {
 		THREAD.lazySet(this, Thread.currentThread());
 		try {
 			try {

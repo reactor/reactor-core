@@ -251,8 +251,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled == 1;
 			if (key == Attr.CAPACITY) return size;
@@ -441,8 +440,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled == 1;
 			if (key == Attr.CAPACITY) return size;
@@ -730,8 +728,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled == 1;
 			if (key == Attr.CAPACITY) return size;

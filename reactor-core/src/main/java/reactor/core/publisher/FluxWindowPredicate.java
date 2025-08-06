@@ -320,8 +320,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled == 1;
 			if (key == Attr.PREFETCH) return prefetch;
@@ -546,8 +545,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		}
 
 		@Override
-		@Nullable
-		public Flux<T> poll() {
+		public @Nullable Flux<T> poll() {
 			return queue.poll();
 		}
 
@@ -864,8 +862,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			T v = queue.poll();
 			if (v != null) {
 				produced++;
@@ -908,8 +905,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.TERMINATED) return done;

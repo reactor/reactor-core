@@ -159,8 +159,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 
 		return null;
@@ -247,17 +246,15 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Subscription> onSubscribeCall() {
+	public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 		if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
 			return s -> log(SignalType.ON_SUBSCRIBE, subscriptionAsString(s));
 		}
 		return null;
 	}
 
-	@Nullable
 	@Override
-	public Consumer<? super Context> onCurrentContextCall() {
+	public @Nullable Consumer<? super Context> onCurrentContextCall() {
 		if ((options & CONTEXT_PARENT) == CONTEXT_PARENT && (
 				(level == Level.FINE && log.isDebugEnabled())
 						|| (level == Level.FINEST && log.isTraceEnabled()))) {
@@ -267,8 +264,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super IN> onNextCall() {
+	public @Nullable Consumer<? super IN> onNextCall() {
 		if ((options & ON_NEXT) == ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
 			return d -> safeLog(SignalType.ON_NEXT, d);
 		}
@@ -276,8 +272,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Throwable> onErrorCall() {
+	public @Nullable Consumer<? super Throwable> onErrorCall() {
 		boolean shouldLogAsDebug = level == Level.FINE && log.isDebugEnabled();
 		boolean shouldLogAsTrace = level == Level.FINEST && log.isTraceEnabled();
 		boolean shouldLogAsError = level != Level.FINE && level != Level.FINEST && log.isErrorEnabled();
@@ -311,8 +306,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCompleteCall() {
+	public @Nullable Runnable onCompleteCall() {
 		if ((options & ON_COMPLETE) == ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
 			return () -> log(SignalType.ON_COMPLETE, "");
 		}
@@ -320,8 +314,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Runnable onAfterTerminateCall() {
+	public @Nullable Runnable onAfterTerminateCall() {
 		if ((options & AFTER_TERMINATE) == AFTER_TERMINATE && (level != Level.INFO || log.isInfoEnabled())) {
 			return () -> log(SignalType.AFTER_TERMINATE, "");
 		}
@@ -329,8 +322,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public LongConsumer onRequestCall() {
+	public @Nullable LongConsumer onRequestCall() {
 		if ((options & REQUEST) == REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
 			return n -> log(SignalType.REQUEST,
 					Long.MAX_VALUE == n ? "unbounded" : n);
@@ -339,8 +331,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCancelCall() {
+	public @Nullable Runnable onCancelCall() {
 		if ((options & CANCEL) == CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
 			return () -> log(SignalType.CANCEL, "");
 		}

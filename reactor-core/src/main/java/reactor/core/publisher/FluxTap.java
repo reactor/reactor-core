@@ -90,9 +90,8 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		return new TapSubscriber<>(actual, signalListener, ctx);
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);
@@ -126,8 +125,7 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

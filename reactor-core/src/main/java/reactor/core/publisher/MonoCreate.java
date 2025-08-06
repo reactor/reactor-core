@@ -119,8 +119,7 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) {
 				return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE || disposable == TERMINATED;
 			}

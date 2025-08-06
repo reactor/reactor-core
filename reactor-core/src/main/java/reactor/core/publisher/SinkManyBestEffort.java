@@ -76,9 +76,8 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		return Stream.of(subscribers);
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
 		if (key == Attr.ERROR) return error;
 		if (key == InternalProducerAttr.INSTANCE) return true;
@@ -335,8 +334,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.CANCELLED) return isCancelled();
 

@@ -138,8 +138,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return done && queue.isEmpty();
@@ -349,8 +348,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return queue.poll();
 		}
 

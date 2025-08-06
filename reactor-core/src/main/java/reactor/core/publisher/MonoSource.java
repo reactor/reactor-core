@@ -84,8 +84,7 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 				return source;
 		}

@@ -48,8 +48,7 @@ final class GroupedLift<K, I, O> extends GroupedFlux<K, O> implements Scannable 
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 			return source;
 		}

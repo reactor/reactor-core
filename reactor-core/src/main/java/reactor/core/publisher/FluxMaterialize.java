@@ -77,8 +77,7 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return terminalSignal != null;
 			if (key == Attr.ERROR) return terminalSignal != null ? terminalSignal.getThrowable() : null;
@@ -169,10 +168,9 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        @Nullable
-        @SuppressWarnings("unchecked")
-        public Signal<T> poll() {
+		@Override
+		@SuppressWarnings("unchecked")
+		public @Nullable Signal<T> poll() {
             Signal<T> v = terminalSignal;
             if (v != null && v != empty) {
 	            terminalSignal = (Signal<T>)empty;
@@ -181,9 +179,8 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
             return null;
         }
 
-        @Override
-        @Nullable
-        public Signal<T> peek() {
+		@Override
+		public @Nullable Signal<T> peek() {
             return empty == terminalSignal ? null : terminalSignal;
         }
 

@@ -240,8 +240,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
@@ -266,8 +265,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			if (sourceMode == ASYNC) {
 				if (done) {
 					return null;
@@ -634,8 +632,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
@@ -660,8 +657,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			if (sourceMode == ASYNC) {
 				if (done) {
 					return null;

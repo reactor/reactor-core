@@ -96,8 +96,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 * @param index The index of the object to retrieve. Starts at 0.
 	 * @return The object or {@literal null} if out of bounds.
 	 */
-	@Nullable
-	public Object get(int index) {
+	public @Nullable Object get(int index) {
 		switch (index) {
 			case 0:
 				return t1;

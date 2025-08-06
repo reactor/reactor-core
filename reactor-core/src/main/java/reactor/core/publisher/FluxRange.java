@@ -185,8 +185,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return isEmpty();
@@ -196,8 +195,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
-		@Nullable
-		public Integer poll() {
+		public @Nullable Integer poll() {
 			long i = index;
 			if (i == end) {
 				return null;
@@ -347,8 +345,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
-		@Nullable
-		public Integer poll() {
+		public @Nullable Integer poll() {
 			long i = index;
 			if (i == end) {
 				return null;

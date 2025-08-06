@@ -441,13 +441,11 @@ public abstract class Loggers {
 			logger.log(Level.SEVERE, msg, t);
 		}
 
-		@Nullable
-		private String format(@Nullable String from, Object @Nullable[] arguments) {
+		private @Nullable String format(@Nullable String from, Object @Nullable[] arguments) {
 			return format(from, arguments, false);
 		}
 
-		@Nullable
-		private String format(@Nullable String from, Object @Nullable[] arguments, boolean skipLast) {
+		private @Nullable String format(@Nullable String from, Object @Nullable[] arguments, boolean skipLast) {
 			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -475,8 +473,7 @@ public abstract class Loggers {
 			logger.log(level, format(format, arguments));
 		}
 
-		@Nullable
-		private Throwable getPotentialThrowable(Object... arguments) {
+		private @Nullable Throwable getPotentialThrowable(Object... arguments) {
 			if (arguments == null) {
 				return null;
 			}
@@ -527,13 +524,11 @@ public abstract class Loggers {
 			return identifier.name;
 		}
 
-		@Nullable
-		private String format(@Nullable String from, Object @Nullable[] arguments) {
+		private @Nullable String format(@Nullable String from, Object @Nullable[] arguments) {
 			return format(from, arguments, false);
 		}
 
-		@Nullable
-		private String format(@Nullable String from, Object @Nullable[] arguments, boolean skipLast) {
+		private @Nullable String format(@Nullable String from, Object @Nullable[] arguments, boolean skipLast) {
 			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -572,8 +567,7 @@ public abstract class Loggers {
 			);
 		}
 
-		@Nullable
-		private static Throwable getPotentialThrowable(Object... arguments) {
+		private static @Nullable Throwable getPotentialThrowable(Object... arguments) {
 			if (arguments == null) {
 				return null;
 			}

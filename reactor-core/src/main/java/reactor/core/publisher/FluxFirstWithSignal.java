@@ -194,8 +194,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 
 			return null;
@@ -304,8 +303,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return parent.cancelled;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

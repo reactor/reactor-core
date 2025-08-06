@@ -40,8 +40,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	@Nullable
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (this.cap == 0) {
 			Operators.complete(actual);
 			return null;

@@ -286,8 +286,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return s;
 		if (key == Attr.ERROR) return error;
 		if (key == Attr.BUFFERED) return producerCapacity();

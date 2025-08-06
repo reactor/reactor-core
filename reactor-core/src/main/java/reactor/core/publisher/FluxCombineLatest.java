@@ -274,8 +274,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.ERROR) return error;
@@ -531,8 +530,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			SourceAndArray e = queue.poll();
 			if (e == null) {
 				return null;
@@ -634,8 +632,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return  s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();

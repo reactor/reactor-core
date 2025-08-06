@@ -284,14 +284,12 @@ public final class Queues {
 		}
 
 		@Override
-		@Nullable
-		public T peek() {
+		public @Nullable T peek() {
 			return get();
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			T v = get();
 			if (v != null) {
 			    lazySet(null);
@@ -401,14 +399,12 @@ public final class Queues {
 		}
 
 		@Override
-		@Nullable
-		public T peek() {
+		public @Nullable T peek() {
 			return null;
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

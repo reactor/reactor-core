@@ -311,8 +311,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT){
 			return subscription;
 		}
@@ -550,8 +549,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return buffer.poll(this);
 		}
 
@@ -607,8 +605,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 		}
 
 		@Override
-		@Nullable
-		public Object node() {
+		public @Nullable Object node() {
 			return node;
 		}
 

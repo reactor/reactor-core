@@ -101,26 +101,22 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Subscription> onSubscribeCall() {
+	public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribe;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super T> onNextCall() {
+	public @Nullable Consumer<? super T> onNextCall() {
 		return onNext;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Throwable> onErrorCall() {
+	public @Nullable Consumer<? super Throwable> onErrorCall() {
 		return onError;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCompleteCall() {
+	public @Nullable Runnable onCompleteCall() {
 		return onComplete;
 	}
 
@@ -130,26 +126,22 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	@Nullable
-	public LongConsumer onRequestCall() {
+	public @Nullable LongConsumer onRequestCall() {
 		return onRequest;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCancelCall() {
+	public @Nullable Runnable onCancelCall() {
 		return onCancel;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super T> onAfterNextCall() {
+	public @Nullable Consumer<? super T> onAfterNextCall() {
 		return onAfterNext;
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

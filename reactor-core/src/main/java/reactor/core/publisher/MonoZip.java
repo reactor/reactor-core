@@ -188,8 +188,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return deliveredSignals(this.state) == subscribers.length;
 			if (key == Attr.BUFFERED) return subscribers.length;
 			if (key == Attr.DELAY_ERROR) return delayError;
@@ -438,8 +437,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) {
 				return s == Operators.cancelledSubscription();
 			}

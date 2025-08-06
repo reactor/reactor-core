@@ -129,8 +129,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return state == HAS_CANCELLED;
 			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 			if (key == Attr.RUN_ON) return scheduler;
@@ -171,8 +170,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (fusionState == HAS_VALUE) {
 				fusionState = COMPLETE;
 				return value;

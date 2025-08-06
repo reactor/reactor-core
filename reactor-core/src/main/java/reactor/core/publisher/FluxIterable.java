@@ -442,8 +442,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
@@ -496,8 +495,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (hasNextFailure != null) {
 				state = STATE_NO_NEXT;
 				throw Exceptions.propagate(hasNextFailure);
@@ -773,8 +771,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
@@ -827,8 +824,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (hasNextFailure != null) {
 				state = STATE_NO_NEXT;
 				throw Exceptions.propagate(hasNextFailure);

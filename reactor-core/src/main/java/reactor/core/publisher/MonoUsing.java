@@ -157,8 +157,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
 			if (key == Attr.PARENT) return s;
@@ -305,8 +304,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (mode == NONE || qs == null) {
 				return null;
 			}

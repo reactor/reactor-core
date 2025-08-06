@@ -66,44 +66,37 @@ final class MonoPeekFuseable<T> extends InternalMonoOperator<T, T>
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Subscription> onSubscribeCall() {
+	public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super T> onNextCall() {
+	public @Nullable Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Throwable> onErrorCall() {
+	public @Nullable Consumer<? super Throwable> onErrorCall() {
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCompleteCall() {
+	public @Nullable Runnable onCompleteCall() {
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onAfterTerminateCall() {
+	public @Nullable Runnable onAfterTerminateCall() {
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public LongConsumer onRequestCall() {
+	public @Nullable LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCancelCall() {
+	public @Nullable Runnable onCancelCall() {
 		return onCancelCall;
 	}
 

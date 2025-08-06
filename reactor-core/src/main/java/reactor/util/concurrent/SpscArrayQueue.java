@@ -58,10 +58,9 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 		PRODUCER_INDEX.lazySet(this, pi + 1);
 		return true;
 	}
-	
+
 	@Override
-	@Nullable
-	public T poll() {
+	public @Nullable T poll() {
 		long ci = consumerIndex;
 		int offset = (int)ci & mask;
 		
@@ -72,10 +71,9 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 		}
 		return v;
 	}
-	
+
 	@Override
-	@Nullable
-	public T peek() {
+	public @Nullable T peek() {
 		int offset = (int)consumerIndex & mask;
 		return get(offset);
 	}

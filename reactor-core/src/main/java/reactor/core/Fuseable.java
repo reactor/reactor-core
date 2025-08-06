@@ -169,10 +169,8 @@ public interface Fuseable {
 		 */
 		int requestFusion(int requestedMode);
 
-		
 		@Override
-		@Nullable
-		default T peek() {
+		default @Nullable T peek() {
 			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 

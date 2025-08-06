@@ -153,9 +153,8 @@ public class SinkManySerializedTest {
 			return delegate.inners();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return delegate.scanUnsafe(key);
 		}
 	}

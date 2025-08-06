@@ -85,8 +85,7 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Scannable.Attr key) {
+	public @Nullable Object scanUnsafe(Scannable.Attr key) {
 		if (key == Scannable.Attr.PARENT) {
 			return source;
 		}

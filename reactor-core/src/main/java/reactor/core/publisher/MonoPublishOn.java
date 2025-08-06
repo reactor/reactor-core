@@ -89,8 +89,7 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return future == OperatorDisposables.DISPOSED;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ERROR) return error;

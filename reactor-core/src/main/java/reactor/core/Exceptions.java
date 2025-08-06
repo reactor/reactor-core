@@ -420,8 +420,7 @@ public abstract class Exceptions {
 	 *
 	 * @return the previously masked throwable
 	 */
-	@Nullable
-	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field,
+	public static <T> @Nullable Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field,
 			T instance) {
 		Throwable current = field.get(instance);
 		if (current != TERMINATED) {

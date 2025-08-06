@@ -110,8 +110,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @return Current error if any, default to null
 	 */
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return null;
 	}
 
@@ -166,8 +165,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return isTerminated();
 		if (key == Attr.ERROR) return getError();
 		if (key == Attr.CAPACITY) return getBufferSize();

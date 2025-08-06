@@ -77,8 +77,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 		}
 	}
 
-	@Nullable
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
+	public abstract @Nullable CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
 
 	@Override
 	public final CorePublisher<? extends I> source() {
@@ -91,8 +90,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == InternalProducerAttr.INSTANCE) return true;

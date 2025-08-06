@@ -119,8 +119,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return done && isEmpty();

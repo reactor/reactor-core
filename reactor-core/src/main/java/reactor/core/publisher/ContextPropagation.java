@@ -466,8 +466,7 @@ final class ContextPropagation {
 		}
 
 		@Override
-		@Nullable
-		public T peek() {
+		public @Nullable T peek() {
 			Envelope<T> envelope = envelopeQueue.peek();
 			return envelope == null ? null : envelope.body;
 		}

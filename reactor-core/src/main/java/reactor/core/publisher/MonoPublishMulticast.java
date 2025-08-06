@@ -113,8 +113,7 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -353,8 +352,7 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
 			}

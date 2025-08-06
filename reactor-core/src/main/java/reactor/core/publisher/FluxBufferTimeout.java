@@ -848,8 +848,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.CANCELLED) return terminated == TERMINATED_WITH_CANCEL;
 			if (key == Attr.TERMINATED) return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;

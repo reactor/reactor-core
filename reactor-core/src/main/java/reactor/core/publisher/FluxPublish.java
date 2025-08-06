@@ -154,8 +154,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -650,8 +649,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.ERROR) return error;
@@ -896,8 +894,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelled();
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -934,8 +931,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.TERMINATED) return parent != null && parent.isTerminated();
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

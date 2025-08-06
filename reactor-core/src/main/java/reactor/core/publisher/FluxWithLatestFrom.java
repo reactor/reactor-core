@@ -127,8 +127,7 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return main;
 			if (key == RUN_STYLE) return SYNC;
@@ -282,8 +281,7 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
 				return main;
 			}

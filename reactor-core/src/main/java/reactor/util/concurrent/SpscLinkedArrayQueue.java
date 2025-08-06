@@ -140,8 +140,7 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public T poll() {
+	public @Nullable T poll() {
 		long ci = consumerIndex;
 		AtomicReferenceArray<Object> a = consumerArray;
 		int m = mask;
@@ -168,8 +167,7 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public T peek() {
+	public @Nullable T peek() {
 		long ci = consumerIndex;
 		AtomicReferenceArray<Object> a = consumerArray;
 		int m = mask;

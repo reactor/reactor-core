@@ -476,8 +476,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public final Object scanUnsafe(Attr key) {
+		public final @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return hasInboundCancelled(this.state) || hasInboundClosedPrematurely(this.state);
 			if (key == Attr.TERMINATED) return hasInboundTerminated(this.state) || hasInboundClosedPrematurely(this.state);
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

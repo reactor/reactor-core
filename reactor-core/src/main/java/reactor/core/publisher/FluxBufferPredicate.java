@@ -397,8 +397,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public C poll() {
+		public @Nullable C poll() {
 			C b = buffer;
 			if (b != null && !b.isEmpty()) {
 				synchronized (this) {
@@ -410,8 +409,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public C peek() {
+		public @Nullable C peek() {
 			return buffer;
 		}
 

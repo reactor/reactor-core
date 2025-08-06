@@ -172,8 +172,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -197,8 +196,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
 				for (; ; ) {
@@ -392,8 +390,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -417,8 +414,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
 				for (; ; ) {

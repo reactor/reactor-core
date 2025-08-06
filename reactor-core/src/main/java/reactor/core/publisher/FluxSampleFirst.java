@@ -129,8 +129,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ERROR) return error;
@@ -263,8 +262,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

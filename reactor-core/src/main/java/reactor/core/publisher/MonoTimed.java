@@ -44,9 +44,8 @@ final class MonoTimed<T> extends InternalMonoOperator<T, Timed<T>> {
 		return new FluxTimed.TimedSubscriber<>(actual, this.clock);
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return 0;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

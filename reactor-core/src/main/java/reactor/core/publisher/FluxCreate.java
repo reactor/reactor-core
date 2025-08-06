@@ -297,8 +297,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
 				return mpscQueue.size();
 			}
@@ -620,8 +619,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return disposable == TERMINATED;
 			if (key == Attr.CANCELLED) return disposable == CANCELLED;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requestedFromDownstream();
@@ -920,8 +918,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
 				return queue.size();
 			}
@@ -1082,8 +1079,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
 				return queue.get() == null ? 0 : 1;
 			}

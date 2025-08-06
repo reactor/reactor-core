@@ -1429,8 +1429,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		}
 
 		@Override
-		@Nullable
-		public Worker createWorker() {
+		public @Nullable Worker createWorker() {
 			return null;
 		}
 	}

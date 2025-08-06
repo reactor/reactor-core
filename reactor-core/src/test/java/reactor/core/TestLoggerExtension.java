@@ -87,9 +87,8 @@ public class TestLoggerExtension implements ParameterResolver, AfterEachCallback
 	}
 
 	@Override
-	@Nullable
-	public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
-		throws ParameterResolutionException {
+	public @Nullable Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+			throws ParameterResolutionException {
 		if (parameterContext.getParameter().getType() == TestLogger.class) {
 			return this.logger;
 		}

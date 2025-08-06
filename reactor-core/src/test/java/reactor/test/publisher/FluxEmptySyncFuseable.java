@@ -31,8 +31,7 @@ final class FluxEmptySyncFuseable<T> extends Flux<T> implements Fuseable {
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(new SynchronousSubscription<T>() {
 			@Override
-			@Nullable
-			public T poll() {
+			public @Nullable T poll() {
 				return null;
 			}
 

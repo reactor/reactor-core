@@ -65,8 +65,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	@Nullable
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(actual,
 				processorQueueSupplier, processorQueueSupplier.get());
 
@@ -154,8 +153,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.CANCELLED) return cancelled == 1;
@@ -401,8 +399,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
 				return main;
 			}

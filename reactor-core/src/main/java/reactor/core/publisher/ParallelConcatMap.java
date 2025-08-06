@@ -58,8 +58,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.DELAY_ERROR) return errorMode != ErrorMode.IMMEDIATE;

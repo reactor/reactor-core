@@ -106,8 +106,7 @@ final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		return sink.scanUnsafe(key);
 	}
 

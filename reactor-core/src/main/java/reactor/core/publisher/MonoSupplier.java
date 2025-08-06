@@ -46,23 +46,20 @@ extends Mono<T>
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(new MonoSupplierSubscription<>(actual, supplier));
 	}
-	
+
 	@Override
-	@Nullable
-	public T block(Duration m) {
+	public @Nullable T block(Duration m) {
 		return supplier.get();
 	}
 
 	@Override
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		//the duration is ignored above
 		return block(Duration.ZERO);
 	}
-	
+
 	@Override
-	@Nullable
-	public T call() throws Exception {
+	public @Nullable T call() throws Exception {
 		return supplier.get();
 	}
 

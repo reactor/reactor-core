@@ -126,8 +126,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.CAPACITY) {
@@ -321,8 +320,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
 				return main;
 			}

@@ -106,9 +106,8 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
             this.lastMono = lastMono;
         }
 
-        @Override
-        @Nullable
-        public Object scanUnsafe(Attr key) {
+		@Override
+		public @Nullable Object scanUnsafe(Attr key) {
             if (key == Attr.PARENT) return this.activeSubscription;
             if (key == Attr.CANCELLED) return isCancelled(this.state);
             if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

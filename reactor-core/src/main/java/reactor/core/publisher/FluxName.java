@@ -111,9 +111,8 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 		return actual;
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.NAME) {
 			return name;
 		}

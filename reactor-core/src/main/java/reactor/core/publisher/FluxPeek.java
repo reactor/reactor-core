@@ -106,8 +106,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -278,44 +277,37 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Subscription> onSubscribeCall() {
+	public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super T> onNextCall() {
+	public @Nullable Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Throwable> onErrorCall() {
+	public @Nullable Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCompleteCall() {
+	public @Nullable Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onAfterTerminateCall() {
+	public @Nullable Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
 	@Override
-	@Nullable
-	public LongConsumer onRequestCall() {
+	public @Nullable LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCancelCall() {
+	public @Nullable Runnable onCancelCall() {
 		return onCancelCall;
 	}
 

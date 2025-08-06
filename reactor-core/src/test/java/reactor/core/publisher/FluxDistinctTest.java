@@ -514,8 +514,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		}
 
 		@Override
-		@Nullable
-		public Iterator<T> iterator() {
+		public @Nullable Iterator<T> iterator() {
 			return null;
 		}
 

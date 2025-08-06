@@ -561,9 +561,8 @@ public abstract class Hooks {
 		}
 	}
 
-	@Nullable
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
+	static @Nullable Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
 		Function<Publisher, Publisher> composite = null;
 		for (Function<? super Publisher<Object>, ? extends Publisher<Object>> function : hooks) {
 			Function<? super Publisher, ? extends Publisher> op = (Function<? super Publisher, ? extends Publisher>) function;
@@ -577,8 +576,7 @@ public abstract class Hooks {
 		return composite;
 	}
 
-	@Nullable
-	static BiFunction<? super Throwable, Object, ? extends Throwable> createOrUpdateOpErrorHook(Collection<BiFunction<? super Throwable, Object, ? extends Throwable>> hooks) {
+	static @Nullable BiFunction<? super Throwable, Object, ? extends Throwable> createOrUpdateOpErrorHook(Collection<BiFunction<? super Throwable, Object, ? extends Throwable>> hooks) {
 		BiFunction<? super Throwable, Object, ? extends Throwable> composite = null;
 		for (BiFunction<? super Throwable, Object, ? extends Throwable> function : hooks) {
 			if (composite != null) {
@@ -681,9 +679,8 @@ public abstract class Hooks {
 	 *
 	 * @deprecated Should only be used by the instrumentation, DOES NOT guarantee any compatibility
 	 */
-	@Nullable
 	@Deprecated
-	public static <T, P extends Publisher<T>> Publisher<T> addReturnInfo(@Nullable P publisher, String method) {
+	public static <T, P extends Publisher<T>> @Nullable Publisher<T> addReturnInfo(@Nullable P publisher, String method) {
 		if (publisher == null) {
 			return null;
 		}
@@ -694,9 +691,8 @@ public abstract class Hooks {
 	 *
 	 * @deprecated Should only be used by the instrumentation, DOES NOT guarantee any compatibility
 	 */
-	@Nullable
 	@Deprecated
-	public static <T, P extends Publisher<T>> Publisher<T> addCallSiteInfo(@Nullable P publisher, String callSite) {
+	public static <T, P extends Publisher<T>> @Nullable Publisher<T> addCallSiteInfo(@Nullable P publisher, String callSite) {
 		if (publisher == null) {
 			return null;
 		}

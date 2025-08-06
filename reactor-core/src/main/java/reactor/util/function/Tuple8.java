@@ -153,9 +153,8 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 		return new Tuple8<>(t1, t2, t3, t4, t5, t6, t7, mapper.apply(t8));
 	}
 
-	@Nullable
 	@Override
-	public Object get(int index) {
+	public @Nullable Object get(int index) {
 		switch (index) {
 			case 0:
 				return t1;

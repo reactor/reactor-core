@@ -140,8 +140,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return upstream;
 			if (key == Attr.TERMINATED) return state == State.TERMINATED;
 			if (key == Attr.CANCELLED) return state == State.CANCELLED;

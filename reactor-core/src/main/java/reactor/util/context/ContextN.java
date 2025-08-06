@@ -132,8 +132,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	}
 
 	@Override
-	@Nullable
-	public Object getOrDefault(Object key, @Nullable Object defaultValue) {
+	public @Nullable Object getOrDefault(Object key, @Nullable Object defaultValue) {
 		Object o = super.get(key);
 		if (o != null) {
 			return o;

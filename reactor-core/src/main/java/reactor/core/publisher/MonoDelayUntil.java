@@ -314,8 +314,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isTerminated(this.state) && !this.done;
 			if (key == Attr.TERMINATED) return isTerminated(this.state) && this.done;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -448,8 +447,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isTerminated(this.parent.state) && !this.done;
 			if (key == Attr.PARENT) return this.s;
 			if (key == Attr.ACTUAL) return this.parent;

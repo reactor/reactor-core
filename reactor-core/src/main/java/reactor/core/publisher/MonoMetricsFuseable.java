@@ -149,8 +149,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs == null) {
 				return null;
 			}

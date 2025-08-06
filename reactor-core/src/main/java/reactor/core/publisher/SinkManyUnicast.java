@@ -455,8 +455,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 	}
 
 	@Override
-	@Nullable
-	public T poll() {
+	public @Nullable T poll() {
 		return queue.poll();
 	}
 

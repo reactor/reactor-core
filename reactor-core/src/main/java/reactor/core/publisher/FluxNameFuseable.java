@@ -52,9 +52,8 @@ final class FluxNameFuseable<T> extends InternalFluxOperator<T, T> implements Fu
 		return actual;
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.NAME) {
 			return name;
 		}

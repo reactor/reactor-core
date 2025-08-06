@@ -50,8 +50,7 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 	}
 
 	@Override
-	@Nullable
-	public <T> T readValue(ContextView sourceContext, Object key) {
+	public <T> @Nullable T readValue(ContextView sourceContext, Object key) {
 		return sourceContext.getOrDefault(key, null);
 	}
 

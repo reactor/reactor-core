@@ -51,8 +51,7 @@ final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 	}
 
 	@Override
-	@Nullable
-	public Void call() {
+	public @Nullable Void call() {
 		thread = Thread.currentThread();
 		try {
 			try {

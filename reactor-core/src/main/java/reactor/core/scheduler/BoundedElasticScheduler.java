@@ -656,8 +656,7 @@ final class BoundedElasticScheduler implements Scheduler,
 			}
 		}
 
-		@Nullable
-		private BoundedState choseOneBusy() {
+		private @Nullable BoundedState choseOneBusy() {
 			BoundedState[] arr = busyStates.array;
 			int len = arr.length;
 			if (len == 0) {

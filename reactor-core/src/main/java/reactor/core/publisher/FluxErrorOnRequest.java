@@ -84,8 +84,7 @@ final class FluxErrorOnRequest<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.CANCELLED || key == Attr.TERMINATED)
 				return once == 1;

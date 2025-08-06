@@ -58,8 +58,7 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable,
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.PARENT) return source;
 		if (key == InternalProducerAttr.INSTANCE) return true;
@@ -93,8 +92,7 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable,
 	}
 
 	@Override
-	@Nullable
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
+	public abstract @Nullable CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
 	public final CorePublisher<? extends I> source() {

@@ -336,9 +336,8 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 		}
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return terminalSignal != null || subscriptionFailure.get() != null;
 		if (key == Attr.CANCELLED) return cancelled.get();
 		if (key == Attr.ERROR) {
@@ -535,8 +534,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	}
 
 	@Override
-	@Nullable
-	public Signal<T> getTerminalSignal() {
+	public @Nullable Signal<T> getTerminalSignal() {
 		checkSubscriptionFailure();
 		return this.terminalSignal;
 	}

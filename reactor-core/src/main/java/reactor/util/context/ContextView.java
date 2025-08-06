@@ -82,8 +82,7 @@ public interface ContextView {
 	 *
 	 * @return the value resolved for this key, or the given default if not present
 	 */
-	@Nullable
-	default <T> T getOrDefault(Object key, @Nullable T defaultValue) {
+	default <T> @Nullable T getOrDefault(Object key, @Nullable T defaultValue) {
 		if (!hasKey(key)) {
 			return defaultValue;
 		}

@@ -95,9 +95,8 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 		return source.parallelism();
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.NAME) {
 			return name;
 		}

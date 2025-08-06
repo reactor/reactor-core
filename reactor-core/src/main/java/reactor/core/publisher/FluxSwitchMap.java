@@ -172,8 +172,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
@@ -472,8 +471,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;

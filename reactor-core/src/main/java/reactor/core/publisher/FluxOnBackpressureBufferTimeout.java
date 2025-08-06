@@ -136,8 +136,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}

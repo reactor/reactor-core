@@ -34,8 +34,7 @@ import reactor.core.Scannable;
 interface SourceProducer<O> extends Scannable, Publisher<O> {
 
 	@Override
-	@Nullable
-	default Object scanUnsafe(Attr key) {
+	default @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return null;
 		if (key == Attr.ACTUAL) return null;
 		if (key == InternalProducerAttr.INSTANCE) return true;

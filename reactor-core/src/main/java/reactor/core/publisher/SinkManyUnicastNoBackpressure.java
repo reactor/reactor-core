@@ -188,9 +188,8 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 		return a == null ? Stream.empty() : Stream.of(Scannable.from(a));
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL) return actual;
 		if (key == Attr.TERMINATED) return state == State.TERMINATED;
 		if (key == Attr.CANCELLED) return state == State.CANCELLED;

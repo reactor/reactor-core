@@ -159,8 +159,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -640,8 +639,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
 				return Math.max(0L, requested);
 			}
@@ -709,8 +707,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -780,8 +777,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			// should not be called because fusion is always rejected
 			return null;
 		}
@@ -808,8 +804,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -863,8 +858,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return s.poll();
 		}
 

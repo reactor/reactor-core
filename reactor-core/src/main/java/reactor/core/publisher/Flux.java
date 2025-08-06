@@ -2757,8 +2757,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return the first value or null
 	 */
-	@Nullable
-	public final T blockFirst() {
+	public final @Nullable T blockFirst() {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>(context);
@@ -2780,12 +2779,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/blockFirstWithTimeout.svg" alt="">
 	 *
- 	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
+	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
 	 * with a {@link TimeoutException} as the cause
 	 * @return the first value or null
 	 */
-	@Nullable
-	public final T blockFirst(Duration timeout) {
+	public final @Nullable T blockFirst(Duration timeout) {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>(context);
@@ -2808,15 +2806,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return the last value or null
 	 */
-	@Nullable
-	public final T blockLast() {
+	public final @Nullable T blockLast() {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
-
 
 	/**
 	 * Subscribe to this {@link Flux} and <strong>block</strong> until the upstream
@@ -2836,8 +2832,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * with a {@link TimeoutException} as the cause
 	 * @return the last value or null
 	 */
-	@Nullable
-	public final T blockLast(Duration timeout) {
+	public final @Nullable T blockLast(Duration timeout) {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>(context);
