@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Hooks;
-import reactor.util.annotation.Nullable;
 
 
 /**

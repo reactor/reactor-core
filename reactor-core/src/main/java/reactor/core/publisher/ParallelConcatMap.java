@@ -21,11 +21,11 @@ import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
-import reactor.util.annotation.Nullable;
 
 /**
  * Concatenates the generated Publishers on each rail.

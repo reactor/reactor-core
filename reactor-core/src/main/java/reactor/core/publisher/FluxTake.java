@@ -18,12 +18,12 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import reactor.util.annotation.Nullable;
 
 /**
  * Takes only the first N values from the source Publisher.

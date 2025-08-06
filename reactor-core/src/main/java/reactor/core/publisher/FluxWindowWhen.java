@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -33,7 +34,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static reactor.core.Exceptions.wrapSource;
@@ -353,7 +353,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	static final class WindowOperation<T, U> {
 		final Sinks.Many<T> w;
 		final U             open;
-		WindowOperation(@Nullable Sinks.Many<T> w, @Nullable U open) {
+		WindowOperation(Sinks.@Nullable Many<T> w, @Nullable U open) {
 			this.w = w;
 			this.open = open;
 		}

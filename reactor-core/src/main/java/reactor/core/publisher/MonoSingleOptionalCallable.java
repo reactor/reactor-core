@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 
 import java.time.Duration;
 import java.util.NoSuchElementException;

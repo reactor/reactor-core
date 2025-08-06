@@ -16,8 +16,7 @@
 
 package reactor.core.publisher;
 
-
-import reactor.util.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Represents a sequence of events which has an associated key.

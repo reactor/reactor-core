@@ -17,11 +17,11 @@
 package reactor.core.publisher;
 
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  *

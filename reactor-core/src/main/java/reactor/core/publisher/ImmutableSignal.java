@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 

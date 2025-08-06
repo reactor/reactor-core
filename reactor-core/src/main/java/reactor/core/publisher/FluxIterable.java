@@ -23,12 +23,12 @@ import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**

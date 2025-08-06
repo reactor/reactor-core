@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import org.jspecify.annotations.Nullable;
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
@@ -27,7 +28,6 @@ import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.LLI_Result;
 
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;

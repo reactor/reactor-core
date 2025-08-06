@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.reactivestreams.Publisher;
@@ -29,7 +30,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.util.TestLogger;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

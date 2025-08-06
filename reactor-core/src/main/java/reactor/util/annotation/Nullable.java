@@ -26,6 +26,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.meta.TypeQualifierNickname;
 import javax.annotation.meta.When;
 
+import org.jspecify.annotations.NonNull;
+
 /**
  * A common Reactor annotation (similar to Spring ones) to declare that annotated elements
  * can be {@code null} under some circumstance. Leverages JSR 305 meta-annotations to

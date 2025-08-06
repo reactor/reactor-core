@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 
 import io.micrometer.context.ContextSnapshot;
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

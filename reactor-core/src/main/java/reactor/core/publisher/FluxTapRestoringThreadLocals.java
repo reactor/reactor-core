@@ -17,13 +17,13 @@
 package reactor.core.publisher;
 
 import io.micrometer.context.ContextSnapshot;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

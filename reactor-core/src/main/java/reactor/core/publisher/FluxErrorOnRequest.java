@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.

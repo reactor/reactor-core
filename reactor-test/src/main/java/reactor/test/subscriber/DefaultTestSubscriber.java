@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -49,8 +49,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final int                                     expectedFusionMode;
 
 	Subscription s;
-	@Nullable
-	Fuseable.QueueSubscription<T> qs;
+	Fuseable.@Nullable QueueSubscription<T> qs;
 	int fusionMode = -1;
 
 	// state tracking

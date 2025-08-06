@@ -16,10 +16,10 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are

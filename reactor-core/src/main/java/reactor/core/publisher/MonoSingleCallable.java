@@ -21,9 +21,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 
 /**
  * Expects and emits a single item from the source Callable or signals

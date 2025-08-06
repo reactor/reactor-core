@@ -20,8 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.regex.Matcher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.util.Logger;
-import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Logger} that writes to {@link ByteArrayOutputStream} and allows retrieval of

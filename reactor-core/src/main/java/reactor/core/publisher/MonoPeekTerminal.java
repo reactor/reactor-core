@@ -19,12 +19,12 @@ package reactor.core.publisher;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Peeks the value of a {@link Mono} and execute terminal callbacks accordingly, allowing
@@ -93,8 +93,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 
 		//TODO could go into a common base for all-in-one subscribers? (as well as actual above)
 		Subscription                  s;
-		@Nullable
-		Fuseable.QueueSubscription<T> queueSubscription;
+		Fuseable.@Nullable QueueSubscription<T> queueSubscription;
 
 		int sourceMode;
 

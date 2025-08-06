@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.jspecify.annotations.Nullable;
 import org.openjdk.jcstress.annotations.Actor;
 import org.openjdk.jcstress.annotations.Arbiter;
 import org.openjdk.jcstress.annotations.JCStressTest;
@@ -29,7 +30,6 @@ import org.openjdk.jcstress.infra.results.IIIIIII_Result;
 import org.openjdk.jcstress.infra.results.IIIIII_Result;
 import org.openjdk.jcstress.infra.results.JJ_Result;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE_INTERESTING;

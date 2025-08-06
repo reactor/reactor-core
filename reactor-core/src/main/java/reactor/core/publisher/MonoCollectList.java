@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Buffers all values from the source Publisher and emits it as a single List.

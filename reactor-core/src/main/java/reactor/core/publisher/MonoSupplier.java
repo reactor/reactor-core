@@ -22,10 +22,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.

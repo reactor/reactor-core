@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A tuple that holds two non-null values.

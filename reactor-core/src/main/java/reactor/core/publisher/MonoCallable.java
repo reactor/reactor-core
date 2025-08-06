@@ -21,12 +21,12 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
- /**
+/**
  * Executes a Callable function and emits a single value to each individual Subscriber.
  * <p>
  *  Preferred to {@link java.util.function.Supplier} because the Callable may throw.

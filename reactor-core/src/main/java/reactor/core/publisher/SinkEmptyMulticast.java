@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 //intentionally not final

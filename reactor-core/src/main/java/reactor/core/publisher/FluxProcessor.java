@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -27,7 +28,6 @@ import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.publisher.Sinks.Many;

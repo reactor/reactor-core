@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

@@ -25,6 +25,9 @@ import java.lang.annotation.Target;
 import javax.annotation.Nonnull;
 import javax.annotation.meta.TypeQualifierDefault;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 /**
  * A common Reactor annotation (similar to Spring one) to declare that parameters and return
  * values are to be considered as non-nullable by default for a given package.

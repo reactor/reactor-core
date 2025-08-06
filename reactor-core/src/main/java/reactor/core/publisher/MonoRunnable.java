@@ -21,10 +21,10 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.

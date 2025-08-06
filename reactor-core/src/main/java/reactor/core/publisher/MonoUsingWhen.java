@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -29,7 +30,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.core.publisher.Operators.DeferredSubscription;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

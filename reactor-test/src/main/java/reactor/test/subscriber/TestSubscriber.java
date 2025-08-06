@@ -19,13 +19,13 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Signal;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

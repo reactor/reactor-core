@@ -19,8 +19,8 @@ package reactor.core.scheduler;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The noop {@link VirtualThread} Reactor {@link ThreadFactory} to be

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiPredicate;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 
 /**

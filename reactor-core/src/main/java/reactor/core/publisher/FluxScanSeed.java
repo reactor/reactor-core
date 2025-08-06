@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
 import static reactor.core.Scannable.Attr.RunStyle.SYNC;

@@ -20,10 +20,10 @@ import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
 
 final class FluxCancelOn<T> extends InternalFluxOperator<T, T> {
 

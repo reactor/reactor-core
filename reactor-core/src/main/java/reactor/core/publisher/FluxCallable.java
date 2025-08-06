@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.

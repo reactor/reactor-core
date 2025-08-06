@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The standard Reactor {@link ThreadFactory Thread factories} to be used by {@link Scheduler},

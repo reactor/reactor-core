@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiPredicate;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /*
  * The code was inspired by the similarly named JCTools class:

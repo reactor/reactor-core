@@ -38,6 +38,7 @@ ext {
 
 dependencies {
 	api project(":reactor-core")
+	api libs.jspecify
 	compileOnly libs.jsr305
 
 	testImplementation platform(libs.junit.bom)

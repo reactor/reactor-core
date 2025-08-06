@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.

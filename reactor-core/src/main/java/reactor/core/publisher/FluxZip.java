@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -35,7 +36,6 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.Fuseable.ASYNC;
@@ -291,7 +291,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	 */
 	void handleBoth(CoreSubscriber<? super R> s,
 			Publisher<? extends T>[] srcs,
-			@Nullable Object[] scalars,
+			Object @Nullable[] scalars,
 			int n,
 			int sc) {
 		Operators.toFluxOrMono(srcs);

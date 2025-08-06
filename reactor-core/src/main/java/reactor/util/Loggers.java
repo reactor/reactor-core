@@ -25,7 +25,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -442,12 +442,12 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object[] arguments) {
+		private String format(@Nullable String from, Object @Nullable[] arguments) {
 			return format(from, arguments, false);
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object[] arguments, boolean skipLast) {
+		private String format(@Nullable String from, Object @Nullable[] arguments, boolean skipLast) {
 			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -528,12 +528,12 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object[] arguments) {
+		private String format(@Nullable String from, Object @Nullable[] arguments) {
 			return format(from, arguments, false);
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object[] arguments, boolean skipLast) {
+		private String format(@Nullable String from, Object @Nullable[] arguments, boolean skipLast) {
 			if (from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {

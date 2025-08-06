@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -49,7 +50,6 @@ import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;

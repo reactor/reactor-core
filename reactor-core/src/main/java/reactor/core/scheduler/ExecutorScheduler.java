@@ -28,7 +28,6 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.

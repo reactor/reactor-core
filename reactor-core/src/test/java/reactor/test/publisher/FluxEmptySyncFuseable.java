@@ -17,10 +17,10 @@
 package reactor.test.publisher;
 
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

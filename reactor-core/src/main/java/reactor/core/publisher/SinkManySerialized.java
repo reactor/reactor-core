@@ -16,8 +16,8 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import java.util.Objects;

@@ -18,9 +18,8 @@ package reactor.core;
 
 import java.util.Collections;
 
-
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;

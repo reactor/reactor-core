@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,6 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.subscriber.ConditionalTestSubscriber;
 import reactor.test.subscriber.TestSubscriber;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;

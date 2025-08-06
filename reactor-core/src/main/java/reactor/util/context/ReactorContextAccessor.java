@@ -20,8 +20,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import io.micrometer.context.ContextAccessor;
-
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A {@code ContextAccessor} to enable reading values from a Reactor

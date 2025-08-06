@@ -24,13 +24,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.Exceptions.wrapSource;

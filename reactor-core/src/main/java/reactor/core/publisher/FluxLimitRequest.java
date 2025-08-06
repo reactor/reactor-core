@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Simon Baslé

@@ -31,12 +31,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule

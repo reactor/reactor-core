@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,7 +45,6 @@ import reactor.test.MockUtils;
 import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.annotation.NonNull;
 import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 

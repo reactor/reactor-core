@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A utility class to format error messages in all of the default implementation of {@link StepVerifier}.
@@ -33,13 +33,13 @@ final class MessageFormatter {
 	private static final String                            EMPTY = "";
 
 	final String scenarioPrefix;
-	@Nullable
-	final ValueFormatters.ToStringConverter valueFormatter;
+
+	final ValueFormatters.@Nullable ToStringConverter valueFormatter;
 	@Nullable
 	final Collection<ValueFormatters.Extractor<?>> extractors;
 
 	MessageFormatter(@Nullable final String scenarioName,
-			@Nullable ValueFormatters.ToStringConverter valueFormatter,
+			ValueFormatters.@Nullable ToStringConverter valueFormatter,
 			@Nullable Collection<ValueFormatters.Extractor<?>> extractors) {
 		if (scenarioName == null || scenarioName.isEmpty()) {
 			scenarioPrefix = EMPTY;
@@ -60,7 +60,7 @@ final class MessageFormatter {
 	 * @param args the optional values for the placeholders in msg
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name
 	 */
-	AssertionError fail(@Nullable DefaultStepVerifierBuilder.Event<?> event, String msg, Object... args) {
+	AssertionError fail(DefaultStepVerifierBuilder.@Nullable Event<?> event, String msg, Object... args) {
 		String prefix;
 		if (event != null && event.getDescription()
 		                          .length() > 0) {
@@ -83,7 +83,7 @@ final class MessageFormatter {
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name,
 	 * wrapped in an {@link Optional}
 	 */
-	Optional<AssertionError> failOptional(@Nullable DefaultStepVerifierBuilder.Event<?> event, String msg,
+	Optional<AssertionError> failOptional(DefaultStepVerifierBuilder.@Nullable Event<?> event, String msg,
 			Object... args) {
 		return Optional.of(fail(event, msg, args));
 	}

@@ -16,8 +16,8 @@
 
 package reactor.core.scheduler;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
-import reactor.util.annotation.Nullable;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;

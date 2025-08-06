@@ -20,11 +20,11 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 
 /**
  * Abstract base class for subscribers that hold another subscriber, a queue

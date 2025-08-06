@@ -27,12 +27,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.observability.micrometer.TimedSchedulerMeterDocumentation.SubmittedTags;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.observability.micrometer.TimedSchedulerMeterDocumentation.*;
 

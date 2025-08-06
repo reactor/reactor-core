@@ -20,7 +20,6 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it

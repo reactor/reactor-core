@@ -21,9 +21,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
-import reactor.util.annotation.Nullable;
 
 final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 

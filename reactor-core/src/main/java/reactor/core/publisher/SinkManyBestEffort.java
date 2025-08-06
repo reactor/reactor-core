@@ -22,11 +22,11 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

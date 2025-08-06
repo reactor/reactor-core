@@ -16,9 +16,9 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * A common interface of operator in Reactor which adds contracts around subscription

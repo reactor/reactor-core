@@ -20,10 +20,10 @@ import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Flattens the generated Publishers on each rail.

@@ -20,9 +20,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
-import reactor.util.annotation.Nullable;
 
 /**
  * Utility methods to work with {@link Disposable} atomically.

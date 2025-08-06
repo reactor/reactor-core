@@ -18,13 +18,13 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

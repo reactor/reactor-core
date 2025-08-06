@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an

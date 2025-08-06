@@ -22,11 +22,11 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.publisher.FluxMetrics.*;
 
@@ -77,8 +77,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 
 		int mode;
 
-		@Nullable
-		Fuseable.QueueSubscription<T> qs;
+		Fuseable.@Nullable QueueSubscription<T> qs;
 
 		MetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,

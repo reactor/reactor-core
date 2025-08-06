@@ -21,10 +21,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.Fuseable.NONE;
 
@@ -49,8 +48,8 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 	int              demand                               = -1;
 	IntFunction<? extends I> producingMapper;
 
-	@Nullable Consumer<? super O>[]          receivers      = null;
-	@Nullable O[]                            receiverValues = null;
+	Consumer<? super O> @Nullable[]          receivers      = null;
+	O @Nullable[]                            receiverValues = null;
 	@Nullable String                         description    = null;
 	@Nullable Consumer<StepVerifier.Step<O>> verifier       = null;
 

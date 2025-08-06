@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Comparator;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Merges the individual 'rails' of the source {@link ParallelFlux} assuming a total order

@@ -24,10 +24,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-
+import org.jspecify.annotations.Nullable;
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.CommonTags.*;
 import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.TerminationTags.*;

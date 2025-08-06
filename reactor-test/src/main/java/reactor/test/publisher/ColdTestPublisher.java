@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
@@ -33,7 +34,6 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
-import reactor.util.annotation.Nullable;
 
 import static reactor.test.publisher.TestPublisher.Violation.ALLOW_NULL;
 import static reactor.test.publisher.TestPublisher.Violation.DEFER_CANCELLATION;

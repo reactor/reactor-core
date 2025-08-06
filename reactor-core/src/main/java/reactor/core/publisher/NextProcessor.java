@@ -22,6 +22,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -33,7 +34,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmissionException;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 // NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.

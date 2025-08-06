@@ -16,12 +16,12 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

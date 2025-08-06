@@ -16,12 +16,12 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
 import reactor.core.publisher.FluxTap.TapSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

@@ -20,10 +20,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.scheduler.SchedulerState.DisposeAwaiterRunnable.awaitInPool;
 

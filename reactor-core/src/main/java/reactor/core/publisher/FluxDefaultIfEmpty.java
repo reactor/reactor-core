@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits a scalar value if the source sequence turns out to be empty.

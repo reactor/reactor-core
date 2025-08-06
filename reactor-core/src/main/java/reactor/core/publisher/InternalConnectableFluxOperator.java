@@ -16,10 +16,10 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> implements Scannable,
                                                                                            OptimizableOperator<O, I> {

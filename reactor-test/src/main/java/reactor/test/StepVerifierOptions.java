@@ -23,11 +23,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Signal;
 import reactor.test.ValueFormatters.Extractor;
 import reactor.test.ValueFormatters.ToStringConverter;
 import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits only the element at the given index position or signals a

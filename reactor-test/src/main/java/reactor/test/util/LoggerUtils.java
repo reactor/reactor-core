@@ -19,10 +19,10 @@ package reactor.test.util;
 import java.lang.reflect.Field;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 
 /**
  * This class eases testing interested in what reactor classes emit using {@link Logger loggers}.

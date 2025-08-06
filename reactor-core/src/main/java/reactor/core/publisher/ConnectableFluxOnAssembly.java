@@ -18,12 +18,12 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and

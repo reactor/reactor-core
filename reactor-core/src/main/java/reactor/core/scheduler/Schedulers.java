@@ -38,13 +38,13 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
 

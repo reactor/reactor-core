@@ -28,6 +28,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
@@ -38,7 +39,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 /**

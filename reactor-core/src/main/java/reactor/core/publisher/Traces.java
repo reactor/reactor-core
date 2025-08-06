@@ -19,7 +19,8 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
-import reactor.util.annotation.Nullable;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utilities around manipulating stack traces and displaying assembly traces.

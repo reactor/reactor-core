@@ -19,7 +19,7 @@ package reactor.core;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Indicates that a task or resource can be cancelled/disposed.

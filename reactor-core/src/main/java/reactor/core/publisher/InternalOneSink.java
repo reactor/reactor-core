@@ -16,9 +16,9 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.EmissionException;
-import reactor.util.annotation.Nullable;
 
 interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 

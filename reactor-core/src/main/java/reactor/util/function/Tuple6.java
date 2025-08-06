@@ -19,8 +19,8 @@ package reactor.util.function;
 import java.util.Objects;
 import java.util.function.Function;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A tuple that holds six values

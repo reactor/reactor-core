@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -28,7 +29,6 @@ import reactor.core.publisher.FluxConcatMap.ConcatMapInner;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxConcatMap.FluxConcatMapSupport;
 import reactor.core.publisher.FluxConcatMap.WeakScalarSubscription;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

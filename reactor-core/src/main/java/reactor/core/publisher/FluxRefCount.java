@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -28,7 +29,6 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Connects to the underlying Flux once the given number of Subscribers subscribed

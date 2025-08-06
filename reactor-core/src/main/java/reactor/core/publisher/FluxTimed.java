@@ -21,11 +21,11 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Simon Baslé

@@ -21,8 +21,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
-import reactor.util.annotation.Nullable;
 
 /**
  * A runnable task for {@link Scheduler} Workers that are time-capable (implementing a

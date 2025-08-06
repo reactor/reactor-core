@@ -24,12 +24,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.assertj.core.api.SoftAssertions;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import reactor.core.publisher.Mono;
 import reactor.test.util.RaceTestUtils;
 import reactor.test.util.TestLogger;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static reactor.core.Exceptions.*;

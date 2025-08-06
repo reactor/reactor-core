@@ -20,9 +20,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextSnapshot;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> {

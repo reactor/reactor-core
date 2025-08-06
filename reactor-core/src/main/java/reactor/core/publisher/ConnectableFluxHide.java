@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Hide a {@link ConnectableFlux} from fusion optimizations while keeping the {@link ConnectableFlux}

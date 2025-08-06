@@ -17,9 +17,9 @@
 package reactor.core.publisher;
 
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Ignores normal values and passes only the terminal signals along.

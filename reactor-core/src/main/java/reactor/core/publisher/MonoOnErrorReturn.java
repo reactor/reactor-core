@@ -18,8 +18,8 @@ package reactor.core.publisher;
 
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * See {@link FluxOnErrorReturn}.

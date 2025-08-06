@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 
 final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements InternalOneSink<O> {
 

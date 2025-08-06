@@ -17,9 +17,9 @@
 package reactor.core.publisher;
 
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.

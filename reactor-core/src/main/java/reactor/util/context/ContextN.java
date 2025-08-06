@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends LinkedHashMap<Object, Object>

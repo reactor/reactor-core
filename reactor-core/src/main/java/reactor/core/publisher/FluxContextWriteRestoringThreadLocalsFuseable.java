@@ -20,10 +20,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import io.micrometer.context.ContextSnapshot;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class FluxContextWriteRestoringThreadLocalsFuseable<T> extends FluxOperator<T, T>

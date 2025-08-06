@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits a range of integer values.

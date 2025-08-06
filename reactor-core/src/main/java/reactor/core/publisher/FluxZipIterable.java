@@ -20,9 +20,9 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Pairwise combines elements of a publisher and an iterable sequence through a function.
