@@ -46,11 +46,14 @@ import org.jspecify.annotations.Nullable;
  * @since 3.1.0
  * @see NonNullApi
  * @see Nullable
+ * @deprecated Use {@link org.jspecify.annotations.NonNull} instead. To removed in
+ * 3.9.0 the earliest.
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull
 @TypeQualifierNickname
+@Deprecated
 public @interface NonNull {
 }
