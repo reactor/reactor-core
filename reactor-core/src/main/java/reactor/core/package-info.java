@@ -19,7 +19,7 @@
  * programming model.
  *
  */
-@NonNullApi
+@NullMarked
 package reactor.core;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;
