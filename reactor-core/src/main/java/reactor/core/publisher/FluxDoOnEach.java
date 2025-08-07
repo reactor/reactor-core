@@ -70,7 +70,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == RUN_STYLE) return SYNC;
 		return super.scanUnsafe(key);
 	}

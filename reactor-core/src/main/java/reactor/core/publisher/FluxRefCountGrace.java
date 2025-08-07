@@ -359,7 +359,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return isTerminated(state);

@@ -70,7 +70,7 @@ final class FluxRange extends Flux<Integer>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -335,7 +335,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return isEmpty();

@@ -61,7 +61,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}

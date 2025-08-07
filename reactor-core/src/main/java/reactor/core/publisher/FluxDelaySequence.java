@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
@@ -47,7 +48,7 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
@@ -155,7 +156,7 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.RUN_ON) return w;
 			if (key == Attr.TERMINATED) return done;

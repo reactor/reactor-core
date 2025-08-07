@@ -312,7 +312,7 @@ public interface Scannable {
 		 */
 		static final Scannable UNAVAILABLE_SCAN = new Scannable() {
 			@Override
-			public Object scanUnsafe(Attr key) {
+			public @Nullable Object scanUnsafe(Attr key) {
 				return null;
 			}
 
@@ -338,7 +338,7 @@ public interface Scannable {
 		 */
 		static final Scannable NULL_SCAN = new Scannable() {
 			@Override
-			public Object scanUnsafe(Attr key) {
+			public @Nullable Object scanUnsafe(Attr key) {
 				return null;
 			}
 

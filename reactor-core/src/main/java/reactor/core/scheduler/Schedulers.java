@@ -1356,7 +1356,7 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (Attr.NAME == key) return stringRepresentation;
 			return Scannable.from(cached).scanUnsafe(key);
 		}

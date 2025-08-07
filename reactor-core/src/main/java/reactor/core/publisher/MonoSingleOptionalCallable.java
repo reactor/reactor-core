@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 
@@ -90,7 +91,7 @@ final class MonoSingleOptionalCallable<T> extends Mono<Optional<T>>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}

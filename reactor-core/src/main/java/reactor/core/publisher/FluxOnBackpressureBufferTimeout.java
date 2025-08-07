@@ -83,7 +83,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return ttlScheduler;
 		if (key == RUN_STYLE) return ASYNC;
 

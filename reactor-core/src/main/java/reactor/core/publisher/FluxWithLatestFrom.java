@@ -77,7 +77,7 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == RUN_STYLE) return SYNC;
 		return super.scanUnsafe(key);
 	}

@@ -268,7 +268,7 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CAPACITY) return 123;
 			if (key == Attr.BUFFERED) return 1024;
 			if (key == Attr.NAME) return toString();

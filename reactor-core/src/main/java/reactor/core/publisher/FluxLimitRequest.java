@@ -54,7 +54,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return cap;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -158,7 +158,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

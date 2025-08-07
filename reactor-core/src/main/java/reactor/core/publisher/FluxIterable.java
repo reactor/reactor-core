@@ -84,7 +84,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.BUFFERED) {
 			if (iterable instanceof Collection) return ((Collection) iterable).size();
 			if (iterable instanceof Tuple2) return ((Tuple2) iterable).size();

@@ -79,7 +79,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL_METADATA) return !snapshotStack.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

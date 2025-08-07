@@ -85,7 +85,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public final @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

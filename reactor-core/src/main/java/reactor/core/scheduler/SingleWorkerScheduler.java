@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 
@@ -84,7 +85,7 @@ final class SingleWorkerScheduler implements Scheduler, Executor, Scannable {
     }
 
     @Override
-    public Object scanUnsafe(Attr key) {
+    public @Nullable Object scanUnsafe(Attr key) {
         if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
         if (key == Attr.PARENT) return main;
         if (key == Attr.NAME) return this.toString();

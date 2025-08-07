@@ -121,7 +121,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timer;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
@@ -522,7 +522,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return this.subscription;
 			if (key == Attr.CANCELLED) return isCancelled(this.state);
 			if (key == Attr.TERMINATED) return isTerminated(this.state);

@@ -77,7 +77,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timedScheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 		return SourceProducer.super.scanUnsafe(key);

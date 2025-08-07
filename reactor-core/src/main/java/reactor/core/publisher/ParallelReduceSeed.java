@@ -215,7 +215,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return !done && accumulator == null;

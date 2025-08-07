@@ -93,7 +93,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}

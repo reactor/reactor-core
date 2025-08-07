@@ -99,7 +99,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -232,7 +232,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return resourceSubscription;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;

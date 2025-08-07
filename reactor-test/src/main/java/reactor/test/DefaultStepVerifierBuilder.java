@@ -1081,7 +1081,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				Subscription s = this.get();
 				if (s instanceof Scannable) return s;

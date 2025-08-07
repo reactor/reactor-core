@@ -205,7 +205,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return toString();
 

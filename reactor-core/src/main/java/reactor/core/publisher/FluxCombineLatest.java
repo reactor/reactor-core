@@ -179,7 +179,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);

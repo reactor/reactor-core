@@ -201,7 +201,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return collection == null && !done;

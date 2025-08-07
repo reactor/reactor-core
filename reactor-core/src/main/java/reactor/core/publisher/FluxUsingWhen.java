@@ -107,7 +107,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -252,7 +252,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return resourceSubscription;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -480,7 +480,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.ERROR) return rollbackCause;
@@ -532,7 +532,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.TERMINATED) return done;
@@ -580,7 +580,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

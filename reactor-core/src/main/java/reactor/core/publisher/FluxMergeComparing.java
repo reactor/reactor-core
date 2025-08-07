@@ -388,7 +388,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		}
 		
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.CANCELLED) return this.cancelled > 0;
 			if (key == Attr.ERROR) return this.error;

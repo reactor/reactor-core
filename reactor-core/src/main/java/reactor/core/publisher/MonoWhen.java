@@ -102,7 +102,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

@@ -613,7 +613,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
 			}

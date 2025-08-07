@@ -39,7 +39,7 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}

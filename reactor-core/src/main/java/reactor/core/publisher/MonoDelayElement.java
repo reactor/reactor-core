@@ -58,7 +58,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timedScheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 

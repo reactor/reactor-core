@@ -93,7 +93,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -364,7 +364,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return getAsBoolean();

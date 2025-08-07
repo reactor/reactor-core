@@ -70,7 +70,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return isTerminated(subscribers);
 		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -160,7 +160,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) {
 				return Attr.RunStyle.SYNC;
 			}

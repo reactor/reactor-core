@@ -294,7 +294,7 @@ final class BoundedElasticThreadPerTaskScheduler
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.BUFFERED) return estimateSize();
 		if (key == Attr.CAPACITY) return maxThreads;
@@ -831,7 +831,7 @@ final class BoundedElasticThreadPerTaskScheduler
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (Attr.TERMINATED == key) return isDisposed();
 			if (Attr.BUFFERED == key) return numberOfEnqueuedTasks();
 			if (Attr.CAPACITY == key) return this.queueCapacity;
@@ -1359,7 +1359,7 @@ final class BoundedElasticThreadPerTaskScheduler
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) return disposables.size();
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 			if (key == Attr.NAME) return "SingleThreadExecutorWorker";

@@ -49,7 +49,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == InternalProducerAttr.INSTANCE) return true;
 		return super.scanUnsafe(key);
 	}

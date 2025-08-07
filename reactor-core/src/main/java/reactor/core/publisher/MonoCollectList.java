@@ -40,7 +40,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}

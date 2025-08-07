@@ -406,7 +406,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.BUFFERED) return estimateSize();
 		if (key == Attr.CAPACITY) return maxThreads;
@@ -853,7 +853,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return Schedulers.scanExecutor(executor, key);
 		}
 
@@ -895,7 +895,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (Attr.TERMINATED == key) return isTerminated();
 			if (Attr.BUFFERED == key) return getQueue().size();
 			if (Attr.CAPACITY == key) return this.queueCapacity;

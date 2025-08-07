@@ -117,7 +117,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}

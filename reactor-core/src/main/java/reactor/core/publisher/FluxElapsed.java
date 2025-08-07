@@ -44,7 +44,7 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

@@ -92,7 +92,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}

@@ -152,7 +152,7 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return null;
 		}
 	}

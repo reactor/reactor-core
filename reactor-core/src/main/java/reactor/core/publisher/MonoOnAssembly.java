@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
@@ -60,7 +61,7 @@ final class MonoOnAssembly<T> extends InternalMonoOperator<T, T> implements Fuse
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL_METADATA) return !stacktrace.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

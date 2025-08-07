@@ -232,7 +232,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (Attr.ACTUAL == key) return actual();
 		if (Attr.BUFFERED == key) return queue.size();
 		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
