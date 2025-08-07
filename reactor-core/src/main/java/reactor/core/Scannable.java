@@ -293,8 +293,8 @@ public interface Scannable {
 			return safeConverter.apply(o);
 		}
 
-		final T                             defaultValue;
-		final Function<Object, ? extends T> safeConverter;
+		final @Nullable T defaultValue;
+		final @Nullable Function<Object, ? extends T> safeConverter;
 
 		protected Attr(@Nullable T defaultValue){
 			this(defaultValue, null);
@@ -508,7 +508,7 @@ public interface Scannable {
 				stepAfter = chain.get(i + 1);
 			}
 			//noinspection ConstantConditions
-			if (stepAfter != null && stepAfter.scan(Attr.ACTUAL_METADATA)) {
+			if (stepAfter != null && Boolean.TRUE.equals(stepAfter.scan(Attr.ACTUAL_METADATA))) {
 				chainNames.add(stepAfter.stepName());
 				i++;
 			}

@@ -140,6 +140,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		final String           description;
 		@Nullable
 		final Supplier<String> assemblyInformationSupplier;
+		@Nullable
 		String cached;
 
 		/**
@@ -433,7 +434,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		@Override
-		public String getMessage() {
+		public @Nullable String getMessage() {
 			//skip the "error has been observed" traceback if mapped traceback is empty
 			synchronized (nodesPerId) {
 				if (root.children.isEmpty()) {

@@ -910,7 +910,8 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
-	public static <T> Throwable onNextInnerError(Throwable error, Context context, @Nullable Subscription subscriptionForCancel) {
+	public static <T> @Nullable Throwable onNextInnerError(Throwable error, Context context,
+			@Nullable Subscription subscriptionForCancel) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, null)) {
@@ -2498,7 +2499,7 @@ public abstract class Operators {
 			this(actual, value, null);
 		}
 
-		ScalarSubscription(CoreSubscriber<? super T> actual, T value, String stepName) {
+		ScalarSubscription(CoreSubscriber<? super T> actual, T value, @Nullable String stepName) {
 			this.value = Objects.requireNonNull(value, "value");
 			this.actual = Objects.requireNonNull(actual, "actual");
 			this.stepName = stepName;
