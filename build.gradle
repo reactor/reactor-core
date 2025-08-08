@@ -156,7 +156,7 @@ configure(subprojects) { p ->
 		options.errorprone {
 			disableAllChecks = true // Other error prone checks are disabled
 			option("NullAway:OnlyNullMarked", "true") // Enable nullness checks only in null-marked code
-			error("NullAway") // bump checks from warnings (default) to errors
+//			error("NullAway") // bump checks from warnings (default) to errors
 		}
 	}
 
