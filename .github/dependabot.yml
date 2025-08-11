@@ -81,6 +81,7 @@ updates:
       - dependency-name: "org.junit:junit-bom"
       - dependency-name: "org.junit.jupiter:*"
       - dependency-name: "org.junit.platform:*"
+      - dependency-name: "org.testng:testng:*"
       - dependency-name: "org.mockito:mockito-core"
       - dependency-name: "org.openjdk.jol:jol-core"
       - dependency-name: "org.reactivestreams:*"
