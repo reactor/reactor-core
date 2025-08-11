@@ -361,10 +361,10 @@ final class BoundedElasticThreadPerTaskScheduler
 			return t;
 		};
 
-		final BoundedElasticThreadPerTaskScheduler parent;
-		final ScheduledExecutorService             sharedDelayedTasksScheduler;
-		final ThreadFactory factory;
-		final int maxTasksQueuedPerThread;
+		final @Nullable BoundedElasticThreadPerTaskScheduler parent;
+		final           ScheduledExecutorService             sharedDelayedTasksScheduler;
+		final @Nullable ThreadFactory                        factory;
+		final           int                                  maxTasksQueuedPerThread;
 
 		volatile ActiveExecutorsState activeExecutorsState;
 		static final AtomicReferenceFieldUpdater<BoundedServices, ActiveExecutorsState> ACTIVE_EXECUTORS_STATE =
@@ -518,9 +518,9 @@ final class BoundedElasticThreadPerTaskScheduler
 			}
 		}
 
-		final ThreadFactory factory;
+		final @Nullable ThreadFactory factory;
 
-		SchedulerTask activeTask;
+		@Nullable SchedulerTask activeTask;
 
 		SequentialThreadPerTaskExecutor(BoundedServices parent, boolean markPicked) {
 			super(1);
@@ -981,10 +981,10 @@ final class BoundedElasticThreadPerTaskScheduler
 		final SequentialThreadPerTaskExecutor holder;
 
 		final Runnable task;
-		@Nullable
-		final Composite tracker;
 
-		Thread carrier;
+		final @Nullable Composite tracker;
+
+		@Nullable Thread carrier;
 
 		Future<?> scheduledFuture;
 
@@ -1114,7 +1114,7 @@ final class BoundedElasticThreadPerTaskScheduler
 				if (hasFuture(previousState)) {
 					this.scheduledFuture.cancel(true);
 				}
-				if (Thread.currentThread() != this.carrier) {
+				if (Thread.currentThread() != this.carrier && this.carrier != null) {
 					this.carrier.interrupt();
 				}
 				return;

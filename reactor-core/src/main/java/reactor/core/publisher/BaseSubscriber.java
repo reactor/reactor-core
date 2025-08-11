@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -49,7 +50,7 @@ import reactor.util.context.Context;
 public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscription,
                                                    Disposable {
 
-	volatile Subscription subscription;
+	volatile @Nullable Subscription subscription;
 
 	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(BaseSubscriber.class, Subscription.class, "subscription");
@@ -58,7 +59,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 	 * Return current {@link Subscription}
 	 * @return current {@link Subscription}
 	 */
-	protected Subscription upstream() {
+	protected @Nullable Subscription upstream() {
 		return subscription;
 	}
 

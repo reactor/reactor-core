@@ -46,6 +46,9 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 		final CoreSubscriber<? super T> actual;
 		final boolean                   completeAfterOnNext;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;

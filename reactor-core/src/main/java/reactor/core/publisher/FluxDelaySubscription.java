@@ -72,6 +72,9 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 
 		final CoreSubscriber<? super T> actual;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;

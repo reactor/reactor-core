@@ -406,8 +406,8 @@ final class ContextPropagation {
 		boolean cleanOnNull;
 		boolean hasPrevious = false;
 
-		Thread                lastReader;
-		ContextSnapshot.Scope scope;
+		@Nullable Thread                lastReader;
+		ContextSnapshot.@Nullable Scope scope;
 
 		@SuppressWarnings({"unchecked", "rawtypes"})
 		ContextQueue(Queue<?> queue) {

@@ -140,13 +140,14 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	final boolean autoCancel;
 
-	volatile Subscription s;
+	volatile @Nullable Subscription s;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Subscription.class,
 					"s");
 
+	@SuppressWarnings("NullAway.Init")
 	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
@@ -168,13 +169,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	static final AtomicIntegerFieldUpdater<EmitterProcessor> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "wip");
 
-	volatile Queue<T> queue;
+	volatile @Nullable Queue<T> queue;
 
 	int sourceMode;
 
 	volatile boolean done;
 
-	volatile Throwable error;
+	volatile @Nullable Throwable error;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =

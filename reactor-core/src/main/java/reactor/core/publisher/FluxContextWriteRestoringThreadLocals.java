@@ -61,6 +61,9 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		final ConditionalSubscriber<? super T> actualConditional;
 		final Context                          context;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		@SuppressWarnings("unchecked")

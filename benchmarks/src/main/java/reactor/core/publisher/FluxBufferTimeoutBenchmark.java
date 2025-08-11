@@ -74,6 +74,9 @@ public class FluxBufferTimeoutBenchmark {
 
 		private final Blackhole    blackhole;
 		private final boolean      oneByOneRequest;
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		private       Subscription s;
 
 		public JmhSubscriber(Blackhole blackhole, boolean oneByOneRequest) {

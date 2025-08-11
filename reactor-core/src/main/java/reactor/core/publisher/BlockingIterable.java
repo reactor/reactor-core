@@ -138,6 +138,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 		long produced;
 
+		@SuppressWarnings("NullAway.Init")
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SubscriberIterator, Subscription> S =
@@ -146,7 +147,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 						"s");
 
 		volatile boolean done;
-		Throwable error;
+		@Nullable Throwable error;
 
 		 SubscriberIterator(Queue<T> queue, Context context, int batchSize) {
 			this.queue = queue;

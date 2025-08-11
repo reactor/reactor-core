@@ -114,11 +114,14 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		static final AtomicLongFieldUpdater<BufferWhenMainSubscriber> REQUESTED =
 		AtomicLongFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, "requested");
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		volatile Subscription s;
 		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, Subscription.class, "s");
 
-		volatile Throwable errors;
+		volatile @Nullable Throwable errors;
 		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, Throwable>
 				ERRORS =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, Throwable.class, "errors");
@@ -439,6 +442,9 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 	static final class BufferWhenOpenSubscriber<OPEN>
 			implements Disposable, InnerConsumer<OPEN> {
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		volatile Subscription subscription;
 		static final AtomicReferenceFieldUpdater<BufferWhenOpenSubscriber, Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenOpenSubscriber.class, Subscription.class, "subscription");

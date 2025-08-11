@@ -40,7 +40,10 @@ import org.openjdk.jmh.infra.Blackhole;
 @State(Scope.Benchmark)
 public class BoundedElasticBusyStructureBenchmark {
 
+	@SuppressWarnings("NullAway.Init")
 	OldBoundedElasticScheduler oldBoundedElasticScheduler;
+
+	@SuppressWarnings("NullAway.Init")
 	Scheduler                  newBoundedElasticScheduler;
 
 	@Setup(Level.Trial)

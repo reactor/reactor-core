@@ -1320,7 +1320,7 @@ public abstract class Operators {
 	 * @param instance the parent instance
 	 * @return true if terminated, false if the subscription was already terminated
 	 */
-	public static <F> boolean terminate(AtomicReferenceFieldUpdater<F, Subscription> field,
+	public static <F> boolean terminate(AtomicReferenceFieldUpdater<F, @Nullable Subscription> field,
 			F instance) {
 		Subscription a = field.get(instance);
 		if (a != CancelledSubscription.INSTANCE) {

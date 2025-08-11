@@ -48,7 +48,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final int                                     requestedFusionMode;
 	final int                                     expectedFusionMode;
 
-	Subscription s;
+	@Nullable Subscription s;
 
 	Fuseable.@Nullable QueueSubscription<T> qs;
 	int fusionMode = -1;

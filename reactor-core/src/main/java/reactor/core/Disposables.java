@@ -307,7 +307,7 @@ public final class Disposables {
  */
 static final class SwapDisposable implements Disposable.Swap {
 
-	volatile Disposable inner;
+	volatile @Nullable Disposable inner;
 	static final AtomicReferenceFieldUpdater<SwapDisposable, Disposable>
 	                    INNER =
 			AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");

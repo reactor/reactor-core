@@ -963,13 +963,14 @@ final class DefaultStepVerifierBuilder<T>
 		@Nullable
 		Logger                        logger;
 		int                           establishedFusionMode;
+		@SuppressWarnings("NullAway.Init")
 		Fuseable.QueueSubscription<T> qs;
 		long                          produced;   //used for request tracking
 		long                          unasserted; //used for expectNextXXX tracking
 		volatile long                 requested;
 		volatile boolean done; // async fusion
-		Iterator<? extends T>         currentNextAs;
-		Collection<T>                 currentCollector;
+		@Nullable Iterator<? extends T>         currentNextAs;
+		@Nullable Collection<T>                 currentCollector;
 
 		static final AtomicLongFieldUpdater<DefaultVerifySubscriber> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(DefaultVerifySubscriber.class, "requested");
@@ -978,14 +979,14 @@ final class DefaultStepVerifierBuilder<T>
 		volatile int wip;
 
 		@SuppressWarnings("unused")
-		volatile Throwable errors;
+		volatile @Nullable Throwable errors;
 
 		volatile boolean monitorSignal;
 
 		/**
 		 * used to keep track of the terminal error, if any
 		 */
-		volatile Signal<T> terminalError;
+		volatile @Nullable Signal<T> terminalError;
 
 		/** The constructor used for verification, where a VirtualTimeScheduler can be
 		 * passed */

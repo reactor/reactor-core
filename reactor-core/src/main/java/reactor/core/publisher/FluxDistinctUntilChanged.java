@@ -72,6 +72,9 @@ final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 		final Function<? super T, K> keyExtractor;
 		final BiPredicate<? super K, ? super K> keyComparator;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;
@@ -208,6 +211,9 @@ final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 		final Function<? super T, K> keyExtractor;
 		final BiPredicate<? super K, ? super K> keyComparator;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;

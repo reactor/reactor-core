@@ -99,6 +99,8 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			CANCELLED,
 		}
 
+		// Initialized lazily in constructor via STATE field.
+		@SuppressWarnings("NullAway.Init")
 		volatile State state;
 
 		@SuppressWarnings("rawtypes")
@@ -108,7 +110,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				"state"
 		);
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, Throwable> ERROR = AtomicReferenceFieldUpdater.newUpdater(
@@ -125,6 +127,9 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		final ErrorMode errorMode;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription upstream;
 
 		FluxConcatMapNoPrefetchSubscriber(

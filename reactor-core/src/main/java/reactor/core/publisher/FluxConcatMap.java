@@ -143,17 +143,23 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final int limit;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		int consumed;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		volatile Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapImmediate, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapImmediate.class,
@@ -505,17 +511,23 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final boolean veryEnd;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		int consumed;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		volatile Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapDelayed, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapDelayed.class,

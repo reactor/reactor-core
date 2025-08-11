@@ -131,6 +131,9 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class,
 						"requestedFromSource");
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		volatile Subscription s;
 
 		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber,
@@ -431,7 +434,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		private Function<? super T, ? extends K>  keySelector;
 		private BiPredicate<? super K, ? super K> keyComparator;
-		private K                                 lastKey;
+		private @Nullable K                       lastKey;
 
 		ChangedPredicate(Function<? super T, ? extends K> keySelector,
 				BiPredicate<? super K, ? super K> keyComparator) {

@@ -58,8 +58,12 @@ final class FluxContextWrite<T> extends InternalFluxOperator<T, T> implements Fu
 		final ConditionalSubscriber<? super T> actualConditional;
 		final Context                          context;
 
-		QueueSubscription<T> qs;
-		Subscription         s;
+		@Nullable QueueSubscription<T> qs;
+
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
+		Subscription s;
 
 		@SuppressWarnings("unchecked")
 		ContextWriteSubscriber(CoreSubscriber<? super T> actual, Context context) {

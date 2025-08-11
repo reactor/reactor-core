@@ -97,7 +97,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		C buffer;
 
-		volatile Subscription s;
+		volatile @Nullable Subscription s;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BufferBoundaryMain, Subscription> S =

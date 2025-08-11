@@ -86,8 +86,11 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		final Context                     cachedContext;
 		final Consumer<? super Signal<T>> onSignal;
 
-		T t;
+		@Nullable T t;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		Fuseable.@Nullable QueueSubscription<T> qs;

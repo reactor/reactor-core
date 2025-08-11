@@ -52,7 +52,10 @@ final class FluxDetach<T> extends InternalFluxOperator<T, T> {
 	static final class DetachSubscriber<T> implements InnerOperator<T, T> {
 
 		CoreSubscriber<? super T> actual;
-		
+
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		DetachSubscriber(CoreSubscriber<? super T> actual) {

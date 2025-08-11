@@ -53,6 +53,9 @@ final class FluxCancelOn<T> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 		final Scheduler             scheduler;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		volatile int cancelled = 0;

@@ -200,7 +200,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T>                             actual;
 		final Function<? super T, ? extends Publisher<? extends T>> expander;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		static final AtomicReferenceFieldUpdater<ExpandDepthSubscription, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscription.class, Throwable.class, "error");
 
@@ -212,7 +212,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<ExpandDepthSubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ExpandDepthSubscription.class, "requested");
 
-		volatile Object    current;
+		volatile @Nullable Object    current;
 		static final AtomicReferenceFieldUpdater<ExpandDepthSubscription, Object> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscription.class, Object.class, "current");
 
@@ -224,7 +224,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 
 		volatile boolean cancelled;
 
-		CorePublisher<? extends T> source;
+		@Nullable CorePublisher<? extends T> source;
 		long                       consumed;
 
 		ExpandDepthSubscription(CoreSubscriber<? super T> actual,

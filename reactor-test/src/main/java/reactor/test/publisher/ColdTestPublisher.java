@@ -56,7 +56,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	boolean done;
 	/** Non-null if either {@link #error(Throwable) or {@link #complete()}} have been called. */
-	Throwable error;
+	@Nullable Throwable error;
 
 	/** If true, emit an overflow error when there is more values than request. If false, buffer until data is requested. */
 	final boolean errorOnOverflow;

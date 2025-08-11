@@ -97,6 +97,9 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 
 		final Consumer<C> cleanupCallback;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;
@@ -232,6 +235,9 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 		final BiPredicate<C, K> distinctPredicate;
 		final Consumer<C>       cleanupCallback;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;
@@ -401,6 +407,9 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 		final BiPredicate<C, K>                distinctPredicate;
 		final Consumer<C>                      cleanupCallback;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		QueueSubscription<T> qs;
 
 		boolean done;

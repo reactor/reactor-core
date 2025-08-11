@@ -58,7 +58,16 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 		final CoreSubscriber<? super Tuple2<Long, T>> actual;
 		final Scheduler                               scheduler;
 
-		Subscription      s;
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
+		Subscription s;
+
+		// The contract for fusion disallows calls using the QueueSubscription in cases
+		// when this would be empty (FusionMode == NONE). For performance reasons we'd
+		// like to avoid explicit null checks on the hot path which is valid for fused
+		// flows.
+		@SuppressWarnings("NullAway.Init")
 		QueueSubscription<T> qs;
 
 		long lastTime;
@@ -94,7 +103,7 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 		}
 
 		@Override
-		public void onNext(T t) {
+		public void onNext(@Nullable T t) {
 			if(t == null){
 				actual.onNext(null);
 				return;

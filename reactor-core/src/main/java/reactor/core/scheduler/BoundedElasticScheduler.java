@@ -86,6 +86,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	final ThreadFactory factory;
 	final long          ttlMillis;
 
+	@SuppressWarnings("NullAway.Init")
 	volatile SchedulerState<BoundedServices> state;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<BoundedElasticScheduler, SchedulerState> STATE =
@@ -486,12 +487,11 @@ final class BoundedElasticScheduler implements Scheduler,
 			return t;
 		};
 
-
-		final BoundedElasticScheduler             parent;
+		final @Nullable BoundedElasticScheduler  parent;
 		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
-		final Clock                               clock;
-		final ScheduledExecutorService            evictor;
-		final Deque<BoundedState>                 idleQueue;
+		final           Clock                    clock;
+		final           ScheduledExecutorService evictor;
+		final           Deque<BoundedState>      idleQueue;
 
 		volatile BusyStates                                                   busyStates;
 		static final AtomicReferenceFieldUpdater<BoundedServices, BusyStates> BUSY_STATES =

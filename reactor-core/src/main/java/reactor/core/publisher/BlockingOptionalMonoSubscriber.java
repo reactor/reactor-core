@@ -39,10 +39,10 @@ import reactor.util.context.Context;
 final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 		implements InnerConsumer<T>, Disposable {
 
-	T         value;
-	Throwable error;
+	@Nullable T         value;
+	@Nullable Throwable error;
 
-	Subscription s;
+	@Nullable Subscription s;
 
 	volatile boolean cancelled;
 

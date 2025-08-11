@@ -97,6 +97,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 
 		C buffer;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;
@@ -226,6 +229,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 
 		C buffer;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;
@@ -389,6 +395,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 
 		final int skip;
 
+		// Initialized in onSubscribe(). Usage happens post-initialization, e.g. `this`
+		// is only presented to downstream as a result of onSubscibe().
+		@SuppressWarnings("NullAway.Init")
 		Subscription s;
 
 		boolean done;

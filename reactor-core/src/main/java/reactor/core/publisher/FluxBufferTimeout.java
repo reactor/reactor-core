@@ -717,7 +717,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		final Scheduler.Worker           timer;
 		final Runnable                   flushTask;
 
-		protected Subscription subscription;
+		protected @Nullable Subscription subscription;
 
 		volatile     int                                                  terminated =
 				NOT_TERMINATED;
@@ -744,7 +744,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "index");
 
 
-		volatile Disposable timespanRegistration;
+		volatile @Nullable Disposable timespanRegistration;
 
 		final Supplier<C> bufferSupplier;
 
