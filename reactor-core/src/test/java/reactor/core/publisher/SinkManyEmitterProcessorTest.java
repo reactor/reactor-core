@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -921,5 +921,15 @@ class SinkManyEmitterProcessorTest {
 		            .expectNext(1)
 		            .expectTimeout(Duration.ofSeconds(1))
 		            .verify();
+	}
+
+	@Test
+	void shouldClearQueueOnImmediateCancellation() {
+		SinkManyEmitterProcessor<Integer> processor = new SinkManyEmitterProcessor<>(true, 1);
+		processor.tryEmitNext(1);
+		assertThat(processor.queue.size()).isEqualTo(1);
+
+		processor.asFlux().take(0).blockLast();
+		assertThat(processor.queue.size()).isEqualTo(0);
 	}
 }
