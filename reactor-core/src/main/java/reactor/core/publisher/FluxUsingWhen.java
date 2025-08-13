@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -269,7 +269,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		//state that differs in the different variants
 		final CoreSubscriber<? super T>                                            actual;
 		//rest of the state is always the same
-		final S                                                                resource;
+		S                                                                		resource;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
 		@Nullable
@@ -328,13 +328,17 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			if (CALLBACK_APPLIED.compareAndSet(this, 0, 3)) {
 				this.s.cancel();
 				try {
-					if (asyncCancel != null) {
-						Flux.from(asyncCancel.apply(resource))
-						    .subscribe(new CancelInner(this));
-					}
-					else {
-						Flux.from(asyncComplete.apply(resource))
-						    .subscribe(new CancelInner(this));
+					S resourceRef = this.resource;
+					if (resourceRef != null) {
+						this.resource = null;
+						if (asyncCancel != null) {
+							Flux.from(asyncCancel.apply(resourceRef))
+									.subscribe(new CancelInner(this));
+						}
+						else {
+							Flux.from(asyncComplete.apply(resourceRef))
+									.subscribe(new CancelInner(this));
+						}
 					}
 				}
 				catch (Throwable error) {
@@ -354,8 +358,16 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 				Publisher<?> p;
 
 				try {
-					p = Objects.requireNonNull(asyncError.apply(resource, t),
-							"The asyncError returned a null Publisher");
+					S resourceRef = this.resource;
+					if (resourceRef != null) {
+						this.resource = null;
+						p = Objects.requireNonNull(asyncError.apply(resourceRef, t),
+								"The asyncError returned a null Publisher");
+					}
+					else {
+						actual.onError(t);
+						return;
+					}
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
@@ -374,9 +386,19 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			if (CALLBACK_APPLIED.compareAndSet(this, 0, 1)) {
 				Publisher<?> p;
 
+
+
 				try {
-					p = Objects.requireNonNull(asyncComplete.apply(resource),
-							"The asyncComplete returned a null Publisher");
+					S currentResource = this.resource;
+					if (currentResource != null) {
+						this.resource = null;
+						p = Objects.requireNonNull(asyncComplete.apply(currentResource),
+								"The asyncComplete returned a null Publisher");
+					}
+					else {
+						actual.onComplete();
+						return;
+					}
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
