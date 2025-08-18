@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @author Stephane Maldini
  */
 final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
-	Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder {
+		Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -201,6 +201,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	@Override
 	public EmitResult tryEmitComplete() {
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
@@ -217,6 +220,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	@Override
 	public EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "tryEmitError must be invoked with a non-null Throwable");
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
@@ -241,6 +247,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	@Override
 	public EmitResult tryEmitNext(T t) {
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
 		if (done) {
 			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
@@ -271,6 +280,23 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			return subscribers == EMPTY ? EmitResult.FAIL_ZERO_SUBSCRIBER : EmitResult.FAIL_OVERFLOW;
 		}
 		drain();
+
+		// This final check is critical for handling a race between this emit operation
+		// and a concurrent cancellation from another thread.
+		//
+		// The race condition scenario:
+		// 1. This thread passes the initial isCancelled() check at the top of the method.
+		// 2. This thread successfully offers an item to the queue.
+		// 3. Concurrently, another thread disposes the last subscriber, which cancels the sink
+		//    and triggers a drain that cleans up the just-offered item.
+		//
+		// Without this check, we would return EmitResult.OK, but the item has already been
+		// discarded. This check ensures we accurately report FAIL_CANCELLED, reflecting
+		// the final state of the operation.
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
+
 		return EmitResult.OK;
 	}
 
@@ -382,7 +408,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		return null;
 	}
 
-	final void drain() {
+	void drain() {
 		if (WIP.getAndIncrement(this) != 0) {
 			return;
 		}
@@ -397,11 +423,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 			boolean empty = q == null || q.isEmpty();
 
-			if (checkTerminated(d, empty)) {
-				return;
-			}
+            cleanupIfTerminated(d, empty);
 
-			FluxPublish.PubSubInner<T>[] a = subscribers;
+            FluxPublish.PubSubInner<T>[] a = subscribers;
 
 			if (a != EMPTY && !empty) {
 				long maxRequested = Long.MAX_VALUE;
@@ -431,10 +455,8 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 						d = true;
 						v = null;
 					}
-					if (checkTerminated(d, v == null)) {
-						return;
-					}
-					if (sourceMode != Fuseable.SYNC) {
+                    cleanupIfTerminated(d, v == null);
+                    if (sourceMode != Fuseable.SYNC) {
 						s.request(1);
 					}
 					continue;
@@ -458,16 +480,14 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 					empty = v == null;
 
-					if (checkTerminated(d, empty)) {
-						return;
-					}
+                    cleanupIfTerminated(d, empty);
 
-					if (empty) {
+                    if (empty) {
 						//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
 						if (sourceMode == Fuseable.SYNC) {
 							//the q is empty
 							done = true;
-							checkTerminated(true, true);
+							cleanupIfTerminated(true, true);
 						}
 						break;
 					}
@@ -494,10 +514,8 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			}
 			else if ( sourceMode == Fuseable.SYNC ) {
 				done = true;
-				if (checkTerminated(true, empty)) { //empty can be true if no subscriber
-					break;
-				}
-			}
+                cleanupIfTerminated(true, empty);//empty can be true if no subscriber
+            }
 
 			missed = WIP.addAndGet(this, -missed);
 			if (missed == 0) {
@@ -511,7 +529,14 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		return SUBSCRIBERS.getAndSet(this, TERMINATED);
 	}
 
-	boolean checkTerminated(boolean d, boolean empty) {
+	/**
+	 * Inspects the current state and, if terminal, performs the necessary cleanup actions
+	 * like clearing the queue and signaling subscribers.
+	 *
+	 * @param d the current `done` state
+	 * @param empty if the queue is currently empty
+	 */
+	void cleanupIfTerminated(boolean d, boolean empty) {
 		if (s == Operators.cancelledSubscription()) {
 			if (autoCancel) {
 				terminate();
@@ -520,7 +545,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 					q.clear();
 				}
 			}
-			return true;
+			return;
 		}
 		if (d) {
 			Throwable e = error;
@@ -532,19 +557,16 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 				for (FluxPublish.PubSubInner<T> inner : terminate()) {
 					inner.actual.onError(e);
 				}
-				return true;
 			}
 			else if (empty) {
 				for (FluxPublish.PubSubInner<T> inner : terminate()) {
 					inner.actual.onComplete();
 				}
-				return true;
 			}
 		}
-		return false;
 	}
 
-	final boolean add(EmitterInner<T> inner) {
+	boolean add(EmitterInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 			if (a == TERMINATED) {
@@ -560,7 +582,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		}
 	}
 
-	final void remove(FluxPublish.PubSubInner<T> inner) {
+	void remove(FluxPublish.PubSubInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
@@ -591,14 +613,11 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
 				//contrary to FluxPublish, there is a possibility of auto-cancel, which
 				//happens when the removed inner makes the subscribers array EMPTY
-				if (autoCancel && b == EMPTY && Operators.terminate(S, this)) {
-					if (WIP.getAndIncrement(this) != 0) {
-						return;
-					}
-					terminate();
-					Queue<T> q = queue;
-					if (q != null) {
-						q.clear();
+				if (autoCancel && b == EMPTY && !isCancelled()) {
+					if (Operators.terminate(S, this)) {
+						// The state is now CANCELLED.
+						// Trigger a drain so the serialized drain-loop can perform the cleanup
+						drain();
 					}
 				}
 				return;
@@ -652,6 +671,5 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			}
 		}
 	}
-
 
 }
