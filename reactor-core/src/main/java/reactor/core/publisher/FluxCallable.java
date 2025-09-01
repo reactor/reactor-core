@@ -29,9 +29,9 @@ import reactor.core.Fuseable;
  */
 final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, SourceProducer<T> {
 
-	final Callable<T> callable;
+	final Callable<@Nullable T> callable;
 
-	FluxCallable(Callable<T> callable) {
+	FluxCallable(Callable<@Nullable T> callable) {
 		this.callable = callable;
 	}
 

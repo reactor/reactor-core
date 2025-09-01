@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
@@ -26,7 +27,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
-final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements CoreSubscriber<T> {
+final class MonoToCompletableFuture<T> extends CompletableFuture<@Nullable T> implements CoreSubscriber<T> {
 
 	final AtomicReference<Subscription> ref = new AtomicReference<>();
 	final boolean cancelSourceOnNext;

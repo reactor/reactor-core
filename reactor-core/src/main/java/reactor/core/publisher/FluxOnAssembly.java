@@ -219,7 +219,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		String operatorAssemblyInformation() {
-			return cached;
+			assert this.cached != null;
+			return this.cached;
 		}
 
 	}
@@ -254,7 +255,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		String operatorAssemblyInformation() {
-			return cached;
+			assert this.cached != null;
+			return this.cached;
 		}
 	}
 

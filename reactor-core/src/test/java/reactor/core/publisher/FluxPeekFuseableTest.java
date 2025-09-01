@@ -1059,7 +1059,7 @@ public class FluxPeekFuseableTest {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			T value = q.poll();
 			if (value == null && completeWithError) {
 				throw new IllegalStateException("AssertQueueSubscriber poll error");

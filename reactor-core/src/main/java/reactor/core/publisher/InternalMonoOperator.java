@@ -93,7 +93,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public final @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 }

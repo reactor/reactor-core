@@ -156,7 +156,7 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		T accumulatedValue() {
+		@Nullable T accumulatedValue() {
 			final T fallbackValue = this.fallbackValue;
 			if (fallbackValue != null && FALLBACK_VALUE.compareAndSet(this, fallbackValue, null)) {
 				return fallbackValue;

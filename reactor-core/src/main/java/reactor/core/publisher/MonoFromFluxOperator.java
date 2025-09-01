@@ -100,7 +100,7 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable,
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public final @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

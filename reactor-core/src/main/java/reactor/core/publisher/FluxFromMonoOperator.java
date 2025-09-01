@@ -102,7 +102,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public final @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

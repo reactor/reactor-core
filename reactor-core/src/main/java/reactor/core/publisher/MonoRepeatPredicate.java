@@ -39,7 +39,7 @@ final class MonoRepeatPredicate<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRepeatPredicate.RepeatPredicateSubscriber<T> parent = new FluxRepeatPredicate.RepeatPredicateSubscriber<>(source,
 				actual, predicate);
 

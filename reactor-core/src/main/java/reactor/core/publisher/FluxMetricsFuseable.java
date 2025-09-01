@@ -99,6 +99,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 			return qs == null || qs.isEmpty();
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (this.mode == Fuseable.ASYNC) {

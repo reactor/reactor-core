@@ -39,56 +39,49 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
 	 */
-	@Nullable
-	Consumer<? super Subscription> onSubscribeCall();
+	@Nullable Consumer<? super Subscription> onSubscribeCall();
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onNext(Object)}
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onNext(Object)}
 	 */
-	@Nullable
-	Consumer<? super T> onNextCall();
+	@Nullable Consumer<? super T> onNextCall();
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onError(Throwable)}}
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onError(Throwable)}
 	 */
-	@Nullable
-	Consumer<? super Throwable> onErrorCall();
+	@Nullable Consumer<? super Throwable> onErrorCall();
 
 	/**
 	 * A task that will run on {@link Subscriber#onComplete()}
 	 *
 	 * @return A task that will run on {@link Subscriber#onComplete()}
 	 */
-	@Nullable
-	Runnable onCompleteCall();
+	@Nullable Runnable onCompleteCall();
 
 	/**
 	 * A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 	 *
 	 * @return A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 	 */
-	@Nullable
-	Runnable onAfterTerminateCall();
+	@Nullable Runnable onAfterTerminateCall();
 
 	/**
 	 * A consumer of long that will observe {@link Subscription#request(long)}}
 	 *
 	 * @return A consumer of long that will observe {@link Subscription#request(long)}}
 	 */
-	@Nullable
-	LongConsumer onRequestCall();
+	@Nullable LongConsumer onRequestCall();
 
 	/**
 	 * A task that will run on {@link Subscription#cancel()}
 	 *
 	 * @return A task that will run on {@link Subscription#cancel()}
 	 */
-	@Nullable
-	Runnable onCancelCall();
+	@Nullable Runnable onCancelCall();
 
 	/**
 	 * A task that will run after (finally) {@link Subscriber#onNext(Object)}

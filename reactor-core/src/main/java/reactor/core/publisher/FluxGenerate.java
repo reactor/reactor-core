@@ -40,10 +40,10 @@ import reactor.util.context.ContextView;
  * @param <S> the custom state per subscriber
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxGenerate<T, S>
-extends Flux<T> implements Fuseable, SourceProducer<T> {
+final class FluxGenerate<T, S extends Object> extends Flux<T>
+		implements Fuseable, SourceProducer<T> {
 
-
+	@SuppressWarnings("rawtypes")
 	static final Callable EMPTY_CALLABLE = () -> null;
 
 	final Callable<S> stateSupplier;

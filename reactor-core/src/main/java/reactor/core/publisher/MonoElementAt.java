@@ -66,8 +66,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	static final class ElementAtSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, T> {
-		@Nullable
-		final T defaultValue;
+		final @Nullable T defaultValue;
 
 		long index;
 
@@ -140,7 +139,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		T accumulatedValue() {
+		@Nullable T accumulatedValue() {
 			return defaultValue;
 		}
 	}

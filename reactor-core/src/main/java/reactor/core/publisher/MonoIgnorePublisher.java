@@ -63,17 +63,17 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		return new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 	}
 
 	@Override
-	public final CorePublisher<? extends T> source() {
+	public CorePublisher<? extends T> source() {
 		return this;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends T> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

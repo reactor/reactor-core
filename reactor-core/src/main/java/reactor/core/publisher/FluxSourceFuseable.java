@@ -66,12 +66,12 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourcePro
 	}
 
 	@Override
-	public final CorePublisher<? extends I> source() {
+	public CorePublisher<? extends I> source() {
 		return this;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

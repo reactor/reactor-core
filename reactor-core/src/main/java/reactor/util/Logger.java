@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package reactor.util;
 
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Logger interface designed for internal Reactor usage.
@@ -73,7 +75,7 @@ public interface Logger {
 	 * @param format    the format string
 	 * @param arguments a list of 3 or more arguments
 	 */
-	void trace(String format, Object... arguments);
+	void trace(String format, @Nullable Object... arguments);
 
 	/**
 	 * Log an exception (throwable) at the TRACE level with an

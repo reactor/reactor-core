@@ -35,9 +35,9 @@ import static reactor.core.Scannable.Attr.RUN_STYLE;
  */
 final class FluxNameFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
-	final String name;
+	final @Nullable String name;
 
-	final List<Tuple2<String, String>> tagsWithDuplicates;
+	final @Nullable List<Tuple2<String, String>> tagsWithDuplicates;
 
 	FluxNameFuseable(Flux<? extends T> source,
 			@Nullable String name,

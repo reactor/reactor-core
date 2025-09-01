@@ -44,7 +44,7 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Scheduler.Worker worker = scheduler.createWorker();
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,

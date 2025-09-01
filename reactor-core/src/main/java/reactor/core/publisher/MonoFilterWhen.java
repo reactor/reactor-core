@@ -262,7 +262,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

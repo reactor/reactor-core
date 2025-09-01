@@ -69,7 +69,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 	}
 
 	@Override
-	public CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 
 		JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new JoinSubscription<>(actual,

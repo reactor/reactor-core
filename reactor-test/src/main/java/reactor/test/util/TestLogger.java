@@ -189,7 +189,7 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.err);
 	}
 
-	String logContent(String logType, String msg){
+	String logContent(String logType, @Nullable String msg){
 		if(logCurrentThreadName){
 			return String.format("[%s] (%s) %s\n", logType,
 					Thread.currentThread().getName(), msg);

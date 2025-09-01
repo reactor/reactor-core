@@ -35,11 +35,11 @@ import reactor.core.Exceptions;
 final class MonoSingleCallable<T> extends Mono<T>
 		implements Callable<T>, SourceProducer<T> {
 
-	final Callable<? extends T> callable;
+	final Callable<? extends @Nullable T> callable;
 	@Nullable
 	final T defaultValue;
 
-	MonoSingleCallable(Callable<? extends T> source) {
+	MonoSingleCallable(Callable<? extends @Nullable T> source) {
 		this.callable = Objects.requireNonNull(source, "source");
 		this.defaultValue = null;
 	}

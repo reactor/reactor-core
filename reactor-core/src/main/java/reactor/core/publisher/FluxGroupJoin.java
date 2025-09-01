@@ -89,7 +89,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	@Override
-	public CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new GroupJoinSubscription<>(actual,
 						leftEnd,
@@ -249,6 +249,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		void errorAll(Subscriber<?> a) {
 			Throwable ex = Exceptions.terminate(ERROR, this);
+			assert ex != null;
 
 			for (Sinks.Many<TRight> up : lefts.values()) {
 				up.emitError(ex, Sinks.EmitFailureHandler.FAIL_FAST);

@@ -105,6 +105,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 			return null;
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -266,6 +267,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 			return actual.tryOnNext(indexed);
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {

@@ -55,7 +55,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
@@ -266,7 +266,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public OptimizableOperator<?, ? extends Long> nextOptimizableSource() {
+		public @Nullable OptimizableOperator<?, ? extends Long> nextOptimizableSource() {
 			return null;
 		}
 	}

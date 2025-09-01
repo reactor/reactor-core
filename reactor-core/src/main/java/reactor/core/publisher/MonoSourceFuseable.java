@@ -60,17 +60,17 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 	}
 
 	@Override
-	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
 	}
 
 	@Override
-	public final CorePublisher<? extends I> source() {
+	public CorePublisher<? extends I> source() {
 		return this;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

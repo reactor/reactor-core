@@ -95,7 +95,7 @@ extends Mono<T>
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			if (this.done) {
 				return null;
 			}

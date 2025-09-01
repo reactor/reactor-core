@@ -1156,7 +1156,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual)
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual)
 			throws Throwable {
 		boolean expired;
 		for (; ; ) {
@@ -1192,12 +1192,12 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public final CorePublisher<? extends T> source() {
+	public CorePublisher<? extends T> source() {
 		return source;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends T> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

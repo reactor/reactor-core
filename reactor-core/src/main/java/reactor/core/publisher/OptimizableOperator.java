@@ -57,6 +57,5 @@ interface OptimizableOperator<IN, OUT> extends CorePublisher<IN> {
 	 *
 	 * @return next {@link OptimizableOperator} if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
 	 */
-	@Nullable
-	OptimizableOperator<?, ? extends OUT> nextOptimizableSource();
+	@Nullable OptimizableOperator<?, ? extends OUT> nextOptimizableSource();
 }

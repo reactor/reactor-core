@@ -2118,7 +2118,7 @@ public abstract class Operators {
 		abstract @Nullable O accumulatedValue();
 
 		@Override
-		public final I poll() {
+		public final @Nullable I poll() {
 			return null;
 		}
 

@@ -77,7 +77,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

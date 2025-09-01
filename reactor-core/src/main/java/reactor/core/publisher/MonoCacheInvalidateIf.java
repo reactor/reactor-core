@@ -109,7 +109,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		//important: onSubscribe should be deferred until we're sure we're in the Coordinator case OR the cached value passes the predicate
 		for(;;) {

@@ -85,7 +85,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		//for now mergeSequential doesn't support onErrorContinue, so the scalar version shouldn't either
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, false)) {
 			return null;
@@ -170,7 +170,8 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(subscribers.peek());
+			MergeSequentialInner<R> inner = subscribers.peek();
+			return inner != null ? Stream.of(inner) : Stream.empty();
 		}
 
 		@Override

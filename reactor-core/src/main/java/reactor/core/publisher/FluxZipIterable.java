@@ -48,7 +48,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		Iterator<? extends U> it = Objects.requireNonNull(other.iterator(),
 				"The other iterable produced a null iterator");
 

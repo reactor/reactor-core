@@ -219,8 +219,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@SuppressWarnings("unchecked")
-		@Nullable
-		T getAndNullValue() {
+		@Nullable T getAndNullValue() {
 			return (T) VALUE.getAndSet(this, null);
 		}
 

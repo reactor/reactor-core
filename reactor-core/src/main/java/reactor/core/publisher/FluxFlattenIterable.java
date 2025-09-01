@@ -73,7 +73,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) throws Exception {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) throws Exception {
 
 		if (source instanceof Callable) {
 			T v = ((Callable<T>) source).call();

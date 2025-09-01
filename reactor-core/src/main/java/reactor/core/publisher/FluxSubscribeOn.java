@@ -50,7 +50,7 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Worker worker = Objects.requireNonNull(scheduler.createWorker(),
 				"The scheduler returned a null Function");
 

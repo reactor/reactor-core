@@ -178,6 +178,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 			}
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -469,6 +470,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 			}
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -752,8 +754,11 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		@Override
 		public Context currentContext() {
 			Context c = actual.currentContext();
-			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
-				parent.onCurrentContextCall().accept(c);
+			if (!c.isEmpty()) {
+				Consumer<? super Context> onCurrentContextCall = parent.onCurrentContextCall();
+				if (onCurrentContextCall != null) {
+					onCurrentContextCall.accept(c);
+				}
 			}
 			return c;
 		}

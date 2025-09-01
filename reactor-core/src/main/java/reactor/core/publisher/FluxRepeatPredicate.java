@@ -41,7 +41,7 @@ final class FluxRepeatPredicate<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatPredicateSubscriber<T> parent = new RepeatPredicateSubscriber<>(source,
 				actual, predicate);
 

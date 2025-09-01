@@ -42,7 +42,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		//for now Mono in general doesn't support onErrorContinue, so the scalar version shouldn't either
 		//even if the result is a Flux. once the mapper is applied, onErrorContinue will be taken care of by
 		//the mapped Flux if relevant.

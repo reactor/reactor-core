@@ -435,6 +435,9 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 			}
 		}
 
+		// in the latest NullAway we can configure DataFlowIssue to be treated as
+		// NullAway suppression
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public boolean tryOnNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {

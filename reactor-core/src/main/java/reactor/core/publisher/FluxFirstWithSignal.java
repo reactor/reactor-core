@@ -150,8 +150,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 	 *
 	 * @return the new {@link FluxFirstWithSignal} instance or null if the Amb runs with an Iterable
 	 */
-	@Nullable
-	FluxFirstWithSignal<T> orAdditionalSource(Publisher<? extends T> source) {
+	@Nullable FluxFirstWithSignal<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =

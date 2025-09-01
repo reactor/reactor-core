@@ -544,8 +544,7 @@ public interface Scannable {
 	 * @param key a {@link Attr} to resolve for the component.
 	 * @return the value associated to the key for that specific component, or null if none.
 	 */
-	@Nullable
-	Object scanUnsafe(Attr key);
+	@Nullable Object scanUnsafe(Attr key);
 
 	/**
 	 * Introspect a component's specific state {@link Attr attribute}, returning an

@@ -48,7 +48,7 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRepeatWhen.RepeatWhenOtherSubscriber other =
 				new FluxRepeatWhen.RepeatWhenOtherSubscriber();
 

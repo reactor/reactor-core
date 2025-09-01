@@ -103,7 +103,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(actual, otherGenerators);
 		actual.onSubscribe(parent);
 
@@ -111,12 +111,12 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 	}
 
 	@Override
-	public final CorePublisher<? extends T> source() {
+	public CorePublisher<? extends T> source() {
 		return source;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends T> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

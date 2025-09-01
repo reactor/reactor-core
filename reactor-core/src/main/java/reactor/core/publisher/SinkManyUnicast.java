@@ -303,6 +303,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 		}
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	void drainFused(CoreSubscriber<? super T> a) {
 		int missed = 1;
 

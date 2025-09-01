@@ -340,8 +340,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	 *
 	 * @return Current error if any, default to null
 	 */
-	@Nullable
-	Throwable getError() {
+	@Nullable Throwable getError() {
 		return error;
 	}
 

@@ -1197,7 +1197,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * and return a (new) state.
 	 * @return a {@link Flux}
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
+	public static <T, S extends @Nullable Object> Flux<T> generate(Callable<S> stateSupplier,
+			BiFunction<S, SynchronousSink<T>, S> generator) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator));
 	}
 
@@ -1220,7 +1221,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux}
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
+	public static <T, S extends @Nullable Object> Flux<T> generate(Callable<S> stateSupplier,
+			BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator, stateConsumer));
 	}
 

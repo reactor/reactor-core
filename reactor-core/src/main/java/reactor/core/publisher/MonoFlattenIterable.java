@@ -64,7 +64,7 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) throws Exception {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) throws Exception {
 		if (source instanceof Callable) {
 			T v = ((Callable<T>) source).call();
 

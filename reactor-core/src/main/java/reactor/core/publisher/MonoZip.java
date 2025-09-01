@@ -325,7 +325,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@Override
-		public R poll() {
+		public @Nullable R poll() {
 			return null;
 		}
 

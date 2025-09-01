@@ -41,7 +41,7 @@ final class MonoRetry<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRetry.RetrySubscriber<T> parent = new FluxRetry.RetrySubscriber<>(source,
 				actual, times);
 

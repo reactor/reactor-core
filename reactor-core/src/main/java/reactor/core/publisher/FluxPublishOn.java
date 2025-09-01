@@ -83,7 +83,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Worker worker = Objects.requireNonNull(scheduler.createWorker(),
 				"The scheduler returned a null worker");
 
@@ -473,6 +473,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		void runBackfused() {
 			int missed = 1;
 
@@ -1031,6 +1032,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		void runBackfused() {
 			int missed = 1;
 

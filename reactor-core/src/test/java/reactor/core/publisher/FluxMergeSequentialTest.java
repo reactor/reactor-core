@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -842,6 +842,8 @@ public class FluxMergeSequentialTest {
         test.onError(new IllegalStateException("boom"));
         assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(test.inners().count()).isEqualTo(0);
     }
 
     @Test
@@ -872,6 +874,7 @@ public class FluxMergeSequentialTest {
         assertThat(inner.scan(Scannable.Attr.CANCELLED)).isFalse();
         inner.cancel();
         assertThat(inner.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(main.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
     }
 
 	@Test

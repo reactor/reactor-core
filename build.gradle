@@ -156,7 +156,9 @@ configure(subprojects) { p ->
 		options.errorprone {
 			disableAllChecks = true // Other error prone checks are disabled
 			option("NullAway:OnlyNullMarked", "true") // Enable nullness checks only in null-marked code
+			// jspecify mode would check generic types and array annotations
 //			error("NullAway") // bump checks from warnings (default) to errors
+			warn("NullAway") // bump checks from warnings (default) to errors
 		}
 	}
 

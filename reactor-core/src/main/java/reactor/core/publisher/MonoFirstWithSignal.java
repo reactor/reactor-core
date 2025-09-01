@@ -48,8 +48,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
-	@Nullable
-	Mono<T> orAdditionalSource(Mono<? extends T> other) {
+	@Nullable Mono<T> orAdditionalSource(Mono<? extends T> other) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];

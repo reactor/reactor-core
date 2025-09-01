@@ -179,7 +179,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		T accumulatedValue() {
+		@Nullable T accumulatedValue() {
 			final T v;
 			synchronized (this) {
 				v = this.value;

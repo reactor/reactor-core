@@ -75,12 +75,12 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 	}
 
 	@Override
-	public final CorePublisher<? extends T> source() {
+	public CorePublisher<? extends T> source() {
 		return this;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends T> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

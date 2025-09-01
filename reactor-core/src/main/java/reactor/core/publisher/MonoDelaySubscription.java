@@ -43,7 +43,7 @@ final class MonoDelaySubscription<T, U> extends InternalMonoOperator<T, T>
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		other.subscribe(new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<>(
 				actual, this));
 		return null;

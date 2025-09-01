@@ -47,7 +47,7 @@ final class FluxRepeat<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, actual, times  + 1);
 
 		actual.onSubscribe(parent);

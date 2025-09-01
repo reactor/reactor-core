@@ -55,7 +55,7 @@ final class MonoCallable<T> extends Mono<T>
 	}
 
 	@Override
-	public @Nullable T block(Duration m) {
+	public T block(Duration m) {
 		try {
 			return callable.call();
 		}
@@ -65,7 +65,7 @@ final class MonoCallable<T> extends Mono<T>
 	}
 
 	@Override
-	public @Nullable T call() throws Exception {
+	public T call() throws Exception {
 		return callable.call();
 	}
 
@@ -102,7 +102,7 @@ final class MonoCallable<T> extends Mono<T>
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			if (this.done) {
 				return null;
 			}

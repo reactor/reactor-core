@@ -1009,7 +1009,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public final Object scanUnsafe(Attr key) {
+		public final @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return delegate;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

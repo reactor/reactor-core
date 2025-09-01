@@ -207,6 +207,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			}
 		}
 
+		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (mode == ASYNC) {

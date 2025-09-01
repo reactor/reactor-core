@@ -29,8 +29,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 
 	static final int STATE_VALUE = 1;
 
-	@Nullable
-	O value;
+	@Nullable O value;
 
 	@Override
 	boolean isTerminated(Inner<?>[] array) {
@@ -98,6 +97,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 			as.complete();
 		}
 		else {
+			assert value != null;
 			as.complete(value);
 		}
 	}

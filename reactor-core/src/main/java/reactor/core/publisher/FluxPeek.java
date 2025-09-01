@@ -117,8 +117,11 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 		@Override
 		public Context currentContext() {
 			Context c = actual.currentContext();
-			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
-				parent.onCurrentContextCall().accept(c);
+			if (!c.isEmpty()) {
+				Consumer<? super Context> onCurrentContextCall = parent.onCurrentContextCall();
+				if (onCurrentContextCall != null) {
+					onCurrentContextCall.accept(c);
+				}
 			}
 			return c;
 		}

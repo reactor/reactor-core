@@ -392,6 +392,7 @@ class DefaultTestSubscriberTest {
 		assertThat(subscriber.isCancelled()).as("isCancelled").isTrue();
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	void asyncPollInterruptedByCancel() {
 		AtomicInteger source = new AtomicInteger();
@@ -522,6 +523,7 @@ class DefaultTestSubscriberTest {
 				.allMatch(s -> s.getContextView().isEmpty(), "empty context");
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	void onNextNullWhenNoFusion() {
 		final Subscription mock = Mockito.mock(Subscription.class);
@@ -539,6 +541,7 @@ class DefaultTestSubscriberTest {
 				.withMessage("onNext(null) received while ASYNC fusion not established");
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	void onNextNullWhenSyncFusion() {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
@@ -1331,6 +1334,7 @@ class DefaultTestSubscriberTest {
 		Mockito.verify(queueSubscription).clear();
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	void drainAsyncWithOnError() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
@@ -1358,6 +1362,7 @@ class DefaultTestSubscriberTest {
 				.satisfies(s -> assertThat(s.getThrowable()).isInstanceOf(IllegalStateException.class).hasMessage("expected"));
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncBadOnErrorDuringPollNotifiesAndClears() {
@@ -1421,6 +1426,7 @@ class DefaultTestSubscriberTest {
 				.isSameAs(testSubscriber.getTerminalSignal()); //that last assertion ensures we registered the terminal signal
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncBadOnCompleteDuringPollNotifiesAndClears() {
@@ -1483,6 +1489,7 @@ class DefaultTestSubscriberTest {
 				.isSameAs(testSubscriber.getTerminalSignal()); //that last assertion ensures we registered the terminal signal
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncBadTerminalNotifiesAndClearsOnceProducedRequestedAmount() {
@@ -1551,6 +1558,7 @@ class DefaultTestSubscriberTest {
 				.isSameAs(testSubscriber.getTerminalSignal());
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncCancelledNotifiesAndClears() {

@@ -232,6 +232,7 @@ class SinkManyEmitterProcessorTest {
 		            .verify(Duration.ofSeconds(1));
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // passing null on purpose
 	@Test
 	void emitNextNullWithAsyncFusion() {
 		SinkManyEmitterProcessor<Integer> processor = new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
@@ -303,6 +304,7 @@ class SinkManyEmitterProcessorTest {
 
 	}
 
+	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // passing null on purpose
 	@Test
 	void onNextNull() {
 		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {

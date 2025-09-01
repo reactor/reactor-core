@@ -244,7 +244,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

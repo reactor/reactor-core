@@ -74,12 +74,12 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	}
 
 	@Override
-	public final CorePublisher<? extends I> source() {
+	public CorePublisher<? extends I> source() {
 		return this;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

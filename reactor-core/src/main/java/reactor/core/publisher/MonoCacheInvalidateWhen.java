@@ -99,7 +99,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		actual.onSubscribe(inner);
 		for(;;) {

@@ -345,6 +345,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 		void signalAsyncError() {
 			Throwable e = Exceptions.terminate(ERROR, this);
+			assert e != null;
 			windowCount = 0;
 			WindowFlux<T> g = window;
 			if (g != null) {

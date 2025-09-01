@@ -426,7 +426,7 @@ final class ContextPropagation {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			Envelope<T> envelope = envelopeQueue.poll();
 			if (envelope == null) {
 				if (cleanOnNull && scope != null) {

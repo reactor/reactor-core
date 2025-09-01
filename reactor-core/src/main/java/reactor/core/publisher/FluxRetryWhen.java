@@ -83,7 +83,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		subscribe(actual, whenSourceFactory, source);
 		return null;
 	}
@@ -299,7 +299,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public OptimizableOperator<?, ? extends Retry.RetrySignal> nextOptimizableSource() {
+		public @Nullable OptimizableOperator<?, ? extends Retry.RetrySignal> nextOptimizableSource() {
 			return null;
 		}
 	}

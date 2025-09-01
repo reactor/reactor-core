@@ -99,9 +99,11 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
 	}
 
+	// super.getError() returns null by default and this method would throw NPE in that
+	// case, however the parent's contract is to return nullable Throwable
 	@Override
-	public @Nullable Throwable getError() {
-		//noinspection ConstantConditions
+	@SuppressWarnings({"NullAway", "DataFlowIssue"})
+	public Throwable getError() {
 		return Scannable.from(upstream)
 		                .scanOrDefault(Attr.ERROR, super.getError());
 	}

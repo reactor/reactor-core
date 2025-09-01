@@ -49,7 +49,7 @@ final class FluxDelaySubscription<T, U> extends InternalFluxOperator<T, T>
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		other.subscribe(new DelaySubscriptionOtherSubscriber<>(actual, this));
 		return null;
 	}

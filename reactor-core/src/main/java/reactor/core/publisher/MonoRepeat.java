@@ -44,7 +44,7 @@ final class MonoRepeat<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRepeat.RepeatSubscriber<T> parent =
 				new FluxRepeat.RepeatSubscriber<>(source, actual, times + 1);
 

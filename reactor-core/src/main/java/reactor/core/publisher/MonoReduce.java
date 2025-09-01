@@ -223,7 +223,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

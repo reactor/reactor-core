@@ -82,7 +82,7 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+	public final @Nullable OptimizableOperator<?, ? extends I> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 

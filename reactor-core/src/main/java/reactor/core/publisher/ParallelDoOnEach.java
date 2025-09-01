@@ -117,37 +117,37 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 		}
 
 		@Override
-		public Consumer<? super Subscription> onSubscribeCall() {
+		public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 			return null;
 		}
 
 		@Override
-		public Consumer<? super T> onNextCall() {
+		public @Nullable Consumer<? super T> onNextCall() {
 			return onNextCall;
 		}
 
 		@Override
-		public Consumer<? super Throwable> onErrorCall() {
+		public @Nullable Consumer<? super Throwable> onErrorCall() {
 			return onErrorCall;
 		}
 
 		@Override
-		public Runnable onCompleteCall() {
+		public @Nullable Runnable onCompleteCall() {
 			return onCompleteCall;
 		}
 
 		@Override
-		public Runnable onAfterTerminateCall() {
+		public @Nullable Runnable onAfterTerminateCall() {
 			return null;
 		}
 
 		@Override
-		public LongConsumer onRequestCall() {
+		public @Nullable LongConsumer onRequestCall() {
 			return null;
 		}
 
 		@Override
-		public Runnable onCancelCall() {
+		public @Nullable Runnable onCancelCall() {
 			return null;
 		}
 

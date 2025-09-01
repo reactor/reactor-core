@@ -82,7 +82,9 @@ final class FluxSkipLast<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (size() == n) {
-				actual.onNext(pollFirst());
+				T first = pollFirst();
+				assert first != null;
+				actual.onNext(first);
 			}
 			offerLast(t);
 
