@@ -195,6 +195,10 @@ task docsZip(type: Zip, dependsOn: ':docs:antora') {
         into 'docs'
     }
 
+    from("${rootDir}/docs/src/docs/dist") {
+        include "LICENSE"
+    }
+
     if (!isSnapshot || forcePdf) {
         def pdfFile = file("build/assembler/reactor/${version}/reactor-3-reference-guide.pdf")
         logger.lifecycle("${pdfFile} will be included in docs zip")
