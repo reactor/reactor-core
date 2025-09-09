@@ -126,6 +126,11 @@ shadowJar {
         inheritFrom project.tasks.jar.manifest
     }
 
+    from("${rootDir}/docs/src/docs/dist") {
+        include "LICENSE"
+        into "META-INF"
+    }
+
     configurations = [project.configurations.shaded]
 
     project.afterEvaluate {
