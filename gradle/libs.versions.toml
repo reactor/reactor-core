@@ -7,9 +7,9 @@
 
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.7.9"
-baselinePerfCore = "3.7.9"
-baselinePerfCoreMicrometer = "1.2.9"
+baseline-core-api = "3.7.10"
+baselinePerfCore = "3.7.10"
+baselinePerfCoreMicrometer = "1.2.10"
 baselinePerfExtra = "3.5.2"
 
 # Other shared versions
