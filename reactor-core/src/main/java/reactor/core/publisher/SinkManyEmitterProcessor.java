@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @author Stephane Maldini
  */
 final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManySink<T>,
-	Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder {
+	Sinks.ManyWithUpstream<T>, CoreSubscriber<T>, Scannable, Disposable, ContextHolder, SourceProducer<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -292,6 +292,29 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	int getPending() {
 		Queue<T> q = queue;
 		return q != null ? q.size() : 0;
+	}
+
+	@Override
+	public void terminateAndCleanup() {
+		if (Operators.terminate(S, this)) {
+			this.done = true;
+
+			FluxPublish.PubSubInner<T>[] innerSubscribers = terminate();
+
+			Queue<T> q = this.queue;
+			if (q != null) {
+				q.clear();
+			}
+
+			if (innerSubscribers.length > 0) {
+				CancellationException ex = new CancellationException("Processor terminated by downstream operator");
+				if (ERROR.compareAndSet(this, null, ex)) {
+					for (FluxPublish.PubSubInner<T> inner: innerSubscribers) {
+						inner.actual.onError(ex);
+					}
+				}
+			}
+		}
 	}
 
 	//TODO evaluate the use case for Disposable in the context of Sinks

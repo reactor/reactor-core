@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.I_Result;
+import reactor.util.concurrent.Queues;
+
+import java.util.Queue;
 
 public class SinkManyUnicastStressTest {
 
@@ -57,6 +60,31 @@ public class SinkManyUnicastStressTest {
 			if (subscriber.concurrentOnSubscribe.get() || subscriber.concurrentOnNext.get()) {
 				throw new IllegalStateException("Concurrent onSubscribe with onNext");
 			}
+		}
+	}
+
+	@JCStressTest
+	@Outcome(id = {"0"}, expect = Expect.ACCEPTABLE, desc = "Queue was correctly cleared.")
+	@Outcome(expect = Expect.FORBIDDEN, desc = "Item was leaked into the queue.")
+	@State
+	public static class SinkManyUnicastTakeZeroTest {
+
+		final Queue<Object> queue = Queues.unbounded().get();
+		final Sinks.Many<Object> sink = Sinks.many().unicast().onBackpressureBuffer(queue);
+
+		@Actor
+		public void takeZero() {
+			sink.asFlux().take(0).blockLast();
+		}
+
+		@Actor
+		public void emit() {
+			sink.tryEmitNext("Test emit");
+		}
+
+		@Arbiter
+		public void arbiter(I_Result result) {
+			result.r1 = queue.size();
 		}
 	}
 }
