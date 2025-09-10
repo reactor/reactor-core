@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -37,6 +30,16 @@ import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -664,6 +667,82 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	void fluxUsingShouldNotHoldReferenceToTheResourceAfterCleanup() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(1);
+
+		AtomicReference<WeakReference<ExpensiveResource>> resourceRef = new AtomicReference<>();
+		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>();
+
+		Flux<Integer> flux = Flux.using(
+				() -> {
+					ExpensiveResource resource = new ExpensiveResource();
+					resourceRef.set(new WeakReference<>(resource));
+					return resource;
+				},
+				resource -> Flux.range(1, 3),
+				resource -> {
+					try {
+						resource.close();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+		);
+
+		flux.subscribe(new CoreSubscriber<Integer>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+				subscriptionHolder.set(s);
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(Integer value) {
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				latch.countDown();
+			}
+
+			@Override
+			public void onComplete() {
+				latch.countDown();
+			}
+		});
+
+		boolean completed = latch.await(5, TimeUnit.SECONDS);
+		assertThat(completed).isTrue();
+
+		for (int i = 0; i < 5; i++) {
+			System.gc();
+			Thread.sleep(100);
+		}
+
+		assertThat(resourceRef.get().get()).isNull();
+	}
+
+	static class ExpensiveResource implements AutoCloseable, Iterable<String> {
+		private final byte[] largeBuffer = new byte[1024 * 1024];
+		private final String id = "Resource-" + System.currentTimeMillis();
+
+		@Override
+		public java.util.Iterator<String> iterator() {
+			return java.util.Arrays.asList("item1", "item2", "item3").iterator();
+		}
+
+		@Override
+		public String toString() {
+			return "ExpensiveResource{id='" + id + "'}";
+		}
+
+		@Override
+		public void close() {
+			System.out.println("Closing: " + id);
+		}
+	}
 
 	static abstract class CleanupCase<T> implements Supplier<Flux<T>> {
 

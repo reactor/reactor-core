@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 
 		final CoreSubscriber<? super R> actual;
 
-		final Iterator<? extends U> it;
+		Iterator<? extends U> it;
 
 		final BiFunction<? super T, ? super U, ? extends R> zipper;
 
@@ -121,6 +121,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
+				this.it = null;
 				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
@@ -133,6 +134,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
+				this.it = null;
 				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
@@ -146,12 +148,14 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
+				this.it = null;
 				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
 			if (!b) {
 				done = true;
+				this.it = null;
 				s.cancel();
 				actual.onComplete();
 			}
@@ -164,6 +168,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 			done = true;
+			this.it = null;
 			actual.onError(t);
 		}
 
@@ -173,6 +178,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 			done = true;
+			this.it = null;
 			actual.onComplete();
 		}
 
@@ -188,6 +194,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void cancel() {
+			this.it = null;
 			s.cancel();
 		}
 	}
