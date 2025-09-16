@@ -561,6 +561,16 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * @return true if automatic context propagation to {@link ThreadLocal}s is enabled, false otherwise
+	 * @see #enableAutomaticContextPropagation
+	 * @see #disableAutomaticContextPropagation
+	 * @since 3.7.12
+	 */
+	public static boolean isAutomaticContextPropagationEnabled() {
+		return ContextPropagationSupport.shouldPropagateContextToThreadLocals();
+	}
+
 	@Nullable
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
