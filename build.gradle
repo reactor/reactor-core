@@ -152,13 +152,25 @@ configure(subprojects) { p ->
 		errorprone libs.errorprone
 	}
 
-	p.tasks.withType(JavaCompile).configureEach {
-		options.errorprone {
-			disableAllChecks = true // Other error prone checks are disabled
-			option("NullAway:OnlyNullMarked", "true") // Enable nullness checks only in null-marked code
-			// jspecify mode would check generic types and array annotations
-//			error("NullAway") // bump checks from warnings (default) to errors
-			warn("NullAway") // bump checks from warnings (default) to errors
+	p.tasks.withType(JavaCompile).configureEach { task ->
+		if (task.name.endsWith("TestJava") || task.name.endsWith("JcstressJava")) {
+			options.errorprone {
+				enabled = false
+			}
+		} else {
+			options.errorprone {
+				disableAllChecks = true // Other error prone checks are disabled
+				// Enable nullness checks only in null-marked code
+				option("NullAway:OnlyNullMarked", "true")
+				// jspecify mode would check generic types and array annotations
+//				option("NullAway:JSpecifyMode", "true")
+				// Allows treating assert ... statements as nullness assertions
+				option("NullAway:AssertsEnabled", "true")
+				option("NullAway:SuppressionNameAliases",
+						"DataFlowIssue,NotNullFieldNotInitialized")
+//				error("NullAway") // bump checks from warnings (default) to errors
+				warn("NullAway") // run checks as warnings
+			}
 		}
 	}
 
