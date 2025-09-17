@@ -3499,7 +3499,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final <R> Mono<R> mapNotNull(Function <? super T, ? extends R> mapper) {
+	public final <R> Mono<R> mapNotNull(Function <? super T, ? extends @Nullable R> mapper) {
 		return this.handle((t, sink) -> {
 			R r = mapper.apply(t);
 			if (r != null) {

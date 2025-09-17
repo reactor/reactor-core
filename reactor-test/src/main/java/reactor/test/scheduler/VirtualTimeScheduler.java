@@ -260,7 +260,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	final VirtualTimeWorker directWorker;
 
-	private Schedulers.Snapshot schedulersSnapshot;
+	private Schedulers.@Nullable Snapshot schedulersSnapshot;
 
 	protected VirtualTimeScheduler(boolean defer) {
 		this.defer = defer;

@@ -497,7 +497,9 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		final Publisher<?>              current;
 		final CoreSubscriber<? super T> actual;
 
-		QueueSubscription<T> qs;
+		@Nullable QueueSubscription<T> qs;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription         s;
 		int                  fusionMode;
 
@@ -618,6 +620,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		@Override
 		final public boolean isEmpty() {
 			try {
+				assert qs != null : "Queue interface used only when qs is non-null";
 				return qs.isEmpty();
 			}
 			catch (Throwable ex) {
@@ -637,11 +640,13 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		final public int size() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			return qs.size();
 		}
 
 		@Override
 		final public void clear() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			qs.clear();
 		}
 
@@ -658,6 +663,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		@Override
 		final public @Nullable T poll() {
 			try {
+				assert qs != null : "Queue interface used only when qs is non-null";
 				return qs.poll();
 			}
 			catch (final Throwable ex) {

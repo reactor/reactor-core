@@ -35,7 +35,7 @@ import reactor.core.Fuseable;
  */
 final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 
-	final Function<? super T, ? extends R> mapper;
+	final Function<? super T, ? extends @Nullable R> mapper;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and mapper.
@@ -46,7 +46,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
 	FluxMap(Flux<? extends T> source,
-			Function<? super T, ? extends R> mapper) {
+			Function<? super T, ? extends @Nullable R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
@@ -72,14 +72,14 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 			implements InnerOperator<T, R> {
 
 		final CoreSubscriber<? super R>        actual;
-		final Function<? super T, ? extends R> mapper;
+		final Function<? super T, ? extends @Nullable R> mapper;
 
 		boolean done;
 
 		Subscription s;
 
 		MapSubscriber(CoreSubscriber<? super R> actual,
-				Function<? super T, ? extends R> mapper) {
+				Function<? super T, ? extends @Nullable R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}

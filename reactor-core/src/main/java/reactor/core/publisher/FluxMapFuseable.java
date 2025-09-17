@@ -37,7 +37,7 @@ import reactor.core.Fuseable;
  */
 final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
-	final Function<? super T, ? extends R> mapper;
+	final Function<? super T, ? extends @Nullable R> mapper;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and mapper.
@@ -48,7 +48,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
 	FluxMapFuseable(Flux<? extends T> source,
-			Function<? super T, ? extends R> mapper) {
+			Function<? super T, ? extends @Nullable R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
@@ -74,7 +74,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			           QueueSubscription<R> {
 
 		final CoreSubscriber<? super R>        actual;
-		final Function<? super T, ? extends R> mapper;
+		final Function<? super T, ? extends @Nullable R> mapper;
 
 		boolean done;
 
@@ -83,7 +83,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		int sourceMode;
 
 		MapFuseableSubscriber(CoreSubscriber<? super R> actual,
-				Function<? super T, ? extends R> mapper) {
+				Function<? super T, ? extends @Nullable R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
@@ -233,7 +233,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			           QueueSubscription<R> {
 
 		final ConditionalSubscriber<? super R> actual;
-		final Function<? super T, ? extends R> mapper;
+		final Function<? super T, ? extends @Nullable R> mapper;
 
 		boolean done;
 
@@ -242,7 +242,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		int sourceMode;
 
 		MapFuseableConditionalSubscriber(ConditionalSubscriber<? super R> actual,
-				Function<? super T, ? extends R> mapper) {
+				Function<? super T, ? extends @Nullable R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}

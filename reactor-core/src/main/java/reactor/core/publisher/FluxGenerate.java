@@ -40,7 +40,7 @@ import reactor.util.context.ContextView;
  * @param <S> the custom state per subscriber
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxGenerate<T, S extends Object> extends Flux<T>
+final class FluxGenerate<T, S extends @Nullable Object> extends Flux<T>
 		implements Fuseable, SourceProducer<T> {
 
 	@SuppressWarnings("rawtypes")
@@ -91,7 +91,7 @@ final class FluxGenerate<T, S extends Object> extends Flux<T>
 		return SourceProducer.super.scanUnsafe(key);
 	}
 
-	static final class GenerateSubscription<T, S>
+	static final class GenerateSubscription<T, S extends @Nullable Object>
 	  implements QueueSubscription<T>, InnerProducer<T>, SynchronousSink<T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -102,7 +102,7 @@ final class FluxGenerate<T, S extends Object> extends Flux<T>
 
 		volatile boolean cancelled;
 
-		S state;
+		@Nullable S state;
 
 		boolean terminate;
 
@@ -110,9 +110,9 @@ final class FluxGenerate<T, S extends Object> extends Flux<T>
 		
 		boolean outputFused;
 		
-		T generatedValue;
+		@Nullable T generatedValue;
 		
-		Throwable generatedError;
+		@Nullable Throwable generatedError;
 
 		volatile long requested;
 
@@ -314,7 +314,7 @@ final class FluxGenerate<T, S extends Object> extends Flux<T>
 			}
 		}
 
-		void cleanup(S s) {
+		void cleanup(@Nullable S s) {
 			try {
 				state = null;
 

@@ -48,6 +48,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final int                                     requestedFusionMode;
 	final int                                     expectedFusionMode;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // set in onSubscribe
 	Subscription s;
 	Fuseable.@Nullable QueueSubscription<T> qs;
 	int fusionMode = -1;
@@ -59,7 +60,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final List<Signal<T>> protocolErrors;
 
 	final CountDownLatch                  doneLatch;
-	final AtomicReference<AssertionError> subscriptionFailure;
+	final AtomicReference<@Nullable AssertionError> subscriptionFailure;
 
 	@Nullable
 	volatile Signal<T> terminalSignal;

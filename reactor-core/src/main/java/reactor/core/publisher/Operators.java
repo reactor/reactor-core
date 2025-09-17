@@ -759,7 +759,7 @@ public abstract class Operators {
 		}
 
 		Throwable t = Exceptions.unwrap(error);
-		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
+		BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> hook =
 				context.getOrDefault(Hooks.KEY_ON_OPERATOR_ERROR, null);
 		if (hook == null) {
 			hook = Hooks.onOperatorErrorHook;
@@ -1672,6 +1672,8 @@ public abstract class Operators {
 		static final int STATE_CANCELLED = -2;
 		static final int STATE_SUBSCRIBED = -1;
 
+		// s is set in set() and only used after
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription s;
 		volatile long requested;
 
@@ -2006,6 +2008,8 @@ public abstract class Operators {
 			                                                      QueueSubscription<I> {
 		final CoreSubscriber<? super O> actual;
 
+		// s is set in onSubscribe and only used after
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription s;
 
 		boolean hasRequest;
@@ -2166,12 +2170,12 @@ public abstract class Operators {
 		/**
 		 * The current subscription which may null if no Subscriptions have been set.
 		 */
-		Subscription subscription;
+		@Nullable Subscription subscription;
 		/**
 		 * The current outstanding request amount.
 		 */
 		long         requested;
-		volatile Subscription missedSubscription;
+		volatile @Nullable Subscription missedSubscription;
 		volatile long missedRequested;
 		volatile long missedProduced;
 		volatile int wip;
@@ -2452,15 +2456,16 @@ public abstract class Operators {
 
 	            missed = WIP.addAndGet(this, -missed);
 	            if (missed == 0) {
-	                if (requestAmount != 0L) {
-	                    requestTarget.request(requestAmount);
-	                }
+		            if (requestAmount != 0L) {
+			            assert requestTarget != null : "requestTarget is either missedSubscription or subscription and can not be null";
+			            requestTarget.request(requestAmount);
+		            }
 	                return;
 	            }
 	        }
 		}
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, @Nullable Subscription>
 				MISSED_SUBSCRIPTION =
 		  AtomicReferenceFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class,
 			Subscription.class,
@@ -2665,7 +2670,7 @@ public abstract class Operators {
 	final static class LiftFunction<I, O>
 			implements Function<Publisher<I>, Publisher<O>> {
 
-		final Predicate<Publisher> filter;
+		final @Nullable Predicate<Publisher> filter;
 		final String name;
 
 		// TODO: this leaks to the users of LiftFunction, encapsulation is broken
@@ -2778,7 +2783,7 @@ public abstract class Operators {
 		/**
 		 * The value stored by this Mono operator.
 		 */
-		private O value;
+		private @Nullable O value;
 
 		private volatile  int state; //see STATE field updater
 		@SuppressWarnings("rawtypes")
@@ -2845,6 +2850,7 @@ public abstract class Operators {
 						O v = this.value;
 						this.value = null; // aggressively null value to prevent strong ref after complete
 
+						assert v != null : "Value must be present if HAS_VALUE is set";
 						doOnComplete(v);
 
 						actual.onNext(v);
@@ -2919,6 +2925,7 @@ public abstract class Operators {
 							O v = this.value;
 							this.value = null; // aggressively null value to prevent strong ref after complete
 
+							assert v != null : "Value must be present if HAS_VALUE is set";
 							doOnComplete(v);
 
 							actual.onNext(v);
@@ -2945,7 +2952,7 @@ public abstract class Operators {
 		 * @param value the new value.
 		 * @see #complete(Object)
 		 */
-		protected final void setValue(@Nullable O value) {
+		protected final void setValue(O value) {
 			this.value = value;
 			for (; ; ) {
 				int s = this.state;

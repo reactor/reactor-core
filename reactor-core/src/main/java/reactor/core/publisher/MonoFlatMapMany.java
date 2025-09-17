@@ -64,9 +64,10 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription main;
 
-		volatile Subscription inner;
+		volatile @Nullable Subscription inner;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapManyMain, Subscription> INNER =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapManyMain.class,
@@ -173,7 +174,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 				R v;
 
 				try {
-					v = ((Callable<R>) p).call();
+					v = ((Callable<@Nullable R>) p).call();
 				}
 				catch (Throwable ex) {
 					actual.onError(Operators.onOperatorError(this, ex, t,
