@@ -26,16 +26,28 @@ jar {
 	manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
 	manifest.attributes["Implementation-Title"] = project.name
 	manifest.attributes["Implementation-Version"] = project.version
+	from("${rootDir}/docs/src/docs/dist") {
+		include "LICENSE"
+		into "META-INF"
+	}
 }
 
 task sourcesJar(type: Jar) {
 	archiveClassifier.set('sources')
 	from sourceSets.main.allSource
+	from("${rootDir}/docs/src/docs/dist") {
+		include "LICENSE"
+		into "META-INF"
+	}
 }
 
 task javadocJar(type: Jar) {
 	archiveClassifier.set('javadoc')
 	from javadoc
+	from("${rootDir}/docs/src/docs/dist") {
+		include "LICENSE"
+		into "META-INF"
+	}
 }
 
 static def qualifyVersion(String v) {

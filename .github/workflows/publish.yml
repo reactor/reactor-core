@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -54,7 +54,7 @@ jobs:
         distribution: 'temurin'
         java-version: 21
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96
+      uses: gradle/actions/setup-gradle@017a9effdb900e5b5b2fddfb590a105619dca3c3
     - name: interpret version
       id: version
       #we only run the qualifyVersionGha task so that no other console printing can hijack this step's output
@@ -75,7 +75,7 @@ jobs:
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -114,7 +114,7 @@ jobs:
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -172,7 +172,7 @@ jobs:
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
