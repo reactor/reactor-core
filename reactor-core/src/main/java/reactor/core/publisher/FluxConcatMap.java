@@ -143,17 +143,19 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final int limit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription s;
 
 		int consumed;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // queue is set in onSubscribe
 		volatile Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapImmediate, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapImmediate.class,
@@ -504,17 +506,19 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final boolean veryEnd;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription s;
 
 		int consumed;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // queue is set in onSubscribe
 		volatile Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapDelayed, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapDelayed.class,

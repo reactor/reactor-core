@@ -47,7 +47,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 
 	static final class MonoCollectListSubscriber<T> extends Operators.BaseFluxToMonoOperator<T, List<T>> {
 
-		List<T> list;
+		@Nullable List<T> list;
 
 		boolean done;
 

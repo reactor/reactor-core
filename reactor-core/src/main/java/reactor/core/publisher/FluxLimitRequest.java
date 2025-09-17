@@ -66,6 +66,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // parent is set in onSubscribe
 		Subscription parent;
 		long toProduce;
 		boolean done;

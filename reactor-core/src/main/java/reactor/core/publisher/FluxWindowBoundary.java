@@ -99,6 +99,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 
 		Sinks.Many<T> window;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		volatile Subscription s;
 
 		@SuppressWarnings("rawtypes")
@@ -110,7 +111,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 		static final AtomicLongFieldUpdater<WindowBoundaryMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(WindowBoundaryMain.class, "requested");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowBoundaryMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(WindowBoundaryMain.class, Throwable.class, "error");
@@ -294,6 +295,8 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
+							// we just checked whether error was null, but we extract it via a proxy
+							assert e != null;
 							w.emitError(wrapSource(e),
 									Sinks.EmitFailureHandler.FAIL_FAST);
 

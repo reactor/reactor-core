@@ -162,7 +162,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 
 	final class ResumeStrategy implements OnNextFailureStrategy {
 
-		final Predicate<Throwable>  errorPredicate;
+		final @Nullable Predicate<Throwable>  errorPredicate;
 		final BiConsumer<Throwable, Object>   errorConsumer;
 
 		ResumeStrategy(@Nullable Predicate<Throwable> errorPredicate,
@@ -197,7 +197,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 
 	final class ResumeDropStrategy implements OnNextFailureStrategy {
 
-		final Predicate<Throwable> errorPredicate;
+		final @Nullable Predicate<Throwable> errorPredicate;
 
 		ResumeDropStrategy(@Nullable Predicate<Throwable> errorPredicate) {
 			this.errorPredicate = errorPredicate;

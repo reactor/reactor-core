@@ -43,19 +43,19 @@ import reactor.util.context.Context;
 final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		implements Fuseable, SignalPeek<T> {
 
-	final Consumer<? super Subscription> onSubscribeCall;
+	final @Nullable Consumer<? super Subscription> onSubscribeCall;
 
-	final Consumer<? super T> onNextCall;
+	final @Nullable Consumer<? super T> onNextCall;
 
-	final Consumer<? super Throwable> onErrorCall;
+	final @Nullable Consumer<? super Throwable> onErrorCall;
 
-	final Runnable onCompleteCall;
+	final @Nullable Runnable onCompleteCall;
 
-	final Runnable onAfterTerminateCall;
+	final @Nullable Runnable onAfterTerminateCall;
 
-	final LongConsumer onRequestCall;
+	final @Nullable LongConsumer onRequestCall;
 
-	final Runnable onCancelCall;
+	final @Nullable Runnable onCancelCall;
 
 	FluxPeekFuseable(Flux<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,

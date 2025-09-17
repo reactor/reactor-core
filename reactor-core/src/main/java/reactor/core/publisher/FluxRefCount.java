@@ -141,7 +141,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		boolean terminated;
 		boolean connected;
 
-		volatile Disposable disconnect;
+		volatile @Nullable Disposable disconnect;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<RefCountMonitor, Disposable> DISCONNECT =
 				AtomicReferenceFieldUpdater.newUpdater(RefCountMonitor.class, Disposable.class, "disconnect");
@@ -169,11 +169,12 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		final CoreSubscriber<? super T> actual;
 
-		RefCountMonitor<T> connection;
+		@Nullable RefCountMonitor<T> connection;
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription s;
-		QueueSubscription<T> qs;
+		@Nullable QueueSubscription<T> qs;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 
 		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
@@ -253,6 +254,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
 					if (isMonitorSet(previousState)) {
+						assert connection != null : "isMonitorSet check guarantees connection is not null";
 						connection.upstreamFinished();
 						actual.onError(t);
 					}
@@ -272,6 +274,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
 					if (isMonitorSet(previousState)) {
+						assert connection != null : "isMonitorSet check guarantees connection is not null";
 						connection.upstreamFinished();
 						actual.onComplete();
 					}
@@ -295,7 +298,9 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				return;
 			}
 
-			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+			if (isMonitorSet(previousState)
+					&& STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+				assert connection != null : "isMonitorSet check guarantees connection is not null";
 				connection.innerCancelled();
 			}
 		}
@@ -317,21 +322,25 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		@Override
 		public @Nullable T poll() {
+			assert qs != null : "Queue interface is only used when qs is not null";
 			return qs.poll();
 		}
 
 		@Override
 		public int size() {
+			assert qs != null : "Queue interface is only used when qs is not null";
 			return qs.size();
 		}
 
 		@Override
 		public boolean isEmpty() {
+			assert qs != null : "Queue interface is only used when qs is not null";
 			return qs.isEmpty();
 		}
 
 		@Override
 		public void clear() {
+			assert qs != null : "Queue interface is only used when qs is not null";
 			qs.clear();
 		}
 
