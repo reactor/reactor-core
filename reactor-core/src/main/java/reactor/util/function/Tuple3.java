@@ -19,7 +19,6 @@ package reactor.util.function;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -35,7 +34,7 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 
 	private static final long serialVersionUID = -4430274211524723033L;
 
-	@NonNull final T3 t3;
+	final T3 t3;
 
 	Tuple3(T1 t1, T2 t2, T3 t3) {
 		super(t1, t2);

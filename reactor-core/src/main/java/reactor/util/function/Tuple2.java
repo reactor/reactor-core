@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -40,8 +39,8 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 
 	private static final long serialVersionUID = -3518082018884860684L;
 
-	@NonNull final T1 t1;
-	@NonNull final T2 t2;
+	final T1 t1;
+	final T2 t2;
 
 	Tuple2(T1 t1, T2 t2) {
 		this.t1 = Objects.requireNonNull(t1, "t1");
