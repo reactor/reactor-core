@@ -89,7 +89,7 @@ download = { id = "de.undercouch.download", version = "5.6.0" }
 japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.6" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.15" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.11" }
-shadow = { id = "com.gradleup.shadow", version = "8.3.7" }
+shadow = { id = "com.gradleup.shadow", version = "9.1.0" }
 spotless = { id = "com.diffplug.spotless", version = "6.13.0" }
 mrjar = { id = "me.champeau.mrjar",  version = "0.1.1" }
 antora = { id = "org.antora", version.ref = "antora" }
