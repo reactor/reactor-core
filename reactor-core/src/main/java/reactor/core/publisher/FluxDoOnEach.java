@@ -267,7 +267,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			super(actual, onSignal, isMono);
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (this.fusionMode == Fuseable.ASYNC) {

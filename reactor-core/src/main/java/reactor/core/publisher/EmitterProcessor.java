@@ -693,8 +693,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	static final class EmitterDisposable implements Disposable {
 
-		@Nullable
-		EmitterProcessor<?> target;
+		@Nullable EmitterProcessor<?> target;
 
 		public EmitterDisposable(EmitterProcessor<?> emitterProcessor) {
 			this.target = emitterProcessor;

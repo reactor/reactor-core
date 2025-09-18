@@ -43,8 +43,7 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 
 	final Publisher<? extends I> source;
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	MonoSource(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);

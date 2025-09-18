@@ -57,9 +57,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		return spliterator.hasCharacteristics(Spliterator.SIZED);
 	}
 
-	final Iterable<? extends T> iterable;
-	@Nullable
-	private final Runnable      onClose;
+	final                   Iterable<? extends T> iterable;
+	private final @Nullable Runnable              onClose;
 
 	FluxIterable(Iterable<? extends T> iterable) {
 		this.iterable = Objects.requireNonNull(iterable, "iterable");

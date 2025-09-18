@@ -437,11 +437,10 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
 			implements InnerOperator<T, R> {
 
-		@Nullable
-		final StateLogger                                                      logger;
+		final @Nullable StateLogger logger;
 
-		final SwitchOnFirstControlSubscriber<? super R>
-		                                                                       outboundSubscriber;
+		final SwitchOnFirstControlSubscriber<? super R> outboundSubscriber;
+
 		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
 		Subscription s;

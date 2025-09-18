@@ -130,8 +130,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 			return InnerProducer.super.scanUnsafe(key);
 		}
 
-		@Nullable
-		SlotPair<T> addValue(T value) {
+		@Nullable SlotPair<T> addValue(T value) {
 			for (; ; ) {
 				SlotPair<T> curr = current;
 

@@ -73,8 +73,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchMapMain<T, R> implements InnerOperator<T, R> {
 
-		@Nullable
-		final StateLogger logger;
+		final @Nullable StateLogger logger;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 		final CoreSubscriber<? super R> actual;
@@ -310,8 +309,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchMapInner<T, R> implements InnerConsumer<R> {
 
-		@Nullable
-		final StateLogger logger;
+		final @Nullable StateLogger logger;
 
 		final SwitchMapMain<T, R> parent;
 		final CoreSubscriber<? super R> actual;

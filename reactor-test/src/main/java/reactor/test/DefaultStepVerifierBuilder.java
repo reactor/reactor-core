@@ -191,10 +191,10 @@ final class DefaultStepVerifierBuilder<T>
 	final Supplier<? extends VirtualTimeScheduler> vtsLookup;
 	final StepVerifierOptions                      options;
 
-	@Nullable
-	Supplier<? extends Publisher<? extends T>> sourceSupplier;
-	@Nullable
-	Predicate<? super T> tryOnNextPredicate;
+	@Nullable Supplier<? extends Publisher<? extends T>> sourceSupplier;
+
+	@Nullable Predicate<? super T> tryOnNextPredicate;
+
 	long hangCheckRequested;
 	int  requestedFusionMode = -1;
 	int  expectedFusionMode  = -1;
@@ -959,9 +959,10 @@ final class DefaultStepVerifierBuilder<T>
 		final VirtualTimeScheduler virtualTimeScheduler;
 		final Disposable           postVerifyCleanup;
 
-		Context                       initialContext;
-		@Nullable
-		Logger                        logger;
+		Context initialContext;
+
+		@Nullable Logger logger;
+
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
 		long                          produced;   //used for request tracking
@@ -2335,8 +2336,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.consumer = null;
 		}
 
-		@Nullable
-		Collection<T> get() {
+		@Nullable Collection<T> get() {
 			return supplier != null ? supplier.get() : null;
 		}
 

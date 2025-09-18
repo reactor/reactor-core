@@ -40,8 +40,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 
 	final Publisher<? extends I> source;
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build a {@link FluxSource} wrapper around the passed parent {@link Publisher}

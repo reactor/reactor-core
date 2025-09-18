@@ -98,8 +98,7 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 
 		volatile boolean done;
 
-		@Nullable
-		T         value;
+		@Nullable T value;
 		Throwable error;
 
 		volatile boolean connected;

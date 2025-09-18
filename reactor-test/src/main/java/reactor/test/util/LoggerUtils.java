@@ -31,8 +31,7 @@ import reactor.util.Loggers;
  */
 public final class LoggerUtils {
 
-	@Nullable
-	static CapturingFactory currentCapturingFactory;
+	static @Nullable CapturingFactory currentCapturingFactory;
 
 	private LoggerUtils() {
 	}
@@ -117,8 +116,8 @@ public final class LoggerUtils {
 
 		final Function<String, ? extends Logger> originalFactory;
 
-		@Nullable
-		Logger capturingLogger;
+		@Nullable Logger capturingLogger;
+
 		boolean redirectToOriginal;
 
 		CapturingFactory(Function<String, ? extends Logger> originalFactory) {
@@ -139,8 +138,7 @@ public final class LoggerUtils {
 			this.capturingLogger = captureLogger;
 		}
 
-		@Nullable
-		Logger getCapturingLogger() {
+		@Nullable Logger getCapturingLogger() {
 			return this.capturingLogger;
 		}
 

@@ -160,8 +160,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						Throwable.class,
 						"error");
 
-		@Nullable
-		Spliterator<? extends R> current;
+		@Nullable Spliterator<? extends R> current;
 		boolean currentKnownToBeFinite;
 
 		boolean valueReady = false;

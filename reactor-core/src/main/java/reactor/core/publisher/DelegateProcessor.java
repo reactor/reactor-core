@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -102,7 +103,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	// super.getError() returns null by default and this method would throw NPE in that
 	// case, however the parent's contract is to return nullable Throwable
 	@Override
-	@SuppressWarnings({"NullAway", "DataFlowIssue"})
+	@SuppressWarnings("DataFlowIssue")
 	public Throwable getError() {
 		return Scannable.from(upstream)
 		                .scanOrDefault(Attr.ERROR, super.getError());

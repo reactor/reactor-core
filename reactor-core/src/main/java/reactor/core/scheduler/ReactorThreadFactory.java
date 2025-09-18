@@ -34,13 +34,12 @@ class ReactorThreadFactory implements ThreadFactory,
                                       Supplier<String>,
                                       Thread.UncaughtExceptionHandler {
 
-	final private String                        name;
-	final private AtomicLong                    counterReference;
-	final private boolean                       daemon;
-	final private boolean                       rejectBlocking;
+	private final String     name;
+	private final AtomicLong counterReference;
+	private final boolean    daemon;
+	private final boolean    rejectBlocking;
 
-	@Nullable
-	final private BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
+	private final @Nullable BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
 
 	ReactorThreadFactory(String name,
 			AtomicLong counterReference,

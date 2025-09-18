@@ -113,8 +113,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	@Nullable
-	FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
+	@Nullable FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof PairwiseZipper) {
 			int oldLen = oldSources.length;

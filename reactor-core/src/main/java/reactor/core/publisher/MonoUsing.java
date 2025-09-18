@@ -132,9 +132,10 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		final boolean eager;
 		final boolean allowFusion;
 
-		Subscription         s;
-		@Nullable
-		QueueSubscription<T> qs;
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
+		Subscription s;
+
+		@Nullable QueueSubscription<T> qs;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -207,7 +208,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			}
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (mode == ASYNC) {

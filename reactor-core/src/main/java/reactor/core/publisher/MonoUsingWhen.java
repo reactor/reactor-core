@@ -49,8 +49,8 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 	final Function<? super S, ? extends Mono<? extends T>>                 resourceClosure;
 	final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 	final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-	@Nullable
-	final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
+
+	final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
 
 	MonoUsingWhen(Publisher<S> resourceSupplier,
 			Function<? super S, ? extends Mono<? extends T>> resourceClosure,
@@ -144,10 +144,13 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		final Function<? super S, ? extends Mono<? extends T>>                 resourceClosure;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
-		final boolean                                                          isMonoSource;
 
+		final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
+
+		final boolean isMonoSource;
+
+		// resourceSubscription is set in onSubscribe
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription        resourceSubscription;
 		boolean             resourceProvided;
 

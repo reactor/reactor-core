@@ -34,11 +34,9 @@ import reactor.core.CoreSubscriber;
  */
 final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 
-	@Nullable
-	final Predicate<? super Throwable> resumableErrorPredicate;
+	final @Nullable Predicate<? super Throwable> resumableErrorPredicate;
 
-	@Nullable
-	final T fallbackValue;
+	final @Nullable T fallbackValue;
 
 	FluxOnErrorReturn(Flux<? extends T> source, @Nullable Predicate<? super Throwable> predicate, @Nullable T value) {
 		super(source);
@@ -68,11 +66,9 @@ final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 
 		Subscription s;
 
-		@Nullable
-		final Predicate<? super Throwable> resumableErrorPredicate;
+		final @Nullable Predicate<? super Throwable> resumableErrorPredicate;
 
-		@Nullable
-		final T fallbackValue;
+		final @Nullable T fallbackValue;
 
 		volatile     long                                     requested;
 		@SuppressWarnings("rawtypes")

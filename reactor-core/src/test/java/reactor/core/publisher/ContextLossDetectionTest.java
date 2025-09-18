@@ -171,8 +171,8 @@ public class ContextLossDetectionTest {
 
 		final String description;
 		final boolean useCoreSubscriber;
-		@Nullable
-		final Context contextOfSubscriber;
+
+		final @Nullable Context contextOfSubscriber;
 
 		protected LossyTransformer(String description, Context contextOfSubscriber) {
 			this.description = description;
@@ -246,9 +246,10 @@ public class ContextLossDetectionTest {
 	static class ContextLossyPublisher<T> implements Publisher<T> {
 
 		final Publisher<T> source;
-		@Nullable
-		final Context      lossyContext;
-		final boolean      useCoreSubscriber;
+
+		final @Nullable Context lossyContext;
+
+		final boolean useCoreSubscriber;
 
 		ContextLossyPublisher(Publisher<T> source, Context lossyContext) {
 			this.source = source;
@@ -315,8 +316,7 @@ public class ContextLossDetectionTest {
 
 		static class CoreLossyOperator<T> extends ForeignOperator<T> implements CoreSubscriber<T> {
 
-			@Nullable
-			private final Context lossyContext;
+			private final @Nullable Context lossyContext;
 
 			CoreLossyOperator(Subscriber<? super T> subscriber, @Nullable Context lossyContext) {
 				super(subscriber);

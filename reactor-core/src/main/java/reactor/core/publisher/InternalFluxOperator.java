@@ -26,8 +26,7 @@ import reactor.core.Scannable;
 abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements Scannable,
                                                                                 OptimizableOperator<O, I> {
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build a {@link InternalFluxOperator} wrapper around the passed parent {@link Publisher}

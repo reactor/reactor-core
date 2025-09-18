@@ -47,8 +47,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheInvalidateWhen.class);
 
 	final Function<? super T, Mono<Void>> invalidationTriggerGenerator;
-	@Nullable
-	final Consumer<? super T>             invalidateHandler;
+
+	final @Nullable Consumer<? super T> invalidateHandler;
 
 	volatile     State<T>   state;
 	@SuppressWarnings("rawtypes")

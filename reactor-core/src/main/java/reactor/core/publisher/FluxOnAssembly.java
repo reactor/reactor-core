@@ -135,13 +135,11 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	 */
 	static class AssemblySnapshot {
 
-		final boolean          isCheckpoint;
-		@Nullable
-		final String           description;
-		@Nullable
-		final Supplier<String> assemblyInformationSupplier;
-		@Nullable
-		String cached;
+		final           boolean          isCheckpoint;
+		final @Nullable String           description;
+		final @Nullable Supplier<String> assemblyInformationSupplier;
+
+		@Nullable String cached;
 
 		/**
 		 * @param description a description for the assembly traceback.
@@ -269,8 +267,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		int occurrenceCounter;
 
-		@Nullable
-		ObservedAtInformationNode parent;
+		@Nullable ObservedAtInformationNode parent;
+
 		Set<ObservedAtInformationNode> children;
 
 		ObservedAtInformationNode(int id, String operator, String message) {

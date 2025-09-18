@@ -49,8 +49,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 	Function<? super T, ? extends Publisher<?>>[] otherGenerators;
 
-	@Nullable
-	final OptimizableOperator<?, T> optimizableOperator;
+	final @Nullable OptimizableOperator<?, T> optimizableOperator;
 
 	@SuppressWarnings("unchecked")
 	MonoDelayUntil(Mono<T> monoSource,

@@ -70,8 +70,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	 * otherwise.
 	 * @see #test(Throwable, Object)
 	 */
-	@Nullable
-	Throwable process(Throwable error, @Nullable Object value, Context context);
+	@Nullable Throwable process(Throwable error, @Nullable Object value, Context context);
 
 	/**
 	 * A strategy that never let any error resume.

@@ -117,8 +117,7 @@ public final class Disposables {
 	 */
 	static final class ListCompositeDisposable implements Disposable.Composite, Scannable {
 
-		@Nullable
-		List<Disposable> resources;
+		@Nullable List<Disposable> resources;
 
 		volatile boolean disposed;
 

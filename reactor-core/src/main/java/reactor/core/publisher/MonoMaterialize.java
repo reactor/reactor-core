@@ -57,13 +57,13 @@ final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 		 * Captures the fact that we were requested. The amount or the number of request
 		 * calls doesn't matter since the source is a Mono.
 		 */
-		volatile boolean   requested;
+		volatile boolean requested;
+
 		/**
 		 * This captures an early termination (onComplete or onError), with the goal to
 		 * avoid capturing onNext, so as to simplify cleanup and avoid discard concerns.
 		 */
-		@Nullable
-		volatile Signal<T> signalToReplayUponFirstRequest;
+		volatile @Nullable Signal<T> signalToReplayUponFirstRequest;
 
 		MaterializeSubscriber(CoreSubscriber<? super Signal<T>> actual) {
 			this.actual = actual;

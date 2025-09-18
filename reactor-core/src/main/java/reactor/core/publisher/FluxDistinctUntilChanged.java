@@ -76,8 +76,7 @@ final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 
 		boolean done;
 
-		@Nullable
-		K lastKey;
+		@Nullable K lastKey;
 
 		DistinctUntilChangedSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, K> keyExtractor,
@@ -211,8 +210,7 @@ final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 
 		boolean done;
 
-		@Nullable
-		K lastKey;
+		@Nullable K lastKey;
 
 		DistinctUntilChangedConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				Function<? super T, K> keyExtractor,

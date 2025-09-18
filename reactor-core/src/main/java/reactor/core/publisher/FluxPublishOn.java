@@ -473,7 +473,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		void runBackfused() {
 			int missed = 1;
 
@@ -1032,7 +1032,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		void runBackfused() {
 			int missed = 1;
 

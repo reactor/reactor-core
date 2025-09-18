@@ -33,8 +33,7 @@ import reactor.core.Scannable;
 abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements Scannable,
                                                                                 OptimizableOperator<O, I> {
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	protected InternalMonoOperator(Mono<? extends I> source) {
 		super(source);

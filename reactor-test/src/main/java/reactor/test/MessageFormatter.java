@@ -35,8 +35,8 @@ final class MessageFormatter {
 	final String scenarioPrefix;
 
 	final ValueFormatters.@Nullable ToStringConverter valueFormatter;
-	@Nullable
-	final Collection<ValueFormatters.Extractor<?>> extractors;
+
+	final @Nullable Collection<ValueFormatters.Extractor<?>> extractors;
 
 	MessageFormatter(@Nullable final String scenarioName,
 			ValueFormatters.@Nullable ToStringConverter valueFormatter,

@@ -192,8 +192,7 @@ public interface TestSubscriber<T> extends CoreSubscriber<T>, Scannable {
 	 * @see #isTerminated()
 	 * @see #expectTerminalSignal()
 	 */
-	@Nullable
-	Signal<T> getTerminalSignal();
+	@Nullable Signal<T> getTerminalSignal();
 
 	/**
 	 * Expect the {@link TestSubscriber} to be {@link #isTerminated() terminated}, and return the terminal {@link Signal}

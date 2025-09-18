@@ -34,8 +34,7 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 
 	final Publisher<? extends I> source;
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	MonoSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);

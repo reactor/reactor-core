@@ -627,8 +627,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	static final class EmitterDisposable implements Disposable {
 
-		@Nullable
-		SinkManyEmitterProcessor<?> target;
+		@Nullable SinkManyEmitterProcessor<?> target;
 
 		public EmitterDisposable(SinkManyEmitterProcessor<?> emitterProcessor) {
 			this.target = emitterProcessor;

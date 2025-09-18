@@ -110,8 +110,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		final Predicate<? super T> predicate;
 
-		@Nullable
-		C buffer;
+		@Nullable C buffer;
 
 		boolean done;
 
@@ -268,8 +267,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			}
 		}
 
-		@Nullable
-		C triggerNewBuffer() {
+		@Nullable C triggerNewBuffer() {
 			C b;
 			synchronized (this) {
 				b = buffer;

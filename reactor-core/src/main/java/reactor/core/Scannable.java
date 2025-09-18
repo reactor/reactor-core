@@ -281,8 +281,7 @@ public interface Scannable {
 		 * @param o the instance to attempt conversion on
 		 * @return the converted instance
 		 */
-		@Nullable
-		T tryConvert(@Nullable Object o) {
+		@Nullable T tryConvert(@Nullable Object o) {
 			if (o == null) {
 				return null;
 			}

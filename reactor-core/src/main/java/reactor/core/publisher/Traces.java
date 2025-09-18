@@ -160,9 +160,9 @@ final class Traces {
 	 */
 	private static Iterator<StackLineView> trimmedNonemptyLines(String source) {
 		return new Iterator<StackLineView>() {
-			private int           index = 0;
-			@Nullable
-			private StackLineView next  = getNextLine();
+			private int index = 0;
+
+			private @Nullable StackLineView next = getNextLine();
 
 			@Override
 			public boolean hasNext() {

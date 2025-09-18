@@ -1805,9 +1805,9 @@ public abstract class Operators {
 		 * The value stored by this Mono operator. Strongly prefer using {@link #setValue(Object)}
 		 * rather than direct writes to this field, when possible.
 		 */
-		@Nullable
-		protected O   value;
-		volatile  int state; //see STATE field updater
+		protected @Nullable O value;
+
+		volatile int state; //see STATE field updater
 
 		public MonoSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
@@ -2495,8 +2495,7 @@ public abstract class Operators {
 
 		final T value;
 
-		@Nullable
-		final String stepName;
+		final @Nullable String stepName;
 
 		volatile int once;
 

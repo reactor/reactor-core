@@ -271,8 +271,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			}
 		}
 
-		@Nullable
-		ExpandDepthSubscriber<T> pop() {
+		@Nullable ExpandDepthSubscriber<T> pop() {
 			synchronized (this) {
 				Deque<ExpandDepthSubscriber<T>> q = subscriptionStack;
 				return q != null ? q.pollFirst() : null;

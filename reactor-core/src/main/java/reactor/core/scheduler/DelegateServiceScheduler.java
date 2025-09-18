@@ -58,8 +58,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	final String executorName;
 	final ScheduledExecutorService original;
 
-	@Nullable
-	volatile SchedulerState<ScheduledExecutorService> state;
+	volatile @Nullable SchedulerState<ScheduledExecutorService> state;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<DelegateServiceScheduler, SchedulerState> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(DelegateServiceScheduler.class,

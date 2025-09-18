@@ -65,8 +65,8 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T> {
 
 	static final class SingleSubscriber<T> extends Operators.MonoInnerProducerBase<T> implements InnerConsumer<T> {
 
-		@Nullable
-		final T       defaultValue;
+		final @Nullable T defaultValue;
+
 		final boolean completeOnEmpty;
 
 		Subscription s;

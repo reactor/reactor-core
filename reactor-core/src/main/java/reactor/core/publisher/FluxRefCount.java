@@ -43,8 +43,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	
 	final int n;
 
-	@Nullable
-	RefCountMonitor<T> connection;
+	@Nullable RefCountMonitor<T> connection;
 
 	FluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {

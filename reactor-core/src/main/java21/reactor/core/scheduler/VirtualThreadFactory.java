@@ -33,8 +33,7 @@ class VirtualThreadFactory implements ThreadFactory,
                                       Thread.UncaughtExceptionHandler {
 
 	final ThreadFactory                         delegate;
-	@Nullable
-	final BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
+	final @Nullable BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
 
 	VirtualThreadFactory(String name,
 			boolean inheritThreadLocals,

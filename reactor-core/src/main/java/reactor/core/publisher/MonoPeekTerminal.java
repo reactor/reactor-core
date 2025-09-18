@@ -150,7 +150,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 			actual.onSubscribe(this);
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {

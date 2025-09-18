@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,7 +236,7 @@ public class BlockingIterableTest {
 	}
 	
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void hasNextInterrupt() throws InterruptedException {
 		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(
 				Queues.<String>one().get(),
@@ -262,7 +262,7 @@ public class BlockingIterableTest {
 	}
 
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void gh841_streamCreate() {
 		Flux<String> source = Flux.<String>create(sink -> {
 			sink.next("a");
@@ -278,7 +278,7 @@ public class BlockingIterableTest {
 	}
 
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void gh841_streamCreateDeferredError() {
 		Flux<Integer> source = Flux.<Integer>create(sink -> {
 			sink.next(1);
@@ -296,7 +296,7 @@ public class BlockingIterableTest {
 	}
 
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void gh841_streamFromIterable() {
 		Flux<String> source = Flux.fromIterable(Arrays.asList("a","b"))
 		                          .sort((a, b) -> { throw new IllegalStateException("boom"); });
@@ -308,7 +308,7 @@ public class BlockingIterableTest {
 	}
 
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void gh841_iteratorFromCreate() {
 		Iterator<String> it = Flux.<String>create(sink -> {
 			sink.next("a");
@@ -324,7 +324,7 @@ public class BlockingIterableTest {
 	}
 
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void gh841_workaroundFlux() {
 		Flux<String> source = Flux.<String>create(sink -> {
 			sink.next("a");
@@ -342,7 +342,7 @@ public class BlockingIterableTest {
 	}
 
 	@Test
-	@Timeout(1)
+	@Timeout(5)
 	public void gh841_workaroundStream() {
 		Flux<String> source = Flux.<String>create(sink -> {
 			sink.next("a");

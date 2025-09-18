@@ -407,7 +407,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	void drainFused(CoreSubscriber<? super T> a) {
 		int missed = 1;
 

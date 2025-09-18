@@ -97,7 +97,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			}
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -265,7 +265,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			}
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {

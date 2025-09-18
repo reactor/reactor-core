@@ -101,12 +101,11 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 
-	@Nullable
-	CorePublisher<? extends O> source;
-	@Nullable
-	Throwable error;
-	@Nullable
-	O         value;
+	@Nullable CorePublisher<? extends O> source;
+
+	@Nullable Throwable error;
+
+	@Nullable O value;
 
 	NextProcessor(@Nullable CorePublisher<? extends O> source) {
 		this(source, false);

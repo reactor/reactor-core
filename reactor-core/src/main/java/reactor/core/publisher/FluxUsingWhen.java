@@ -56,8 +56,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 	final Function<? super S, ? extends Publisher<? extends T>>            resourceClosure;
 	final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 	final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-	@Nullable
-	final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
+
+	final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
 
 	FluxUsingWhen(Publisher<S> resourceSupplier,
 			Function<? super S, ? extends Publisher<? extends T>> resourceClosure,
@@ -163,8 +163,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		final Function<? super S, ? extends Publisher<? extends T>>            resourceClosure;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
+
+		final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
+
 		final boolean                                                          isMonoSource;
 
 		Subscription resourceSubscription;
@@ -272,10 +273,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		final S                                                                resource;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
-		@Nullable
-		final DeferredSubscription                                             arbiter;
+
+		final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
+		final @Nullable DeferredSubscription                        arbiter;
 
 		volatile int callbackApplied;
 		static final AtomicIntegerFieldUpdater<UsingWhenSubscriber> CALLBACK_APPLIED = AtomicIntegerFieldUpdater.newUpdater(UsingWhenSubscriber.class, "callbackApplied");

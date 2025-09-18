@@ -79,8 +79,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 	}
 
 	@SuppressWarnings("unchecked")
-	@Nullable
-	Mono<R> zipAdditionalSource(Mono source, BiFunction zipper) {
+	@Nullable Mono<R> zipAdditionalSource(Mono source, BiFunction zipper) {
 		Mono[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof FluxZip.PairwiseZipper) {
 			int oldLen = oldSources.length;

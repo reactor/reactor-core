@@ -56,8 +56,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
-	@Nullable
-	VirtualTimeScheduler vts;
+	@Nullable VirtualTimeScheduler vts;
 
 	@BeforeEach
 	public void vtsStart(TestInfo testInfo) {

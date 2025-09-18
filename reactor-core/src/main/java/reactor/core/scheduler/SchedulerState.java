@@ -29,8 +29,8 @@ import static reactor.core.scheduler.SchedulerState.DisposeAwaiterRunnable.await
 
 final class SchedulerState<T> {
 
-	@Nullable
-	final T initialResource;
+	final @Nullable T initialResource;
+
 	final T currentResource;
 	final Mono<Void> onDispose;
 

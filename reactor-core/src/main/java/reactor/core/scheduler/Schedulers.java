@@ -1166,14 +1166,11 @@ public abstract class Schedulers {
 	 */
 	public static final class Snapshot implements Disposable {
 
-		@Nullable
-		final CachedScheduler oldBoundedElasticScheduler;
+		final @Nullable CachedScheduler oldBoundedElasticScheduler;
 
-		@Nullable
-		final CachedScheduler oldParallelScheduler;
+		final @Nullable CachedScheduler oldParallelScheduler;
 
-		@Nullable
-		final CachedScheduler oldSingleScheduler;
+		final @Nullable CachedScheduler oldSingleScheduler;
 
 		final Factory oldFactory;
 
@@ -1234,13 +1231,11 @@ public abstract class Schedulers {
 
 	private static final LinkedHashMap<String, BiConsumer<Thread, Throwable>> onHandleErrorHooks = new LinkedHashMap<>(1);
 
-	@Nullable
-	static BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
+	static @Nullable BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
 	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
 
-	@Nullable
-	private static Function<Runnable, Runnable> onScheduleHook;
+	private static @Nullable Function<Runnable, Runnable> onScheduleHook;
 
 	/**
 	 * Get a {@link CachedScheduler} out of the {@code reference} or create one using the

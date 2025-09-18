@@ -105,8 +105,9 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		long totalFailureIndex = 0L;
 		long subsequentFailureIndex = 0L;
-		@Nullable
-		Throwable lastFailure = null;
+
+		@Nullable Throwable lastFailure = null;
+
 		final ContextView retryContext;
 
 		Context context;

@@ -186,7 +186,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 			}
 		}
 
-		@SuppressWarnings({"NullAway", "DataFlowIssue"}) // fusion passes nulls via onNext
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (this.mode == ASYNC) {

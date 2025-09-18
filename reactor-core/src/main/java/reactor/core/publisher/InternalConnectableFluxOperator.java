@@ -26,8 +26,7 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 
 	final ConnectableFlux<I> source;
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build an {@link InternalConnectableFluxOperator} wrapper around the passed parent {@link ConnectableFlux}

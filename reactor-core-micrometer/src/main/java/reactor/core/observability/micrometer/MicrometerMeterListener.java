@@ -38,11 +38,9 @@ import static reactor.core.observability.micrometer.MicrometerMeterListenerDocum
  */
 final class MicrometerMeterListener<T> implements SignalListener<T> {
 
-	final MicrometerMeterListenerConfiguration configuration;
-	@Nullable
-	final DistributionSummary                  requestedCounter;
-	@Nullable
-	final Timer                           onNextIntervalTimer;
+	final           MicrometerMeterListenerConfiguration configuration;
+	final @Nullable DistributionSummary                  requestedCounter;
+	final @Nullable Timer                                onNextIntervalTimer;
 
 	Timer.Sample subscribeToTerminateSample;
 	long         lastNextEventNanos = -1L;

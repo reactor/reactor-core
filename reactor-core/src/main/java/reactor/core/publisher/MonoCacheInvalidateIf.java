@@ -45,8 +45,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	 */
 	static interface State<T> {
 
-		@Nullable
-		T get();
+		@Nullable T get();
 
 		void clear();
 	}
@@ -58,8 +57,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	 */
 	static final class ValueState<T> implements State<T> {
 
-		@Nullable
-		T value;
+		@Nullable T value;
 
 		ValueState(T value) {
 			this.value = value;

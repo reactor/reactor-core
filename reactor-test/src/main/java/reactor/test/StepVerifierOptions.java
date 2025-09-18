@@ -38,16 +38,14 @@ import reactor.util.context.Context;
  */
 public class StepVerifierOptions {
 
-	@Nullable
-	private String scenarioName = null;
+	private @Nullable String scenarioName = null;
 
 	private boolean checkUnderRequesting = true;
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
 	private Context initialContext;
 
-	@Nullable
-	private ToStringConverter objectFormatter = null;
+	private @Nullable ToStringConverter objectFormatter = null;
 
 	final Map<Class<?>, Extractor<?>> extractorMap = new LinkedHashMap<>();
 

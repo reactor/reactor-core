@@ -178,8 +178,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 *
 	 * @return the Throwable associated with this (onError) signal, or null if not relevant
 	 */
-	@Nullable
-	Throwable getThrowable();
+	@Nullable Throwable getThrowable();
 
 	/**
 	 * Read the subscription associated with this (onSubscribe) signal.
@@ -187,8 +186,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return the Subscription associated with this (onSubscribe) signal, or null if not
 	 * relevant
 	 */
-	@Nullable
-	Subscription getSubscription();
+	@Nullable Subscription getSubscription();
 
 	/**
 	 * Retrieves the item associated with this (onNext) signal.
@@ -196,8 +194,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return the item associated with this (onNext) signal, or null if not relevant
 	 */
 	@Override
-	@Nullable
-	T get();
+	@Nullable T get();
 
 	/**
 	 * Has this signal an item associated with it ? (which only happens if it is an

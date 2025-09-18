@@ -58,8 +58,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					ReplaySubscriber.class,
 					"connection");
 
-	@Nullable
-	final OptimizableOperator<?, T> optimizableOperator;
+	final @Nullable OptimizableOperator<?, T> optimizableOperator;
 
 	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
 
@@ -74,8 +73,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		void node(@Nullable Object node);
 
-		@Nullable
-		Object node();
+		@Nullable Object node();
 
 		int tailIndex();
 
@@ -100,8 +98,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		void onError(Throwable ex);
 
-		@Nullable
-		Throwable getError();
+		@Nullable Throwable getError();
 
 		void onComplete();
 
@@ -109,8 +106,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		boolean isDone();
 
-		@Nullable
-		T poll(ReplaySubscription<T> rs);
+		@Nullable T poll(ReplaySubscription<T> rs);
 
 		void clear(ReplaySubscription<T> rs);
 

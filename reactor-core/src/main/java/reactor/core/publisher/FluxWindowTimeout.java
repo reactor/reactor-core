@@ -92,8 +92,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 	static final class WindowTimeoutWithBackpressureSubscriber<T>
 			implements InnerOperator<T, Flux<T>> {
 
-		@Nullable
-		final StateLogger                     logger;
+		final @Nullable StateLogger logger;
 
 		final CoreSubscriber<? super Flux<T>> actual;
 		final long                            timespan;
@@ -878,9 +877,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		static final Disposable DISPOSED = Disposables.disposed();
 
-
-		@Nullable
-		final StateLogger                                logger;
+		final @Nullable StateLogger logger;
 
 		final WindowTimeoutWithBackpressureSubscriber<T> parent;
 		final int                                        max;

@@ -46,8 +46,7 @@ class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 	static final int STATE_ERROR = -1;
 	static final int STATE_EMPTY = -2;
 
-	@Nullable
-	Throwable error;
+	@Nullable Throwable error;
 
 	SinkEmptyMulticast() {
 		SUBSCRIBERS.lazySet(this, EMPTY);

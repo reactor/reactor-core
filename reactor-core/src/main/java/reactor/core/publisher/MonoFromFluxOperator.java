@@ -37,8 +37,7 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable,
 
 	protected final Flux<? extends I> source;
 
-	@Nullable
-	final OptimizableOperator<?, I> optimizableOperator;
+	final @Nullable OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build a {@link MonoFromFluxOperator} wrapper around the passed parent {@link Publisher}

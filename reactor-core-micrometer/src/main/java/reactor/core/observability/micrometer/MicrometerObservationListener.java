@@ -60,8 +60,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	final ContextView originalContext;
 	final Observation tapObservation;
 
-	@Nullable
-	Context contextWithObservation;
+	@Nullable Context contextWithObservation;
 
 	boolean valued;
 
