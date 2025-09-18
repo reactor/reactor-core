@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,6 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.subscriber.ConditionalTestSubscriber;
 import reactor.test.subscriber.TestSubscriber;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -574,18 +574,16 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
 	static class NullFunction<T, R> implements Function<T, R> {
 
-		@Nullable
 		@Override
-		public R apply(T t) {
+		public @Nullable R apply(T t) {
 			return null;
 		}
 	}
 
 	static class NullSupplier<T> implements Supplier<T> {
 
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			return null;
 		}
 	}

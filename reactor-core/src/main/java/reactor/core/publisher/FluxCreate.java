@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.CoreSubscriber;
@@ -34,7 +35,6 @@ import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -105,7 +105,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -297,8 +297,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
 				return mpscQueue.size();
 			}
@@ -347,7 +346,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return serializedSink != null ? serializedSink.scanUnsafe(key) :
 					baseSink.scanUnsafe(key);
 		}
@@ -620,8 +619,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return disposable == TERMINATED;
 			if (key == Attr.CANCELLED) return disposable == CANCELLED;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requestedFromDownstream();
@@ -920,8 +918,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
 				return queue.size();
 			}
@@ -1082,8 +1079,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
 				return queue.get() == null ? 0 : 1;
 			}

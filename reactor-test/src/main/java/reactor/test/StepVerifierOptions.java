@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Signal;
 import reactor.test.ValueFormatters.Extractor;
 import reactor.test.ValueFormatters.ToStringConverter;
 import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -38,16 +38,14 @@ import reactor.util.context.Context;
  */
 public class StepVerifierOptions {
 
-	@Nullable
-	private String scenarioName = null;
+	private @Nullable String scenarioName = null;
 
 	private boolean checkUnderRequesting = true;
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
 	private Context initialContext;
 
-	@Nullable
-	private ToStringConverter objectFormatter = null;
+	private @Nullable ToStringConverter objectFormatter = null;
 
 	final Map<Class<?>, Extractor<?>> extractorMap = new LinkedHashMap<>();
 
@@ -149,8 +147,7 @@ public class StepVerifierOptions {
 	 *
 	 * @return the custom value formatter, or null if no specific formatting has been defined.
 	 */
-	@Nullable
-	public ToStringConverter getValueFormatter() {
+	public @Nullable ToStringConverter getValueFormatter() {
 		return this.objectFormatter;
 	}
 
@@ -208,8 +205,7 @@ public class StepVerifierOptions {
 	 * {@link StepVerifier} receiving these options.
 	 *
 	 */
-	@Nullable
-	public Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
+	public @Nullable Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
 		return vtsLookup;
 	}
 
@@ -228,8 +224,7 @@ public class StepVerifierOptions {
 	/**
 	 * @return the {@link Context} to be propagated initially by the {@link StepVerifier}.
 	 */
-	@Nullable
-	public Context getInitialContext() {
+	public @Nullable Context getInitialContext() {
 		return this.initialContext;
 	}
 
@@ -250,8 +245,7 @@ public class StepVerifierOptions {
 	/**
 	 * @return the name given to the configured {@link StepVerifier}, or null if none.
 	 */
-	@Nullable
-	public String getScenarioName() {
+	public @Nullable String getScenarioName() {
 		return this.scenarioName;
 	}
 }

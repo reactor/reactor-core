@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -40,7 +40,7 @@ final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> impleme
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
@@ -88,9 +88,8 @@ final class MonoTapFuseable<T, STATE> extends InternalMonoOperator<T, T> impleme
 		return new FluxTapFuseable.TapFuseableSubscriber<>(actual, signalListener, ctx);
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return -1;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
@@ -42,7 +42,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		//for now Mono in general doesn't support onErrorContinue, so the scalar version shouldn't either
 		//even if the result is a Flux. once the mapper is applied, onErrorContinue will be taken care of by
 		//the mapped Flux if relevant.
@@ -53,7 +53,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -64,9 +64,10 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription main;
 
-		volatile Subscription inner;
+		volatile @Nullable Subscription inner;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapManyMain, Subscription> INNER =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapManyMain.class,
@@ -87,8 +88,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -174,7 +174,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 				R v;
 
 				try {
-					v = ((Callable<R>) p).call();
+					v = ((Callable<@Nullable R>) p).call();
 				}
 				catch (Throwable ex) {
 					actual.onError(Operators.onOperatorError(this, ex, t,
@@ -231,8 +231,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent.inner;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return parent.requested;

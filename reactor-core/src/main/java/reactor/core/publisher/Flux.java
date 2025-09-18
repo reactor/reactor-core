@@ -51,6 +51,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -70,7 +71,6 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -1197,7 +1197,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * and return a (new) state.
 	 * @return a {@link Flux}
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
+	public static <T, S extends @Nullable Object> Flux<T> generate(Callable<S> stateSupplier,
+			BiFunction<S, SynchronousSink<T>, S> generator) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator));
 	}
 
@@ -1220,7 +1221,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux}
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
+	public static <T, S extends @Nullable Object> Flux<T> generate(Callable<S> stateSupplier,
+			BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator, stateConsumer));
 	}
 
@@ -2757,8 +2759,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return the first value or null
 	 */
-	@Nullable
-	public final T blockFirst() {
+	public final @Nullable T blockFirst() {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>(context);
@@ -2780,12 +2781,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/blockFirstWithTimeout.svg" alt="">
 	 *
- 	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
+	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
 	 * with a {@link TimeoutException} as the cause
 	 * @return the first value or null
 	 */
-	@Nullable
-	public final T blockFirst(Duration timeout) {
+	public final @Nullable T blockFirst(Duration timeout) {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>(context);
@@ -2808,15 +2808,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return the last value or null
 	 */
-	@Nullable
-	public final T blockLast() {
+	public final @Nullable T blockLast() {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>(context);
 		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
-
 
 	/**
 	 * Subscribe to this {@link Flux} and <strong>block</strong> until the upstream
@@ -2836,8 +2834,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * with a {@link TimeoutException} as the cause
 	 * @return the last value or null
 	 */
-	@Nullable
-	public final T blockLast(Duration timeout) {
+	public final @Nullable T blockLast(Duration timeout) {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>(context);
@@ -6626,7 +6623,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
+	public final <V> Flux<V> map(Function<? super T, ? extends @Nullable V> mapper) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxMapFuseable<>(this, mapper));
 		}
@@ -6653,7 +6650,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <V> Flux<V> mapNotNull(Function <? super T, ? extends V> mapper) {
+	public final <V> Flux<V> mapNotNull(Function <? super T, ? extends @Nullable V> mapper) {
 		return this.handle((t, sink) -> {
 			V v = mapper.apply(t);
 			if (v != null) {

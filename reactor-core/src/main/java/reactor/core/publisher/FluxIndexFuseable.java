@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
@@ -60,7 +60,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -94,8 +94,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public I poll() {
+		public @Nullable I poll() {
 			T v = s.poll();
 			if (v != null) {
 				long i = this.index;
@@ -106,6 +105,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 			return null;
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -195,8 +195,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -236,8 +235,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public I poll() {
+		public @Nullable I poll() {
 			T v = s.poll();
 			if (v != null) {
 				long i = this.index;
@@ -269,6 +267,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 			return actual.tryOnNext(indexed);
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -358,8 +357,7 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

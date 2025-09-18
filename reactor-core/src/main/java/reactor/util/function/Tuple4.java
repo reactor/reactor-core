@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ package reactor.util.function;
 import java.util.Objects;
 import java.util.function.Function;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A tuple that holds four non-null values
@@ -36,7 +35,7 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 
 	private static final long serialVersionUID = -4898704078143033129L;
 
-	@NonNull final T4 t4;
+	final T4 t4;
 
 	Tuple4(T1 t1, T2 t2, T3 t3, T4 t4) {
 		super( t1, t2, t3);
@@ -100,9 +99,8 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 		return new Tuple4<>(t1, t2, t3, mapper.apply(t4));
 	}
 
-	@Nullable
 	@Override
-	public Object get(int index) {
+	public @Nullable Object get(int index) {
 		switch (index) {
 			case 0:
 				return t1;

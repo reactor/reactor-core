@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import io.micrometer.context.ContextAccessor;
-
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A {@code ContextAccessor} to enable reading values from a Reactor
@@ -51,8 +50,7 @@ public final class ReactorContextAccessor implements ContextAccessor<ContextView
 	}
 
 	@Override
-	@Nullable
-	public <T> T readValue(ContextView sourceContext, Object key) {
+	public <T> @Nullable T readValue(ContextView sourceContext, Object key) {
 		return sourceContext.getOrDefault(key, null);
 	}
 

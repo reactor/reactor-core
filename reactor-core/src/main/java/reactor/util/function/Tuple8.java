@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ package reactor.util.function;
 import java.util.Objects;
 import java.util.function.Function;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A tuple that holds eight values
@@ -41,7 +40,7 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 
 	private static final long serialVersionUID = -8746796646535446242L;
 
-	@NonNull final T8 t8;
+	final T8 t8;
 
 	Tuple8(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
 		super(t1, t2, t3, t4, t5, t6, t7);
@@ -153,9 +152,8 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 		return new Tuple8<>(t1, t2, t3, t4, t5, t6, t7, mapper.apply(t8));
 	}
 
-	@Nullable
 	@Override
-	public Object get(int index) {
+	public @Nullable Object get(int index) {
 		switch (index) {
 			case 0:
 				return t1;

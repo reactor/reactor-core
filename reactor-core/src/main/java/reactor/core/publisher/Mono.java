@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -61,7 +62,6 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -1765,8 +1765,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return T the result
 	 */
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
@@ -1793,8 +1792,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return T the result
 	 */
-	@Nullable
-	public T block(Duration timeout) {
+	public @Nullable T block(Duration timeout) {
 		Context context = ContextPropagationSupport.shouldPropagateContextToThreadLocals()
 				? ContextPropagation.contextCaptureToEmpty() : Context.empty();
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>(context);
@@ -3501,7 +3499,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final <R> Mono<R> mapNotNull(Function <? super T, ? extends R> mapper) {
+	public final <R> Mono<R> mapNotNull(Function <? super T, ? extends @Nullable R> mapper) {
 		return this.handle((t, sink) -> {
 			R r = mapper.apply(t);
 			if (r != null) {

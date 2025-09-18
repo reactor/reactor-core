@@ -17,7 +17,7 @@
 /**
  * Main test components supporting the testing and assertion of publishers.
  */
-@NonNullApi
+@NullMarked
 package reactor.test;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

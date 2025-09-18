@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -81,7 +81,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
@@ -278,7 +278,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			if (key == Attr.PARENT) return this.s;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -469,8 +469,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.DELAY_ERROR) return true;
 			if (key == Attr.TERMINATED) return this.error == Exceptions.TERMINATED;
 			if (key == Attr.ERROR) return this.error != Exceptions.TERMINATED ? this.error : null;
@@ -507,8 +506,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 	}
 
-	@Nullable
-	static <T extends SubscriptionAware> Subscription addCapAndGetSubscription(long n, AtomicLongFieldUpdater<T> updater, T instance) {
+	static <T extends SubscriptionAware> @Nullable Subscription addCapAndGetSubscription(long n, AtomicLongFieldUpdater<T> updater, T instance) {
 		for (;;) {
 			final long state = updater.get(instance);
 			final Subscription s = instance.upstream();

@@ -34,11 +34,15 @@ awaitility = "4.3.0"
 blockhound = "1.0.13.RELEASE"
 byteBuddy = "1.17.7"
 cglib = "3.3.0"
+errorprone = "2.40.0"
+errorpronePlugin = "4.2.0"
 javaObjectLayout = "0.17"
 jmh = "1.37"
+jspecify = "1.0.0"
 junit = "5.13.4"
 logback = "1.2.13"
 mockito = "4.11.0"
+nullaway = "0.12.10"
 slf4j = "1.7.36"
 testng = "7.5.1" # since 7.6 JDK8 is unsupported, don't bump
 throwingFunction = "1.6.1"
@@ -71,6 +75,7 @@ cglib = { module = "cglib:cglib", version.ref = "cglib" }
 javaObjectLayout = { module = "org.openjdk.jol:jol-core", version.ref = "javaObjectLayout" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-generatorAnnprocess = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jspecify = { module = "org.jspecify:jspecify", version.ref="jspecify" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine" }
@@ -81,6 +86,8 @@ mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 testng = { module = "org.testng:testng", version.ref = "testng" }
 throwingFunction = { module = "com.pivovarit:throwing-function", version.ref = "throwingFunction" }
+errorprone = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
 
 [plugins]
 artifactory = { id = "com.jfrog.artifactory", version = "4.33.1" }
@@ -94,3 +101,4 @@ spotless = { id = "com.diffplug.spotless", version = "6.13.0" }
 mrjar = { id = "me.champeau.mrjar",  version = "0.1.1" }
 antora = { id = "org.antora", version.ref = "antora" }
 antora-yml = { id = "io.spring.antora.generate-antora-yml", version.ref = "antora-yml" }
+errorprone = { id = "net.ltgt.errorprone", version.ref = "errorpronePlugin"}

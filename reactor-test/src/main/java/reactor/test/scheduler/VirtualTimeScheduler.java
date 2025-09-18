@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Operators;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 /**
@@ -260,7 +260,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	final VirtualTimeWorker directWorker;
 
-	private Schedulers.Snapshot schedulersSnapshot;
+	private Schedulers.@Nullable Snapshot schedulersSnapshot;
 
 	protected VirtualTimeScheduler(boolean defer) {
 		this.defer = defer;

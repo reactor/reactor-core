@@ -50,6 +50,16 @@
         <property name="optional" value="true"/>
     </module>
 
+    <!-- JSpecify Requirement -->
+    <module name="RegexpSingleline">
+		<property name="format" value="reactor\.util\.annotation\.Nullable"/>
+		<property name="message" value="Please use JSpecify imports."/>
+	</module>
+	<module name="RegexpSingleline">
+		<property name="format" value="reactor\.util\.annotation\.NonNullApi"/>
+		<property name="message" value="Please use JSpecify imports."/>
+	</module>
+
     <!-- Allow suppression with comments
        // CHECKSTYLE:OFF
        ... ignored content ...

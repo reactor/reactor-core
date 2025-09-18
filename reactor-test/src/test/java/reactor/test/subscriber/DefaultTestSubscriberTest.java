@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,6 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -59,8 +59,7 @@ class DefaultTestSubscriberTest {
 	private static final Logger LOGGER = Loggers.getLogger(DefaultTestSubscriberTest.class);
 	private static final int RACE_DETECTION_LOOPS = 1000;
 
-	@Nullable
-	static Throwable captureThrow(Runnable r) {
+	static @Nullable Throwable captureThrow(Runnable r) {
 		try {
 			r.run();
 			return null;
@@ -368,9 +367,8 @@ class DefaultTestSubscriberTest {
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.SYNC);
 		Mockito.when(mock.poll())
 				.thenAnswer(new Answer<Integer>() {
-					@Override
-					@Nullable
-					public Integer answer(InvocationOnMock invocation) {
+			@Override
+			public @Nullable Integer answer(InvocationOnMock invocation) {
 						int value = source.incrementAndGet();
 						if (value == 4) {
 							//emulate a precisely concurrent cancellation
@@ -394,6 +392,7 @@ class DefaultTestSubscriberTest {
 		assertThat(subscriber.isCancelled()).as("isCancelled").isTrue();
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	void asyncPollInterruptedByCancel() {
 		AtomicInteger source = new AtomicInteger();
@@ -407,9 +406,8 @@ class DefaultTestSubscriberTest {
 		Mockito.when(mock.requestFusion(anyInt())).thenReturn(Fuseable.ASYNC);
 		Mockito.when(mock.poll())
 				.thenAnswer(new Answer<Integer>() {
-					@Override
-					@Nullable
-					public Integer answer(InvocationOnMock invocation) throws Throwable {
+			@Override
+			public @Nullable Integer answer(InvocationOnMock invocation) throws Throwable {
 						int value = source.incrementAndGet();
 						if (value == 4) {
 							//emulate a precisely concurrent cancellation
@@ -525,6 +523,7 @@ class DefaultTestSubscriberTest {
 				.allMatch(s -> s.getContextView().isEmpty(), "empty context");
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	void onNextNullWhenNoFusion() {
 		final Subscription mock = Mockito.mock(Subscription.class);
@@ -542,6 +541,7 @@ class DefaultTestSubscriberTest {
 				.withMessage("onNext(null) received while ASYNC fusion not established");
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	void onNextNullWhenSyncFusion() {
 		final Fuseable.QueueSubscription<?> mock = Mockito.mock(Fuseable.QueueSubscription.class);
@@ -1334,6 +1334,7 @@ class DefaultTestSubscriberTest {
 		Mockito.verify(queueSubscription).clear();
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	void drainAsyncWithOnError() {
 		TestSubscriber<Integer> testSubscriber = TestSubscriber.builder().requireFusion(Fuseable.ASYNC).build();
@@ -1361,6 +1362,7 @@ class DefaultTestSubscriberTest {
 				.satisfies(s -> assertThat(s.getThrowable()).isInstanceOf(IllegalStateException.class).hasMessage("expected"));
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncBadOnErrorDuringPollNotifiesAndClears() {
@@ -1424,6 +1426,7 @@ class DefaultTestSubscriberTest {
 				.isSameAs(testSubscriber.getTerminalSignal()); //that last assertion ensures we registered the terminal signal
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncBadOnCompleteDuringPollNotifiesAndClears() {
@@ -1486,6 +1489,7 @@ class DefaultTestSubscriberTest {
 				.isSameAs(testSubscriber.getTerminalSignal()); //that last assertion ensures we registered the terminal signal
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncBadTerminalNotifiesAndClearsOnceProducedRequestedAmount() {
@@ -1554,6 +1558,7 @@ class DefaultTestSubscriberTest {
 				.isSameAs(testSubscriber.getTerminalSignal());
 	}
 
+	@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 	@Test
 	@Tag("slow") //potentially slow due to timeout 10s
 	void drainAsyncCancelledNotifiesAndClears() {

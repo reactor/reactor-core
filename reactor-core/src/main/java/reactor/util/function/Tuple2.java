@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A tuple that holds two non-null values.
@@ -40,8 +39,8 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 
 	private static final long serialVersionUID = -3518082018884860684L;
 
-	@NonNull final T1 t1;
-	@NonNull final T2 t2;
+	final T1 t1;
+	final T2 t2;
 
 	Tuple2(T1 t1, T2 t2) {
 		this.t1 = Objects.requireNonNull(t1, "t1");
@@ -96,8 +95,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 * @param index The index of the object to retrieve. Starts at 0.
 	 * @return The object or {@literal null} if out of bounds.
 	 */
-	@Nullable
-	public Object get(int index) {
+	public @Nullable Object get(int index) {
 		switch (index) {
 			case 0:
 				return t1;

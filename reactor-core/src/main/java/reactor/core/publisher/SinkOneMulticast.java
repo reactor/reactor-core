@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 
 final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements InternalOneSink<O> {
 
@@ -29,8 +29,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 
 	static final int STATE_VALUE = 1;
 
-	@Nullable
-	O value;
+	@Nullable O value;
 
 	@Override
 	boolean isTerminated(Inner<?>[] array) {
@@ -70,7 +69,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return isTerminated(subscribers);
 		if (key == Attr.ERROR) return subscribers == TERMINATED_ERROR ? error : null;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -98,6 +97,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 			as.complete();
 		}
 		else {
+			assert value != null;
 			as.complete(value);
 		}
 	}
@@ -130,9 +130,8 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 		}
 	}
 
-	@Nullable
 	@Override
-	public O block(Duration timeout) {
+	public @Nullable O block(Duration timeout) {
 		if (timeout.isNegative()) {
 			return super.block(Duration.ZERO);
 		}
@@ -161,7 +160,7 @@ final class SinkOneMulticast<O> extends SinkEmptyMulticast<O> implements Interna
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) {
 				return Attr.RunStyle.SYNC;
 			}

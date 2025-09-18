@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -40,10 +40,10 @@ import reactor.util.context.ContextView;
  * @param <S> the custom state per subscriber
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxGenerate<T, S>
-extends Flux<T> implements Fuseable, SourceProducer<T> {
+final class FluxGenerate<T, S extends @Nullable Object> extends Flux<T>
+		implements Fuseable, SourceProducer<T> {
 
-
+	@SuppressWarnings("rawtypes")
 	static final Callable EMPTY_CALLABLE = () -> null;
 
 	final Callable<S> stateSupplier;
@@ -86,12 +86,12 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
 
-	static final class GenerateSubscription<T, S>
+	static final class GenerateSubscription<T, S extends @Nullable Object>
 	  implements QueueSubscription<T>, InnerProducer<T>, SynchronousSink<T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -102,7 +102,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 		volatile boolean cancelled;
 
-		S state;
+		@Nullable S state;
 
 		boolean terminate;
 
@@ -110,9 +110,9 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		
 		boolean outputFused;
 		
-		T generatedValue;
+		@Nullable T generatedValue;
 		
-		Throwable generatedError;
+		@Nullable Throwable generatedError;
 
 		volatile long requested;
 
@@ -140,8 +140,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return terminate;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -315,7 +314,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			}
 		}
 
-		void cleanup(S s) {
+		void cleanup(@Nullable S s) {
 			try {
 				state = null;
 
@@ -333,10 +332,9 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			}
 			return Fuseable.NONE;
 		}
-		
+
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			S s = state;
 
 			if (terminate) {

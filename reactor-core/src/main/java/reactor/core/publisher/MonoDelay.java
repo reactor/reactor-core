@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -68,7 +68,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timedScheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 		return SourceProducer.super.scanUnsafe(key);
@@ -236,8 +236,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return wasDelayDone(this.state) && wasRequested(this.state);
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return wasRequested(this.state) ? 1L : 0L;
 			if (key == Attr.CANCELLED) return wasCancelled(this.state);

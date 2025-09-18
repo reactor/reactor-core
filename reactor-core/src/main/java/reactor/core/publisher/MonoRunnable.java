@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
@@ -52,30 +52,26 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<Void>, SourcePro
             actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
         }
     }
-    
-    @Override
-    @Nullable
-    public T block(Duration m) {
+	@Override
+	public @Nullable T block(Duration m) {
+        run.run();
+        return null;
+    }
+
+	@Override
+	public @Nullable T block() {
+        run.run();
+        return null;
+    }
+
+	@Override
+	public @Nullable Void call() throws Exception {
         run.run();
         return null;
     }
 
     @Override
-    @Nullable
-    public T block() {
-        run.run();
-        return null;
-    }
-
-    @Override
-    @Nullable
-    public Void call() throws Exception {
-        run.run();
-        return null;
-    }
-
-    @Override
-    public Object scanUnsafe(Attr key) {
+    public @Nullable Object scanUnsafe(Attr key) {
         if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
         return SourceProducer.super.scanUnsafe(key);
     }

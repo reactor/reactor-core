@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -47,8 +47,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	String KEY_ON_NEXT_ERROR_STRATEGY = "reactor.onNextError.localStrategy";
 
 	@Override
-	@Nullable
-	default Throwable apply(Throwable throwable, @Nullable Object o) {
+	default @Nullable Throwable apply(Throwable throwable, @Nullable Object o) {
 		return process(throwable, o, Context.empty());
 	}
 
@@ -71,8 +70,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	 * otherwise.
 	 * @see #test(Throwable, Object)
 	 */
-	@Nullable
-	Throwable process(Throwable error, @Nullable Object value, Context context);
+	@Nullable Throwable process(Throwable error, @Nullable Object value, Context context);
 
 	/**
 	 * A strategy that never let any error resume.
@@ -163,7 +161,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 
 	final class ResumeStrategy implements OnNextFailureStrategy {
 
-		final Predicate<Throwable>  errorPredicate;
+		final @Nullable Predicate<Throwable>  errorPredicate;
 		final BiConsumer<Throwable, Object>   errorConsumer;
 
 		ResumeStrategy(@Nullable Predicate<Throwable> errorPredicate,
@@ -178,8 +176,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		}
 
 		@Override
-		@Nullable
-		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+		public @Nullable Throwable process(Throwable error, @Nullable Object value, Context context) {
 			if (errorPredicate == null) {
 				Exceptions.throwIfFatal(error);
 			}
@@ -199,7 +196,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 
 	final class ResumeDropStrategy implements OnNextFailureStrategy {
 
-		final Predicate<Throwable> errorPredicate;
+		final @Nullable Predicate<Throwable> errorPredicate;
 
 		ResumeDropStrategy(@Nullable Predicate<Throwable> errorPredicate) {
 			this.errorPredicate = errorPredicate;
@@ -211,8 +208,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		}
 
 		@Override
-		@Nullable
-		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+		public @Nullable Throwable process(Throwable error, @Nullable Object value, Context context) {
 			if (errorPredicate == null) {
 				Exceptions.throwIfFatal(error);
 			}
@@ -256,8 +252,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		}
 
 		@Override
-		@Nullable
-		public Throwable process(Throwable error, @Nullable Object value, Context ignored) {
+		public @Nullable Throwable process(Throwable error, @Nullable Object value, Context ignored) {
 			return delegateProcessor.apply(error, value);
 		}
 	}

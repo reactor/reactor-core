@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.retry.Retry;
 
 /**
@@ -420,8 +420,7 @@ public abstract class Exceptions {
 	 *
 	 * @return the previously masked throwable
 	 */
-	@Nullable
-	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field,
+	public static <T> @Nullable Throwable terminate(AtomicReferenceFieldUpdater<T, @Nullable Throwable> field,
 			T instance) {
 		Throwable current = field.get(instance);
 		if (current != TERMINATED) {

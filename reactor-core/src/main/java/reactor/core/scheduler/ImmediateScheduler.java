@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -60,7 +61,7 @@ final class ImmediateScheduler implements Scheduler, Scannable {
 
 
     @Override
-    public Object scanUnsafe(Attr key) {
+    public @Nullable Object scanUnsafe(Attr key) {
         if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
         if (key == Attr.NAME) return Schedulers.IMMEDIATE;
 
@@ -96,7 +97,7 @@ final class ImmediateScheduler implements Scheduler, Scannable {
         }
 
         @Override
-        public Object scanUnsafe(Attr key) {
+        public @Nullable Object scanUnsafe(Attr key) {
             if (key == Attr.TERMINATED || key == Attr.CANCELLED) return shutdown;
             if (key == Attr.NAME) return Schedulers.IMMEDIATE + ".worker";
 

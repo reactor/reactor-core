@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * In case of onError, complete the sequence with a fallback value or simply with the onComplete signal in case said value is null.
@@ -34,11 +34,9 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 
-	@Nullable
-	final Predicate<? super Throwable> resumableErrorPredicate;
+	final @Nullable Predicate<? super Throwable> resumableErrorPredicate;
 
-	@Nullable
-	final T fallbackValue;
+	final @Nullable T fallbackValue;
 
 	FluxOnErrorReturn(Flux<? extends T> source, @Nullable Predicate<? super Throwable> predicate, @Nullable T value) {
 		super(source);
@@ -52,7 +50,7 @@ final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -68,11 +66,9 @@ final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 
 		Subscription s;
 
-		@Nullable
-		final Predicate<? super Throwable> resumableErrorPredicate;
+		final @Nullable Predicate<? super Throwable> resumableErrorPredicate;
 
-		@Nullable
-		final T fallbackValue;
+		final @Nullable T fallbackValue;
 
 		volatile     long                                     requested;
 		@SuppressWarnings("rawtypes")
@@ -217,7 +213,7 @@ final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			if (key == Attr.PARENT) return s;
 

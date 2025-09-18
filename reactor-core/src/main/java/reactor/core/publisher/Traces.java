@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
-import reactor.util.annotation.Nullable;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utilities around manipulating stack traces and displaying assembly traces.
@@ -159,9 +160,9 @@ final class Traces {
 	 */
 	private static Iterator<StackLineView> trimmedNonemptyLines(String source) {
 		return new Iterator<StackLineView>() {
-			private int           index = 0;
-			@Nullable
-			private StackLineView next  = getNextLine();
+			private int index = 0;
+
+			private @Nullable StackLineView next = getNextLine();
 
 			@Override
 			public boolean hasNext() {
@@ -178,8 +179,7 @@ final class Traces {
 				return current;
 			}
 
-			@Nullable
-			private StackLineView getNextLine() {
+			private @Nullable StackLineView getNextLine() {
 				while (index < source.length()) {
 					int end = source.indexOf('\n', index);
 					if (end == -1) {

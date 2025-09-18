@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -69,7 +69,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -165,6 +165,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -240,8 +241,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
@@ -266,8 +266,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			if (sourceMode == ASYNC) {
 				if (done) {
 					return null;
@@ -474,6 +473,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 
@@ -634,8 +634,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
@@ -660,8 +659,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			if (sourceMode == ASYNC) {
 				if (done) {
 					return null;

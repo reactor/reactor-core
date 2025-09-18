@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
- /**
+/**
  * Executes a Callable function and emits a single value to each individual Subscriber.
  * <p>
  *  Preferred to {@link java.util.function.Supplier} because the Callable may throw.
@@ -49,14 +49,12 @@ final class MonoCallable<T> extends Mono<T>
 	}
 
 	@Override
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		//duration is ignored below
 		return block(Duration.ZERO);
 	}
 
 	@Override
-	@Nullable
 	public T block(Duration m) {
 		try {
 			return callable.call();
@@ -67,13 +65,12 @@ final class MonoCallable<T> extends Mono<T>
 	}
 
 	@Override
-	@Nullable
 	public T call() throws Exception {
 		return callable.call();
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -105,7 +102,7 @@ final class MonoCallable<T> extends Mono<T>
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			if (this.done) {
 				return null;
 			}

@@ -38,13 +38,13 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -651,8 +651,7 @@ public abstract class Schedulers {
 		}
 	}
 
-	@Nullable
-	private static BiConsumer<Thread, ? super Throwable> createOrAppendHandleError(Collection<BiConsumer<Thread, Throwable>> subHooks) {
+	private static @Nullable BiConsumer<Thread, ? super Throwable> createOrAppendHandleError(Collection<BiConsumer<Thread, Throwable>> subHooks) {
 		BiConsumer<Thread, Throwable> composite = null;
 		for (BiConsumer<Thread, Throwable> value : subHooks) {
 			if (composite != null) {
@@ -1167,14 +1166,11 @@ public abstract class Schedulers {
 	 */
 	public static final class Snapshot implements Disposable {
 
-		@Nullable
-		final CachedScheduler oldBoundedElasticScheduler;
+		final @Nullable CachedScheduler oldBoundedElasticScheduler;
 
-		@Nullable
-		final CachedScheduler oldParallelScheduler;
+		final @Nullable CachedScheduler oldParallelScheduler;
 
-		@Nullable
-		final CachedScheduler oldSingleScheduler;
+		final @Nullable CachedScheduler oldSingleScheduler;
 
 		final Factory oldFactory;
 
@@ -1235,13 +1231,11 @@ public abstract class Schedulers {
 
 	private static final LinkedHashMap<String, BiConsumer<Thread, Throwable>> onHandleErrorHooks = new LinkedHashMap<>(1);
 
-	@Nullable
-	static BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
+	static @Nullable BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
 	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
 
-	@Nullable
-	private static Function<Runnable, Runnable> onScheduleHook;
+	private static @Nullable Function<Runnable, Runnable> onScheduleHook;
 
 	/**
 	 * Get a {@link CachedScheduler} out of the {@code reference} or create one using the
@@ -1357,7 +1351,7 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (Attr.NAME == key) return stringRepresentation;
 			return Scannable.from(cached).scanUnsafe(key);
 		}
@@ -1533,8 +1527,7 @@ public abstract class Schedulers {
 	 * @return an equivalent of {@link Scannable#scanUnsafe(Scannable.Attr)} but that can
 	 * also work on some implementations of {@link Executor}
 	 */
-	@Nullable
-	static final Object scanExecutor(Executor executor, Scannable.Attr key) {
+	static final @Nullable Object scanExecutor(Executor executor, Scannable.Attr key) {
 		if (executor instanceof DelegateServiceScheduler.UnsupportedScheduledExecutorService) {
 			executor = ((DelegateServiceScheduler.UnsupportedScheduledExecutorService) executor).get();
 		}

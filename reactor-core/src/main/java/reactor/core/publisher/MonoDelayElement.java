@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount
@@ -58,7 +58,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timedScheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
@@ -100,8 +100,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) {
 				final Disposable task = this.task;
 				return done && (task == TERMINATED || (task == null && value == null));
@@ -250,7 +249,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

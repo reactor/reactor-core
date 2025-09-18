@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -62,7 +62,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> s) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> s) {
 		if (breadthFirst) {
 			ExpandBreathSubscriber<T> parent =
 					new ExpandBreathSubscriber<>(s, expander, capacityHint);
@@ -80,7 +80,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -185,9 +185,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			}
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -272,8 +271,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			}
 		}
 
-		@Nullable
-		ExpandDepthSubscriber<T> pop() {
+		@Nullable ExpandDepthSubscriber<T> pop() {
 			synchronized (this) {
 				Deque<ExpandDepthSubscriber<T>> q = subscriptionStack;
 				return q != null ? q.pollFirst() : null;
@@ -430,9 +428,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			drainQueue();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return this.requested;
 			if (key == Attr.ERROR) return this.error;
@@ -493,9 +490,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 			Operators.terminate(S, this);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent.actual;
 			if (key == Attr.TERMINATED) return this.done;

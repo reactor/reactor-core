@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -30,7 +31,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.annotation.Nullable;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
@@ -69,7 +69,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
@@ -83,7 +83,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Worker worker = Objects.requireNonNull(scheduler.createWorker(),
 				"The scheduler returned a null worker");
 
@@ -473,6 +473,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		void runBackfused() {
 			int missed = 1;
 
@@ -586,8 +587,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM ) return requested;
 			if (key == Attr.PARENT ) return s;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -640,8 +640,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			T v = queue.poll();
 			if (v != null && sourceMode != SYNC) {
 				long p = produced + 1;
@@ -1033,6 +1032,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		void runBackfused() {
 			int missed = 1;
 
@@ -1086,8 +1086,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -1200,8 +1199,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			T v = queue.poll();
 			if (v != null && sourceMode != SYNC) {
 				long p = consumed + 1;

@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
 import javax.annotation.Nonnull;
 import javax.annotation.meta.TypeQualifierNickname;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A common Reactor annotation (similar to Spring ones) to declare that annotated elements
  * cannot be {@code null}. Leverages JSR 305 meta-annotations to indicate nullability in
@@ -44,11 +46,14 @@ import javax.annotation.meta.TypeQualifierNickname;
  * @since 3.1.0
  * @see NonNullApi
  * @see Nullable
+ * @deprecated Use {@link org.jspecify.annotations.NonNull} instead. To removed in
+ * 3.9.0 the earliest.
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull
 @TypeQualifierNickname
+@Deprecated
 public @interface NonNull {
 }

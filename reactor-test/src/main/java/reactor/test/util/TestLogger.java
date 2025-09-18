@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.regex.Matcher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.util.Logger;
-import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Logger} that writes to {@link ByteArrayOutputStream} and allows retrieval of
@@ -72,8 +72,7 @@ public class TestLogger implements Logger {
 		this.logContent.reset();
 	}
 
-	@Nullable
-	private String format(@Nullable String from, @Nullable Object... arguments){
+	private @Nullable String format(@Nullable String from, @Nullable Object... arguments) {
 		if(from != null) {
 			String computed = from;
 			if (arguments != null && arguments.length != 0) {
@@ -190,7 +189,7 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.err);
 	}
 
-	String logContent(String logType, String msg){
+	String logContent(String logType, @Nullable String msg){
 		if(logCurrentThreadName){
 			return String.format("[%s] (%s) %s\n", logType,
 					Thread.currentThread().getName(), msg);

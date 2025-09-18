@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -36,8 +36,7 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 
 	final Publisher<? extends T> source;
 
-	@Nullable
-	final OptimizableOperator<?, T> optimizableOperator;
+	final @Nullable OptimizableOperator<?, T> optimizableOperator;
 
 	MonoIgnorePublisher(Publisher<? extends T> source) {
 		this.source = Operators.toFluxOrMono(Objects.requireNonNull(source, "publisher"));
@@ -63,23 +62,22 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		return new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 	}
 
 	@Override
-	public final CorePublisher<? extends T> source() {
+	public CorePublisher<? extends T> source() {
 		return this;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends T> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Scannable.Attr key) {
+	public @Nullable Object scanUnsafe(Scannable.Attr key) {
 		if (key == Scannable.Attr.PARENT) {
 			return source;
 		}

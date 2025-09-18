@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,8 @@ final class MicrometerObservationListenerConfiguration {
 
 	static MicrometerObservationListenerConfiguration fromFlux(Flux<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_FLUX;
-		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, MicrometerObservationListenerDocumentation.ANONYMOUS.getName());
+		String anonymousName = MicrometerObservationListenerDocumentation.ANONYMOUS.getName();
+		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, anonymousName);
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
 		return new MicrometerObservationListenerConfiguration(name, keyValues, observationRegistry, false);
@@ -53,7 +54,8 @@ final class MicrometerObservationListenerConfiguration {
 
 	static MicrometerObservationListenerConfiguration fromMono(Mono<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_MONO;
-		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, MicrometerObservationListenerDocumentation.ANONYMOUS.getName());
+		String anonymousName = MicrometerObservationListenerDocumentation.ANONYMOUS.getName();
+		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, anonymousName);
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
 		return new MicrometerObservationListenerConfiguration(name, keyValues, observationRegistry, true);

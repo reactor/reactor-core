@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -44,7 +45,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static reactor.core.scheduler.BoundedElasticThreadPerTaskScheduler.BoundedServices.CREATING;
@@ -62,6 +62,7 @@ final class BoundedElasticThreadPerTaskScheduler
 
 	final ThreadFactory factory;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized via updater
 	volatile SchedulerState<BoundedServices>                                                      state;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<BoundedElasticThreadPerTaskScheduler, SchedulerState>STATE =
@@ -294,7 +295,7 @@ final class BoundedElasticThreadPerTaskScheduler
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.BUFFERED) return estimateSize();
 		if (key == Attr.CAPACITY) return maxThreads;
@@ -366,12 +367,14 @@ final class BoundedElasticThreadPerTaskScheduler
 		final ThreadFactory factory;
 		final int maxTasksQueuedPerThread;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized via updater
 		volatile ActiveExecutorsState activeExecutorsState;
 		static final AtomicReferenceFieldUpdater<BoundedServices, ActiveExecutorsState> ACTIVE_EXECUTORS_STATE =
 			AtomicReferenceFieldUpdater.newUpdater(BoundedServices.class, ActiveExecutorsState.class,
 					"activeExecutorsState");
 
 		//constructor for SHUTDOWN
+		@SuppressWarnings("DataFlowIssue") // null fields never accessed
 		private BoundedServices() {
 			this.parent = null;
 			this.maxTasksQueuedPerThread = 0;
@@ -520,7 +523,7 @@ final class BoundedElasticThreadPerTaskScheduler
 
 		final ThreadFactory factory;
 
-		SchedulerTask activeTask;
+		@Nullable SchedulerTask activeTask;
 
 		SequentialThreadPerTaskExecutor(BoundedServices parent, boolean markPicked) {
 			super(1);
@@ -667,11 +670,10 @@ final class BoundedElasticThreadPerTaskScheduler
 			incrementTasksCount();
 
 			Runnable decoratedTask = onSchedule(task);
-			boolean isDirect = disposables == null;
 			SchedulerTask disposable =
 					new SchedulerTask(this, decoratedTask, -1, TimeUnit.NANOSECONDS, disposables);
 
-			if (!isDirect) {
+			if (disposables != null) {
 				if (!disposables.add(disposable)) {
 					throw Exceptions.failWithRejected();
 				}
@@ -690,11 +692,10 @@ final class BoundedElasticThreadPerTaskScheduler
 			incrementTasksCount();
 
 			Runnable decoratedTask = onSchedule(task);
-			boolean isDirect = disposables == null;
 			SchedulerTask disposable =
 					new SchedulerTask(this, decoratedTask, -1, unit, disposables);
 
-			if (!isDirect) {
+			if (disposables != null) {
 				if (!disposables.add(disposable)) {
 					throw Exceptions.failWithRejected();
 				}
@@ -722,7 +723,6 @@ final class BoundedElasticThreadPerTaskScheduler
 			incrementTasksCount();
 
 			Runnable decoratedTask = onSchedule(task);
-			boolean isDirect = disposables == null;
 
 			SchedulerTask disposable = new SchedulerTask(this,
 					decoratedTask,
@@ -730,7 +730,7 @@ final class BoundedElasticThreadPerTaskScheduler
 					unit,
 					disposables);
 
-			if (!isDirect) {
+			if (disposables != null) {
 				if (!disposables.add(disposable)) {
 					throw Exceptions.failWithRejected();
 				}
@@ -831,7 +831,7 @@ final class BoundedElasticThreadPerTaskScheduler
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (Attr.TERMINATED == key) return isDisposed();
 			if (Attr.BUFFERED == key) return numberOfEnqueuedTasks();
 			if (Attr.CAPACITY == key) return this.queueCapacity;
@@ -981,11 +981,13 @@ final class BoundedElasticThreadPerTaskScheduler
 		final SequentialThreadPerTaskExecutor holder;
 
 		final Runnable task;
-		@Nullable
-		final Composite tracker;
 
-		Thread carrier;
+		final @Nullable Composite tracker;
 
+		@Nullable Thread carrier;
+
+		// initialized via schedule method and used only when HAS_FUTURE_FLAG is set
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Future<?> scheduledFuture;
 
 		SchedulerTask(SequentialThreadPerTaskExecutor holder,
@@ -1096,9 +1098,11 @@ final class BoundedElasticThreadPerTaskScheduler
 				return;
 			}
 
-			boolean isDirect = this.tracker == null;
+			Composite tracker = this.tracker;
+			boolean isDirect = tracker == null;
 			if (!isDirect) {
-				this.tracker.remove(this);
+				assert tracker != null; // NullAway fails to recognize the isDirect check above
+				tracker.remove(this);
 			}
 
 			if (isScheduled(previousState)) {
@@ -1115,6 +1119,7 @@ final class BoundedElasticThreadPerTaskScheduler
 					this.scheduledFuture.cancel(true);
 				}
 				if (Thread.currentThread() != this.carrier) {
+					assert this.carrier != null; // only disposed after carrier was set
 					this.carrier.interrupt();
 				}
 				return;
@@ -1359,7 +1364,7 @@ final class BoundedElasticThreadPerTaskScheduler
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) return disposables.size();
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 			if (key == Attr.NAME) return "SingleThreadExecutorWorker";

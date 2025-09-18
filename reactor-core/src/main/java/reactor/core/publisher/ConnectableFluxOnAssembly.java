@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and
@@ -55,7 +55,7 @@ final class ConnectableFluxOnAssembly<T> extends InternalConnectableFluxOperator
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxOnAssembly.wrapSubscriber(actual, source, this, stacktrace);
 	}
 
@@ -65,8 +65,7 @@ final class ConnectableFluxOnAssembly<T> extends InternalConnectableFluxOperator
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.ACTUAL_METADATA) return !stacktrace.isCheckpoint;

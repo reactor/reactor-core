@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -50,18 +50,16 @@ final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 	}
 
 	@Override
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		//duration is ignored below
 		return block(Duration.ZERO);
 	}
 
 	@Override
-	@Nullable
 	@SuppressWarnings("unchecked")
-	public T block(Duration timeout) {
+	public @Nullable T block(Duration timeout) {
 		try {
-			return ((Callable<T>) source).call();
+			return ((Callable<@Nullable T>) source).call();
 		}
 		catch (Throwable e) {
 			throw Exceptions.propagate(e);
@@ -86,13 +84,12 @@ final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public T call() throws Exception {
-		return ((Callable<T>) source).call();
+	public @Nullable T call() throws Exception {
+		return ((Callable<@Nullable T>) source).call();
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL_METADATA) return !stacktrace.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

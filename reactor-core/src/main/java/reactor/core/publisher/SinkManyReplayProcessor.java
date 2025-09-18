@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -34,7 +35,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -311,8 +311,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT){
 			return subscription;
 		}
@@ -550,8 +549,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return buffer.poll(this);
 		}
 
@@ -607,8 +605,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 		}
 
 		@Override
-		@Nullable
-		public Object node() {
+		public @Nullable Object node() {
 			return node;
 		}
 

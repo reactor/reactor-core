@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -178,8 +178,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 *
 	 * @return the Throwable associated with this (onError) signal, or null if not relevant
 	 */
-	@Nullable
-	Throwable getThrowable();
+	@Nullable Throwable getThrowable();
 
 	/**
 	 * Read the subscription associated with this (onSubscribe) signal.
@@ -187,8 +186,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return the Subscription associated with this (onSubscribe) signal, or null if not
 	 * relevant
 	 */
-	@Nullable
-	Subscription getSubscription();
+	@Nullable Subscription getSubscription();
 
 	/**
 	 * Retrieves the item associated with this (onNext) signal.
@@ -196,8 +194,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return the item associated with this (onNext) signal, or null if not relevant
 	 */
 	@Override
-	@Nullable
-	T get();
+	@Nullable T get();
 
 	/**
 	 * Has this signal an item associated with it ? (which only happens if it is an

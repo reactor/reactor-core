@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package reactor.core.publisher;
 
-
-import reactor.util.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Represents a sequence of events which has an associated key.

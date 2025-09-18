@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -23,7 +24,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -406,7 +406,7 @@ final class BoundedElasticScheduler implements Scheduler,
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.BUFFERED) return estimateSize();
 		if (key == Attr.CAPACITY) return maxThreads;
@@ -656,8 +656,7 @@ final class BoundedElasticScheduler implements Scheduler,
 			}
 		}
 
-		@Nullable
-		private BoundedState choseOneBusy() {
+		private @Nullable BoundedState choseOneBusy() {
 			BoundedState[] arr = busyStates.array;
 			int len = arr.length;
 			if (len == 0) {
@@ -854,7 +853,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return Schedulers.scanExecutor(executor, key);
 		}
 
@@ -896,7 +895,7 @@ final class BoundedElasticScheduler implements Scheduler,
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (Attr.TERMINATED == key) return isTerminated();
 			if (Attr.BUFFERED == key) return getQueue().size();
 			if (Attr.CAPACITY == key) return this.queueCapacity;

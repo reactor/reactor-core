@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,7 +48,6 @@ import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.util.TestLogger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
@@ -1335,8 +1335,7 @@ public class FluxUsingWhenTest {
 			return commitProbe.flux();
 		}
 
-		@Nullable
-		public Flux<Integer> commitNull() {
+		public @Nullable Flux<Integer> commitNull() {
 			return null;
 		}
 
@@ -1364,8 +1363,7 @@ public class FluxUsingWhenTest {
 			return rollbackProbe.flux();
 		}
 
-		@Nullable
-		public Flux<Integer> rollbackNull(Throwable error) {
+		public @Nullable Flux<Integer> rollbackNull(Throwable error) {
 			return null;
 		}
 
@@ -1385,8 +1383,7 @@ public class FluxUsingWhenTest {
 			return cancelProbe.flux();
 		}
 
-		@Nullable
-		public Flux<Integer> cancelNull() {
+		public @Nullable Flux<Integer> cancelNull() {
 			return null;
 		}
 	}

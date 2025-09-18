@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -150,8 +150,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 	 *
 	 * @return the new {@link FluxFirstWithSignal} instance or null if the Amb runs with an Iterable
 	 */
-	@Nullable
-	FluxFirstWithSignal<T> orAdditionalSource(Publisher<? extends T> source) {
+	@Nullable FluxFirstWithSignal<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -165,7 +164,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -194,8 +193,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 
 			return null;
@@ -304,8 +302,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return parent.cancelled;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

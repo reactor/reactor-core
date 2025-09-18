@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -43,19 +43,19 @@ import reactor.util.context.Context;
 final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		implements Fuseable, SignalPeek<T> {
 
-	final Consumer<? super Subscription> onSubscribeCall;
+	final @Nullable Consumer<? super Subscription> onSubscribeCall;
 
-	final Consumer<? super T> onNextCall;
+	final @Nullable Consumer<? super T> onNextCall;
 
-	final Consumer<? super Throwable> onErrorCall;
+	final @Nullable Consumer<? super Throwable> onErrorCall;
 
-	final Runnable onCompleteCall;
+	final @Nullable Runnable onCompleteCall;
 
-	final Runnable onAfterTerminateCall;
+	final @Nullable Runnable onAfterTerminateCall;
 
-	final LongConsumer onRequestCall;
+	final @Nullable LongConsumer onRequestCall;
 
-	final Runnable onCancelCall;
+	final @Nullable Runnable onCancelCall;
 
 	FluxPeekFuseable(Flux<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,
@@ -86,7 +86,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -105,8 +105,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		volatile boolean done;
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -179,6 +178,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -294,8 +294,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			boolean d = done;
 			T v;
 			try {
@@ -414,8 +413,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -472,6 +470,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -612,8 +611,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			boolean d = done;
 			T v;
 			try {
@@ -702,44 +700,37 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Subscription> onSubscribeCall() {
+	public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super T> onNextCall() {
+	public @Nullable Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Throwable> onErrorCall() {
+	public @Nullable Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCompleteCall() {
+	public @Nullable Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onAfterTerminateCall() {
+	public @Nullable Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
 	@Override
-	@Nullable
-	public LongConsumer onRequestCall() {
+	public @Nullable LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCancelCall() {
+	public @Nullable Runnable onCancelCall() {
 		return onCancelCall;
 	}
 
@@ -763,8 +754,11 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		@Override
 		public Context currentContext() {
 			Context c = actual.currentContext();
-			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
-				parent.onCurrentContextCall().accept(c);
+			if (!c.isEmpty()) {
+				Consumer<? super Context> onCurrentContextCall = parent.onCurrentContextCall();
+				if (onCurrentContextCall != null) {
+					onCurrentContextCall.accept(c);
+				}
 			}
 			return c;
 		}
@@ -818,8 +812,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

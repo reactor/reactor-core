@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -48,7 +48,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -80,8 +80,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return !done && aggregate == CANCELLED;
 			if (key == Attr.PREFETCH) return 0;
@@ -224,7 +223,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 

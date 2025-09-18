@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -29,7 +30,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.core.publisher.Operators.DeferredSubscription;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -49,8 +49,8 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 	final Function<? super S, ? extends Mono<? extends T>>                 resourceClosure;
 	final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 	final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-	@Nullable
-	final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
+
+	final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
 
 	MonoUsingWhen(Publisher<S> resourceSupplier,
 			Function<? super S, ? extends Mono<? extends T>> resourceClosure,
@@ -99,7 +99,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -144,10 +144,13 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		final Function<? super S, ? extends Mono<? extends T>>                 resourceClosure;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
-		final boolean                                                          isMonoSource;
 
+		final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
+
+		final boolean isMonoSource;
+
+		// resourceSubscription is set in onSubscribe
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription        resourceSubscription;
 		boolean             resourceProvided;
 
@@ -232,7 +235,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return resourceSubscription;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;

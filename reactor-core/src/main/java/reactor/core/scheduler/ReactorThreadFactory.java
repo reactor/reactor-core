@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The standard Reactor {@link ThreadFactory Thread factories} to be used by {@link Scheduler},
@@ -34,13 +34,12 @@ class ReactorThreadFactory implements ThreadFactory,
                                       Supplier<String>,
                                       Thread.UncaughtExceptionHandler {
 
-	final private String                        name;
-	final private AtomicLong                    counterReference;
-	final private boolean                       daemon;
-	final private boolean                       rejectBlocking;
+	private final String     name;
+	private final AtomicLong counterReference;
+	private final boolean    daemon;
+	private final boolean    rejectBlocking;
 
-	@Nullable
-	final private BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
+	private final @Nullable BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
 
 	ReactorThreadFactory(String name,
 			AtomicLong counterReference,

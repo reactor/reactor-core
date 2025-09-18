@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.annotation.Nullable;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -77,7 +77,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timedScheduler;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 		return SourceProducer.super.scanUnsafe(key);
@@ -108,8 +108,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.RUN_ON) return worker;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;

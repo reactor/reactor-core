@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -38,7 +39,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -79,7 +79,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL_METADATA) return !snapshotStack.isCheckpoint;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -135,12 +135,11 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 	 */
 	static class AssemblySnapshot {
 
-		final boolean          isCheckpoint;
-		@Nullable
-		final String           description;
-		@Nullable
-		final Supplier<String> assemblyInformationSupplier;
-		String cached;
+		final           boolean          isCheckpoint;
+		final @Nullable String           description;
+		final @Nullable Supplier<String> assemblyInformationSupplier;
+
+		@Nullable String cached;
 
 		/**
 		 * @param description a description for the assembly traceback.
@@ -168,8 +167,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 			return this.description != null;
 		}
 
-		@Nullable
-		public String getDescription() {
+		public @Nullable String getDescription() {
 			return description;
 		}
 
@@ -219,7 +217,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		String operatorAssemblyInformation() {
-			return cached;
+			assert this.cached != null;
+			return this.cached;
 		}
 
 	}
@@ -254,7 +253,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		String operatorAssemblyInformation() {
-			return cached;
+			assert this.cached != null;
+			return this.cached;
 		}
 	}
 
@@ -267,8 +267,8 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		int occurrenceCounter;
 
-		@Nullable
-		ObservedAtInformationNode parent;
+		@Nullable ObservedAtInformationNode parent;
+
 		Set<ObservedAtInformationNode> children;
 
 		ObservedAtInformationNode(int id, String operator, String message) {
@@ -434,7 +434,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		@Override
-		public String getMessage() {
+		public @Nullable String getMessage() {
 			//skip the "error has been observed" traceback if mapped traceback is empty
 			synchronized (nodesPerId) {
 				if (root.children.isEmpty()) {
@@ -495,7 +495,9 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		final Publisher<?>              current;
 		final CoreSubscriber<? super T> actual;
 
-		QueueSubscription<T> qs;
+		@Nullable QueueSubscription<T> qs;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription         s;
 		int                  fusionMode;
 
@@ -515,8 +517,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL_METADATA) return !snapshotStack.isCheckpoint;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -617,6 +618,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		@Override
 		final public boolean isEmpty() {
 			try {
+				assert qs != null : "Queue interface used only when qs is non-null";
 				return qs.isEmpty();
 			}
 			catch (Throwable ex) {
@@ -636,11 +638,13 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 		@Override
 		final public int size() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			return qs.size();
 		}
 
 		@Override
 		final public void clear() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			qs.clear();
 		}
 
@@ -655,9 +659,9 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 		}
 
 		@Override
-		@Nullable
-		final public T poll() {
+		final public @Nullable T poll() {
 			try {
+				assert qs != null : "Queue interface used only when qs is non-null";
 				return qs.poll();
 			}
 			catch (final Throwable ex) {

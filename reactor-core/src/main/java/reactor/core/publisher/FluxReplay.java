@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -35,7 +36,6 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -58,8 +58,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					ReplaySubscriber.class,
 					"connection");
 
-	@Nullable
-	final OptimizableOperator<?, T> optimizableOperator;
+	final @Nullable OptimizableOperator<?, T> optimizableOperator;
 
 	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
 
@@ -74,8 +73,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		void node(@Nullable Object node);
 
-		@Nullable
-		Object node();
+		@Nullable Object node();
 
 		int tailIndex();
 
@@ -100,8 +98,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		void onError(Throwable ex);
 
-		@Nullable
-		Throwable getError();
+		@Nullable Throwable getError();
 
 		void onComplete();
 
@@ -109,8 +106,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		boolean isDone();
 
-		@Nullable
-		T poll(ReplaySubscription<T> rs);
+		@Nullable T poll(ReplaySubscription<T> rs);
 
 		void clear(ReplaySubscription<T> rs);
 
@@ -324,8 +320,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Throwable getError() {
+		public @Nullable Throwable getError() {
 			return error;
 		}
 
@@ -358,8 +353,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll(ReplaySubscription<T> rs) {
+		public @Nullable T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
 			long now = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
@@ -526,8 +520,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Throwable getError() {
+		public @Nullable Throwable getError() {
 			return error;
 		}
 
@@ -719,8 +712,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll(ReplaySubscription<T> rs) {
+		public @Nullable T poll(ReplaySubscription<T> rs) {
 			int index = rs.index();
 			if (index == size) {
 				return null;
@@ -970,8 +962,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Throwable getError() {
+		public @Nullable Throwable getError() {
 			return error;
 		}
 
@@ -1000,8 +991,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll(ReplaySubscription<T> rs) {
+		public @Nullable T poll(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 			if (node == null) {
 				node = head;
@@ -1162,7 +1152,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual)
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual)
 			throws Throwable {
 		boolean expired;
 		for (; ; ) {
@@ -1198,18 +1188,17 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public final CorePublisher<? extends T> source() {
+	public CorePublisher<? extends T> source() {
 		return source;
 	}
 
 	@Override
-	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+	public @Nullable OptimizableOperator<?, ? extends T> nextOptimizableSource() {
 		return optimizableOperator;
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Scannable.Attr key) {
+	public @Nullable Object scanUnsafe(Scannable.Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_ON) return scheduler;
@@ -1484,8 +1473,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.CAPACITY) return buffer.capacity();
@@ -1714,8 +1702,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
 			}
@@ -1773,8 +1760,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			return parent.buffer.poll(this);
 		}
 
@@ -1804,8 +1790,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		@Nullable
-		public Object node() {
+		public @Nullable Object node() {
 			return node;
 		}
 

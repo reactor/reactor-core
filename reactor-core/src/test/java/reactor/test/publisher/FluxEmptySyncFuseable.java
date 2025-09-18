@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package reactor.test.publisher;
 
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -31,8 +31,7 @@ final class FluxEmptySyncFuseable<T> extends Flux<T> implements Fuseable {
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(new SynchronousSubscription<T>() {
 			@Override
-			@Nullable
-			public T poll() {
+			public @Nullable T poll() {
 				return null;
 			}
 

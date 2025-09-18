@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -81,8 +81,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 *
 	 * @return the first value or null if the source is empty
 	 */
-	@Nullable
-	final T blockingGet() {
+	final @Nullable T blockingGet() {
 		if (Schedulers.isInNonBlockingThread()) {
 			throw new IllegalStateException("block()/blockFirst()/blockLast() are blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
@@ -116,8 +115,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 *
 	 * @return the first value or null if the source is empty
 	 */
-	@Nullable
-	final T blockingGet(long timeout, TimeUnit unit) {
+	final @Nullable T blockingGet(long timeout, TimeUnit unit) {
 		if (Schedulers.isInNonBlockingThread()) {
 			throw new IllegalStateException("block()/blockFirst()/blockLast() are blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
@@ -149,11 +147,8 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		return value;
 	}
 
-
-
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return getCount() == 0;
 		if (key == Attr.PARENT) return  s;
 		if (key == Attr.CANCELLED) return cancelled;

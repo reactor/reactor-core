@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -74,7 +74,7 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
     }
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
     	if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -245,9 +245,8 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        @Nullable
-        public R poll() {
+		@Override
+		public @Nullable R poll() {
             R v = value;
             if (v != null) {
                 value = null;
@@ -256,9 +255,8 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
             return null;
         }
 
-	    @Override
-	    @Nullable
-	    public Object scanUnsafe(Attr key) {
+		@Override
+		public @Nullable Object scanUnsafe(Attr key) {
 		    if (key == Attr.PARENT) return s;
 		    if (key == Attr.TERMINATED) return done;
 		    if (key == Attr.CANCELLED) return getAsBoolean();
@@ -269,9 +267,8 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 		    return InnerOperator.super.scanUnsafe(key);
 	    }
 
-	    @Override
-	    @Nullable
-        public R peek() {
+		@Override
+		public @Nullable R peek() {
             return value;
         }
 

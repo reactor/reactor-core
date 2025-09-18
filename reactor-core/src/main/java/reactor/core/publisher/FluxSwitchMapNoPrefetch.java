@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -56,7 +56,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		//for now switchMap doesn't support onErrorContinue, so the scalar version shouldn't either
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, false)) {
 			return null;
@@ -66,15 +66,14 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
 
 	static final class SwitchMapMain<T, R> implements InnerOperator<T, R> {
 
-		@Nullable
-		final StateLogger logger;
+		final @Nullable StateLogger logger;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 		final CoreSubscriber<? super R> actual;
@@ -119,8 +118,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			final long state = this.state;
 			if (key == Attr.CANCELLED) return !this.done && state == TERMINATED;
 			if (key == Attr.PARENT) return this.s;
@@ -311,8 +309,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 	static final class SwitchMapInner<T, R> implements InnerConsumer<R> {
 
-		@Nullable
-		final StateLogger logger;
+		final @Nullable StateLogger logger;
 
 		final SwitchMapMain<T, R> parent;
 		final CoreSubscriber<? super R> actual;
@@ -340,8 +337,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelledByParent();
 			if (key == Attr.PARENT) return this.parent;
 			if (key == Attr.ACTUAL) return this.actual;

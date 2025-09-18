@@ -1,6 +1,7 @@
 package reactor.core.scrabble;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -58,7 +59,7 @@ final class FluxCharSequence extends Flux<Integer> implements Fuseable {
 		}
 
 		@Override
-		public Integer poll() {
+		public @Nullable Integer poll() {
 			int i = index;
 			if (i != end) {
 				index = i + 1;

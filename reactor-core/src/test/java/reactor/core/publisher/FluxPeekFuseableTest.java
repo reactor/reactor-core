@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -46,7 +47,6 @@ import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.TestLogger;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -933,45 +933,38 @@ public class FluxPeekFuseableTest {
 			};
 		}
 
-		@Nullable
 		@Override
-		public Consumer<? super Subscription> onSubscribeCall() {
+		public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Consumer<? super Throwable> onErrorCall() {
+		public @Nullable Consumer<? super Throwable> onErrorCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Runnable onCompleteCall() {
+		public @Nullable Runnable onCompleteCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Runnable onAfterTerminateCall() {
+		public @Nullable Runnable onAfterTerminateCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public LongConsumer onRequestCall() {
+		public @Nullable LongConsumer onRequestCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Runnable onCancelCall() {
+		public @Nullable Runnable onCancelCall() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return null;
 		}
 	}
@@ -1066,7 +1059,7 @@ public class FluxPeekFuseableTest {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			T value = q.poll();
 			if (value == null && completeWithError) {
 				throw new IllegalStateException("AssertQueueSubscriber poll error");
@@ -1079,9 +1072,8 @@ public class FluxPeekFuseableTest {
 			return q.element();
 		}
 
-		@Nullable
 		@Override
-		public T peek() {
+		public @Nullable T peek() {
 			return q.peek();
 		}
 

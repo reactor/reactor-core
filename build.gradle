@@ -37,6 +37,7 @@ plugins {
 	alias(libs.plugins.jcstress) apply false
 	alias(libs.plugins.spotless)
 	alias(libs.plugins.mrjar) apply false
+	alias(libs.plugins.errorprone) apply false
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -120,6 +121,7 @@ spotless {
 configure(subprojects) { p ->
 	apply plugin: 'java'
 	apply plugin: 'jacoco'
+	apply plugin: "net.ltgt.errorprone"
 	apply from: "${rootDir}/gradle/setup.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
@@ -143,6 +145,33 @@ configure(subprojects) { p ->
 		}
 		// Spring Milestone repository is required for io.projectreactor:jsr166:1.0.0.RELEASE
 		maven { url 'https://repo.spring.io/milestone' }
+	}
+
+	dependencies {
+		errorprone libs.nullaway
+		errorprone libs.errorprone
+	}
+
+	p.tasks.withType(JavaCompile).configureEach { task ->
+		if (task.name.endsWith("TestJava") || task.name.endsWith("JcstressJava")) {
+			options.errorprone {
+				enabled = false
+			}
+		} else {
+			options.errorprone {
+				disableAllChecks = true // Other error prone checks are disabled
+				// Enable nullness checks only in null-marked code
+				option("NullAway:OnlyNullMarked", "true")
+				// jspecify mode would check generic types and array annotations
+//				option("NullAway:JSpecifyMode", "true")
+				// Allows treating assert ... statements as nullness assertions
+				option("NullAway:AssertsEnabled", "true")
+				option("NullAway:SuppressionNameAliases",
+						"DataFlowIssue,NotNullFieldNotInitialized")
+//				error("NullAway") // bump checks from warnings (default) to errors
+				warn("NullAway") // run checks as warnings
+			}
+		}
 	}
 
 	jacocoTestReport {

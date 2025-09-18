@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements InternalManySink<T>, Subscription, ContextHolder {
@@ -188,9 +188,8 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 		return a == null ? Stream.empty() : Stream.of(Scannable.from(a));
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.ACTUAL) return actual;
 		if (key == Attr.TERMINATED) return state == State.TERMINATED;
 		if (key == Attr.CANCELLED) return state == State.CANCELLED;

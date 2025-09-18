@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -85,7 +85,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -106,8 +106,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -118,8 +117,11 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 		@Override
 		public Context currentContext() {
 			Context c = actual.currentContext();
-			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
-				parent.onCurrentContextCall().accept(c);
+			if (!c.isEmpty()) {
+				Consumer<? super Context> onCurrentContextCall = parent.onCurrentContextCall();
+				if (onCurrentContextCall != null) {
+					onCurrentContextCall.accept(c);
+				}
 			}
 			return c;
 		}
@@ -278,44 +280,37 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Subscription> onSubscribeCall() {
+	public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super T> onNextCall() {
+	public @Nullable Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
-	@Nullable
-	public Consumer<? super Throwable> onErrorCall() {
+	public @Nullable Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCompleteCall() {
+	public @Nullable Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onAfterTerminateCall() {
+	public @Nullable Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
 	@Override
-	@Nullable
-	public LongConsumer onRequestCall() {
+	public @Nullable LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
-	@Nullable
-	public Runnable onCancelCall() {
+	public @Nullable Runnable onCancelCall() {
 		return onCancelCall;
 	}
 

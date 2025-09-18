@@ -31,8 +31,8 @@ import io.micrometer.context.ContextSnapshot;
 
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import reactor.core.observability.SignalListener;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -426,7 +426,7 @@ final class ContextPropagation {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			Envelope<T> envelope = envelopeQueue.poll();
 			if (envelope == null) {
 				if (cleanOnNull && scope != null) {
@@ -466,8 +466,7 @@ final class ContextPropagation {
 		}
 
 		@Override
-		@Nullable
-		public T peek() {
+		public @Nullable T peek() {
 			Envelope<T> envelope = envelopeQueue.peek();
 			return envelope == null ? null : envelope.body;
 		}

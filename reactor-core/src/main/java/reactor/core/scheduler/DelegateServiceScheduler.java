@@ -31,12 +31,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
@@ -58,8 +58,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	final String executorName;
 	final ScheduledExecutorService original;
 
-	@Nullable
-	volatile SchedulerState<ScheduledExecutorService> state;
+	volatile @Nullable SchedulerState<ScheduledExecutorService> state;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<DelegateServiceScheduler, SchedulerState> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(DelegateServiceScheduler.class,
@@ -205,7 +204,7 @@ final class DelegateServiceScheduler implements Scheduler, SchedulerState.Dispos
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return toString();
 

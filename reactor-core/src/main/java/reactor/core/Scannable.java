@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
@@ -256,8 +256,7 @@ public interface Scannable {
 		 *
 		 * @return the default value applicable to all components or null if none.
 		 */
-		@Nullable
-		public T defaultValue(){
+		public @Nullable T defaultValue() {
 			return defaultValue;
 		}
 
@@ -282,8 +281,7 @@ public interface Scannable {
 		 * @param o the instance to attempt conversion on
 		 * @return the converted instance
 		 */
-		@Nullable
-		T tryConvert(@Nullable Object o) {
+		@Nullable T tryConvert(@Nullable Object o) {
 			if (o == null) {
 				return null;
 			}
@@ -294,8 +292,8 @@ public interface Scannable {
 			return safeConverter.apply(o);
 		}
 
-		final T                             defaultValue;
-		final Function<Object, ? extends T> safeConverter;
+		final @Nullable T defaultValue;
+		final @Nullable Function<Object, ? extends T> safeConverter;
 
 		protected Attr(@Nullable T defaultValue){
 			this(defaultValue, null);
@@ -313,7 +311,7 @@ public interface Scannable {
 		 */
 		static final Scannable UNAVAILABLE_SCAN = new Scannable() {
 			@Override
-			public Object scanUnsafe(Attr key) {
+			public @Nullable Object scanUnsafe(Attr key) {
 				return null;
 			}
 
@@ -339,7 +337,7 @@ public interface Scannable {
 		 */
 		static final Scannable NULL_SCAN = new Scannable() {
 			@Override
-			public Object scanUnsafe(Attr key) {
+			public @Nullable Object scanUnsafe(Attr key) {
 				return null;
 			}
 
@@ -509,7 +507,7 @@ public interface Scannable {
 				stepAfter = chain.get(i + 1);
 			}
 			//noinspection ConstantConditions
-			if (stepAfter != null && stepAfter.scan(Attr.ACTUAL_METADATA)) {
+			if (stepAfter != null && Boolean.TRUE.equals(stepAfter.scan(Attr.ACTUAL_METADATA))) {
 				chainNames.add(stepAfter.stepName());
 				i++;
 			}
@@ -545,8 +543,7 @@ public interface Scannable {
 	 * @param key a {@link Attr} to resolve for the component.
 	 * @return the value associated to the key for that specific component, or null if none.
 	 */
-	@Nullable
-	Object scanUnsafe(Attr key);
+	@Nullable Object scanUnsafe(Attr key);
 
 	/**
 	 * Introspect a component's specific state {@link Attr attribute}, returning an
@@ -558,8 +555,7 @@ public interface Scannable {
 	 * @return a value associated to the key or null if unmatched or unresolved
 	 *
 	 */
-	@Nullable
-	default <T> T scan(Attr<T> key) {
+	default <T> @Nullable T scan(Attr<T> key) {
 		//note tryConvert will just plain cast most of the time
 		//except e.g. for Attr<Scannable>
 		T value = key.tryConvert(scanUnsafe(key));

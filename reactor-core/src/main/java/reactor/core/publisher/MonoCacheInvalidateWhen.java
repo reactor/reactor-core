@@ -22,13 +22,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.MonoCacheInvalidateIf.State;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.publisher.MonoCacheInvalidateIf.EMPTY_STATE;
@@ -47,8 +47,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheInvalidateWhen.class);
 
 	final Function<? super T, Mono<Void>> invalidationTriggerGenerator;
-	@Nullable
-	final Consumer<? super T>             invalidateHandler;
+
+	final @Nullable Consumer<? super T> invalidateHandler;
 
 	volatile     State<T>   state;
 	@SuppressWarnings("rawtypes")
@@ -99,7 +99,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		actual.onSubscribe(inner);
 		for(;;) {
@@ -141,7 +141,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -173,9 +173,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		 * unused in this context as the {@link State} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			throw new UnsupportedOperationException("coordinator State#get shouldn't be used");
 		}
 
@@ -328,9 +327,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			return Operators.multiSubscribersContext(subscribers);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return null;
 		}
@@ -355,7 +353,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return coordinator.main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);
@@ -397,9 +395,8 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 			return Context.empty();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return main;
 			//this is an approximation of TERMINATED, the trigger should only be active AFTER an actual value has been set as STATE
 			if (key == Attr.TERMINATED) return main.state == EMPTY_STATE || main.state instanceof CoordinatorSubscriber;

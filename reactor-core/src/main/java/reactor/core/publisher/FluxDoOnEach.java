@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -70,7 +70,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == RUN_STYLE) return SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -89,8 +89,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		T t;
 
 		Subscription s;
-		@Nullable
-		Fuseable.QueueSubscription<T> qs;
+		Fuseable.@Nullable QueueSubscription<T> qs;
 
 		short state;
 
@@ -128,8 +127,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
 			}
@@ -228,21 +226,18 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			return actual;
 		}
 
-		@Nullable
 		@Override
-		public Throwable getThrowable() {
+		public @Nullable Throwable getThrowable() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public Subscription getSubscription() {
+		public @Nullable Subscription getSubscription() {
 			return null;
 		}
 
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			return t;
 		}
 
@@ -272,6 +267,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			super(actual, onSignal, isMono);
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (this.fusionMode == Fuseable.ASYNC) {
@@ -306,8 +302,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs == null) {
 				return null;
 			}

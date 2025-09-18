@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -115,7 +115,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -132,9 +132,10 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		final boolean eager;
 		final boolean allowFusion;
 
-		Subscription         s;
-		@Nullable
-		QueueSubscription<T> qs;
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
+		Subscription s;
+
+		@Nullable QueueSubscription<T> qs;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -157,8 +158,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
 			if (key == Attr.PARENT) return s;
@@ -208,6 +208,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (mode == ASYNC) {
@@ -305,8 +306,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (mode == NONE || qs == null) {
 				return null;
 			}

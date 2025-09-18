@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.
@@ -47,28 +46,25 @@ extends Mono<T>
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(new MonoSupplierSubscription<>(actual, supplier));
 	}
-	
+
 	@Override
-	@Nullable
-	public T block(Duration m) {
+	public @Nullable T block(Duration m) {
 		return supplier.get();
 	}
 
 	@Override
-	@Nullable
-	public T block() {
+	public @Nullable T block() {
 		//the duration is ignored above
 		return block(Duration.ZERO);
 	}
-	
+
 	@Override
-	@Nullable
-	public T call() throws Exception {
+	public @Nullable T call() throws Exception {
 		return supplier.get();
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -99,7 +95,7 @@ extends Mono<T>
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			if (this.done) {
 				return null;
 			}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -79,8 +79,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 	}
 
 	@SuppressWarnings("unchecked")
-	@Nullable
-	Mono<R> zipAdditionalSource(Mono source, BiFunction zipper) {
+	@Nullable Mono<R> zipAdditionalSource(Mono source, BiFunction zipper) {
 		Mono[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof FluxZip.PairwiseZipper) {
 			int oldLen = oldSources.length;
@@ -130,7 +129,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
@@ -188,8 +187,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return deliveredSignals(this.state) == subscribers.length;
 			if (key == Attr.BUFFERED) return subscribers.length;
 			if (key == Attr.DELAY_ERROR) return delayError;
@@ -326,7 +324,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@Override
-		public R poll() {
+		public @Nullable R poll() {
 			return null;
 		}
 
@@ -438,8 +436,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) {
 				return s == Operators.cancelledSubscription();
 			}

@@ -17,13 +17,13 @@
 package reactor.core.publisher;
 
 import io.micrometer.context.ContextSnapshot;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -85,9 +85,8 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		if (key == InternalProducerAttr.INSTANCE) return true;
 		return super.scanUnsafe(key);
@@ -126,8 +125,7 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

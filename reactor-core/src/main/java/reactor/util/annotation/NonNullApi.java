@@ -25,6 +25,9 @@ import java.lang.annotation.Target;
 import javax.annotation.Nonnull;
 import javax.annotation.meta.TypeQualifierDefault;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 /**
  * A common Reactor annotation (similar to Spring one) to declare that parameters and return
  * values are to be considered as non-nullable by default for a given package.
@@ -39,11 +42,14 @@ import javax.annotation.meta.TypeQualifierDefault;
  * @since 3.1.0
  * @see Nullable
  * @see NonNull
+ * @deprecated Use {@link org.jspecify.annotations.NullMarked} instead. To be removed
+ * in 3.9.0 the earliest.
  */
 @Target(ElementType.PACKAGE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull
 @TypeQualifierDefault({ElementType.METHOD, ElementType.PARAMETER})
+@Deprecated
 public @interface NonNullApi {
 }

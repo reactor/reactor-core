@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package reactor.test.util;
 import java.lang.reflect.Field;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 
 /**
  * This class eases testing interested in what reactor classes emit using {@link Logger loggers}.
@@ -31,8 +31,7 @@ import reactor.util.annotation.Nullable;
  */
 public final class LoggerUtils {
 
-	@Nullable
-	static CapturingFactory currentCapturingFactory;
+	static @Nullable CapturingFactory currentCapturingFactory;
 
 	private LoggerUtils() {
 	}
@@ -117,8 +116,8 @@ public final class LoggerUtils {
 
 		final Function<String, ? extends Logger> originalFactory;
 
-		@Nullable
-		Logger capturingLogger;
+		@Nullable Logger capturingLogger;
+
 		boolean redirectToOriginal;
 
 		CapturingFactory(Function<String, ? extends Logger> originalFactory) {
@@ -139,8 +138,7 @@ public final class LoggerUtils {
 			this.capturingLogger = captureLogger;
 		}
 
-		@Nullable
-		Logger getCapturingLogger() {
+		@Nullable Logger getCapturingLogger() {
 			return this.capturingLogger;
 		}
 

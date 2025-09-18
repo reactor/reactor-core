@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -31,7 +32,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.Operators.DeferredSubscription;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -56,8 +56,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 	final Function<? super S, ? extends Publisher<? extends T>>            resourceClosure;
 	final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 	final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-	@Nullable
-	final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
+
+	final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
 
 	FluxUsingWhen(Publisher<S> resourceSupplier,
 			Function<? super S, ? extends Publisher<? extends T>> resourceClosure,
@@ -107,7 +107,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -163,8 +163,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		final Function<? super S, ? extends Publisher<? extends T>>            resourceClosure;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
+
+		final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
+
 		final boolean                                                          isMonoSource;
 
 		Subscription resourceSubscription;
@@ -252,7 +253,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return resourceSubscription;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -272,10 +273,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		final S                                                                resource;
 		final Function<? super S, ? extends Publisher<?>>                      asyncComplete;
 		final BiFunction<? super S, ? super Throwable, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>>                      asyncCancel;
-		@Nullable
-		final DeferredSubscription                                             arbiter;
+
+		final @Nullable Function<? super S, ? extends Publisher<?>> asyncCancel;
+		final @Nullable DeferredSubscription                        arbiter;
 
 		volatile int callbackApplied;
 		static final AtomicIntegerFieldUpdater<UsingWhenSubscriber> CALLBACK_APPLIED = AtomicIntegerFieldUpdater.newUpdater(UsingWhenSubscriber.class, "callbackApplied");
@@ -305,8 +305,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			return this.actual;
 		}
 
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return error != null;
 			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
 			if (key == Attr.CANCELLED) return callbackApplied == 3;
@@ -481,7 +480,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.ERROR) return rollbackCause;
@@ -533,7 +532,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.TERMINATED) return done;
@@ -581,7 +580,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

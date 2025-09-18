@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -58,25 +58,22 @@ extends Mono<Object>
 	}
 
 	@Override
-	@Nullable
-	public Object call() throws Exception {
+	public @Nullable Object call() throws Exception {
 		return null; /* Scalar optimizations on empty */
 	}
 
 	@Override
-	@Nullable
-	public Object block(Duration m) {
+	public @Nullable Object block(Duration m) {
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public Object block() {
+	public @Nullable Object block() {
 		return null;
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}

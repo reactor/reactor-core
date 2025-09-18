@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -64,7 +65,6 @@ import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -191,10 +191,10 @@ final class DefaultStepVerifierBuilder<T>
 	final Supplier<? extends VirtualTimeScheduler> vtsLookup;
 	final StepVerifierOptions                      options;
 
-	@Nullable
-	Supplier<? extends Publisher<? extends T>> sourceSupplier;
-	@Nullable
-	Predicate<? super T> tryOnNextPredicate;
+	@Nullable Supplier<? extends Publisher<? extends T>> sourceSupplier;
+
+	@Nullable Predicate<? super T> tryOnNextPredicate;
+
 	long hangCheckRequested;
 	int  requestedFusionMode = -1;
 	int  expectedFusionMode  = -1;
@@ -959,9 +959,10 @@ final class DefaultStepVerifierBuilder<T>
 		final VirtualTimeScheduler virtualTimeScheduler;
 		final Disposable           postVerifyCleanup;
 
-		Context                       initialContext;
-		@Nullable
-		Logger                        logger;
+		Context initialContext;
+
+		@Nullable Logger logger;
+
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
 		long                          produced;   //used for request tracking
@@ -1081,7 +1082,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				Subscription s = this.get();
 				if (s instanceof Scannable) return s;
@@ -1346,8 +1347,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.completeLatch.countDown();
 		}
 
-		@Nullable
-		final Subscription cancel() {
+		final @Nullable Subscription cancel() {
 			Subscription s =
 					this.getAndSet(Operators.cancelledSubscription());
 			if (s != null && s != Operators.cancelledSubscription()) {
@@ -2336,8 +2336,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.consumer = null;
 		}
 
-		@Nullable
-		Collection<T> get() {
+		@Nullable Collection<T> get() {
 			return supplier != null ? supplier.get() : null;
 		}
 

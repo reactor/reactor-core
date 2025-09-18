@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiPredicate;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -140,8 +140,7 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public T poll() {
+	public @Nullable T poll() {
 		long ci = consumerIndex;
 		AtomicReferenceArray<Object> a = consumerArray;
 		int m = mask;
@@ -168,8 +167,7 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public T peek() {
+	public @Nullable T peek() {
 		long ci = consumerIndex;
 		AtomicReferenceArray<Object> a = consumerArray;
 		int m = mask;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.Exceptions.TERMINATED;
@@ -113,7 +113,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, true)) {
 			return null;
 		}
@@ -122,7 +122,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -143,17 +143,19 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final int limit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription s;
 
 		int consumed;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // queue is set in onSubscribe
 		volatile Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapImmediate, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapImmediate.class,
@@ -187,8 +189,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done || error == TERMINATED;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -505,17 +506,19 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final boolean veryEnd;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription s;
 
 		int consumed;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // queue is set in onSubscribe
 		volatile Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapDelayed, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapDelayed.class,
@@ -550,8 +553,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -849,9 +851,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 			return parent.currentContext();
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

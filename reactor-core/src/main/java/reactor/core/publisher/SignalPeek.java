@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -39,63 +39,55 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
 	 */
-	@Nullable
-	Consumer<? super Subscription> onSubscribeCall();
+	@Nullable Consumer<? super Subscription> onSubscribeCall();
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onNext(Object)}
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onNext(Object)}
 	 */
-	@Nullable
-	Consumer<? super T> onNextCall();
+	@Nullable Consumer<? super T> onNextCall();
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onError(Throwable)}}
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onError(Throwable)}
 	 */
-	@Nullable
-	Consumer<? super Throwable> onErrorCall();
+	@Nullable Consumer<? super Throwable> onErrorCall();
 
 	/**
 	 * A task that will run on {@link Subscriber#onComplete()}
 	 *
 	 * @return A task that will run on {@link Subscriber#onComplete()}
 	 */
-	@Nullable
-	Runnable onCompleteCall();
+	@Nullable Runnable onCompleteCall();
 
 	/**
 	 * A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 	 *
 	 * @return A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 	 */
-	@Nullable
-	Runnable onAfterTerminateCall();
+	@Nullable Runnable onAfterTerminateCall();
 
 	/**
 	 * A consumer of long that will observe {@link Subscription#request(long)}}
 	 *
 	 * @return A consumer of long that will observe {@link Subscription#request(long)}}
 	 */
-	@Nullable
-	LongConsumer onRequestCall();
+	@Nullable LongConsumer onRequestCall();
 
 	/**
 	 * A task that will run on {@link Subscription#cancel()}
 	 *
 	 * @return A task that will run on {@link Subscription#cancel()}
 	 */
-	@Nullable
-	Runnable onCancelCall();
+	@Nullable Runnable onCancelCall();
 
 	/**
 	 * A task that will run after (finally) {@link Subscriber#onNext(Object)}
 	 * @return A task that will run after (finally) {@link Subscriber#onNext(Object)}
 	 */
-	@Nullable
-	default Consumer<? super T> onAfterNextCall(){
+	default @Nullable Consumer<? super T> onAfterNextCall() {
 		return null;
 	}
 
@@ -103,8 +95,7 @@ interface SignalPeek<T> extends Scannable {
 	 * A task that will run on {@link Context} read from downstream to upstream
 	 * @return A task that will run on {@link Context} propagation from upstream to downstream
 	 */
-	@Nullable
-	default Consumer<? super Context> onCurrentContextCall(){
+	default @Nullable Consumer<? super Context> onCurrentContextCall() {
 		return null;
 	}
 }

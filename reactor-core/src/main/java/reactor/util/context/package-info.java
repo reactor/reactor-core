@@ -17,7 +17,7 @@
 /**
  * Miscellaneous utility classes, such as loggers, tuples or queue suppliers and implementations.
  */
-@NonNullApi
+@NullMarked
 package reactor.util.context;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

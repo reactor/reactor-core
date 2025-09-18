@@ -18,7 +18,7 @@
  * Components supporting the creation of test-oriented
  * {@link org.reactivestreams.Publisher Publishers}.
  */
-@NonNullApi
+@NullMarked
 package reactor.test.publisher;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

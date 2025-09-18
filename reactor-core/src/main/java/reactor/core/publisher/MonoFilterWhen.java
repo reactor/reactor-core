@@ -22,13 +22,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
@@ -61,7 +61,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == RUN_STYLE) return SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -236,8 +236,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return 0;
 			if (key == Attr.TERMINATED) {
@@ -263,7 +262,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		public T poll() {
+		public @Nullable T poll() {
 			return null;
 		}
 
@@ -361,8 +360,7 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.TERMINATED) return done;

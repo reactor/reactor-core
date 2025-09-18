@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -93,7 +93,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -110,8 +110,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		final Predicate<? super T> predicate;
 
-		@Nullable
-		C buffer;
+		@Nullable C buffer;
 
 		boolean done;
 
@@ -268,8 +267,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			}
 		}
 
-		@Nullable
-		C triggerNewBuffer() {
+		@Nullable C triggerNewBuffer() {
 			C b;
 			synchronized (this) {
 				b = buffer;
@@ -364,7 +362,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return getAsBoolean();
@@ -397,8 +395,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public C poll() {
+		public @Nullable C poll() {
 			C b = buffer;
 			if (b != null && !b.isEmpty()) {
 				synchronized (this) {
@@ -410,8 +407,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		@Nullable
-		public C peek() {
+		public @Nullable C peek() {
 			return buffer;
 		}
 

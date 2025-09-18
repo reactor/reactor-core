@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -99,10 +100,11 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
 	}
 
+	// super.getError() returns null by default and this method would throw NPE in that
+	// case, however the parent's contract is to return nullable Throwable
 	@Override
-	@Nullable
+	@SuppressWarnings("DataFlowIssue")
 	public Throwable getError() {
-		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .scanOrDefault(Attr.ERROR, super.getError());
 	}
@@ -115,8 +117,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 			return downstream;
 		}

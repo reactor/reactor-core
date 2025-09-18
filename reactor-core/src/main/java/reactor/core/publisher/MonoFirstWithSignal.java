@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -48,8 +48,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
-	@Nullable
-	Mono<T> orAdditionalSource(Mono<? extends T> other) {
+	@Nullable Mono<T> orAdditionalSource(Mono<? extends T> other) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];
@@ -151,7 +150,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}

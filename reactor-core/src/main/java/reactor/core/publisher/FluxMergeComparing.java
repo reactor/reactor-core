@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -107,8 +107,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return sources.length > 0 ? sources[0] : null;
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.DELAY_ERROR) return delayError;
@@ -389,7 +388,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		}
 		
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.CANCELLED) return this.cancelled > 0;
 			if (key == Attr.ERROR) return this.error;
@@ -484,8 +483,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key){
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return parent; //TODO does that check out?
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.PREFETCH) return prefetch;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package reactor.core.publisher;
 
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * See {@link FluxOnErrorReturn}.
@@ -28,11 +28,9 @@ import reactor.util.annotation.Nullable;
  */
 final class MonoOnErrorReturn<T> extends InternalMonoOperator<T, T> {
 
-	@Nullable
-	final Predicate<? super Throwable> resumableErrorPredicate;
+	final @Nullable Predicate<? super Throwable> resumableErrorPredicate;
 
-	@Nullable
-	final T fallbackValue;
+	final @Nullable T fallbackValue;
 
 	MonoOnErrorReturn(Mono<? extends T> source, @Nullable Predicate<? super Throwable> predicate, @Nullable T value) {
 		super(source);
@@ -46,7 +44,7 @@ final class MonoOnErrorReturn<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}

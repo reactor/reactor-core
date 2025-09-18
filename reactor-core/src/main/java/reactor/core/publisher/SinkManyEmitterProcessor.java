@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -33,7 +34,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -340,8 +340,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	 *
 	 * @return Current error if any, default to null
 	 */
-	@Nullable
-	Throwable getError() {
+	@Nullable Throwable getError() {
 		return error;
 	}
 
@@ -367,8 +366,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return s;
 		if (key == Attr.BUFFERED) return getPending();
 		if (key == Attr.CANCELLED) return isCancelled();
@@ -629,8 +627,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	static final class EmitterDisposable implements Disposable {
 
-		@Nullable
-		SinkManyEmitterProcessor<?> target;
+		@Nullable SinkManyEmitterProcessor<?> target;
 
 		public EmitterDisposable(SinkManyEmitterProcessor<?> emitterProcessor) {
 			this.target = emitterProcessor;

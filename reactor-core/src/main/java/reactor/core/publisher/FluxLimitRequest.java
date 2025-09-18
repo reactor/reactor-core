@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Simon Baslé
@@ -40,8 +40,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	@Nullable
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (this.cap == 0) {
 			Operators.complete(actual);
 			return null;
@@ -55,7 +54,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return cap;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
@@ -67,6 +66,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // parent is set in onSubscribe
 		Subscription parent;
 		long toProduce;
 		boolean done;
@@ -159,7 +159,7 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -23,7 +24,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -44,7 +44,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		//if the SignalListener cannot be created, all we can do is error the subscriber.
 		//after it is created, in case doFirst fails we can additionally try to invoke doFinally.
 		//note that if the later handler also fails, then that exception is thrown.
@@ -92,9 +92,8 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		return new TapFuseableSubscriber<>(actual, signalListener, ctx);
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);
@@ -187,7 +186,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 			}
 		}
 
-		@SuppressWarnings("ConstantConditions")
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (this.mode == ASYNC) {
@@ -198,8 +197,7 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (qs == null) {
 				return null;
 			}

@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.
@@ -49,7 +49,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
     	if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -74,8 +74,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done && value == null;
 			if (key == Attr.CANCELLED) return value == CANCELLED;
 
@@ -180,7 +179,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		@Override
-		T accumulatedValue() {
+		@Nullable T accumulatedValue() {
 			final T v;
 			synchronized (this) {
 				v = this.value;

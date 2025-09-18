@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,7 +35,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.test.ParameterizedTestWithName;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -171,8 +171,8 @@ public class ContextLossDetectionTest {
 
 		final String description;
 		final boolean useCoreSubscriber;
-		@Nullable
-		final Context contextOfSubscriber;
+
+		final @Nullable Context contextOfSubscriber;
 
 		protected LossyTransformer(String description, Context contextOfSubscriber) {
 			this.description = description;
@@ -246,9 +246,10 @@ public class ContextLossDetectionTest {
 	static class ContextLossyPublisher<T> implements Publisher<T> {
 
 		final Publisher<T> source;
-		@Nullable
-		final Context      lossyContext;
-		final boolean      useCoreSubscriber;
+
+		final @Nullable Context lossyContext;
+
+		final boolean useCoreSubscriber;
 
 		ContextLossyPublisher(Publisher<T> source, Context lossyContext) {
 			this.source = source;
@@ -315,8 +316,7 @@ public class ContextLossDetectionTest {
 
 		static class CoreLossyOperator<T> extends ForeignOperator<T> implements CoreSubscriber<T> {
 
-			@Nullable
-			private final Context lossyContext;
+			private final @Nullable Context lossyContext;
 
 			CoreLossyOperator(Subscriber<? super T> subscriber, @Nullable Context lossyContext) {
 				super(subscriber);

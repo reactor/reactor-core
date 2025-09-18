@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Signal;
-import reactor.util.annotation.Nullable;
 
 /**
  * An utility class to create {@link ToStringConverter} {@link Function} that convert objects to {@link String}.
@@ -178,8 +178,7 @@ public final class ValueFormatters {
 		 * contained in the target
 		 * @return the {@link String} representation of the target, customized as needed
 		 */
-		@Nullable
-		default String apply(Object target, Function<Object, String> contentFormatter) {
+		default @Nullable String apply(Object target, Function<Object, String> contentFormatter) {
 			Class<CONTAINER> containerClass = getTargetClass();
 			if (containerClass.isInstance(target)) {
 				CONTAINER container = containerClass.cast(target);
@@ -299,13 +298,13 @@ public final class ValueFormatters {
 		};
 	}
 
+
 	/**
 	 * Convert the whole vararg array by applying this formatter to each element in it.
 	 * @param args the vararg to format
 	 * @return a formatted array usable in replacement of the vararg
 	 */
-	@Nullable
-	static Object[] convertVarArgs(@Nullable ToStringConverter toStringConverter,
+	static Object @Nullable[] convertVarArgs(@Nullable ToStringConverter toStringConverter,
 			@Nullable Collection<Extractor<?>> extractors,
 			@Nullable Object... args) {
 		if (args == null) return null;

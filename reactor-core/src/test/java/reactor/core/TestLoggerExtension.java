@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import reactor.test.util.LoggerUtils;
 import reactor.test.util.TestLogger;
 import reactor.util.Logger;
-import reactor.util.annotation.Nullable;
 
 /**
  * A JUnit5 extension that installs a {@link TestLogger} as the capturing instance via {@link LoggerUtils#enableCaptureWith(Logger)},
@@ -87,9 +87,8 @@ public class TestLoggerExtension implements ParameterResolver, AfterEachCallback
 	}
 
 	@Override
-	@Nullable
-	public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
-		throws ParameterResolutionException {
+	public @Nullable Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+			throws ParameterResolutionException {
 		if (parameterContext.getParameter().getType() == TestLogger.class) {
 			return this.logger;
 		}

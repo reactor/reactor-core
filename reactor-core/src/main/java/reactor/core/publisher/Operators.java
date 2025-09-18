@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -44,7 +45,6 @@ import reactor.core.Scannable;
 import reactor.core.Scannable.Attr.RunStyle;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.Fuseable.NONE;
@@ -98,6 +98,7 @@ public abstract class Operators {
 			}
 		}
 	}
+
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.
@@ -105,8 +106,7 @@ public abstract class Operators {
 	 * @return the QueueSubscription instance or null
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
-	public static <T> QueueSubscription<T> as(Subscription s) {
+	public static <T> @Nullable QueueSubscription<T> as(Subscription s) {
 		if (s instanceof QueueSubscription) {
 			return (QueueSubscription<T>) s;
 		}
@@ -759,7 +759,7 @@ public abstract class Operators {
 		}
 
 		Throwable t = Exceptions.unwrap(error);
-		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
+		BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> hook =
 				context.getOrDefault(Hooks.KEY_ON_OPERATOR_ERROR, null);
 		if (hook == null) {
 			hook = Hooks.onOperatorErrorHook;
@@ -851,8 +851,7 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
-	@Nullable
-	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
+	public static <T> @Nullable Throwable onNextError(@Nullable T value, Throwable error, Context context,
 			Subscription subscriptionForCancel) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
@@ -886,8 +885,7 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is terminal, null if not.
 	 * @see #onNextError(Object, Throwable, Context, Subscription)
 	 */
-	@Nullable
-	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context) {
+	public static <T> @Nullable Throwable onNextError(@Nullable T value, Throwable error, Context context) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {
@@ -912,7 +910,8 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
-	public static <T> Throwable onNextInnerError(Throwable error, Context context, @Nullable Subscription subscriptionForCancel) {
+	public static <T> @Nullable Throwable onNextInnerError(Throwable error, Context context,
+			@Nullable Subscription subscriptionForCancel) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, null)) {
@@ -950,8 +949,7 @@ public abstract class Operators {
 	 * the strategy, null if not.
 	 * @see #onNextError(Object, Throwable, Context)
 	 */
-	@Nullable
-	public static <T> RuntimeException onNextPollError(@Nullable T value, Throwable error, Context context) {
+	public static <T> @Nullable RuntimeException onNextPollError(@Nullable T value, Throwable error, Context context) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {
@@ -1590,8 +1588,7 @@ public abstract class Operators {
 		static final CancelledSubscription INSTANCE = new CancelledSubscription();
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) {
 				return true;
 			}
@@ -1634,8 +1631,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object poll() {
+		public @Nullable Object poll() {
 			return null;
 		}
 
@@ -1650,8 +1646,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return true;
 			return null;
 		}
@@ -1677,6 +1672,8 @@ public abstract class Operators {
 		static final int STATE_CANCELLED = -2;
 		static final int STATE_SUBSCRIBED = -1;
 
+		// s is set in set() and only used after
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription s;
 		volatile long requested;
 
@@ -1701,8 +1698,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			long requested = this.requested; // volatile read to see subscription
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested < 0 ? 0 : requested;
@@ -1809,9 +1805,9 @@ public abstract class Operators {
 		 * The value stored by this Mono operator. Strongly prefer using {@link #setValue(Object)}
 		 * rather than direct writes to this field, when possible.
 		 */
-		@Nullable
-		protected O   value;
-		volatile  int state; //see STATE field updater
+		protected @Nullable O value;
+
+		volatile int state; //see STATE field updater
 
 		public MonoSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
@@ -1826,8 +1822,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelled();
 			if (key == Attr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -1923,8 +1918,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public final O poll() {
+		public final @Nullable O poll() {
 			return null;
 		}
 
@@ -2014,6 +2008,8 @@ public abstract class Operators {
 			                                                      QueueSubscription<I> {
 		final CoreSubscriber<? super O> actual;
 
+		// s is set in onSubscribe and only used after
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription s;
 
 		boolean hasRequest;
@@ -2028,8 +2024,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Scannable.Attr key) {
+		public @Nullable Object scanUnsafe(Scannable.Attr key) {
 			if (key == Scannable.Attr.PREFETCH) return 0;
 			if (key == Scannable.Attr.PARENT) return s;
 			if (key == Scannable.Attr.RUN_STYLE) return Scannable.Attr.RunStyle.SYNC;
@@ -2124,11 +2119,10 @@ public abstract class Operators {
 		 *
 		 * @return accumulated/default value or null if cancelled before
 		 */
-		@Nullable
-		abstract O accumulatedValue();
+		abstract @Nullable O accumulatedValue();
 
 		@Override
-		public final I poll() {
+		public final @Nullable I poll() {
 			return null;
 		}
 
@@ -2176,12 +2170,12 @@ public abstract class Operators {
 		/**
 		 * The current subscription which may null if no Subscriptions have been set.
 		 */
-		Subscription subscription;
+		@Nullable Subscription subscription;
 		/**
 		 * The current outstanding request amount.
 		 */
 		long         requested;
-		volatile Subscription missedSubscription;
+		volatile @Nullable Subscription missedSubscription;
 		volatile long missedRequested;
 		volatile long missedProduced;
 		volatile int wip;
@@ -2206,8 +2200,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT)
 				return missedSubscription != null ? missedSubscription : subscription;
 			if (key == Attr.CANCELLED) return isCancelled();
@@ -2463,15 +2456,16 @@ public abstract class Operators {
 
 	            missed = WIP.addAndGet(this, -missed);
 	            if (missed == 0) {
-	                if (requestAmount != 0L) {
-	                    requestTarget.request(requestAmount);
-	                }
+		            if (requestAmount != 0L) {
+			            assert requestTarget != null : "requestTarget is either missedSubscription or subscription and can not be null";
+			            requestTarget.request(requestAmount);
+		            }
 	                return;
 	            }
 	        }
 		}
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, @Nullable Subscription>
 				MISSED_SUBSCRIPTION =
 		  AtomicReferenceFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class,
 			Subscription.class,
@@ -2501,8 +2495,7 @@ public abstract class Operators {
 
 		final T value;
 
-		@Nullable
-		final String stepName;
+		final @Nullable String stepName;
 
 		volatile int once;
 
@@ -2510,7 +2503,7 @@ public abstract class Operators {
 			this(actual, value, null);
 		}
 
-		ScalarSubscription(CoreSubscriber<? super T> actual, T value, String stepName) {
+		ScalarSubscription(CoreSubscriber<? super T> actual, T value, @Nullable String stepName) {
 			this.value = Objects.requireNonNull(value, "value");
 			this.actual = Objects.requireNonNull(actual, "actual");
 			this.stepName = stepName;
@@ -2543,8 +2536,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (once == 0) {
 				ONCE.lazySet(this, 1);
 				return value;
@@ -2553,8 +2545,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return once == 1;
 			if (key == Attr.CANCELLED) return once == 2;
 			if (key == Attr.RUN_STYLE) return RunStyle.SYNC;
@@ -2678,7 +2669,7 @@ public abstract class Operators {
 	final static class LiftFunction<I, O>
 			implements Function<Publisher<I>, Publisher<O>> {
 
-		final Predicate<Publisher> filter;
+		final @Nullable Predicate<Publisher> filter;
 		final String name;
 
 		// TODO: this leaks to the users of LiftFunction, encapsulation is broken
@@ -2791,7 +2782,7 @@ public abstract class Operators {
 		/**
 		 * The value stored by this Mono operator.
 		 */
-		private O value;
+		private @Nullable O value;
 
 		private volatile  int state; //see STATE field updater
 		@SuppressWarnings("rawtypes")
@@ -2802,9 +2793,8 @@ public abstract class Operators {
 			this.actual = actual;
 		}
 
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+	@Override
+	public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return isCancelled();
 			if (key == Attr.TERMINATED) return hasCompleted(state);
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
@@ -2859,6 +2849,7 @@ public abstract class Operators {
 						O v = this.value;
 						this.value = null; // aggressively null value to prevent strong ref after complete
 
+						assert v != null : "Value must be present if HAS_VALUE is set";
 						doOnComplete(v);
 
 						actual.onNext(v);
@@ -2933,6 +2924,7 @@ public abstract class Operators {
 							O v = this.value;
 							this.value = null; // aggressively null value to prevent strong ref after complete
 
+							assert v != null : "Value must be present if HAS_VALUE is set";
 							doOnComplete(v);
 
 							actual.onNext(v);
@@ -2959,7 +2951,7 @@ public abstract class Operators {
 		 * @param value the new value.
 		 * @see #complete(Object)
 		 */
-		protected final void setValue(@Nullable O value) {
+		protected final void setValue(O value) {
 			this.value = value;
 			for (; ; ) {
 				int s = this.state;

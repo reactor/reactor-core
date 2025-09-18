@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -27,7 +28,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -111,8 +111,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * @return the value of this {@code MonoProcessor}
 	 */
 	@Override
-	@Nullable
-	public O block() {
+	public @Nullable O block() {
 		return block(null);
 	}
 
@@ -126,8 +125,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * not completed
 	 */
 	@Override
-	@Nullable
-	public O block(@Nullable Duration timeout) {
+	public @Nullable O block(@Nullable Duration timeout) {
 		return peek();
 	}
 
@@ -136,8 +134,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return the produced {@link Throwable} error if any or null
 	 */
-	@Nullable
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return null;
 	}
 
@@ -183,9 +180,8 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
 	 * @deprecated this method is discouraged, consider peeking into a MonoProcessor by {@link Mono#toFuture() turning it into a CompletableFuture}
 	 */
-	@Nullable
 	@Deprecated
-	public O peek() {
+	public @Nullable O peek() {
 		return null;
 	}
 
@@ -200,8 +196,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		//touch guard
 		boolean t = isTerminated();
 

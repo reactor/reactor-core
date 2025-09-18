@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -37,7 +37,7 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
-	final Function<? super T, ? extends R> mapper;
+	final Function<? super T, ? extends @Nullable R> mapper;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and mapper.
@@ -48,7 +48,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
 	FluxMapFuseable(Flux<? extends T> source,
-			Function<? super T, ? extends R> mapper) {
+			Function<? super T, ? extends @Nullable R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
@@ -64,7 +64,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -74,7 +74,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			           QueueSubscription<R> {
 
 		final CoreSubscriber<? super R>        actual;
-		final Function<? super T, ? extends R> mapper;
+		final Function<? super T, ? extends @Nullable R> mapper;
 
 		boolean done;
 
@@ -83,7 +83,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		int sourceMode;
 
 		MapFuseableSubscriber(CoreSubscriber<? super R> actual,
-				Function<? super T, ? extends R> mapper) {
+				Function<? super T, ? extends @Nullable R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
@@ -97,6 +97,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -153,7 +154,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -177,8 +178,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			for(;;) {
 				T v = s.poll();
 				if (v != null) {
@@ -233,7 +233,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			           QueueSubscription<R> {
 
 		final ConditionalSubscriber<? super R> actual;
-		final Function<? super T, ? extends R> mapper;
+		final Function<? super T, ? extends @Nullable R> mapper;
 
 		boolean done;
 
@@ -242,14 +242,13 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		int sourceMode;
 
 		MapFuseableConditionalSubscriber(ConditionalSubscriber<? super R> actual,
-				Function<? super T, ? extends R> mapper) {
+				Function<? super T, ? extends @Nullable R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -266,6 +265,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
@@ -366,8 +366,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		}
 
 		@Override
-		@Nullable
-		public R poll() {
+		public @Nullable R poll() {
 			for(;;) {
 				T v = s.poll();
 				if (v != null) {

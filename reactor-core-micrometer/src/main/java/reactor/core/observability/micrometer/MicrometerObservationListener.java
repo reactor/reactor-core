@@ -18,12 +18,11 @@ package reactor.core.observability.micrometer;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-
+import org.jspecify.annotations.Nullable;
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -61,8 +60,7 @@ final class MicrometerObservationListener<T> implements SignalListener<T> {
 	final ContextView originalContext;
 	final Observation tapObservation;
 
-	@Nullable
-	Context contextWithObservation;
+	@Nullable Context contextWithObservation;
 
 	boolean valued;
 

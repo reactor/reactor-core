@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -75,8 +75,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 	 * @return the new {@link FluxFirstWithValue} instance or null if new sources cannot be added (backed by an Iterable)
 	 */
 	@SafeVarargs
-	@Nullable
-	final FluxFirstWithValue<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
+	final @Nullable FluxFirstWithValue<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
 		Objects.requireNonNull(others, "others");
 		if (others.length == 0) {
 			return this;
@@ -176,7 +175,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}
@@ -212,7 +211,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 
 			return null;
@@ -310,8 +309,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return parent.cancelled;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

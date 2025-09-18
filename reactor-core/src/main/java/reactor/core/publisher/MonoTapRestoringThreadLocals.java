@@ -17,10 +17,10 @@
 package reactor.core.publisher;
 
 import io.micrometer.context.ContextSnapshot;
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.observability.SignalListener;
 import reactor.core.observability.SignalListenerFactory;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -79,9 +79,8 @@ final class MonoTapRestoringThreadLocals<T, STATE> extends MonoOperator<T, T> {
 		}
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return -1;
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		if (key == InternalProducerAttr.INSTANCE) return true;

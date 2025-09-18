@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 
 /**
@@ -58,10 +58,9 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 		PRODUCER_INDEX.lazySet(this, pi + 1);
 		return true;
 	}
-	
+
 	@Override
-	@Nullable
-	public T poll() {
+	public @Nullable T poll() {
 		long ci = consumerIndex;
 		int offset = (int)ci & mask;
 		
@@ -72,10 +71,9 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 		}
 		return v;
 	}
-	
+
 	@Override
-	@Nullable
-	public T peek() {
+	public @Nullable T peek() {
 		int offset = (int)consumerIndex & mask;
 		return get(offset);
 	}

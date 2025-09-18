@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * @param <T>
@@ -64,7 +64,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) {
 			return Attr.RunStyle.SYNC;
 		}
@@ -437,11 +437,10 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 	static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
 			implements InnerOperator<T, R> {
 
-		@Nullable
-		final StateLogger                                                      logger;
+		final @Nullable StateLogger logger;
 
-		final SwitchOnFirstControlSubscriber<? super R>
-		                                                                       outboundSubscriber;
+		final SwitchOnFirstControlSubscriber<? super R> outboundSubscriber;
+
 		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
 		Subscription s;
@@ -476,8 +475,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		@Nullable
-		public final Object scanUnsafe(Attr key) {
+		public final @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return hasInboundCancelled(this.state) || hasInboundClosedPrematurely(this.state);
 			if (key == Attr.TERMINATED) return hasInboundTerminated(this.state) || hasInboundClosedPrematurely(this.state);
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -1010,7 +1008,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 		}
 
 		@Override
-		public final Object scanUnsafe(Attr key) {
+		public final @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return delegate;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;

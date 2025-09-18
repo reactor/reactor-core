@@ -15,15 +15,9 @@
  */
 
 /**
- * Adapt
- * {@link org.reactivestreams.Publisher} to Java 9+
- * {@link reactor.adapter.JdkFlowAdapter Flow.Publisher}. More adapter can be found
- * in reactor-adapter under https://github.com/reactor/reactor-addons/ including RxJava1 and
- * RxJava2.
- *
- * @author Stephane Maldini
+ * Main test components supporting the testing and assertion of publishers.
  */
 @NullMarked
-package reactor.adapter;
+package reactor.test.util;
 
 import org.jspecify.annotations.NullMarked;

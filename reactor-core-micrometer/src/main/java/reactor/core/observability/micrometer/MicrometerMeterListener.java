@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-
+import org.jspecify.annotations.Nullable;
 import reactor.core.observability.SignalListener;
 import reactor.core.publisher.SignalType;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.CommonTags.*;
 import static reactor.core.observability.micrometer.MicrometerMeterListenerDocumentation.TerminationTags.*;
@@ -39,11 +38,9 @@ import static reactor.core.observability.micrometer.MicrometerMeterListenerDocum
  */
 final class MicrometerMeterListener<T> implements SignalListener<T> {
 
-	final MicrometerMeterListenerConfiguration configuration;
-	@Nullable
-	final DistributionSummary                  requestedCounter;
-	@Nullable
-	final Timer                           onNextIntervalTimer;
+	final           MicrometerMeterListenerConfiguration configuration;
+	final @Nullable DistributionSummary                  requestedCounter;
+	final @Nullable Timer                                onNextIntervalTimer;
 
 	Timer.Sample subscribeToTerminateSample;
 	long         lastNextEventNanos = -1L;

@@ -20,7 +20,7 @@
  *
  * @author Stephane Maldini
  */
-@NonNullApi
+@NullMarked
 package reactor.util.concurrent;
 
-import reactor.util.annotation.NonNullApi;
+import org.jspecify.annotations.NullMarked;

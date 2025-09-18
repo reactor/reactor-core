@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.annotation.Nullable;
 
 /**
  * Expects and emits a single item from the source Callable or signals
@@ -35,11 +35,11 @@ import reactor.util.annotation.Nullable;
 final class MonoSingleCallable<T> extends Mono<T>
 		implements Callable<T>, SourceProducer<T> {
 
-	final Callable<? extends T> callable;
-	@Nullable
-	final T defaultValue;
+	final Callable<? extends @Nullable T> callable;
 
-	MonoSingleCallable(Callable<? extends T> source) {
+	final @Nullable T defaultValue;
+
+	MonoSingleCallable(Callable<? extends @Nullable T> source) {
 		this.callable = Objects.requireNonNull(source, "source");
 		this.defaultValue = null;
 	}
@@ -120,7 +120,7 @@ final class MonoSingleCallable<T> extends Mono<T>
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}

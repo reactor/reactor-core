@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
@@ -57,9 +57,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		return spliterator.hasCharacteristics(Spliterator.SIZED);
 	}
 
-	final Iterable<? extends T> iterable;
-	@Nullable
-	private final Runnable      onClose;
+	final                   Iterable<? extends T> iterable;
+	private final @Nullable Runnable              onClose;
 
 	FluxIterable(Iterable<? extends T> iterable) {
 		this.iterable = Objects.requireNonNull(iterable, "iterable");
@@ -84,7 +83,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.BUFFERED) {
 			if (iterable instanceof Collection) return ((Collection) iterable).size();
 			if (iterable instanceof Tuple2) return ((Tuple2) iterable).size();
@@ -442,8 +441,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
@@ -496,8 +494,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (hasNextFailure != null) {
 				state = STATE_NO_NEXT;
 				throw Exceptions.propagate(hasNextFailure);
@@ -773,8 +770,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
@@ -827,8 +823,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		}
 
 		@Override
-		@Nullable
-		public T poll() {
+		public @Nullable T poll() {
 			if (hasNextFailure != null) {
 				state = STATE_NO_NEXT;
 				throw Exceptions.propagate(hasNextFailure);

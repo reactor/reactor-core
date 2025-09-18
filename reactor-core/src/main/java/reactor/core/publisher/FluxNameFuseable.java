@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
@@ -35,9 +35,9 @@ import static reactor.core.Scannable.Attr.RUN_STYLE;
  */
 final class FluxNameFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
-	final String name;
+	final @Nullable String name;
 
-	final List<Tuple2<String, String>> tagsWithDuplicates;
+	final @Nullable List<Tuple2<String, String>> tagsWithDuplicates;
 
 	FluxNameFuseable(Flux<? extends T> source,
 			@Nullable String name,
@@ -52,9 +52,8 @@ final class FluxNameFuseable<T> extends InternalFluxOperator<T, T> implements Fu
 		return actual;
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.NAME) {
 			return name;
 		}

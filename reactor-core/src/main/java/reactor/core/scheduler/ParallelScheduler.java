@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
@@ -268,7 +269,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     }
 
     @Override
-    public Object scanUnsafe(Attr key) {
+    public @Nullable Object scanUnsafe(Attr key) {
         if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
         if (key == Attr.CAPACITY || key == Attr.BUFFERED) return n; //BUFFERED: number of workers doesn't vary
         if (key == Attr.NAME) return this.toString();

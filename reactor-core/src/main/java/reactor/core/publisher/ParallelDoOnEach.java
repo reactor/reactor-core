@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -93,8 +93,7 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -118,42 +117,42 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 		}
 
 		@Override
-		public Consumer<? super Subscription> onSubscribeCall() {
+		public @Nullable Consumer<? super Subscription> onSubscribeCall() {
 			return null;
 		}
 
 		@Override
-		public Consumer<? super T> onNextCall() {
+		public @Nullable Consumer<? super T> onNextCall() {
 			return onNextCall;
 		}
 
 		@Override
-		public Consumer<? super Throwable> onErrorCall() {
+		public @Nullable Consumer<? super Throwable> onErrorCall() {
 			return onErrorCall;
 		}
 
 		@Override
-		public Runnable onCompleteCall() {
+		public @Nullable Runnable onCompleteCall() {
 			return onCompleteCall;
 		}
 
 		@Override
-		public Runnable onAfterTerminateCall() {
+		public @Nullable Runnable onAfterTerminateCall() {
 			return null;
 		}
 
 		@Override
-		public LongConsumer onRequestCall() {
+		public @Nullable LongConsumer onRequestCall() {
 			return null;
 		}
 
 		@Override
-		public Runnable onCancelCall() {
+		public @Nullable Runnable onCancelCall() {
 			return null;
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			return null;
 		}
 	}

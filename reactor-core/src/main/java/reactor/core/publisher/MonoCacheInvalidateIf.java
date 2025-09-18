@@ -21,10 +21,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -45,8 +45,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	 */
 	static interface State<T> {
 
-		@Nullable
-		T get();
+		@Nullable T get();
 
 		void clear();
 	}
@@ -58,16 +57,14 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	 */
 	static final class ValueState<T> implements State<T> {
 
-		@Nullable
-		T value;
+		@Nullable T value;
 
 		ValueState(T value) {
 			this.value = value;
 		}
 
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			return value;
 		}
 
@@ -82,9 +79,9 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	 * pre-subscription, when no caching has been requested.
 	 */
 	static final State<?> EMPTY_STATE = new State<Object>() {
-		@Nullable
+
 		@Override
-		public Object get() {
+		public @Nullable Object get() {
 			return null;
 		}
 
@@ -110,7 +107,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		//important: onSubscribe should be deferred until we're sure we're in the Coordinator case OR the cached value passes the predicate
 		for(;;) {
@@ -174,7 +171,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return super.scanUnsafe(key);
 	}
@@ -215,9 +212,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		 * unused in this context as the {@link State} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Nullable
 		@Override
-		public T get() {
+		public @Nullable T get() {
 			throw new UnsupportedOperationException("coordinator State#get shouldn't be used");
 		}
 
@@ -369,9 +365,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 			return Operators.multiSubscribersContext(subscribers);
 		}
 
-		@Nullable
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return null;
 		}
@@ -396,7 +391,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return coordinator.main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);

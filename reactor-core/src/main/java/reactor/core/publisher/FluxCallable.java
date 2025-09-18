@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.
@@ -29,9 +29,9 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, SourceProducer<T> {
 
-	final Callable<T> callable;
+	final Callable<@Nullable T> callable;
 
-	FluxCallable(Callable<T> callable) {
+	FluxCallable(Callable<@Nullable T> callable) {
 		this.callable = callable;
 	}
 
@@ -41,13 +41,12 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, So
 	}
 
 	@Override
-	@Nullable
-	public T call() throws Exception {
+	public @Nullable T call() throws Exception {
 		return callable.call();
 	}
 
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return SourceProducer.super.scanUnsafe(key);
 	}

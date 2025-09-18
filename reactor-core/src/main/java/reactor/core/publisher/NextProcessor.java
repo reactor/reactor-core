@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -33,7 +34,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.EmissionException;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.publisher.Sinks.EmitResult;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 // NextProcessor extends a deprecated class but is itself not deprecated and is here to stay, hence the following line is ok.
@@ -55,8 +55,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 * @return the value of this {@link NextProcessor}
 	 */
 	@Override
-	@Nullable
-	public O block() {
+	public @Nullable O block() {
 		return block(null);
 	}
 
@@ -102,12 +101,11 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 
-	@Nullable
-	CorePublisher<? extends O> source;
-	@Nullable
-	Throwable error;
-	@Nullable
-	O         value;
+	@Nullable CorePublisher<? extends O> source;
+
+	@Nullable Throwable error;
+
+	@Nullable O value;
 
 	NextProcessor(@Nullable CorePublisher<? extends O> source) {
 		this(source, false);
@@ -129,9 +127,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 *
 	 * @throws RuntimeException if the {@link NextProcessor} was completed with an error
 	 */
-	@Nullable
 	@Override
-	public O peek() {
+	public @Nullable O peek() {
 		if (!isTerminated()) {
 			return null;
 		}
@@ -159,8 +156,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 		 * not completed
 		 */
 	@Override
-	@Nullable
-	public O block(@Nullable Duration timeout) {
+	public @Nullable O block(@Nullable Duration timeout) {
 		try {
 			if (isTerminated()) {
 				return peek();
@@ -361,9 +357,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 		return EmitResult.OK;
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT)
 			return subscription;
 		//touch guard
@@ -472,9 +467,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 *
 	 * @return the produced {@link Throwable} error if any or null
 	 */
-	@Nullable
 	@Override
-	public Throwable getError() {
+	public @Nullable Throwable getError() {
 		return error;
 	}
 
@@ -618,7 +612,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 		}
 
 		@Override
-		public Object scanUnsafe(Attr key) {
+		public @Nullable Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
 			}

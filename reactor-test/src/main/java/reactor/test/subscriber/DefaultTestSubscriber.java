@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -48,9 +48,9 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final int                                     requestedFusionMode;
 	final int                                     expectedFusionMode;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 	Subscription s;
-	@Nullable
-	Fuseable.QueueSubscription<T> qs;
+	Fuseable.@Nullable QueueSubscription<T> qs;
 	int fusionMode = -1;
 
 	// state tracking
@@ -60,10 +60,9 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	final List<Signal<T>> protocolErrors;
 
 	final CountDownLatch                  doneLatch;
-	final AtomicReference<AssertionError> subscriptionFailure;
+	final AtomicReference<@Nullable AssertionError> subscriptionFailure;
 
-	@Nullable
-	volatile Signal<T> terminalSignal;
+	volatile @Nullable Signal<T> terminalSignal;
 
 	volatile     int                                              state;
 	@SuppressWarnings("rawtypes")
@@ -337,9 +336,8 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 		}
 	}
 
-	@Nullable
 	@Override
-	public Object scanUnsafe(Attr key) {
+	public @Nullable Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED) return terminalSignal != null || subscriptionFailure.get() != null;
 		if (key == Attr.CANCELLED) return cancelled.get();
 		if (key == Attr.ERROR) {
@@ -536,8 +534,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 	}
 
 	@Override
-	@Nullable
-	public Signal<T> getTerminalSignal() {
+	public @Nullable Signal<T> getTerminalSignal() {
 		checkSubscriptionFailure();
 		return this.terminalSignal;
 	}
