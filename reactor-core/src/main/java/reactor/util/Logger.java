@@ -75,7 +75,7 @@ public interface Logger {
 	 * @param format    the format string
 	 * @param arguments a list of 3 or more arguments
 	 */
-	void trace(String format, @Nullable Object... arguments);
+	void trace(String format, @Nullable Object @Nullable... arguments);
 
 	/**
 	 * Log an exception (throwable) at the TRACE level with an
@@ -113,7 +113,7 @@ public interface Logger {
 	 * @param format    the format string
 	 * @param arguments a list of 3 or more arguments
 	 */
-	void debug(String format, Object... arguments);
+	void debug(String format, @Nullable Object @Nullable... arguments);
 
 	/**
 	 * Log an exception (throwable) at the DEBUG level with an
@@ -151,7 +151,7 @@ public interface Logger {
 	 * @param format    the format string
 	 * @param arguments a list of 3 or more arguments
 	 */
-	void info(String format, Object... arguments);
+	void info(String format, @Nullable Object @Nullable... arguments);
 
 	/**
 	 * Log an exception (throwable) at the INFO level with an
@@ -233,7 +233,7 @@ public interface Logger {
 	 * @param format    the format string
 	 * @param arguments a list of 3 or more arguments
 	 */
-	void warn(String format, Object... arguments);
+	void warn(String format, @Nullable Object @Nullable... arguments);
 
 	/**
 	 * Log an exception (throwable) at the WARN level with an
@@ -315,7 +315,7 @@ public interface Logger {
 	 * @param format    the format string
 	 * @param arguments a list of 3 or more arguments
 	 */
-	void error(String format, Object... arguments);
+	void error(String format, @Nullable Object @Nullable... arguments);
 
 	/**
 	 * Log an exception (throwable) at the ERROR level with an

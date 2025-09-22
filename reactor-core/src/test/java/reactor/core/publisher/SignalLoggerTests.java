@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -42,8 +43,8 @@ public class SignalLoggerTests {
 	public void safeLogsWhenLoggerThrows() {
 		TestLogger logger = new TestLogger() {
 			@Override
-			public synchronized void info(String format, Object... arguments) {
-				if (arguments[0] instanceof SignalType && arguments[1] instanceof Integer) {
+			public synchronized void info(String format, @Nullable Object @Nullable... arguments) {
+				if (arguments != null && arguments[0] instanceof SignalType && arguments[1] instanceof Integer) {
 					throw new UnsupportedOperationException("boom on integer");
 				}
 				super.info(format, arguments);
@@ -406,7 +407,10 @@ public class SignalLoggerTests {
 			return str.toString();
 		}
 
-		private Object[] wrapArguments(Object... arguments) {
+		private Object[] wrapArguments(@Nullable Object @Nullable... arguments) {
+			if (arguments == null) {
+				return null;
+			}
 			Object[] args = new Object[arguments.length];
 			for (int i = 0; i < arguments.length; i++) {
 				args[i] = collectionAsString(arguments[i]);
@@ -430,7 +434,7 @@ public class SignalLoggerTests {
 		}
 
 		@Override
-		public void trace(String format, Object... arguments) {
+		public void trace(String format, @Nullable Object @Nullable... arguments) {
 			delegate.trace(format, wrapArguments(arguments));
 		}
 
@@ -450,7 +454,7 @@ public class SignalLoggerTests {
 		}
 
 		@Override
-		public void debug(String format, Object... arguments) {
+		public void debug(String format, @Nullable Object @Nullable... arguments) {
 			delegate.debug(format, wrapArguments(arguments));
 		}
 
@@ -470,7 +474,7 @@ public class SignalLoggerTests {
 		}
 
 		@Override
-		public void info(String format, Object... arguments) {
+		public void info(String format, @Nullable Object @Nullable... arguments) {
 			delegate.info(format, wrapArguments(arguments));
 		}
 
@@ -490,7 +494,7 @@ public class SignalLoggerTests {
 		}
 
 		@Override
-		public void warn(String format, Object... arguments) {
+		public void warn(String format, @Nullable Object @Nullable... arguments) {
 			delegate.warn(format, wrapArguments(arguments));
 		}
 
@@ -510,7 +514,7 @@ public class SignalLoggerTests {
 		}
 
 		@Override
-		public void error(String format, Object... arguments) {
+		public void error(String format, @Nullable Object @Nullable... arguments) {
 			delegate.error(format, wrapArguments(arguments));
 		}
 
