@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.util.Logger;
 
 /**
@@ -86,7 +87,7 @@ public class FastLogger implements Logger {
 	}
 
 	@Override
-	public void trace(String format, Object... arguments) {
+	public void trace(String format, @Nullable Object @Nullable... arguments) {
 		trace(String.format(format, arguments));
 	}
 
@@ -106,7 +107,7 @@ public class FastLogger implements Logger {
 	}
 
 	@Override
-	public void debug(String format, Object... arguments) {
+	public void debug(String format, @Nullable Object @Nullable... arguments) {
 
 	}
 
@@ -126,7 +127,7 @@ public class FastLogger implements Logger {
 	}
 
 	@Override
-	public void info(String format, Object... arguments) {
+	public void info(String format, @Nullable Object @Nullable... arguments) {
 
 	}
 
@@ -146,7 +147,7 @@ public class FastLogger implements Logger {
 	}
 
 	@Override
-	public void warn(String format, Object... arguments) {
+	public void warn(String format, @Nullable Object @Nullable... arguments) {
 
 	}
 
@@ -166,7 +167,7 @@ public class FastLogger implements Logger {
 	}
 
 	@Override
-	public void error(String format, Object... arguments) {
+	public void error(String format, @Nullable Object @Nullable... arguments) {
 
 	}
 

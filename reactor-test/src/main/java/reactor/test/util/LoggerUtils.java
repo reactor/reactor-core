@@ -210,7 +210,7 @@ public final class LoggerUtils {
 		}
 
 		@Override
-		public void trace(String format, Object... arguments) {
+		public void trace(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.trace(format, arguments);
@@ -249,7 +249,7 @@ public final class LoggerUtils {
 		}
 
 		@Override
-		public void debug(String format, Object... arguments) {
+		public void debug(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.debug(format, arguments);
@@ -288,7 +288,7 @@ public final class LoggerUtils {
 		}
 
 		@Override
-		public void info(String format, Object... arguments) {
+		public void info(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.info(format, arguments);
@@ -327,7 +327,7 @@ public final class LoggerUtils {
 		}
 
 		@Override
-		public void warn(String format, Object... arguments) {
+		public void warn(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.warn(format, arguments);
@@ -366,7 +366,7 @@ public final class LoggerUtils {
 		}
 
 		@Override
-		public void error(String format, Object... arguments) {
+		public void error(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
 			if (logger != null) {
 				logger.error(format, arguments);

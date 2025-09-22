@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,5 +178,80 @@ class TestLoggerTest {
 				"[ERROR] msg2",
 				"[ERROR] msg - reactor.core.Exceptions$StaticThrowable: Operator has been terminated",
 				"reactor.core.Exceptions$StaticThrowable: Operator has been terminated");
+	}
+
+	@Test
+	void traceLogsNullArgument() {
+		TestLogger testLogger = new TestLogger(false);
+		testLogger.trace("msg {}", (Object) null);
+		testLogger.trace("msg {} {}", 1, null);
+		testLogger.trace("msg {} {} {}", 1, null, 3);
+		assertThat(testLogger.getErrContent()).as("err").isEmpty();
+		assertThat(testLogger.getOutContent().split(System.lineSeparator()))
+				.as("out")
+				.containsExactly(
+						"[TRACE] msg null",
+						"[TRACE] msg 1 null",
+						"[TRACE] msg 1 null 3");
+	}
+
+	@Test
+	void debugLogsNullArgument() {
+		TestLogger testLogger = new TestLogger(false);
+		testLogger.debug("msg {}", (Object) null);
+		testLogger.debug("msg {} {}", 1, null);
+		testLogger.debug("msg {} {} {}", 1, null, 3);
+		assertThat(testLogger.getErrContent()).as("err").isEmpty();
+		assertThat(testLogger.getOutContent().split(System.lineSeparator()))
+				.as("out")
+				.containsExactly(
+						"[DEBUG] msg null",
+						"[DEBUG] msg 1 null",
+						"[DEBUG] msg 1 null 3");
+	}
+
+	@Test
+	void infoLogsNullArgument() {
+		TestLogger testLogger = new TestLogger(false);
+		testLogger.info("msg {}", (Object) null);
+		testLogger.info("msg {} {}", 1, null);
+		testLogger.info("msg {} {} {}", 1, null, 3);
+		assertThat(testLogger.getErrContent()).as("err").isEmpty();
+		assertThat(testLogger.getOutContent().split(System.lineSeparator()))
+				.as("out")
+				.containsExactly(
+						"[ INFO] msg null",
+						"[ INFO] msg 1 null",
+						"[ INFO] msg 1 null 3");
+	}
+
+	@Test
+	void warnLogsNullArgument() {
+		TestLogger testLogger = new TestLogger(false);
+		testLogger.warn("msg {}", (Object) null);
+		testLogger.warn("msg {} {}", 1, null);
+		testLogger.warn("msg {} {} {}", 1, null, 3);
+		assertThat(testLogger.getOutContent()).as("out").isEmpty();
+		assertThat(testLogger.getErrContent().split(System.lineSeparator()))
+				.as("err")
+				.containsExactly(
+						"[ WARN] msg null",
+						"[ WARN] msg 1 null",
+						"[ WARN] msg 1 null 3");
+	}
+
+	@Test
+	void errorLogsNullArgument() {
+		TestLogger testLogger = new TestLogger(false);
+		testLogger.error("msg {}", (Object) null);
+		testLogger.error("msg {} {}", 1, null);
+		testLogger.error("msg {} {} {}", 1, null, 3);
+		assertThat(testLogger.getOutContent()).as("out").isEmpty();
+		assertThat(testLogger.getErrContent().split(System.lineSeparator()))
+				.as("err")
+				.containsExactly(
+						"[ERROR] msg null",
+						"[ERROR] msg 1 null",
+						"[ERROR] msg 1 null 3");
 	}
 }

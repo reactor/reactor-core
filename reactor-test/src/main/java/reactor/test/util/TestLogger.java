@@ -72,12 +72,12 @@ public class TestLogger implements Logger {
 		this.logContent.reset();
 	}
 
-	private @Nullable String format(@Nullable String from, @Nullable Object... arguments) {
+	private @Nullable String format(@Nullable String from, @Nullable Object @Nullable... arguments) {
 		if(from != null) {
 			String computed = from;
 			if (arguments != null && arguments.length != 0) {
 				for (Object argument : arguments) {
-					computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+					computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
 				}
 			}
 			return computed;
@@ -96,7 +96,7 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
-	public synchronized void trace(String format, Object... arguments) {
+	public synchronized void trace(String format, @Nullable Object @Nullable... arguments) {
 		this.log.format(logContent("TRACE", format(format, arguments)));
 	}
 	@Override
@@ -116,7 +116,7 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
-	public synchronized void debug(String format, Object... arguments) {
+	public synchronized void debug(String format, @Nullable Object @Nullable... arguments) {
 		this.log.format(logContent("DEBUG", format(format, arguments)));
 	}
 
@@ -137,7 +137,7 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
-	public synchronized void info(String format, Object... arguments) {
+	public synchronized void info(String format, @Nullable Object @Nullable... arguments) {
 		this.log.format(logContent(" INFO", format(format, arguments)));
 	}
 
@@ -158,7 +158,7 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
-	public synchronized void warn(String format, Object... arguments) {
+	public synchronized void warn(String format, @Nullable Object @Nullable... arguments) {
 		this.err.format(logContent(" WARN", format(format, arguments)));
 	}
 
@@ -179,7 +179,7 @@ public class TestLogger implements Logger {
 	}
 
 	@Override
-	public synchronized void error(String format, Object... arguments) {
+	public synchronized void error(String format, @Nullable Object @Nullable... arguments) {
 		this.err.format(logContent("ERROR", format(format, arguments)));
 	}
 
