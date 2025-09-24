@@ -6623,7 +6623,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <V> Flux<V> map(Function<? super T, ? extends @Nullable V> mapper) {
+	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxMapFuseable<>(this, mapper));
 		}
