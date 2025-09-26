@@ -42,6 +42,9 @@ final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 	@Override
 	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (this.cap == 0) {
+			if (super.source instanceof SourceProducer) {
+				((SourceProducer<?>) super.source).terminateAndCleanup();
+			}
 			Operators.complete(actual);
 			return null;
 		}
