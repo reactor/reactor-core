@@ -46,6 +46,11 @@ updates:
       - dependency-name: "biz.aQute.bnd.builder"
         versions:
           - "[7.a, 8]"
+      # artifactory: don't upgrade above 5.1.10 as it breaks the toolchain
+      # languageVersion setting
+      - dependency-name: "com.jfrog.artifactory"
+        versions:
+          - "[5.1.11, 7]"
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
