@@ -29,9 +29,9 @@ jobs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -73,9 +73,9 @@ jobs:
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -112,9 +112,9 @@ jobs:
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -170,9 +170,9 @@ jobs:
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1
+      uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -227,7 +227,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
@@ -242,7 +242,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
