@@ -46,10 +46,6 @@ updates:
       - dependency-name: "biz.aQute.bnd.builder"
         versions:
           - "[7.a, 8]"
-      # artifactory: don't upgrade to v5 (collides with Kotlin plugin) - Remove once 3.4 is out of support
-      - dependency-name: "com.jfrog.artifactory"
-        versions:
-          - "[5.a, 6]"
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
