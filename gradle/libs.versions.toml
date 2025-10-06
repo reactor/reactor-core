@@ -1,10 +1,3 @@
-# Versions and dependencies declared here are NOT covered by Dependabot.
-# Therefore it focuses on versions that should be updated by hand:
-#  - Reactor ecosystem
-#  - Fixed versions (JSR166, JSR305...)
-#  - Libraries that we want to more closely monitor / have an associated plugin (RS, Micrometer, Kotlin)
-#  - Plugins (including Kotlin)
-
 [versions]
 # Baselines, should be updated on every release
 baseline-core-api = "3.7.11"
