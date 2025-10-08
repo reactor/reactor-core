@@ -184,6 +184,11 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				final InnerWindow<T> window = this.window;
+				if (window == null) {
+					Operators.onDiscard(t, this.actual.currentContext());
+					return;
+				}
+
 				if (window.sendNext(t)) {
 					return;
 				}
