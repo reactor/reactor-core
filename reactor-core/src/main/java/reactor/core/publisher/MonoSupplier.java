@@ -38,8 +38,8 @@ extends Mono<T>
 
 	final Supplier<? extends T> supplier;
 
-	MonoSupplier(Supplier<? extends T> callable) {
-		this.supplier = Objects.requireNonNull(callable, "callable");
+	MonoSupplier(Supplier<? extends T> supplier) {
+		this.supplier = Objects.requireNonNull(supplier, "supplier");
 	}
 
 	@Override
@@ -84,9 +84,9 @@ extends Mono<T>
 
 		volatile boolean cancelled;
 
-		MonoSupplierSubscription(CoreSubscriber<? super T> actual, Supplier<? extends T> callable) {
+		MonoSupplierSubscription(CoreSubscriber<? super T> actual, Supplier<? extends T> supplier) {
 			this.actual = actual;
-			this.supplier = callable;
+			this.supplier = supplier;
 		}
 
 		@Override
