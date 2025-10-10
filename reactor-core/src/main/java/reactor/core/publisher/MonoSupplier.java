@@ -36,10 +36,10 @@ final class MonoSupplier<T>
 extends Mono<T>
 		implements Callable<T>, Fuseable, SourceProducer<T>  {
 
-	final Supplier<? extends T> supplier;
+	final Supplier<? extends @Nullable T> supplier;
 
-	MonoSupplier(Supplier<? extends T> callable) {
-		this.supplier = Objects.requireNonNull(callable, "callable");
+	MonoSupplier(Supplier<? extends @Nullable T> supplier) {
+		this.supplier = Objects.requireNonNull(supplier, "supplier");
 	}
 
 	@Override
@@ -73,7 +73,7 @@ extends Mono<T>
 			implements InnerProducer<T>, Fuseable, QueueSubscription<T> {
 
 		final CoreSubscriber<? super T> actual;
-		final Supplier<? extends T>     supplier;
+		final Supplier<? extends @Nullable T> supplier;
 
 		boolean done;
 
@@ -84,9 +84,10 @@ extends Mono<T>
 
 		volatile boolean cancelled;
 
-		MonoSupplierSubscription(CoreSubscriber<? super T> actual, Supplier<? extends T> callable) {
+		MonoSupplierSubscription(CoreSubscriber<? super T> actual,
+				Supplier<? extends @Nullable T> supplier) {
 			this.actual = actual;
-			this.supplier = callable;
+			this.supplier = supplier;
 		}
 
 		@Override
