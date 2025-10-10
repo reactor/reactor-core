@@ -37,9 +37,9 @@ import reactor.core.Fuseable;
 final class MonoCallable<T> extends Mono<T>
 		implements Callable<T>, Fuseable, SourceProducer<T> {
 
-	final Callable<? extends T> callable;
+	final Callable<? extends @Nullable T> callable;
 
-	MonoCallable(Callable<? extends T> callable) {
+	MonoCallable(Callable<? extends @Nullable T> callable) {
 		this.callable = Objects.requireNonNull(callable, "callable");
 	}
 
@@ -55,7 +55,7 @@ final class MonoCallable<T> extends Mono<T>
 	}
 
 	@Override
-	public T block(Duration m) {
+	public @Nullable T block(Duration m) {
 		try {
 			return callable.call();
 		}
@@ -65,7 +65,7 @@ final class MonoCallable<T> extends Mono<T>
 	}
 
 	@Override
-	public T call() throws Exception {
+	public @Nullable T call() throws Exception {
 		return callable.call();
 	}
 
@@ -79,7 +79,7 @@ final class MonoCallable<T> extends Mono<T>
 			implements InnerProducer<T>, Fuseable, QueueSubscription<T> {
 
 		final CoreSubscriber<? super T> actual;
-		final Callable<? extends T>     callable;
+		final Callable<? extends @Nullable T> callable;
 
 		boolean done;
 
@@ -91,7 +91,7 @@ final class MonoCallable<T> extends Mono<T>
 
 		volatile boolean cancelled;
 
-		MonoCallableSubscription(CoreSubscriber<? super T> actual, Callable<? extends T> callable) {
+		MonoCallableSubscription(CoreSubscriber<? super T> actual, Callable<? extends @Nullable T> callable) {
 			this.actual = actual;
 			this.callable = callable;
 		}

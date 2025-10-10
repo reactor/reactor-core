@@ -515,13 +515,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromCallable.svg" alt="">
 	 * <p>
-	 * @param supplier {@link Callable} that will produce the value
+	 * @param callable {@link Callable} that will produce the value
 	 * @param <T> type of the expected value
 	 *
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<T> fromCallable(Callable<? extends T> supplier) {
-		return onAssembly(new MonoCallable<>(supplier));
+	public static <T> Mono<T> fromCallable(Callable<? extends @Nullable T> callable) {
+		return onAssembly(new MonoCallable<>(callable));
 	}
 
 	/**
@@ -709,7 +709,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<T> fromSupplier(Supplier<? extends T> supplier) {
+	public static <T> Mono<T> fromSupplier(Supplier<? extends @Nullable T> supplier) {
 		return onAssembly(new MonoSupplier<>(supplier));
 	}
 
