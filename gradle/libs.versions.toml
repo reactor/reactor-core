@@ -3,7 +3,7 @@
 baseline-core-api = "3.7.12"
 baselinePerfCore = "3.7.12"
 baselinePerfCoreMicrometer = "1.2.12"
-baselinePerfExtra = "3.5.3"
+baselinePerfExtra = "3.5.4"
 
 # Other shared versions
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
