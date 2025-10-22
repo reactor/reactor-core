@@ -238,11 +238,17 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		if (name == null) {
 			name = clazz.getName();
 		}
-		name = name.replaceFirst(clazz.getPackage()
-		                              .getName() + ".", "");
-		asString.append(name);
 
-		return asString.toString();
+        String packageNameWithDot = clazz.getPackage().getName() + '.';
+        int indexOfPackageName = name.indexOf(packageNameWithDot);
+        int indexAfterPackage = indexOfPackageName + packageNameWithDot.length();
+        if (indexOfPackageName != -1 && name.length() > indexAfterPackage) {
+            asString.append(name, indexAfterPackage, name.length());
+        } else {
+            asString.append(name);
+        }
+
+        return asString.toString();
 	}
 
 	@Override
