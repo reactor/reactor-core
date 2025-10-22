@@ -120,8 +120,10 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		static final AtomicLongFieldUpdater<GroupByMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(GroupByMain.class, "requested");
 
-		volatile boolean   done;
-		volatile Throwable error;
+		volatile boolean done;
+
+		volatile @Nullable Throwable error;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<GroupByMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(GroupByMain.class,
@@ -138,6 +140,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		static final AtomicIntegerFieldUpdater<GroupByMain> GROUP_COUNT =
 				AtomicIntegerFieldUpdater.newUpdater(GroupByMain.class, "groupCount");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean enableAsyncFusion;
@@ -159,7 +162,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		@Override
-		public final CoreSubscriber<? super GroupedFlux<K, V>> actual() {
+		public CoreSubscriber<? super GroupedFlux<K, V>> actual() {
 			return actual;
 		}
 
@@ -481,17 +484,19 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		final Queue<V> queue;
 
-		volatile GroupByMain<?, K, V> parent;
+		volatile @Nullable GroupByMain<?, K, V> parent;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, GroupByMain> PARENT =
+		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, @Nullable GroupByMain> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
 						GroupByMain.class,
 						"parent");
 
 		volatile boolean done;
-		Throwable error;
 
-		volatile CoreSubscriber<? super V> actual;
+		@Nullable Throwable error;
+
+		volatile @Nullable CoreSubscriber<? super V> actual;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, CoreSubscriber> ACTUAL =
 				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
@@ -673,12 +678,13 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			return false;
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		public void onNext(V t) {
-			Subscriber<? super V> a = actual;
+			CoreSubscriber<? super V> a = actual;
 
 			if (!queue.offer(t)) {
 				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
-						actual.currentContext()));
+						a != null ? a.currentContext() : Context.empty()));
 				return;
 			}
 			if (outputFused) {
@@ -820,7 +826,9 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		@Override
 		public CoreSubscriber<? super V> actual() {
-			return actual;
+			CoreSubscriber<? super V> a = actual;
+			assert a != null : "Expecting actual to be non-null";
+			return a;
 		}
 
 	}

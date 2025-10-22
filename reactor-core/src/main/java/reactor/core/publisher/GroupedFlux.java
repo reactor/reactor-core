@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.jspecify.annotations.NonNull;
-
 /**
  * Represents a sequence of events which has an associated key.
  *
@@ -30,6 +28,5 @@ public abstract class GroupedFlux<K, V> extends Flux<V> {
 	 * Return the key of the {@link GroupedFlux}.
 	 * @return the key
 	 */
-	@NonNull
 	public abstract K key();
 }
