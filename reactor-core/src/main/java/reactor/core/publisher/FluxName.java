@@ -40,9 +40,9 @@ import static reactor.core.Scannable.Attr.RunStyle.SYNC;
  */
 final class FluxName<T> extends InternalFluxOperator<T, T> {
 
-	final String name;
+	final @Nullable String name;
 
-	final List<Tuple2<String, String>> tagsWithDuplicates;
+	final @Nullable List<Tuple2<String, String>> tagsWithDuplicates;
 
 	static <T> Flux<T> createOrAppend(Flux<T> source, String name) {
 		Objects.requireNonNull(name, "name");

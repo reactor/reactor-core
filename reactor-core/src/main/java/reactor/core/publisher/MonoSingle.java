@@ -34,7 +34,8 @@ import reactor.util.context.Context;
  */
 final class MonoSingle<T> extends MonoFromFluxOperator<T, T> {
 
-	final T       defaultValue;
+	final @Nullable T defaultValue;
+
 	final boolean completeOnEmpty;
 
 	MonoSingle(Flux<? extends T> source) {
@@ -69,6 +70,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T> {
 
 		final boolean completeOnEmpty;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
 		Subscription s;
 
 		int count;

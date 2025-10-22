@@ -49,6 +49,7 @@ import reactor.util.context.Context;
 public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscription,
                                                    Disposable {
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
 
 	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =
