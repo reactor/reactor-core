@@ -98,6 +98,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 
 		final SignalPeek<T> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		int sourceMode;
@@ -390,6 +391,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 
 		final SignalPeek<T> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		int sourceMode;
@@ -741,6 +743,7 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 
 		final SignalPeek<T> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

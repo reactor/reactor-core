@@ -37,9 +37,9 @@ import reactor.core.Fuseable;
  */
 final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
-	final BiConsumer<? super T, Throwable> onAfterTerminateCall;
-	final Consumer<? super T>              onSuccessCall;
-	final Consumer<? super Throwable>      onErrorCall;
+	final @Nullable BiConsumer<? super T, Throwable> onAfterTerminateCall;
+	final @Nullable Consumer<? super T>              onSuccessCall;
+	final @Nullable Consumer<? super Throwable>      onErrorCall;
 
 	MonoPeekTerminal(Mono<? extends T> source,
 			@Nullable Consumer<? super T> onSuccessCall,
@@ -86,13 +86,16 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           Fuseable.QueueSubscription<T> {
 
-		final CoreSubscriber<? super T>        actual;
-		final ConditionalSubscriber<? super T> actualConditional;
+		final CoreSubscriber<? super T> actual;
+
+		final @Nullable ConditionalSubscriber<? super T> actualConditional;
 
 		final MonoPeekTerminal<T> parent;
 
 		//TODO could go into a common base for all-in-one subscribers? (as well as actual above)
-		Subscription                  s;
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+		Subscription s;
+
 		Fuseable.@Nullable QueueSubscription<T> queueSubscription;
 
 		int sourceMode;

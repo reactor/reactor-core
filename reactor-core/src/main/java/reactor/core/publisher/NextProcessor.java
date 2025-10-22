@@ -46,6 +46,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	 */
 	final boolean isRefCounted;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // subscribers are set in connect
 	volatile NextInner<O>[] subscribers;
 
 	/**
@@ -96,7 +97,9 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	@SuppressWarnings("rawtypes")
 	static final NextInner[] EMPTY_WITH_SOURCE = new NextInner[0];
 
-	volatile     Subscription                                             subscription;
+	@SuppressWarnings("NotNullFieldNotInitialized") // subscription is set in onSubscribe
+	volatile Subscription subscription;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");

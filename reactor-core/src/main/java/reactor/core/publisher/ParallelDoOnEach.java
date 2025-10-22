@@ -36,9 +36,9 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 
 	final ParallelFlux<T> source;
 
-	final BiConsumer<Context, ? super T>         onNext;
-	final BiConsumer<Context, ? super Throwable> onError;
-	final Consumer<Context>                      onComplete;
+	final @Nullable BiConsumer<Context, ? super T>         onNext;
+	final @Nullable BiConsumer<Context, ? super Throwable> onError;
+	final @Nullable Consumer<Context>                      onComplete;
 
 	ParallelDoOnEach(
 			ParallelFlux<T> source,
@@ -104,11 +104,11 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 
 	private class DoOnEachSignalPeek implements SignalPeek<T> {
 
-		Consumer<? super T> onNextCall;
+		@Nullable Consumer<? super T> onNextCall;
 
-		Consumer<? super Throwable> onErrorCall;
+		@Nullable Consumer<? super Throwable> onErrorCall;
 
-		Runnable onCompleteCall;
+		@Nullable Runnable onCompleteCall;
 
 		public DoOnEachSignalPeek(Context ctx) {
 			onNextCall = onNext != null ? v -> onNext.accept(ctx, v) : null;

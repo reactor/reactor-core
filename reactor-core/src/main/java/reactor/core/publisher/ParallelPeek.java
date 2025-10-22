@@ -33,14 +33,14 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 
 	final ParallelFlux<T> source;
 	
-	final Consumer<? super T> onNext;
-	final Consumer<? super T> onAfterNext;
-	final Consumer<? super Throwable> onError;
-	final Runnable onComplete;
-	final Runnable onAfterTerminated;
-	final Consumer<? super Subscription> onSubscribe;
-	final LongConsumer onRequest;
-	final Runnable onCancel;
+	final @Nullable Consumer<? super T> onNext;
+	final @Nullable Consumer<? super T> onAfterNext;
+	final @Nullable Consumer<? super Throwable> onError;
+	final @Nullable Runnable onComplete;
+	final @Nullable Runnable onAfterTerminated;
+	final @Nullable Consumer<? super Subscription> onSubscribe;
+	final @Nullable LongConsumer onRequest;
+	final @Nullable Runnable onCancel;
 
 	ParallelPeek(ParallelFlux<T> source,
 			@Nullable Consumer<? super T> onNext,
@@ -121,7 +121,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	public Runnable onAfterTerminateCall() {
+	public @Nullable Runnable onAfterTerminateCall() {
 		return onAfterTerminated;
 	}
 

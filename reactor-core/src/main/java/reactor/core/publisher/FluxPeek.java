@@ -42,19 +42,19 @@ import reactor.util.context.Context;
  */
 final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek<T> {
 
-	final Consumer<? super Subscription> onSubscribeCall;
+	final @Nullable Consumer<? super Subscription> onSubscribeCall;
 
-	final Consumer<? super T> onNextCall;
+	final @Nullable Consumer<? super T> onNextCall;
 
-	final Consumer<? super Throwable> onErrorCall;
+	final @Nullable Consumer<? super Throwable> onErrorCall;
 
-	final Runnable onCompleteCall;
+	final @Nullable Runnable onCompleteCall;
 
-	final Runnable onAfterTerminateCall;
+	final @Nullable Runnable onAfterTerminateCall;
 
-	final LongConsumer onRequestCall;
+	final @Nullable LongConsumer onRequestCall;
 
-	final Runnable onCancelCall;
+	final @Nullable Runnable onCancelCall;
 
 	FluxPeek(Flux<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,
@@ -96,6 +96,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 
 		final SignalPeek<T> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
