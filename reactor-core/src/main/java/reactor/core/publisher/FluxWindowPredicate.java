@@ -637,10 +637,8 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
-			CoreSubscriber<? super T> a = actual;
-			assert a != null : "actual subscriber should not be null when accessed";
-			return a;
+		public @Nullable CoreSubscriber<? super T> actual() {
+			return actual;
 		}
 
 		void propagateTerminate() {
