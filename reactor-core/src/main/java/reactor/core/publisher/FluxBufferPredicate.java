@@ -130,6 +130,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class,
 						"requestedFromSource");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
 		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber,
@@ -427,7 +428,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		private Function<? super T, ? extends K>  keySelector;
 		private BiPredicate<? super K, ? super K> keyComparator;
-		private K                                 lastKey;
+
+		private @Nullable K lastKey;
 
 		ChangedPredicate(Function<? super T, ? extends K> keySelector,
 				BiPredicate<? super K, ? super K> keyComparator) {

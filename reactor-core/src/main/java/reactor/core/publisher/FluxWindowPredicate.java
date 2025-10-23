@@ -127,7 +127,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 		final Queue<Flux<T>> queue;
 
-		WindowFlux<T> window;
+		@Nullable WindowFlux<T> window;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -140,7 +140,8 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 				AtomicLongFieldUpdater.newUpdater(WindowPredicateMain.class, "requested");
 
 		volatile boolean   done;
-		volatile Throwable error;
+
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowPredicateMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateMain.class,
@@ -158,6 +159,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		static final AtomicIntegerFieldUpdater<WindowPredicateMain> WINDOW_COUNT =
 				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "windowCount");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean outputFused;
@@ -216,6 +218,8 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 				return;
 			}
 			WindowFlux<T> g = window;
+
+			assert g != null : "window should not be null in onNext";
 
 			boolean match;
 			try {
@@ -580,17 +584,19 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 		final Queue<T> queue;
 
-		volatile WindowPredicateMain<T> parent;
+		volatile @Nullable WindowPredicateMain<T> parent;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowFlux, WindowPredicateMain>
+		static final AtomicReferenceFieldUpdater<WindowFlux, @Nullable WindowPredicateMain>
 				PARENT = AtomicReferenceFieldUpdater.newUpdater(WindowFlux.class,
 				WindowPredicateMain.class,
 				"parent");
 
 		volatile boolean done;
-		Throwable error;
 
-		volatile CoreSubscriber<? super T> actual;
+		@Nullable Throwable error;
+
+		volatile @Nullable CoreSubscriber<? super T> actual;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowFlux, CoreSubscriber> ACTUAL =
 				AtomicReferenceFieldUpdater.newUpdater(WindowFlux.class,
@@ -632,7 +638,9 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 		@Override
 		public CoreSubscriber<? super T> actual() {
-			return actual;
+			CoreSubscriber<? super T> a = actual;
+			assert a != null : "actual subscriber should not be null when accessed";
+			return a;
 		}
 
 		void propagateTerminate() {

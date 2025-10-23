@@ -39,7 +39,7 @@ import reactor.core.scheduler.Scheduler;
  */
 final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannable {
 
-	final T value;
+	final @Nullable T value;
 
 	final Scheduler scheduler;
 
@@ -92,9 +92,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 		static final AtomicIntegerFieldUpdater<ScheduledScalar> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ScheduledScalar.class, "once");
 
-		volatile Disposable future;
+		volatile @Nullable Disposable future;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ScheduledScalar, Disposable> FUTURE =
+		static final AtomicReferenceFieldUpdater<ScheduledScalar, @Nullable Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledScalar.class,
 						Disposable.class,
 						"future");
@@ -223,8 +223,8 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 
 		final Subscriber<?> actual;
 
-		volatile Disposable future;
-		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Disposable> FUTURE =
+		volatile @Nullable Disposable future;
+		static final AtomicReferenceFieldUpdater<ScheduledEmpty, @Nullable Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class,
 						Disposable.class,
 						"future");

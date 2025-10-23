@@ -58,8 +58,10 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 		final CoreSubscriber<? super Tuple2<Long, T>> actual;
 		final Scheduler                               scheduler;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription      s;
-		QueueSubscription<T> qs;
+
+		@Nullable QueueSubscription<T> qs;
 
 		long lastTime;
 
@@ -142,6 +144,7 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 
 		@Override
 		public @Nullable Tuple2<Long, T> poll() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			T data = qs.poll();
 			if(data != null){
 				return snapshot(data);
@@ -151,16 +154,19 @@ final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> impl
 
 		@Override
 		public int size() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			return qs.size();
 		}
 
 		@Override
 		public boolean isEmpty() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			return qs.isEmpty();
 		}
 
 		@Override
 		public void clear() {
+			assert qs != null : "Queue interface used only when qs is non-null";
 			qs.clear();
 		}
 	}

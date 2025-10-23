@@ -55,9 +55,9 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 		boolean hasValue;
 
-		volatile T fallbackValue;
+		volatile @Nullable T fallbackValue;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DefaultIfEmptySubscriber, Object> FALLBACK_VALUE =
+		static final AtomicReferenceFieldUpdater<DefaultIfEmptySubscriber, @Nullable Object> FALLBACK_VALUE =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultIfEmptySubscriber.class, Object.class, "fallbackValue");
 
 		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T fallbackValue) {

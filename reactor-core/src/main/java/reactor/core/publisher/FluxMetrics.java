@@ -83,12 +83,17 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 		final String                    sequenceName;
 		final Tags                      commonTags;
 		final MeterRegistry             registry;
-		final DistributionSummary       requestedCounter;
 		final Timer                     onNextIntervalTimer;
 
+		final @Nullable DistributionSummary requestedCounter;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Timer.Sample subscribeToTerminateSample;
+
 		long         lastNextEventNanos = -1L;
 		boolean      done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		MetricsSubscriber(CoreSubscriber<? super T> actual,

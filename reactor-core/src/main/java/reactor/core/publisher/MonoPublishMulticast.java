@@ -75,7 +75,9 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 	static final class MonoPublishMulticaster<T> extends Mono<T>
 			implements InnerConsumer<T>, FluxPublishMulticast.PublishMulticasterParent {
 
-		volatile     Subscription s;
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
+		volatile Subscription s;
+
 		static final AtomicReferenceFieldUpdater<MonoPublishMulticaster, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(MonoPublishMulticaster.class,
 						Subscription.class,
@@ -85,7 +87,10 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		static final AtomicIntegerFieldUpdater<MonoPublishMulticaster> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(MonoPublishMulticaster.class, "wip");
 
+		// lazy-initialized in constructor
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		volatile PublishMulticastInner<T>[] subscribers;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MonoPublishMulticaster, PublishMulticastInner[]> SUBSCRIBERS =
 				AtomicReferenceFieldUpdater.newUpdater(MonoPublishMulticaster.class, PublishMulticastInner[].class, "subscribers");
@@ -99,7 +104,8 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		volatile boolean done;
 
 		@Nullable T value;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		volatile boolean connected;
 

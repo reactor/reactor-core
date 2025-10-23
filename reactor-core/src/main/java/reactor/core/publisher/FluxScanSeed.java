@@ -88,7 +88,7 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 		final    BiFunction<R, ? super T, R> accumulator;
 		volatile int                         wip;
 		long produced;
-		private ScanSeedSubscriber<T, R> seedSubscriber;
+		private @Nullable ScanSeedSubscriber<T, R> seedSubscriber;
 
 		ScanSeedCoordinator(CoreSubscriber<? super R> actual, Flux<? extends T> source,
 				BiFunction<R, ? super T, R> accumulator,
@@ -170,9 +170,10 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 
 		final BiFunction<R, ? super T, R> accumulator;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		R value;
+		@Nullable R value;
 
 		boolean done;
 
@@ -223,6 +224,7 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 			}
 
 			R r = value;
+			assert r != null : "value can not be null";
 
 			try {
 				r = Objects.requireNonNull(accumulator.apply(r, t),

@@ -35,13 +35,16 @@ import reactor.util.context.Context;
 final class LambdaSubscriber<T>
 		implements InnerConsumer<T>, Disposable {
 
-	final Consumer<? super T>            consumer;
-	final Consumer<? super Throwable>    errorConsumer;
-	final Runnable                       completeConsumer;
-	final Consumer<? super Subscription> subscriptionConsumer;
-	final Context                        initialContext;
+	final @Nullable Consumer<? super T>            consumer;
+	final @Nullable Consumer<? super Throwable>    errorConsumer;
+	final @Nullable Runnable                       completeConsumer;
+	final @Nullable Consumer<? super Subscription> subscriptionConsumer;
 
+	final Context initialContext;
+
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
+
 	static final AtomicReferenceFieldUpdater<LambdaSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(LambdaSubscriber.class,
 					Subscription.class,
@@ -102,7 +105,7 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
-	public final void onSubscribe(Subscription s) {
+	public void onSubscribe(Subscription s) {
 		if (Operators.validate(subscription, s)) {
 			this.subscription = s;
 			if (subscriptionConsumer != null) {
@@ -122,7 +125,7 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
-	public final void onComplete() {
+	public void onComplete() {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
 			return;
@@ -139,7 +142,7 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
-	public final void onError(Throwable t) {
+	public void onError(Throwable t) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
 			Operators.onErrorDropped(t, this.initialContext);
@@ -154,7 +157,7 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
-	public final void onNext(T x) {
+	public void onNext(T x) {
 		try {
 			if (consumer != null) {
 				consumer.accept(x);
