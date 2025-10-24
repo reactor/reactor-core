@@ -97,6 +97,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		C buffer;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
 		@SuppressWarnings("rawtypes")

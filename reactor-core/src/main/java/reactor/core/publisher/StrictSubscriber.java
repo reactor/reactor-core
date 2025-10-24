@@ -35,7 +35,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 
 	final Subscriber<? super T> actual;
 
-	volatile Subscription s;
+	volatile @Nullable Subscription s;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<StrictSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(StrictSubscriber.class,

@@ -140,13 +140,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	final boolean autoCancel;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	volatile Subscription s;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Subscription.class,
 					"s");
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")

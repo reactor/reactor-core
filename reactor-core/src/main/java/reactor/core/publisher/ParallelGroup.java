@@ -78,7 +78,8 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		static final AtomicIntegerFieldUpdater<ParallelInnerGroup> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ParallelInnerGroup.class, "once");
 
-		volatile Subscription s;
+		volatile @Nullable Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ParallelInnerGroup, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ParallelInnerGroup.class, Subscription.class, "s");
@@ -88,6 +89,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		static final AtomicLongFieldUpdater<ParallelInnerGroup> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ParallelInnerGroup.class, "requested");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // actual initialized in subscribe
 		CoreSubscriber<? super T> actual;
 
 		ParallelInnerGroup(int key) {

@@ -82,7 +82,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		final CoreSubscriber<? super T> actual;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
+		static final AtomicReferenceFieldUpdater<MergeSequentialMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 
 		volatile int wip;
@@ -121,7 +121,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
-		public final CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -353,13 +353,15 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		final int limit;
 		
 		long produced;
-		
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeSequentialInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialInner.class, Subscription.class, "s");
 		
-		volatile Queue<T> queue;
+		volatile @Nullable Queue<T> queue;
 		
 		volatile boolean done;
 		
@@ -375,7 +377,10 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.PREFETCH) return prefetch;
-			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.BUFFERED) {
+				Queue<T> q = queue;
+				return q != null ? q.size() : 0;
+			}
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 

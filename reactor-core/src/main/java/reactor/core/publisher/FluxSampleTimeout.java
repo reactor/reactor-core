@@ -87,6 +87,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T>                   actual;
 		final Context                                     ctx;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
 		@SuppressWarnings("rawtypes")
@@ -95,7 +96,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 						Subscription.class,
 						"s");
 
-		volatile Subscription other;
+		volatile @Nullable Subscription other;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Subscription>
 				OTHER = AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
@@ -156,7 +157,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public final CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -406,7 +407,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 			}
 		}
 
-		final Stream<T> toStream() {
+		Stream<T> toStream() {
 			return Stream.of(value);
 		}
 

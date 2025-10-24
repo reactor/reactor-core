@@ -445,7 +445,9 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		volatile boolean done;
 		volatile T       value;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		static final AtomicReferenceFieldUpdater<ExpandDepthSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscriber.class, Subscription.class, "s");
 

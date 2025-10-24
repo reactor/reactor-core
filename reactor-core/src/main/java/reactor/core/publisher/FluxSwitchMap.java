@@ -97,11 +97,14 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
-		final Queue<Object>               queue;
-		final BiPredicate<Object, Object> queueBiAtomic;
+		final Queue<Object> queue;
+
+		final @Nullable BiPredicate<Object, Object> queueBiAtomic;
+
 		final int                         prefetch;
 		final CoreSubscriber<? super R>   actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean done;
@@ -131,9 +134,9 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 		static final AtomicIntegerFieldUpdater<SwitchMapMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SwitchMapMain.class, "wip");
 
-		volatile SwitchMapInner<R> inner;
+		volatile @Nullable SwitchMapInner<R> inner;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SwitchMapMain, SwitchMapInner> INNER =
+		static final AtomicReferenceFieldUpdater<SwitchMapMain, @Nullable SwitchMapInner> INNER =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class,
 						SwitchMapInner.class,
 						"inner");
@@ -449,9 +452,10 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 		static final AtomicIntegerFieldUpdater<SwitchMapInner> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(SwitchMapInner.class, "once");
 
-		volatile Subscription s;
+		volatile @Nullable Subscription s;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SwitchMapInner, Subscription> S =
+		static final AtomicReferenceFieldUpdater<SwitchMapInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapInner.class,
 						Subscription.class,
 						"s");
@@ -531,7 +535,9 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 			int p = produced + 1;
 			if (p == limit) {
 				produced = 0;
-				s.request(p);
+				Subscription _s = s;
+				assert _s != null : "s can not be null when requesting";
+				_s.request(p);
 			}
 			else {
 				produced = p;
@@ -543,7 +549,9 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 			long p = produced + n;
 			if (p >= limit) {
 				produced = 0;
-				s.request(p);
+				Subscription _s = s;
+				assert _s != null : "s can not be null when requesting";
+				_s.request(p);
 			}
 			else {
 				produced = (int) p;

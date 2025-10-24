@@ -917,7 +917,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final int limit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class,
@@ -926,7 +928,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		long produced;
 
-		volatile Queue<R> queue;
+		volatile @Nullable Queue<R> queue;
 
 		volatile boolean done;
 

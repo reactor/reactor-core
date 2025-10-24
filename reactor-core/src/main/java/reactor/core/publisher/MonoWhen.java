@@ -38,9 +38,9 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 	final boolean delayError;
 
-	final Publisher<?>[] sources;
+	final Publisher<?> @Nullable [] sources;
 
-	final Iterable<? extends Publisher<?>> sourcesIterable;
+	final @Nullable Iterable<? extends Publisher<?>> sourcesIterable;
 
 	MonoWhen(boolean delayError, Publisher<?>... sources) {
 		this.delayError = delayError;
@@ -79,6 +79,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 		}
 		else {
 			a = new Publisher[8];
+			assert sourcesIterable != null : "sources and sourcesIterable can not both null";
 			for (Publisher<?> m : sourcesIterable) {
 				if (n == a.length) {
 					Publisher<?>[] b = new Publisher[n + (n >> 2)];
@@ -353,7 +354,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 		final WhenCoordinator parent;
 
-		volatile Subscription s;
+		volatile @Nullable Subscription s;
 		static final AtomicReferenceFieldUpdater<WhenInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(WhenInner.class,
 						Subscription.class,
