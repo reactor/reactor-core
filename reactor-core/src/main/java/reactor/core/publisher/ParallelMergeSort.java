@@ -106,7 +106,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 				AtomicIntegerFieldUpdater.newUpdater(MergeSortMain.class,
 						"remaining");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeSortMain, Throwable>
 				ERROR =

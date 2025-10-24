@@ -112,7 +112,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<SampleTimeoutMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SampleTimeoutMain.class, "wip");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,

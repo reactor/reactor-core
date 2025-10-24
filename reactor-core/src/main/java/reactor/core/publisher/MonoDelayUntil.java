@@ -139,7 +139,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		Subscription s;
 		DelayUntilTrigger<?> triggerSubscriber;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<DelayUntilCoordinator, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(DelayUntilCoordinator.class, Throwable.class, "error");

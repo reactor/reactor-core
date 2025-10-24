@@ -152,7 +152,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlattenIterableSubscriber, Throwable>
 				ERROR =

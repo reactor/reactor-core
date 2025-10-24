@@ -217,7 +217,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 
 		volatile boolean done;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<CombineLatestCoordinator, Throwable>

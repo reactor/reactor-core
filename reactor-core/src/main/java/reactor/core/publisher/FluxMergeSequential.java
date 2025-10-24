@@ -131,7 +131,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");

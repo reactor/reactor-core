@@ -108,7 +108,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				"state"
 		);
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, Throwable> ERROR = AtomicReferenceFieldUpdater.newUpdater(

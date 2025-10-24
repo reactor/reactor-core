@@ -104,7 +104,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<SampleFirstMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SampleFirstMain.class, "wip");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleFirstMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SampleFirstMain.class,

@@ -102,7 +102,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MergeSequentialMain> DONE =
 				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "done");
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		MergeSequentialMain(CoreSubscriber<? super T> actual, int n, int
 				prefetch,

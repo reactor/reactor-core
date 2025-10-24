@@ -174,7 +174,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	volatile boolean done;
 
-	volatile Throwable error;
+	volatile @Nullable Throwable error;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =

@@ -119,7 +119,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		final BaseSink<T> sink;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SerializedFluxSink, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SerializedFluxSink.class,

@@ -136,7 +136,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 
 		boolean done;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		static final AtomicReferenceFieldUpdater<MergeOrderedMainProducer, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeOrderedMainProducer.class, Throwable.class, "error");
 

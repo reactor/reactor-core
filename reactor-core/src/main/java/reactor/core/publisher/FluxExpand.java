@@ -199,7 +199,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T>                             actual;
 		final Function<? super T, ? extends Publisher<? extends T>> expander;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		static final AtomicReferenceFieldUpdater<ExpandDepthSubscription, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscription.class, Throwable.class, "error");
 

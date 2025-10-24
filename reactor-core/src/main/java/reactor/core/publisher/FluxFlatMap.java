@@ -232,7 +232,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile Queue<R> scalarQueue;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,

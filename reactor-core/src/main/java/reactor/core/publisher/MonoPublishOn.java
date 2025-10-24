@@ -80,7 +80,7 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 						Object.class,
 						"value");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		PublishOnSubscriber(CoreSubscriber<? super T> actual,
 				Scheduler scheduler) {

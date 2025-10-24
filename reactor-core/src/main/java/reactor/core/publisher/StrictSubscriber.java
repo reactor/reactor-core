@@ -52,7 +52,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 	static final AtomicIntegerFieldUpdater<StrictSubscriber> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(StrictSubscriber.class, "wip");
 
-	volatile Throwable error;
+	volatile @Nullable Throwable error;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<StrictSubscriber, Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(StrictSubscriber.class,

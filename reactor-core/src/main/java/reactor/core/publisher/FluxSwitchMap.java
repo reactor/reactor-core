@@ -106,7 +106,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile boolean done;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> ERROR =
