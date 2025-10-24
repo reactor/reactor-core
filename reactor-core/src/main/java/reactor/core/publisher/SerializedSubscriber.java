@@ -49,7 +49,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 	LinkedArrayNode<T> tail;
 
-	Throwable error;
+	@Nullable Throwable error;
 
 	Subscription s;
 

@@ -205,8 +205,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		Subscription s;
 		QueueSubscription<T> qs;
 
-		Throwable error;
-
+		@Nullable Throwable error;
 
 		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
 		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;

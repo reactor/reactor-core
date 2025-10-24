@@ -434,7 +434,8 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		Subscription s;
 		boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		DelayUntilTrigger(DelayUntilCoordinator<?> parent) {
 			this.parent = parent;

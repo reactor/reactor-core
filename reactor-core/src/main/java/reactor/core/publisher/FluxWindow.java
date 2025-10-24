@@ -505,7 +505,8 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 		Subscription s;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		WindowOverlapSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int size,

@@ -784,7 +784,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		final Queue<T> queue;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
@@ -942,7 +943,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		final AtomicReference<T> queue;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;

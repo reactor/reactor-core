@@ -106,7 +106,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 		volatile boolean cancelled;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<BackpressureBufferTimeoutSubscriber> WIP =

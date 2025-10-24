@@ -52,7 +52,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	static final AtomicIntegerFieldUpdater<DefaultTestPublisher> CANCEL_COUNT =
 		AtomicIntegerFieldUpdater.newUpdater(DefaultTestPublisher.class, "cancelCount");
 
-	Throwable error;
+	@Nullable Throwable error;
 
 	volatile boolean hasOverflown;
 	volatile boolean wasRequested;

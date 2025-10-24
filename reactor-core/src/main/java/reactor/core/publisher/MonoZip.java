@@ -428,8 +428,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class, Subscription.class, "s");
 
-		Object    value;
-		Throwable error;
+		@Nullable Object value;
+
+		@Nullable Throwable error;
 
 		ZipInner(ZipCoordinator<R> parent) {
 			this.parent = parent;

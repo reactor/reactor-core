@@ -71,9 +71,12 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 		boolean done;
 		boolean stop;
-		Throwable error;
-		R data;
 
+		@Nullable Throwable error;
+
+		@Nullable R data;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		HandleSubscriber(CoreSubscriber<? super R> actual,
@@ -285,9 +288,12 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 		boolean done;
 		boolean stop;
-		Throwable error;
-		R data;
 
+		@Nullable Throwable error;
+
+		@Nullable R data;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {

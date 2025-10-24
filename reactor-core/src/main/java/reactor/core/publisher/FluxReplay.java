@@ -155,7 +155,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		TimedNode<T> tail;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		static final long NOT_DONE = Long.MIN_VALUE;
 
 		volatile long done = NOT_DONE;
@@ -504,7 +505,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		int tailIndex;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		UnboundedReplayBuffer(int batchSize) {
 			this.batchSize = batchSize;
@@ -775,7 +777,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		int size;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		SizeBoundReplayBuffer(int limit) {
 			if (limit < 0) {

@@ -293,7 +293,8 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		final int                 prefetch;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		Subscription cachedSubscription;
 		volatile Subscription subscription;

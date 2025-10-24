@@ -358,7 +358,8 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 				AtomicReferenceFieldUpdater.newUpdater(WhenInner.class,
 						Subscription.class,
 						"s");
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		WhenInner(WhenCoordinator parent) {
 			this.parent = parent;

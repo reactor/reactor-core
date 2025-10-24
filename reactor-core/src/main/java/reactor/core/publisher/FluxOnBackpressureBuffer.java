@@ -88,7 +88,8 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		volatile boolean enabledFusion;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")

@@ -973,8 +973,9 @@ public class FluxPeekFuseableTest {
 
 		List<T> next = new ArrayList<>();
 		boolean subscribed;
-		Throwable error;
 		boolean completed;
+
+		@Nullable Throwable error;
 
 		private final Context context;
 

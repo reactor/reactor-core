@@ -283,7 +283,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		/**
 		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
 		 */
-		Throwable error;
+		@Nullable Throwable error;
+
 		Subscription s;
 
 		UsingWhenSubscriber(CoreSubscriber<? super T> actual,

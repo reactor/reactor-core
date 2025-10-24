@@ -137,7 +137,9 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 		long produced;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SubscriberIterator, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscriberIterator.class,
@@ -145,7 +147,8 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 						"s");
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		 SubscriberIterator(Queue<T> queue, Context context, int batchSize) {
 			this.queue = queue;
@@ -215,6 +218,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 				long p = produced + 1;
 				if (p == limit) {
 					produced = 0;
+					assert s != null : "s can not be null";
 					s.request(p);
 				}
 				else {

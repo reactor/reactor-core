@@ -132,7 +132,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		static final int REQUEST_INDEX_SHIFT       = 40;
 
 		boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		Subscription s;
 
@@ -903,7 +904,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		CoreSubscriber<? super T> actual;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		int received = 0;
 		int produced = 0;
@@ -1710,7 +1711,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		final Scheduler.Worker                worker;
 		final Queue<Object>                   queue;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done;
 		volatile boolean cancelled;
 

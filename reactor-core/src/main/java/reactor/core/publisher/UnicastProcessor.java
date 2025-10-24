@@ -171,7 +171,8 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
-	Throwable error;
+
+	@Nullable Throwable error;
 
 	boolean hasDownstream; //important to not loose the downstream too early and miss discard hook, while having relevant hasDownstreams()
 	volatile CoreSubscriber<? super T> actual;

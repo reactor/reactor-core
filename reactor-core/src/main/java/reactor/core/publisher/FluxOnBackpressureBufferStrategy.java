@@ -92,7 +92,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 		volatile boolean cancelled;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<BackpressureBufferDropOldestSubscriber> WIP =

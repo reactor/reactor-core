@@ -73,7 +73,8 @@ final class FluxOnBackpressureLatest<T> extends InternalFluxOperator<T, T> {
 
 		Subscription s;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done;
 
 		volatile boolean cancelled;

@@ -132,7 +132,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		volatile boolean done;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -695,7 +695,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		volatile boolean done;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
