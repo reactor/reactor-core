@@ -103,11 +103,13 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 
 		final Supplier<Queue<T>> queueSupplier;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
-		
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Queue<T> queue;
 		
-		Throwable error;
+		@Nullable Throwable error;
 		
 		volatile boolean done;
 		

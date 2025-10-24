@@ -55,11 +55,13 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	/**
 	 * Stores the error that terminated this sink, for immediate replay to late subscribers
 	 */
-	Throwable error;
+	@Nullable Throwable error;
 
-	volatile     DirectInner<T>[]                                              subscribers;
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in constructor
+	volatile DirectInner<T>[] subscribers;
+
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyBestEffort, DirectInner[]>SUBSCRIBERS =
+	static final AtomicReferenceFieldUpdater<SinkManyBestEffort, DirectInner[]> SUBSCRIBERS =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyBestEffort.class, DirectInner[].class, "subscribers");
 
 	SinkManyBestEffort(boolean allOrNothing) {

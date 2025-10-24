@@ -108,7 +108,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectInner[]>SUBSCRIBERS =
 		AtomicReferenceFieldUpdater.newUpdater(DirectProcessor.class, DirectInner[].class, "subscribers");
 
-	Throwable error;
+	@Nullable Throwable error;
 
 	DirectProcessor() {
 	}

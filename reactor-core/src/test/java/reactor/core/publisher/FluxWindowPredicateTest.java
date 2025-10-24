@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1186,9 +1186,10 @@ public class FluxWindowPredicateTest extends
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
+		test.subscribe(); // Register actual subscriber against the WindowFlux
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
-		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull(); // RS: TODO Need to make actual non-null
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isNotNull();
 		test.requested = 35;
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 		test.queue.offer(27);
