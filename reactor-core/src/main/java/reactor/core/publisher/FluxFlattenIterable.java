@@ -76,7 +76,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) throws Exception {
 
 		if (source instanceof Callable) {
-			T v = ((Callable<T>) source).call();
+			T v = ((Callable<@Nullable T>) source).call();
 
 			if (v == null) {
 				Operators.complete(actual);
@@ -144,8 +144,10 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 				AtomicLongFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
 						"requested");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Queue<T> queue;
 
 		volatile boolean done;
@@ -165,7 +167,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 
 		boolean valueReady = false;
 
-		R nextElement;
+		@Nullable R nextElement;
 
 		int consumed;
 
@@ -290,6 +292,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 				valueReady = false;
 				R t = nextElement;
 				nextElement = null;
+				assert t != null : "value can not be null when hasNext returned true";
 				return t;
 			}
 		}
@@ -319,7 +322,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		}
 
 		//should be kept small and final to favor inlining
-		final void resetCurrent() {
+		void resetCurrent() {
 			current = null;
 			currentKnownToBeFinite = false;
 		}

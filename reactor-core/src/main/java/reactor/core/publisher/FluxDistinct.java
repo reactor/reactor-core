@@ -97,6 +97,7 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 
 		final Consumer<C> cleanupCallback;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
@@ -232,6 +233,7 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 		final BiPredicate<C, K> distinctPredicate;
 		final Consumer<C>       cleanupCallback;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

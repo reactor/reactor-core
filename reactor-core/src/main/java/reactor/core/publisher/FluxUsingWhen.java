@@ -285,6 +285,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		 */
 		@Nullable Throwable error;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		UsingWhenSubscriber(CoreSubscriber<? super T> actual,

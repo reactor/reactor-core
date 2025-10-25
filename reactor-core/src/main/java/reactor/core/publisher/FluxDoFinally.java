@@ -81,6 +81,7 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<DoFinallySubscriber> ONCE =
 			AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "once");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		DoFinallySubscriber(CoreSubscriber<? super T> actual, Consumer<SignalType> onFinally) {

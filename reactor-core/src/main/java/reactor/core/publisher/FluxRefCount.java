@@ -169,8 +169,10 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		final CoreSubscriber<? super T> actual;
 
 		@Nullable RefCountMonitor<T> connection;
+
 		@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 		Subscription s;
+
 		@Nullable QueueSubscription<T> qs;
 
 		@Nullable Throwable error;

@@ -62,6 +62,7 @@ final class FluxSkip<T> extends InternalFluxOperator<T, T> {
 
 		long remaining;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		SkipSubscriber(CoreSubscriber<? super T> actual, long n) {

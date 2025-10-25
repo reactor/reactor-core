@@ -63,7 +63,8 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
 	            AtomicLongFieldUpdater.newUpdater(MaterializeSubscriber.class, "requested");
 	    
 	    long produced;
-	    
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	    Subscription s;
 	    
 		MaterializeSubscriber(CoreSubscriber<? super Signal<T>> subscriber) {

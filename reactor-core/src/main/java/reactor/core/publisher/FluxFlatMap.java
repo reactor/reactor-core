@@ -243,6 +243,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile boolean cancelled;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile long requested;

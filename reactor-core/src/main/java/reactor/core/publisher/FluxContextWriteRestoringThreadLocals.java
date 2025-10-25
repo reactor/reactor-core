@@ -61,6 +61,7 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 		final ConditionalSubscriber<? super T> actualConditional;
 		final Context                          context;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		@SuppressWarnings("unchecked")

@@ -68,9 +68,10 @@ final class FluxScan<T> extends InternalFluxOperator<T, T> {
 
 		final BiFunction<T, ? super T, T> accumulator;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		T value;
+		@Nullable T value;
 
 		boolean done;
 

@@ -72,6 +72,7 @@ final class FluxOnBackpressureDrop<T> extends InternalFluxOperator<T, T> {
 		final Context                   ctx;
 		final Consumer<? super T>   onDrop;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile long requested;

@@ -38,7 +38,8 @@ import reactor.util.context.Context;
  */
 final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, O> {
 
-	final Consumer<? super O>    onBufferOverflow;
+	final @Nullable Consumer<? super O> onBufferOverflow;
+
 	final int                    bufferSize;
 	final boolean                delayError;
 	final BufferOverflowStrategy bufferOverflowStrategy;
@@ -83,10 +84,12 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;
 		final int                       bufferSize;
-		final Consumer<? super T>       onOverflow;
 		final boolean                   delayError;
 		final BufferOverflowStrategy    overflowStrategy;
 
+		final @Nullable Consumer<? super T> onOverflow;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean cancelled;

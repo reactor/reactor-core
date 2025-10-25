@@ -50,7 +50,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	final Supplier<? extends Queue<Sinks.Many<T>>> overflowQueueSupplier;
+	final @Nullable Supplier<? extends Queue<Sinks.Many<T>>> overflowQueueSupplier;
 
 	FluxWindow(Flux<? extends T> source,
 			int size,
@@ -98,6 +98,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 					size, skip, processorQueueSupplier);
 		}
 		else {
+			assert overflowQueueSupplier != null : "overflowQueueSupplier must be provided for overlapping windows";
 			return new WindowOverlapSubscriber<>(actual,
 					size,
 					skip, processorQueueSupplier, overflowQueueSupplier.get());
@@ -131,9 +132,10 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		int index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		Sinks.Many<T> window;
+		Sinks. @Nullable Many<T> window;
 
 		boolean done;
 
@@ -174,6 +176,8 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			i++;
+
+			assert w != null : "window can not be null";
 
 			w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 
@@ -297,9 +301,10 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		int index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		Sinks.Many<T> window;
+		Sinks.@Nullable Many<T> window;
 
 		boolean done;
 
@@ -502,6 +507,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		int produced;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean done;

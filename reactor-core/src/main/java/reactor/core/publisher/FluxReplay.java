@@ -49,11 +49,13 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	final CorePublisher<T> source;
 	final int              history;
 	final long             ttl;
-	final Scheduler        scheduler;
 
-	volatile     ReplaySubscriber<T>                                       connection;
+	final @Nullable Scheduler scheduler;
+
+	volatile @Nullable ReplaySubscriber<T> connection;
+
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxReplay, ReplaySubscriber> CONNECTION =
+	static final AtomicReferenceFieldUpdater<FluxReplay, @Nullable ReplaySubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxReplay.class,
 					ReplaySubscriber.class,
 					"connection");
@@ -123,11 +125,12 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	static final class SizeAndTimeBoundReplayBuffer<T> implements ReplayBuffer<T> {
 
-		static final class TimedNode<T> extends AtomicReference<TimedNode<T>> {
+		static final class TimedNode<T> extends AtomicReference<@Nullable TimedNode<T>> {
 
 			final int  index;
-			final T    value;
 			final long time;
+
+			final @Nullable T value;
 
 			TimedNode(int index, @Nullable T value, long time) {
 				this.index = index;
@@ -980,7 +983,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			private static final long serialVersionUID = 3713592843205853725L;
 
 			final int index;
-			final T   value;
+
+			final @Nullable T value;
 
 			Node(int index, @Nullable T value) {
 				this.index = index;
@@ -1218,7 +1222,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		final long             prefetch;
 		final int             limit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
+
 		int          produced;
 		int          nextPrefetchIndex;
 
@@ -1671,7 +1677,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		int tailIndex;
 
-		Object node;
+		@Nullable Object node;
 
 		int fusionMode;
 

@@ -136,6 +136,8 @@ final class FluxTimed<T> extends InternalFluxOperator<T, Timed<T>> {
 		long lastEventNanos;
 
 		boolean done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		TimedSubscriber(CoreSubscriber<? super Timed<T>> actual, Scheduler clock) {

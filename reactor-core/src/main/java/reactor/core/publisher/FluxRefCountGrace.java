@@ -44,7 +44,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	final Duration           gracePeriod;
 	final Scheduler          scheduler;
 
-	RefConnection connection;
+	@Nullable RefConnection connection;
 
 	FluxRefCountGrace(ConnectableFlux<T> source, int n, Duration gracePeriod, Scheduler scheduler) {
 		this.source = ConnectableFlux.from(Objects.requireNonNull(source, "source"));
@@ -161,12 +161,13 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		final FluxRefCountGrace<?> parent;
 
-		Disposable timer;
+		@Nullable Disposable timer;
+
 		long       subscriberCount;
 		boolean    connected;
 		boolean    terminated;
 
-		volatile Disposable sourceDisconnector;
+		volatile @Nullable Disposable sourceDisconnector;
 		static final AtomicReferenceFieldUpdater<RefConnection, Disposable> SOURCE_DISCONNECTOR =
 				AtomicReferenceFieldUpdater.newUpdater(RefConnection.class, Disposable.class, "sourceDisconnector");
 
@@ -200,9 +201,12 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		final FluxRefCountGrace<T> parent;
 
-		RefConnection connection;
+		@Nullable RefConnection connection;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // qs initialized in fusion mode
 		QueueSubscription<T> qs;
 
 		@Nullable Throwable error;
@@ -268,6 +272,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
 					if (isMonitorSet(previousState)) {
+						assert connection != null : "connection must not be null when monitor is set";
 						this.parent.terminated(connection);
 						this.actual.onError(t);
 					}
@@ -287,6 +292,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
 					if (isMonitorSet(previousState)) {
+						assert connection != null : "connection must not be null when monitor is set";
 						this.parent.terminated(connection);
 						this.actual.onComplete();
 					}
@@ -311,6 +317,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 			}
 
 			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+				assert connection != null : "connection must not be null when cancelling";
 				parent.cancel(connection);
 			}
 		}

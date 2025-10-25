@@ -50,6 +50,7 @@ final class FluxHide<T> extends InternalFluxOperator<T, T> {
 	static final class HideSubscriber<T> implements InnerOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 		
 		HideSubscriber(CoreSubscriber<? super T> actual) {
@@ -106,6 +107,7 @@ final class FluxHide<T> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		SuppressFuseableSubscriber(CoreSubscriber<? super T> actual) {

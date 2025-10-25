@@ -101,6 +101,8 @@ final class FluxTapRestoringThreadLocals<T, STATE> extends FluxOperator<T, T> {
 		final SignalListener<T> listener;
 
 		boolean done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		TapSubscriber(CoreSubscriber<? super T> actual, SignalListener<T> signalListener, Context ctx) {

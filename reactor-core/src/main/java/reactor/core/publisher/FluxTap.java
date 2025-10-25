@@ -105,6 +105,8 @@ final class FluxTap<T, STATE> extends InternalFluxOperator<T, T> {
 		final SignalListener<T>         listener;
 
 		boolean done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		TapSubscriber(CoreSubscriber<? super T> actual,
