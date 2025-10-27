@@ -35,7 +35,7 @@ import reactor.core.Scannable;
 interface InnerProducer<O>
 		extends Scannable, Subscription {
 
-	CoreSubscriber<? super O> actual();
+	@Nullable CoreSubscriber<? super O> actual();
 
 	@Override
 	default @Nullable Object scanUnsafe(Attr key) {

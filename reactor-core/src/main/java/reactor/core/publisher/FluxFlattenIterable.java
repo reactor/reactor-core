@@ -285,14 +285,13 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			return valueReady;
 		}
 
-		R next(Spliterator<? extends R> spliterator) {
+		@Nullable R next(Spliterator<? extends R> spliterator) {
 			if (!valueReady && !hasNext(spliterator))
 				throw new NoSuchElementException();
 			else {
 				valueReady = false;
 				R t = nextElement;
 				nextElement = null;
-				assert t != null : "value can not be null when hasNext returned true";
 				return t;
 			}
 		}

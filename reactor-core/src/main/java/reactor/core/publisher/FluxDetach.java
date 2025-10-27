@@ -104,8 +104,7 @@ final class FluxDetach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
-			assert actual != null : "actual can not be null when actual() is called";
+		public @Nullable CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
