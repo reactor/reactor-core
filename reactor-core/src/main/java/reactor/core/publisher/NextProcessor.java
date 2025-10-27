@@ -97,11 +97,10 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 	@SuppressWarnings("rawtypes")
 	static final NextInner[] EMPTY_WITH_SOURCE = new NextInner[0];
 
-	@SuppressWarnings("NotNullFieldNotInitialized") // subscription is set in onSubscribe
-	volatile Subscription subscription;
+	volatile @Nullable Subscription subscription;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM =
+	static final AtomicReferenceFieldUpdater<NextProcessor, @Nullable Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 
 	@Nullable CorePublisher<? extends O> source;

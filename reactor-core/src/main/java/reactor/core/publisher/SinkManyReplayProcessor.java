@@ -278,8 +278,9 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 
 	final FluxReplay.ReplayBuffer<T> buffer;
 
-	Subscription subscription;
+	@Nullable Subscription subscription;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile FluxReplay.ReplaySubscription<T>[] subscribers;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<SinkManyReplayProcessor, FluxReplay.ReplaySubscription[]>
@@ -501,7 +502,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 
 		int tailIndex;
 
-		Object node;
+		@Nullable Object node;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")

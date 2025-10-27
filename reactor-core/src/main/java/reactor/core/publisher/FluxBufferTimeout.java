@@ -49,7 +49,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final long        timespan;
 	final TimeUnit    unit;
 	final boolean     fairBackpressure;
-	final Logger      logger;
+
+	final @Nullable Logger logger;
 
 	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
@@ -717,7 +718,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		final Scheduler.Worker           timer;
 		final Runnable                   flushTask;
 
-		protected Subscription subscription;
+		protected @Nullable Subscription subscription;
 
 		volatile     int                                                  terminated =
 				NOT_TERMINATED;
@@ -744,11 +745,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "index");
 
 
-		volatile Disposable timespanRegistration;
+		volatile @Nullable Disposable timespanRegistration;
 
 		final Supplier<C> bufferSupplier;
 
-		volatile C values;
+		volatile @Nullable C values;
 
 		BufferTimeoutSubscriber(CoreSubscriber<? super C> actual,
 				int maxSize,
@@ -890,8 +891,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			nextCallback(value);
 
 			if (flush) {
-				if (timespanRegistration != null) {
-					timespanRegistration.dispose();
+				Disposable tsRegistration = timespanRegistration;
+				if (tsRegistration != null) {
+					tsRegistration.dispose();
 					timespanRegistration = null;
 				}
 				flushCallback(value);

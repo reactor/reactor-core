@@ -95,7 +95,11 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 
 		this.ttlGenerator = sig -> {
 			if (sig.isOnNext()) return valueTtlGenerator.apply(sig.get());
-			if (sig.isOnError()) return errorTtlGenerator.apply(sig.getThrowable());
+			if (sig.isOnError()) {
+				Throwable t = sig.getThrowable();
+				assert t != null : "throwable may not be null when isOnError";
+				return errorTtlGenerator.apply(t);
+			}
 			return emptyTtlGenerator.get();
 		};
 		this.clock = clock;
@@ -154,7 +158,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 					inner.onComplete();
 				}
 				else {
-					inner.onError(state.getThrowable());
+					Throwable t = state.getThrowable();
+					assert t != null : "throwable may not be null when state is neither onNext nor onComplete";
+					inner.onError(t);
 				}
 				break;
 			}
@@ -172,7 +178,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 
 		final MonoCacheTime<T> main;
 
-		volatile Subscription subscription;
+		volatile @Nullable Subscription subscription;
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "subscription");
 
@@ -306,8 +312,10 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 					signalToPropagate = Signal.error(generatorError);
 					STATE.set(main, signalToPropagate);
 					if (signal.isOnError()) {
+						Throwable t = signal.getThrowable();
+						assert t != null : "throwable may not be null when isOnError";
 						//noinspection ThrowableNotThrown
-						Exceptions.addSuppressed(generatorError, signal.getThrowable());
+						Exceptions.addSuppressed(generatorError, t);
 					}
 				}
 
@@ -324,7 +332,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 				else {
 					//error during TTL generation, signal != updatedSignal, aka dropped
 					if (signal.isOnNext()) {
-						Operators.onNextDropped(signal.get(), currentContext());
+						T value = signal.get();
+						assert value != null : "value may not be null when isOnNext";
+						Operators.onNextDropped(value, currentContext());
 					}
 					//if signal.isOnError(), avoid dropping the error. it is not really dropped but already suppressed
 					//in all cases, unless nextDropped hook throws, immediate cache clear
@@ -337,7 +347,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 					inner.complete(signalToPropagate.get());
 				}
 				else if (signalToPropagate.isOnError()) {
-					inner.onError(signalToPropagate.getThrowable());
+					Throwable t = signalToPropagate.getThrowable();
+					assert t != null : "throwable may not be null when isOnError";
+					inner.onError(t);
 				}
 				else {
 					inner.onComplete();
@@ -385,7 +397,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 
 	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
-		CoordinatorSubscriber<T> coordinator;
+		@Nullable CoordinatorSubscriber<T> coordinator;
 
 		CacheMonoSubscriber(CoreSubscriber<? super T> actual) {
 			super(actual);

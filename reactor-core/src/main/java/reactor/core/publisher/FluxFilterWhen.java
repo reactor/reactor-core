@@ -107,7 +107,8 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, FilterWhenInner>CURRENT   =
 				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, FilterWhenInner.class, "current");
 
-		@SuppressWarnings("ConstantConditions")
+		// dummy instance has null reference
+		@SuppressWarnings({"ConstantConditions", "DataFlowIssue"})
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
 		static final int STATE_FRESH   = 0;
@@ -418,6 +419,7 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription sub;
 
 		static final AtomicReferenceFieldUpdater<FilterWhenInner, Subscription> SUB =

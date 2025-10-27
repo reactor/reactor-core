@@ -41,11 +41,12 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 	private final transient ContextView contextView;
 
 	private final SignalType type;
-	private final Throwable  throwable;
 
-	private final T value;
+	private final @Nullable Throwable throwable;
 
-	private transient final Subscription subscription;
+	private final @Nullable T value;
+
+	private transient final @Nullable Subscription subscription;
 
 	ImmutableSignal(ContextView contextView, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
 		this.contextView = contextView;

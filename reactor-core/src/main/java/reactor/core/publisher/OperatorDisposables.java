@@ -47,7 +47,8 @@ final class OperatorDisposables {
 	 * @param newValue the new Disposable to set
 	 * @return true if successful, false if the field contains the {@link #DISPOSED} instance.
 	 */
-	public static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
+	public static <T> boolean set(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater,
+			T holder, @Nullable Disposable newValue) {
 		for (;;) {
 			Disposable current = updater.get(holder);
 			if (current == DISPOSED) {
@@ -77,7 +78,7 @@ final class OperatorDisposables {
 	 * @param newValue the new Disposable to set, not null
 	 * @return true if the operation succeeded, false
 	 */
-	public static <T> boolean setOnce(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue,
+	public static <T> boolean setOnce(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater, T holder, Disposable newValue,
 			Consumer<RuntimeException> errorCallback) {
 		Objects.requireNonNull(newValue, "newValue is null");
 		if (!updater.compareAndSet(holder, null, newValue)) {
@@ -100,7 +101,7 @@ final class OperatorDisposables {
 	 * @return true if the operation succeeded, false if the target field contained
 	 * the common {@link #DISPOSED} instance and the given disposable is not null but is disposed.
 	 */
-	public static <T> boolean replace(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
+	public static <T> boolean replace(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater, T holder, @Nullable Disposable newValue) {
 		for (;;) {
 			Disposable current = updater.get(holder);
 			if (current == DISPOSED) {
@@ -122,7 +123,7 @@ final class OperatorDisposables {
 	 * @param holder the target instance holding the field
 	 * @return true if the {@link Disposable} held by the field was properly disposed
 	 */
-	public static <T> boolean dispose(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder) {
+	public static <T> boolean dispose(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater, T holder) {
 		Disposable current = updater.get(holder);
 		Disposable d = DISPOSED;
 		if (current != d) {
@@ -169,7 +170,7 @@ final class OperatorDisposables {
 	 * @param newValue the disposable to set
 	 * @return true if successful, false otherwise
 	 */
-	public static <T> boolean trySet(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {
+	public static <T> boolean trySet(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater, T holder, Disposable newValue) {
 		if (!updater.compareAndSet(holder, null, newValue)) {
 			if (updater.get(holder) == DISPOSED) {
 				newValue.dispose();
@@ -185,7 +186,7 @@ final class OperatorDisposables {
 	 * @param d the disposable to check
 	 * @return true if d is {@link #DISPOSED}
 	 */
-	public static boolean isDisposed(Disposable d) {
+	public static boolean isDisposed(@Nullable Disposable d) {
 		return d == DISPOSED;
 	}
 

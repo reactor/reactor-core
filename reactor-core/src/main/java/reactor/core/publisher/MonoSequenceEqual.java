@@ -46,8 +46,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		this.second = Operators.toFluxOrMono(Objects.requireNonNull(second, "second"));
 		this.comparer = Objects.requireNonNull(comparer, "comparer");
 		if(prefetch < 1){
-			throw new IllegalArgumentException("Buffer size must be strictly positive: " +
-					""+ prefetch);
+			throw new IllegalArgumentException("Buffer size must be strictly positive: " + prefetch);
 		}
 		this.prefetch = prefetch;
 	}
@@ -82,9 +81,9 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		static final AtomicIntegerFieldUpdater<EqualCoordinator> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(EqualCoordinator.class, "once");
 
-		T v1;
+		@Nullable T v1;
 
-		T v2;
+		@Nullable T v2;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -296,9 +295,11 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 
 		@Nullable Throwable error;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription cachedSubscription;
-		volatile Subscription subscription;
-		static final AtomicReferenceFieldUpdater<EqualSubscriber, Subscription> S =
+
+		volatile @Nullable Subscription subscription;
+		static final AtomicReferenceFieldUpdater<EqualSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(EqualSubscriber.class,
 						Subscription.class, "subscription");
 

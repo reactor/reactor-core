@@ -1675,6 +1675,7 @@ public abstract class Operators {
 		// s is set in set() and only used after
 		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription s;
+
 		volatile long requested;
 
 		protected boolean isCancelled(){

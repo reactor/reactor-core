@@ -62,8 +62,9 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		final BiFunction<T, T, T> aggregator;
 		final CoreSubscriber<? super T> actual;
 
-		T aggregate;
+		@Nullable T aggregate;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
