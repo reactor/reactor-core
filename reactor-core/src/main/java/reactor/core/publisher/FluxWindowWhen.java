@@ -83,7 +83,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 		}
 		WindowWhenOpenSubscriber<T, U> os = new WindowWhenOpenSubscriber<>(main);
 
-		if (WindowWhenMainSubscriber.BOUNDARY.compareAndSet(main,null, os)) {
+		if (WindowWhenMainSubscriber.BOUNDARY.compareAndSet(main, null, os)) {
 			WindowWhenMainSubscriber.OPEN_WINDOW_COUNT.incrementAndGet(main);
 			start.subscribe(os);
 			return main;
@@ -107,10 +107,11 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 		final Disposable.Composite resources;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		volatile Disposable boundary;
-		static final AtomicReferenceFieldUpdater<WindowWhenMainSubscriber, Disposable> BOUNDARY =
+		volatile @Nullable Disposable boundary;
+		static final AtomicReferenceFieldUpdater<WindowWhenMainSubscriber, @Nullable Disposable> BOUNDARY =
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenMainSubscriber.class, Disposable.class, "boundary");
 
 		final List<Sinks.Many<T>> windows;
@@ -261,8 +262,8 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 
 						Sinks.Many<T> w = wo.w;
 						if (w != null) {
-							if (ws.remove(wo.w)) {
-								wo.w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+							if (ws.remove(w)) {
+								w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 
 								if (OPEN_WINDOW_COUNT.decrementAndGet(this) == 0) {
 									dispose();
@@ -295,6 +296,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						Publisher<V> p;
 
 						try {
+							assert wo.open != null : "open signal can not be null";
 							p = Objects.requireNonNull(close.apply(wo.open), "The publisher supplied is null");
 						} catch (Throwable e) {
 							cancelled = true;
@@ -350,8 +352,10 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowOperation<T, U> {
-		final Sinks.Many<T> w;
-		final U             open;
+		final Sinks.@Nullable Many<T> w;
+
+		final @Nullable U open;
+
 		WindowOperation(Sinks.@Nullable Many<T> w, @Nullable U open) {
 			this.w = w;
 			this.open = open;
@@ -361,7 +365,9 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	static final class WindowWhenOpenSubscriber<T, U>
 			implements Disposable, Subscriber<U> {
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
+
 		static final AtomicReferenceFieldUpdater<WindowWhenOpenSubscriber, Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenOpenSubscriber.class, Subscription.class, "subscription");
 
@@ -421,7 +427,9 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	static final class WindowWhenCloseSubscriber<T, V>
 			implements Disposable, Subscriber<V> {
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
+
 		static final AtomicReferenceFieldUpdater<WindowWhenCloseSubscriber, Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenCloseSubscriber.class, Subscription.class, "subscription");
 

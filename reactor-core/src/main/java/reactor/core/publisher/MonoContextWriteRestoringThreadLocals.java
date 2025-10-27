@@ -58,8 +58,10 @@ final class MonoContextWriteRestoringThreadLocals<T> extends MonoOperator<T, T> 
 		final CoreSubscriber<? super T> actual;
 		final Context                   context;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
-		boolean      done;
+
+		boolean done;
 
 		ContextWriteRestoringThreadLocalsSubscriber(CoreSubscriber<? super T> actual, Context context) {
 			this.actual = actual;

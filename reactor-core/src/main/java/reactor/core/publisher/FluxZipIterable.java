@@ -77,6 +77,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 
 		final BiFunction<? super T, ? super U, ? extends R> zipper;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

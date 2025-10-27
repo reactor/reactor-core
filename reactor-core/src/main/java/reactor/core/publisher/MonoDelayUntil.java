@@ -133,11 +133,14 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		int index;
 
-		T value;
+		@Nullable T value;
+
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
-		DelayUntilTrigger<?> triggerSubscriber;
+
+		@Nullable DelayUntilTrigger<?> triggerSubscriber;
 
 		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
@@ -213,6 +216,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 			if (hasInner(previousState)) {
 				Operators.onDiscard(this.value, this.actual.currentContext());
+				assert this.triggerSubscriber != null : "triggerSubscriber can not be null when HAS_INNER is set";
 				this.triggerSubscriber.cancel();
 			}
 
@@ -250,6 +254,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 					this.done = true;
 					final CoreSubscriber<? super T> actual = this.actual;
 					final T v = this.value;
+					assert v != null : "value can not be null when flag is set";
 
 					actual.onNext(v);
 					actual.onComplete();
@@ -277,6 +282,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			if (hasInner(previousState)) {
 				Operators.onDiscard(this.value, this.actual.currentContext());
 
+				assert this.triggerSubscriber != null : "triggerSubscriber can not be null when HAS_INNER is set";
 				this.triggerSubscriber.cancel();
 		    }
 		}
@@ -414,6 +420,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 				if (hasRequest(s) && STATE.compareAndSet(this, s, TERMINATED)) {
 					final CoreSubscriber<? super T> actual = this.actual;
 					final T v = this.value;
+					assert v != null : "value can not be null when completing as a result of processing triggers";
 
 					actual.onNext(v);
 					actual.onComplete();
@@ -432,7 +439,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 		final DelayUntilCoordinator<?> parent;
 
-		Subscription s;
+		@Nullable Subscription s;
 		boolean done;
 
 		@Nullable Throwable error;
@@ -547,6 +554,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		}
 
 		void cancel() {
+			assert s != null : "subscription can not be null when cancelling";
 			this.s.cancel();
 		}
 
