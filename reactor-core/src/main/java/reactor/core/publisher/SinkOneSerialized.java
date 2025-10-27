@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Sinks.One;
 
 public class SinkOneSerialized<T> extends SinkEmptySerialized<T> implements InternalOneSink<T>, ContextHolder {
@@ -28,7 +29,7 @@ public class SinkOneSerialized<T> extends SinkEmptySerialized<T> implements Inte
 	}
 
 	@Override
-	public Sinks.EmitResult tryEmitValue(T t) {
+	public Sinks.EmitResult tryEmitValue(@Nullable T t) {
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
 			return Sinks.EmitResult.FAIL_NON_SERIALIZED;

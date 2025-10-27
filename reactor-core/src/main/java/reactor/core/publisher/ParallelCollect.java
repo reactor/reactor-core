@@ -110,7 +110,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 
 		final BiConsumer<? super C, ? super T> collector;
 
-		C collection;
+		@Nullable C collection;
 
 		boolean done;
 
@@ -191,7 +191,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		}
 
 		@Override
-		C accumulatedValue() {
+		@Nullable C accumulatedValue() {
 			final C c;
 			synchronized (this) {
 				c = collection;

@@ -211,7 +211,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<ExpandDepthSubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ExpandDepthSubscription.class, "requested");
 
-		volatile Object    current;
+		volatile @Nullable Object current;
+
 		static final AtomicReferenceFieldUpdater<ExpandDepthSubscription, Object> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscription.class, Object.class, "current");
 
@@ -219,12 +220,13 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<ExpandDepthSubscription> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(ExpandDepthSubscription.class, "wip");
 
-		Deque<ExpandDepthSubscriber<T>> subscriptionStack;
+		@Nullable Deque<ExpandDepthSubscriber<T>> subscriptionStack;
 
 		volatile boolean cancelled;
 
-		CorePublisher<? extends T> source;
-		long                       consumed;
+		@Nullable CorePublisher<? extends T> source;
+
+		long consumed;
 
 		ExpandDepthSubscription(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<? extends T>> expander,
@@ -443,7 +445,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		ExpandDepthSubscription<T> parent;
 
 		volatile boolean done;
-		volatile T       value;
+
+		volatile @Nullable T value;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;

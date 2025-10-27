@@ -66,7 +66,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 
 		final BiFunction<R, ? super T, R> accumulator;
 
-		R seed;
+		@Nullable R seed;
 
 		boolean done;
 
@@ -163,7 +163,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		R accumulatedValue() {
+		@Nullable R accumulatedValue() {
 			final R seed;
 			synchronized (this) {
 				seed = this.seed;

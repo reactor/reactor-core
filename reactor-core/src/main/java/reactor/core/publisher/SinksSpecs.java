@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks.Empty;
 import reactor.core.publisher.Sinks.Many;
@@ -39,8 +40,9 @@ final class SinksSpecs {
 		static final AtomicIntegerFieldUpdater<AbstractSerializedSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(AbstractSerializedSink.class, "wip");
 
-		volatile Thread                                                          lockedAt;
-		static final AtomicReferenceFieldUpdater<AbstractSerializedSink, Thread> LOCKED_AT =
+		volatile @Nullable Thread lockedAt;
+
+		static final AtomicReferenceFieldUpdater<AbstractSerializedSink, @Nullable Thread>LOCKED_AT =
 				AtomicReferenceFieldUpdater.newUpdater(AbstractSerializedSink.class, Thread.class, "lockedAt");
 
 		boolean tryAcquire(Thread currentThread) {

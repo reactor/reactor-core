@@ -514,7 +514,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return parent.actual().currentContext();
+			CoreSubscriber<?> actual = parent.actual();
+			assert actual != null : "actual subscriber can not be null in inner consumer";
+			return actual.currentContext();
 		}
 
 		@Override
@@ -625,7 +627,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return parent.actual().currentContext();
+			CoreSubscriber<?> actual = parent.actual();
+			assert actual != null : "actual subscriber can not be null in inner consumer";
+			return actual.currentContext();
 		}
 
 	}

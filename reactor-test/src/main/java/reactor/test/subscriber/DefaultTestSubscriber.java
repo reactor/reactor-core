@@ -50,7 +50,9 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 
 	@SuppressWarnings("NotNullFieldNotInitialized") // s is set in onSubscribe
 	Subscription s;
+
 	Fuseable.@Nullable QueueSubscription<T> qs;
+
 	int fusionMode = -1;
 
 	// state tracking

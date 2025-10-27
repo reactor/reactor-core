@@ -40,9 +40,9 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 
 	final ParallelFlux<T> source;
 
-	final String name;
+	final @Nullable String name;
 
-	final List<Tuple2<String, String>> tagsWithDuplicates;
+	final @Nullable List<Tuple2<String, String>> tagsWithDuplicates;
 
 	@SuppressWarnings("unchecked")
 	static <T> ParallelFlux<T> createOrAppend(ParallelFlux<T> source, String name) {

@@ -208,7 +208,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final Spliterator<? extends T> spliterator;
 		final boolean knownToBeFinite;
-		final Runnable onClose;
+
+		final @Nullable Runnable onClose;
 
 		volatile boolean cancelled;
 
@@ -238,13 +239,13 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		 */
 		static final int STATE_CALL_HAS_NEXT      = 3;
 
-		T current;
+		@Nullable T current;
 
 		boolean valueReady = false;
 
-		T nextElement;
+		@Nullable T nextElement;
 
-		Throwable hasNextFailure;
+		@Nullable Throwable hasNextFailure;
 
 		IterableSubscription(CoreSubscriber<? super T> actual,
 							 Spliterator<? extends T> spliterator, boolean knownToBeFinite, @Nullable Runnable onClose) {
@@ -271,7 +272,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			return valueReady;
 		}
 
-		T next() {
+		@Nullable T next() {
 			if (!valueReady && !hasNext())
 				throw new NoSuchElementException();
 			else {
@@ -535,7 +536,8 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final Spliterator<? extends T> spliterator;
 		final boolean               knownToBeFinite;
-		final Runnable              onClose;
+
+		final @Nullable Runnable onClose;
 
 		volatile boolean cancelled;
 
@@ -565,13 +567,13 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		 */
 		static final int STATE_CALL_HAS_NEXT      = 3;
 
-		T current;
+		@Nullable T current;
 
 		boolean valueReady = false;
 
-		T nextElement;
+		@Nullable T nextElement;
 
-		Throwable hasNextFailure;
+		@Nullable Throwable hasNextFailure;
 
 		IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
 										Spliterator<? extends T> spliterator, boolean knownToBeFinite, @Nullable Runnable onClose) {
@@ -598,7 +600,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			return valueReady;
 		}
 
-		T next() {
+		@Nullable T next() {
 			if (!valueReady && !hasNext())
 				throw new NoSuchElementException();
 			else {

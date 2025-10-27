@@ -77,6 +77,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		int sourceMode;
@@ -236,6 +237,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		int sourceMode;

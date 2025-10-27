@@ -162,12 +162,13 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		return new UnicastProcessor<>(Hooks.wrapQueue(queue), onOverflow, endcallback);
 	}
 
-	final Queue<T>            queue;
-	final Consumer<? super T> onOverflow;
+	final Queue<T> queue;
 
-	volatile Disposable onTerminate;
+	final @Nullable Consumer<? super T> onOverflow;
+
+	volatile @Nullable Disposable onTerminate;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<UnicastProcessor, Disposable> ON_TERMINATE =
+	static final AtomicReferenceFieldUpdater<UnicastProcessor, @Nullable Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
@@ -175,6 +176,8 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@Nullable Throwable error;
 
 	boolean hasDownstream; //important to not loose the downstream too early and miss discard hook, while having relevant hasDownstreams()
+
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile CoreSubscriber<? super T> actual;
 
 	volatile boolean cancelled;

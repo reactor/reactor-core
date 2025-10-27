@@ -78,9 +78,9 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 
 		boolean done;
 
-		volatile FilterWhenInner<T> asyncFilter;
+		volatile @Nullable FilterWhenInner<T> asyncFilter;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, FilterWhenInner> ASYNC_FILTER =
+		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, @Nullable FilterWhenInner> ASYNC_FILTER =
 				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenMain.class, FilterWhenInner.class, "asyncFilter");
 
 		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked",

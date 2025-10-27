@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
 
 /**
@@ -30,6 +31,8 @@ interface InnerOperator<I, O>
 
 	@Override
 	default Context currentContext() {
-		return actual().currentContext();
+		CoreSubscriber<? super O> actual = actual();
+		assert actual != null : "actual subscriber can not be null in inner operator";
+		return actual.currentContext();
 	}
 }

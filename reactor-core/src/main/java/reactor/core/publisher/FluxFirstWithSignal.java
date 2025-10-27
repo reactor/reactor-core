@@ -37,9 +37,9 @@ import reactor.core.Scannable;
  */
 final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> {
 
-	final Publisher<? extends T>[] array;
+	final Publisher<? extends T> @Nullable [] array;
 
-	final Iterable<? extends Publisher<? extends T>> iterable;
+	final @Nullable Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
 	FluxFirstWithSignal(Publisher<? extends T>... array) {
@@ -64,6 +64,7 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 			Iterator<? extends Publisher<? extends T>> it;
 
 			try {
+				assert iterable != null : "iterable can not be null when array is null";
 				it = Objects.requireNonNull(iterable.iterator(),
 						"The iterator returned is null");
 			}

@@ -58,9 +58,11 @@ final class FluxContextWriteRestoringThreadLocalsFuseable<T> extends FluxOperato
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           Fuseable.QueueSubscription<T> {
 
-		final CoreSubscriber<? super T>        actual;
-		final ConditionalSubscriber<? super T> actualConditional;
-		final Context                          context;
+		final CoreSubscriber<? super T> actual;
+
+		final @Nullable ConditionalSubscriber<? super T> actualConditional;
+
+		final Context context;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;

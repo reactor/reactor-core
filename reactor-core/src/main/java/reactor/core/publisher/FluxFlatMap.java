@@ -230,7 +230,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		final Supplier<? extends Queue<R>>                          innerQueueSupplier;
 		final CoreSubscriber<? super R>                             actual;
 
-		volatile Queue<R> scalarQueue;
+		volatile @Nullable Queue<R> scalarQueue;
 
 		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
@@ -1071,6 +1071,9 @@ abstract class FlatMapTracker<T> {
 
 	abstract void setIndex(T entry, int index);
 
+	// assigns null to non-null reference field (free) to avoid memory a leak
+	// while the reference is not checked for nullness to improve performance
+	@SuppressWarnings("DataFlowIssue")
 	final void unsubscribe() {
 		T[] a;
 		T[] t = terminated();

@@ -168,8 +168,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 		final boolean                                                          isMonoSource;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription resourceSubscription;
-		boolean      resourceProvided;
+
+		boolean resourceProvided;
 
 		ResourceSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super S, ? extends Publisher<? extends T>> resourceClosure,

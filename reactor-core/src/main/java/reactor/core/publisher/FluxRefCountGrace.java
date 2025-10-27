@@ -103,9 +103,6 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	void cancel(RefConnection rc) {
-		boolean replaceTimer = false;
-		Disposable dispose = null;
-		Disposable.Swap sd = null;
 		synchronized (this) {
 			if (rc.terminated) {
 				return;
@@ -116,22 +113,20 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				return;
 			}
 			if (!gracePeriod.isZero()) {
-				sd = Disposables.swap();
+				Disposable.Swap sd = Disposables.swap();
 				rc.timer = sd;
-				replaceTimer = true;
+				sd.replace(scheduler.schedule(rc, gracePeriod.toNanos(), TimeUnit.NANOSECONDS));
 			}
 			else if (rc == connection) {
 				//emulate what a timeout would do without getting out of sync block
 				//capture the disposable for later disposal
 				connection = null;
-				dispose = RefConnection.SOURCE_DISCONNECTOR.getAndSet(rc, Disposables.disposed());
+				Disposable dispose = RefConnection.SOURCE_DISCONNECTOR.getAndSet(rc,
+						Disposables.disposed());
+				if (dispose != null) {
+					dispose.dispose();
+				}
 			}
-		}
-
-		if (replaceTimer) {
-			sd.replace(scheduler.schedule(rc, gracePeriod.toNanos(), TimeUnit.NANOSECONDS));
-		} else if (dispose != null) {
-			dispose.dispose();
 		}
 	}
 
@@ -168,7 +163,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		boolean    terminated;
 
 		volatile @Nullable Disposable sourceDisconnector;
-		static final AtomicReferenceFieldUpdater<RefConnection, Disposable> SOURCE_DISCONNECTOR =
+		static final AtomicReferenceFieldUpdater<RefConnection, @Nullable Disposable> SOURCE_DISCONNECTOR =
 				AtomicReferenceFieldUpdater.newUpdater(RefConnection.class, Disposable.class, "sourceDisconnector");
 
 		RefConnection(FluxRefCountGrace<?> parent) {
