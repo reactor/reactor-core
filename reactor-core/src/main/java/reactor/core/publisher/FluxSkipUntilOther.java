@@ -132,18 +132,20 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 		final Context ctx;
 
-		volatile Subscription       main;
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
+		volatile Subscription main;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, @Nullable Subscription>
 				MAIN =
 				AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class,
 						Subscription.class,
 						"main");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in main's onSubscribe
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, @Nullable Subscription>
 				OTHER =
 				AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class,
 						Subscription.class,
@@ -157,7 +159,7 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public final CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

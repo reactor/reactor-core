@@ -450,6 +450,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 								return;
 							}
 
+							assert inner != null : "inner can not be null";
 							if (em == ErrorMode.IMMEDIATE) {
 								Throwable ex = error;
 								if (ex != null) {

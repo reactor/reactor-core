@@ -54,12 +54,15 @@ final class FluxContextWrite<T> extends InternalFluxOperator<T, T> implements Fu
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
-		final CoreSubscriber<? super T>        actual;
-		final ConditionalSubscriber<? super T> actualConditional;
-		final Context                          context;
+		final CoreSubscriber<? super T> actual;
+		final Context                   context;
 
-		QueueSubscription<T> qs;
-		Subscription         s;
+		final @Nullable ConditionalSubscriber<? super T> actualConditional;
+
+		@Nullable QueueSubscription<T> qs;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+		Subscription s;
 
 		@SuppressWarnings("unchecked")
 		ContextWriteSubscriber(CoreSubscriber<? super T> actual, Context context) {

@@ -53,7 +53,7 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
 	    final CoreSubscriber<? super Signal<T>> actual;
 	    final Context                           cachedContext;
 
-	    Signal<T> terminalSignal;
+	    @Nullable Signal<T> terminalSignal;
 	    
 	    volatile boolean cancelled;
 	    

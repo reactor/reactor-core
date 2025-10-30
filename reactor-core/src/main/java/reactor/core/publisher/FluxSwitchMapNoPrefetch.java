@@ -165,6 +165,8 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
+			// NullAway issue?
+			assert si != null : "si can not be null here";
 			final int nextIndex = si.index + 1;
 			final SwitchMapInner<T, R> nsi = new SwitchMapInner<>(this, this.actual, nextIndex, this.logger);
 
@@ -326,7 +328,10 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		long    requested;
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // set when switching
 		T nextElement;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // set when switching
 		SwitchMapInner<T, R> nextInner;
 
 		SwitchMapInner(SwitchMapMain<T, R> parent, CoreSubscriber<? super R> actual, int index, @Nullable StateLogger logger) {

@@ -184,9 +184,10 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 		//no need for volatile: only used in onNext/onError/onComplete
 		boolean done = false;
 
-		volatile Subscription upstream;
+		volatile @Nullable Subscription upstream;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Subscription> UPSTREAM =
+		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, @Nullable Subscription> UPSTREAM =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "upstream");
 
 
@@ -375,7 +376,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 
 	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
-		CoordinatorSubscriber<T> coordinator;
+		@Nullable CoordinatorSubscriber<T> coordinator;
 
 		CacheMonoSubscriber(CoreSubscriber<? super T> actual) {
 			super(actual);
@@ -392,7 +393,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public @Nullable Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return coordinator.main;
+			if (key == Attr.PARENT) return coordinator == null ? null : coordinator.main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);
 		}

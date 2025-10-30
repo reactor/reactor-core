@@ -130,9 +130,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			final int  index;
 			final long time;
 
-			final @Nullable T value;
+			final T value;
 
-			TimedNode(int index, @Nullable T value, long time) {
+			TimedNode(int index, T value, long time) {
 				this.index = index;
 				this.value = value;
 				this.time = time;
@@ -164,6 +164,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		volatile long done = NOT_DONE;
 
+		// initializing head to dummy value with null references
+		@SuppressWarnings("DataFlowIssue")
 		SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
 				Scheduler scheduler) {
@@ -236,6 +238,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 						break;
 					}
 
+					assert next != null && next.value != null : "next and next.value must not be null";
 					a.onNext(next.value);
 
 					e++;
@@ -437,7 +440,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			this.tail = valueNode;
 			int s = size;
 			if (s == limit) {
-				head = head.get();
+				TimedNode<T> afterHead = head.get();
+				assert afterHead != null : "afterHead can not be null when s == limit";
+				head = afterHead;
 			}
 			else {
 				size = s + 1;
@@ -813,7 +818,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			this.tail = n;
 			int s = size;
 			if (s == limit) {
-				head = head.get();
+				Node<T> afterHead = head.get();
+				assert afterHead != null : "afterHead can not be null when s == limit";
+				head = afterHead;
 			}
 			else {
 				size = s + 1;
@@ -872,6 +879,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 						break;
 					}
 
+					assert next != null && next.value != null : "next and next.value must not be null";
 					a.onNext(next.value);
 
 					e++;

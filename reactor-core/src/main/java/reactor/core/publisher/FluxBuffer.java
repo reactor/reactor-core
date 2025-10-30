@@ -95,7 +95,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 
 		final int size;
 
-		C buffer;
+		@Nullable C buffer;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
@@ -224,7 +224,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 
 		final int skip;
 
-		C buffer;
+		@Nullable C buffer;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;

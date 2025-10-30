@@ -389,7 +389,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 				if (bufs == null) {
 					return;
 				}
-				queue.offer(buffers.remove(idx));
+				queue.offer(bufs.remove(idx));
 			}
 			if (makeDone) {
 				done = true;

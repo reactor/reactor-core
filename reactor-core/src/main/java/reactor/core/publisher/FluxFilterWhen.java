@@ -83,29 +83,45 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T>                         actual;
 		final Context                                           ctx;
 
-		int          consumed;
-		long         consumerIndex;
-		long         emitted;
-		Boolean      innerResult;
-		long         producerIndex;
+		int  consumed;
+		long consumerIndex;
+		long emitted;
+		long producerIndex;
+
+		@Nullable Boolean innerResult;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription upstream;
 
-		volatile boolean         cancelled;
-		volatile FilterWhenInner current;
-		volatile boolean         done;
-		volatile Throwable       error;
-		volatile long            requested;
-		volatile int             state;
-		volatile int             wip;
+		volatile @Nullable FilterWhenInner current;
 
-		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, Throwable>      ERROR     =
-				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, Throwable.class, "error");
-		static final AtomicLongFieldUpdater<FluxFilterWhenSubscriber>                      REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, "requested");
-		static final AtomicIntegerFieldUpdater<FluxFilterWhenSubscriber>                   WIP       =
-				AtomicIntegerFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, "wip");
-		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, FilterWhenInner>CURRENT   =
-				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, FilterWhenInner.class, "current");
+		volatile @Nullable Throwable error;
+
+		volatile boolean cancelled;
+		volatile boolean done;
+		volatile long    requested;
+		volatile int     state;
+		volatile int     wip;
+
+		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, Throwable>
+				ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
+						Throwable.class,
+						"error");
+
+		static final AtomicLongFieldUpdater<FluxFilterWhenSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
+						"requested");
+
+		static final AtomicIntegerFieldUpdater<FluxFilterWhenSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
+						"wip");
+
+		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, @Nullable FilterWhenInner>
+				CURRENT =
+				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
+						FilterWhenInner.class,
+						"current");
 
 		// dummy instance has null reference
 		@SuppressWarnings({"ConstantConditions", "DataFlowIssue"})

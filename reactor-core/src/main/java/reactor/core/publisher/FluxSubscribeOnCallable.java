@@ -37,11 +37,11 @@ import reactor.core.scheduler.Scheduler;
  */
 final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scannable {
 
-	final Callable<? extends T> callable;
+	final Callable<? extends @Nullable T> callable;
 
 	final Scheduler scheduler;
 
-	FluxSubscribeOnCallable(Callable<? extends T> callable, Scheduler scheduler) {
+	FluxSubscribeOnCallable(Callable<? extends @Nullable T> callable, Scheduler scheduler) {
 		this.callable = Objects.requireNonNull(callable, "callable");
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
@@ -77,7 +77,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 
 		final CoreSubscriber<? super T> actual;
 
-		final Callable<? extends T> callable;
+		final Callable<? extends @Nullable T> callable;
 
 		final Scheduler scheduler;
 
@@ -87,7 +87,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 				AtomicIntegerFieldUpdater.newUpdater(CallableSubscribeOnSubscription.class,
 						"state");
 
-		T value;
+		@Nullable T value;
 		static final int NO_REQUEST_HAS_VALUE  = 1;
 		static final int HAS_REQUEST_NO_VALUE  = 2;
 		static final int HAS_REQUEST_HAS_VALUE = 3;
@@ -99,24 +99,26 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 		static final int HAS_VALUE = 2;
 		static final int COMPLETE  = 3;
 
-		volatile Disposable mainFuture;
+		volatile @Nullable Disposable mainFuture;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, Disposable>
+		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, @Nullable Disposable>
 				MAIN_FUTURE = AtomicReferenceFieldUpdater.newUpdater(
 				CallableSubscribeOnSubscription.class,
 				Disposable.class,
 				"mainFuture");
 
-		volatile Disposable requestFuture;
+		volatile @Nullable Disposable requestFuture;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, Disposable>
+		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, @Nullable Disposable>
 				REQUEST_FUTURE = AtomicReferenceFieldUpdater.newUpdater(
 				CallableSubscribeOnSubscription.class,
 				Disposable.class,
 				"requestFuture");
 
 		CallableSubscribeOnSubscription(CoreSubscriber<? super T> actual,
-				Callable<? extends T> callable,
+				Callable<? extends @Nullable T> callable,
 				Scheduler scheduler) {
 			this.actual = actual;
 			this.callable = callable;

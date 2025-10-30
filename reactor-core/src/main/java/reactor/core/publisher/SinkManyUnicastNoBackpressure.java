@@ -42,6 +42,7 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 		CANCELLED,
 	}
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile State state;
 
 	@SuppressWarnings("rawtypes")
@@ -51,7 +52,7 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 			"state"
 	);
 
-	private volatile CoreSubscriber<? super T> actual = null;
+	private volatile @Nullable CoreSubscriber<? super T> actual = null;
 
 	volatile long                                                      requested;
 	@SuppressWarnings("rawtypes")
@@ -121,7 +122,9 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 					return Sinks.EmitResult.FAIL_OVERFLOW;
 				}
 
-				actual.onNext(t);
+				CoreSubscriber<? super T> actualSubscriber = this.actual;
+				assert actualSubscriber != null : "actual subscriber can not be null in SUBSCRIBED state";
+				actualSubscriber.onNext(t);
 				Operators.produced(REQUESTED, this, 1);
 				return Sinks.EmitResult.OK;
 			case TERMINATED:
@@ -143,8 +146,10 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 					return Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER;
 				case SUBSCRIBED:
 					if (STATE.compareAndSet(this, s, State.TERMINATED)) {
-						actual.onError(t);
-						actual = null;
+						CoreSubscriber<? super T> actualSubscriber = this.actual;
+						assert actualSubscriber != null : "actual subscriber can not be null in SUBSCRIBED state";
+						actualSubscriber.onError(t);
+						this.actual = null;
 						return Sinks.EmitResult.OK;
 					}
 					continue;
@@ -167,8 +172,10 @@ final class SinkManyUnicastNoBackpressure<T> extends Flux<T> implements Internal
 					return Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER;
 				case SUBSCRIBED:
 					if (STATE.compareAndSet(this, s, State.TERMINATED)) {
-						actual.onComplete();
-						actual = null;
+						CoreSubscriber<? super T> actualSubscriber = this.actual;
+						assert actualSubscriber != null : "actual subscriber can not be null in SUBSCRIBED state";
+						actualSubscriber.onComplete();
+						this.actual = null;
 						return EmitResult.OK;
 					}
 					continue;

@@ -257,7 +257,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 			super(actual, resource, asyncComplete, asyncError, asyncCancel, arbiter);
 		}
 
-		T value;
+		@Nullable T value;
 
 		@Override
 		public void onNext(T value) {

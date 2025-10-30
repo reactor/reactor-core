@@ -34,9 +34,9 @@ import static reactor.core.Scannable.Attr.RUN_STYLE;
  */
 final class MonoNameFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
-	final String name;
+	final @Nullable String name;
 
-	final List<Tuple2<String, String>> tagsWithDuplicates;
+	final @Nullable List<Tuple2<String, String>> tagsWithDuplicates;
 
 	MonoNameFuseable(Mono<? extends T> source,
 			@Nullable String name,

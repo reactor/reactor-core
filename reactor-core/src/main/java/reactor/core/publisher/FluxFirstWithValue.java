@@ -38,9 +38,9 @@ import java.util.stream.Stream;
  */
 final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 
-	final Publisher<? extends T>[] array;
+	final Publisher<? extends T> @Nullable [] array;
 
-	final Iterable<? extends Publisher<? extends T>> iterable;
+	final @Nullable Iterable<? extends Publisher<? extends T>> iterable;
 
 	private FluxFirstWithValue(Publisher<? extends T>[] array) {
 		this.array = Objects.requireNonNull(array, "array");
@@ -106,6 +106,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 			Iterator<? extends Publisher<? extends T>> it;
 
 			try {
+				assert iterable != null : "iterable cannot be null when array is null";
 				it = Objects.requireNonNull(iterable.iterator(),
 						"The iterator returned is null");
 			} catch (Throwable e) {
@@ -184,7 +185,7 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 			implements Subscription, Scannable {
 
 		final FirstValuesEmittingSubscriber<T>[] subscribers;
-		final Throwable[] errorsOrCompleteEmpty;
+		final @Nullable Throwable[] errorsOrCompleteEmpty;
 
 		volatile boolean cancelled;
 
@@ -355,6 +356,9 @@ final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 			}
 		}
 
+		// passing array of nullable errors to Exceptions.multiple is allowed because
+		// it only has null items when this method is not called
+		@SuppressWarnings("DataFlowIssue")
 		void recordTerminalSignals(Throwable t) {
 			parent.errorsOrCompleteEmpty[index] = t;
 			int nb = RaceValuesCoordinator.ERRORS_OR_COMPLETED_EMPTY.incrementAndGet(parent);

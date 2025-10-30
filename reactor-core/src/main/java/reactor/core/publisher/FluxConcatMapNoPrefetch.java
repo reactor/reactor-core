@@ -184,7 +184,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 				if (p instanceof Callable) {
 					@SuppressWarnings("unchecked")
-					Callable<R> callable = (Callable<R>) p;
+					Callable<@Nullable R> callable = (Callable<@Nullable R>) p;
 
 					R result = callable.call();
 					if (result == null) {

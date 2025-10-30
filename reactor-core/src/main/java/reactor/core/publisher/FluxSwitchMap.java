@@ -52,7 +52,8 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 	final int prefetch;
 
-	@SuppressWarnings("ConstantConditions")
+	// dummy object with null reference
+	@SuppressWarnings({"ConstantConditions", "DataFlowIssue"})
 	static final SwitchMapInner<Object> CANCELLED_INNER =
 			new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
 

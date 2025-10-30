@@ -23,7 +23,6 @@ import io.micrometer.context.ContextSnapshot;
 import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.context.Context;
 
@@ -57,9 +56,11 @@ final class FluxContextWriteRestoringThreadLocals<T> extends FluxOperator<T, T> 
 	static class ContextWriteRestoringThreadLocalsSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
-		final CoreSubscriber<? super T>        actual;
-		final ConditionalSubscriber<? super T> actualConditional;
-		final Context                          context;
+		final CoreSubscriber<? super T> actual;
+
+		final @Nullable ConditionalSubscriber<? super T> actualConditional;
+
+		final Context context;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;

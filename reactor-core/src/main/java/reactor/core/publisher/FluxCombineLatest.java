@@ -45,9 +45,9 @@ import reactor.util.context.Context;
  */
 final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceProducer<R> {
 
-	final Publisher<? extends T>[] array;
+	final Publisher<? extends T> @Nullable [] array;
 
-	final Iterable<? extends Publisher<? extends T>> iterable;
+	final @Nullable Iterable<? extends Publisher<? extends T>> iterable;
 
 	final Function<Object[], R> combiner;
 
@@ -100,6 +100,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 			Iterator<? extends Publisher<? extends T>> it;
 
 			try {
+				assert iterable != null : "iterable can not be null when array is null";
 				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {
@@ -368,6 +369,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 			}
 		}
 
+		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
 		void drainOutput() {
 			final CoreSubscriber<? super R> a = actual;
 			final Queue<SourceAndArray> q = queue;

@@ -33,9 +33,9 @@ import reactor.core.CoreSubscriber;
  */
 final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T>  {
 
-	final Mono<? extends T>[] array;
+	final Mono<? extends T> @Nullable [] array;
 
-	final Iterable<? extends Mono<? extends T>> iterable;
+	final @Nullable Iterable<? extends Mono<? extends T>> iterable;
 
 	@SafeVarargs
 	MonoFirstWithSignal(Mono<? extends T>... array) {
@@ -72,6 +72,7 @@ final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T> 
 			Iterator<? extends Publisher<? extends T>> it;
 
 			try {
+				assert iterable != null : "iterable can not be null when array is null";
 				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {

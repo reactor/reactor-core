@@ -33,7 +33,7 @@ import reactor.core.scheduler.Scheduler;
  */
 final class MonoSubscribeOnValue<T> extends Mono<T> implements Scannable {
 
-	final T value;
+	final @Nullable T value;
 
 	final Scheduler scheduler;
 
