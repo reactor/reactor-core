@@ -305,8 +305,8 @@ public final class Disposables {
  */
 static final class SwapDisposable implements Disposable.Swap {
 
-	volatile Disposable inner;
-	static final AtomicReferenceFieldUpdater<SwapDisposable, Disposable>
+	volatile @Nullable Disposable inner;
+	static final AtomicReferenceFieldUpdater<SwapDisposable, @Nullable Disposable>
 	                    INNER =
 			AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");
 
@@ -404,7 +404,8 @@ static final class NeverDisposable implements Disposable {
 	 * @param newValue the new Disposable to set
 	 * @return true if successful, false if the field contains the {@link #DISPOSED} instance.
 	 */
-	static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
+	static <T> boolean set(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater,
+			T holder, @Nullable Disposable newValue) {
 		for (;;) {
 			Disposable current = updater.get(holder);
 			if (current == DISPOSED) {
@@ -432,7 +433,8 @@ static final class NeverDisposable implements Disposable {
 	 * @return true if the operation succeeded, false if the target field contained
 	 * the common {@link #DISPOSED} instance and the given disposable is not null but is disposed.
 	 */
-	static <T> boolean replace(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
+	static <T> boolean replace(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater,
+			T holder, @Nullable Disposable newValue) {
 		for (;;) {
 			Disposable current = updater.get(holder);
 			if (current == DISPOSED) {
@@ -454,7 +456,8 @@ static final class NeverDisposable implements Disposable {
 	 * @param holder the target instance holding the field
 	 * @return true if the {@link Disposable} held by the field was properly disposed
 	 */
-	static <T> boolean dispose(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder) {
+	static <T> boolean dispose(AtomicReferenceFieldUpdater<T, @Nullable Disposable> updater,
+			T holder) {
 		Disposable current = updater.get(holder);
 		Disposable d = DISPOSED;
 		if (current != d) {
@@ -475,7 +478,7 @@ static final class NeverDisposable implements Disposable {
 	 * @param d the disposable to check
 	 * @return true if d is {@link #DISPOSED}
 	 */
-	static boolean isDisposed(Disposable d) {
+	static boolean isDisposed(@Nullable Disposable d) {
 		return d == DISPOSED;
 	}
 	//=====================================================

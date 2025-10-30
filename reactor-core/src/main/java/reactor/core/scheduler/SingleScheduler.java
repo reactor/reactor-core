@@ -48,6 +48,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	final ThreadFactory factory;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile SchedulerState<ScheduledExecutorService> state;
 	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<SingleScheduler, SchedulerState> STATE =

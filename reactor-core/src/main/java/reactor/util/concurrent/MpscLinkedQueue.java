@@ -33,12 +33,18 @@ import org.jspecify.annotations.Nullable;
  * @param <E> the contained value type
  */
 final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E, E> {
+
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	private volatile LinkedQueueNode<E> producerNode;
 
+	@SuppressWarnings("rawtypes")
 	private final static AtomicReferenceFieldUpdater<MpscLinkedQueue, LinkedQueueNode> PRODUCER_NODE_UPDATER
 			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, LinkedQueueNode.class, "producerNode");
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	private volatile LinkedQueueNode<E> consumerNode;
+
+	@SuppressWarnings("rawtypes")
 	private final static AtomicReferenceFieldUpdater<MpscLinkedQueue, LinkedQueueNode> CONSUMER_NODE_UPDATER
 			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, LinkedQueueNode.class, "consumerNode");
 
@@ -67,7 +73,7 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public final boolean offer(final E e) {
+	public boolean offer(final E e) {
 		Objects.requireNonNull(e, "The offered value 'e' must be non-null");
 
 		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
@@ -236,11 +242,13 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 
 	static final class LinkedQueueNode<E>
 	{
-		private volatile LinkedQueueNode<E> next;
-		private final static AtomicReferenceFieldUpdater<LinkedQueueNode, LinkedQueueNode> NEXT_UPDATER
+		private volatile @Nullable LinkedQueueNode<E> next;
+
+		@SuppressWarnings("rawtypes")
+		private final static AtomicReferenceFieldUpdater<LinkedQueueNode, @Nullable LinkedQueueNode> NEXT_UPDATER
 				= AtomicReferenceFieldUpdater.newUpdater(LinkedQueueNode.class, LinkedQueueNode.class, "next");
 
-		private E value;
+		private @Nullable E value;
 
 		LinkedQueueNode()
 		{

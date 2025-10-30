@@ -55,9 +55,10 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     final int n;
     final ThreadFactory factory;
 
-    volatile SchedulerState<ScheduledExecutorService[]> state;
+    volatile @Nullable SchedulerState<ScheduledExecutorService[]> state;
+
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<ParallelScheduler, SchedulerState> STATE =
+    private static final AtomicReferenceFieldUpdater<ParallelScheduler, @Nullable SchedulerState> STATE =
             AtomicReferenceFieldUpdater.newUpdater(
                     ParallelScheduler.class, SchedulerState.class, "state"
             );
@@ -279,8 +280,9 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     @Override
     public Stream<? extends Scannable> inners() {
-        return Stream.of(state.currentResource)
-                .map(exec -> key -> Schedulers.scanExecutor(exec, key));
+	    SchedulerState<ScheduledExecutorService[]> schedulerState = state;
+	    return schedulerState == null ? Stream.empty() : Stream.of(schedulerState.currentResource)
+	                                                   .map(exec -> key -> Schedulers.scanExecutor(exec, key));
     }
 
     @Override

@@ -86,7 +86,9 @@ final class BoundedElasticScheduler implements Scheduler,
 	final ThreadFactory factory;
 	final long          ttlMillis;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile SchedulerState<BoundedServices> state;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<BoundedElasticScheduler, SchedulerState> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(BoundedElasticScheduler.class, SchedulerState.class, "state");
@@ -486,8 +488,9 @@ final class BoundedElasticScheduler implements Scheduler,
 			return t;
 		};
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in constructor
+		final BoundedElasticScheduler parent;
 
-		final BoundedElasticScheduler             parent;
 		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
 		final Clock                               clock;
 		final ScheduledExecutorService            evictor;
@@ -499,6 +502,7 @@ final class BoundedElasticScheduler implements Scheduler,
 					"busyStates");
 
 		//constructor for SHUTDOWN
+		@SuppressWarnings("DataFlowIssue") // only used for SHUTDOWN instance
 		private BoundedServices() {
 			this.parent = null;
 			this.clock = Clock.fixed(Instant.EPOCH, ZONE_UTC);

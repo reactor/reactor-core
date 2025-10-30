@@ -33,17 +33,22 @@ final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	static final Composite DISPOSED = new EmptyCompositeDisposable();
 
+	@SuppressWarnings("DataFlowIssue") // only a dummy object
 	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
 
-	volatile Future<?> future;
-	static final AtomicReferenceFieldUpdater<PeriodicWorkerTask, Future> FUTURE =
+	volatile @Nullable Future<?> future;
+
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<PeriodicWorkerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(PeriodicWorkerTask.class, Future.class, "future");
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile Composite parent;
+
 	static final AtomicReferenceFieldUpdater<PeriodicWorkerTask, Composite> PARENT =
 			AtomicReferenceFieldUpdater.newUpdater(PeriodicWorkerTask.class, Composite.class, "parent");
 
-	Thread thread;
+	@Nullable Thread thread;
 
 	PeriodicWorkerTask(Runnable task, Composite parent) {
 		this.task = task;
@@ -74,7 +79,7 @@ final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	void setFuture(Future<?> f) {
 		for (;;) {
-			Future o = future;
+			Future<?> o = future;
 			if (o == CANCELLED) {
 				f.cancel(thread != Thread.currentThread());
 				return;
@@ -93,7 +98,7 @@ final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 	@Override
 	public void dispose() {
 		for (;;) {
-			Future f = future;
+			Future<?> f = future;
 			if (f == CANCELLED) {
 				break;
 			}

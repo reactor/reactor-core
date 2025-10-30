@@ -45,29 +45,33 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 
 
 	/** marker that the Worker has completed, for the FUTURE field */
+	@SuppressWarnings("DataFlowIssue") // only a dummy object
 	static final Future<Void> FINISHED        = new FutureTask<>(() -> null);
 	/**
 	 * marker that the Worker was cancelled from the same thread (ie. within call()/run()),
 	 * which means setFuture might race: we avoid interrupting the Future in this case.
 	 */
+	@SuppressWarnings("DataFlowIssue") // only a dummy object
 	static final Future<Void> SYNC_CANCELLED  = new FutureTask<>(() -> null);
 	/**
 	 * marker that the Worker was cancelled from another thread, making it safe to
 	 * interrupt the Future task.
 	 */
 	//see https://github.com/reactor/reactor-core/issues/1107
+	@SuppressWarnings("DataFlowIssue") // only a dummy object
 	static final Future<Void> ASYNC_CANCELLED = new FutureTask<>(() -> null);
 
-	volatile Future<?> future;
-	static final AtomicReferenceFieldUpdater<WorkerTask, Future> FUTURE =
+	volatile @Nullable Future<?> future;
+	static final AtomicReferenceFieldUpdater<WorkerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Future.class, "future");
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile Composite parent;
 	static final AtomicReferenceFieldUpdater<WorkerTask, Composite> PARENT =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Composite.class, "parent");
 
-	volatile Thread thread;
-	static final AtomicReferenceFieldUpdater<WorkerTask, Thread> THREAD =
+	volatile @Nullable Thread thread;
+	static final AtomicReferenceFieldUpdater<WorkerTask, @Nullable Thread> THREAD =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Thread.class, "thread");
 
 	WorkerTask(Runnable task, Composite parent) {
@@ -94,7 +98,7 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 				o.remove(this);
 			}
 
-			Future f;
+			Future<?> f;
 			for (;;) {
 				f = future;
 				if (f == SYNC_CANCELLED || f == ASYNC_CANCELLED || FUTURE.compareAndSet(this, f, FINISHED)) {
@@ -112,7 +116,7 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	void setFuture(Future<?> f) {
 		for (;;) {
-			Future o = future;
+			Future<?> o = future;
 			if (o == FINISHED) {
 				return;
 			}
@@ -139,7 +143,7 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 	@Override
 	public void dispose() {
 		for (;;) {
-			Future f = future;
+			Future<?> f = future;
 			if (f == FINISHED || f == SYNC_CANCELLED || f == ASYNC_CANCELLED) {
 				break;
 			}

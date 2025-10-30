@@ -42,8 +42,8 @@ public class StepVerifierOptions {
 
 	private boolean checkUnderRequesting = true;
 	private long initialRequest = Long.MAX_VALUE;
-	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
-	private Context initialContext;
+	private @Nullable Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
+	private @Nullable Context initialContext;
 
 	private @Nullable ToStringConverter objectFormatter = null;
 

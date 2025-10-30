@@ -50,6 +50,7 @@ public abstract class Loggers {
 	 */
 	public static final String FALLBACK_PROPERTY = "reactor.logging.fallback";
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in static block
 	private static Function<String, ? extends Logger> LOGGER_FACTORY;
 
 	static {

@@ -174,7 +174,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	static final class ColdTestPublisherSubscription<T> implements Subscription {
 
 		final Subscriber<? super T>                     actual;
-		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
+		final Fuseable.@Nullable ConditionalSubscriber<? super T> actualConditional;
 
 		final ColdTestPublisher<T> parent;
 

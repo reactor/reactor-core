@@ -29,20 +29,23 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
+	@SuppressWarnings("DataFlowIssue") // only dummy object
 	static final Future<Void> FINISHED = new FutureTask<>(() -> null);
+
+	@SuppressWarnings("DataFlowIssue") // only dummy object
 	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
 
 	static final Disposable TAKEN = Disposables.disposed();
 
-	volatile Future<?> future;
-	static final AtomicReferenceFieldUpdater<SchedulerTask, Future> FUTURE =
+	volatile @Nullable Future<?> future;
+	static final AtomicReferenceFieldUpdater<SchedulerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(SchedulerTask.class, Future.class, "future");
 
-	volatile Disposable parent;
-	static final AtomicReferenceFieldUpdater<SchedulerTask, Disposable> PARENT =
+	volatile @Nullable Disposable parent;
+	static final AtomicReferenceFieldUpdater<SchedulerTask, @Nullable Disposable> PARENT =
 			AtomicReferenceFieldUpdater.newUpdater(SchedulerTask.class, Disposable.class, "parent");
 
-	Thread thread;
+	@Nullable Thread thread;
 
 	SchedulerTask(Runnable task, @Nullable Disposable parent) {
 		this.task = task;
@@ -72,7 +75,7 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 		}
 		finally {
 			thread = null;
-			Future f;
+			Future<?> f;
 			for (;;) {
 				f = future;
 				if (f == CANCELLED || FUTURE.compareAndSet(this, f, FINISHED)) {
@@ -93,7 +96,7 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 
 	void setFuture(Future<?> f) {
 		for (;;) {
-			Future o = future;
+			Future<?> o = future;
 			if (o == FINISHED) {
 				return;
 			}
@@ -116,7 +119,7 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 	@Override
 	public void dispose() {
 		for (;;) {
-			Future f = future;
+			Future<?> f = future;
 			if (f == FINISHED || f == CANCELLED) {
 				break;
 			}
