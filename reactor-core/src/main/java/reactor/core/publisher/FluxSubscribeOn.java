@@ -88,6 +88,8 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 
 		volatile @Nullable Subscription s;
 
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						Subscription.class,

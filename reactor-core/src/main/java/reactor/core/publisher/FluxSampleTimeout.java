@@ -90,15 +90,18 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 						Subscription.class,
 						"s");
 
 		volatile @Nullable Subscription other;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Subscription>
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, @Nullable Subscription>
 				OTHER = AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 				Subscription.class,
 				"other");
@@ -114,8 +117,10 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 				AtomicIntegerFieldUpdater.newUpdater(SampleTimeoutMain.class, "wip");
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 						Throwable.class,
 						"error");

@@ -140,8 +140,9 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SubscriberIterator, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SubscriberIterator, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscriberIterator.class,
 						Subscription.class,
 						"s");

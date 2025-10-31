@@ -87,8 +87,9 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Throwable throwable;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> THROWABLE =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SwitchMapMain, @Nullable Throwable> THROWABLE =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class, Throwable.class, "throwable");
 
 		volatile long requested;

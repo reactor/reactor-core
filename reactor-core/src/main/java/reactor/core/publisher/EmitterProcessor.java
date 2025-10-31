@@ -143,8 +143,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	volatile Subscription s;
 
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Subscription.class,
 					"s");
@@ -160,7 +161,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	volatile @Nullable EmitterDisposable upstreamDisposable;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable EmitterDisposable> UPSTREAM_DISPOSABLE =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
@@ -181,7 +183,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	volatile @Nullable Throwable error;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Throwable.class,

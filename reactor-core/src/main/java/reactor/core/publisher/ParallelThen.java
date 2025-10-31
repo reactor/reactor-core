@@ -251,8 +251,9 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThenInner, Subscription>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ThenInner, @Nullable Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(
 				ThenInner.class,
 				Subscription.class,

@@ -45,7 +45,9 @@ final class LambdaSubscriber<T>
 	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
 
-	static final AtomicReferenceFieldUpdater<LambdaSubscriber, Subscription> S =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<LambdaSubscriber, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(LambdaSubscriber.class,
 					Subscription.class,
 					"subscription");

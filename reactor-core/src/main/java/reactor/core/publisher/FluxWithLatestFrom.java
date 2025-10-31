@@ -90,7 +90,8 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription main;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, @Nullable Subscription>
 				MAIN =
 				AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class,
@@ -99,7 +100,9 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in main's onSubscribe
 		volatile Subscription other;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, @Nullable Subscription>
 				OTHER =
 				AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class,

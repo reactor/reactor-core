@@ -103,7 +103,9 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		volatile int     state;
 		volatile int     wip;
 
-		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, Throwable>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, @Nullable Throwable>
 				ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
 						Throwable.class,
@@ -117,6 +119,8 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 				AtomicIntegerFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
 						"wip");
 
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, @Nullable FilterWhenInner>
 				CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
@@ -438,7 +442,9 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription sub;
 
-		static final AtomicReferenceFieldUpdater<FilterWhenInner, Subscription> SUB =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<FilterWhenInner, @Nullable Subscription> SUB =
 				AtomicReferenceFieldUpdater.newUpdater(FilterWhenInner.class, Subscription.class, "sub");
 
 		FilterWhenInner(FluxFilterWhenSubscriber<?> parent, boolean cancelOnNext) {

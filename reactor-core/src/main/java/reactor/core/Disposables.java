@@ -306,6 +306,9 @@ public final class Disposables {
 static final class SwapDisposable implements Disposable.Swap {
 
 	volatile @Nullable Disposable inner;
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings("DataFlowIssue")
 	static final AtomicReferenceFieldUpdater<SwapDisposable, @Nullable Disposable>
 	                    INNER =
 			AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");

@@ -142,8 +142,10 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		volatile boolean   done;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowPredicateMain, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<WindowPredicateMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateMain.class,
 						Throwable.class,
 						"error");
@@ -585,7 +587,9 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		final Queue<T> queue;
 
 		volatile @Nullable WindowPredicateMain<T> parent;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<WindowFlux, @Nullable WindowPredicateMain>
 				PARENT = AtomicReferenceFieldUpdater.newUpdater(WindowFlux.class,
 				WindowPredicateMain.class,

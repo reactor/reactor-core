@@ -81,7 +81,9 @@ final class FluxOnBackpressureLatest<T> extends InternalFluxOperator<T, T> {
 		volatile boolean cancelled;
 
 		volatile @Nullable T value;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<LatestSubscriber, @Nullable Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(LatestSubscriber.class, Object.class, "value");
 

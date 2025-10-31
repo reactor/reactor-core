@@ -36,8 +36,10 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 	final Subscriber<? super T> actual;
 
 	volatile @Nullable Subscription s;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<StrictSubscriber, Subscription> S =
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<StrictSubscriber, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(StrictSubscriber.class,
 					Subscription.class,
 					"s");
@@ -53,8 +55,10 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 			AtomicIntegerFieldUpdater.newUpdater(StrictSubscriber.class, "wip");
 
 	volatile @Nullable Throwable error;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<StrictSubscriber, Throwable> ERROR =
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<StrictSubscriber, @Nullable Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(StrictSubscriber.class,
 					Throwable.class,
 					"error");

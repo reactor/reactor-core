@@ -222,6 +222,8 @@ final class TimedScheduler implements Scheduler {
 
 		volatile @Nullable Composite parent;
 
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<TimedRunnable, @Nullable Composite> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(TimedRunnable.class, Composite.class, "parent");
 

@@ -299,6 +299,9 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		Subscription cachedSubscription;
 
 		volatile @Nullable Subscription subscription;
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<EqualSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(EqualSubscriber.class,
 						Subscription.class, "subscription");

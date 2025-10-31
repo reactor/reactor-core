@@ -101,7 +101,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 
 		volatile @Nullable Disposable mainFuture;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, @Nullable Disposable>
 				MAIN_FUTURE = AtomicReferenceFieldUpdater.newUpdater(
 				CallableSubscribeOnSubscription.class,
@@ -110,7 +111,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 
 		volatile @Nullable Disposable requestFuture;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, @Nullable Disposable>
 				REQUEST_FUTURE = AtomicReferenceFieldUpdater.newUpdater(
 				CallableSubscribeOnSubscription.class,

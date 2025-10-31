@@ -46,7 +46,9 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
 
-	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, Subscription> S =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(LambdaMonoSubscriber.class,
 					Subscription.class,
 					"subscription");

@@ -200,7 +200,10 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		final Function<? super T, ? extends Publisher<? extends T>> expander;
 
 		volatile @Nullable Throwable error;
-		static final AtomicReferenceFieldUpdater<ExpandDepthSubscription, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<ExpandDepthSubscription, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscription.class, Throwable.class, "error");
 
 		volatile int       active;
@@ -451,7 +454,9 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		static final AtomicReferenceFieldUpdater<ExpandDepthSubscriber, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ExpandDepthSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ExpandDepthSubscriber.class, Subscription.class, "s");
 
 		ExpandDepthSubscriber(ExpandDepthSubscription<T> parent) {

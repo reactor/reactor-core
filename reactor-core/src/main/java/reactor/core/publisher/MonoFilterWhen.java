@@ -79,7 +79,9 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		boolean done;
 
 		volatile @Nullable FilterWhenInner<T> asyncFilter;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, @Nullable FilterWhenInner> ASYNC_FILTER =
 				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenMain.class, FilterWhenInner.class, "asyncFilter");
 

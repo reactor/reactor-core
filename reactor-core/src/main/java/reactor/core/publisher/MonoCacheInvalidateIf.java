@@ -186,7 +186,8 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 
 		volatile @Nullable Subscription upstream;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, @Nullable Subscription> UPSTREAM =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "upstream");
 

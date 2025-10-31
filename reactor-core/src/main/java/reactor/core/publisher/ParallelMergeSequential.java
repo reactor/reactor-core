@@ -81,7 +81,8 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		final Supplier<Queue<T>>    queueSupplier;
 		final CoreSubscriber<? super T> actual;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<MergeSequentialMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 
@@ -357,8 +358,9 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSequentialInner, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<MergeSequentialInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialInner.class, Subscription.class, "s");
 		
 		volatile @Nullable Queue<T> queue;

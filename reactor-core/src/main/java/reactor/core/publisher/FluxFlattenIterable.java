@@ -155,8 +155,10 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		volatile boolean cancelled;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlattenIterableSubscriber, Throwable>
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<FlattenIterableSubscriber, @Nullable Throwable>
 				ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
 						Throwable.class,

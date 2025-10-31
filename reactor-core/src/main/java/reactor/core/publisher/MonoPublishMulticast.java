@@ -78,7 +78,9 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
 		volatile Subscription s;
 
-		static final AtomicReferenceFieldUpdater<MonoPublishMulticaster, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<MonoPublishMulticaster, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(MonoPublishMulticaster.class,
 						Subscription.class,
 						"s");

@@ -80,8 +80,9 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 
 		volatile @Nullable Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ParallelInnerGroup, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ParallelInnerGroup, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ParallelInnerGroup.class, Subscription.class, "s");
 
 		volatile long requested;

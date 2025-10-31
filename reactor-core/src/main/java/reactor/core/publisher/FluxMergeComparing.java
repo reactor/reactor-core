@@ -130,14 +130,17 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		final CoreSubscriber<? super T> actual;
 		final MergeOrderedInnerSubscriber<T>[] subscribers;
 		final Comparator<? super T> comparator;
-		final Object[] values;
+		final @Nullable Object[] values;
 		final boolean delayError;
 		final boolean waitForAllSources;
 
 		boolean done;
 
 		volatile @Nullable Throwable error;
-		static final AtomicReferenceFieldUpdater<MergeOrderedMainProducer, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<MergeOrderedMainProducer, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeOrderedMainProducer.class, Throwable.class, "error");
 
 		volatile int cancelled;
@@ -242,7 +245,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 			MergeOrderedInnerSubscriber<T>[] subscribers = this.subscribers;
 			int n = subscribers.length;
 
-			Object[] values = this.values;
+			@Nullable Object[] values = this.values;
 
 			long e = emitted;
 
@@ -414,8 +417,9 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeOrderedInnerSubscriber, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<MergeOrderedInnerSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(MergeOrderedInnerSubscriber.class, Subscription.class, "s");
 
 		MergeOrderedInnerSubscriber(MergeOrderedMainProducer<T> parent, int prefetch) {

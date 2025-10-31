@@ -133,7 +133,9 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 		volatile @Nullable Throwable error;
 
-		static final AtomicReferenceFieldUpdater<JoinSubscription, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<JoinSubscription, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(JoinSubscription.class,
 						Throwable.class,
 						"error");

@@ -124,8 +124,9 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		volatile @Nullable Throwable error;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<GroupByMain, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<GroupByMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(GroupByMain.class,
 						Throwable.class,
 						"error");
@@ -485,7 +486,9 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		final Queue<V> queue;
 
 		volatile @Nullable GroupByMain<?, K, V> parent;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, @Nullable GroupByMain> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
 						GroupByMain.class,

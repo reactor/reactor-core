@@ -79,7 +79,8 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		volatile @Nullable Disposable disposable;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<DefaultMonoSink, @Nullable Disposable> DISPOSABLE =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class,
 						Disposable.class,
@@ -92,7 +93,8 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		volatile @Nullable LongConsumer requestConsumer;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<DefaultMonoSink, @Nullable LongConsumer>
 				REQUEST_CONSUMER =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class,

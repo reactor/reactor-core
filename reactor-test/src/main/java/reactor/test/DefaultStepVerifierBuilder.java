@@ -729,6 +729,7 @@ final class DefaultStepVerifierBuilder<T>
 		return this;
 	}
 
+	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290
 	@Override
 	public DefaultStepVerifierBuilder<T> thenConsumeWhile(Predicate<T> predicate) {
 		return thenConsumeWhile(predicate, t -> {});
@@ -1363,6 +1364,7 @@ final class DefaultStepVerifierBuilder<T>
 		 * @param msg the message for the error
 		 * @param arguments the optional formatter arguments to the message
 		 */
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		final void setFailure(@Nullable Event<T> event, @Nullable Signal<T> actualSignal,
 				String msg, @Nullable Object... arguments) {
 			Exceptions.addThrowable(ERRORS, this, messageFormatter.fail(event, msg, arguments));
@@ -1370,6 +1372,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.completeLatch.countDown();
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		final void setFailurePrefix(String prefix, Signal<T> actualSignal, String msg,
 				@Nullable Object... arguments) {
 			Exceptions.addThrowable(ERRORS, this, messageFormatter.failPrefix(prefix, msg, arguments));
@@ -1425,6 +1428,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		boolean onCollect(Signal<T> actualSignal) {
 			Collection<T> c;
 			CollectEvent<T> collectEvent = (CollectEvent<T>) Objects.requireNonNull(
@@ -1455,7 +1459,7 @@ final class DefaultStepVerifierBuilder<T>
 			return false;
 		}
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		final void onExpectation(Signal<T> actualSignal) {
 			if (monitorSignal) {
 				setFailure(null, actualSignal, "expected no event: %s", actualSignal);
@@ -1555,6 +1559,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		boolean onSignal(Signal<T> actualSignal) {
 			SignalEvent<T> signalEvent = (SignalEvent<T>) Objects.requireNonNull(
 					this.script.poll(), "signalEvent null in onSignal");
@@ -1576,6 +1581,7 @@ final class DefaultStepVerifierBuilder<T>
 			return false;
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		boolean onSignalSequence(Signal<T> actualSignal,
 				SignalSequenceEvent<T> sequenceEvent) {
 			Iterator<? extends T> currentNextAs = this.currentNextAs;
@@ -1634,6 +1640,7 @@ final class DefaultStepVerifierBuilder<T>
 			return false;
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with AtomicReferenceFieldUpdater
 		final boolean onSignalCount(Signal<T> actualSignal, SignalCountEvent<T> event) {
 			if (unasserted >= event.count) {
 				this.script.poll();
@@ -2837,8 +2844,9 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
-	static final AtomicReferenceFieldUpdater<DefaultVerifySubscriber, Throwable>
-			ERRORS =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<DefaultVerifySubscriber, @Nullable Throwable> ERRORS =
 			AtomicReferenceFieldUpdater.newUpdater(DefaultVerifySubscriber.class,
 					Throwable.class,
 					"errors");

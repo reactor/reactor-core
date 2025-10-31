@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -96,8 +97,9 @@ public class AssertSubscriber<T>
 			AtomicReferenceFieldUpdater.newUpdater(AssertSubscriber.class, List.class,
 					"values");
 
-	@SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<AssertSubscriber, Subscription> S =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+    private static final AtomicReferenceFieldUpdater<AssertSubscriber, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(AssertSubscriber.class, Subscription.class, "s");
 
 	private final Context context;

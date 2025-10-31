@@ -1118,7 +1118,7 @@ public abstract class Operators {
 	 *
 	 * @return true if replaced
 	 */
-	public static <F> boolean replace(AtomicReferenceFieldUpdater<F, Subscription> field,
+	public static <F> boolean replace(AtomicReferenceFieldUpdater<F, @Nullable Subscription> field,
 			F instance,
 			Subscription s) {
 		for (; ; ) {
@@ -1233,7 +1233,7 @@ public abstract class Operators {
 	 *
 	 * @return true if replaced
 	 */
-	public static <F> boolean set(AtomicReferenceFieldUpdater<F, Subscription> field,
+	public static <F> boolean set(AtomicReferenceFieldUpdater<F, @Nullable Subscription> field,
 			F instance,
 			Subscription s) {
 		for (; ; ) {
@@ -1264,7 +1264,7 @@ public abstract class Operators {
 	 * @param s the subscription to set once
 	 * @return true if successful, false if the target was not empty or has been cancelled
 	 */
-	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
+	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, @Nullable Subscription> field, F instance, Subscription s) {
 		Objects.requireNonNull(s, "subscription");
 		Subscription a = field.get(instance);
 		if (a == CancelledSubscription.INSTANCE) {
@@ -1318,7 +1318,7 @@ public abstract class Operators {
 	 * @param instance the parent instance
 	 * @return true if terminated, false if the subscription was already terminated
 	 */
-	public static <F> boolean terminate(AtomicReferenceFieldUpdater<F, Subscription> field,
+	public static <F> boolean terminate(AtomicReferenceFieldUpdater<F, @Nullable Subscription> field,
 			F instance) {
 		Subscription a = field.get(instance);
 		if (a != CancelledSubscription.INSTANCE) {
@@ -2466,7 +2466,9 @@ public abstract class Operators {
 	            }
 	        }
 		}
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, @Nullable Subscription>
 				MISSED_SUBSCRIPTION =
 		  AtomicReferenceFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class,

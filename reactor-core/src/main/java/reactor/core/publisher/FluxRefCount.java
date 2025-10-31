@@ -141,8 +141,10 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		boolean connected;
 
 		volatile @Nullable Disposable disconnect;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<RefCountMonitor, Disposable> DISCONNECT =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<RefCountMonitor, @Nullable Disposable> DISCONNECT =
 				AtomicReferenceFieldUpdater.newUpdater(RefCountMonitor.class, Disposable.class, "disconnect");
 
 		RefCountMonitor(FluxRefCount<? extends T> parent) {

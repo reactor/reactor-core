@@ -82,8 +82,9 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 
 		volatile @Nullable Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						Subscription.class,
 						"s");
@@ -95,7 +96,9 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 						"requested");
 
 		volatile @Nullable Thread thread;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, @Nullable Thread> THREAD =
 				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						Thread.class,

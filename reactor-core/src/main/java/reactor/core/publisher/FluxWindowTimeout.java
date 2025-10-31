@@ -911,7 +911,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				AtomicLongFieldUpdater.newUpdater(InnerWindow.class, "state");
 
 		volatile @Nullable Disposable timer;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<InnerWindow, @Nullable Disposable> TIMER =
 				AtomicReferenceFieldUpdater.newUpdater(InnerWindow.class, Disposable.class, "timer");
 
@@ -1756,8 +1758,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Disposable timer;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowTimeoutSubscriber, Disposable>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<WindowTimeoutSubscriber, @Nullable Disposable>
 		                        TIMER = AtomicReferenceFieldUpdater.newUpdater(
 				WindowTimeoutSubscriber.class,
 				Disposable.class,

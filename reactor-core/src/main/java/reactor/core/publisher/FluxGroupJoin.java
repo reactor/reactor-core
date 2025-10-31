@@ -173,7 +173,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		volatile @Nullable Throwable error;
 
-		static final AtomicReferenceFieldUpdater<GroupJoinSubscription, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<GroupJoinSubscription, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(GroupJoinSubscription.class,
 						Throwable.class,
 						"error");
@@ -496,7 +498,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
-		final static AtomicReferenceFieldUpdater<LeftRightSubscriber, Subscription>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		final static AtomicReferenceFieldUpdater<LeftRightSubscriber, @Nullable Subscription>
 				SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(LeftRightSubscriber.class,
 						Subscription.class,
@@ -570,7 +574,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
-		final static AtomicReferenceFieldUpdater<LeftRightEndSubscriber, Subscription>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		final static AtomicReferenceFieldUpdater<LeftRightEndSubscriber, @Nullable Subscription>
 				SUBSCRIPTION = AtomicReferenceFieldUpdater.newUpdater(
 				LeftRightEndSubscriber.class,
 				Subscription.class,

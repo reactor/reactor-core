@@ -112,8 +112,9 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Throwable error;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<SwitchMapMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class,
 						Throwable.class,
 						"error");
@@ -136,7 +137,9 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 				AtomicIntegerFieldUpdater.newUpdater(SwitchMapMain.class, "wip");
 
 		volatile @Nullable SwitchMapInner<R> inner;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, @Nullable SwitchMapInner> INNER =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class,
 						SwitchMapInner.class,
@@ -455,7 +458,8 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Subscription s;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SwitchMapInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapInner.class,
 						Subscription.class,

@@ -143,8 +143,10 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		@Nullable DelayUntilTrigger<?> triggerSubscriber;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DelayUntilCoordinator, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<DelayUntilCoordinator, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(DelayUntilCoordinator.class, Throwable.class, "error");
 
 		volatile int state;
@@ -295,7 +297,9 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			Publisher<?> p;
 
 			try {
-				p = generator.apply(this.value);
+				T v = this.value;
+				assert v != null : "value can not be null when subscribing to next trigger";
+				p = generator.apply(v);
 				Objects.requireNonNull(p, "mapper returned null value");
 			}
 			catch (Throwable t) {

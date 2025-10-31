@@ -156,8 +156,10 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		volatile boolean cancelled;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ConcatMapImmediate, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ConcatMapImmediate, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapImmediate.class,
 						Throwable.class,
 						"error");
@@ -519,8 +521,10 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		volatile boolean cancelled;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ConcatMapDelayed, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ConcatMapDelayed, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatMapDelayed.class,
 						Throwable.class,
 						"error");

@@ -120,7 +120,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final BaseSink<T> sink;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SerializedFluxSink, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SerializedFluxSink.class,
 						Throwable.class,
@@ -420,7 +422,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final Context                   ctx;
 
 		volatile @Nullable Disposable disposable;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<BaseSink, @Nullable Disposable> DISPOSABLE =
 				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
 						Disposable.class,
@@ -432,7 +436,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
 
 		volatile @Nullable LongConsumer requestConsumer;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<BaseSink, @Nullable LongConsumer>
 				REQUEST_CONSUMER = AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
 				LongConsumer.class,

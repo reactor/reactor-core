@@ -63,7 +63,8 @@ final class BoundedElasticThreadPerTaskScheduler
 	final ThreadFactory factory;
 
 	@SuppressWarnings("NotNullFieldNotInitialized") // initialized via updater
-	volatile SchedulerState<BoundedServices>                                                      state;
+	volatile SchedulerState<BoundedServices> state;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<BoundedElasticThreadPerTaskScheduler, SchedulerState>STATE =
 			AtomicReferenceFieldUpdater.newUpdater(BoundedElasticThreadPerTaskScheduler.class, SchedulerState.class, "state");

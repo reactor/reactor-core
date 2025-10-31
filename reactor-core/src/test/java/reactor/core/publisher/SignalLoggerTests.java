@@ -407,7 +407,7 @@ public class SignalLoggerTests {
 			return str.toString();
 		}
 
-		private Object[] wrapArguments(@Nullable Object @Nullable... arguments) {
+		private @Nullable Object @Nullable [] wrapArguments(@Nullable Object @Nullable... arguments) {
 			if (arguments == null) {
 				return null;
 			}

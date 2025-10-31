@@ -77,7 +77,8 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		volatile @Nullable SlotPair<T> current;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<MergeReduceMain, @Nullable SlotPair> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(MergeReduceMain.class,
 				SlotPair.class,
@@ -91,7 +92,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				"remaining");
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<MergeReduceMain, @Nullable Throwable>
 				ERROR = AtomicReferenceFieldUpdater.newUpdater(
 				MergeReduceMain.class,
@@ -281,8 +284,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeReduceInner, Subscription>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<MergeReduceInner, @Nullable Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(
 				MergeReduceInner.class,
 				Subscription.class,

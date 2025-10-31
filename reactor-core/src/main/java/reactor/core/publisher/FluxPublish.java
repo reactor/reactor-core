@@ -63,7 +63,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 	volatile @Nullable PublishSubscriber<T> connection;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<FluxPublish, @Nullable PublishSubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxPublish.class,
 					PublishSubscriber.class,
@@ -206,8 +207,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		volatile @Nullable Throwable error;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<PublishSubscriber, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<PublishSubscriber, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(PublishSubscriber.class,
 						Throwable.class,
 						"error");
