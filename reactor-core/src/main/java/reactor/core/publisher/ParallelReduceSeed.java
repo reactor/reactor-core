@@ -110,7 +110,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 
 		final BiFunction<R, ? super T, R> reducer;
 
-		R accumulator;
+		@Nullable R accumulator;
 
 		boolean done;
 
@@ -184,7 +184,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 		}
 
 		@Override
-		R accumulatedValue() {
+		@Nullable R accumulatedValue() {
 			final R a;
 			synchronized (this) {
 				a = accumulator;

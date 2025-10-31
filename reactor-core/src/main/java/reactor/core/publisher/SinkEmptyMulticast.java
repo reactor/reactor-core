@@ -30,7 +30,9 @@ import reactor.util.context.Context;
 //intentionally not final
 class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 
-	volatile Inner<T>[]                                                   subscribers;
+	// lazy-initialized in constructor
+	@SuppressWarnings("NotNullFieldNotInitialized")
+	volatile Inner<T>[] subscribers;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<SinkEmptyMulticast, Inner[]> SUBSCRIBERS =
 		AtomicReferenceFieldUpdater.newUpdater(SinkEmptyMulticast.class, Inner[].class, "subscribers");

@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -62,8 +61,9 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	final boolean fuseable;
 	final int     options;
 	final Level   level;
-	final String  operatorLine;
 	final long    id;
+
+	final @Nullable String operatorLine;
 
 	static final String LOG_TEMPLATE          = "{}({})";
 	static final String LOG_TEMPLATE_FUSEABLE = "| {}({})";
@@ -81,7 +81,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 			Level level,
 			boolean correlateStack,
 			Function<String, Logger> loggerSupplier,
-			@Nullable SignalType... options) {
+			SignalType... options) {
 
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();

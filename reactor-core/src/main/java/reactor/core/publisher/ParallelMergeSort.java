@@ -106,9 +106,10 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 				AtomicIntegerFieldUpdater.newUpdater(MergeSortMain.class,
 						"remaining");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSortMain, Throwable>
+		static final AtomicReferenceFieldUpdater<MergeSortMain, @Nullable Throwable>
 				ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSortMain.class,
 						Throwable.class,
@@ -132,7 +133,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
-		public final CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -315,7 +316,9 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 
 		final int index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeSortInner, Subscription>
 				S =

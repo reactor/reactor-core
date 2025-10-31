@@ -86,9 +86,11 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		final Context                     cachedContext;
 		final Consumer<? super Signal<T>> onSignal;
 
-		T t;
+		@Nullable T t;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
+
 		Fuseable.@Nullable QueueSubscription<T> qs;
 
 		short state;
@@ -293,6 +295,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void clear() {
+			assert qs != null : "qs can not be null in fusion mode";
 			qs.clear(); //throws NPE, but should only be called after onSubscribe on a Fuseable
 		}
 

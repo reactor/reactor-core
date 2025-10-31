@@ -133,6 +133,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final boolean eager;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile int wip;
@@ -277,6 +278,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final boolean eager;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		volatile int wip;
@@ -435,6 +437,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable, SourceProducer<
 
 		final boolean eager;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile int wip;

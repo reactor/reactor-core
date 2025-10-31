@@ -20,7 +20,6 @@ import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -50,7 +49,9 @@ final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 		 * Allows to distinguish onNext+onComplete vs onComplete (ignore the complete in the first case)
 		 * while still being able to null out {@link #signalToReplayUponFirstRequest} below.
 		 */
-		boolean      alreadyReceivedSignalFromSource;
+		boolean alreadyReceivedSignalFromSource;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		/**

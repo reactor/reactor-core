@@ -53,6 +53,7 @@ final class FluxCancelOn<T> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 		final Scheduler             scheduler;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile int cancelled = 0;

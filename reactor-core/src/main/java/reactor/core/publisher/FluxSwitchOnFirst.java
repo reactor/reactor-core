@@ -443,15 +443,19 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 		final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean isInboundRequestedOnce;
 		boolean isFirstOnNextReceivedOnce;
-		T       firstValue;
 
-		Throwable throwable;
-		boolean   done;
+		@Nullable T firstValue;
 
+		@Nullable Throwable throwable;
+
+		boolean done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // inboundSubscriber initialized in subscribe
 		CoreSubscriber<? super T> inboundSubscriber;
 
 		volatile int state;
@@ -690,6 +694,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 						final T first = this.firstValue;
 						this.firstValue = null;
 
+						assert first != null : "First value must be non-null once delivered";
 						final boolean wasDelivered = sendFirst(first);
 						if (wasDelivered) {
 							if (n != Long.MAX_VALUE) {

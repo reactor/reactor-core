@@ -42,6 +42,7 @@ final class MicrometerMeterListener<T> implements SignalListener<T> {
 	final @Nullable DistributionSummary                  requestedCounter;
 	final @Nullable Timer                                onNextIntervalTimer;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	Timer.Sample subscribeToTerminateSample;
 	long         lastNextEventNanos = -1L;
 	boolean      valued;

@@ -35,7 +35,6 @@ import reactor.core.Scannable;
 import reactor.util.context.Context;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
-import static reactor.core.Scannable.Attr.RunStyle.SYNC;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and consume it
@@ -107,9 +106,12 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 
 		final Supplier<? extends Queue<T>> queueSupplier;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // queue is initialized in onSubscribe
 		Queue<T> queue;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(FluxPublishMulticaster.class,
@@ -117,11 +119,15 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 						"s");
 
 		volatile int wip;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<FluxPublishMulticaster> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(FluxPublishMulticaster.class, "wip");
 
+		// lazy-initialized in constructor
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		volatile PublishMulticastInner<T>[] subscribers;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, PublishMulticastInner[]>
 				SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(
@@ -139,7 +145,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 
 		volatile boolean connected;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		final Context context;
 
@@ -265,6 +271,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 			}
 
 			if (sourceMode != Fuseable.ASYNC) {
+
 				if (!queue.offer(t)) {
 					onError(Operators.onOperatorError(s,
 							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
@@ -693,6 +700,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 
 		final PublishMulticasterParent parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		CancelMulticaster(CoreSubscriber<? super T> actual,
@@ -790,6 +798,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 
 		final PublishMulticasterParent parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		CancelFuseableMulticaster(CoreSubscriber<? super T> actual,
@@ -830,7 +839,9 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = Operators.as(s);
+				QueueSubscription<T> qs = Operators.as(s);
+				assert qs != null : "Subscription expected to be a QueueSubscription";
+				this.s = qs;
 				actual.onSubscribe(this);
 			}
 		}

@@ -77,6 +77,7 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 
 		long remaining;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
@@ -196,6 +197,7 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 
 		long remaining;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
@@ -346,6 +348,7 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 
 		long remaining;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // qs initialized in onSubscribe
 		QueueSubscription<T> qs;
 
 		boolean done;

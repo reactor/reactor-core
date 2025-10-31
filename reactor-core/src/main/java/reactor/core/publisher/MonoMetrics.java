@@ -68,8 +68,12 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 		final Tags                      commonTags;
 		final MeterRegistry             registry;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Timer.Sample subscribeToTerminateSample;
+
 		boolean done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription s;
 
 		MetricsSubscriber(CoreSubscriber<? super T> actual,

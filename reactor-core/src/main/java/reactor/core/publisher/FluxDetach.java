@@ -51,9 +51,9 @@ final class FluxDetach<T> extends InternalFluxOperator<T, T> {
 
 	static final class DetachSubscriber<T> implements InnerOperator<T, T> {
 
-		CoreSubscriber<? super T> actual;
-		
-		Subscription s;
+		@Nullable CoreSubscriber<? super T> actual;
+
+		@Nullable Subscription s;
 
 		DetachSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
@@ -78,7 +78,8 @@ final class FluxDetach<T> extends InternalFluxOperator<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
+
+				assert actual != null : "actual can not be null when onSubscribe is called";
 				actual.onSubscribe(this);
 			}
 		}
@@ -103,7 +104,7 @@ final class FluxDetach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
+		public @Nullable CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

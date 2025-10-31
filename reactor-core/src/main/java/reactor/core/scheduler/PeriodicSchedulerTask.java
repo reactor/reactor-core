@@ -28,13 +28,16 @@ final class PeriodicSchedulerTask implements Runnable, Disposable, Callable<Void
 
 	final Runnable task;
 
+	@SuppressWarnings("DataFlowIssue") // only a dummy object
 	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
 
-	volatile Future<?> future;
-	static final AtomicReferenceFieldUpdater<PeriodicSchedulerTask, Future> FUTURE =
+	volatile @Nullable Future<?> future;
+
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<PeriodicSchedulerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(PeriodicSchedulerTask.class, Future.class, "future");
 
-	Thread thread;
+	@Nullable Thread thread;
 
 	PeriodicSchedulerTask(Runnable task) {
 		this.task = task;
@@ -64,7 +67,7 @@ final class PeriodicSchedulerTask implements Runnable, Disposable, Callable<Void
 
 	void setFuture(Future<?> f) {
 		for (;;) {
-			Future o = future;
+			Future<?> o = future;
 			if (o == CANCELLED) {
 				f.cancel(thread != Thread.currentThread());
 				return;
@@ -83,7 +86,7 @@ final class PeriodicSchedulerTask implements Runnable, Disposable, Callable<Void
 	@Override
 	public void dispose() {
 		for (;;) {
-			Future f = future;
+			Future<?> f = future;
 			if (f == CANCELLED) {
 				break;
 			}

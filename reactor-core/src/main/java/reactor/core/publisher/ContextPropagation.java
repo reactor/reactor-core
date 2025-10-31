@@ -47,6 +47,7 @@ final class ContextPropagation {
 	static final Function<Context, Context> NO_OP = c -> c;
 	static final Function<Context, Context> WITH_GLOBAL_REGISTRY_NO_PREDICATE;
 
+	@SuppressWarnings("DataFlowIssue") // only accessed when not null
 	static ContextSnapshotFactory globalContextSnapshotFactory = null;
 
 	static {
@@ -86,7 +87,7 @@ final class ContextPropagation {
 		else {
 			ContextRegistry registry = ContextRegistry.getInstance();
 			ContextAccessor<?, ?> contextAccessor = registry.getContextAccessorForRead(context);
-			Map<Object, Object> previousValues = null;
+			Map<Object, @Nullable Object> previousValues = null;
 			for (ThreadLocalAccessor<?> threadLocalAccessor : registry.getThreadLocalAccessors()) {
 				Object key = threadLocalAccessor.key();
 				Object value = ((ContextAccessor<C, ?>) contextAccessor).readValue((C) context, key);
@@ -100,8 +101,8 @@ final class ContextPropagation {
 	}
 
 	@SuppressWarnings({"unchecked", "deprecation"})
-	private static <V> Map<Object, Object> setThreadLocal(Object key, @Nullable V value,
-			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, Object> previousValues) {
+	private static <V> Map<Object, @Nullable Object> setThreadLocal(Object key, @Nullable V value,
+			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, @Nullable Object> previousValues) {
 
 		previousValues = (previousValues != null ? previousValues : new HashMap<>());
 		previousValues.put(key, accessor.getValue());
@@ -406,8 +407,9 @@ final class ContextPropagation {
 		boolean cleanOnNull;
 		boolean hasPrevious = false;
 
-		Thread                lastReader;
-		ContextSnapshot.Scope scope;
+		@Nullable Thread lastReader;
+
+		ContextSnapshot.@Nullable Scope scope;
 
 		@SuppressWarnings({"unchecked", "rawtypes"})
 		ContextQueue(Queue<?> queue) {
@@ -523,7 +525,7 @@ final class ContextPropagation {
 			}
 		}
 
-		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
+		public static ContextSnapshot.Scope from(@Nullable Map<Object, @Nullable Object> previousValues, ContextRegistry registry) {
 			return (previousValues != null ? new ReactorScopeImpl(previousValues, registry) : () -> {
 			});
 		}
@@ -563,7 +565,7 @@ final class ContextPropagation {
 			}
 		}
 
-		public static ContextSnapshot.Scope from(@Nullable Map<Object, Object> previousValues, ContextRegistry registry) {
+		public static ContextSnapshot.Scope from(@Nullable Map<Object, @Nullable Object> previousValues, ContextRegistry registry) {
 			return (previousValues != null ? new ReactorScopeImpl100(previousValues, registry) : () -> {
 			});
 		}

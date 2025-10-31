@@ -211,6 +211,8 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
 			implements InnerConsumer<Object>, OptimizableOperator<Long, Long> {
 
+		// main initialized upon creation in FluxRepeatWhen.subscribeOrReturn
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		RepeatWhenMainSubscriber<?> main;
 
 		final Sinks.Many<Long> completionSignal = Sinks.many().multicast().onBackpressureBuffer();

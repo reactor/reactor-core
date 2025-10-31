@@ -77,9 +77,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		volatile Disposable disposable;
+		volatile @Nullable Disposable disposable;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DefaultMonoSink, Disposable> DISPOSABLE =
+		static final AtomicReferenceFieldUpdater<DefaultMonoSink, @Nullable Disposable> DISPOSABLE =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class,
 						Disposable.class,
 						"disposable");
@@ -89,15 +90,16 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		static final AtomicIntegerFieldUpdater<DefaultMonoSink> STATE =
 				AtomicIntegerFieldUpdater.newUpdater(DefaultMonoSink.class, "state");
 
-		volatile LongConsumer requestConsumer;
+		volatile @Nullable LongConsumer requestConsumer;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DefaultMonoSink, LongConsumer>
+		static final AtomicReferenceFieldUpdater<DefaultMonoSink, @Nullable LongConsumer>
 				REQUEST_CONSUMER =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class,
 						LongConsumer.class,
 						"requestConsumer");
 
-		T value;
+		@Nullable T value;
 
 		static final int NO_REQUEST_HAS_VALUE  = 1;
 		static final int HAS_REQUEST_NO_VALUE  = 2;

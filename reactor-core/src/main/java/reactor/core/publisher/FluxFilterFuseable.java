@@ -21,7 +21,6 @@ import java.util.function.Predicate;
 
 import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
@@ -66,6 +65,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 
 		final Predicate<? super T> predicate;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		boolean done;
@@ -283,6 +283,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 
 		final Predicate<? super T> predicate;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		QueueSubscription<T> s;
 
 		boolean done;

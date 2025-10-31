@@ -52,7 +52,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	static final AtomicIntegerFieldUpdater<DefaultTestPublisher> CANCEL_COUNT =
 		AtomicIntegerFieldUpdater.newUpdater(DefaultTestPublisher.class, "cancelCount");
 
-	Throwable error;
+	@Nullable Throwable error;
 
 	volatile boolean hasOverflown;
 	volatile boolean wasRequested;
@@ -174,7 +174,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	static final class TestPublisherSubscription<T> implements Subscription {
 
 		final Subscriber<? super T>                     actual;
-		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
+		final Fuseable.@Nullable ConditionalSubscriber<? super T> actualConditional;
 
 		final DefaultTestPublisher<T> parent;
 
@@ -251,7 +251,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		}
 	}
 
-	private Consumer<TestPublisher<T>> replayOnSubscribe = null;
+	private @Nullable Consumer<TestPublisher<T>> replayOnSubscribe = null;
 
 	public TestPublisher<T> replayOnSubscribe(Consumer<TestPublisher<T>> replay) {
 		if (replayOnSubscribe == null) {
@@ -392,6 +392,8 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		return this;
 	}
 
+	// possibly pushing null to onNext is intentional here
+	@SuppressWarnings("DataFlowIssue")
 	@Override
 	public DefaultTestPublisher<T> next(@Nullable T t) {
 		if (!violations.contains(Violation.ALLOW_NULL)) {

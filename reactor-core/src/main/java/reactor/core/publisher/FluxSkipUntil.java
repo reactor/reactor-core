@@ -60,6 +60,7 @@ final class FluxSkipUntil<T> extends InternalFluxOperator<T, T> {
 
 		final Predicate<? super T> predicate;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

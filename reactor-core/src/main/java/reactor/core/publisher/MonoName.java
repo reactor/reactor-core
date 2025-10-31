@@ -36,9 +36,9 @@ import reactor.util.function.Tuples;
  */
 final class MonoName<T> extends InternalMonoOperator<T, T> {
 
-	final String name;
+	final @Nullable String name;
 
-	final List<Tuple2<String, String>> tagsWithDuplicates;
+	final @Nullable List<Tuple2<String, String>> tagsWithDuplicates;
 
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> createOrAppend(Mono<T> source, String name) {

@@ -103,6 +103,8 @@ final class FluxTapFuseable<T, STATE> extends InternalFluxOperator<T, T> impleme
 	static class TapFuseableSubscriber<T> extends FluxTap.TapSubscriber<T> implements QueueSubscription<T> {
 
 		int mode;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // qs initialized in onSubscribe
 		QueueSubscription<T> qs;
 
 		TapFuseableSubscriber(CoreSubscriber<? super T> actual,

@@ -60,7 +60,7 @@ final class MessageFormatter {
 	 * @param args the optional values for the placeholders in msg
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name
 	 */
-	AssertionError fail(DefaultStepVerifierBuilder.@Nullable Event<?> event, String msg, Object... args) {
+	AssertionError fail(DefaultStepVerifierBuilder.@Nullable Event<?> event, String msg, @Nullable Object... args) {
 		String prefix;
 		if (event != null && event.getDescription()
 		                          .length() > 0) {
@@ -84,7 +84,7 @@ final class MessageFormatter {
 	 * wrapped in an {@link Optional}
 	 */
 	Optional<AssertionError> failOptional(DefaultStepVerifierBuilder.@Nullable Event<?> event, String msg,
-			Object... args) {
+			@Nullable Object... args) {
 		return Optional.of(fail(event, msg, args));
 	}
 
@@ -99,7 +99,7 @@ final class MessageFormatter {
 	 * @param args the optional values for the placeholders in msg
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name
 	 */
-	AssertionError failPrefix(String prefix, String msg, Object... args) {
+	AssertionError failPrefix(String prefix, String msg, @Nullable Object... args) {
 		String formattedMessage = format(msg, args);
 		return assertionError(prefix + formattedMessage + ")");
 	}
@@ -149,7 +149,7 @@ final class MessageFormatter {
 	 * @param args the arguments
 	 * @return the formatted message
 	 */
-	String format(String msg, Object... args) {
+	String format(String msg, @Nullable Object... args) {
 		if (valueFormatter != null) {
 			return String.format(msg, ValueFormatters.convertVarArgs(valueFormatter, extractors, args));
 		}

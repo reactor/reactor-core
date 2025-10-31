@@ -230,9 +230,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		final Supplier<? extends Queue<R>>                          innerQueueSupplier;
 		final CoreSubscriber<? super R>                             actual;
 
-		volatile Queue<R> scalarQueue;
+		volatile @Nullable Queue<R> scalarQueue;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
@@ -243,6 +243,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile boolean cancelled;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile long requested;
@@ -917,7 +918,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final int limit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class,
@@ -926,7 +929,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		long produced;
 
-		volatile Queue<R> queue;
+		volatile @Nullable Queue<R> queue;
 
 		volatile boolean done;
 
@@ -1068,6 +1071,9 @@ abstract class FlatMapTracker<T> {
 
 	abstract void setIndex(T entry, int index);
 
+	// assigns null to non-null reference field (free) to avoid memory a leak
+	// while the reference is not checked for nullness to improve performance
+	@SuppressWarnings("DataFlowIssue")
 	final void unsubscribe() {
 		T[] a;
 		T[] t = terminated();

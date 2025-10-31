@@ -62,14 +62,12 @@ final class MonoSingleCallable<T> extends Mono<T>
 
 		try {
 			T t = callable.call();
-			if (t == null && defaultValue == null) {
-				actual.onError(new NoSuchElementException("Source was empty"));
-			}
-			else if (t == null) {
-				sds.complete(defaultValue);
-			}
-			else {
+			if (t != null) {
 				sds.complete(t);
+			} else if (defaultValue != null) {
+				sds.complete(defaultValue);
+			} else {
+				actual.onError(new NoSuchElementException("Source was empty"));
 			}
 		}
 		catch (Throwable e) {
@@ -95,28 +93,28 @@ final class MonoSingleCallable<T> extends Mono<T>
 			throw Exceptions.propagate(e);
 		}
 
-		if (v == null && this.defaultValue == null) {
+		if (v != null) {
+			return v;
+		} else {
+			if (this.defaultValue != null) {
+				return this.defaultValue;
+			}
 			throw new NoSuchElementException("Source was empty");
 		}
-		else if (v == null) {
-			return this.defaultValue;
-		}
-
-		return v;
 	}
 
 	@Override
 	public T call() throws Exception {
 		final T v = callable.call();
 
-		if (v == null && this.defaultValue == null) {
+		if (v != null) {
+			return v;
+		} else {
+			if (this.defaultValue != null) {
+				return this.defaultValue;
+			}
 			throw new NoSuchElementException("Source was empty");
 		}
-		else if (v == null) {
-			return this.defaultValue;
-		}
-
-		return v;
 	}
 
 	@Override

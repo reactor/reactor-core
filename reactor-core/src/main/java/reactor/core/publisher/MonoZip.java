@@ -42,9 +42,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 	final boolean delayError;
 
-	final Mono<?>[] sources;
+	final Mono<?> @Nullable [] sources;
 
-	final Iterable<? extends Mono<?>> sourcesIterable;
+	final @Nullable Iterable<? extends Mono<?>> sourcesIterable;
 
 	final Function<? super Object[], ? extends R> zipper;
 
@@ -106,6 +106,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		}
 		else {
 			a = new Mono[8];
+			assert sourcesIterable != null : "sources and sourcesIterable can not both be null";
 			for (Mono<?> m : sourcesIterable) {
 				if (n == a.length) {
 					Mono<?>[] b = new Mono[n + (n >> 2)];
@@ -423,13 +424,16 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 		final ZipCoordinator<R> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class, Subscription.class, "s");
 
-		Object    value;
-		Throwable error;
+		@Nullable Object value;
+
+		@Nullable Throwable error;
 
 		ZipInner(ZipCoordinator<R> parent) {
 			this.parent = parent;

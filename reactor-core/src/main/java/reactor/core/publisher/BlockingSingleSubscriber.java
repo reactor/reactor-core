@@ -33,10 +33,11 @@ import reactor.util.context.Context;
 abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		implements InnerConsumer<T>, Disposable {
 
-	T         value;
-	Throwable error;
+	@Nullable T value;
 
-	Subscription s;
+	@Nullable Throwable error;
+
+	@Nullable Subscription s;
 
 	final Context context;
 

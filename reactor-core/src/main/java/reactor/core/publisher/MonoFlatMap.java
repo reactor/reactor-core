@@ -73,12 +73,13 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		volatile FlatMapInner<R> second;
+		volatile @Nullable FlatMapInner<R> second;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapMain, FlatMapInner> SECOND =
+		static final AtomicReferenceFieldUpdater<FlatMapMain, @Nullable FlatMapInner> SECOND =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class, FlatMapInner.class, "second");
 
 		FlatMapMain(CoreSubscriber<? super R> actual,
@@ -252,10 +253,12 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 	static final class FlatMapInner<R> implements InnerConsumer<R> {
 
+		@SuppressWarnings("DataFlowIssue") // dummy instance has null parent
 		static final FlatMapInner<?> CANCELLED = new FlatMapInner<>(null);
 
 		final FlatMapMain<?, R> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

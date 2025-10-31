@@ -52,9 +52,9 @@ import static reactor.core.Fuseable.SYNC;
  */
 final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
-	final Publisher<? extends T>[] sources;
+	final Publisher<? extends T> @Nullable [] sources;
 
-	final Iterable<? extends Publisher<? extends T>> sourcesIterable;
+	final @Nullable Iterable<? extends Publisher<? extends T>> sourcesIterable;
 
 	final Function<? super Object[], ? extends R> zipper;
 
@@ -136,6 +136,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				handleArrayMode(actual, srcs);
 			}
 			else {
+				assert sourcesIterable != null : "sourceIterable can not be null when sources is null";
 				handleIterableMode(actual, sourcesIterable);
 			}
 		}
@@ -403,7 +404,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		}
 
 		@Override
-		public R poll() {
+		public @Nullable R poll() {
 			if (done) {
 				return null;
 			}
@@ -543,7 +544,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		}
 
 		@Override
-		protected void discard(R v) {
+		protected void discard(@Nullable R v) {
 			if (v != null) {
 				if (v instanceof Iterable) {
 					Operators.onDiscardMultiple(((Iterable<?>) v).iterator(), true, actual.currentContext());
@@ -590,6 +591,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final int index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipSingleSubscriber, Subscription> S =
@@ -690,7 +692,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		static final AtomicLongFieldUpdater<ZipCoordinator> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ZipCoordinator.class, "requested");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipCoordinator, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ZipCoordinator.class,
@@ -1047,8 +1049,10 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final Supplier<? extends Queue<T>> queueSupplier;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Queue<T> queue;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =

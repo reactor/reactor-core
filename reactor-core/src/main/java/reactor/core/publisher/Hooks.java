@@ -601,16 +601,16 @@ public abstract class Hooks {
 	}
 
 	//Hooks that are transformative
-	static Function<Publisher, Publisher> onEachOperatorHook;
-	static volatile Function<Publisher, Publisher> onLastOperatorHook;
-	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
+	static @Nullable Function<Publisher, Publisher> onEachOperatorHook;
+	static volatile @Nullable Function<Publisher, Publisher> onLastOperatorHook;
+	static volatile @Nullable BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
 
 	//Hooks that are just callbacks
-	static volatile Consumer<? super Throwable> onErrorDroppedHook;
-	static volatile Consumer<Object>            onNextDroppedHook;
+	static volatile @Nullable Consumer<? super Throwable> onErrorDroppedHook;
+	static volatile @Nullable Consumer<Object> onNextDroppedHook;
 
 	//Special hook that is between the two (strategy can be transformative, but not named)
-	static volatile OnNextFailureStrategy onNextErrorHook;
+	static volatile @Nullable OnNextFailureStrategy onNextErrorHook;
 
 
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
@@ -751,6 +751,8 @@ public abstract class Hooks {
 					newHook = newHook.andThen(function);
 				}
 			}
+			// NullAway issue?
+			assert newHook != null : "at least the new queue wrapper is present";
 			QUEUE_WRAPPER = newHook;
 		}
 	}
@@ -776,6 +778,8 @@ public abstract class Hooks {
 						newHook = newHook.andThen(function);
 					}
 				}
+				// NullAway issue?
+				assert newHook != null : "newHook can not be null";
 				QUEUE_WRAPPER = newHook;
 			}
 		}

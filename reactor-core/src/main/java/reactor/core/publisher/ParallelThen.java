@@ -248,7 +248,9 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 
 		final ThenMain parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ThenInner, Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(

@@ -47,6 +47,7 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 	static final class IgnoreElementsSubscriber<T> implements InnerOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		IgnoreElementsSubscriber(CoreSubscriber<? super T> actual) {

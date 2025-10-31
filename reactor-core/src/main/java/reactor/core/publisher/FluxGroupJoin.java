@@ -171,7 +171,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				AtomicLongFieldUpdater.newUpdater(GroupJoinSubscription.class,
 						"requested");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		static final AtomicReferenceFieldUpdater<GroupJoinSubscription, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(GroupJoinSubscription.class,
@@ -309,6 +309,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					}
 
 					Object val = q.poll();
+					assert val != null : "value can not be null when mode is not null";
 
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
@@ -492,6 +493,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final boolean isLeft;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
 		final static AtomicReferenceFieldUpdater<LeftRightSubscriber, Subscription>
@@ -512,7 +514,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return parent.actual().currentContext();
+			CoreSubscriber<?> actual = parent.actual();
+			assert actual != null : "actual subscriber can not be null in inner consumer";
+			return actual.currentContext();
 		}
 
 		@Override
@@ -563,6 +567,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final int index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
 		final static AtomicReferenceFieldUpdater<LeftRightEndSubscriber, Subscription>
@@ -622,7 +627,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return parent.actual().currentContext();
+			CoreSubscriber<?> actual = parent.actual();
+			assert actual != null : "actual subscriber can not be null in inner consumer";
+			return actual.currentContext();
 		}
 
 	}

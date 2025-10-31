@@ -132,11 +132,13 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		static final int REQUEST_INDEX_SHIFT       = 40;
 
 		boolean done;
-		Throwable error;
 
+		@Nullable Throwable error;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		InnerWindow<T> window;
+		@Nullable InnerWindow<T> window;
 
 		WindowTimeoutWithBackpressureSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int maxSize,
@@ -184,6 +186,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 				}
 
 				final InnerWindow<T> window = this.window;
+
+				assert window != null : "window can not be null";
+
 				if (window.sendNext(t)) {
 					return;
 				}
@@ -383,6 +388,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (hasUnsentWindow) {
 						final InnerWindow<T> currentUnsentWindow = this.window;
 
+						assert currentUnsentWindow != null : "currentUnsentWindow can not be null";
+
 						// Delivers current unsent window
 						this.actual.onNext(currentUnsentWindow);
 
@@ -532,12 +539,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 										incrementActiveWindowIndex(previousState);
 
 						if (isCancelled(expectedState)) {
+							assert previousWindow != null : "previousWindow can not be null";
 							previousWindow.sendCancel();
 							nextWindow.sendCancel();
 							return;
 						}
 
 						if (isTerminated(expectedState)) {
+							assert previousWindow != null : "previousWindow can not be null";
 							final Throwable e = this.error;
 							if (e != null) {
 								previousWindow.sendError(e);
@@ -590,6 +599,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							new InnerWindow<>(this.maxSize, this, nextWindowIndex, true, logger);
 
 					final InnerWindow<T> previousWindow = this.window;
+
+					assert previousWindow != null : "previousWindow can not be null";
+
 					this.window = nextWindow;
 
 					// doesn't propagate through onNext since window is unsent
@@ -642,6 +654,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 					if (isCancelled(expectedState)) {
 						final InnerWindow<T> currentWindow = this.window;
+
+						assert currentWindow != null : "currentWindow can not be null";
+
 						final long previousWindowState = currentWindow.sendCancel();
 						if (!InnerWindow.isSent(previousWindowState)) {
 							currentWindow.cancel();
@@ -895,15 +910,16 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		static final AtomicLongFieldUpdater<InnerWindow> STATE =
 				AtomicLongFieldUpdater.newUpdater(InnerWindow.class, "state");
 
-		volatile Disposable timer;
+		volatile @Nullable Disposable timer;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<InnerWindow, Disposable> TIMER =
+		static final AtomicReferenceFieldUpdater<InnerWindow, @Nullable Disposable> TIMER =
 				AtomicReferenceFieldUpdater.newUpdater(InnerWindow.class, Disposable.class, "timer");
 
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in subscribe
 		CoreSubscriber<? super T> actual;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		int received = 0;
 		int produced = 0;
@@ -1710,7 +1726,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		final Scheduler.Worker                worker;
 		final Queue<Object>                   queue;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done;
 		volatile boolean cancelled;
 
@@ -1729,13 +1746,16 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		int  count;
 		long producerIndex;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		Sinks.Many<T> window;
+		Sinks.@Nullable Many<T> window;
 
 		volatile boolean terminated;
 
-		volatile     Disposable timer;
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
+		volatile Disposable timer;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowTimeoutSubscriber, Disposable>
 		                        TIMER = AtomicReferenceFieldUpdater.newUpdater(
@@ -1860,6 +1880,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
 				Sinks.Many<T> w = window;
+
+				assert w != null : "window can not be null";
+
 				w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 
 				int c = count + 1;
@@ -1962,6 +1985,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
 			Sinks.Many<T> w = window;
+			assert w != null : "window can not be null";
 
 			int missed = 1;
 			for (; ; ) {

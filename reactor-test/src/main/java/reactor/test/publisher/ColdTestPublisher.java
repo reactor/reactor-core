@@ -55,8 +55,9 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	final List<T> values;
 
 	boolean done;
+
 	/** Non-null if either {@link #error(Throwable) or {@link #complete()}} have been called. */
-	Throwable error;
+	@Nullable Throwable error;
 
 	/** If true, emit an overflow error when there is more values than request. If false, buffer until data is requested. */
 	final boolean errorOnOverflow;
@@ -173,7 +174,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	static final class ColdTestPublisherSubscription<T> implements Subscription {
 
 		final Subscriber<? super T>                     actual;
-		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
+		final Fuseable.@Nullable ConditionalSubscriber<? super T> actualConditional;
 
 		final ColdTestPublisher<T> parent;
 

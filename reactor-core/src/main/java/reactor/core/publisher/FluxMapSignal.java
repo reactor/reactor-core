@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.AbstractQueue;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -37,9 +36,9 @@ import reactor.core.CoreSubscriber;
  */
 final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 
-    final Function<? super T, ? extends R> mapperNext;
-    final Function<? super Throwable, ? extends R> mapperError;
-    final Supplier<? extends R>            mapperComplete;
+	final @Nullable Function<? super T, ? extends R>         mapperNext;
+	final @Nullable Function<? super Throwable, ? extends R> mapperError;
+	final @Nullable Supplier<? extends R>                    mapperComplete;
 
     /**
      * Constructs a FluxMapSignal instance with the given source and mappers.
@@ -84,16 +83,18 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 		    implements InnerOperator<T, R>,
 		               BooleanSupplier {
 
-	    final CoreSubscriber<? super R>                actual;
-	    final Function<? super T, ? extends R>         mapperNext;
-	    final Function<? super Throwable, ? extends R> mapperError;
-	    final Supplier<? extends R>                    mapperComplete;
+		final CoreSubscriber<? super R> actual;
+
+	    final @Nullable Function<? super T, ? extends R>         mapperNext;
+	    final @Nullable Function<? super Throwable, ? extends R> mapperError;
+	    final @Nullable Supplier<? extends R>                    mapperComplete;
 
         boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
         Subscription s;
         
-        R value;
+        @Nullable R value;
         
         volatile long requested;
         @SuppressWarnings("rawtypes")

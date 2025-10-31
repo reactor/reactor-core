@@ -66,13 +66,17 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	final boolean autoCancel;
 
-	volatile Subscription                                                            s;
+	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+	volatile Subscription s;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Subscription.class,
 					"s");
 
+	// subscribers lazy-initialized in constructor
+	@SuppressWarnings("NotNullFieldNotInitialized")
 	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
@@ -81,9 +85,10 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
 
-	volatile EmitterDisposable upstreamDisposable;
+	volatile @Nullable EmitterDisposable upstreamDisposable;
+
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, @Nullable EmitterDisposable> UPSTREAM_DISPOSABLE =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
 
@@ -94,16 +99,16 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	static final AtomicIntegerFieldUpdater<SinkManyEmitterProcessor> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, "wip");
 
-	volatile Queue<T> queue;
+	volatile @Nullable Queue<T> queue;
 
 	int sourceMode;
 
 	volatile boolean done;
 
-	volatile Throwable error;
+	volatile @Nullable Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Throwable> ERROR =
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, @Nullable Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Throwable.class,
 					"error");
@@ -380,7 +385,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		return null;
 	}
 
-	final void drain() {
+	void drain() {
 		if (WIP.getAndIncrement(this) != 0) {
 			return;
 		}
@@ -402,6 +407,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 
 			if (a != EMPTY && !empty) {
+				assert q != null : "q can not be null when !empty";
 				long maxRequested = Long.MAX_VALUE;
 
 				int len = a.length;
@@ -542,7 +548,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		return false;
 	}
 
-	final boolean add(EmitterInner<T> inner) {
+	boolean add(EmitterInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 			if (a == TERMINATED) {
@@ -558,7 +564,7 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 		}
 	}
 
-	final void remove(FluxPublish.PubSubInner<T> inner) {
+	void remove(FluxPublish.PubSubInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {

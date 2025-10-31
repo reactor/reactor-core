@@ -23,7 +23,6 @@ import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -61,26 +60,28 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 
 		final Scheduler scheduler;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		volatile Disposable future;
+		volatile @Nullable Disposable future;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, Disposable>
+		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, @Nullable Disposable>
 				FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(PublishOnSubscriber.class,
 						Disposable.class,
 						"future");
 
+		volatile @Nullable T value;
 
-		volatile T         value;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, Object>
+		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, @Nullable Object>
 				VALUE =
 				AtomicReferenceFieldUpdater.newUpdater(PublishOnSubscriber.class,
 						Object.class,
 						"value");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		PublishOnSubscriber(CoreSubscriber<? super T> actual,
 				Scheduler scheduler) {

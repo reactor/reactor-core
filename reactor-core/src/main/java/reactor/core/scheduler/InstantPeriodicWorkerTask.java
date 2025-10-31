@@ -36,21 +36,27 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 
 	static final Composite DISPOSED = new EmptyCompositeDisposable();
 
+	@SuppressWarnings("DataFlowIssue") // only a dummy object
 	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
 
-	volatile Future<?>                                                          rest;
-	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, Future> REST =
+	volatile @Nullable Future<?> rest;
+
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, @Nullable Future> REST =
 			AtomicReferenceFieldUpdater.newUpdater(InstantPeriodicWorkerTask.class, Future.class, "rest");
 
-	volatile Future<?>                                                          first;
-	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, Future> FIRST =
+	volatile @Nullable Future<?> first;
+
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, @Nullable Future> FIRST =
 			AtomicReferenceFieldUpdater.newUpdater(InstantPeriodicWorkerTask.class, Future.class, "first");
 
-	volatile Composite                                                             parent;
-	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, Composite> PARENT =
+	volatile @Nullable Composite parent;
+
+	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, @Nullable Composite> PARENT =
 			AtomicReferenceFieldUpdater.newUpdater(InstantPeriodicWorkerTask.class, Composite.class, "parent");
 
-	Thread thread;
+	@Nullable Thread thread;
 
 	InstantPeriodicWorkerTask(Runnable task, ExecutorService executor) {
 		this.task = task;
@@ -83,7 +89,7 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 
 	void setRest(Future<?> f) {
 		for (;;) {
-			Future o = rest;
+			Future<?> o = rest;
 			if (o == CANCELLED) {
 				f.cancel(thread != Thread.currentThread());
 				return;
@@ -96,7 +102,7 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 
 	void setFirst(Future<?> f) {
 		for (;;) {
-			Future o = first;
+			Future<?> o = first;
 			if (o == CANCELLED) {
 				f.cancel(thread != Thread.currentThread());
 				return;
@@ -115,7 +121,7 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 	@Override
 	public void dispose() {
 		for (;;) {
-			Future f = first;
+			Future<?> f = first;
 			if (f == CANCELLED) {
 				break;
 			}
@@ -128,7 +134,7 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 		}
 
 		for (;;) {
-			Future f = rest;
+			Future<?> f = rest;
 			if (f == CANCELLED) {
 				break;
 			}

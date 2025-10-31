@@ -136,7 +136,7 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 
 		boolean done;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		static final AtomicReferenceFieldUpdater<MergeOrderedMainProducer, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeOrderedMainProducer.class, Throwable.class, "error");
 
@@ -411,7 +411,9 @@ final class FluxMergeComparing<T> extends Flux<T> implements SourceProducer<T> {
 
 		volatile boolean done;
 
-		volatile     Subscription                                                           s;
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeOrderedInnerSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(MergeOrderedInnerSubscriber.class, Subscription.class, "s");

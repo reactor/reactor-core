@@ -73,18 +73,21 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 		final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
 
-		volatile FilterWhenInner<T> asyncFilter;
+		volatile @Nullable FilterWhenInner<T> asyncFilter;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, FilterWhenInner> ASYNC_FILTER =
+		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, @Nullable FilterWhenInner> ASYNC_FILTER =
 				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenMain.class, FilterWhenInner.class, "asyncFilter");
 
-		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked"})
+		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked",
+				"DataFlowIssue"}) // dummy instance has null reference to parent and value
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false, null);
-		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked"})
+		@SuppressWarnings({"ConstantConditions", "rawtypes", "unchecked",
+				"DataFlowIssue"}) // dummy instance has null reference to parent and value
 		static final FilterWhenInner INNER_TERMINATED = new FilterWhenInner(null, false, null);
 
 		MonoFilterWhenMain(CoreSubscriber<? super T> actual, Function<? super T, ?
@@ -290,13 +293,15 @@ class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 	static final class FilterWhenInner<T> implements InnerConsumer<Boolean> {
 
 		final MonoFilterWhenMain<T> parent;
+
 		/** should the filter publisher be cancelled once we received the first value? */
-		final boolean               cancelOnNext;
+		final boolean cancelOnNext;
 
 		final T value;
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	    Subscription s;
 
 		FilterWhenInner(MonoFilterWhenMain<T> parent, boolean cancelOnNext, T value) {

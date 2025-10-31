@@ -124,15 +124,17 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		final Supplier<? extends Queue<T>> queueSupplier;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Queue<T> queue;
 
 		volatile boolean cancelled;
 
 		volatile boolean done;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -687,15 +689,17 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 		final Supplier<? extends Queue<T>> queueSupplier;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Queue<T> queue;
 
 		volatile boolean cancelled;
 
 		volatile boolean done;
 
-		Throwable error;
+		@Nullable Throwable error;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")

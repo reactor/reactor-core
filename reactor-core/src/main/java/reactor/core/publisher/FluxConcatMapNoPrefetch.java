@@ -99,6 +99,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			CANCELLED,
 		}
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 		volatile State state;
 
 		@SuppressWarnings("rawtypes")
@@ -108,14 +109,12 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				"state"
 		);
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, Throwable> ERROR = AtomicReferenceFieldUpdater.newUpdater(
-				FluxConcatMapNoPrefetchSubscriber.class,
-				Throwable.class,
-				"error"
-		);
+		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, @Nullable Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(
+						FluxConcatMapNoPrefetchSubscriber.class, Throwable.class, "error");
 
 		final CoreSubscriber<? super R> actual;
 
@@ -125,6 +124,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		final ErrorMode errorMode;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription upstream;
 
 		FluxConcatMapNoPrefetchSubscriber(
@@ -184,7 +184,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 				if (p instanceof Callable) {
 					@SuppressWarnings("unchecked")
-					Callable<R> callable = (Callable<R>) p;
+					Callable<@Nullable R> callable = (Callable<@Nullable R>) p;
 
 					R result = callable.call();
 					if (result == null) {

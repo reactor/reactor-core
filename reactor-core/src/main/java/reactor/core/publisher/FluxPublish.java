@@ -61,9 +61,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	 */
 	final boolean resetUponSourceTermination;
 
-	volatile PublishSubscriber<T> connection;
+	volatile @Nullable PublishSubscriber<T> connection;
+
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxPublish, PublishSubscriber> CONNECTION =
+	static final AtomicReferenceFieldUpdater<FluxPublish, @Nullable PublishSubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxPublish.class,
 					PublishSubscriber.class,
 					"connection");
@@ -170,8 +171,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		final FluxPublish<T> parent;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in constructor
 		volatile PubSubInner<T>[] subscribers;
 
 		@SuppressWarnings("rawtypes")
@@ -194,13 +197,14 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@SuppressWarnings("rawtypes")
 		static final PubSubInner[] TERMINATED = new PublishInner[0];
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Queue<T> queue;
 
 		int sourceMode;
 
 		boolean   done;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<PublishSubscriber, Throwable> ERROR =
@@ -279,16 +283,19 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				return;
 			}
 			boolean isAsyncMode = sourceMode == Fuseable.ASYNC;
-			if (!isAsyncMode && !queue.offer(t)) {
-				Throwable ex = Operators.onOperatorError(s,
-						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-						t,
-						currentContext());
-				if (!Exceptions.addThrowable(ERROR, this, ex)) {
-					Operators.onErrorDroppedMulticast(ex, subscribers);
-					return;
+			if (!isAsyncMode) {
+				assert t != null : "onNext called with null in non-async fusion mode";
+				if (!queue.offer(t)) {
+					Throwable ex = Operators.onOperatorError(s,
+							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
+							t,
+							currentContext());
+					if (!Exceptions.addThrowable(ERROR, this, ex)) {
+						Operators.onErrorDroppedMulticast(ex, subscribers);
+						return;
+					}
+					done = true;
 				}
-				done = true;
 			}
 
 			long previousState = addWork(this);
@@ -466,7 +473,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			return !isConnected(previousState);
 		}
 
-		final void drainFromInner() {
+		void drainFromInner() {
 			long previousState = addWorkIfSubscribed(this);
 
 			if (!isSubscriptionSet(previousState)) {
@@ -480,7 +487,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			drain(previousState + 1);
 		}
 
-		final void drain(long expectedState) {
+		void drain(long expectedState) {
 			for (; ; ) {
 
 				boolean d = done;
@@ -907,7 +914,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	static final class PublishInner<T> extends PubSubInner<T> {
-		PublishSubscriber<T> parent;
+		@Nullable PublishSubscriber<T> parent;
 
 		PublishInner(CoreSubscriber<? super T> actual) {
 			super(actual);

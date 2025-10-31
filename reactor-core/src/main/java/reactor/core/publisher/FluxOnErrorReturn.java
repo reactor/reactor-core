@@ -64,6 +64,7 @@ final class FluxOnErrorReturn<T> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 		final boolean                   trackRequestWhenFallbackDeferred;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		final @Nullable Predicate<? super Throwable> resumableErrorPredicate;

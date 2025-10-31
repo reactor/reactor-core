@@ -114,11 +114,13 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		static final AtomicLongFieldUpdater<BufferWhenMainSubscriber> REQUESTED =
 		AtomicLongFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, "requested");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, Subscription.class, "s");
 
-		volatile Throwable errors;
+		volatile @Nullable Throwable errors;
 		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, Throwable>
 				ERRORS =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, Throwable.class, "errors");
@@ -130,9 +132,11 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		volatile boolean done;
 		volatile boolean cancelled;
 
-		long                        index;
-		LinkedHashMap<Long, BUFFER> buffers; //linkedHashMap important to keep the buffer order on final drain
-		long                        emitted;
+		long index;
+		// buffer order on final drain
+		long emitted;
+
+		@Nullable LinkedHashMap<Long, BUFFER> buffers; //linkedHashMap important to keep the
 
 		BufferWhenMainSubscriber(CoreSubscriber<? super BUFFER> actual,
 				Supplier<BUFFER> bufferSupplier, Supplier<? extends Queue<BUFFER>> queueSupplier,
@@ -385,7 +389,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 				if (bufs == null) {
 					return;
 				}
-				queue.offer(buffers.remove(idx));
+				queue.offer(bufs.remove(idx));
 			}
 			if (makeDone) {
 				done = true;
@@ -421,7 +425,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == Attr.BUFFERED) return buffers.values()
+			if (key == Attr.BUFFERED) return buffers == null ? 0 : buffers.values()
 			                                        .stream()
 			                                        .mapToInt(Collection::size)
 			                                        .sum();
@@ -438,7 +442,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 	static final class BufferWhenOpenSubscriber<OPEN>
 			implements Disposable, InnerConsumer<OPEN> {
 
-		volatile Subscription subscription;
+		volatile @Nullable Subscription subscription;
 		static final AtomicReferenceFieldUpdater<BufferWhenOpenSubscriber, Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenOpenSubscriber.class, Subscription.class, "subscription");
 
@@ -456,7 +460,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
-				subscription.request(Long.MAX_VALUE);
+				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -502,7 +506,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 	static final class BufferWhenCloseSubscriber<T, BUFFER extends Collection<? super T>>
 			implements Disposable, InnerConsumer<Object> {
 
-		volatile Subscription subscription;
+		volatile @Nullable Subscription subscription;
 		static final AtomicReferenceFieldUpdater<BufferWhenCloseSubscriber, Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenCloseSubscriber.class, Subscription.class, "subscription");
 
@@ -523,7 +527,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
-				subscription.request(Long.MAX_VALUE);
+				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -542,6 +546,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			Subscription s = subscription;
 			if (s != Operators.cancelledSubscription()) {
 				SUBSCRIPTION.lazySet(this, Operators.cancelledSubscription());
+				assert s != null : "subscription can not be null when onNext happens";
 				s.cancel();
 				parent.close(this, index);
 			}

@@ -44,7 +44,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	final Duration           gracePeriod;
 	final Scheduler          scheduler;
 
-	RefConnection connection;
+	@Nullable RefConnection connection;
 
 	FluxRefCountGrace(ConnectableFlux<T> source, int n, Duration gracePeriod, Scheduler scheduler) {
 		this.source = ConnectableFlux.from(Objects.requireNonNull(source, "source"));
@@ -103,9 +103,6 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	void cancel(RefConnection rc) {
-		boolean replaceTimer = false;
-		Disposable dispose = null;
-		Disposable.Swap sd = null;
 		synchronized (this) {
 			if (rc.terminated) {
 				return;
@@ -116,22 +113,20 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				return;
 			}
 			if (!gracePeriod.isZero()) {
-				sd = Disposables.swap();
+				Disposable.Swap sd = Disposables.swap();
 				rc.timer = sd;
-				replaceTimer = true;
+				sd.replace(scheduler.schedule(rc, gracePeriod.toNanos(), TimeUnit.NANOSECONDS));
 			}
 			else if (rc == connection) {
 				//emulate what a timeout would do without getting out of sync block
 				//capture the disposable for later disposal
 				connection = null;
-				dispose = RefConnection.SOURCE_DISCONNECTOR.getAndSet(rc, Disposables.disposed());
+				Disposable dispose = RefConnection.SOURCE_DISCONNECTOR.getAndSet(rc,
+						Disposables.disposed());
+				if (dispose != null) {
+					dispose.dispose();
+				}
 			}
-		}
-
-		if (replaceTimer) {
-			sd.replace(scheduler.schedule(rc, gracePeriod.toNanos(), TimeUnit.NANOSECONDS));
-		} else if (dispose != null) {
-			dispose.dispose();
 		}
 	}
 
@@ -161,13 +156,14 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		final FluxRefCountGrace<?> parent;
 
-		Disposable timer;
+		@Nullable Disposable timer;
+
 		long       subscriberCount;
 		boolean    connected;
 		boolean    terminated;
 
-		volatile Disposable sourceDisconnector;
-		static final AtomicReferenceFieldUpdater<RefConnection, Disposable> SOURCE_DISCONNECTOR =
+		volatile @Nullable Disposable sourceDisconnector;
+		static final AtomicReferenceFieldUpdater<RefConnection, @Nullable Disposable> SOURCE_DISCONNECTOR =
 				AtomicReferenceFieldUpdater.newUpdater(RefConnection.class, Disposable.class, "sourceDisconnector");
 
 		RefConnection(FluxRefCountGrace<?> parent) {
@@ -200,13 +196,15 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		final FluxRefCountGrace<T> parent;
 
-		RefConnection connection;
+		@Nullable RefConnection connection;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // qs initialized in fusion mode
 		QueueSubscription<T> qs;
 
-		Throwable error;
-
+		@Nullable Throwable error;
 
 		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
 		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;
@@ -269,6 +267,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
 					if (isMonitorSet(previousState)) {
+						assert connection != null : "connection must not be null when monitor is set";
 						this.parent.terminated(connection);
 						this.actual.onError(t);
 					}
@@ -288,6 +287,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 				if (STATE.compareAndSet(this, previousState, previousState | TERMINATED_FLAG)) {
 					if (isMonitorSet(previousState)) {
+						assert connection != null : "connection must not be null when monitor is set";
 						this.parent.terminated(connection);
 						this.actual.onComplete();
 					}
@@ -312,6 +312,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 			}
 
 			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+				assert connection != null : "connection must not be null when cancelling";
 				parent.cancel(connection);
 			}
 		}

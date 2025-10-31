@@ -72,7 +72,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 
 		final Function<? super A, ? extends R> finisher;
 
-		A container; //not final to be able to null it out on termination
+		@Nullable A container; //not final to be able to null it out on termination
 
 		boolean done;
 

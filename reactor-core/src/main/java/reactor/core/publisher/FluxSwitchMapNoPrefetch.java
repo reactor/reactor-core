@@ -78,13 +78,15 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 		final CoreSubscriber<? super R> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;
 
-		SwitchMapInner<T, R> inner;
+		@Nullable SwitchMapInner<T, R> inner;
 
-		volatile Throwable throwable;
+		volatile @Nullable Throwable throwable;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> THROWABLE =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class, Throwable.class, "throwable");
@@ -163,6 +165,8 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				return;
 			}
 
+			// NullAway issue?
+			assert si != null : "si can not be null here";
 			final int nextIndex = si.index + 1;
 			final SwitchMapInner<T, R> nsi = new SwitchMapInner<>(this, this.actual, nextIndex, this.logger);
 
@@ -276,6 +280,7 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 				if (hasRequest(state) == 1 && isInnerSubscribed(state) && !hasInnerCompleted(state)) {
 					final SwitchMapInner<T, R> inner = this.inner;
+					assert inner != null : "inner can not be null when flag is set";
 					if (inner.index == index(state)) {
 						inner.request(n);
 					}
@@ -316,12 +321,17 @@ final class FluxSwitchMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		final int index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
-		long         produced;
-		long         requested;
-		boolean      done;
 
+		long    produced;
+		long    requested;
+		boolean done;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // set when switching
 		T nextElement;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // set when switching
 		SwitchMapInner<T, R> nextInner;
 
 		SwitchMapInner(SwitchMapMain<T, R> parent, CoreSubscriber<? super R> actual, int index, @Nullable StateLogger logger) {

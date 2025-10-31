@@ -150,6 +150,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 
 		final MonoCacheInvalidateWhen<T> main;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription subscription;
 
 		volatile     CacheMonoSubscriber<T>[]                                                  subscribers;
@@ -337,7 +338,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 
 	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
-		CoordinatorSubscriber<T> coordinator;
+		@Nullable CoordinatorSubscriber<T> coordinator;
 
 		CacheMonoSubscriber(CoreSubscriber<? super T> actual) {
 			super(actual);
@@ -354,7 +355,7 @@ final class MonoCacheInvalidateWhen<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public @Nullable Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return coordinator.main;
+			if (key == Attr.PARENT) return coordinator == null ? null : coordinator.main;
 			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);
 		}

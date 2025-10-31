@@ -46,6 +46,7 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 		final CoreSubscriber<? super T> actual;
 		final boolean                   completeAfterOnNext;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s
 		Subscription s;
 
 		boolean done;
@@ -91,10 +92,14 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 			}
 			else if (t.isOnError()) {
 				s.cancel();
-				onError(t.getThrowable());
+				Throwable throwable = t.getThrowable();
+				assert throwable != null : "Throwable can't be null when Signal.isOnError() is true";
+				onError(throwable);
 			}
 			else if (t.isOnNext()) {
-				actual.onNext(t.get());
+				T next = t.get();
+				assert next != null : "Value can't be null when Signal.isOnNext() is true";
+				actual.onNext(next);
 				if (completeAfterOnNext) {
 					onComplete();
 				}

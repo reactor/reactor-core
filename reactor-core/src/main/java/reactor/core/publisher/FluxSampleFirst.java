@@ -79,6 +79,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 
 		volatile boolean gate;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
 		@SuppressWarnings("rawtypes")
@@ -87,7 +88,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 						Subscription.class,
 						"s");
 
-		volatile Subscription other;
+		volatile @Nullable Subscription other;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleFirstMain, Subscription> OTHER =
 				AtomicReferenceFieldUpdater.newUpdater(SampleFirstMain.class,
@@ -104,7 +105,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<SampleFirstMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SampleFirstMain.class, "wip");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleFirstMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SampleFirstMain.class,
@@ -119,7 +120,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public final CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

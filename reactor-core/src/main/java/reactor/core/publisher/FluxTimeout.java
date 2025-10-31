@@ -24,7 +24,6 @@ import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -47,9 +46,9 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
-	final Publisher<? extends T> other;
+	final @Nullable Publisher<? extends T> other;
 
-	final String timeoutDescription; //only useful when no `other`
+	final @Nullable String timeoutDescription; //only useful when no `other`
 
 	FluxTimeout(Flux<? extends T> source,
 			Publisher<U> firstTimeout,
@@ -109,11 +108,14 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
-		final Publisher<? extends T> other;
-		final String timeoutDescription; //only useful/non-null when no `other`
+		final @Nullable Publisher<? extends T> other;
 
+		final @Nullable String timeoutDescription; //only useful/non-null when no `other`
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile IndexedCancellable timeout;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<TimeoutMainSubscriber, IndexedCancellable>
@@ -382,9 +384,10 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		final long index;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		static final AtomicReferenceFieldUpdater<TimeoutTimeoutSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<TimeoutTimeoutSubscriber, @Nullable Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(TimeoutTimeoutSubscriber.class,
 				Subscription.class,
 				"s");

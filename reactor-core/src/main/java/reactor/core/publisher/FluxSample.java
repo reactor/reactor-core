@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -83,22 +82,22 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 		final Context ctx;
 
-		volatile T                  value;
+		volatile @Nullable T value;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Object> VALUE =
+		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, @Nullable Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Object.class, "value");
 
-		volatile Subscription main;
+		volatile @Nullable Subscription main;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Subscription> MAIN =
+		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, @Nullable Subscription> MAIN =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "main");
-		volatile Subscription other;
 
+		volatile @Nullable Subscription other;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Subscription> OTHER =
+		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, @Nullable Subscription> OTHER =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "other");
 		volatile long requested;
 
@@ -112,7 +111,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public final CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -212,7 +211,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 			// below ensures last source value is always part of the sample.
 			T v = value;
 			if (v != null) {
-				actual.onNext(value);
+				actual.onNext(v);
 			}
 
 			actual.onComplete();

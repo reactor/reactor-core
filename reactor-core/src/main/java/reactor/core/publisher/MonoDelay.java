@@ -78,7 +78,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		final CoreSubscriber<? super Long> actual;
 		final boolean failOnBackpressure;
 
-		Disposable cancel;
+		@Nullable Disposable cancel;
 
 		volatile int state;
 		static final AtomicIntegerFieldUpdater<MonoDelayRunnable> STATE = AtomicIntegerFieldUpdater.newUpdater(MonoDelayRunnable.class, "state");
@@ -296,6 +296,7 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 				return;
 			}
 			if (wasCancelFutureSet(previousState)) {
+				assert this.cancel != null : "cancel can not be null if flag is set";
 				this.cancel.dispose();
 			}
 			//otherwise having marked cancelled will trigger immediate disposal upon setCancel

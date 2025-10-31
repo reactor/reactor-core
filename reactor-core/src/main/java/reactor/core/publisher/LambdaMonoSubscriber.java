@@ -36,13 +36,16 @@ import static reactor.core.Scannable.Attr.RunStyle.SYNC;
  */
 final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 
-	final Consumer<? super T>            consumer;
-	final Consumer<? super Throwable>    errorConsumer;
-	final Runnable                       completeConsumer;
-	final Consumer<? super Subscription> subscriptionConsumer;
-	final Context                        initialContext;
+	final @Nullable Consumer<? super T>            consumer;
+	final @Nullable Consumer<? super Throwable>    errorConsumer;
+	final @Nullable Runnable                       completeConsumer;
+	final @Nullable Consumer<? super Subscription> subscriptionConsumer;
 
+	final Context initialContext;
+
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
+
 	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(LambdaMonoSubscriber.class,
 					Subscription.class,

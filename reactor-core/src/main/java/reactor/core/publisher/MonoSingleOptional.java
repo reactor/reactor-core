@@ -50,6 +50,7 @@ final class MonoSingleOptional<T> extends InternalMonoOperator<T, Optional<T>> {
 
 	static final class SingleOptionalSubscriber<T> extends Operators.MonoInnerProducerBase<Optional<T>> implements InnerConsumer<T> {
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

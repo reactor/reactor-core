@@ -69,7 +69,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 
 		final BiConsumer<? super R, ? super T> action;
 
-		R container;
+		@Nullable R container;
 
 		boolean done;
 
@@ -160,7 +160,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
-		R accumulatedValue() {
+		@Nullable R accumulatedValue() {
 			final R c;
 			synchronized (this) {
 				c = container;

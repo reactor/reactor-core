@@ -124,16 +124,20 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 
 	final Queue<T>            queue;
 
-	volatile Disposable                                                   onTerminate;
+	volatile @Nullable Disposable onTerminate;
+
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyUnicast, Disposable> ON_TERMINATE =
+	static final AtomicReferenceFieldUpdater<SinkManyUnicast, @Nullable Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyUnicast.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
 	volatile boolean subscriptionDelivered;
-	Throwable error;
+
+	@Nullable Throwable error;
 
 	boolean hasDownstream; //important to not loose the downstream too early and miss discard hook, while having relevant hasDownstreams()
+
+	@SuppressWarnings("NotNullFieldNotInitialized") // actual initialized in subscribe
 	volatile CoreSubscriber<? super T> actual;
 
 	volatile boolean cancelled;

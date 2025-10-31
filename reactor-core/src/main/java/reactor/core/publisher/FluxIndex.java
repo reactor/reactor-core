@@ -69,8 +69,10 @@ final class FluxIndex<T, I> extends InternalFluxOperator<T, I> {
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
 		boolean      done;
-		Subscription s;
 		long         index = 0;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+		Subscription s;
 
 		IndexSubscriber(CoreSubscriber<? super I> actual,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
@@ -158,7 +160,9 @@ final class FluxIndex<T, I> extends InternalFluxOperator<T, I> {
 		final ConditionalSubscriber<? super I>      actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
+
 		boolean done;
 		long index;
 

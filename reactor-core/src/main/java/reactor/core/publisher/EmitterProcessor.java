@@ -140,13 +140,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	final boolean autoCancel;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	volatile Subscription s;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Subscription.class,
 					"s");
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
@@ -155,9 +158,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			FluxPublish.PubSubInner[].class,
 			"subscribers");
 
-	volatile EmitterDisposable upstreamDisposable;
+	volatile @Nullable EmitterDisposable upstreamDisposable;
+
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterDisposable> UPSTREAM_DISPOSABLE =
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable EmitterDisposable> UPSTREAM_DISPOSABLE =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
 
@@ -168,16 +172,17 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	static final AtomicIntegerFieldUpdater<EmitterProcessor> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "wip");
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Queue<T> queue;
 
 	int sourceMode;
 
 	volatile boolean done;
 
-	volatile Throwable error;
+	volatile @Nullable Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Throwable.class,
 					"error");

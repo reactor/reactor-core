@@ -39,8 +39,9 @@ final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 
 	final Publisher<U> firstTimeout;
 
-	final Publisher<? extends T> other;
-	final String timeoutDescription; //only useful when no `other`
+	final @Nullable Publisher<? extends T> other;
+
+	final @Nullable String timeoutDescription; //only useful when no `other`
 
 	@SuppressWarnings("rawtypes")
     final static Function NEVER = e -> Flux.never();

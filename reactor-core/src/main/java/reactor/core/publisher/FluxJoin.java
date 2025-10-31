@@ -131,7 +131,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				AtomicLongFieldUpdater.newUpdater(JoinSubscription.class,
 						"requested");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		static final AtomicReferenceFieldUpdater<JoinSubscription, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(JoinSubscription.class,

@@ -1420,7 +1420,8 @@ public abstract class Operators {
 
 	static Context multiSubscribersContext(InnerProducer<?>[] multicastInners){
 		if (multicastInners.length > 0){
-			return multicastInners[0].actual().currentContext();
+			CoreSubscriber<?> firstSubscriber = multicastInners[0].actual();
+			return firstSubscriber != null ? firstSubscriber.currentContext() : Context.empty();
 		}
 		return Context.empty();
 	}
@@ -1675,6 +1676,7 @@ public abstract class Operators {
 		// s is set in set() and only used after
 		@SuppressWarnings("NotNullFieldNotInitialized")
 		Subscription s;
+
 		volatile long requested;
 
 		protected boolean isCancelled(){

@@ -308,8 +308,9 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	final FluxReplay.ReplayBuffer<T> buffer;
 
-	Subscription subscription;
+	@Nullable Subscription subscription;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // lazy-initialized in constructor
 	volatile FluxReplay.ReplaySubscription<T>[] subscribers;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<ReplayProcessor, FluxReplay.ReplaySubscription[]>
@@ -536,7 +537,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		int tailIndex;
 
-		Object node;
+		@Nullable Object node;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")

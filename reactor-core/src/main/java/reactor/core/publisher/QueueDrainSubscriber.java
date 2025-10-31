@@ -46,7 +46,7 @@ abstract class QueueDrainSubscriber<T, U, V> extends QueueDrainSubscriberPad4
 	volatile boolean cancelled;
 
 	volatile boolean done;
-	Throwable error;
+	@Nullable Throwable error;
 
 	QueueDrainSubscriber(CoreSubscriber<? super V> actual, Queue<U> queue) {
 		this.actual = actual;
@@ -147,7 +147,7 @@ abstract class QueueDrainSubscriber<T, U, V> extends QueueDrainSubscriberPad4
 		return false;
 	}
 
-	public final Throwable error() {
+	public final @Nullable Throwable error() {
 		return error;
 	}
 

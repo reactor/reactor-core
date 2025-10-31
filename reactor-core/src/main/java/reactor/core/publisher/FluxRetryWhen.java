@@ -245,6 +245,9 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 	static final class RetryWhenOtherSubscriber extends Flux<Retry.RetrySignal>
 	implements InnerConsumer<Object>, OptimizableOperator<Retry.RetrySignal, Retry.RetrySignal> {
+
+		// main initialized upon construction in FluxRetryWhen.subscribeOrReturn
+		@SuppressWarnings("NotNullFieldNotInitialized")
 		RetryWhenMainSubscriber<?> main;
 
 		final Sinks.Many<Retry.RetrySignal> completionSignal = Sinks.many().multicast().onBackpressureBuffer();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import reactor.util.context.Context;
 public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscription,
                                                    Disposable {
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
 
 	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =

@@ -68,6 +68,7 @@ final class FluxTakeLast<T> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		TakeLastZeroSubscriber(CoreSubscriber<? super T> actual) {
@@ -133,6 +134,7 @@ final class FluxTakeLast<T> extends InternalFluxOperator<T, T> {
 
 		volatile boolean cancelled;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile long requested;

@@ -81,11 +81,12 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
         final Mono<T> lastMono;
         final CoreSubscriber<? super T> actual;
 
-        T value;
+        @Nullable T value;
 
         int          index;
-        Subscription activeSubscription;
         boolean      done;
+
+        @Nullable Subscription activeSubscription;
 
         volatile int state;
         @SuppressWarnings("rawtypes")
@@ -140,7 +141,9 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
             int previousState = markCancelled();
 
             if (hasSubscription(previousState)) {
-                this.activeSubscription.cancel();
+				Subscription a = this.activeSubscription;
+				assert a != null : "activeSubscription cannot be null when hasSubscription(previousState) is true";
+                a.cancel();
             }
         }
 
@@ -159,6 +162,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         if (hasValue(state)) {
                             final CoreSubscriber<? super T> actual = this.actual;
                             final T v = this.value;
+							assert v != null : "v can not be null when hasValue(state) is true";
 
                             actual.onNext(v);
                             actual.onComplete();
@@ -225,7 +229,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
                         }
                         T v;
                         try {
-                            v = ((Callable<T>)m).call();
+                            v = ((Callable<@Nullable T>)m).call();
                         }
                         catch (Throwable ex) {
                             onError(Operators.onOperatorError(ex, currentContext()));
@@ -279,7 +283,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
             this.actual.onError(t);
         }
 
-        final void complete(T value) {
+		void complete(T value) {
             for (; ; ) {
                 int s = this.state;
                 if (isCancelled(s)) {
@@ -302,7 +306,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
             }
         }
 
-        final int markHasSubscription() {
+        int markHasSubscription() {
             for (;;) {
                 final int state = this.state;
 
@@ -320,7 +324,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
             }
         }
 
-        final int markUnsubscribed() {
+        int markUnsubscribed() {
             for (;;) {
                 final int state = this.state;
 
@@ -338,7 +342,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Scannable {
             }
         }
 
-        final int markCancelled() {
+        int markCancelled() {
             for (;;) {
                 final int state = this.state;
 

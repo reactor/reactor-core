@@ -78,13 +78,17 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		final Scheduler scheduler;
 		final TimeUnit unit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
-		T value;
+
+		@Nullable T value;
+
 		boolean done;
 
-		volatile Disposable task;
+		volatile @Nullable Disposable task;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DelayElementSubscriber, Disposable> TASK =
+		static final AtomicReferenceFieldUpdater<DelayElementSubscriber, @Nullable Disposable> TASK =
 				AtomicReferenceFieldUpdater.newUpdater(DelayElementSubscriber.class, Disposable.class, "task");
 
 		DelayElementSubscriber(
@@ -191,6 +195,7 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 			}
 
 			final T value = this.value;
+			assert value != null : "value can not be null when task scheduled";
 			this.value = null;
 
 			this.actual.onNext(value);

@@ -75,10 +75,10 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		final BiFunction<T, T, T> reducer;
 
-		volatile SlotPair<T> current;
+		volatile @Nullable SlotPair<T> current;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeReduceMain, SlotPair> CURRENT =
+		static final AtomicReferenceFieldUpdater<MergeReduceMain, @Nullable SlotPair> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(MergeReduceMain.class,
 				SlotPair.class,
 				"current");
@@ -90,9 +90,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				MergeReduceMain.class,
 				"remaining");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeReduceMain, Throwable>
+		static final AtomicReferenceFieldUpdater<MergeReduceMain, @Nullable Throwable>
 				ERROR = AtomicReferenceFieldUpdater.newUpdater(
 				MergeReduceMain.class,
 				Throwable.class,
@@ -201,6 +201,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 					if (sp != null) {
 
 						try {
+							assert sp.first != null : "Reduced first must be non-null";
+							assert sp.second != null : "Reduced second must be non-null";
+
 							value = Objects.requireNonNull(reducer.apply(sp.first,
 									sp.second), "The reducer returned a null value");
 						}
@@ -221,6 +224,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				CURRENT.lazySet(this, null);
 
 				if (sp != null) {
+					assert sp.first != null : "Final reduce value must be non-null";
 					actual.onNext(sp.first);
 					actual.onComplete();
 				}
@@ -274,7 +278,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		final BiFunction<T, T, T> reducer;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeReduceInner, Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(
@@ -282,7 +288,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				Subscription.class,
 				"s");
 
-		T value;
+		@Nullable T value;
 
 		boolean done;
 
@@ -368,9 +374,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 	static final class SlotPair<T> {
 
-		T first;
+		@Nullable T first;
 
-		T second;
+		@Nullable T second;
 
 		volatile int acquireIndex;
 		@SuppressWarnings("rawtypes")

@@ -133,7 +133,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		}
 
 		@Override
-		List<T> accumulatedValue() {
+		@Nullable List<T> accumulatedValue() {
 			final List<T> l;
 			synchronized (this) {
 				l = list;

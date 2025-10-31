@@ -119,9 +119,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		final BaseSink<T> sink;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SerializedFluxSink, Throwable> ERROR =
+		static final AtomicReferenceFieldUpdater<SerializedFluxSink, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SerializedFluxSink.class,
 						Throwable.class,
 						"error");
@@ -236,7 +236,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					if (ERROR.get(this) != null) {
 						Operators.onDiscardQueueWithClear(q, ctx, null);
 						//noinspection ConstantConditions
-						e.error(Exceptions.terminate(ERROR, this));
+						Throwable err = Exceptions.terminate(ERROR, this);
+						assert err != null : "error can not be null";
+						e.error(err);
 						return;
 					}
 
@@ -326,8 +328,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	static class SerializeOnRequestSink<T> implements FluxSink<T>, Scannable {
 
 		final BaseSink<T> baseSink;
-		SerializedFluxSink<T> serializedSink;
-		FluxSink<T>       sink;
+
+		@Nullable SerializedFluxSink<T> serializedSink;
+
+		FluxSink<T> sink;
 
 		SerializeOnRequestSink(BaseSink<T> sink) {
 			this.baseSink = sink;
@@ -415,9 +419,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;
 
-		volatile Disposable disposable;
+		volatile @Nullable Disposable disposable;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BaseSink, Disposable> DISPOSABLE =
+		static final AtomicReferenceFieldUpdater<BaseSink, @Nullable Disposable> DISPOSABLE =
 				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
 						Disposable.class,
 						"disposable");
@@ -427,9 +431,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		static final AtomicLongFieldUpdater<BaseSink> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
 
-		volatile LongConsumer requestConsumer;
+		volatile @Nullable LongConsumer requestConsumer;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BaseSink, LongConsumer>
+		static final AtomicReferenceFieldUpdater<BaseSink, @Nullable LongConsumer>
 				REQUEST_CONSUMER = AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
 				LongConsumer.class,
 				"requestConsumer");
@@ -527,6 +531,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 				if (hasRequestConsumer(s)) {
 					LongConsumer consumer = requestConsumer;
+					assert consumer != null : "requestConsumer should not be null when hasRequestConsumer is true";
 					if (!isCancelled()) {
 						consumer.accept(n);
 					}
@@ -784,7 +789,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		final Queue<T> queue;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
@@ -940,9 +946,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class LatestAsyncSink<T> extends BaseSink<T> {
 
-		final AtomicReference<T> queue;
+		final AtomicReference<@Nullable T> queue;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
@@ -996,7 +1003,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			}
 
 			final Subscriber<? super T> a = actual;
-			final AtomicReference<T> q = queue;
+			final AtomicReference<@Nullable T> q = queue;
 
 			for (; ; ) {
 				long r = requestedFromDownstream();
@@ -1101,9 +1108,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class SinkDisposable implements Disposable {
 
-		Disposable onCancel;
+		@Nullable Disposable onCancel;
 
-		Disposable disposable;
+		@Nullable Disposable disposable;
 
 		SinkDisposable(@Nullable Disposable disposable, @Nullable Disposable onCancel) {
 			this.disposable = disposable;

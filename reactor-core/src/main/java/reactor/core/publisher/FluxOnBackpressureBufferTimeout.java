@@ -101,12 +101,14 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 		final int                       bufferSizeDouble;
 		final Consumer<? super T>       onBufferEviction;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean cancelled;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<BackpressureBufferTimeoutSubscriber> WIP =

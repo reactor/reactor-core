@@ -31,7 +31,7 @@ import reactor.core.Fuseable;
 final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		implements Fuseable {
 
-	final T defaultValue;
+	final @Nullable T defaultValue;
 
     MonoTakeLastOne(Flux<? extends T> source) {
         super(source);
@@ -61,7 +61,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 
 		final boolean mustEmit;
 
-		T value;
+		@Nullable T value;
 
 		boolean done;
 

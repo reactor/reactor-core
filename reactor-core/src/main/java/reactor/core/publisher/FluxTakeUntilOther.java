@@ -132,15 +132,15 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		volatile Subscription       main;
+		volatile @Nullable Subscription main;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, Subscription> MAIN =
+		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, @Nullable Subscription> MAIN =
 		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "main");
 
-		volatile Subscription other;
+		volatile @Nullable Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, Subscription> OTHER =
+		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, @Nullable Subscription> OTHER =
 		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "other");
 
 		TakeUntilMainSubscriber(CoreSubscriber<? super T> actual) {
@@ -177,7 +177,9 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void request(long n) {
-			main.request(n);
+			Subscription s = this.main;
+			assert s != null : "main can not be null when requesting";
+			s.request(n);
 		}
 
 		void cancelMainAndComplete() {

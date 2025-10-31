@@ -95,8 +95,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		final BufferBoundaryOther<U> other;
 
-		C buffer;
+		@Nullable C buffer;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
 		@SuppressWarnings("rawtypes")
@@ -201,7 +202,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				}
 
 				other.cancel();
-				if (!b.isEmpty()) {
+				if (b != null && !b.isEmpty()) {
 					if (emit(b)) {
 						actual.onComplete();
 					} //failed emit will discard buffer's elements

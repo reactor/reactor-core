@@ -33,13 +33,13 @@ import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
  */
 final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek<T> {
 
-	final Consumer<? super Subscription> onSubscribeCall;
+	final @Nullable Consumer<? super Subscription> onSubscribeCall;
 
-	final Consumer<? super T> onNextCall;
+	final @Nullable Consumer<? super T> onNextCall;
 
-	final LongConsumer onRequestCall;
+	final @Nullable LongConsumer onRequestCall;
 
-	final Runnable onCancelCall;
+	final @Nullable Runnable onCancelCall;
 
 	MonoPeek(Mono<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,

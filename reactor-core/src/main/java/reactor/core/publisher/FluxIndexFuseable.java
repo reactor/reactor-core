@@ -73,8 +73,10 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 
 		boolean              done;
 		long                 index;
-		QueueSubscription<T> s;
 		int                  sourceMode;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+		QueueSubscription<T> s;
 
 		IndexFuseableSubscriber(CoreSubscriber<? super I> actual,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
@@ -214,8 +216,10 @@ final class FluxIndexFuseable<T, I> extends InternalFluxOperator<T, I>
 
 		boolean              done;
 		long                 index;
-		QueueSubscription<T> s;
 		int                  sourceMode;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
+		QueueSubscription<T> s;
 
 		IndexFuseableConditionalSubscriber(
 				ConditionalSubscriber<? super I> cs,

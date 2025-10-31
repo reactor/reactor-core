@@ -34,7 +34,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 
 	final long index;
 
-	final T defaultValue;
+	final @Nullable T defaultValue;
 
 	MonoElementAt(Flux<? extends T> source, long index) {
 		super(source);

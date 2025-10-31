@@ -76,7 +76,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 	public @Nullable CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) throws Exception {
 
 		if (source instanceof Callable) {
-			T v = ((Callable<T>) source).call();
+			T v = ((Callable<@Nullable T>) source).call();
 
 			if (v == null) {
 				Operators.complete(actual);
@@ -144,15 +144,17 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 				AtomicLongFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
 						"requested");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Queue<T> queue;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlattenIterableSubscriber, Throwable>
 				ERROR =
@@ -165,7 +167,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 
 		boolean valueReady = false;
 
-		R nextElement;
+		@Nullable R nextElement;
 
 		int consumed;
 
@@ -283,7 +285,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			return valueReady;
 		}
 
-		R next(Spliterator<? extends R> spliterator) {
+		@Nullable R next(Spliterator<? extends R> spliterator) {
 			if (!valueReady && !hasNext(spliterator))
 				throw new NoSuchElementException();
 			else {
@@ -319,7 +321,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 		}
 
 		//should be kept small and final to favor inlining
-		final void resetCurrent() {
+		void resetCurrent() {
 			current = null;
 			currentKnownToBeFinite = false;
 		}

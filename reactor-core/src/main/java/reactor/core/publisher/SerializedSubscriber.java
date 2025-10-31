@@ -45,12 +45,13 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 	volatile boolean cancelled;
 
-	LinkedArrayNode<T> head;
+	@Nullable LinkedArrayNode<T> head;
 
-	LinkedArrayNode<T> tail;
+	@Nullable LinkedArrayNode<T> tail;
 
-	Throwable error;
+	@Nullable Throwable error;
 
+	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	Subscription s;
 
 	SerializedSubscriber(CoreSubscriber<? super T> actual) {
@@ -263,7 +264,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 		}
 	}
 
-	private void discardMultiple(LinkedArrayNode<T> head) {
+	private void discardMultiple(@Nullable LinkedArrayNode<T> head) {
 		LinkedArrayNode<T> originalHead = head;
 		LinkedArrayNode<T> h = head;
 		while (h != null) {
@@ -317,7 +318,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 		final T[] array;
 		int count;
 
-		LinkedArrayNode<T> next;
+		@Nullable LinkedArrayNode<T> next;
 
 		@SuppressWarnings("unchecked")
 		LinkedArrayNode(T value) {

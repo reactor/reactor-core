@@ -75,6 +75,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		MapSubscriber(CoreSubscriber<? super R> actual,
@@ -176,6 +177,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 
 		boolean done;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		MapConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual,

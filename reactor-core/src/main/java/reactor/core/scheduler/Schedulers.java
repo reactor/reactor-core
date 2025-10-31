@@ -1211,9 +1211,14 @@ public abstract class Schedulers {
 
 
 	// Cached schedulers in atomic references:
-	static AtomicReference<CachedScheduler> CACHED_BOUNDED_ELASTIC = new AtomicReference<>();
-	static AtomicReference<CachedScheduler> CACHED_PARALLEL        = new AtomicReference<>();
-	static AtomicReference<CachedScheduler> CACHED_SINGLE          = new AtomicReference<>();
+	static AtomicReference<@Nullable CachedScheduler> CACHED_BOUNDED_ELASTIC =
+			new AtomicReference<>();
+
+	static AtomicReference<@Nullable CachedScheduler> CACHED_PARALLEL =
+			new AtomicReference<>();
+
+	static AtomicReference<@Nullable CachedScheduler> CACHED_SINGLE =
+			new AtomicReference<>();
 
 	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER = new BoundedElasticSchedulerSupplier();
 
@@ -1249,7 +1254,8 @@ public abstract class Schedulers {
 	 * immediately {@link Scheduler#dispose() disposed}.
 	 * @return a {@link CachedScheduler} to be reused, either pre-existing or created
 	 */
-	static CachedScheduler cache(AtomicReference<CachedScheduler> reference, String key, Supplier<Scheduler> supplier) {
+	static CachedScheduler cache(AtomicReference<@Nullable CachedScheduler> reference,
+			String key, Supplier<Scheduler> supplier) {
 		CachedScheduler s = reference.get();
 		if (s != null) {
 			return s;
@@ -1258,10 +1264,12 @@ public abstract class Schedulers {
 		if (reference.compareAndSet(null, s)) {
 			return s;
 		}
+		CachedScheduler other = reference.get();
+		assert other != null : "CachedScheduler should not be null after failed CAS";
 		//the reference was updated in the meantime with a cached scheduler
 		//fallback to it and dispose the extraneous one
 		s._dispose();
-		return reference.get();
+		return other;
 	}
 
 	static final Logger LOGGER = Loggers.getLogger(Schedulers.class);

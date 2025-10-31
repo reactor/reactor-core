@@ -86,8 +86,9 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 		final Worker  worker;
 		final boolean requestOnSeparateThread;
 
-		volatile Subscription s;
-		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Subscription> S =
+		volatile @Nullable Subscription s;
+
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						Subscription.class,
 						"s");
@@ -100,6 +101,7 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 				AtomicLongFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						"requested");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in run()
 		volatile Thread thread;
 
 		@SuppressWarnings("rawtypes")

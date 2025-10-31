@@ -125,18 +125,19 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 		final CoreSubscriber<? super R> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
 
 		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 
-		MergeSequentialInner<R> current;
+		@Nullable MergeSequentialInner<R> current;
 
 		/** guard against multiple threads entering the drain loop. allows thread
 		 * stealing by continuing the loop if wip has been incremented externally by
@@ -449,6 +450,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 								return;
 							}
 
+							assert inner != null : "inner can not be null";
 							if (em == ErrorMode.IMMEDIATE) {
 								Throwable ex = error;
 								if (ex != null) {
@@ -505,8 +507,10 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 		final int limit;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Queue<R> queue;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
 		static final AtomicReferenceFieldUpdater<MergeSequentialInner, Subscription>

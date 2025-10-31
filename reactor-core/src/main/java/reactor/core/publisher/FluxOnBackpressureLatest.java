@@ -71,16 +71,18 @@ final class FluxOnBackpressureLatest<T> extends InternalFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<LatestSubscriber> WIP =
 		  AtomicIntegerFieldUpdater.newUpdater(LatestSubscriber.class, "wip");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
-		Throwable error;
+		@Nullable Throwable error;
+
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
-		volatile T value;
+		volatile @Nullable T value;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<LatestSubscriber, Object> VALUE =
+		static final AtomicReferenceFieldUpdater<LatestSubscriber, @Nullable Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(LatestSubscriber.class, Object.class, "value");
 
 		LatestSubscriber(CoreSubscriber<? super T> actual) {

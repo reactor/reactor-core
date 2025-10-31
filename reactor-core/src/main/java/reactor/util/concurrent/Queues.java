@@ -50,7 +50,7 @@ public final class Queues {
 	 * @param q the {@link Queue} to try to get a capacity for
 	 * @return the capacity of the queue, if discoverable with confidence, or {@link #CAPACITY_UNSURE} negative constant.
 	 */
-	public static final int capacity(Queue q) {
+	public static int capacity(Queue q) {
 		if (q instanceof ZeroQueue) {
 			return 0;
 		}
@@ -230,7 +230,7 @@ public final class Queues {
 		//prevent construction
 	}
 
-	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
+	static final class OneQueue<T> extends AtomicReference<@Nullable T> implements Queue<T> {
         @Override
 		public boolean add(T t) {
 
@@ -260,7 +260,7 @@ public final class Queues {
 		}
 
 		@Override
-		public T element() {
+		public @Nullable T element() {
 			return get();
 		}
 
@@ -298,7 +298,7 @@ public final class Queues {
 		}
 
 		@Override
-		public T remove() {
+		public @Nullable T remove() {
 			return getAndSet(null);
 		}
 
@@ -333,7 +333,7 @@ public final class Queues {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T1> T1[] toArray(T1[] a) {
+		public <T1 extends @Nullable Object> T1[] toArray(T1[] a) {
 			int size = size();
 			if (a.length < size) {
 				a = (T1[]) java.lang.reflect.Array.newInstance(
@@ -440,7 +440,7 @@ public final class Queues {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T1> T1[] toArray(T1[] a) {
+		public <T1 extends @Nullable Object> T1[] toArray(T1[] a) {
 			if (a.length > 0) {
 				a[0] = null;
 			}
@@ -464,7 +464,7 @@ public final class Queues {
 		}
 
 		@Override
-		public T next() {
+		public @Nullable T next() {
 			return queue.poll();
 		}
 

@@ -87,24 +87,26 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		final CoreSubscriber<? super R> actual;
 		final BiFunction<? super T, ? super U, ? extends R> combiner;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription main;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, @Nullable Subscription>
 				MAIN =
 				AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class,
 						Subscription.class,
 						"main");
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in main's onSubscribe
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, @Nullable Subscription>
 				OTHER =
 				AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class,
 						Subscription.class,
 						"other");
 
-		volatile U otherValue;
+		volatile @Nullable U otherValue;
 
 		WithLatestFromSubscriber(CoreSubscriber<? super R> actual,
 				BiFunction<? super T, ? super U, ? extends R> combiner) {

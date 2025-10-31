@@ -36,7 +36,8 @@ import reactor.util.context.Context;
  */
 final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> implements Fuseable {
 
-	final Consumer<? super O> onOverflow;
+	final @Nullable Consumer<? super O> onOverflow;
+
 	final int                 bufferSize;
 	final boolean             unbounded;
 
@@ -79,8 +80,10 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		final Context                   ctx;
 		final Queue<T>                  queue;
 		final int                       capacityOrSkip;
-		final Consumer<? super T>       onOverflow;
 
+		final @Nullable Consumer<? super T> onOverflow;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean cancelled;
@@ -88,7 +91,8 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		volatile boolean enabledFusion;
 
 		volatile boolean done;
-		Throwable error;
+
+		@Nullable Throwable error;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")

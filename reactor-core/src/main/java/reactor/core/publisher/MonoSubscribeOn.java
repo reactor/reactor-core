@@ -80,7 +80,8 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 
 		final Scheduler.Worker worker;
 
-		volatile Subscription s;
+		volatile @Nullable Subscription s;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
@@ -93,9 +94,9 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 				AtomicLongFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						"requested");
 
-		volatile Thread thread;
+		volatile @Nullable Thread thread;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Thread> THREAD =
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, @Nullable Thread> THREAD =
 				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						Thread.class,
 						"thread");

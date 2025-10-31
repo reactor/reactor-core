@@ -50,6 +50,7 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		boolean done;

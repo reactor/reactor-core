@@ -62,6 +62,7 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 		final TimeUnit timeUnit;
 		final Scheduler.Worker w;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		Subscription s;
 
 		volatile boolean done;

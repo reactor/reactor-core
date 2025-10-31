@@ -136,6 +136,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		int index;
 		long produced;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is
 		Subscription s;
 
 		volatile long requested;
@@ -150,6 +152,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			this.sources = sources;
 		}
 
+		// null check upon first call - subsequent calls happen for consecutive sources
+		@SuppressWarnings("DataFlowIssue")
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (this.cancelled) {
@@ -295,6 +299,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		int index;
 		long produced;
+
+		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
 		Subscription s;
 
 		volatile long requested;
@@ -302,7 +308,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		static final AtomicLongFieldUpdater<ConcatArrayDelayErrorSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, "requested");
 
-		volatile Throwable error;
+		volatile @Nullable Throwable error;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatArrayDelayErrorSubscriber, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, Throwable.class, "error");
@@ -314,6 +321,8 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			this.sources = sources;
 		}
 
+		// null check upon first call - subsequent calls happen for consecutive sources
+		@SuppressWarnings("DataFlowIssue")
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (this.cancelled) {

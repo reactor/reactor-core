@@ -402,8 +402,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 							}
 
 							if (p instanceof Callable) {
-								@SuppressWarnings("unchecked") Callable<R> callable =
-										(Callable<R>) p;
+								@SuppressWarnings("unchecked") Callable<@Nullable R> callable =
+										(Callable<@Nullable R>) p;
 
 								R vr;
 
@@ -766,8 +766,8 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 							}
 
 							if (p instanceof Callable) {
-								@SuppressWarnings("unchecked") Callable<R> supplier =
-										(Callable<R>) p;
+								@SuppressWarnings("unchecked") Callable<@Nullable R> supplier =
+										(Callable<@Nullable R>) p;
 
 								R vr;
 

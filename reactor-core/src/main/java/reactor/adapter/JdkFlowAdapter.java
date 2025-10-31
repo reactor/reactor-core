@@ -92,6 +92,7 @@ public abstract class JdkFlowAdapter {
 
 		private final Flow.Subscriber<? super T> subscriber;
 
+	    @SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Subscription subscription;
 
 		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
@@ -134,6 +135,7 @@ public abstract class JdkFlowAdapter {
 
 		private final Subscriber<? super T> s;
 
+		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		Flow.Subscription subscription;
 
 		public SubscriberToRS(Subscriber<? super T> s) {
