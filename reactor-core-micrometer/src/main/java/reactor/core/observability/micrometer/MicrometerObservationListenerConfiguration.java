@@ -46,6 +46,7 @@ final class MicrometerObservationListenerConfiguration {
 	static MicrometerObservationListenerConfiguration fromFlux(Flux<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_FLUX;
 		String anonymousName = MicrometerObservationListenerDocumentation.ANONYMOUS.getName();
+		assert anonymousName != null : "anonymousName can not be null"; // NullAway issue?
 		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, anonymousName);
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 
@@ -55,6 +56,7 @@ final class MicrometerObservationListenerConfiguration {
 	static MicrometerObservationListenerConfiguration fromMono(Mono<?> source, ObservationRegistry observationRegistry) {
 		KeyValues defaultKeyValues = DEFAULT_KV_MONO;
 		String anonymousName = MicrometerObservationListenerDocumentation.ANONYMOUS.getName();
+		assert anonymousName != null : "anonymousName can not be null"; // NullAway issue?
 		final String name = MicrometerMeterListenerConfiguration.resolveName(source, LOGGER, anonymousName);
 		final KeyValues keyValues = resolveKeyValues(source, defaultKeyValues);
 

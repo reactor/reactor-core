@@ -214,14 +214,15 @@ final class TimedScheduler implements Scheduler {
 		final TimedScheduler timedScheduler;
 		final Runnable       task;
 
-		final LongTaskTimer.Sample pendingSample;
+		final LongTaskTimer.@Nullable Sample pendingSample;
 
 		boolean isRerun;
 
-		Disposable disposable;
+		@Nullable Disposable disposable;
 
-		volatile Composite parent;
-		static final AtomicReferenceFieldUpdater<TimedRunnable, Composite> PARENT =
+		volatile @Nullable Composite parent;
+
+		static final AtomicReferenceFieldUpdater<TimedRunnable, @Nullable Composite> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(TimedRunnable.class, Composite.class, "parent");
 
 		TimedRunnable(MeterRegistry registry, TimedScheduler timedScheduler, Runnable task,
