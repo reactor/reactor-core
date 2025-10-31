@@ -268,11 +268,11 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> consumeNextWith(
-			Consumer<? super T> consumer) {
+			Consumer<? super @Nullable T> consumer) {
 		return consumeNextWith(consumer, "consumeNextWith");
 	}
 
-	private DefaultStepVerifierBuilder<T> consumeNextWith(Consumer<? super T> consumer, String description) {
+	private DefaultStepVerifierBuilder<T> consumeNextWith(Consumer<? super @Nullable T> consumer, String description) {
 		Objects.requireNonNull(consumer, "consumer");
 		checkPotentialHang(1, description);
 		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
@@ -290,7 +290,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> consumeRecordedWith(
-			Consumer<? super Collection<T>> consumer) {
+			Consumer<? super Collection<@Nullable T>> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		this.script.add(new CollectEvent<>(consumer,
 				messageFormatter, "consumeRecordedWith"));
@@ -466,65 +466,65 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public final DefaultStepVerifierBuilder<T> expectNext(T t) {
-		return addExpectedValues(new Object[] { t });
+	public DefaultStepVerifierBuilder<T> expectNext(@Nullable T t) {
+		return addExpectedValues(new @Nullable Object[] { t });
 	}
 
 	@Override
-	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2) {
-		return addExpectedValues(new Object[] { t1, t2 });
+	public DefaultStepVerifierBuilder<T> expectNext(@Nullable T t1, @Nullable T t2) {
+		return addExpectedValues(new @Nullable Object[] { t1, t2 });
 	}
 
 	@Override
-	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3) {
-		return addExpectedValues(new Object[] { t1, t2, t3 });
+	public DefaultStepVerifierBuilder<T> expectNext(@Nullable T t1, @Nullable T t2,
+			@Nullable T t3) {
+		return addExpectedValues(new @Nullable Object[] { t1, t2, t3 });
 	}
 
 	@Override
-	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3, T t4) {
-		return addExpectedValues(new Object[] { t1, t2, t3, t4 });
+	public DefaultStepVerifierBuilder<T> expectNext(@Nullable T t1, @Nullable T t2,
+			@Nullable T t3, @Nullable T t4) {
+		return addExpectedValues(new @Nullable Object[] { t1, t2, t3, t4 });
 	}
 
 	@Override
-	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3, T t4, T t5) {
-		return addExpectedValues(new Object[] { t1, t2, t3, t4, t5 });
+	public DefaultStepVerifierBuilder<T> expectNext(@Nullable T t1, @Nullable T t2,
+			@Nullable T t3, @Nullable T t4, @Nullable T t5) {
+		return addExpectedValues(new @Nullable Object[] { t1, t2, t3, t4, t5 });
 	}
 
 	@Override
-	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3, T t4, T t5, T t6) {
-		return addExpectedValues(new Object[] { t1, t2, t3, t4, t5, t6 });
+	public DefaultStepVerifierBuilder<T> expectNext(@Nullable T t1, @Nullable T t2,
+			@Nullable T t3, @Nullable T t4, @Nullable T t5, @Nullable T t6) {
+		return addExpectedValues(new @Nullable Object[] { t1, t2, t3, t4, t5, t6 });
 	}
 
 	@Override
 	@SafeVarargs
-	public final DefaultStepVerifierBuilder<T> expectNext(T... ts) {
+	public final DefaultStepVerifierBuilder<T> expectNext(@Nullable T... ts) {
 		Objects.requireNonNull(ts, "ts");
 		Arrays.stream(ts).forEach(this::addExpectedValue);
 		return this;
 	}
 
 	@SuppressWarnings("unchecked") // cast to a known type
-	private DefaultStepVerifierBuilder<T> addExpectedValues(Object[] values) {
+	private DefaultStepVerifierBuilder<T> addExpectedValues(@Nullable Object[] values) {
 		Arrays.stream(values).map(val -> (T) val).forEach(this::addExpectedValue);
 		return this;
 	}
 
-	private void addExpectedValue(T value) {
+	private void addExpectedValue(@Nullable T value) {
 		String desc = messageFormatter.format("expectNext(%s)", value);
 		checkPotentialHang(1, desc);
 		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnNext()) {
 				return messageFormatter.failOptional(se, "expected: onNext(%s); actual: %s", value, signal);
 			}
+			else if (!Objects.equals(value, signal.get())) {
+				return messageFormatter.failOptional(se, "expected value: %s; actual value: %s", value, signal.get());
+			}
 			else {
-				T t = Objects.requireNonNull(signal.get(),
-						"signal.get() null when signal.isOnNext() == true");
-				if (!Objects.equals(value, t)) {
-					return messageFormatter.failOptional(se, "expected value: %s; actual value: %s", value, t);
-				}
-				else {
-					return Optional.empty();
-				}
+				return Optional.empty();
 			}
 		}, desc);
 		this.script.add(event);
@@ -532,7 +532,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectNextSequence(
-			Iterable<? extends T> iterable) {
+			Iterable<? extends @Nullable T> iterable) {
 		Objects.requireNonNull(iterable, "iterable");
 		if (iterable.iterator().hasNext()) {
 			if (iterable instanceof Collection) {
@@ -560,7 +560,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectNextMatches(
-			Predicate<? super T> predicate) {
+			Predicate<? super @Nullable T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		checkPotentialHang(1, "expectNextMatches");
 		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
@@ -568,8 +568,7 @@ final class DefaultStepVerifierBuilder<T>
 				return messageFormatter.failOptional(se, "expected: onNext(); actual: %s", signal);
 			}
 			else {
-				T t = Objects.requireNonNull(signal.get(),
-						"signal.get() null when signal.isOnNext() == true");
+				T t = signal.get();
 				if (!predicate.test(t)) {
 					return messageFormatter.failOptional(se, "predicate failed on value: %s", t);
 				}
@@ -584,7 +583,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectRecordedMatches(
-			Predicate<? super Collection<T>> predicate) {
+			Predicate<? super Collection<@Nullable T>> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		this.script.add(new CollectEvent<>(predicate,
 				messageFormatter, "expectRecordedMatches"));
@@ -638,7 +637,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultStepVerifierBuilder<T> recordWith(Supplier<? extends Collection<T>> supplier) {
+	public DefaultStepVerifierBuilder<T> recordWith(Supplier<? extends Collection<@Nullable T>> supplier) {
 		Objects.requireNonNull(supplier, "supplier");
 		this.script.add(new CollectEvent<>(supplier, messageFormatter, "recordWith"));
 		return this;
@@ -2370,7 +2369,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		final @Nullable Consumer<? super Collection<T>> consumer;
 
-		CollectEvent(Supplier<? extends Collection<T>> supplier, MessageFormatter messageFormatter, String desc) {
+		CollectEvent(Supplier<? extends Collection<@Nullable T>> supplier, MessageFormatter messageFormatter, String desc) {
 			super(desc);
 			this.messageFormatter = messageFormatter;
 			this.supplier = supplier;
@@ -2378,7 +2377,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.consumer = null;
 		}
 
-		CollectEvent(Consumer<? super Collection<T>> consumer, MessageFormatter messageFormatter, String desc) {
+		CollectEvent(Consumer<? super Collection<@Nullable T>> consumer, MessageFormatter messageFormatter, String desc) {
 			super(desc);
 			this.messageFormatter = messageFormatter;
 			this.supplier = null;
@@ -2386,7 +2385,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.consumer = consumer;
 		}
 
-		CollectEvent(Predicate<? super Collection<T>> predicate, MessageFormatter messageFormatter, String desc) {
+		CollectEvent(Predicate<? super Collection<@Nullable T>> predicate, MessageFormatter messageFormatter, String desc) {
 			super(desc);
 			this.messageFormatter = messageFormatter;
 			this.supplier = null;
@@ -2539,7 +2538,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	static final class SignalSequenceEvent<T> extends AbstractSignalEvent<T> {
 
-		final Iterable<? extends T> iterable;
+		final Iterable<? extends @Nullable T> iterable;
 		final MessageFormatter      messageFormatter;
 
 		SignalSequenceEvent(Iterable<? extends T> iterable, MessageFormatter messageFormatter, String desc) {
@@ -2548,14 +2547,13 @@ final class DefaultStepVerifierBuilder<T>
 			this.messageFormatter = messageFormatter;
 		}
 
-		Optional<AssertionError> test(Signal<T> signal, Iterator<? extends T> iterator) {
+		Optional<AssertionError> test(Signal<T> signal, Iterator<? extends @Nullable T> iterator) {
 			if (signal.isOnNext()) {
 				if (!iterator.hasNext()) {
 					return Optional.empty();
 				}
 				T d2 = iterator.next();
-				T next = Objects.requireNonNull(signal.get(),
-						"signal.get() null when signal.isOnNext() == true");
+				T next = signal.get();
 				if (!Objects.equals(next, d2)) {
 					return messageFormatter.failOptional(this, "expected : onNext(%s); actual: %s; iterable: %s",
 							d2,
@@ -2644,9 +2642,10 @@ final class DefaultStepVerifierBuilder<T>
 	static final class DefaultContextExpectations<T>
 			implements StepVerifier.ContextExpectations<T> {
 
-		private final MessageFormatter             messageFormatter;
-		private final StepVerifier.Step<T>         step;
-		private       Consumer<CoreSubscriber<?>>  contextExpectations;
+		private final MessageFormatter     messageFormatter;
+		private final StepVerifier.Step<T> step;
+
+		private Consumer<@Nullable CoreSubscriber<?>> contextExpectations;
 
 		DefaultContextExpectations(StepVerifier.Step<T> step, MessageFormatter messageFormatter) {
 			this.messageFormatter = messageFormatter;
@@ -2681,7 +2680,7 @@ final class DefaultStepVerifierBuilder<T>
 						//if it wasn't a CoreSubscriber (eg. custom or vanilla Subscriber) there won't be a Context
 						.block();
 
-				this.contextExpectations.accept(Objects.requireNonNull(subscriber));
+				this.contextExpectations.accept(subscriber);
 			});
 		}
 
