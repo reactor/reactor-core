@@ -168,8 +168,8 @@ configure(subprojects) { p ->
 				option("NullAway:AssertsEnabled", "true")
 				option("NullAway:SuppressionNameAliases",
 						"DataFlowIssue,NotNullFieldNotInitialized")
-//				error("NullAway") // bump checks from warnings (default) to errors
-				warn("NullAway") // run checks as warnings
+				error("NullAway") // bump checks from warnings to errors
+//				warn("NullAway") // run checks as warnings
 			}
 		}
 	}

@@ -660,7 +660,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T> consumeNextWith(Consumer<? super @Nullable T> consumer);
+		Step<T> consumeNextWith(Consumer<? super T> consumer);
 
 		/**
 		 * Expect an element and consume it with the given consumer, usually performing
@@ -674,7 +674,7 @@ public interface StepVerifier {
 		 * @param assertionConsumer the consumer for the value, performing assertions
 		 * @return this builder
 		 */
-		default Step<T> assertNext(Consumer<? super @Nullable T> assertionConsumer) {
+		default Step<T> assertNext(Consumer<? super T> assertionConsumer) {
 			return consumeNextWith(assertionConsumer);
 		}
 
@@ -688,7 +688,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T> consumeRecordedWith(Consumer<? super Collection<@Nullable T>> consumer);
+		Step<T> consumeRecordedWith(Consumer<? super Collection<T>> consumer);
 
 		/**
 		 * Expect the next element received to be equal to the given value.
@@ -699,7 +699,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(@Nullable T t);
+		Step<T> expectNext(T t);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -711,7 +711,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(@Nullable T t1, @Nullable T t2);
+		Step<T> expectNext(T t1, T t2);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -724,7 +724,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(@Nullable T t1, @Nullable T t2, @Nullable T t3);
+		Step<T> expectNext(T t1, T t2, T t3);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -738,7 +738,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(@Nullable T t1, @Nullable T t2, @Nullable T t3, @Nullable T t4);
+		Step<T> expectNext(T t1, T t2, T t3, T t4);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -753,7 +753,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(@Nullable T t1, @Nullable T t2, @Nullable T t3, @Nullable T t4, @Nullable T t5);
+		Step<T> expectNext(T t1, T t2, T t3, T t4, T t5);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -769,7 +769,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(@Nullable T t1, @Nullable T t2, @Nullable T t3, @Nullable T t4, @Nullable T t5, @Nullable T t6);
+		Step<T> expectNext(T t1, T t2, T t3, T t4, T t5, T t6);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -781,7 +781,7 @@ public interface StepVerifier {
 		 * @see Subscriber#onNext(Object)
 		 */
 		@SuppressWarnings("unchecked")
-		Step<T> expectNext(@Nullable T... ts);
+		Step<T> expectNext(T... ts);
 
 		/**
 		 * Expect to received {@code count} elements, starting from the previous
@@ -805,7 +805,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNextSequence(Iterable<? extends @Nullable T> iterable);
+		Step<T> expectNextSequence(Iterable<? extends T> iterable);
 
 		/**
 		 * Expect an element and evaluate with the given predicate.
@@ -816,7 +816,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNextMatches(Predicate<? super @Nullable T> predicate);
+		Step<T> expectNextMatches(Predicate<? super T> predicate);
 
 		/**
 		 * Expect a {@link Subscription} and consume with the given consumer. Any {@code
@@ -881,7 +881,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectRecordedMatches(Predicate<? super Collection<@Nullable T>> predicate);
+		Step<T> expectRecordedMatches(Predicate<? super Collection<T>> predicate);
 
 		/**
 		 * Start a recording session storing {@link Subscriber#onNext(Object)} values in
@@ -895,7 +895,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T> recordWith(Supplier<? extends Collection<@Nullable T>> supplier);
+		Step<T> recordWith(Supplier<? extends Collection<T>> supplier);
 
 		/**
 		 * Run an arbitrary task scheduled after previous expectations or tasks.
