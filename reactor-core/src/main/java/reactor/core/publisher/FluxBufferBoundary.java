@@ -100,8 +100,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BufferBoundaryMain, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<BufferBoundaryMain, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(BufferBoundaryMain.class,
 						Subscription.class,
 						"s");

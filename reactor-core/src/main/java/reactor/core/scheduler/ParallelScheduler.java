@@ -57,7 +57,8 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     volatile @Nullable SchedulerState<ScheduledExecutorService[]> state;
 
-    @SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
     private static final AtomicReferenceFieldUpdater<ParallelScheduler, @Nullable SchedulerState> STATE =
             AtomicReferenceFieldUpdater.newUpdater(
                     ParallelScheduler.class, SchedulerState.class, "state"

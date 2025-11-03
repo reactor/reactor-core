@@ -56,7 +56,9 @@ final class FluxDefaultIfEmpty<T> extends InternalFluxOperator<T, T> {
 		boolean hasValue;
 
 		volatile @Nullable T fallbackValue;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<DefaultIfEmptySubscriber, @Nullable Object> FALLBACK_VALUE =
 				AtomicReferenceFieldUpdater.newUpdater(DefaultIfEmptySubscriber.class, Object.class, "fallbackValue");
 

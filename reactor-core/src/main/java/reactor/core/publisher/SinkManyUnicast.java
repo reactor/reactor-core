@@ -126,7 +126,8 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 
 	volatile @Nullable Disposable onTerminate;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<SinkManyUnicast, @Nullable Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyUnicast.class, Disposable.class, "onTerminate");
 

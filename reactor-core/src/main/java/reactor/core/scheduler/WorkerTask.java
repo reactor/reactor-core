@@ -62,6 +62,9 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 	static final Future<Void> ASYNC_CANCELLED = new FutureTask<>(() -> null);
 
 	volatile @Nullable Future<?> future;
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<WorkerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Future.class, "future");
 
@@ -71,6 +74,9 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Composite.class, "parent");
 
 	volatile @Nullable Thread thread;
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings("DataFlowIssue")
 	static final AtomicReferenceFieldUpdater<WorkerTask, @Nullable Thread> THREAD =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Thread.class, "thread");
 

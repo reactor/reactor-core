@@ -38,10 +38,16 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 	static final Disposable TAKEN = Disposables.disposed();
 
 	volatile @Nullable Future<?> future;
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings("DataFlowIssue")
 	static final AtomicReferenceFieldUpdater<SchedulerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(SchedulerTask.class, Future.class, "future");
 
 	volatile @Nullable Disposable parent;
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings("DataFlowIssue")
 	static final AtomicReferenceFieldUpdater<SchedulerTask, @Nullable Disposable> PARENT =
 			AtomicReferenceFieldUpdater.newUpdater(SchedulerTask.class, Disposable.class, "parent");
 

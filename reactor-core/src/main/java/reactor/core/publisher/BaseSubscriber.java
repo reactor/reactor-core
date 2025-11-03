@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -52,7 +53,9 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
 
-	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static AtomicReferenceFieldUpdater<BaseSubscriber, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(BaseSubscriber.class, Subscription.class, "subscription");
 
 	/**

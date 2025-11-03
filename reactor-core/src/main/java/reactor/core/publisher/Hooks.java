@@ -395,7 +395,7 @@ public abstract class Hooks {
 	 * @see #resetOnOperatorError(String)
 	 * @see #resetOnOperatorError()
 	 */
-	public static void onOperatorError(BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorError) {
+	public static void onOperatorError(BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> onOperatorError) {
 		onOperatorError(onOperatorError.toString(), onOperatorError);
 	}
 
@@ -422,7 +422,7 @@ public abstract class Hooks {
 	 * @see #resetOnOperatorError(String)
 	 * @see #resetOnOperatorError()
 	 */
-	public static void onOperatorError(String key, BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorError) {
+	public static void onOperatorError(String key, BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> onOperatorError) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(onOperatorError, "onOperatorError");
 		log.debug("Hooking onOperatorError: {}", key);
@@ -586,11 +586,12 @@ public abstract class Hooks {
 		return composite;
 	}
 
-	static @Nullable BiFunction<? super Throwable, Object, ? extends Throwable> createOrUpdateOpErrorHook(Collection<BiFunction<? super Throwable, Object, ? extends Throwable>> hooks) {
-		BiFunction<? super Throwable, Object, ? extends Throwable> composite = null;
-		for (BiFunction<? super Throwable, Object, ? extends Throwable> function : hooks) {
+	static @Nullable BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> createOrUpdateOpErrorHook(
+			Collection<BiFunction<? super Throwable, @Nullable Object, ? extends Throwable>> hooks) {
+		BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> composite = null;
+		for (BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> function : hooks) {
 			if (composite != null) {
-				BiFunction<? super Throwable, Object, ? extends Throwable> ff = composite;
+				BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> ff = composite;
 				composite = (e, data) -> function.apply(ff.apply(e, data), data);
 			}
 			else {
@@ -603,7 +604,7 @@ public abstract class Hooks {
 	//Hooks that are transformative
 	static @Nullable Function<Publisher, Publisher> onEachOperatorHook;
 	static volatile @Nullable Function<Publisher, Publisher> onLastOperatorHook;
-	static volatile @Nullable BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
+	static volatile @Nullable BiFunction<? super Throwable, @Nullable Object, ? extends Throwable> onOperatorErrorHook;
 
 	//Hooks that are just callbacks
 	static volatile @Nullable Consumer<? super Throwable> onErrorDroppedHook;
@@ -617,7 +618,7 @@ public abstract class Hooks {
 	//internal use only as it relies on external synchronization
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
-	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
+	private static final LinkedHashMap<String, BiFunction<? super Throwable, @Nullable Object, ? extends Throwable>> onOperatorErrorHooks;
 
 	private static final LinkedHashMap<String, Function<Queue<?>, Queue<?>>> QUEUE_WRAPPERS = new LinkedHashMap<>(1);
 
@@ -630,7 +631,7 @@ public abstract class Hooks {
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnLastOperatorHooks() {
 		return Collections.unmodifiableMap(onLastOperatorHooks);
 	}
-	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
+	static final Map<String, BiFunction<? super Throwable, @Nullable Object, ? extends Throwable>> getOnOperatorErrorHooks() {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
 	}
 

@@ -167,7 +167,9 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	final @Nullable Consumer<? super T> onOverflow;
 
 	volatile @Nullable Disposable onTerminate;
-	@SuppressWarnings("rawtypes")
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<UnicastProcessor, @Nullable Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
 

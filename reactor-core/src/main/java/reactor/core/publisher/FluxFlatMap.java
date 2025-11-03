@@ -233,8 +233,10 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		volatile @Nullable Queue<R> scalarQueue;
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapMain, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<FlatMapMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
 						Throwable.class,
 						"error");
@@ -316,19 +318,19 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		FlatMapInner<R>[] empty() {
+		@Nullable FlatMapInner<R>[] empty() {
 			return EMPTY;
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
-		FlatMapInner<R>[] terminated() {
+		@Nullable FlatMapInner<R>[] terminated() {
 			return TERMINATED;
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
-		FlatMapInner<R>[] newArray(int size) {
+		@Nullable FlatMapInner<R>[] newArray(int size) {
 			return new FlatMapInner[size];
 		}
 
@@ -601,7 +603,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 				boolean d = done;
 
-				FlatMapInner<R>[] as = get();
+				@Nullable FlatMapInner<R>[] as = get();
 
 				int n = as.length;
 
@@ -921,8 +923,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapInner, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<FlatMapInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class,
 						Subscription.class,
 						"s");
@@ -1046,7 +1049,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 abstract class FlatMapTracker<T> {
 
-	volatile T[] array = empty();
+	volatile @Nullable T[] array = empty();
 
 	int[] free = FREE_EMPTY;
 
@@ -1061,11 +1064,11 @@ abstract class FlatMapTracker<T> {
 
 	static final int[] FREE_EMPTY = new int[0];
 
-	abstract T[] empty();
+	abstract @Nullable T[] empty();
 
-	abstract T[] terminated();
+	abstract @Nullable T[] terminated();
 
-	abstract T[] newArray(int size);
+	abstract @Nullable T[] newArray(int size);
 
 	abstract void unsubscribeEntry(T entry);
 
@@ -1075,8 +1078,8 @@ abstract class FlatMapTracker<T> {
 	// while the reference is not checked for nullness to improve performance
 	@SuppressWarnings("DataFlowIssue")
 	final void unsubscribe() {
-		T[] a;
-		T[] t = terminated();
+		@Nullable T[] a;
+		@Nullable T[] t = terminated();
 		synchronized (this) {
 			a = array;
 			if (a == t) {
@@ -1093,12 +1096,12 @@ abstract class FlatMapTracker<T> {
 		}
 	}
 
-	final T[] get() {
+	final @Nullable T[] get() {
 		return array;
 	}
 
 	final boolean add(T entry) {
-		T[] a = array;
+		@Nullable T[] a = array;
 		if (a == terminated()) {
 			return false;
 		}
@@ -1111,7 +1114,7 @@ abstract class FlatMapTracker<T> {
 			int idx = pollFree();
 			if (idx < 0) {
 				int n = a.length;
-				T[] b = n != 0 ? newArray(n << 1) : newArray(4);
+				@Nullable T[] b = n != 0 ? newArray(n << 1) : newArray(4);
 				System.arraycopy(a, 0, b, 0, n);
 
 				array = b;
@@ -1138,7 +1141,7 @@ abstract class FlatMapTracker<T> {
 
 	final void remove(int index) {
 		synchronized (this) {
-			T[] a = array;
+			@Nullable T[] a = array;
 			if (a != terminated()) {
 				a[index] = null;
 				offerFree(index);

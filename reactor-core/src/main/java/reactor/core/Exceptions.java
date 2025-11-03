@@ -75,7 +75,7 @@ public abstract class Exceptions {
 	 * instance.
 	 * @see #unwrapMultiple(Throwable)
 	 */
-	public static <T> boolean addThrowable(AtomicReferenceFieldUpdater<T, Throwable> field,
+	public static <T> boolean addThrowable(AtomicReferenceFieldUpdater<T, @Nullable Throwable> field,
 			T instance,
 			Throwable exception) {
 		for (; ; ) {

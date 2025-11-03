@@ -387,6 +387,8 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<TimeoutTimeoutSubscriber, @Nullable Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(TimeoutTimeoutSubscriber.class,
 				Subscription.class,

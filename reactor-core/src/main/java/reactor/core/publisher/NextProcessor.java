@@ -99,7 +99,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 
 	volatile @Nullable Subscription subscription;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<NextProcessor, @Nullable Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 

@@ -117,6 +117,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 			category += "." + id;
 		}
 
+		assert category != null : "Category cannot be null";
 		this.log = loggerSupplier.apply(category);
 
 		this.level = level;

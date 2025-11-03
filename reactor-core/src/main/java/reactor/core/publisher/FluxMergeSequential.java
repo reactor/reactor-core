@@ -134,7 +134,9 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Throwable error;
 
-		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<MergeSequentialMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 
 		@Nullable MergeSequentialInner<R> current;
@@ -513,7 +515,9 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
-		static final AtomicReferenceFieldUpdater<MergeSequentialInner, Subscription>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<MergeSequentialInner, @Nullable Subscription>
 				SUBSCRIPTION = AtomicReferenceFieldUpdater.newUpdater(
 						MergeSequentialInner.class, Subscription.class, "subscription");
 

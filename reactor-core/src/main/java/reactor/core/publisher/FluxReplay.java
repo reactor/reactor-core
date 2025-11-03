@@ -54,7 +54,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	volatile @Nullable ReplaySubscriber<T> connection;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<FluxReplay, @Nullable ReplaySubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxReplay.class,
 					ReplaySubscriber.class,

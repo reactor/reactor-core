@@ -427,8 +427,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ZipInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class, Subscription.class, "s");
 
 		@Nullable Object value;

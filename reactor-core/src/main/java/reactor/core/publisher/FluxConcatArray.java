@@ -310,8 +310,9 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		volatile @Nullable Throwable error;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ConcatArrayDelayErrorSubscriber, Throwable> ERROR =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ConcatArrayDelayErrorSubscriber, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, Throwable.class, "error");
 
 		volatile boolean cancelled;

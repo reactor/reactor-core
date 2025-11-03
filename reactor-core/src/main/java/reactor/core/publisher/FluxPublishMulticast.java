@@ -112,8 +112,9 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(FluxPublishMulticaster.class,
 						Subscription.class,
 						"s");

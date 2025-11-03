@@ -65,7 +65,8 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 
 		volatile @Nullable Disposable future;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, @Nullable Disposable>
 				FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(PublishOnSubscriber.class,
@@ -74,7 +75,8 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 
 		volatile @Nullable T value;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, @Nullable Object>
 				VALUE =
 				AtomicReferenceFieldUpdater.newUpdater(PublishOnSubscriber.class,

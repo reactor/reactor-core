@@ -29,7 +29,7 @@ import reactor.util.context.Context;
  */
 final class MonoToCompletableFuture<T> extends CompletableFuture<@Nullable T> implements CoreSubscriber<T> {
 
-	final AtomicReference<Subscription> ref = new AtomicReference<>();
+	final AtomicReference<@Nullable Subscription> ref = new AtomicReference<>();
 	final boolean cancelSourceOnNext;
 
 	MonoToCompletableFuture(boolean sourceCanEmitMoreThanOnce) {

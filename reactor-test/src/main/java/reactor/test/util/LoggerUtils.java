@@ -209,6 +209,7 @@ public final class LoggerUtils {
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with varargs and jspecify mode
 		@Override
 		public void trace(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
@@ -248,6 +249,7 @@ public final class LoggerUtils {
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with varargs and jspecify mode
 		@Override
 		public void debug(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
@@ -287,6 +289,7 @@ public final class LoggerUtils {
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with varargs and jspecify mode
 		@Override
 		public void info(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
@@ -326,6 +329,7 @@ public final class LoggerUtils {
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with varargs and jspecify mode
 		@Override
 		public void warn(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();
@@ -365,6 +369,7 @@ public final class LoggerUtils {
 			}
 		}
 
+		@SuppressWarnings("NullAway") // NullAway issue with varargs and jspecify mode
 		@Override
 		public void error(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();

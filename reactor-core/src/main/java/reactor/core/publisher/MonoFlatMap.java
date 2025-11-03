@@ -78,7 +78,8 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 
 		volatile @Nullable FlatMapInner<R> second;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<FlatMapMain, @Nullable FlatMapInner> SECOND =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class, FlatMapInner.class, "second");
 

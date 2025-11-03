@@ -111,7 +111,8 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Throwable error;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(
 						FluxConcatMapNoPrefetchSubscriber.class, Throwable.class, "error");

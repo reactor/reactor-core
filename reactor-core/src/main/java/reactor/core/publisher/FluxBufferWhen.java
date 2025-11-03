@@ -117,11 +117,16 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, Subscription> S =
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, Subscription.class, "s");
 
 		volatile @Nullable Throwable errors;
-		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, Throwable>
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<BufferWhenMainSubscriber, @Nullable Throwable>
 				ERRORS =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, Throwable.class, "errors");
 
@@ -443,7 +448,10 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			implements Disposable, InnerConsumer<OPEN> {
 
 		volatile @Nullable Subscription subscription;
-		static final AtomicReferenceFieldUpdater<BufferWhenOpenSubscriber, Subscription> SUBSCRIPTION =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<BufferWhenOpenSubscriber, @Nullable Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenOpenSubscriber.class, Subscription.class, "subscription");
 
 		final BufferWhenMainSubscriber<?, OPEN, ?, ?> parent;
@@ -507,7 +515,10 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			implements Disposable, InnerConsumer<Object> {
 
 		volatile @Nullable Subscription subscription;
-		static final AtomicReferenceFieldUpdater<BufferWhenCloseSubscriber, Subscription> SUBSCRIPTION =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<BufferWhenCloseSubscriber, @Nullable Subscription> SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(BufferWhenCloseSubscriber.class, Subscription.class, "subscription");
 
 		final BufferWhenMainSubscriber<T, ?, ?, BUFFER> parent;

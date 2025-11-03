@@ -94,7 +94,11 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		Objects.requireNonNull(clock, "clock must not be null");
 
 		this.ttlGenerator = sig -> {
-			if (sig.isOnNext()) return valueTtlGenerator.apply(sig.get());
+			if (sig.isOnNext()) {
+				T val = sig.get();
+				assert val != null : "value may not be null when isOnNext";
+				return valueTtlGenerator.apply(val);
+			}
 			if (sig.isOnError()) {
 				Throwable t = sig.getThrowable();
 				assert t != null : "throwable may not be null when isOnError";
@@ -179,7 +183,10 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		final MonoCacheTime<T> main;
 
 		volatile @Nullable Subscription subscription;
-		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Subscription> S =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "subscription");
 
 		volatile Operators.MonoSubscriber<T, T>[] subscribers;

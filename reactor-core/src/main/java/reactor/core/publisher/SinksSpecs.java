@@ -42,6 +42,8 @@ final class SinksSpecs {
 
 		volatile @Nullable Thread lockedAt;
 
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<AbstractSerializedSink, @Nullable Thread>LOCKED_AT =
 				AtomicReferenceFieldUpdater.newUpdater(AbstractSerializedSink.class, Thread.class, "lockedAt");
 

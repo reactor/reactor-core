@@ -493,11 +493,11 @@ final class ContextPropagation {
 
 	private static class ReactorScopeImpl implements ContextSnapshot.Scope {
 
-		private final Map<Object, Object> previousValues;
+		private final Map<Object, @Nullable Object> previousValues;
 
 		private final ContextRegistry contextRegistry;
 
-		private ReactorScopeImpl(Map<Object, Object> previousValues,
+		private ReactorScopeImpl(Map<Object, @Nullable Object> previousValues,
 				ContextRegistry contextRegistry) {
 			this.previousValues = previousValues;
 			this.contextRegistry = contextRegistry;
@@ -533,11 +533,11 @@ final class ContextPropagation {
 
 	private static class ReactorScopeImpl100 implements ContextSnapshot.Scope {
 
-		private final Map<Object, Object> previousValues;
+		private final Map<Object, @Nullable Object> previousValues;
 
 		private final ContextRegistry contextRegistry;
 
-		private ReactorScopeImpl100(Map<Object, Object> previousValues,
+		private ReactorScopeImpl100(Map<Object, @Nullable Object> previousValues,
 				ContextRegistry contextRegistry) {
 			this.previousValues = previousValues;
 			this.contextRegistry = contextRegistry;

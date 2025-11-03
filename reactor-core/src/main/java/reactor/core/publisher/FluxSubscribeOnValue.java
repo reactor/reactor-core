@@ -93,7 +93,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 				AtomicIntegerFieldUpdater.newUpdater(ScheduledScalar.class, "once");
 
 		volatile @Nullable Disposable future;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<ScheduledScalar, @Nullable Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledScalar.class,
 						Disposable.class,
@@ -224,6 +226,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 		final Subscriber<?> actual;
 
 		volatile @Nullable Disposable future;
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<ScheduledEmpty, @Nullable Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class,
 						Disposable.class,

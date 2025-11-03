@@ -42,7 +42,10 @@ public class ExceptionsTest {
 	//used for two addThrowableXxx tests lower in the class. each test receiving a separate instance of ExceptionsTests,
 	//there is no need to reset it.
 	volatile @Nullable Throwable addThrowable;
-	static final AtomicReferenceFieldUpdater<ExceptionsTest, Throwable> ADD_THROWABLE =
+
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings("DataFlowIssue")
+	static final AtomicReferenceFieldUpdater<ExceptionsTest, @Nullable Throwable> ADD_THROWABLE =
 			AtomicReferenceFieldUpdater.newUpdater(ExceptionsTest.class, Throwable.class, "addThrowable");
 
 	static VirtualMachineError JVM_FATAL_VIRTUAL_MACHINE_ERROR = new VirtualMachineError("expected to be logged") {

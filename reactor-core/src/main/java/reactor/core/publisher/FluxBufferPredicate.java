@@ -133,9 +133,10 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber,
-				Subscription> S = AtomicReferenceFieldUpdater.newUpdater
-				(BufferPredicateSubscriber.class, Subscription.class, "s");
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber, @Nullable Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(BufferPredicateSubscriber.class, Subscription.class, "s");
 
 		BufferPredicateSubscriber(CoreSubscriber<? super C> actual, C initialBuffer,
 				Supplier<C> bufferSupplier, Predicate<? super T> predicate, Mode mode) {

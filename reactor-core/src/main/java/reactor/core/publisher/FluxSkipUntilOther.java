@@ -135,7 +135,8 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription main;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, @Nullable Subscription>
 				MAIN =
 				AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class,
@@ -144,7 +145,9 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in main's onSubscribe
 		volatile Subscription other;
-		@SuppressWarnings("rawtypes")
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, @Nullable Subscription>
 				OTHER =
 				AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class,

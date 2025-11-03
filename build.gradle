@@ -162,8 +162,8 @@ configure(subprojects) { p ->
 				disableAllChecks = true // Other error prone checks are disabled
 				// Enable nullness checks only in null-marked code
 				option("NullAway:OnlyNullMarked", "true")
-				// jspecify mode would check generic types and array annotations
-//				option("NullAway:JSpecifyMode", "true")
+				// jspecify mode checks generic types and array annotations
+				option("NullAway:JSpecifyMode", "true")
 				// Allows treating assert ... statements as nullness assertions
 				option("NullAway:AssertsEnabled", "true")
 				option("NullAway:SuppressionNameAliases",

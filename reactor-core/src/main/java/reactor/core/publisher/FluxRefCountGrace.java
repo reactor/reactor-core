@@ -163,6 +163,9 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		boolean    terminated;
 
 		volatile @Nullable Disposable sourceDisconnector;
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<RefConnection, @Nullable Disposable> SOURCE_DISCONNECTOR =
 				AtomicReferenceFieldUpdater.newUpdater(RefConnection.class, Disposable.class, "sourceDisconnector");
 

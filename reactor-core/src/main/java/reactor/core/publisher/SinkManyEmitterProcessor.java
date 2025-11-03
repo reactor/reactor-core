@@ -69,8 +69,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	volatile Subscription s;
 
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, Subscription> S =
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Subscription.class,
 					"s");
@@ -87,7 +88,8 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	volatile @Nullable EmitterDisposable upstreamDisposable;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, @Nullable EmitterDisposable> UPSTREAM_DISPOSABLE =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
@@ -107,7 +109,8 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	volatile @Nullable Throwable error;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<SinkManyEmitterProcessor, @Nullable Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(SinkManyEmitterProcessor.class,
 					Throwable.class,

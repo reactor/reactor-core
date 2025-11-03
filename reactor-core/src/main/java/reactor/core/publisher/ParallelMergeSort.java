@@ -108,7 +108,8 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 
 		volatile @Nullable Throwable error;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<MergeSortMain, @Nullable Throwable>
 				ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSortMain.class,
@@ -319,8 +320,9 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSortInner, Subscription>
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<MergeSortInner, @Nullable Subscription>
 				S =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSortInner.class,
 						Subscription.class,

@@ -84,19 +84,22 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 
 		volatile @Nullable T value;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, @Nullable Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Object.class, "value");
 
 		volatile @Nullable Subscription main;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, @Nullable Subscription> MAIN =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "main");
 
 		volatile @Nullable Subscription other;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, @Nullable Subscription> OTHER =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "other");
 		volatile long requested;

@@ -355,7 +355,10 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 		final WhenCoordinator parent;
 
 		volatile @Nullable Subscription s;
-		static final AtomicReferenceFieldUpdater<WhenInner, Subscription> S =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings("DataFlowIssue")
+		static final AtomicReferenceFieldUpdater<WhenInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(WhenInner.class,
 						Subscription.class,
 						"s");

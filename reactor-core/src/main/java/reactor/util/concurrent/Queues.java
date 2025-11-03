@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Hooks;
 
@@ -333,7 +334,8 @@ public final class Queues {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T1 extends @Nullable Object> T1[] toArray(T1[] a) {
+		@NullUnmarked
+		public <T1> T1[] toArray(T1[] a) {
 			int size = size();
 			if (a.length < size) {
 				a = (T1[]) java.lang.reflect.Array.newInstance(
@@ -440,7 +442,8 @@ public final class Queues {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T1 extends @Nullable Object> T1[] toArray(T1[] a) {
+		@NullUnmarked
+		public <T1> T1[] toArray(T1[] a) {
 			if (a.length > 0) {
 				a[0] = null;
 			}

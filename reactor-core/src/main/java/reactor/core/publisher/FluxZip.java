@@ -593,8 +593,10 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipSingleSubscriber, Subscription> S =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ZipSingleSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipSingleSubscriber.class,
 						Subscription.class,
 						"s");
@@ -693,15 +695,17 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				AtomicLongFieldUpdater.newUpdater(ZipCoordinator.class, "requested");
 
 		volatile @Nullable Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipCoordinator, Throwable> ERROR =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ZipCoordinator, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ZipCoordinator.class,
 						Throwable.class,
 						"error");
 
 		volatile boolean cancelled;
 
-		final Object[] current;
+		final @Nullable Object[] current;
 
 		ZipCoordinator(CoreSubscriber<? super R> actual,
 				Function<? super Object[], ? extends R> zipper,
@@ -792,7 +796,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		void discardAll(int m) {
 			final Context context = actual.currentContext();
-			final Object[] values = current;
+			final @Nullable Object[] values = current;
 			Operators.onDiscardMultiple(Arrays.asList(values), context);
 			Arrays.fill(values, null);
 
@@ -843,7 +847,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			final CoreSubscriber<? super R> a = actual;
 			final ZipInner<T>[] qs = subscribers;
 			final int n = qs.length;
-			Object[] values = current;
+			@Nullable Object[] values = current;
 
 			int missed = 1;
 
@@ -1054,8 +1058,10 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<ZipInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class,
 						Subscription.class,
 						"s");

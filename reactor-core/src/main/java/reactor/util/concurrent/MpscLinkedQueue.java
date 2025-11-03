@@ -244,7 +244,8 @@ final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E
 	{
 		private volatile @Nullable LinkedQueueNode<E> next;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		private final static AtomicReferenceFieldUpdater<LinkedQueueNode, @Nullable LinkedQueueNode> NEXT_UPDATER
 				= AtomicReferenceFieldUpdater.newUpdater(LinkedQueueNode.class, LinkedQueueNode.class, "next");
 

@@ -3248,7 +3248,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
     public final Flux<T> flux() {
 	    if (this instanceof Callable && !(this instanceof Fuseable.ScalarCallable)) {
-		    @SuppressWarnings("unchecked") Callable<T> thiz = (Callable<T>) this;
+		    @SuppressWarnings("unchecked") Callable<@Nullable T> thiz = (Callable<@Nullable T>) this;
 		    return Flux.onAssembly(new FluxCallable<>(thiz));
 	    }
 		return Flux.from(this);
@@ -5142,7 +5142,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link CompletableFuture}
 	 */
-	public final CompletableFuture<T> toFuture() {
+	public final CompletableFuture<@Nullable T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>(false));
 	}
 

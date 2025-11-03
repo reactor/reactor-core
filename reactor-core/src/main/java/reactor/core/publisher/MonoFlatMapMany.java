@@ -68,8 +68,10 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		Subscription main;
 
 		volatile @Nullable Subscription inner;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapManyMain, Subscription> INNER =
+
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		static final AtomicReferenceFieldUpdater<FlatMapManyMain, @Nullable Subscription> INNER =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapManyMain.class,
 						Subscription.class,
 						"inner");

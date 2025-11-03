@@ -38,7 +38,8 @@ final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	volatile @Nullable Future<?> future;
 
-	@SuppressWarnings("rawtypes")
+	// https://github.com/uber/NullAway/issues/1157
+	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 	static final AtomicReferenceFieldUpdater<PeriodicWorkerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(PeriodicWorkerTask.class, Future.class, "future");
 

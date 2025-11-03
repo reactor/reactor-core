@@ -87,7 +87,8 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 
 		volatile @Nullable Disposable task;
 
-		@SuppressWarnings("rawtypes")
+		// https://github.com/uber/NullAway/issues/1157
+		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
 		static final AtomicReferenceFieldUpdater<DelayElementSubscriber, @Nullable Disposable> TASK =
 				AtomicReferenceFieldUpdater.newUpdater(DelayElementSubscriber.class, Disposable.class, "task");
 
