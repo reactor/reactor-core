@@ -467,12 +467,13 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerSyncInnerCallable() {
-		AtomicBoolean handlerCaught = new AtomicBoolean();
+	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerSyncInnerCallable()
+			throws InterruptedException {
+		CountDownLatch handlerCaught = new CountDownLatch(1);
 		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
 			Thread thread = new Thread(r);
 			thread.setUncaughtExceptionHandler((t, ex) -> {
-				handlerCaught.set(true);
+				handlerCaught.countDown();
 				System.err.println("from uncaught handler: " + ex.toString());
 			});
 			return thread;
@@ -496,7 +497,8 @@ public class SchedulersTest {
 				.withMessageStartingWith("VerifySubscriber timed out on ");
 
 		//nonetheless, the uncaught exception handler should have been invoked
-		assertThat(handlerCaught).as("uncaughtExceptionHandler used").isTrue();
+		assertThat(handlerCaught.await(100, TimeUnit.MILLISECONDS))
+				.as("uncaughtExceptionHandler used").isTrue();
 	}
 
 	@Test
