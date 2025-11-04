@@ -369,7 +369,6 @@ public final class LoggerUtils {
 			}
 		}
 
-		@SuppressWarnings("NullAway") // NullAway issue with varargs and jspecify mode
 		@Override
 		public void error(String format, @Nullable Object @Nullable... arguments) {
 			Logger logger = parent.getCapturingLogger();

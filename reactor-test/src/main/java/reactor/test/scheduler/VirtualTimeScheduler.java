@@ -546,8 +546,8 @@ public class VirtualTimeScheduler implements Scheduler {
 			return shutdown;
 		}
 
-		final class PeriodicTask extends AtomicReference<Disposable> implements Runnable,
-		                                                                        Disposable {
+		final class PeriodicTask extends AtomicReference<@Nullable Disposable>
+				implements Runnable, Disposable {
 
 			final Runnable decoratedRun;
 			final long     periodInNanoseconds;
@@ -604,7 +604,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	static final Disposable CANCELLED = Disposables.disposed();
 	static final Disposable EMPTY = Disposables.never();
 
-	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
+	static boolean replace(AtomicReference<@Nullable Disposable> ref, @Nullable Disposable c) {
 		for (; ; ) {
 			Disposable current = ref.get();
 			if (current == CANCELLED) {
@@ -648,7 +648,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static final AtomicReference<VirtualTimeScheduler> CURRENT = new AtomicReference<>();
+	static final AtomicReference<@Nullable VirtualTimeScheduler> CURRENT = new AtomicReference<>();
 
 	static final AtomicLongFieldUpdater<VirtualTimeScheduler> COUNTER =
 			AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "counter");
