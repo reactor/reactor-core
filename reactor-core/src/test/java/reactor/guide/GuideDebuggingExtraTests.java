@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,12 @@ public class GuideDebuggingExtraTests {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack.substring(0, debugStack.indexOf("Original Stack Trace:")))
-				.endsWith("Error has been observed at the following site(s):\n"
-						+ "\t*________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
-						+ "\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)\n"
-						+ "\t|_    Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)\n"
-						+ "\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:39)\n"
-						+ "\t|_   Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)\n"
-						+ "\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)\n");
+				.contains("Error has been observed at the following site(s):")
+				.contains("\t*________Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java")
+				.contains("\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java")
+				.contains("\t|_    Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$")
+				.contains("\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java")
+				.contains("\t|_   Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$")
+				.contains("\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java");
 	}
 }

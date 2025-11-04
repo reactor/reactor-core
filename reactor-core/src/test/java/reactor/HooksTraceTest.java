@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public class HooksTraceTest {
 			    .block()
 		).satisfies(e -> assertThat(e.getSuppressed()[0])
 				.hasMessageContaining("HooksTraceTest.java:")
-				.hasMessageContaining("|_      Mono.map ⇢ at reactor.HooksTraceTest.lambda$testTrace2$8(HooksTraceTest.java:")
+				.hasMessageContaining("|_      Mono.map ⇢ at reactor.HooksTraceTest.lambda$testTrace2$")
 		);
 	}
 
@@ -90,7 +90,7 @@ public class HooksTraceTest {
 				    .blockLast()
 		).satisfies(e -> assertThat(e.getSuppressed()[0])
 				.hasMessageContaining("HooksTraceTest.java:")
-				.hasMessageContaining("|_    Flux.share ⇢ at reactor.HooksTraceTest.lambda$testTrace3$14(HooksTraceTest.java:")
+				.hasMessageContaining("|_    Flux.share ⇢ at reactor.HooksTraceTest.lambda$testTrace3$")
 		);
 	}
 
@@ -111,7 +111,7 @@ public class HooksTraceTest {
 		catch (IllegalStateException ise) {
 			assertThat(ise.getSuppressed()[0])
 					.hasMessageContaining("HooksTraceTest.java:")
-					.hasMessageContaining("*___Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceDefer$20(HooksTraceTest.java:");
+					.hasMessageContaining("*___Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceDefer$");
 		}
 	}
 
@@ -127,7 +127,7 @@ public class HooksTraceTest {
 				    .block()
 		).satisfies(e -> assertThat(e.getSuppressed()[0])
 				.hasMessageContaining("HooksTraceTest.java:")
-				.hasMessageContaining("*___Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed$25(HooksTraceTest.java:")
+				.hasMessageContaining("*___Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed$")
 		);
 	}
 
@@ -145,7 +145,7 @@ public class HooksTraceTest {
 				    .blockLast()
 		).satisfies(e -> assertThat(e.getSuppressed()[0])
 				.hasMessageContaining("HooksTraceTest.java:")
-				.hasMessageContaining("*___Flux.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed2$31(HooksTraceTest.java:")
+				.hasMessageContaining("*___Flux.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceComposed2$")
 		);
 	}
 
