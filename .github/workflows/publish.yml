@@ -53,6 +53,12 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: Setup Java 25
+      if: contains('main', github.base_ref)
+      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # tag=v5
+      with:
+        distribution: 'temurin'
+        java-version: 25
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2
     - name: interpret version
@@ -97,6 +103,12 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: Setup Java 25
+      if: contains('main', github.base_ref)
+      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # tag=v5
+      with:
+        distribution: 'temurin'
+        java-version: 25
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
@@ -136,6 +148,12 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: Setup Java 25
+      if: contains('main', github.base_ref)
+      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # tag=v5
+      with:
+        distribution: 'temurin'
+        java-version: 25
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
@@ -194,6 +212,12 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: Setup Java 25
+      if: contains('main', github.base_ref)
+      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # tag=v5
+      with:
+        distribution: 'temurin'
+        java-version: 25
     - name: deploy
       env:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
