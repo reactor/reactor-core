@@ -56,7 +56,7 @@ public class JavaConventions implements Plugin<Project> {
 			p.getTasks()
 			 .withType(JavaCompile.class)
 			 .forEach(compileTask -> {
-				 compileTask.getJavaCompiler().set(javaToolchains.compilerFor(spec -> spec.getLanguageVersion().set(JavaLanguageVersion.of(21))));
+				 compileTask.getJavaCompiler().set(javaToolchains.compilerFor(spec -> spec.getLanguageVersion().set(JavaLanguageVersion.of(25))));
 
 				 compileTask.getOptions().setEncoding("UTF-8");
 
