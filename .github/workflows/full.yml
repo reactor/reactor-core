@@ -36,6 +36,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 11
+      - name: Setup Java 25
+        if: contains('main', matrix.branch)
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # tag=v5
+        with:
+          distribution: 'temurin'
+          java-version: 25
       - name: Setup Java 21
         if: contains('main 3.7.x', matrix.branch)
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # tag=v5
