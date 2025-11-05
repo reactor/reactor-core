@@ -19,12 +19,9 @@ apply plugin: 'java-library'
 
 description = 'Reactor-Core Micrometer Metrics support'
 
-version = "$metricsMicrometerVersion"
 group = "io.projectreactor"
 
 ext {
-	def osgiVersion = osgiVersion("$metricsMicrometerVersion")
-
 	bndOptions = [
 		"Export-Package": [
 			"!*internal*",
