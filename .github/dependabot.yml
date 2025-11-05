@@ -84,6 +84,8 @@ updates:
       - dependency-name: "ch.qos.logback:logback-classic"
       - dependency-name: "com.pivovarit:throwing-function"
       - dependency-name: "com.tngtech.archunit:archunit"
+      - dependency-name: "net.bytebuddy:byte-buddy"
+      - dependency-name: "net.bytebuddy:byte-buddy-agent"
       - dependency-name: "io.projectreactor.tools:blockhound"
       - dependency-name: "org.assertj:assertj-core"
       - dependency-name: "org.awaitility:awaitility"
