@@ -118,11 +118,11 @@ JSpecify annotations apply to generics as well. For example, in `@NullMarked` co
 Things are a bit more complicated when you are declaring generic types or generic methods. See the related
 https://jspecify.dev/docs/user-guide/#generics[JSpecify generics documentation] for more details.
 
-NOTE: Reactor's `Flux` and `Mono` do not support nullable type parameters (such as `Flux<@Nullable T>` or `Mono<@Nullable T>`).
-This is a result of the Reactive Streams specification which prohibits `null` elements to be signaled.
+NOTE: Reactor's `Flux` and `Mono` do not support nullable type parameters (such as
+`Flux<@Nullable T>` or `Mono<@Nullable T>`) since `null` signals are not permitted.
 However, note that `Mono#block()`, `Flux#blockFirst()` and similar methods have a
-signature that permits a null return value to represent the absence of a value upon
-completion (for example `@Nullable T block()`)
+signature that permits a `null` return value to represent the absence of a value upon
+completion (for example `@Nullable T block()`).
 
 WARNING: The nullability of generic types and generic methods
 https://github.com/uber/NullAway/issues?q=is%3Aissue+is%3Aopen+label%3Ajspecify[is not yet fully supported by NullAway].
