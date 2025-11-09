@@ -69,15 +69,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
-		if (size == skip) {
-			return new BufferExactSubscriber<>(actual, size, bufferSupplier);
-		}
-		else if (skip > size) {
-			return new BufferSkipSubscriber<>(actual, size, skip, bufferSupplier);
-		}
-		else {
-			return new BufferOverlappingSubscriber<>(actual, size, skip, bufferSupplier);
-		}
+		return (size == skip) ? new BufferExactSubscriber<>(actual, size, bufferSupplier) :
+				(skip > size) ? new BufferSkipSubscriber<>(actual, size, skip, bufferSupplier) :
+						new BufferOverlappingSubscriber<>(actual, size, skip, bufferSupplier);
 	}
 
 	@Override
