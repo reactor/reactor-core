@@ -781,6 +781,12 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		void error(Throwable e, int index) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
+				// Mark the inner subscriber as 'done' only AFTER this coordinator has
+				// successfully registered the error above.
+				// This specific ordering guarantees that a concurrent drain loop cannot see
+				// `done == true` on the inner subscriber without the coordinator's `error`
+				// field also being visible.
+				subscribers[index].done = true;
 				drain(null, null);
 			}
 			else {
@@ -863,15 +869,31 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						return;
 					}
 
+					// This block is the central point for terminating the operator.
+					// It is checked at the start of every work cycle inside the drain loop.
+					// We also enter this block on the loop AFTER a terminal condition has been
+					// atomically registered deeper inside the drain logic.
 					if (error != null) {
-						cancelAll();
-						discardAll(missed);
+						if (error == Exceptions.TERMINATED) {
+							// The onComplete() path is specifically triggered when a previous pass through
+							// the drain loop detected that a source had finished cleanly (d && sourceEmpty)
+							// and successfully won a potential race condition to set the `error` field to the TERMINATED
+							// sentinel. The recursive `drain()` call made at that time ensures we re-enter
+							// this loop, hit this check, and can now safely terminate.
+							cancelAll();
+							discardAll(missed);
+							a.onComplete();
+							return;
+						}
+						else {
+							cancelAll();
+							discardAll(missed);
 
-						Throwable ex = Exceptions.terminate(ERROR, this);
+							Throwable ex = Exceptions.terminate(ERROR, this);
 
-						a.onError(ex);
-
-						return;
+							a.onError(ex);
+							return;
+						}
 					}
 
 					boolean empty = false;
@@ -887,11 +909,26 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 								boolean sourceEmpty = v == null;
 								if (d && sourceEmpty) {
-									cancelAll();
-									discardAll(missed);
+									// Attempt to claim the error state. In a concurrent scenario,
+									// an onError() from one source could be racing with this onComplete path
+									// from another. `compareAndSet` ensures that only the first signal
+									// to arrive can set the error state using a sentinel value.
+									if (ERROR.compareAndSet(this, null, Exceptions.TERMINATED)) {
+										// If case of a race condition, we have just created a new unit of work: the
+										// drain loop must now see the TERMINATED state and send onComplete().
+										// We call drain() here to safely increment the WIP, which
+										// guarantees the main drain loop will run at least one more time
+										// instead of exiting prematurely.
+										drain(null, null);
+									}
 
-									a.onComplete();
-									return;
+									// We signal to the rest of the drain loop that we cannot produce a
+									// zipped value in this iteration. If we didn't, an early 'break' could leave
+									// the `values` array partially filled, causing an NPE when the zipper
+									// function is called.
+									empty = true;
+
+									break;
 								}
 								if (!sourceEmpty) {
 									values[j] = v;
@@ -956,14 +993,21 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 					}
 
 					if (error != null) {
-						cancelAll();
-						discardAll(missed);
+						if (error == Exceptions.TERMINATED) {
+							cancelAll();
+							discardAll(missed);
+							a.onComplete();
+							return;
+						}
+						else {
+							cancelAll();
+							discardAll(missed);
 
-						Throwable ex = Exceptions.terminate(ERROR, this);
+							Throwable ex = Exceptions.terminate(ERROR, this);
 
-						a.onError(ex);
-
-						return;
+							a.onError(ex);
+							return;
+						}
 					}
 
 					for (int j = 0; j < n; j++) {
@@ -976,11 +1020,11 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 								boolean empty = v == null;
 								if (d && empty) {
-									cancelAll();
-									discardAll(missed);
+									if (ERROR.compareAndSet(this, null, Exceptions.TERMINATED)) {
+										drain(null, null);
+									}
 
-									a.onComplete();
-									return;
+									break;
 								}
 								if (!empty) {
 									values[j] = v;
@@ -1139,7 +1183,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				Operators.onErrorDropped(t, currentContext());
 				return;
 			}
-			done = true;
 			parent.error(t, index);
 		}
 
