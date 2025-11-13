@@ -153,7 +153,7 @@ configure(subprojects) { p ->
 	}
 
 	p.tasks.withType(JavaCompile).configureEach { task ->
-		if (task.name.endsWith("TestJava") || task.name.endsWith("JcstressJava")) {
+		if (p.name.equals("benchmarks") || task.name.endsWith("TestJava") || task.name.endsWith("JcstressJava")) {
 			options.errorprone {
 				enabled = false
 			}
