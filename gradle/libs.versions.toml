@@ -1,9 +1,8 @@
 [versions]
 # Baselines, should be updated on every release
-baseline-core-api = "3.7.13"
-baselinePerfCore = "3.7.13"
-baselinePerfCoreMicrometer = "1.2.13"
-baselinePerfExtra = "3.5.4"
+baseline-core-api = "3.8.0"
+baselinePerfCore = "3.8.0"
+baselinePerfExtra = "3.6.0"
 
 # Other shared versions
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
@@ -56,7 +55,7 @@ micrometer-test = { module = "io.micrometer:micrometer-test" }
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactiveStreams" }
 reactiveStreams-tck = { module = "org.reactivestreams:reactive-streams-tck", version.ref = "reactiveStreams" }
 reactor-perfBaseline-core = { module = "io.projectreactor:reactor-core", version.ref = "baselinePerfCore" }
-reactor-perfBaseline-coreMicrometer = { module = "io.projectreactor:reactor-core-micrometer", version.ref = "baselinePerfCoreMicrometer" }
+reactor-perfBaseline-coreMicrometer = { module = "io.projectreactor:reactor-core-micrometer", version.ref = "baselinePerfCore" }
 reactor-perfBaseline-extra = { module = "io.projectreactor.addons:reactor-extra", version.ref = "baselinePerfExtra" }
 archUnit = { module = "com.tngtech.archunit:archunit", version.ref = "archUnit" }
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
