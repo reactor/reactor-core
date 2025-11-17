@@ -18,6 +18,8 @@ updates:
       - dependency-name: "com.google.code.findbugs:jsr305"
       # Micrometer is updated manually
       - dependency-name: "io.micrometer:*"
+      # Reactor-Core-Micrometer is updated manually
+      - dependency-name: "io.projectreactor:reactor-core-micrometer"
       # Kotlin: stay on 1.8 to allow support for 1.3 target
       - dependency-name: "org.jetbrains.kotlin*"
         versions:
@@ -76,6 +78,8 @@ updates:
       - dependency-name: "com.google.code.findbugs:jsr305"
       # Micrometer is updated manually
       - dependency-name: "io.micrometer:*"
+      # Reactor-Core-Micrometer is updated manually
+      - dependency-name: "io.projectreactor:reactor-core-micrometer"
       # Kotlin: stay on 1.8 to allow support for 1.3 target
       - dependency-name: "org.jetbrains.kotlin*"
         versions:
