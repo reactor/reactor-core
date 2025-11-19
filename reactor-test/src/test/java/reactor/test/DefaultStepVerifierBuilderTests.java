@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import reactor.test.DefaultStepVerifierBuilder.SubscriptionEvent;
 import reactor.test.DefaultStepVerifierBuilder.TaskEvent;
 import reactor.test.DefaultStepVerifierBuilder.WaitEvent;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -317,5 +319,35 @@ public class DefaultStepVerifierBuilderTests {
 		assertThat(builder.enableConditionalSupport(i -> true).build().toVerifierAndSubscribe())
 			.as("with enableConditionalSupport")
 			.isInstanceOf(Fuseable.ConditionalSubscriber.class);
+	}
+
+	@Test
+	@Timeout(5) // Ensure test completes within 5 seconds (should be much faster with the fix)
+	void retryWhenBackoffDoesNotCauseResourceExhaustion() {
+		// Reproduces issue #4054: retryWhen(backoff()) causing high resource usage
+		// The fix prevents busy-waiting by using adaptive wait times when idle
+		AtomicInteger callCount = new AtomicInteger(0);
+
+		Flux<Object> testFlux = Flux.generate(
+				sink -> {
+					int count = callCount.incrementAndGet();
+					if (count <= 2) {
+						sink.error(new IllegalStateException("Error " + count));
+					}
+					else {
+						sink.next(1);
+						sink.complete();
+					}
+				})
+				.retryWhen(Retry.backoff(3, Duration.ofMillis(10)));
+
+		// This should complete quickly without consuming excessive resources
+		// Before the fix, this would cause OOM due to busy-waiting
+		StepVerifier.create(testFlux)
+				.expectNext(1)
+				.expectComplete()
+				.verify(Duration.ofSeconds(2));
+
+		assertThat(callCount.get()).isEqualTo(3);
 	}
 }

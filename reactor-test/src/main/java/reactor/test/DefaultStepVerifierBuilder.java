@@ -1744,18 +1744,35 @@ final class DefaultStepVerifierBuilder<T>
 			Instant stop = Instant.now()
 			                      .plus(timeout);
 
+			// Use adaptive wait to avoid busy-waiting when Flux is in backoff/delay state
+			// When there are no task events to process, use longer wait to prevent resource exhaustion
+			long idleWaitNanos = 10_000_000L; // 10ms when idle to avoid busy-waiting
+
 			for (; ; ) {
+				// Process any pending task events
 				waitTaskEvent();
-				if (this.completeLatch.await(10, TimeUnit.NANOSECONDS)) {
-					break;
+				
+				// Use adaptive wait: if there are still task events pending, use short wait
+				// for responsiveness. Otherwise use longer wait when idle (e.g., during backoff delays).
+				long waitNanos = !taskEvents.isEmpty() ? 10L : idleWaitNanos;
+				
+				// Calculate remaining time to ensure we don't exceed timeout
+				if (timeout != Duration.ZERO) {
+					Duration remaining = Duration.between(Instant.now(), stop);
+					if (remaining.isNegative() || remaining.isZero()) {
+						if (get() == null) {
+							throw messageFormatter.error(IllegalStateException::new, "VerifySubscriber has not been subscribed");
+						}
+						else {
+							throw messageFormatter.assertionError("VerifySubscriber timed out on " + get());
+						}
+					}
+					// Don't wait longer than remaining time
+					waitNanos = Math.min(waitNanos, remaining.toNanos());
 				}
-				if (timeout != Duration.ZERO && stop.isBefore(Instant.now())) {
-					if (get() == null) {
-						throw messageFormatter.error(IllegalStateException::new, "VerifySubscriber has not been subscribed");
-					}
-					else {
-						throw messageFormatter.assertionError("VerifySubscriber timed out on " + get());
-					}
+
+				if (this.completeLatch.await(waitNanos, TimeUnit.NANOSECONDS)) {
+					break;
 				}
 			}
 		}
