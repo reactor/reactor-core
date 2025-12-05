@@ -2755,7 +2755,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
+	public final Mono<T> doOnSuccess(Consumer<? super @Nullable T> onSuccess) {
 		Objects.requireNonNull(onSuccess, "onSuccess");
 		return doOnTerminalSignal(this, onSuccess, null, null);
 	}
