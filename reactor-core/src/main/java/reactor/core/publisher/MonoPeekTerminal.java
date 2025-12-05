@@ -38,11 +38,13 @@ import reactor.core.Fuseable;
 final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final @Nullable BiConsumer<? super T, Throwable> onAfterTerminateCall;
-	final @Nullable Consumer<? super T>              onSuccessCall;
-	final @Nullable Consumer<? super Throwable>      onErrorCall;
+
+	final @Nullable Consumer<? super @Nullable T> onSuccessCall;
+
+	final @Nullable Consumer<? super Throwable> onErrorCall;
 
 	MonoPeekTerminal(Mono<? extends T> source,
-			@Nullable Consumer<? super T> onSuccessCall,
+			@Nullable Consumer<? super @Nullable T> onSuccessCall,
 			@Nullable Consumer<? super Throwable> onErrorCall,
 			@Nullable BiConsumer<? super T, Throwable> onAfterTerminateCall) {
 		super(source);
