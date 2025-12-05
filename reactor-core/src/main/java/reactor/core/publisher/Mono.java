@@ -5384,7 +5384,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	static <T> Mono<T> doOnTerminalSignal(Mono<T> source,
-			@Nullable Consumer<? super T> onSuccess,
+			@Nullable Consumer<? super @Nullable T> onSuccess,
 			@Nullable Consumer<? super Throwable> onError,
 			@Nullable BiConsumer<? super T, Throwable> onAfterTerminate) {
 		return onAssembly(new MonoPeekTerminal<>(source, onSuccess, onError, onAfterTerminate));
