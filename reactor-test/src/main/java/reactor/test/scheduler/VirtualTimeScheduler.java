@@ -546,7 +546,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			return shutdown;
 		}
 
-		final class PeriodicTask extends AtomicReference<@Nullable Disposable>
+		final class PeriodicTask extends AtomicReference<Disposable>
 				implements Runnable, Disposable {
 
 			final Runnable decoratedRun;
@@ -604,13 +604,11 @@ public class VirtualTimeScheduler implements Scheduler {
 	static final Disposable CANCELLED = Disposables.disposed();
 	static final Disposable EMPTY = Disposables.never();
 
-	static boolean replace(AtomicReference<@Nullable Disposable> ref, @Nullable Disposable c) {
+	static boolean replace(AtomicReference<Disposable> ref, Disposable c) {
 		for (; ; ) {
 			Disposable current = ref.get();
 			if (current == CANCELLED) {
-				if (c != null) {
-					c.dispose();
-				}
+				c.dispose();
 				return false;
 			}
 			if (ref.compareAndSet(current, c)) {
