@@ -6,9 +6,9 @@ baselinePerfExtra = "3.6.0"
 
 # Other shared versions
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
-micrometer = "1.16.1"
+micrometer = "1.16.2"
 micrometerDocsGenerator = "1.0.4"
-micrometerTracingTest="1.6.1"
+micrometerTracingTest="1.6.2"
 contextPropagation="1.2.0"
 reactiveStreams = "1.0.4"
 antora = "1.0.0"
