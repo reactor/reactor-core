@@ -50,6 +50,8 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static reactor.core.Scannable.Attr;
 import static reactor.core.Scannable.Attr.*;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -922,5 +924,73 @@ class SinkManyEmitterProcessorTest {
 		            .expectNext(1)
 		            .expectTimeout(Duration.ofSeconds(1))
 		            .verify();
+	}
+
+	@Test
+	void testThatCancelledSinkShouldNotAcceptsEmissions() {
+		Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
+		Disposable subscription1 = sink.asFlux().subscribe(s -> System.out.println("1: " + s));
+		assertEquals(1, sink.currentSubscriberCount());
+		sink.tryEmitNext("Test1");
+		subscription1.dispose();
+		assertEquals(0, sink.currentSubscriberCount());
+		Disposable subscription2 = sink.asFlux().subscribe(s -> System.out.println("2: " + s));
+		assertTrue(subscription2.isDisposed());
+		assertEquals(0, sink.currentSubscriberCount());
+		assertTrue(sink.tryEmitNext("Test2").isFailure(), "Emissions on a cancelled sink should fail");
+	}
+
+	@Test
+	void testQueueShouldBeEmptyAfterCancellation() {
+		SinkManyEmitterProcessor<Integer> processor = new SinkManyEmitterProcessor<>(true, 1);
+		processor.tryEmitNext(1);
+		assertThat(processor.queue.size()).isEqualTo(1);
+		processor.asFlux().doOnNext(i -> System.out.println("Received " + i)).subscribe().dispose();
+		assertThat(processor.queue.size()).isEqualTo(0);
+		processor.tryEmitNext(2);
+		assertThat(processor.queue.size()).isEqualTo(0);
+	}
+
+	@Test
+	void testNoQueueIsCreatedIfNoEmissionOccurredBeforeCancellation() {
+		SinkManyEmitterProcessor<Integer> processor = new SinkManyEmitterProcessor<>(true, 1);
+
+		processor.asFlux().subscribe().dispose();
+
+		processor.tryEmitNext(1);
+		assertThat(processor.queue).isNull();
+	}
+
+	@Test
+	void testThatOneSubscriberDisposesSinkStaysActive() {
+		Sinks.Many<Integer> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+		sink.asFlux().subscribe(i -> System.out.println("Subscriber A received: " + i));
+		Disposable subscriberB = sink.asFlux().subscribe(i -> System.out.println("Subscriber B received: " + i));
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
+
+		sink.tryEmitNext(1);
+		subscriberB.dispose();
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(1);
+
+		Sinks.EmitResult result = sink.tryEmitNext(2);
+		assertThat(result).isEqualTo(Sinks.EmitResult.OK);
+	}
+
+	@Test
+	void testThatLastSubscriberDisposesTriggersAutoCancel() {
+		Sinks.Many<Integer> sink = Sinks.many().multicast().onBackpressureBuffer();
+		Disposable disposable = sink.asFlux().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(1);
+
+		disposable.dispose();
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(0);
+
+		Sinks.EmitResult result = sink.tryEmitNext(1);
+		assertThat(result).isEqualTo(Sinks.EmitResult.FAIL_CANCELLED);
 	}
 }
