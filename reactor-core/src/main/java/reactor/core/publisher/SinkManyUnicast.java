@@ -84,7 +84,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the input and output type
  */
-final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, Disposable, Fuseable.QueueSubscription<T>, Fuseable {
+final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, Disposable, Fuseable.QueueSubscription<T>, Fuseable, SourceProducer<T> {
 
 	/**
 	 * Create a new {@link SinkManyUnicast} that will buffer on an internal queue in an
@@ -350,7 +350,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 			if (dataSignalOfferedBeforeDrain != null) {
 				if (cancelled) {
 					Operators.onDiscard(dataSignalOfferedBeforeDrain,
-							actual.currentContext());
+							currentContext());
 				}
 				else if (done) {
 					Operators.onNextDropped(dataSignalOfferedBeforeDrain,
@@ -373,10 +373,23 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 				return;
 			}
 
+			// This handles a race condition where `cancel()` is
+			// called before a subscriber arrives (e.g., via `take(0)`).
+			if (cancelled) {
+				if (dataSignalOfferedBeforeDrain != null) {
+					Operators.onDiscard(dataSignalOfferedBeforeDrain, currentContext());
+				}
+				if (!outputFused) {
+					Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+				}
+			}
+
 			missed = WIP.addAndGet(this, -missed);
 			if (missed == 0) {
 				break;
 			}
+
+			dataSignalOfferedBeforeDrain = null;
 		}
 	}
 
@@ -450,14 +463,7 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 
 		doTerminate();
 
-		if (WIP.getAndIncrement(this) == 0) {
-			if (!outputFused) {
-				// discard MUST be happening only and only if there is no racing on elements consumption
-				// which is guaranteed by the WIP guard here in case non-fused output
-				Operators.onDiscardQueueWithClear(queue, currentContext(), null);
-			}
-			hasDownstream = false;
-		}
+		drain(null);
 	}
 
 	@Override
@@ -519,5 +525,10 @@ final class SinkManyUnicast<T> extends Flux<T> implements InternalManySink<T>, D
 	@Override
 	public boolean isDisposed() {
 		return cancelled || done;
+	}
+
+	@Override
+	public void terminateAndCleanup() {
+		cancel();
 	}
 }

@@ -923,4 +923,14 @@ class SinkManyEmitterProcessorTest {
 		            .expectTimeout(Duration.ofSeconds(1))
 		            .verify();
 	}
+
+	@Test
+	void shouldClearQueueOnImmediateCancellation() {
+		SinkManyEmitterProcessor<Integer> processor = new SinkManyEmitterProcessor<>(true, 1);
+		processor.tryEmitNext(1);
+		assertThat(processor.queue.size()).isEqualTo(1);
+
+		processor.asFlux().take(0).blockLast();
+		assertThat(processor.queue.size()).isEqualTo(0);
+	}
 }

@@ -46,4 +46,28 @@ interface SourceProducer<O> extends Scannable, Publisher<O> {
 	default String stepName() {
 		return "source(" + getClass().getSimpleName() + ")";
 	}
+
+	/**
+	 * An internal hook for operators to instruct this {@link SourceProducer} to terminate
+	 * and clean up its resources, bypassing the standard subscription-cancellation path.
+	 * <p>
+	 * This method is necessary for specific scenarios where a downstream consumer
+	 * terminates prematurely *without* propagating a standard
+	 * {@link org.reactivestreams.Subscription#cancel() cancel} signal upstream. The primary
+	 * use case is for operators that short-circuit the stream, such as {@code take(0)}.
+	 * <p>
+	 * Without this direct termination signal, a hot source with a buffer (like a
+	 * {@code Sinks.many().unicast().onBackpressureBuffer(queue)}) could be orphaned, leading to its buffered
+	 * elements never being released and causing a memory leak.
+	 * <p>
+	 * This is not intended for public use and should only be called by Reactor framework
+	 * operators. The default implementation is a no-op, allowing sources to opt in to this
+	 * behavior only if they manage resources that require explicit cleanup in such scenarios.
+	 *
+	 * @see reactor.core.publisher.Flux#take(long)
+	 * @see SinkManyUnicast
+	 */
+	default void terminateAndCleanup() {
+		// Default implementation does nothing.
+	}
 }

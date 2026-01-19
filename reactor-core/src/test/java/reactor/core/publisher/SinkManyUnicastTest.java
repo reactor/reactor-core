@@ -16,21 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.locks.LockSupport;
-
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -40,6 +28,18 @@ import reactor.core.Scannable.Attr;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -340,4 +340,22 @@ public class SinkManyUnicastTest {
 				.as("after scannable subscription")
 				.containsExactly(scannable);
 	}
+
+	@Test
+	void shouldClearBufferOnImmediateCancellation() {
+		BlockingQueue<Integer> queue = new LinkedBlockingQueue<>();
+
+		Sinks.Many<Integer> sink = Sinks.many().unicast().onBackpressureBuffer(queue);
+
+		sink.tryEmitNext(1);
+		sink.tryEmitNext(2);
+		sink.tryEmitNext(3);
+
+		assertThat(queue).hasSize(3);
+
+		sink.asFlux().take(0).blockLast();
+
+		assertThat(queue).isEmpty();
+	}
+
 }
