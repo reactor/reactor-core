@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,7 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	volatile @Nullable Future<?> future;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<WorkerTask, @Nullable Future> FUTURE =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Future.class, "future");
 
@@ -75,8 +74,6 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	volatile @Nullable Thread thread;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings("DataFlowIssue")
 	static final AtomicReferenceFieldUpdater<WorkerTask, @Nullable Thread> THREAD =
 			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Thread.class, "thread");
 

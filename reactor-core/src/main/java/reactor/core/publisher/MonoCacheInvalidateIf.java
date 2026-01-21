@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,8 +186,7 @@ final class MonoCacheInvalidateIf<T> extends InternalMonoOperator<T, T> {
 
 		volatile @Nullable Subscription upstream;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, @Nullable Subscription> UPSTREAM =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "upstream");
 

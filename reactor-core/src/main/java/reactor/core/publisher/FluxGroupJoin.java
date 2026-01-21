@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -173,8 +173,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<GroupJoinSubscription, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(GroupJoinSubscription.class,
 						Throwable.class,
@@ -498,8 +496,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		final static AtomicReferenceFieldUpdater<LeftRightSubscriber, @Nullable Subscription>
 				SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(LeftRightSubscriber.class,
@@ -574,8 +571,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription subscription;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		final static AtomicReferenceFieldUpdater<LeftRightEndSubscriber, @Nullable Subscription>
 				SUBSCRIPTION = AtomicReferenceFieldUpdater.newUpdater(
 				LeftRightEndSubscriber.class,

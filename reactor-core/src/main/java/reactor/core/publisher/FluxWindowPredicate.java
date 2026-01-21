@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,8 +143,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowPredicateMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateMain.class,
 						Throwable.class,
@@ -588,8 +587,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 		volatile @Nullable WindowPredicateMain<T> parent;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowFlux, @Nullable WindowPredicateMain>
 				PARENT = AtomicReferenceFieldUpdater.newUpdater(WindowFlux.class,
 				WindowPredicateMain.class,

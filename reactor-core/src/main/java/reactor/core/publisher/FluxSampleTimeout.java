@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,8 +90,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 						Subscription.class,
@@ -99,8 +98,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 
 		volatile @Nullable Subscription other;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, @Nullable Subscription>
 				OTHER = AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 				Subscription.class,
@@ -118,8 +116,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 						Throwable.class,

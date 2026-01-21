@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,8 +124,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<GroupByMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(GroupByMain.class,
 						Throwable.class,
@@ -487,8 +486,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		volatile @Nullable GroupByMain<?, K, V> parent;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, @Nullable GroupByMain> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
 						GroupByMain.class,

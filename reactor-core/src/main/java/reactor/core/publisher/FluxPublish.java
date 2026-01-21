@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 	volatile @Nullable PublishSubscriber<T> connection;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<FluxPublish, @Nullable PublishSubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxPublish.class,
 					PublishSubscriber.class,
@@ -207,8 +206,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<PublishSubscriber, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(PublishSubscriber.class,
 						Throwable.class,

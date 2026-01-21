@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -594,8 +594,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipSingleSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipSingleSubscriber.class,
 						Subscription.class,
@@ -696,8 +695,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipCoordinator, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(ZipCoordinator.class,
 						Throwable.class,
@@ -1059,8 +1057,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class,
 						Subscription.class,

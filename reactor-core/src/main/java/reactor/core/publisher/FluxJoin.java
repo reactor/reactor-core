@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,8 +133,6 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<JoinSubscription, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(JoinSubscription.class,
 						Throwable.class,

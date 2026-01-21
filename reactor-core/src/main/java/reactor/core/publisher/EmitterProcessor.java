@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,8 +143,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 	volatile Subscription s;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Subscription.class,
@@ -161,8 +160,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	volatile @Nullable EmitterDisposable upstreamDisposable;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable EmitterDisposable> UPSTREAM_DISPOSABLE =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class, EmitterDisposable.class, "upstreamDisposable");
 
@@ -183,8 +181,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	volatile @Nullable Throwable error;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, @Nullable Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
 					Throwable.class,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,8 +220,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<CombineLatestCoordinator, @Nullable Throwable>
 				ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(CombineLatestCoordinator.class,
@@ -577,8 +576,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 		@SuppressWarnings("NotNullFieldNotInitialized") // s initialized in onSubscribe
 		volatile Subscription s;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<CombineLatestInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(CombineLatestInner.class,
 						Subscription.class,

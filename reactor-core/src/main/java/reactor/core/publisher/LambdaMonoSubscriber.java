@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,8 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 	volatile Subscription subscription;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
-	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, @Nullable Subscription> S =
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(LambdaMonoSubscriber.class,
 					Subscription.class,
 					"subscription");
@@ -217,7 +216,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	@Override
 	public void dispose() {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
-		if (s != null && s != Operators.cancelledSubscription()) {
+		if (s != Operators.cancelledSubscription()) {
 			s.cancel();
 		}
 	}

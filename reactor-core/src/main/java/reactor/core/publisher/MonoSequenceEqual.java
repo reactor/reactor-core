@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -300,8 +300,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 
 		volatile @Nullable Subscription subscription;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<EqualSubscriber, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(EqualSubscriber.class,
 						Subscription.class, "subscription");

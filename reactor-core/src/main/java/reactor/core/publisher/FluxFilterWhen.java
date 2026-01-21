@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,8 +103,6 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		volatile int     state;
 		volatile int     wip;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, @Nullable Throwable>
 				ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
@@ -119,8 +117,6 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 				AtomicIntegerFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
 						"wip");
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, @Nullable FilterWhenInner>
 				CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class,
@@ -442,8 +438,7 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 		@SuppressWarnings("NotNullFieldNotInitialized") // initialized in onSubscribe
 		volatile Subscription sub;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FilterWhenInner, @Nullable Subscription> SUB =
 				AtomicReferenceFieldUpdater.newUpdater(FilterWhenInner.class, Subscription.class, "sub");
 

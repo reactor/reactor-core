@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(
 						FluxConcatMapNoPrefetchSubscriber.class, Throwable.class, "error");
