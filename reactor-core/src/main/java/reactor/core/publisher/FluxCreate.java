@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,8 +121,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SerializedFluxSink, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SerializedFluxSink.class,
 						Throwable.class,
@@ -423,8 +422,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		volatile @Nullable Disposable disposable;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BaseSink, @Nullable Disposable> DISPOSABLE =
 				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
 						Disposable.class,
@@ -437,8 +435,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		volatile @Nullable LongConsumer requestConsumer;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BaseSink, @Nullable LongConsumer>
 				REQUEST_CONSUMER = AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
 				LongConsumer.class,

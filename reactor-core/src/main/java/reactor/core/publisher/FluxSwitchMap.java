@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,8 +112,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Throwable error;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, @Nullable Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class,
 						Throwable.class,
@@ -138,8 +137,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable SwitchMapInner<R> inner;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, @Nullable SwitchMapInner> INNER =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class,
 						SwitchMapInner.class,
@@ -458,8 +456,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 
 		volatile @Nullable Subscription s;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapInner, @Nullable Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapInner.class,
 						Subscription.class,

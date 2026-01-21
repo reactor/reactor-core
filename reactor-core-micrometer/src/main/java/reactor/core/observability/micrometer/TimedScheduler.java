@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,8 +222,6 @@ final class TimedScheduler implements Scheduler {
 
 		volatile @Nullable Composite parent;
 
-		// https://github.com/uber/NullAway/issues/1157
-		@SuppressWarnings("DataFlowIssue")
 		static final AtomicReferenceFieldUpdater<TimedRunnable, @Nullable Composite> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(TimedRunnable.class, Composite.class, "parent");
 

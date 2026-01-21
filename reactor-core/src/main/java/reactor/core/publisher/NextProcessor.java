@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,8 +99,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements CoreSubscriber<O>, re
 
 	volatile @Nullable Subscription subscription;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<NextProcessor, @Nullable Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 

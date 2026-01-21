@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,22 +41,19 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 
 	volatile @Nullable Future<?> rest;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, @Nullable Future> REST =
 			AtomicReferenceFieldUpdater.newUpdater(InstantPeriodicWorkerTask.class, Future.class, "rest");
 
 	volatile @Nullable Future<?> first;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, @Nullable Future> FIRST =
 			AtomicReferenceFieldUpdater.newUpdater(InstantPeriodicWorkerTask.class, Future.class, "first");
 
 	volatile @Nullable Composite parent;
 
-	// https://github.com/uber/NullAway/issues/1157
-	@SuppressWarnings({"rawtypes", "DataFlowIssue"})
+	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<InstantPeriodicWorkerTask, @Nullable Composite> PARENT =
 			AtomicReferenceFieldUpdater.newUpdater(InstantPeriodicWorkerTask.class, Composite.class, "parent");
 
