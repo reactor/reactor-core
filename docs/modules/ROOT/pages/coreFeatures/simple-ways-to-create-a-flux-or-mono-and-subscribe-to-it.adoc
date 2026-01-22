@@ -69,6 +69,42 @@ subscription when no more data is needed. Upon cancellation, the source should s
 producing values and clean up any resources it created. This cancel-and-clean-up behavior
 is represented in Reactor by the general-purpose `Disposable` interface.
 
+[WARNING]
+====
+Calling `subscribe()` from within reactive code as a "fire-and-forget" side effect is usually an anti-pattern.
+It breaks composition: downstream can no longer coordinate cancellation and error handling for the inner subscription.
+Prefer composing operators and returning a single publisher instead.
+
+.Anti-pattern: fire-and-forget subscription
+[source,java]
+----
+Mono<Void> handle(T arg) {
+  sideEffectService.doSomething(arg).subscribe(); // <1>
+  return Mono.empty();
+}
+----
+<1> Downstream can no longer coordinate cancellation or error handling for this inner subscription.
+
+.Preferred: compose and return
+[source,java]
+----
+Mono<Void> handle(T arg) {
+  return sideEffectService.doSomething(arg).then();
+}
+----
+
+If you must trigger a fire-and-forget subscription at an imperative boundary (for example, an event listener),
+ensure errors are handled explicitly:
+
+[source,java]
+----
+public void onEvent(T arg) {
+  sideEffectService.doSomething(arg)
+      .subscribe(__ -> { }, e -> log.warn("Operation failed", e));
+}
+----
+====
+
 include::../subscribe-details.adoc[]
 
 include::../subscribe-backpressure.adoc[]
