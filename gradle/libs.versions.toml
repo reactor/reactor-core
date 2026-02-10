@@ -78,7 +78,7 @@ throwingFunction = { module = "com.pivovarit:throwing-function", version.ref = "
 [plugins]
 artifactory = { id = "com.jfrog.artifactory", version = "5.1.10" }
 bnd = { id = "biz.aQute.bnd.builder", version = "6.4.0" }
-download = { id = "de.undercouch.download", version = "5.6.0" }
+download = { id = "de.undercouch.download", version = "5.7.0" }
 japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.6" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.8.15" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.11" }
