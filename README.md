@@ -25,15 +25,15 @@ repositories {
 }
 
 dependencies {
-    compile "io.projectreactor:reactor-core:3.8.2"
-    testCompile "io.projectreactor:reactor-test:3.8.2"
+    compile "io.projectreactor:reactor-core:3.8.3"
+    testCompile "io.projectreactor:reactor-test:3.8.3"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.8.3-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.8.3-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.8.4-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.8.4-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.8.2"
+    // implementation "io.projectreactor:reactor-tools:3.8.3"
 }
 ```
 
