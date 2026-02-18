@@ -28,7 +28,7 @@ jobs:
           distribution: 'temurin'
           java-version: 21
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2
+        uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884
       - name: spotless (license header)
         if: always()
         run: ./gradlew spotlessCheck -PspotlessFrom=origin/${{ github.base_ref }}
@@ -86,6 +86,6 @@ jobs:
         distribution: 'temurin'
         java-version: 21
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2
+      uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884
     - name: Run Gradle Tests
       run: ./gradlew ${{ matrix.test-type.arguments }}
