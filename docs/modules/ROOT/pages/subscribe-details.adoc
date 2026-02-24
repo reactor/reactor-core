@@ -222,3 +222,79 @@ NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`, 
 `hookOnComplete` methods. You may also want to implement the `hookFinally` method.
 `SampleSubscriber` is the absolute minimum implementation of a `Subscriber` _that performs
 bounded requests_.
+
+[[subscription-patterns]]
+== Subscription Patterns
+
+In a typical reactive application, users rarely explicitly call `subscribe()` themselves.
+Instead, they declaratively define the processing pipeline as a `Flux` or `Mono` and
+hand it to their library (like `reactor-netty`) or framework (like `Spring WebFlux`)
+of choice to hook into a non-blocking execution engine (typically an event loop).
+The user logic is composed of chaining the reactive operators.
+
+There are times when you explicitly want to start the subscription and this section
+aims to list the typical patterns.
+
+=== Fire-and-forget
+
+When you ignore the `Disposable` returned by `subscribe()`, you lose the ability to
+cancel the execution. In most cases this is an anti-pattern,
+but there are legitimate imperative boundaries (e.g. event listeners) where it is
+unavoidable — in those cases, handle errors explicitly.
+
+.Fire-and-forget
+[source,java]
+----
+Mono<Void> handle(T arg) {
+  sideEffectService.doSomething(arg).subscribe(); // <1>
+  return Mono.empty();
+}
+----
+<1> Downstream can no longer coordinate cancellation or error handling for this inner subscription.
+
+.Preferred: compose and return
+[source,java]
+----
+Mono<Void> handle(T arg) {
+  return sideEffectService.doSomething(arg).then();
+}
+----
+
+.Error handling at an imperative boundary: overload with error consumer
+[source,java]
+----
+public void onEvent(T arg) {
+  sideEffectService.doSomething(arg)
+      .subscribe(ignored -> { }, e -> logger.warn("Operation failed", e));
+}
+----
+
+=== Dispatch and reference
+
+For a more robust alternative, store the reference to the `Disposable` and perform
+cleanup (`dispose()`) at a later stage.
+
+[source,java]
+----
+AtomicReference<Disposable> disposableRef = new AtomicReference<>();
+Disposable disposable = sideEffectService.doSomething(arg)
+    .subscribe(
+        result -> { /* handle next */ },
+        e -> logger.warn("Operation failed", e)
+    );
+
+disposableRef.set(disposable);
+
+// during cleanup
+disposableRef.get().dispose();
+----
+
+=== Use `BaseSubscriber`
+
+The third option — providing the most control — is to extend `BaseSubscriber`. This is
+appropriate when you need fine-grained backpressure control, custom cancellation logic,
+or want to handle all lifecycle signals (`onSubscribe`, `onNext`, `onError`, `onComplete`,
+`onCancel`)
+in a single coherent class.
+
+See <<an-alternative-to-lambdas-basesubscriber>> for a full example.
