@@ -201,8 +201,8 @@ project.tasks.buildPluginTest.dependsOn(shadowJar)
 
 task generateMockGradle(type: Copy) {
     def coreJar = rootProject.findProject("reactor-core").layout.buildDirectory.get().asFile.toString() + "/libs/reactor-core-" + version + ".jar"
-    def agentJar = buildDir.toString() + "/libs/reactor-tools-" + version + "-original.jar"
-    def mockGradleDir = buildDir.toString() + "/mock-gradle"
+    def agentJar = layout.buildDirectory.get().asFile.toString() + "/libs/reactor-tools-" + version + "-original.jar"
+    def mockGradleDir = layout.buildDirectory.get().asFile.toString() + "/mock-gradle"
 
     from "$projectDir/src/buildPluginTest/resources/mock-gradle"
     into "$mockGradleDir"
