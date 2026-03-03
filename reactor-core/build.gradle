@@ -19,7 +19,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 apply plugin: 'idea' // needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'jvm-test-suite'
-apply plugin: 'jcstress'
+apply plugin: 'io.github.reyerizo.gradle.jcstress'
 apply plugin: 'java-library'
 apply plugin: 'me.champeau.mrjar'
 
@@ -61,7 +61,7 @@ testing {
 	  }
 	}
 	tckTest(JvmTestSuite) {
-	  useTestNG()
+	  useTestNG(libs.versions.testng.get())
 	  sources.java.srcDirs = ['src/tckTest/java']
 	  dependencies {
 		implementation project()
@@ -344,7 +344,7 @@ blockHoundTest {
 
 jcstress {
 	mode = project.hasProperty('jcstress.mode') ? project.getProperty('jcstress.mode') : 'quick' //sanity, quick, default, tough
-    jcstressDependency 'org.openjdk.jcstress:jcstress-core:0.16'
+    jcstressDependency = 'org.openjdk.jcstress:jcstress-core:0.16'
 	heapPerFork = 512
 }
 
@@ -381,9 +381,9 @@ jar {
 			'Implementation-Version': project.version,
 			'Automatic-Module-Name': 'reactor.core'
 	}
-	bnd(bndOptions)
 
 	bundle {
+	  bnd(bndOptions)
 	  // workaround for multi-version JARs
 	  //  see https://github.com/bndtools/bnd/issues/2227
 	  bnd '''\

@@ -117,8 +117,8 @@ jar {
 }
 
 shadowJar {
-    enableRelocation true
-    relocationPrefix "reactor.tools.shaded"
+    enableRelocation = true
+    relocationPrefix = "reactor.tools.shaded"
     archiveClassifier.set('')
 
     dependsOn(project.tasks.jar)
@@ -219,6 +219,11 @@ buildPluginTest {
     def mockGradleDir = layout.buildDirectory.dir("mock-gradle").get().asFile.toString()
     println "will run mock gradle build from $mockGradleDir"
     systemProperty "mock-gradle-dir", mockGradleDir
+    // Gradle 9 Tooling API requires JVM 17+ to start the daemon, so this test
+    // must run on Java 17 regardless of the default test toolchain.
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 project.tasks.buildPluginTest.dependsOn(generateMockGradle)

@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import org.gradle.util.VersionNumber
 import java.text.SimpleDateFormat
 
 buildscript {
 	repositories {
 		mavenCentral()
-		maven { url "https://repo.spring.io/plugins-release" }
+		maven { url = "https://repo.spring.io/plugins-release" }
 	}
 }
 
@@ -46,8 +45,16 @@ repositories { //needed at root for asciidoctor and nohttp-checkstyle
 	mavenCentral()
 }
 
+static def parseVersionParts(String v) {
+	def m = v =~ /^(\d+)\.(\d+)\.(\d+)(?:[.\-](.+))?$/
+	if (m.matches()) {
+		return [major: m[0][1] as int, minor: m[0][2] as int, micro: m[0][3] as int, qualifier: m[0][4] ?: ""]
+	}
+	return [major: 0, minor: 0, micro: 0, qualifier: null]
+}
+
 def osgiVersion(String v) {
-	def versionNumber = VersionNumber.parse(v)
+	def versionNumber = parseVersionParts(v)
 	def result
 	if (versionNumber.qualifier == null || versionNumber.qualifier.size() == 0) {
 		result = "${v}.RELEASE"
@@ -133,15 +140,15 @@ configure(subprojects) { p ->
 
 	repositories {
 		mavenCentral()
-		maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+		maven { url = "https://oss.sonatype.org/content/repositories/releases/" }
 
 		mavenLocal()
 		if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
 			//do not wait for Maven Central when going back to snapshots and comparing for baseline
-			maven { url 'https://repo.spring.io/release' }
-			maven { url 'https://repo.spring.io/snapshot' }
+			maven { url = 'https://repo.spring.io/release' }
+			maven { url = 'https://repo.spring.io/snapshot' }
 		}
-		maven { url 'https://repo.spring.io/milestone' }
+		maven { url = 'https://repo.spring.io/milestone' }
 	}
 
 	jacocoTestReport {
@@ -162,9 +169,9 @@ configure(subprojects) { p ->
 	p.tasks.withType(Test).all {
 		testLogging {
 			events "FAILED"
-			showExceptions true
-			exceptionFormat "FULL"
-			maxGranularity -1
+			showExceptions = true
+			exceptionFormat = "FULL"
+			maxGranularity = -1
 		}
 
 		// show progress by displaying test classes, avoiding test suite timeouts

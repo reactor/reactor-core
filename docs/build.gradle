@@ -56,9 +56,11 @@ antora {
 }
 
 tasks.named('antora').configure {
+    def capturedVersion = project.version
+    def capturedForcePdf = project.hasProperty('forcePdf')
     doFirst {
-        def version = project.version
-        def forcePdf = project.hasProperty('forcePdf')
+        def version = capturedVersion
+        def forcePdf = capturedForcePdf
 
         if (!version.endsWith("-SNAPSHOT") || forcePdf) {
 	        if (!isCommandAvailable('asciidoctor-pdf')) {

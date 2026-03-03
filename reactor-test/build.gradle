@@ -128,7 +128,9 @@ jar {
 			'Implementation-Version': project.version,
 			'Automatic-Module-Name': 'reactor.test'
 	}
-	bnd(bndOptions)
+	bundle {
+		bnd(bndOptions)
+	}
 }
 
 tasks.withType(Test).all {
