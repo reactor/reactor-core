@@ -56,7 +56,7 @@ task downloadBaseline(type: Download) {
 	compress true
 
 	src "${repositories.mavenCentral().url}io/projectreactor/reactor-test/${libs.versions.baseline.core.api.get()}/reactor-test-${libs.versions.baseline.core.api.get()}.jar"
-	dest "${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar"
+	dest layout.buildDirectory.file("baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar").get().asFile
 
 	finalizedBy { japicmp }
 }
@@ -98,7 +98,7 @@ task japicmp(type: JapicmpTask) {
 		finalizedBy(japicmpReport)
 	}
 
-	oldClasspath.from(files("${buildDir}/baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar"))
+	oldClasspath.from(files(layout.buildDirectory.file("baselineLibs/reactor-test-${libs.versions.baseline.core.api.get()}.jar").get().asFile))
 	newClasspath.from(files(jar.archiveFile))
 	// these onlyXxx parameters result in a report that is slightly too noisy, but better than
 	// onlyBinaryIncompatibleModified = true which masks source-incompatible-only changes
@@ -128,7 +128,9 @@ jar {
 			'Implementation-Version': project.version,
 			'Automatic-Module-Name': 'reactor.test'
 	}
-	bnd(bndOptions)
+	bundle {
+		bnd(bndOptions)
+	}
 }
 
 tasks.withType(Test).all {

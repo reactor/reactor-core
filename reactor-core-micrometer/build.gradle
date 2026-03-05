@@ -95,7 +95,9 @@ jar {
 			'Implementation-Version': project.version,
 			'Automatic-Module-Name': 'reactor.core.micrometer'
 	}
-	bnd(bndOptions)
+	bundle {
+		bnd(bndOptions)
+	}
 }
 
 //TODO once 1.0.0 is released, introduce JAPICMP checks

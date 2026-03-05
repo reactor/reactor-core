@@ -56,9 +56,11 @@ antora {
 }
 
 tasks.named('antora').configure {
+    def capturedVersion = project.version
+    def capturedForcePdf = project.hasProperty('forcePdf')
     doFirst {
-        def version = project.version
-        def forcePdf = project.hasProperty('forcePdf')
+        def version = capturedVersion
+        def forcePdf = capturedForcePdf
 
         if (!version.endsWith("-SNAPSHOT") || forcePdf) {
 	        if (!isCommandAvailable('asciidoctor-pdf')) {
@@ -167,7 +169,7 @@ tasks.create(name: 'createAntoraPartials', type: Sync) {
     // Download and include SUPPORT.adoc
     doLast {
         def url = 'https://raw.githubusercontent.com/reactor/.github/main/SUPPORT.adoc'
-        def outputFile = file("${buildDir}/generated-antora-resources/modules/ROOT/partials/SUPPORT.adoc")
+        def outputFile = layout.buildDirectory.file("generated-antora-resources/modules/ROOT/partials/SUPPORT.adoc").get().asFile
         ant.get(src: url, dest: outputFile)
     }
     into layout.buildDirectory.dir('generated-antora-resources/modules/ROOT/partials')

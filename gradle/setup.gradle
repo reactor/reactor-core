@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.gradle.util.VersionNumber
-
 if (project.name == 'benchmarks')
 	return
 
@@ -51,14 +49,14 @@ task javadocJar(type: Jar) {
 }
 
 static def qualifyVersion(String v) {
-	def versionNumber = VersionNumber.parse(v)
+	def m = v =~ /^(\d+)\.(\d+)\.(\d+)(?:[.\-](.+))?$/
+	if (!m.matches()) return "BAD"
+	def qualifier = m[0][4] ?: ""
 
-	if (versionNumber == VersionNumber.UNKNOWN) return "BAD";
-
-	if (versionNumber.qualifier == null || versionNumber.qualifier.size() == 0) return "RELEASE" //new scheme
-	if (versionNumber.qualifier == "RELEASE") return "RELEASE" //old scheme
-	if (versionNumber.qualifier.matches("(?:M|RC)\\d+")) return "MILESTONE"
-	if (versionNumber.qualifier == "SNAPSHOT" || versionNumber.qualifier == "BUILD-SNAPSHOT") return "SNAPSHOT"
+	if (qualifier.size() == 0) return "RELEASE" //new scheme
+	if (qualifier == "RELEASE") return "RELEASE" //old scheme
+	if (qualifier.matches("(?:M|RC)\\d+")) return "MILESTONE"
+	if (qualifier == "SNAPSHOT" || qualifier == "BUILD-SNAPSHOT") return "SNAPSHOT"
 
 	return "BAD"
 }
