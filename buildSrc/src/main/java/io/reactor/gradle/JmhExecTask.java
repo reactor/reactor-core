@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ package io.reactor.gradle;
 
 import java.io.File;
 
+import javax.inject.Inject;
+
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -29,7 +32,7 @@ import org.gradle.api.tasks.options.Option;
 /**
  * @author Simon Baslé
  */
-class JmhExecTask extends JavaExec {
+abstract class JmhExecTask extends JavaExec {
 
 	private static final String DEFAULT_FORMAT = "json";
 
@@ -61,8 +64,12 @@ class JmhExecTask extends JavaExec {
 	@Option(option = "verify", description = "run in verify mode")
 	private final Property<String> verify;
 
-	public JmhExecTask() {
+	private final ProjectLayout layout;
+
+	@Inject
+	public JmhExecTask(ProjectLayout layout) {
 		super();
+		this.layout = layout;
 		getMainClass().set("org.openjdk.jmh.Main");
 		ObjectFactory objectFactory = this.getObjectFactory();
 		include = objectFactory.property(String.class);
@@ -111,7 +118,7 @@ class JmhExecTask extends JavaExec {
 
 	@TaskAction
 	public void exec() {
-		File resultFile = getProject().file("build/reports/" + getName() + "/result." + format.getOrElse(DEFAULT_FORMAT));
+		File resultFile = layout.getProjectDirectory().file("build/reports/" + getName() + "/result." + format.getOrElse(DEFAULT_FORMAT)).getAsFile();
 
 		if (include.isPresent()) {
 			args(".*" + include.get() + ".*");
