@@ -488,7 +488,7 @@ WARNING: The transformation will only be applied to your project's classes. The 
 	<dependency>
 		<groupId>io.projectreactor</groupId>
 		<artifactId>reactor-tools</artifactId>
-		<1>
+		<version>VERSION</version> <1>
 		<classifier>original</classifier> <2>
 		<scope>runtime</scope>
 	</dependency>
@@ -510,7 +510,7 @@ WARNING: The transformation will only be applied to your project's classes. The 
 	</plugins>
 </build>
 ----
-<1> If you use the xref:gettingStarted.adoc#getting[BOM], you do not need to specify a `<version>`.
+<1> The version must be specified explicitly. Although the xref:gettingStarted.adoc#getting[Reactor BOM] manages `reactor-tools`, Maven's `dependencyManagement` only applies to project dependencies — it does not cover dependencies declared inside a plugin's `<dependencies>` block, which is where `reactor-tools:original` is used here.
 <2> `classifier` here is important.
 
 .reactor-tools with https://github.com/raphw/byte-buddy/tree/byte-buddy-1.10.9/byte-buddy-gradle-plugin[ByteBuddy's Gradle plugin]
@@ -528,7 +528,7 @@ dependencies {
 	byteBuddyPlugin(
 			group: 'io.projectreactor',
 			name: 'reactor-tools',
-			<1>
+			version: 'VERSION', <1>
 			classifier: 'original', <2>
 	)
 }
@@ -540,7 +540,7 @@ byteBuddy {
 	}
 }
 ----
-<1> If you use the xref:gettingStarted.adoc#getting[BOM], you do not need to specify a `version`.
+<1> The version must be specified explicitly. The `byteBuddyPlugin` is a standalone Gradle configuration, so the Reactor BOM (if imported via `platform(...)`) does not manage versions for dependencies declared in it.
 <2> `classifier` here is important.
 
 
