@@ -20,13 +20,10 @@ plugins {
 }
 
 def isCommandAvailable(String command) {
-    def result = exec {
+    return providers.exec {
         commandLine 'which', command
         ignoreExitValue true
-        standardOutput = new ByteArrayOutputStream()
-        errorOutput = new ByteArrayOutputStream()
-    }
-    return result.exitValue == 0
+    }.result.get().exitValue == 0
 }
 
 antora {
