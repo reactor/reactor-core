@@ -90,7 +90,7 @@ import reactor.util.retry.Retry;
  * <p>
  * The recommended way to learn about the {@link Mono} API and discover new operators is
  * through the reference documentation, rather than through this javadoc (as opposed to
- * learning more about individual operators). See the <a href="https://projectreactor.io/docs/core/release/reference/docs/index.html#which-operator">
+ * learning more about individual operators). See the <a href="https://projectreactor.io/docs/core/release/reference/apdx-operatorChoice.html">
  * "which operator do I need?" appendix</a>.
  *
  * <p><img class="marble" src="doc-files/marbles/mono.svg" alt="">
