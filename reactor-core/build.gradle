@@ -272,7 +272,11 @@ javadoc {
 	options.overview = "$rootDir/docs/api/overview.html"
 	excludes = [
 			// Must be public due to the ServiceLoader's requirements
-			"reactor/core/scheduler/ReactorBlockHoundIntegration.java"
+			"reactor/core/scheduler/ReactorBlockHoundIntegration.java",
+			// Java 8-specific implementation uses sun.misc.* which no longer exists in JDK 21+.
+			// The compiled class (Java 11+ version via multi-release jar) is on the classpath
+			// so references to it from other sources are still resolved correctly.
+			"reactor/core/publisher/CallSiteSupplierFactory.java"
 	]
 	doLast {
 		// work around https://github.com/gradle/gradle/issues/4046

@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
 javadoc {
+	// Use a modern javadoc tool so TYPE_USE annotations (e.g. @Nullable) are
+	// rendered in method return type positions. Java 8's javadoc silently drops them
+	// due to https://bugs.openjdk.org/browse/JDK-8175390.
+	javadocTool = javaToolchains.javadocToolFor {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 	dependsOn jar
 	group = "documentation"
 	description = "Generates aggregated Javadoc API documentation."
@@ -28,12 +36,15 @@ javadoc {
 	options.memberLevel = JavadocMemberLevel.PROTECTED
 
 	if (project.name == "reactor-core") {
-		options.links([rootProject.jdkJavadoc, "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/"] as String[])
+		options.links([rootProject.jdkJavadoc,
+					   "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
+					   "https://javadoc.io/doc/org.jspecify/jspecify/${libs.versions.jspecify.get()}/"] as String[])
 	}
 	else {
 		options.links([rootProject.jdkJavadoc,
-									 "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
-									 "https://projectreactor.io/docs/core/release/api/"] as String[]);
+					   "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
+					   "https://projectreactor.io/docs/core/release/api/",
+					   "https://javadoc.io/doc/org.jspecify/jspecify/${libs.versions.jspecify.get()}/"] as String[]);
 		//TODO add micrometer javadocs here
 		//tried to using javadoc.io but it is currently impossible to link to these from Javadoc JDK 8, no package-list
 	}
