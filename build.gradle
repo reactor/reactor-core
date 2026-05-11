@@ -174,15 +174,6 @@ configure(subprojects) { p ->
 			maxGranularity = -1
 		}
 
-		// show progress by displaying test classes, avoiding test suite timeouts
-		TestDescriptor last
-		beforeTest { TestDescriptor td ->
-			if (last != td.getParent() && td.getParent().toString().startsWith("Test class")) {
-				last = td.getParent()
-				println last
-			}
-		}
-
 		jvmArgs = ["-XX:MaxGCPauseMillis=20"]
 
 		systemProperty("java.awt.headless", "true")
@@ -195,12 +186,32 @@ configure(subprojects) { p ->
 		// because the filter is too restrictive
 		filter.setFailOnNoMatchingTests(false)
 
-		// display intermediate results for special test tasks
-		afterSuite { desc, result ->
-			if (!desc.parent) { // will match the outermost suite
-				println('\n' + "${desc} Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)")
+		// show progress by displaying test classes, avoiding test suite timeouts
+		// and display intermediate results for special test tasks
+		addTestListener(new TestListener() {
+			TestDescriptor last
+
+			@Override
+			void beforeSuite(TestDescriptor suite) {}
+
+			@Override
+			void afterSuite(TestDescriptor desc, TestResult result) {
+				if (!desc.parent) { // will match the outermost suite
+					println('\n' + "${desc} Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)")
+				}
 			}
-		}
+
+			@Override
+			void beforeTest(TestDescriptor td) {
+				if (last != td.getParent() && td.getParent().toString().startsWith("Test class")) {
+					last = td.getParent()
+					println last
+				}
+			}
+
+			@Override
+			void afterTest(TestDescriptor testDescriptor, TestResult result) {}
+		})
 	}
 
 	if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
