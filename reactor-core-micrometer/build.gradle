@@ -72,7 +72,7 @@ dependencies {
 		exclude module: 'reactor-core'
 	}
 	// Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
-	testImplementation project(":reactor-core").sourceSets.test.output
+	testImplementation rootProject.project(":reactor-core").sourceSets.test.output
 
 	testRuntimeOnly libs.logback //need to access API to decrease some tests verbosity
 	testImplementation libs.assertJ
