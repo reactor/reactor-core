@@ -38,13 +38,13 @@ javadoc {
 	if (project.name == "reactor-core") {
 		options.links([rootProject.jdkJavadoc,
 					   "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
-					   "https://javadoc.io/doc/org.jspecify/jspecify/${libs.versions.jspecify.get()}/"] as String[])
+					   "https://jspecify.dev/docs/api/"] as String[])
 	}
 	else {
 		options.links([rootProject.jdkJavadoc,
 					   "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
 					   "https://projectreactor.io/docs/core/release/api/",
-					   "https://javadoc.io/doc/org.jspecify/jspecify/${libs.versions.jspecify.get()}/"] as String[]);
+					   "https://jspecify.dev/docs/api/"] as String[]);
 		//TODO add micrometer javadocs here
 		//tried to using javadoc.io but it is currently impossible to link to these from Javadoc JDK 8, no package-list
 	}
