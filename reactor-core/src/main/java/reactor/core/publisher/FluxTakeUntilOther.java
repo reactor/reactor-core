@@ -114,7 +114,8 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 				return;
 			}
 			once = true;
-			main.onError(t);
+			//cancel main.main, and ensure that if this happens early an empty Subscription is passed down
+			main.cancelMainAndError(t);
 		}
 
 		@Override
@@ -181,6 +182,26 @@ final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 			Subscription s = this.main;
 			assert s != null : "main can not be null when requesting";
 			s.request(n);
+		}
+
+		void cancelMainAndError(Throwable t) {
+			Subscription s = main;
+			if (s != Operators.cancelledSubscription()) {
+				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
+					s.cancel();
+				}
+
+				if (s == null) {
+					// this indicates the Other completed early, even before `main` was set.
+					// let's pass an empty Subscription down and complete immediately
+					Operators.error(actual, t);
+				}
+				else {
+					// if s wasn't null then Main Subscription was set and actual.onSubscribe already called
+					actual.onError(t);
+				}
+			}
 		}
 
 		void cancelMainAndComplete() {
