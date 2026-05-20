@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -475,6 +475,25 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						int toDecrement = -consumed;
 						currentState = forceUpdate(this, state -> resetTimeout(incrementIndex(state, toDecrement)));
 						previousState = resetTimeout(incrementIndex(previousState, toDecrement));
+
+						// If items remain in the buffer after this flush (because new items
+						// arrived during the flush, e.g. through requestMore or concurrent onNext
+						// from upstream), reschedule the timeout. The previous timer was canceled
+						// at the start of the flush, and new onNext calls don't schedule a timer
+						// when the visible index was non-zero, so without this reschedule the
+						// residual buffer could sit indefinitely when demand exists but no further
+						// items arrive to push the index up to batchSize.
+						if (getIndex(currentState) > 0 && !isCancelled(currentState) && !isTerminated(currentState)) {
+							try {
+								Disposable disposable = timer.schedule(this::bufferTimedOut, timeSpan, unit);
+								currentTimeoutTask.update(disposable);
+							} catch (RejectedExecutionException e) {
+								this.error = Operators.onRejectedExecution(
+									e, subscription, null, null, actual.currentContext());
+								previousState = forceAddWork(
+									this, BufferTimeoutWithBackpressureSubscriber::setTerminated);
+							}
+						}
 					}
 
 					currentState = tryClearWip(this, previousState);
