@@ -224,20 +224,22 @@ public final class Sinks {
 	}
 
 	/**
-	 *
 	 * @author Animesh Chaturvedi
 	 */
 	static class OptimisticEmitFailureHandler implements EmitFailureHandler {
 
+        private final long startTime;
 		private final long deadline;
 
 		OptimisticEmitFailureHandler(Duration duration){
-			this.deadline = System.nanoTime() + duration.toNanos();
+            this.startTime = System.nanoTime();
+			this.deadline = duration.toNanos();
 		}
 
 		@Override
 		public boolean onEmitFailure(SignalType signalType, EmitResult emitResult) {
-			return emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED) && (System.nanoTime() < this.deadline);
+			return emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED)
+                    && System.nanoTime() - startTime < deadline;
 		}
 	}
 
