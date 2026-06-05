@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) 2026 VMware, Inc. or its affiliates, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+def isCommandAvailable(String command) {
+    return providers.exec {
+        commandLine 'which', command
+        ignoreExitValue true
+    }.result.get().exitValue == 0
+}
+
+antora {
+    playbook = findProperty('antora.playbook') ?: "antora-playbook.yml"
+
+    def version = project.version
+    def forcePdf = project.hasProperty('forcePdf')
+    options = [clean: true, fetch: !project.gradle.startParameter.offline, stacktrace: true]
+
+    if (!version.endsWith("-SNAPSHOT") || forcePdf) {
+        options.add('--extension=pdf-extension')
+    }
+
+    environment = [
+            'ALGOLIA_API_KEY'   : 'd4bf9918bfc7d63ae68fbf92d69c2f49',
+            'ALGOLIA_APP_ID'    : '82SNR5M8HE',
+            'ALGOLIA_INDEX_NAME': 'projectreactor'
+    ]
+}
+
+tasks.named('antora').configure {
+    def capturedVersion = project.version
+    def capturedForcePdf = project.hasProperty('forcePdf')
+    doFirst {
+        def version = capturedVersion
+        def forcePdf = capturedForcePdf
+
+        if (!version.endsWith("-SNAPSHOT") || forcePdf) {
+            if (!isCommandAvailable('asciidoctor-pdf')) {
+                throw new GradleException("PDF cannot be generated, asciidoctor-pdf not found from the PATH.")
+            }
+            logger.log(LogLevel.DEBUG, "enabling antora pdf-extension")
+        }
+    }
+}
+
+jar {
+    enabled = false
+}
+
+javadoc {
+    enabled = false
+}
+
+tasks.withType(AbstractPublishToMaven).configureEach {
+    enabled = false
+}
+
+tasks.named("generateAntoraYml") {
+    asciidocAttributes = project.provider({ generateAttributes() })
+    baseAntoraYmlFile = file("antora.yml")
+}
+
+tasks.create('generateAntoraResources') {
+    dependsOn 'createAntoraPartials'
+    dependsOn 'generateAntoraYml'
+}
+
+def generateAttributes() {
+    return ['is-snapshot-version': project.version.endsWith("-SNAPSHOT"),
+            'project-version'    : project.version,
+            'reactorReleaseTrain': bomVersion
+    ]
+}
