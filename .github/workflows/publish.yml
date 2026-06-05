@@ -54,7 +54,9 @@ jobs:
         distribution: 'temurin'
         java-version: 21
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+      uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e
+      with:
+        cache-provider: basic
     - name: interpret version
       id: version
       #we only run the qualifyVersionGha task so that no other console printing can hijack this step's output
