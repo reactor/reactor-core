@@ -116,15 +116,16 @@ jar {
     }
 }
 
+shadow {
+    addShadowVariantIntoJavaComponent = false
+}
+
 shadowJar {
-    enableRelocation = true
+    enableAutoRelocation = true
     relocationPrefix = "reactor.tools.shaded"
     archiveClassifier.set('')
 
     dependsOn(project.tasks.jar)
-    manifest {
-        inheritFrom project.tasks.jar.manifest
-    }
 
     from("${rootDir}/docs/src/docs/dist") {
         include "LICENSE"
