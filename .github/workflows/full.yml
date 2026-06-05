@@ -22,7 +22,7 @@ jobs:
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # tag=v5
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
         with:
           ref: ${{ matrix.branch }}
       - name: Setup Java 8
