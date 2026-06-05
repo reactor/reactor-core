@@ -25,3 +25,4 @@ exportToHtml
 .pmd
 .ruleset
 .rulesets
+node_modules/

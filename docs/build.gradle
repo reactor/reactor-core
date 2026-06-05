@@ -19,66 +19,7 @@ plugins {
     alias(libs.plugins.antora.yml)
 }
 
-def isCommandAvailable(String command) {
-    return providers.exec {
-        commandLine 'which', command
-        ignoreExitValue true
-    }.result.get().exitValue == 0
-}
-
-antora {
-    version = libs.versions.antora.version
-    playbook = findProperty('antora.playbook') ?: "antora-playbook.yml"
-
-    def version = project.version
-    def forcePdf = project.hasProperty('forcePdf')
-    def pdfOptions = (!version.endsWith("-SNAPSHOT") || forcePdf) ? ['--extension=pdf-extension'] : []
-
-    options = ['--clean', '--stacktrace'] + pdfOptions
-
-    environment = [
-            'ALGOLIA_API_KEY'   : 'd4bf9918bfc7d63ae68fbf92d69c2f49',
-            'ALGOLIA_APP_ID'    : '82SNR5M8HE',
-            'ALGOLIA_INDEX_NAME': 'projectreactor'
-    ]
-
-    dependencies = [
-            '@antora/atlas-extension'         : "${libs.versions.antora.atlas.extension.get()}",
-            '@antora/pdf-extension'           : "${libs.versions.antora.pdf.extension.get()}",
-            '@antora/collector-extension'     : "${libs.versions.antora.collector.extension.get()}",
-            '@asciidoctor/tabs'               : "${libs.versions.antora.tabs.extension.get()}",
-            '@springio/antora-extensions'     : "${libs.versions.antora.springio.antora.extension.get()}",
-            '@springio/asciidoctor-extensions': "${libs.versions.antora.asciidoctor.extension.get()}"
-    ]
-}
-
-tasks.named('antora').configure {
-    def capturedVersion = project.version
-    def capturedForcePdf = project.hasProperty('forcePdf')
-    doFirst {
-        def version = capturedVersion
-        def forcePdf = capturedForcePdf
-
-        if (!version.endsWith("-SNAPSHOT") || forcePdf) {
-	        if (!isCommandAvailable('asciidoctor-pdf')) {
-                throw new GradleException("PDF cannot be generated, asciidoctor-pdf not found from the PATH.")
-            }
-            logger.log(LogLevel.DEBUG, "enabling antora pdf-extension")
-        }
-    }
-}
-
-jar {
-    enabled = false
-}
-
-javadoc {
-    enabled = false
-}
-
-tasks.withType(AbstractPublishToMaven).configureEach {
-    enabled = false
-}
+apply from: "${rootDir}/gradle/antora-docs.gradle"
 
 configurations {
     adoc
@@ -170,23 +111,6 @@ tasks.create(name: 'createAntoraPartials', type: Sync) {
         ant.get(src: url, dest: outputFile)
     }
     into layout.buildDirectory.dir('generated-antora-resources/modules/ROOT/partials')
-}
-
-tasks.named("generateAntoraYml") {
-    asciidocAttributes = project.provider({ generateAttributes() })
-    baseAntoraYmlFile = file("antora.yml")
-}
-
-tasks.create('generateAntoraResources') {
-    dependsOn 'createAntoraPartials'
-    dependsOn 'generateAntoraYml'
-}
-
-def generateAttributes() {
-    return ['is-snapshot-version': project.version.endsWith("-SNAPSHOT"),
-            'project-version'    : project.version,
-            'reactorReleaseTrain': bomVersion
-    ]
 }
 
 task docsZip(type: Zip, dependsOn: ':docs:antora') {

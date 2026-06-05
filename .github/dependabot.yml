@@ -11,6 +11,7 @@ updates:
       - "reactor/core-team"
     # Updates in the oldest maintenance branch. We'll forward-merge up to main
     target-branch: "3.7.x"
+    open-pull-requests-limit: 10
     ignore:
       # JSR166 backport is fixed
       - dependency-name: "io.projectreactor:jsr166"
@@ -123,3 +124,15 @@ updates:
       - "reactor/core-team"
     # Updates in the oldest maintenance branch. We'll forward-merge up to main
     target-branch: "3.7.x"
+    open-pull-requests-limit: 10
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "daily"
+    labels:
+      - "type/dependency-upgrade"
+    reviewers:
+      - "reactor/core-team"
+    # Updates in the oldest maintenance branch. We'll forward-merge up to main
+    target-branch: "3.7.x"
+    open-pull-requests-limit: 10
