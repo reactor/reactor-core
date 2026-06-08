@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -750,7 +750,7 @@ public class HooksTest {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
 				//live evaluation, error hasn't been emitted everywhere so we only have one occurrence so far
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747)");
+				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[0] = ae;
@@ -761,7 +761,7 @@ public class HooksTest {
 			assemblyExceptions.add(e.getSuppressed()[0]);
 			try {
 				//live evaluation, error hasn't been emitted everywhere so we only have two occurrences so far
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_ Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747) (observed 2 times)");
+				assertThat(e.getSuppressed()[0]).hasMessageMatching("(?s).*\\|_ Flux\\.publish ⇢ at reactor\\.core\\.publisher\\.HooksTest\\.testMultiReceiver\\(HooksTest\\.java:\\d+\\) \\(observed 2 times\\).*");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[1] = ae;
@@ -772,7 +772,7 @@ public class HooksTest {
 			try {
 				//live evaluation, error has been emitted everywhere so we have the three occurrences now
 				// (note that the indentation has grown by 1 due to distinct operator getting in the mix)
-				assertThat(e.getSuppressed()[0]).hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747) (observed 3 times)");
+				assertThat(e.getSuppressed()[0]).hasMessageMatching("(?s).*\\|_  Flux\\.publish ⇢ at reactor\\.core\\.publisher\\.HooksTest\\.testMultiReceiver\\(HooksTest\\.java:\\d+\\) \\(observed 3 times\\).*");
 			}
 			catch (AssertionError ae) {
 				assertionErrors[2] = ae;
@@ -787,7 +787,7 @@ public class HooksTest {
 			.allMatch(Objects::nonNull)
 			.containsOnly(assemblyExceptions.get(0))
 			.first(InstanceOfAssertFactories.THROWABLE)
-			.hasMessageContaining("|_  Flux.publish ⇢ at reactor.core.publisher.HooksTest.testMultiReceiver(HooksTest.java:747) (observed 3 times)")
+			.hasMessageMatching("(?s).*\\|_  Flux\\.publish ⇢ at reactor\\.core\\.publisher\\.HooksTest\\.testMultiReceiver\\(HooksTest\\.java:\\d+\\) \\(observed 3 times\\).*")
 			.hasMessageNotContainingAny("(observed 2 times)");
 	}
 
