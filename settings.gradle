@@ -29,9 +29,9 @@ dependencyResolutionManagement {
   versionCatalogs {
 	libs {
 	  if (System.getProperty("useSnapshotMicrometerVersion")) {
-		version('micrometer', '1.16.6-SNAPSHOT')
+		version('micrometer', '1.16.7-SNAPSHOT')
 		version('micrometerDocsGenerator', "1.0.5-SNAPSHOT")
-		version('micrometerTracingTest', "1.6.6-SNAPSHOT")
+		version('micrometerTracingTest', "1.6.7-SNAPSHOT")
 		version('contextPropagation', "1.2.1-SNAPSHOT")
 	  }
 	}
