@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,16 +47,18 @@ repositories { //needed at root for asciidoctor and nohttp-checkstyle
 }
 
 static def parseVersionParts(String v) {
-	def m = v =~ /^(\d+)\.(\d+)\.(\d+)(?:[.\-](.+))?$/
+	def m = v =~ /^(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?(?:[.\-](.+))?$/
 	if (m.matches()) {
-		return [major: m[0][1] as int, minor: m[0][2] as int, micro: m[0][3] as int, qualifier: m[0][4] ?: ""]
+		return [major: m[0][1] as int, minor: m[0][2] as int, patch: m[0][3] as int, hotfix: m[0][4] ? m[0][4] as int : null, qualifier: m[0][5] ?: ""]
 	}
-	return [major: 0, minor: 0, micro: 0, qualifier: null]
+	return [major: 0, minor: 0, patch: 0, hotfix: null, qualifier: null]
 }
 
 def osgiVersion(String v) {
 	def versionNumber = parseVersionParts(v)
 	def result
+	def patchStr = versionNumber.hotfix != null ? "${versionNumber.patch}.${versionNumber.hotfix}" : "${versionNumber.patch}"
+
 	if (versionNumber.qualifier == null || versionNumber.qualifier.size() == 0) {
 		result = "${v}.RELEASE"
 		println "$v is a release, will use $result for bnd"
@@ -65,11 +67,11 @@ def osgiVersion(String v) {
 		def sdf = new SimpleDateFormat("yyyyMMddHHmm");
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		def buildTimestamp = sdf.format(new Date())
-		result = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.BUILD-$buildTimestamp"
+		result = "${versionNumber.major}.${versionNumber.minor}.${patchStr}.BUILD-$buildTimestamp"
 		println "$v is a snapshot, will use $result for bnd"
 	}
 	else {
-		result = "${versionNumber.major}.${versionNumber.minor}.${versionNumber.micro}.${versionNumber.qualifier}"
+		result = "${versionNumber.major}.${versionNumber.minor}.${patchStr}.${versionNumber.qualifier}"
 		println "$v is neither release nor snapshot, will use $result for bnd"
 	}
 	return result
