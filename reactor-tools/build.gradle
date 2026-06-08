@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,6 +205,8 @@ task generateMockGradle(type: Copy) {
     def agentJar = layout.buildDirectory.get().asFile.toString() + "/libs/reactor-tools-" + version + "-original.jar"
     def mockGradleDir = layout.buildDirectory.get().asFile.toString() + "/mock-gradle"
 
+    inputs.property("version", project.version)
+
     from "$projectDir/src/buildPluginTest/resources/mock-gradle"
     into "$mockGradleDir"
     filter(ReplaceTokens, tokens: [
@@ -228,6 +230,7 @@ buildPluginTest {
 }
 
 project.tasks.buildPluginTest.dependsOn(generateMockGradle)
+project.tasks.buildPluginTest.dependsOn(rootProject.findProject("reactor-core").tasks.jar)
 project.tasks.check.dependsOn(buildPluginTest)
 
 tasks.withType(Test).matching { !(it.name in testing.suites.names) }.configureEach {
