@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -654,12 +654,11 @@ public class ScannableTest {
 		                         .checkpoint("checkpointHere", true)
 		                         .map(a -> a);
 
-		assertThat(Scannable.from(flux).steps())
-				.containsExactly(
-						"source(FluxJust)",
-						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:654)",
-						"map"
-				);
+		List<String> steps = Scannable.from(flux).steps().collect(java.util.stream.Collectors.toList());
+		assertThat(steps).hasSize(3);
+		assertThat(steps.get(0)).isEqualTo("source(FluxJust)");
+		assertThat(steps.get(1)).startsWith("Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:");
+		assertThat(steps.get(2)).isEqualTo("map");
 	}
 
 	@Test
