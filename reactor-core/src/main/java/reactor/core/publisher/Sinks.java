@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,6 @@ public final class Sinks {
 	}
 
 	/**
-	 *
 	 * @author Animesh Chaturvedi
 	 */
 	static class OptimisticEmitFailureHandler implements EmitFailureHandler {
@@ -237,12 +236,13 @@ public final class Sinks {
 
 		@Override
 		public boolean onEmitFailure(SignalType signalType, EmitResult emitResult) {
-			return emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED) && (System.nanoTime() < this.deadline);
+			return emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED)
+					&& deadline - System.nanoTime() > 0; // difference is used to tackle a numeric overflow
 		}
 	}
 
 	/**
-	 * A handler supporting the emit API (eg. {@link Many#emitNext(Object, Sinks.EmitFailureHandler)}),
+	 * A handler supporting the emit API (e.g. {@link Many#emitNext(Object, Sinks.EmitFailureHandler)}),
 	 * checking non-successful emission results from underlying {@link Many#tryEmitNext(Object) tryEmit}
 	 * API calls to decide whether or not such calls should be retried.
 	 * Other than instructing to retry, the handlers are allowed to have side effects
