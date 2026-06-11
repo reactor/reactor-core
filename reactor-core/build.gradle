@@ -398,6 +398,46 @@ jar {
 						  -exportcontents: io.micrometer.*
 						  '''.stripIndent()
 	}
+
+	// Remove sun.misc from versioned OSGi manifests (Java 11+).
+	// Java 11+ uses StackWalker instead of sun.misc, so the import is unnecessary.
+	// bnd generates versioned manifests automatically via JPMSMultiReleasePlugin but
+	// has no per-version Import-Package control, so we post-process the JAR.
+	doLast {
+		def jarFile = archiveFile.get().asFile
+		def jarUri = URI.create("jar:${jarFile.toURI()}")
+		def env = [create: 'false']
+
+		java.nio.file.FileSystems.newFileSystem(jarUri, env).withCloseable { fs ->
+			def versionsDir = fs.getPath('META-INF/versions')
+			if (!java.nio.file.Files.exists(versionsDir)) return
+
+			java.nio.file.Files.list(versionsDir).withCloseable { versions ->
+				versions.each { versionDir ->
+					def manifestPath = versionDir.resolve('OSGI-INF/MANIFEST.MF')
+					if (!java.nio.file.Files.exists(manifestPath)) return
+
+					def manifest = new java.util.jar.Manifest()
+					manifestPath.newInputStream().withCloseable { manifest.read(it) }
+
+					def importPkg = manifest.mainAttributes.getValue('Import-Package')
+					if (importPkg == null || !importPkg.contains('sun.misc')) return
+
+					// Remove sun.misc with optional directives (e.g. ;version="...";resolution:=optional)
+					def modified = importPkg
+						.replaceAll(',sun\\.misc(;[^,]*)?', '')
+						.replaceAll('sun\\.misc(;[^,]*)?,', '')
+						.replaceAll('sun\\.misc(;[^,]*)?', '')
+						.replaceAll(',\\s*$', '')
+
+					manifest.mainAttributes.putValue('Import-Package', modified)
+					manifestPath.newOutputStream().withCloseable { manifest.write(it) }
+
+					logger.lifecycle("Removed sun.misc from versioned manifest: ${manifestPath}")
+				}
+			}
+		}
+	}
 }
 
 jacocoTestReport.dependsOn test
