@@ -423,8 +423,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 						// we should create next window if we see that
 						// currentUnsentWindow is terminated and nextWindowIndex is
-						// greater than currentWindowIndex
-						if (nextWindowIndex > activeWindowIndex && (InnerWindow.isTimeout(previousInnerWindowState) || InnerWindow.isTerminated(previousInnerWindowState))) {
+						// different from currentWindowIndex
+						if (nextWindowIndex != activeWindowIndex && (InnerWindow.isTimeout(previousInnerWindowState) || InnerWindow.isTerminated(previousInnerWindowState))) {
 							final boolean shouldBeUnsent = n == 0;
 							final InnerWindow<T> nextWindow =
 									new InnerWindow<>(this.maxSize, this,

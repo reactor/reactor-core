@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -498,5 +501,92 @@ public class FluxWindowTimeoutTest {
 				&& signal.getThrowable() != null
 				&& signal.getThrowable().getCause() != null
 				&& expectedMessage.equals(signal.getThrowable().getCause().getMessage());
+	}
+
+	@Test
+	void windowTimeoutFairBackpressure_unsentWindowDeliveredAfterIndexWrap() {
+		// Test for the 20-bit index wrap-around hang.
+		// Scenario: the unsent-window path in drain() is hit exactly when nextWindowIndex
+		// wraps from 1_048_575 to 0.
+		//
+		// We use state injection (same package) to avoid actually cycling through
+		// 1_048_576 windows in a test.
+
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+		int maxIndex =
+				(int) FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.NEXT_WINDOW_INDEX_MASK;
+
+		List<Flux<Integer>> deliveredWindows = new ArrayList<>();
+
+		// Outer subscriber that captures windows without auto-requesting.
+		CoreSubscriber<Flux<Integer>> outer = new CoreSubscriber<Flux<Integer>>() {
+			@Override public void onSubscribe(Subscription s) { /* no auto-request */ }
+			@Override public void onNext(Flux<Integer> w)      { deliveredWindows.add(w); }
+			@Override public void onError(Throwable t)         { throw Exceptions.propagate(t); }
+			@Override public void onComplete()                 {}
+		};
+
+		FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<Integer> sub =
+				new FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber<>(
+						outer, 1000, 1, TimeUnit.SECONDS, scheduler, null);
+
+		// Provide a no-op upstream subscription so s.request() calls inside drain don't NPE.
+		sub.onSubscribe(Operators.emptySubscription());
+
+		// Inject state: both indices at maxIndex, unsent window flag set, no demand.
+		// This simulates the subscriber having processed 1_048_575 windows already.
+		long preWrapState =
+				FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.NEXT_WINDOW_INDEX_MASK
+						| FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.ACTIVE_WINDOW_INDEX_MASK
+						| FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.HAS_UNSENT_WINDOW;
+
+		FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.STATE.set(sub, preWrapState);
+
+		// Install an InnerWindow whose index matches nextWindowIndex in the injected state.
+		FluxWindowTimeout.InnerWindow<Integer> preWrapWindow =
+				new FluxWindowTimeout.InnerWindow<>(1000, sub, maxIndex, true, null);
+		sub.window = preWrapWindow;
+
+		// Fire the timeout for the pre-wrap window (no downstream demand at this point).
+		// tryCreateNextWindow wraps nextWindowIndex from 1_048_575 to 0.
+		// drain() sees n == 0 and creates an UNSENT window at index 0.
+		preWrapWindow.run();
+
+		assertThat(FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.nextWindowIndex(sub.state))
+				.as("nextWindowIndex wrapped to 0").isZero();
+		// activeWindowIndex stays at MAX.
+		assertThat(FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.activeWindowIndex(sub.state))
+				.as("activeWindowIndex stays at MAX — commitWork did not run").isEqualTo(maxIndex);
+		assertThat(FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.hasUnsentWindow(sub.state))
+				.as("original unsent window at MAX is still pending delivery").isTrue();
+		assertThat(deliveredWindows).as("no demand yet — nothing delivered").isEmpty();
+
+		// Demand arrives: the unsent window at MAX is delivered.
+		sub.request(1);
+
+		assertThat(deliveredWindows)
+				.as("unsent window at MAX delivered").hasSize(1);
+		assertThat(sub.window.index)
+				.as("current window must be the wrapped index 0, not the stale MAX window").isZero();
+		// window 0 was created as unsent (shouldBeUnsent = true since n == 0 after delivering
+		// index = max).
+		assertThat(FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.hasUnsentWindow(sub.state))
+				.as("window 0 is now the pending unsent window").isTrue();
+
+		// Advance time: window 0 times out and window 1 created as unsent (still no demand).
+		scheduler.advanceTimeBy(Duration.ofSeconds(1));
+
+		assertThat(FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.nextWindowIndex(sub.state))
+				.as("nextWindowIndex is now 1, stream progresses normally past the wrap").isEqualTo(1);
+		assertThat(FluxWindowTimeout.WindowTimeoutWithBackpressureSubscriber.hasUnsentWindow(sub.state))
+				.as("window 1 is unsent, awaiting demand").isTrue();
+
+		// Deliver window 1 — proves the stream is not hung.
+		sub.request(1);
+
+		assertThat(deliveredWindows)
+				.as("window 1 delivered: stream did not hang after index wrap").hasSize(2);
+		assertThat(sub.window.index)
+				.as("active window is now index 1").isEqualTo(1);
 	}
 }
