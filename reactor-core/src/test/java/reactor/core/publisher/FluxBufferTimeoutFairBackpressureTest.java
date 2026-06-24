@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,6 +226,81 @@ public class FluxBufferTimeoutFairBackpressureTest {
 		    .blockLast();
 
 		assertThat(set.size()).isEqualTo(1_000_000);
+	}
+
+	// Reproduces the race exposed in a production heap dump where a partial
+	// flush left items in the buffer with no scheduled timer. In production the
+	// race was: items arrived from upstream (Kafka) between the moment the inner
+	// flush loop polled an empty queue and the moment forceUpdate ran, so the
+	// buffer ended up with INDEX > 0 and REQUESTED > 0 but the timer cancelled
+	// at the start of the flush was never rescheduled. With the same drain
+	// running on a single thread we trigger the same window by pushing items
+	// inside the requestMore -> subscription.request() call that happens after
+	// the inner flush loop and before forceUpdate.
+	@Test
+	public void residualItemsAfterPartialFlushAreEmittedByRescheduledTimer() {
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+		List<List<Integer>> emittedBuffers = new ArrayList<>();
+
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(
+				emittedBuffers::add, e -> {}, null, s -> s.request(4));
+
+		FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> test =
+			new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+				actual, 10, 100, TimeUnit.MILLISECONDS,
+				scheduler.createWorker(), ArrayList::new, null);
+
+		Subscription subscription = new Subscription() {
+			int callCount = 0;
+
+			@Override
+			public void request(long n) {
+				callCount++;
+				if (callCount == 2) {
+					// The second subscription.request comes from requestMore inside
+					// the third flushing drain iteration, after its inner flush loop
+					// has exited but before forceUpdate has run. Push items here so
+					// they are added to the queue and incremented onto state.index
+					// in the same window the production race exploited.
+					for (int i = 100; i < 105; i++) {
+						test.onNext(i);
+					}
+				}
+			}
+
+			@Override
+			public void cancel() {}
+		};
+
+		test.onSubscribe(subscription);
+
+		// Push 30 items. Each batch of 10 triggers a size-based flush. After the
+		// third flush the outstanding upstream demand has dropped below the
+		// replenish mark, so drain calls requestMore which invokes
+		// subscription.request, and the custom subscription above pushes 5 more
+		// items that become residuals.
+		for (int i = 0; i < 30; i++) {
+			test.onNext(i);
+		}
+
+		assertThat(emittedBuffers).hasSize(3);
+		assertThat(emittedBuffers.get(0)).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+		assertThat(emittedBuffers.get(1)).containsExactly(10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
+		assertThat(emittedBuffers.get(2)).containsExactly(20, 21, 22, 23, 24, 25, 26, 27, 28, 29);
+
+		// Five items pushed during requestMore became residuals: REQUESTED is
+		// still 1 (initial 4 minus 3 buffers emitted) but the buffer's index is
+		// below batchSize, so a timer is needed to flush them.
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(5);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+
+		// Without the reschedule fix the timer was cancelled at the start of the
+		// third flush and never re-armed, so the residual buffer would sit
+		// forever. With the fix the timer fires after timeSpan and flushes them.
+		scheduler.advanceTimeBy(Duration.ofMillis(100));
+
+		assertThat(emittedBuffers).hasSize(4);
+		assertThat(emittedBuffers.get(3)).containsExactly(100, 101, 102, 103, 104);
 	}
 
 	@Test
