@@ -29,7 +29,7 @@ jobs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
       uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # tag=v1
       with:
@@ -75,7 +75,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'SNAPSHOT'
     environment: snapshots
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
       uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # tag=v1
       with:
@@ -114,7 +114,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'MILESTONE'
     environment: releases
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
       uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # tag=v1
       with:
@@ -155,7 +155,7 @@ jobs:
     if: needs.prepare.outputs.versionType == 'RELEASE'
     environment: releases
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
       uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # tag=v1
       with:
@@ -212,7 +212,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v5
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
@@ -227,7 +227,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # tag=v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v5
       - name: tag
         run: |
           git config --local user.name 'reactorbot'
