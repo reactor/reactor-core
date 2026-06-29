@@ -82,7 +82,7 @@ japicmp = { id = "me.champeau.gradle.japicmp", version = "0.4.6" }
 jcstress = { id = "io.github.reyerizo.gradle.jcstress", version = "0.9.0" }
 nohttp = { id = "io.spring.nohttp", version = "0.0.11" }
 shadow = { id = "com.gradleup.shadow", version = "9.4.3" }
-spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
+spotless = { id = "com.diffplug.spotless", version = "8.7.0" }
 mrjar = { id = "me.champeau.mrjar",  version = "0.1.1" }
 antora = { id = "org.antora", version.ref = "antora" }
 antora-yml = { id = "io.spring.antora.generate-antora-yml", version.ref = "antora-yml" }
