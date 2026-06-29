@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,41 +130,55 @@ public class FluxBufferWhenTest {
 									.delayElements(Duration.ofMillis(10))
 									.map(i -> retainedDetector.tracked(new Wrapper(i)));
 
-		Mono<List<Tuple3<Long, String, Long>>> buffers = emitter.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
-																.filter(b -> b.size() > 0)
-																.index()
-																.elapsed()
-																.doOnNext(it -> System.gc())
-																//index, bounds of buffer, finalized
-																.map(elapsed -> {
-																	long millis = elapsed.getT1();
-																	Tuple2<Long, List<Wrapper>> t2 = elapsed.getT2();
-																	Tuple3<Long, String, Long> stat = Tuples.of(t2.getT1(), String.format("from %s to %s", t2.getT2()
-																																							 .get(0), t2.getT2()
-																																										.get(t2.getT2()
-																																											   .size() - 1)), retainedDetector.finalizedCount());
-
-																	LOGGER.info("{}ms : {}", millis, stat);
-																	return stat;
-																})
-																.doOnComplete(latch::countDown)
-																.collectList();
+		Mono<List<Tuple3<Long, String, Long>>> buffers =
+				emitter.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
+						.filter(b -> b.size() > 0)
+						.index()
+						.elapsed()
+						.doOnNext(it -> {
+							long bufferIndex = it.getT2().getT1();
+							if (bufferIndex == 0) {
+								System.gc();
+								return;
+							}
+							// Blocking here is intentional and justified: we need the JVM to actually
+							// complete a GC cycle and enqueue phantom references before the map below
+							// snapshots finalizedCount().
+							try {
+								retainedDetector.gcAndAwaitFinalizedAtLeast(1, Duration.ofSeconds(10));
+							} catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+							}
+						})
+						//index, bounds of buffer, finalized so far
+						.map(elapsed -> {
+							long millis = elapsed.getT1();
+							Tuple2<Long, List<Wrapper>> t2 = elapsed.getT2();
+							Tuple3<Long, String, Long> stat = Tuples.of(t2.getT1(), String.format("from %s to %s", t2.getT2()
+									.get(0), t2.getT2()
+									.get(t2.getT2()
+											.size() - 1)), retainedDetector.finalizedCount());
+							LOGGER.info("{}ms : {}", millis, stat);
+							return stat;
+						})
+						.doOnComplete(latch::countDown)
+						.collectList();
 
 		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(50));
 
 		Condition<? super Tuple3<Long, String, Long>> hasFinalized = new Condition<>(t3 -> t3.getT3() > 0, "has finalized");
 
-		//at least 5 intermediate finalize
+		// 400 elements × 10ms ≈ 4s stream; buffer(1000ms, 500ms) produces ~7-8 windows,
+		// all but the first have a guaranteed non-zero finalized count (doOnNext blocks until GC confirms).
+		// 5 is a conservative constant derived from those parameters.
 		assertThat(finalizeStats).areAtLeast(5, hasFinalized);
 
 		assertThat(latch.await(1, TimeUnit.SECONDS)).as("buffers already blocked")
 													.isTrue();
-		LOGGER.debug("final GC");
-		System.gc();
-		Thread.sleep(500);
 
-		assertThat(retainedDetector.finalizedCount()).as("final GC collects all")
-													 .isEqualTo(created.longValue());
+		assertThat(retainedDetector.gcAndAwaitFinalizedAtLeast(created.longValue(), Duration.ofSeconds(10)))
+				.as("all tracked objects collected, no leaks")
+				.isEqualTo(created.longValue());
 	}
 
 	@Test

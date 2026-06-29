@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package reactor.test;
 
 import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -77,6 +79,34 @@ public class MemoryUtils {
 		 */
 		public final long trackedTotal() {
 			return trackedTotal.get();
+		}
+
+		/**
+		 * Suggest GC and block on the reference queue until at least {@code atLeast} tracked
+		 * objects have been finalized or {@code timeout} elapses.
+		 *
+		 * @param atLeast minimum number of finalizations to wait for
+		 * @param timeout maximum time to wait
+		 * @return the finalized count at the time this method returns
+		 * @throws InterruptedException if the thread is interrupted while waiting
+		 */
+		public long gcAndAwaitFinalizedAtLeast(long atLeast, Duration timeout) throws InterruptedException {
+			long deadlineNs = System.nanoTime() + timeout.toNanos();
+			while (finalizedCount() < atLeast) {
+				long remainingMs = (deadlineNs - System.nanoTime()) / 1_000_000L;
+				if (remainingMs <= 0L) break;
+				System.gc();
+				Reference<?> ref = referenceQueue.remove(Math.min(remainingMs, 100L));
+				if (ref != null) {
+					synchronized (this) {
+						finalizedSoFar++;
+						while ((ref = referenceQueue.poll()) != null) {
+							finalizedSoFar++;
+						}
+					}
+				}
+			}
+			return finalizedCount();
 		}
 
 		/**
