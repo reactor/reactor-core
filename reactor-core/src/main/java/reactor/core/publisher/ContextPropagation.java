@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ final class ContextPropagation {
 	private static <V> Map<Object, @Nullable Object> setThreadLocal(Object key, @Nullable V value,
 			ThreadLocalAccessor<?> accessor, @Nullable Map<Object, @Nullable Object> previousValues) {
 
-		previousValues = (previousValues != null ? previousValues : new HashMap<>());
+		previousValues = (previousValues != null ? previousValues : new HashMap<Object, @Nullable Object>());
 		previousValues.put(key, accessor.getValue());
 		if (value != null) {
 			((ThreadLocalAccessor<V>) accessor).setValue(value);

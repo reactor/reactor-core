@@ -387,7 +387,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			if (isEmpty()) {
 				return Collections.emptyIterator();
 			}
-			return Collections.singleton(buffer).iterator();
+			return Collections.<C>singleton(buffer).iterator();
 		}
 
 		@Override
