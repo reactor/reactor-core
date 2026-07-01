@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,30 @@ class SinksTest {
 	class MulticastReplayAll {
 
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().all();
+
+		@Test
+		void allInvalidBatchSizeIsRejected() {
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().all(0))
+				.withMessage("batchSize must be strictly positive, was: 0");
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.unsafe().many().replay().all(0))
+				.withMessage("batchSize must be strictly positive, was: 0");
+
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().all(-1))
+				.withMessage("batchSize must be strictly positive, was: -1");
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.unsafe().many().replay().all(-1))
+				.withMessage("batchSize must be strictly positive, was: -1");
+
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().all(Integer.MAX_VALUE))
+				.withMessage("batchSize must be less than Integer.MAX_VALUE, was: 2147483647");
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.unsafe().many().replay().all(Integer.MAX_VALUE))
+				.withMessage("batchSize must be less than Integer.MAX_VALUE, was: 2147483647");
+		}
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {

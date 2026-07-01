@@ -625,7 +625,8 @@ public final class Sinks {
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
 		 *     <li>Replaying: all elements pushed to this sink are replayed to new subscribers.</li>
 		 * </ul>
-		 * @param batchSize the underlying buffer will optimize storage by linked arrays of given size
+		 * @param batchSize the linked array size used by the underlying buffer, must be strictly
+		 * positive and less than {@link Integer#MAX_VALUE}
 		 */
 		<T> Sinks.Many<T> all(int batchSize);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -639,6 +639,51 @@ public class SinkManyReplayProcessorTest {
 		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
 			SinkManyReplayProcessor.create(-1);
 		});
+	}
+
+	@Test
+	public void failZeroBufferSizeBounded() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			SinkManyReplayProcessor.create(0);
+		}).withMessage("historySize must be strictly positive, was: 0");
+	}
+
+	@Test
+	public void failInvalidBufferSizeReplayProcessorBounded() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.create(0);
+		}).withMessage("historySize must be strictly positive, was: 0");
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.create(-1);
+		}).withMessage("historySize must be strictly positive, was: -1");
+	}
+
+	@Test
+	public void failInvalidBufferSizeUnbounded() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			SinkManyReplayProcessor.create(0, true);
+		}).withMessage("historySize must be strictly positive, was: 0");
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			SinkManyReplayProcessor.create(-1, true);
+		}).withMessage("historySize must be strictly positive, was: -1");
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			SinkManyReplayProcessor.create(Integer.MAX_VALUE, true);
+		}).withMessage("historySize must be less than Integer.MAX_VALUE for unbounded replay, " +
+				"was: 2147483647");
+	}
+
+	@Test
+	public void failInvalidBufferSizeReplayProcessorUnbounded() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.create(0, true);
+		}).withMessage("historySize must be strictly positive, was: 0");
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.create(-1, true);
+		}).withMessage("historySize must be strictly positive, was: -1");
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.create(Integer.MAX_VALUE, true);
+		}).withMessage("historySize must be less than Integer.MAX_VALUE for unbounded replay, " +
+				"was: 2147483647");
 	}
 
 	@Test
