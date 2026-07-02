@@ -62,6 +62,16 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	final @Nullable OptimizableOperator<?, T> optimizableOperator;
 
+	static void validateHistorySize(int historySize, boolean unbounded) {
+		if (historySize <= 0) {
+			throw new IllegalArgumentException("historySize must be strictly positive, was: " + historySize);
+		}
+		if (unbounded && historySize == Integer.MAX_VALUE) {
+			throw new IllegalArgumentException("historySize must be less than Integer.MAX_VALUE for unbounded replay, " +
+					"was: " + historySize);
+		}
+	}
+
 	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
 
 		@Override
