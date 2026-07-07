@@ -1508,6 +1508,25 @@ public abstract class Operators {
 		return prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch;
 	}
 
+	static final int MAX_SAFE_BUFFER_SIZE = 1 << 30;
+
+	static void validateBufferSize(int bufferSize) {
+		if (bufferSize <= 0 || bufferSize > MAX_SAFE_BUFFER_SIZE) {
+			throw new IllegalArgumentException("bufferSize > 0 and <= " +
+					MAX_SAFE_BUFFER_SIZE + " required but it was " + bufferSize);
+		}
+	}
+
+	static void validateQueuePrefetch(int prefetch) {
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
+		}
+		if (prefetch > MAX_SAFE_BUFFER_SIZE && prefetch != Integer.MAX_VALUE) {
+			throw new IllegalArgumentException("prefetch > 0 and <= " +
+					MAX_SAFE_BUFFER_SIZE + " or Integer.MAX_VALUE required but it was " + prefetch);
+		}
+	}
+
 	static int unboundedOrLimit(int prefetch) {
 		return prefetch == Integer.MAX_VALUE ? Integer.MAX_VALUE : (prefetch - (prefetch >>	2));
 	}
