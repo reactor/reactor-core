@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -1639,6 +1640,41 @@ public class FluxFlatMapTest {
 				.verifyThenAssertThat()
 				.hasDropped(1)
 				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueWithCallableDoesNotOverRequest() {
+		AtomicLong requested = new AtomicLong();
+		AtomicReference<Subscriber<? super Integer>> upstream = new AtomicReference<>();
+
+		Flux<Integer> test = Flux.from(s -> {
+					upstream.set(s);
+					s.onSubscribe(new Subscription() {
+						@Override
+						public void request(long n) {
+							requested.addAndGet(n);
+						}
+
+						@Override
+						public void cancel() {
+						}
+					});
+				})
+				.flatMap(f -> Mono.<Integer>fromCallable(() -> {
+					throw new IllegalStateException("boom");
+				}), 4)
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
+
+		StepVerifier.create(test, 0)
+		            .then(() -> assertThat(requested).hasValue(4))
+		            .then(() -> upstream.get().onNext(1))
+		            .then(() -> upstream.get().onNext(2))
+		            .then(() -> assertThat(requested).hasValue(4))
+		            .then(() -> upstream.get().onComplete())
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDropped(1, 2)
+		            .hasDroppedErrors(2);
 	}
 
 	@Test
