@@ -206,6 +206,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 
 	@Override
 	public EmitResult tryEmitComplete() {
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
@@ -222,6 +225,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	@Override
 	public EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "tryEmitError must be invoked with a non-null Throwable");
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
+		}
 		if (done) {
 			return EmitResult.FAIL_TERMINATED;
 		}
@@ -248,6 +254,9 @@ final class SinkManyEmitterProcessor<T> extends Flux<T> implements InternalManyS
 	public EmitResult tryEmitNext(T t) {
 		if (done) {
 			return Sinks.EmitResult.FAIL_TERMINATED;
+		}
+		if (isCancelled()) {
+			return EmitResult.FAIL_CANCELLED;
 		}
 
 		Objects.requireNonNull(t, "tryEmitNext must be invoked with a non-null value");
