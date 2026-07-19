@@ -115,7 +115,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	 * It must deal with potential {@code null}s.
 	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
-	static OnNextFailureStrategy resume(BiConsumer<Throwable, Object> errorConsumer) {
+	static OnNextFailureStrategy resume(BiConsumer<Throwable, @Nullable Object> errorConsumer) {
 		return new ResumeStrategy(null, errorConsumer);
 	}
 
@@ -136,7 +136,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	 */
 	static OnNextFailureStrategy resumeIf(
 			Predicate<Throwable> causePredicate,
-			BiConsumer<Throwable, Object> errorConsumer) {
+			BiConsumer<Throwable, @Nullable Object> errorConsumer) {
 		return new ResumeStrategy(causePredicate, errorConsumer);
 	}
 
@@ -162,10 +162,10 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	final class ResumeStrategy implements OnNextFailureStrategy {
 
 		final @Nullable Predicate<Throwable>  errorPredicate;
-		final BiConsumer<Throwable, Object>   errorConsumer;
+		final BiConsumer<Throwable, @Nullable Object> errorConsumer;
 
 		ResumeStrategy(@Nullable Predicate<Throwable> errorPredicate,
-					   BiConsumer<Throwable, Object> errorConsumer) {
+					   BiConsumer<Throwable, @Nullable Object> errorConsumer) {
 			this.errorPredicate = errorPredicate;
 			this.errorConsumer = errorConsumer;
 		}
