@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # tag=v1
+      uses: ruby/setup-ruby@a30dfa457ad68707b8b910ac3a244714b61c0626 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -83,7 +83,7 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # tag=v1
+      uses: ruby/setup-ruby@a30dfa457ad68707b8b910ac3a244714b61c0626 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -128,7 +128,7 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # tag=v1
+      uses: ruby/setup-ruby@a30dfa457ad68707b8b910ac3a244714b61c0626 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
@@ -192,7 +192,7 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
     - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # tag=v1
+      uses: ruby/setup-ruby@a30dfa457ad68707b8b910ac3a244714b61c0626 # tag=v1
       with:
         ruby-version: 3.3.0
     - name: Install asciidoctor-pdf / rouge
