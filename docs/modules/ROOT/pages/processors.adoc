@@ -71,6 +71,8 @@ EmitResult result = replaySink.tryEmitNext(4);
 When using the `busyLooping`, be aware that returned instances of `EmitFailureHandler` can not be reused, e.g.,
 it should be one call of `busyLooping` per `emitNext`.
 Also, it is recommended to use a timeout above 100ms since smaller values don’t make practical sense.
+The retry loop yields between attempts, allowing other platform threads or virtual threads that share
+the same carrier thread pool to make progress.
 ====
 
 The `Sinks.Many` can be presented to downstream consumers as a `Flux`, like in the below example:
