@@ -130,7 +130,7 @@ task docsZip(type: Zip, dependsOn: ':docs:antora') {
     }
 
     if (!isSnapshot || forcePdf) {
-        def pdfFile = file("build/assembler/reactor/${version}/reactor-3-reference-guide.pdf")
+        def pdfFile = file("build/assembler/pdf/reactor/_exports/index.pdf")
         logger.lifecycle("${pdfFile} will be included in docs zip")
         from(pdfFile) {
             rename { fileName ->
