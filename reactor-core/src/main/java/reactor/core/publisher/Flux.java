@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -7011,7 +7011,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * after having applied the {@code onBufferEviction} handler.
 	 *
 	 * @param ttl maximum {@link Duration} for which an element is kept in the backlog
-	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param maxSize maximum buffer backlog size before overflow callback is called,
+	 * must be strictly positive, values above {@code (Integer.MAX_VALUE - 2) >> 1} are capped
 	 * @param onBufferEviction callback to invoke once TTL is reached or on overflow
 	 *
 	 * @return a backpressured {@link Flux} that buffers with a TTL and up to a capacity then applies an
@@ -7037,7 +7038,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * after having applied the {@code onBufferEviction} handler.
 	 *
 	 * @param ttl maximum {@link Duration} for which an element is kept in the backlog
-	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param maxSize maximum buffer backlog size before overflow callback is called,
+	 * must be strictly positive, values above {@code (Integer.MAX_VALUE - 2) >> 1} are capped
 	 * @param onBufferEviction callback to invoke once TTL is reached or on overflow
 	 * @param scheduler the scheduler on which to run the timeout check
 	 *

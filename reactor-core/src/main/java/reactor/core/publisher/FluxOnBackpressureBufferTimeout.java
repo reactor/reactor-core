@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,9 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 	private static final Logger LOGGER =
 			Loggers.getLogger(FluxOnBackpressureBufferTimeout.class);
 
+	// The queue stores each buffered item as timestamp + value.
+	static final int MAX_BUFFER_SIZE = (Integer.MAX_VALUE - 2) >> 1;
+
 	final Duration            ttl;
 	final Scheduler           ttlScheduler;
 	final int                 bufferSize;
@@ -62,10 +65,19 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 			int bufferSize,
 			Consumer<? super O> onBufferEviction) {
 		super(source);
+		this.bufferSize = validateAndCapBufferSize(bufferSize);
 		this.ttl = ttl;
 		this.ttlScheduler = ttlScheduler;
-		this.bufferSize = bufferSize;
 		this.onBufferEviction = onBufferEviction;
+	}
+
+	private static int validateAndCapBufferSize(int bufferSize) {
+		if (bufferSize < 1) {
+			throw new IllegalArgumentException("Buffer Size must be strictly positive");
+		}
+		// Preserve historical near-unbounded usage while keeping the doubled
+		// timestamp/value threshold from overflowing.
+		return Math.min(bufferSize, MAX_BUFFER_SIZE);
 	}
 
 	@Override
