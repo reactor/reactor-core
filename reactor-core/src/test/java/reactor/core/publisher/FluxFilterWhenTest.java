@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxFilterWhenTest {
 
@@ -332,6 +333,30 @@ public class FluxFilterWhenTest {
 		    .subscribe().dispose();
 
 		assertThat(requested).hasValue(bufferSize);
+	}
+
+	@Test
+	public void bufferSizeMustBeStrictlyPositive() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.just(1).filterWhen(v -> Mono.just(true), 0))
+				.withMessage("bufferSize > 0 and <= " + Operators.MAX_SAFE_BUFFER_SIZE + " required but it was 0");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.just(1).filterWhen(v -> Mono.just(true), -1))
+				.withMessage("bufferSize > 0 and <= " + Operators.MAX_SAFE_BUFFER_SIZE + " required but it was -1");
+	}
+
+	@Test
+	public void bufferSizeMustNotExceedMaximumSafeCapacity() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.just(1).filterWhen(v -> Mono.just(true), Operators.MAX_SAFE_BUFFER_SIZE + 1))
+				.withMessage("bufferSize > 0 and <= " + Operators.MAX_SAFE_BUFFER_SIZE + " required but it was " +
+						(Operators.MAX_SAFE_BUFFER_SIZE + 1));
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.just(1).filterWhen(v -> Mono.just(true), Integer.MAX_VALUE))
+				.withMessage("bufferSize > 0 and <= " + Operators.MAX_SAFE_BUFFER_SIZE + " required but it was " +
+						Integer.MAX_VALUE);
 	}
 
 	@Test

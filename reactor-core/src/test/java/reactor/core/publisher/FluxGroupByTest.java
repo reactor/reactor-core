@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 
 public class FluxGroupByTest extends
@@ -930,6 +931,19 @@ public class FluxGroupByTest extends
 		            .verifyComplete();
 
 		assertThat(initialRequest).hasValue(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void prefetchMustNotExceedMaximumSafeCapacity() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.range(1, 10).groupBy(i -> i % 5, Operators.MAX_SAFE_BUFFER_SIZE + 1))
+				.withMessage("prefetch > 0 and <= " + Operators.MAX_SAFE_BUFFER_SIZE +
+						" or Integer.MAX_VALUE required but it was " + (Operators.MAX_SAFE_BUFFER_SIZE + 1));
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.range(1, 10).groupBy(i -> i % 5, Integer.MAX_VALUE - 1))
+				.withMessage("prefetch > 0 and <= " + Operators.MAX_SAFE_BUFFER_SIZE +
+						" or Integer.MAX_VALUE required but it was " + (Integer.MAX_VALUE - 1));
 	}
 
 	@Test
