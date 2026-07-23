@@ -101,6 +101,14 @@ public class OperatorsTest {
 	}
 
 	@Test
+	public void multiplyCap() {
+		assertThat(Operators.multiplyCap(0, 1L << 31)).isZero();
+		assertThat(Operators.multiplyCap(1L << 31, 0)).isZero();
+		assertThat(Operators.multiplyCap(2, 3)).isEqualTo(6);
+		assertThat(Operators.multiplyCap(Long.MAX_VALUE, 2)).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
 	public void constructor(){
 		assertThat(new Operators(){}).isNotNull();
 	}
