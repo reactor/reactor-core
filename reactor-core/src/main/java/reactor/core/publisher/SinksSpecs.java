@@ -34,6 +34,15 @@ final class SinksSpecs {
 	static final Sinks.RootSpec  UNSAFE_ROOT_SPEC = new UnsafeSpecImpl();
 	static final DefaultSinksSpecs DEFAULT_SINKS    = new DefaultSinksSpecs();
 
+	static void validateReplayAllBatchSize(int batchSize) {
+		if (batchSize <= 0) {
+			throw new IllegalArgumentException("batchSize must be strictly positive, was: " + batchSize);
+		}
+		if (batchSize == Integer.MAX_VALUE) {
+			throw new IllegalArgumentException("batchSize must be less than Integer.MAX_VALUE, was: " + batchSize);
+		}
+	}
+
 	abstract static class AbstractSerializedSink {
 
 		volatile int                                                   wip;
@@ -141,6 +150,7 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> all(int batchSize) {
+			validateReplayAllBatchSize(batchSize);
 			return SinkManyReplayProcessor.create(batchSize);
 		}
 
@@ -275,6 +285,7 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> all(int batchSize) {
+			validateReplayAllBatchSize(batchSize);
 			final SinkManyReplayProcessor<T> original = SinkManyReplayProcessor.create(batchSize, true);
 			return wrapMany(original);
 		}
