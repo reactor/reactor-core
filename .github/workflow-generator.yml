@@ -1,0 +1,31 @@
+workflow:
+  generator:
+    project:
+      java:
+        versions:
+          primary: 21
+      ruby:
+        version: "3.3.0"
+        gems:
+          - "asciidoctor-pdf"
+          - "rouge"
+    workflows:
+      release-train:
+        build:
+          env:
+            COMMERCIAL_REPO_USERNAME: secrets.COMMERCIAL_ARTIFACTORY_USERNAME
+            COMMERCIAL_REPO_PASSWORD: secrets.COMMERCIAL_ARTIFACTORY_PASSWORD
+            COMMERCIAL_RELEASE_REPO_URL: vars.COMMERCIAL_RELEASE_REPO_URL
+          additional-java-versions:
+            - 8
+            - 11
+            - 25
+        test:
+          env:
+            COMMERCIAL_REPO_USERNAME: secrets.COMMERCIAL_ARTIFACTORY_USERNAME
+            COMMERCIAL_REPO_PASSWORD: secrets.COMMERCIAL_ARTIFACTORY_PASSWORD
+            COMMERCIAL_RELEASE_REPO_URL: vars.COMMERCIAL_RELEASE_REPO_URL
+          additional-java-versions:
+            - 8
+            - 11
+            - 25
