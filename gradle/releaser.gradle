@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2011-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,9 @@ if (project.hasProperty("artifactory_publish_password") && project.hasProperty("
 				}
 			}
 			clientConfig.setIncludeEnvVars(false)
-			clientConfig.info.setBuildName('Reactor - Core')
+			clientConfig.info.setBuildName('reactor-core-commercial-' + (project.version.endsWith('-SNAPSHOT') ? '3.8.x-internal' : project.version))
 			clientConfig.info.setBuildNumber(buildNumber)
+			clientConfig.info.setProject('spring')
 			if (System.getenv("GITHUB_ACTIONS") == "true") {
 				clientConfig.info.setBuildUrl(System.getenv("GITHUB_SERVER_URL") + "/" + System.getenv("GITHUB_REPOSITORY") + "/actions/runs/" + System.getenv("GITHUB_RUN_ID"))
 				clientConfig.info.setVcsRevision(System.getenv("GITHUB_SHA"))
