@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,6 +46,24 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 			.shouldHitDropErrorHookAfterTerminate(false)
 			.prefetch(testBasePrefetchValue() == 0 ? -1 : testBasePrefetchValue())
 			.producerError(new RuntimeException("AbstractFluxConcatMapTest"));
+	}
+
+	@Test
+	void scalarInnerValueIsNotDiscardedAfterBeingEmitted() {
+		List<Object> discarded = new ArrayList<>();
+
+		// the source doesn't complete, so that cancellation happens while the scalar
+		// inner subscription that has already emitted its value is still current
+		Flux<Integer> flux = Flux.concat(Flux.just(1), Flux.never())
+				.concatMap(Mono::just, testBasePrefetchValue())
+				.doOnDiscard(Object.class, discarded::add);
+
+		StepVerifier.create(flux, 1)
+				.expectNext(1)
+				.thenCancel()
+				.verify();
+
+		assertThat(discarded).as("discarded after being emitted").isEmpty();
 	}
 
 	@Override

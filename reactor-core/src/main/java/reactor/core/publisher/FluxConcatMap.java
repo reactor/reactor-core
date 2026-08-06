@@ -467,7 +467,11 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		final CoreSubscriber<? super T> actual;
 		final T                     value;
-		boolean once;
+
+		volatile int once;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WeakScalarSubscription> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(WeakScalarSubscription.class, "once");
 
 		WeakScalarSubscription(T value, CoreSubscriber<? super T> actual) {
 			this.value = value;
@@ -476,8 +480,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (n > 0 && !once) {
-				once = true;
+			if (n > 0 && ONCE.compareAndSet(this, 0, 1)) {
 				Subscriber<? super T> a = actual;
 				a.onNext(value);
 				a.onComplete();
@@ -486,7 +489,11 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void cancel() {
-			Operators.onDiscard(value, actual.currentContext());
+			// only discard the value if it hasn't been emitted yet, otherwise the
+			// downstream owns it (see Operators.ScalarSubscription#cancel)
+			if (ONCE.compareAndSet(this, 0, 2)) {
+				Operators.onDiscard(value, actual.currentContext());
+			}
 		}
 	}
 
