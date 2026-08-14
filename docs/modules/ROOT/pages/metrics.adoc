@@ -85,6 +85,11 @@ listenToEvents()
 
 The detail of the exposed metrics is available in xref:metrics-details.adoc#micrometer-details-metrics[Micrometer.metrics()].
 
+NOTE: Meters created through `reactor-core-micrometer` stay registered for the lifetime of the `MeterRegistry`.
+They are not removed when a short-lived pipeline completes.
+Repeating the same `name()` (and tags) reuses those meters, which is the usual setup.
+If you no longer want a registration held in memory, remove it from the registry yourself.
+
 //TODO update and reintroduce tips for using the metrics
 //Want to know how many times your event processing has restarted due to some error? Read `[name].subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
 //
