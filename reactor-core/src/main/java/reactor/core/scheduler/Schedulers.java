@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -908,7 +908,7 @@ public abstract class Schedulers {
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 */
-	public static BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
+	public static @Nullable BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
 		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removed;
 		synchronized (DECORATORS) {
 			removed = DECORATORS.remove(key);
