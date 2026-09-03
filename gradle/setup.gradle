@@ -21,13 +21,18 @@ apply plugin: 'maven-publish'
 //we also conditionally apply artifactory and signing plugins below
 
 jar {
-	manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
+	manifest.attributes["Jdk-Build-Spec"] = "${System.getProperty("java.specification.version")}"
 	manifest.attributes["Implementation-Title"] = project.name
 	manifest.attributes["Implementation-Version"] = project.version
 	from("${rootDir}/docs/src/docs/dist") {
 		include "LICENSE"
 		into "META-INF"
 	}
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
 }
 
 task sourcesJar(type: Jar) {
