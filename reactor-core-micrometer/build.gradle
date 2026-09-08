@@ -33,7 +33,8 @@ ext {
 		].join(","),
 		"Bundle-Name" : "reactor-core-micrometer",
 		"Bundle-SymbolicName" : "io.projectreactor.reactor-core-micrometer",
-		"Bundle-Version" : "$osgiVersion"
+		"Bundle-Version" : "$osgiVersion",
+		"-noextraheaders" : "true"
 	]
 }
 
