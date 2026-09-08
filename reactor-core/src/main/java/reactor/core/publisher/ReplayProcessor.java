@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link ReplayProcessor} that replays up to {@code historySize}
 	 * elements.
 	 *
-	 * @param historySize the backlog size, ie. maximum items retained for replay.
+	 * @param historySize the backlog size, ie. maximum items retained for replay, must be strictly positive
 	 * @param <E> the type of the pushed elements
 	 *
 	 * @return a new {@link ReplayProcessor} that replays a limited history to each new
@@ -138,7 +138,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link ReplayProcessor} that either replay all the elements or a
 	 * limited amount of elements depending on the {@code unbounded} parameter.
 	 *
-	 * @param historySize maximum items retained if bounded, or initial link size if unbounded
+	 * @param historySize maximum items retained if bounded, or initial link size if unbounded;
+	 * must be strictly positive and, if unbounded, less than {@link Integer#MAX_VALUE}
 	 * @param unbounded true if "unlimited" data store must be supplied
 	 * @param <E> the type of the pushed elements
 	 *
@@ -150,6 +151,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 */
 	@Deprecated
 	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
+		FluxReplay.validateHistorySize(historySize, unbounded);
 		FluxReplay.ReplayBuffer<E> buffer;
 		if (unbounded) {
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
