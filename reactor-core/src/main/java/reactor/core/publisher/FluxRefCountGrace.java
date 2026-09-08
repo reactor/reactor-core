@@ -97,7 +97,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		inner.setRefConnection(conn);
 
-		if (connect) {
+		if (connect && !RefCountInner.isCancelled(inner.state)) {
 			source.connect(conn);
 		}
 	}
@@ -207,6 +207,8 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Nullable Throwable error;
 
+		volatile boolean valueReceived;
+
 		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
 		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;
 		static final int CANCELLED_FLAG   = 0b1000_0000_0000_0000_0000_0000_0000_0000;
@@ -229,6 +231,9 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				int previousState = this.state;
 
 				if (isCancelled(previousState)) {
+					if (!isMonitorSet(previousState) && !valueReceived) {
+						this.parent.cancel(connection);
+					}
 					return;
 				}
 
@@ -252,6 +257,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void onNext(T t) {
+			valueReceived = true;
 			actual.onNext(t);
 		}
 
@@ -306,15 +312,22 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		public void cancel() {
 			s.cancel();
 
-			int previousState = this.state;
+			for (;;) {
+				int previousState = this.state;
+				RefConnection connection = this.connection;
 
-			if (isTerminated(previousState) || isCancelled(previousState)) {
-				return;
-			}
+				if (connection == null || isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
 
-			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
-				assert connection != null : "connection must not be null when cancelling";
-				parent.cancel(connection);
+				int nextState = previousState | CANCELLED_FLAG;
+
+				if (STATE.compareAndSet(this, previousState, nextState)) {
+					if (isMonitorSet(previousState)) {
+						parent.cancel(connection);
+					}
+					return;
+				}
 			}
 		}
 
