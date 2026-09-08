@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_OVERFLOW;
 
@@ -359,6 +360,27 @@ public class FluxSwitchMapTest {
 		up.emitComplete(FAIL_FAST);
 		StepVerifier.create(Flux.switchOnNext(up.asFlux(), prefetch))
 		            .expectNext(1, 2, 3, 2, 3, 4, 4, 5, 6)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void switchMapPrefetchMustNotExceedMaximumSafeCapacity() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.just(1).switchMap(i -> Flux.just(i), Operators.MAX_SAFE_BUFFER_SIZE + 1));
+	}
+
+	@Test
+	public void switchOnNextPrefetchMustNotExceedMaximumSafeCapacity() {
+		Flux<Flux<Integer>> source = Flux.just(Flux.just(1));
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> Flux.switchOnNext(source, Operators.MAX_SAFE_BUFFER_SIZE + 1));
+	}
+
+	@Test
+	public void switchOnNextPrefetchIntegerMaxRemainsSupported() {
+		StepVerifier.create(Flux.switchOnNext(Flux.just(Flux.just(1)), Integer.MAX_VALUE))
+		            .expectNext(1)
 		            .verifyComplete();
 	}
 

@@ -77,9 +77,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			Predicate<? super T> predicate,
 			Mode mode) {
 		super(Flux.from(source));
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
-		}
+		Operators.validateQueuePrefetch(prefetch);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 		this.mainQueueSupplier =
 				Objects.requireNonNull(mainQueueSupplier, "mainQueueSupplier");
