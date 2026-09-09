@@ -519,4 +519,59 @@ public class FluxRefCountGraceTest {
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
+	@Test
+	public void cancelDuringOnSubscribeSkipsSourceConnect() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger sourceCancellations = new AtomicInteger();
+
+		Flux<Integer> source = Flux.<Integer>never()
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+				.doOnCancel(sourceCancellations::incrementAndGet);
+
+		Flux<Integer> shared = source.publish().refCount(1, Duration.ZERO, Schedulers.immediate());
+
+		shared.subscribe(new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(org.reactivestreams.Subscription subscription) {
+				cancel();
+			}
+		});
+
+		assertThat(sourceSubscriptions)
+				.as("source must not be subscribed to when the only subscriber cancelled during onSubscribe")
+				.hasValue(0);
+		assertThat(sourceCancellations)
+				.as("source was never subscribed so it cannot be cancelled")
+				.hasValue(0);
+	}
+
+	@Test
+	public void cancelDuringOnSubscribeBlocksSubsequentDisconnect() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger sourceCancellations = new AtomicInteger();
+
+		Flux<Integer> source = Flux.<Integer>never()
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+				.doOnCancel(sourceCancellations::incrementAndGet);
+
+		Flux<Integer> shared = source.publish().refCount(1, Duration.ZERO, Schedulers.immediate());
+
+		shared.subscribe(new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(org.reactivestreams.Subscription subscription) {
+				cancel();
+			}
+		});
+
+		Disposable second = shared.subscribe();
+		second.dispose();
+
+		assertThat(sourceSubscriptions)
+				.as("source must be subscribed exactly once for the second subscriber")
+				.hasValue(1);
+		assertThat(sourceCancellations)
+				.as("source must be disconnected exactly once when the second subscriber disposes")
+				.hasValue(1);
+	}
+
 }
