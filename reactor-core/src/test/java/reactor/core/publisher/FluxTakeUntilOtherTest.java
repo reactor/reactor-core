@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -201,13 +201,15 @@ public class FluxTakeUntilOtherTest {
 
 		Flux<Object> other =
 				Flux.error(new RuntimeException("forced " + "failure"))
+					.delaySubscription(Duration.ofMillis(1))
 				    .doOnCancel(() -> otherCancelled.set(true));
-		Flux.range(1, 10)
+		Flux.<Integer>never()
 		    .doOnCancel(() -> mainCancelled.set(true))
 		    .takeUntilOther(other)
 		    .subscribe(ts);
 
-		ts.assertNoValues()
+		ts.await()
+		  .assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
