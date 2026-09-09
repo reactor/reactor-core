@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1820,6 +1820,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialAsyncSources.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
+	 *
 	 * @param sources a {@link Publisher} of {@link Publisher} sources to merge
 	 * @param <T> the merged type
 	 *
@@ -1837,6 +1839,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialAsyncSources.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
 	 *
 	 * @param sources a {@link Publisher} of {@link Publisher} sources to merge
 	 * @param prefetch the inner source request size
@@ -1859,6 +1863,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialAsyncSources.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation.
+	 *
 	 * @param sources a {@link Publisher} of {@link Publisher} sources to merge
 	 * @param prefetch the inner source request size
 	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
@@ -1878,6 +1884,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialVarSources.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
+	 *
 	 * @param sources a number of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
 	 *
@@ -1894,6 +1902,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialVarSources.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
 	 *
 	 * @param prefetch the inner source request size
 	 * @param sources a number of {@link Publisher} sequences to merge
@@ -1915,6 +1925,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialVarSources.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation.
+	 *
 	 * @param prefetch the inner source request size
 	 * @param sources a number of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
@@ -1933,6 +1945,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialVarSources.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
+	 *
 	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
 	 *
@@ -1950,6 +1964,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialVarSources.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
 	 *
 	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
 	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
@@ -1972,6 +1988,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * has been processed.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/mergeSequentialVarSources.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation.
 	 *
 	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
 	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
@@ -5765,6 +5783,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapSequential.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
+	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param <R> the merged output sequence type
 	 *
@@ -5804,6 +5824,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapSequentialWithConcurrency.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param maxConcurrency the maximum number of in-flight inner sequences
@@ -5847,6 +5869,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapSequentialWithConcurrencyAndPrefetch.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation or error.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param maxConcurrency the maximum number of in-flight inner sequences
@@ -5892,6 +5916,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapSequentialWithConcurrencyAndPrefetch.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued for reordering upon cancellation.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param maxConcurrency the maximum number of in-flight inner sequences
