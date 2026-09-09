@@ -212,8 +212,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			this.bufferSupplier = bufferSupplier;
 			this.logger = logger;
 			this.stateLogger = logger != null ? new StateLogger(logger) : null;
-			this.prefetch = batchSize << 2;
-			this.replenishMark = batchSize << 1;
+			this.prefetch = (int) Math.min((long) batchSize << 2, Integer.MAX_VALUE);
+			this.replenishMark = (int) Math.min((long) batchSize << 1, Integer.MAX_VALUE);
 			this.queue = Queues.<T>get(prefetch).get();
 		}
 
