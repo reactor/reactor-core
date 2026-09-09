@@ -87,6 +87,16 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		inner.setRefCountMonitor(conn);
 
 		if (connect) {
+			if (RefCountInner.isCancelled(inner.state)) {
+				// cancel() always calls innerCancelled() regardless of MONITOR_SET_FLAG, so
+				// the count may already be decremented. Check whether all subscribers are gone
+				// (DISCONNECT disposed) before skipping source.connect — if other subscribers
+				// are still waiting we must connect on their behalf.
+				Disposable d = RefCountMonitor.DISCONNECT.get(conn);
+				if (d != null && d.isDisposed()) {
+					return;
+				}
+			}
 			source.connect(conn);
 		}
 	}
@@ -294,16 +304,21 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		public void cancel() {
 			s.cancel();
 
-			int previousState = this.state;
+			for (;;) {
+				int previousState = this.state;
 
-			if (isTerminated(previousState) || isCancelled(previousState)) {
-				return;
-			}
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
 
-			if (isMonitorSet(previousState)
-					&& STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
-				assert connection != null : "isMonitorSet check guarantees connection is not null";
-				connection.innerCancelled();
+				if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+					// connection is written before actual.onSubscribe in setRefCountMonitor,
+					// so it is non-null when cancel() is invoked (subscription delivery
+					// implies the write is visible to the cancelling thread).
+					assert connection != null : "connection is written before onSubscribe in setRefCountMonitor, guaranteeing non-null";
+					connection.innerCancelled();
+					return;
+				}
 			}
 		}
 

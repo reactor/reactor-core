@@ -485,4 +485,107 @@ public class FluxRefCountTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel+onComplete").isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel+onComplete").isFalse();
 	}
+
+	// CVE-PENDING-refcount-cancel-before-monitor
+	// When a subscriber cancels synchronously inside onSubscribe() — before
+	// setRefCountMonitor() has set MONITOR_SET_FLAG — cancel() skips the CAS and
+	// never calls innerCancelled(). The subscriber count stays at 1 and the source
+	// connection is never torn down.
+	@Test
+	public void cancelDuringOnSubscribeSkipsSourceConnect() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger sourceCancellations = new AtomicInteger();
+
+		Flux<Integer> source = Flux.<Integer>never()
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+				.doOnCancel(sourceCancellations::incrementAndGet);
+
+		Flux<Integer> shared = source.publish().refCount(1);
+
+		// Subscriber that cancels immediately inside onSubscribe (before MONITOR_SET_FLAG).
+		// cancel() sets CANCELLED_FLAG and calls innerCancelled(), decrementing the count to 0.
+		// subscribe() detects all subscribers gone and skips source.connect entirely.
+		shared.subscribe(new reactor.core.publisher.BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(org.reactivestreams.Subscription subscription) {
+				cancel();
+			}
+		});
+
+		assertThat(sourceSubscriptions)
+				.as("source must not be subscribed to when the only subscriber cancelled during onSubscribe")
+				.hasValue(0);
+		assertThat(sourceCancellations)
+				.as("source was never subscribed so it cannot be cancelled")
+				.hasValue(0);
+	}
+
+	// Verify that skipping source.connect for the early-cancel subscriber does not
+	// block a subsequent legitimate subscriber from connecting and disconnecting cleanly.
+	@Test
+	public void cancelDuringOnSubscribeBlocksSubsequentDisconnect() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger sourceCancellations = new AtomicInteger();
+
+		Flux<Integer> source = Flux.<Integer>never()
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+				.doOnCancel(sourceCancellations::incrementAndGet);
+
+		Flux<Integer> shared = source.publish().refCount(1);
+
+		// First subscriber: cancel in onSubscribe — count drops to 0, source.connect skipped.
+		shared.subscribe(new reactor.core.publisher.BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(org.reactivestreams.Subscription subscription) {
+				cancel();
+			}
+		});
+
+		// Second subscriber: creates a fresh connection, source connects, then subscriber disposes.
+		Disposable second = shared.subscribe();
+		second.dispose();
+
+		assertThat(sourceSubscriptions)
+				.as("source must be subscribed exactly once for the second subscriber")
+				.hasValue(1);
+		assertThat(sourceCancellations)
+				.as("source must be disconnected exactly once when the second subscriber disposes")
+				.hasValue(1);
+	}
+
+	// When a subscriber cancels in onSubscribe but a peer subscriber (n=2) is still
+	// waiting, cancel() decrements the count to 1 (not 0), so DISCONNECT is not
+	// disposed. The subscribe() guard must detect this and still call source.connect
+	// on behalf of the waiting peer — otherwise the peer hangs forever.
+	// This is the critical branch that the simple "!isCancelled" guard breaks.
+	@Test
+	public void cancelDuringOnSubscribeWithPeerStillConnects() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger peerReceived = new AtomicInteger();
+
+		Flux<Integer> source = Flux.just(1)
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet());
+
+		// n=2: peer (A) subscribes first (connect=false), early-cancel (B) subscribes
+		// second (connect=true). B cancels in hookOnSubscribe; count drops 2→1.
+		// subscribe() must still call source.connect so A receives the element.
+		Flux<Integer> shared = source.publish().refCount(2);
+
+		shared.subscribe(__ -> peerReceived.incrementAndGet()); // subscriber A
+
+		shared.subscribe(new BaseSubscriber<Integer>() {        // subscriber B
+			@Override
+			protected void hookOnSubscribe(org.reactivestreams.Subscription subscription) {
+				cancel();
+			}
+		});
+
+		assertThat(sourceSubscriptions)
+				.as("source must connect once on behalf of the waiting peer")
+				.hasValue(1);
+		assertThat(peerReceived)
+				.as("peer subscriber must receive the element")
+				.hasValue(1);
+	}
+
 }
