@@ -146,18 +146,26 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 				cancelInner(secondSubscriber);
 
 				if (WIP.getAndIncrement(this) == 0) {
-					firstSubscriber.queue.clear();
-					secondSubscriber.queue.clear();
+					discardCurrentValuesAndQueues();
 				}
 			}
 		}
 
-		void cancel(EqualSubscriber<T> s1, Queue<T> q1, EqualSubscriber<T> s2, Queue<T> q2) {
+		void cancelAndDiscard() {
 			cancelled = true;
-			cancelInner(s1);
-			q1.clear();
-			cancelInner(s2);
-			q2.clear();
+			cancelInner(firstSubscriber);
+			cancelInner(secondSubscriber);
+			discardCurrentValuesAndQueues();
+		}
+
+		void discardCurrentValuesAndQueues() {
+			Context ctx = actual.currentContext();
+			Operators.onDiscard(v1, ctx);
+			v1 = null;
+			Operators.onDiscardQueueWithClear(firstSubscriber.queue, ctx, null);
+			Operators.onDiscard(v2, ctx);
+			v2 = null;
+			Operators.onDiscardQueueWithClear(secondSubscriber.queue, ctx, null);
 		}
 
 		void cancelInner(EqualSubscriber<T> innerSubscriber) {
@@ -187,8 +195,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 				long r = 0L;
 				for (;;) {
 					if (cancelled) {
-						q1.clear();
-						q2.clear();
+						discardCurrentValuesAndQueues();
 						return;
 					}
 
@@ -197,7 +204,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 					if (d1) {
 						Throwable e = s1.error;
 						if (e != null) {
-							cancel(s1, q1, s2, q2);
+							cancelAndDiscard();
 
 							actual.onError(e);
 							return;
@@ -209,7 +216,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 					if (d2) {
 						Throwable e = s2.error;
 						if (e != null) {
-							cancel(s1, q1, s2, q2);
+							cancelAndDiscard();
 
 							actual.onError(e);
 							return;
@@ -232,7 +239,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 						return;
 					}
 					if ((d1 && d2) && (e1 != e2)) {
-						cancel(s1, q1, s2, q2);
+						cancelAndDiscard();
 
 						actual.onNext(false);
 						actual.onComplete();
@@ -246,7 +253,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 							c = comparer.test(v1, v2);
 						} catch (Throwable ex) {
 							Exceptions.throwIfFatal(ex);
-							cancel(s1, q1, s2, q2);
+							cancelAndDiscard();
 
 							actual.onError(Operators.onOperatorError(ex,
 									actual.currentContext()));
@@ -254,7 +261,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 						}
 
 						if (!c) {
-							cancel(s1, q1, s2, q2);
+							cancelAndDiscard();
 
 							actual.onNext(false);
 							actual.onComplete();

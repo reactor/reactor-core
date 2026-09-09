@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -316,6 +318,53 @@ public class MonoSequenceEqualTest {
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+	}
+
+	@Test
+	public void discardOnMismatch() {
+		StepVerifier.create(Mono.sequenceEqual(
+						Flux.just(1, 2, 3),
+						Flux.just(1, 7, 8)))
+		            .expectNext(Boolean.FALSE)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(2, 3, 7);
+	}
+
+	@Test
+	public void discardOnCancel() {
+		List<Object> discarded = new CopyOnWriteArrayList<>();
+		AtomicReference<Subscription> subscription = new AtomicReference<>();
+
+		Mono.sequenceEqual(
+				Flux.just(1, 2, 3).concatWith(Flux.never()),
+				Flux.never())
+		    .doOnDiscard(Object.class, discarded::add)
+		    .subscribe(new CoreSubscriber<Boolean>() {
+			    @Override
+			    public void onSubscribe(Subscription s) {
+				    subscription.set(s);
+				    s.request(Long.MAX_VALUE);
+			    }
+
+			    @Override
+			    public void onNext(Boolean b) {
+			    }
+
+			    @Override
+			    public void onError(Throwable t) {
+			    }
+
+			    @Override
+			    public void onComplete() {
+			    }
+		    });
+
+		// the first source's elements are all buffered awaiting elements from
+		// the second source, which never emits
+		subscription.get().cancel();
+
+		assertThat(discarded).containsExactly(1, 2, 3);
 	}
 
 	//TODO multithreaded race between cancel and onNext, between cancel and drain, source overflow, error dropping to hook
