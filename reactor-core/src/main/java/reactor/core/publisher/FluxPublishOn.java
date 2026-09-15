@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -277,7 +277,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			cancelled = true;
 			s.cancel();
-			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
 				if (sourceMode == ASYNC) {
@@ -289,7 +288,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// which is guaranteed by the WIP guard here in case non-fused output
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+				worker.dispose();
 			}
+			// otherwise a drain task is pending or running: it observes cancelled, clears the
+			// queue and disposes the worker. Disposing the worker here would drop a task that
+			// has been scheduled but not started, and nothing would clear the queue.
 		}
 
 		void trySchedule(
@@ -364,6 +367,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					if (cancelled) {
 						Operators.onDiscard(v, actual.currentContext());
 						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+						worker.dispose();
 						return;
 					}
 					if (v == null) {
@@ -378,6 +382,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 				if (cancelled) {
 					Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+					worker.dispose();
 					return;
 				}
 
@@ -485,6 +490,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
+					worker.dispose();
 					return;
 				}
 
@@ -548,6 +554,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// which is guaranteed by the WIP guard here
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+				worker.dispose();
 				return true;
 			}
 			if (d) {
@@ -844,7 +851,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 			cancelled = true;
 			s.cancel();
-			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
 				if (sourceMode == ASYNC) {
@@ -856,7 +862,11 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// which is guaranteed by the WIP guard here in case non-fused output
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+				worker.dispose();
 			}
+			// otherwise a drain task is pending or running: it observes cancelled, clears the
+			// queue and disposes the worker. Disposing the worker here would drop a task that
+			// has been scheduled but not started, and nothing would clear the queue.
 		}
 
 		void trySchedule(
@@ -930,6 +940,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					if (cancelled) {
 						Operators.onDiscard(v, actual.currentContext());
 						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+						worker.dispose();
 						return;
 					}
 					if (v == null) {
@@ -944,6 +955,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 				if (cancelled) {
 					Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+					worker.dispose();
 					return;
 				}
 
@@ -1046,6 +1058,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
+					worker.dispose();
 					return;
 				}
 
@@ -1130,6 +1143,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					// which is guaranteed by the WIP guard here
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				}
+				worker.dispose();
 				return true;
 			}
 			if (d) {
