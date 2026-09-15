@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -486,6 +488,68 @@ public class FluxTimeoutTest {
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+	}
+
+	@Test
+	public void discardsElementArrivingAfterCancel() {
+		List<Object> discarded = new ArrayList<>();
+		TestPublisher<String> source =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION);
+
+		AssertSubscriber<String> ts = AssertSubscriber.create(1);
+		source.flux()
+		      .timeout(Duration.ofSeconds(30))
+		      .doOnDiscard(Object.class, discarded::add)
+		      .subscribe(ts);
+
+		ts.cancel();
+		source.next("late");
+
+		assertThat(discarded).as("discarded").containsExactly("late");
+	}
+
+	@Test
+	public void discardsElementArrivingAfterTimeout() {
+		List<Object> discarded = new ArrayList<>();
+		TestPublisher<String> source =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION);
+
+		StepVerifier.withVirtualTime(() -> source.flux()
+		                                         .timeout(Duration.ofMillis(100))
+		                                         .doOnDiscard(Object.class, discarded::add))
+		            .thenAwait(Duration.ofMillis(200))
+		            .expectError(TimeoutException.class)
+		            .verify(Duration.ofSeconds(5));
+
+		source.next("late");
+
+		assertThat(discarded).as("discarded").containsExactly("late");
+	}
+
+	@Test
+	public void dropsElementArrivingAfterSourceTerminated() {
+		List<Object> discarded = new ArrayList<>();
+		List<Object> dropped = new ArrayList<>();
+		TestPublisher<String> source =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+
+		AssertSubscriber<String> ts = AssertSubscriber.create(1);
+		source.flux()
+		      .timeout(Duration.ofSeconds(30))
+		      .doOnDiscard(Object.class, discarded::add)
+		      .subscribe(ts);
+
+		Hooks.onNextDropped(dropped::add);
+		try {
+			source.complete();
+			source.next("malformed");
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
+
+		assertThat(dropped).as("dropped").containsExactly("malformed");
+		assertThat(discarded).as("discarded").isEmpty();
 	}
 
 }
