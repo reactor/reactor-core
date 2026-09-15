@@ -86,7 +86,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		inner.setRefCountMonitor(conn);
 
-		if (connect) {
+		if (connect && !RefCountInner.isCancelled(inner.state)) {
 			source.connect(conn);
 		}
 	}
@@ -178,6 +178,8 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		@Nullable Throwable error;
 
+		volatile boolean valueReceived;
+
 
 		static final int MONITOR_SET_FLAG = 0b0010_0000_0000_0000_0000_0000_0000_0000;
 		static final int TERMINATED_FLAG  = 0b0100_0000_0000_0000_0000_0000_0000_0000;
@@ -217,6 +219,9 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				int previousState = this.state;
 
 				if (isCancelled(previousState)) {
+					if (!isMonitorSet(previousState) && !valueReceived) {
+						connection.innerCancelled();
+					}
 					return;
 				}
 
@@ -240,6 +245,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		@Override
 		public void onNext(T t) {
+			valueReceived = true;
 			actual.onNext(t);
 		}
 
@@ -294,16 +300,22 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		public void cancel() {
 			s.cancel();
 
-			int previousState = this.state;
+			for (;;) {
+				int previousState = this.state;
+				RefCountMonitor<T> connection = this.connection;
 
-			if (isTerminated(previousState) || isCancelled(previousState)) {
-				return;
-			}
+				if (connection == null || isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
 
-			if (isMonitorSet(previousState)
-					&& STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
-				assert connection != null : "isMonitorSet check guarantees connection is not null";
-				connection.innerCancelled();
+				int nextState = previousState | CANCELLED_FLAG;
+
+				if (STATE.compareAndSet(this, previousState, nextState)) {
+					if (isMonitorSet(previousState)) {
+						connection.innerCancelled();
+					}
+					return;
+				}
 			}
 		}
 
