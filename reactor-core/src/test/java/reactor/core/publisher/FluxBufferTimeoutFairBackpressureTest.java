@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -535,6 +536,50 @@ public class FluxBufferTimeoutFairBackpressureTest {
 		            .assertNext(l -> assertThat(l).containsExactly(1))
 		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(RejectedExecutionException.class))
 		            .verify();
+	}
+
+	@Test
+	void resumedDemandDoesNotFlushPartialBufferBeforeTimeout() throws InterruptedException {
+		Sinks.Many<Integer> sink = Sinks.many().unicast().onBackpressureBuffer();
+		List<List<Integer>> buffers = new CopyOnWriteArrayList<>();
+		AtomicReference<Subscription> sub = new AtomicReference<>();
+
+		sink.asFlux()
+		    .bufferTimeout(2, Duration.ofSeconds(10), true)
+		    .subscribe(new CoreSubscriber<List<Integer>>() {
+			    @Override
+			    public void onSubscribe(Subscription s) {
+				    sub.set(s);
+				    s.request(1);
+			    }
+
+			    @Override
+			    public void onNext(List<Integer> buffer) {
+				    buffers.add(buffer);
+			    }
+
+			    @Override
+			    public void onError(Throwable t) {
+			    }
+
+			    @Override
+			    public void onComplete() {
+			    }
+		    });
+
+		sink.tryEmitNext(0);
+		sink.tryEmitNext(1);
+		assertThat(buffers).containsExactly(Arrays.asList(0, 1));
+
+		// a new buffer starts with a single element while demand is 0
+		sink.tryEmitNext(2);
+		sub.get().request(1);
+		Thread.sleep(200);
+		// the open buffer is neither full nor timed out (10s timeout): resumed
+		// demand alone must not flush it early
+		assertThat(buffers).containsExactly(Arrays.asList(0, 1));
+
+		sub.get().cancel();
 	}
 
 	@Test
