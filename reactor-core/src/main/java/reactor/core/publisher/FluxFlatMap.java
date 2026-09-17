@@ -411,10 +411,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					Context ctx = actual.currentContext();
 					//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
 					Throwable e_ = Operators.onNextError(t, e, ctx);
-					if (e_ == null) {
-						tryEmitScalar(null);
-					}
-					else if (!delayError || !Exceptions.addThrowable(ERROR, this, e_)) {
+					if (e_ != null && (!delayError || !Exceptions.addThrowable(ERROR, this, e_))) {
 					//now if error mode strategy doesn't apply, let delayError play
 						onError(Operators.onOperatorError(s, e_, t, ctx));
 					}
@@ -1173,4 +1170,3 @@ abstract class FlatMapTracker<T> {
 		return size == 0;
 	}
 }
-
