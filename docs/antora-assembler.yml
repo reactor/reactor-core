@@ -7,3 +7,4 @@ asciidoc:
     attributes:
         source-highlighter: rouge
         pdf-theme: ./pdf-theme.yml
+        reproducible: ''

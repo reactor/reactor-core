@@ -123,6 +123,15 @@ task docsZip(type: Zip, dependsOn: ':docs:antora') {
 
     from('build/site') {
         into 'docs'
+        // Antora's site-mapper and atlas-extension stamp the current time into these
+        // files on every build (sitemap.xml's <lastmod>, site-manifest.json's "generated"),
+        // which breaks reproducible builds. Normalize them to a fixed value.
+        filesMatching('sitemap.xml') {
+            filter { line -> line.replaceAll(/<lastmod>[^<]*<\/lastmod>/, '<lastmod>1980-02-01T00:00:00.000Z</lastmod>') }
+        }
+        filesMatching('site-manifest.json') {
+            filter { line -> line.replaceAll(/"generated": "[^"]*"/, '"generated": "1980-02-01T00:00:00.000Z"') }
+        }
     }
 
     from("${rootDir}/docs/src/docs/dist") {
