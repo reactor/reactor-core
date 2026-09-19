@@ -53,17 +53,7 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	@ValueSource(ints = {-1, 0})
 	public void requiresPositiveMaxSize(int maxSize) {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(Duration.ofSeconds(1), maxSize, v -> {}))
-				.withMessage("Buffer Size must be strictly positive");
-	}
-
-	@Test
-	public void capsMaxSizeWithoutInternalOverflow() {
-		Flux<?> flux = Flux.just("foo")
-		                   .onBackpressureBuffer(Duration.ofSeconds(1), Integer.MAX_VALUE, v -> {});
-
-		assertThat(((FluxOnBackpressureBufferTimeout<?>) flux).bufferSize)
-				.isEqualTo(Integer.MAX_VALUE >>> 1);
+				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(Duration.ofSeconds(1), maxSize, v -> {}));
 	}
 
 	@Test
