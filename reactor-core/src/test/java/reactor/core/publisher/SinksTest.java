@@ -116,6 +116,28 @@ class SinksTest {
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().all();
 
 		@Test
+		void unsafeAllWithBatchSizeReplaysWholeHistory() {
+			Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().all(2);
+			Flux<Integer> flux = sink.asFlux();
+			AssertSubscriber<Integer> early = AssertSubscriber.create();
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			flux.subscribe(early);
+			sink.emitNext(1, FAIL_FAST);
+			sink.emitNext(2, FAIL_FAST);
+			sink.emitNext(3, FAIL_FAST);
+			sink.emitNext(4, FAIL_FAST);
+			sink.emitNext(5, FAIL_FAST);
+			sink.emitComplete(FAIL_FAST);
+			early.assertValues(1, 2, 3, 4, 5)
+			     .assertComplete();
+
+			flux.subscribe(late);
+			late.assertValues(1, 2, 3, 4, 5)
+			    .assertComplete();
+		}
+
+		@Test
 		void allInvalidBatchSizeIsRejected() {
 			assertThatIllegalArgumentException()
 				.isThrownBy(() -> Sinks.many().replay().all(0));

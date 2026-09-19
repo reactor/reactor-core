@@ -141,8 +141,7 @@ final class SinksSpecs {
 
 		@Override
 		public <T> Many<T> all(int batchSize) {
-			FluxReplay.validateHistorySize(batchSize, true);
-			return SinkManyReplayProcessor.create(batchSize);
+			return SinkManyReplayProcessor.create(batchSize, true);
 		}
 
 		@Override
