@@ -233,6 +233,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				}
 			}
 			else if (mode == Mode.WHILE && !match) {
+				Operators.onDiscard(t, actual.currentContext());
 				onNextNewBuffer();
 			}
 			else {
