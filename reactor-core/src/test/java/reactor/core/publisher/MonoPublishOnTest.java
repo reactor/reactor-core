@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -32,7 +34,9 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -398,4 +402,42 @@ public class MonoPublishOnTest {
 		                        .publishOn(Schedulers.single()))
 		            .verifyErrorMessage("forced failure");
 	}
+
+	@Test
+	public void discardsPendingValueOnCancel() throws InterruptedException {
+		List<Object> discarded = new ArrayList<>();
+		Scheduler scheduler = Schedulers.newSingle("monoPublishOnDiscard");
+		CountDownLatch occupied = new CountDownLatch(1);
+		CountDownLatch release = new CountDownLatch(1);
+		try {
+			// occupy the only worker thread so the value cannot be emitted before the cancel
+			scheduler.schedule(() -> {
+				occupied.countDown();
+				try {
+					release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			});
+			assertThat(occupied.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+
+			TestPublisher<String> source = TestPublisher.create();
+			AssertSubscriber<String> ts = AssertSubscriber.create(1);
+			source.mono()
+			      .publishOn(scheduler)
+			      .doOnDiscard(Object.class, discarded::add)
+			      .subscribe(ts);
+
+			source.next("value");
+			ts.cancel();
+
+			assertThat(discarded).as("discarded").containsExactly("value");
+		}
+		finally {
+			release.countDown();
+			scheduler.dispose();
+		}
+	}
+
 }
