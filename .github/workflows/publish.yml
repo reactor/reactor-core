@@ -11,7 +11,7 @@ jobs:
   # General job notes: we DON'T want to cancel any previous runs, especially in the case of a "back to snapshots" build right after a release push
   # We specify the ubuntu version to minimize the chances we have to deal with a migration during a release
   prepare:
-    # Notes on prepare: this job has no access to secrets, only github token. As a result, all non-core actions are centralized here
+    # Notes on prepare: this job has no access to secrets, only github token and Develocity access key. As a result, all non-core actions are centralized here
     # This includes the tagging and drafting of release notes. Still, when possible we favor plain run of gradle tasks
     runs-on: ubuntu-22.04
     strategy:
@@ -63,6 +63,10 @@ jobs:
       uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
       with:
         cache-provider: basic
+    - name: configure gradle properties
+      run: |
+        mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
+        echo 'systemProp.user.name=spring-builds+github' >> ${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties
     - name: interpret version
       id: version
       #we only run the qualifyVersionGha task so that no other console printing can hijack this step's output
@@ -71,6 +75,8 @@ jobs:
       run: ./gradlew qualifyVersionGha
     - name: run checks
       id: checks
+      env:
+        DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
       run: ./gradlew ${{ matrix.test-type.arguments }}
 
   #deploy the snapshot artifacts to Artifactory
@@ -111,8 +117,13 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: configure gradle properties
+      run: |
+        mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
+        echo 'systemProp.user.name=spring-builds+github' >> ${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties
     - name: deploy
       env:
+        DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
       run: |
@@ -156,8 +167,13 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: configure gradle properties
+      run: |
+        mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
+        echo 'systemProp.user.name=spring-builds+github' >> ${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties
     - name: deploy
       env:
+        DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
         ORG_GRADLE_PROJECT_signingKey: ${{secrets.SIGNING_KEY}}
@@ -220,8 +236,13 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: configure gradle properties
+      run: |
+        mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
+        echo 'systemProp.user.name=spring-builds+github' >> ${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties
     - name: deploy
       env:
+        DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
         ORG_GRADLE_PROJECT_signingKey: ${{secrets.SIGNING_KEY}}

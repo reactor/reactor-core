@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+pluginManagement {
+	repositories {
+		gradlePluginPortal()
+		mavenCentral()
+	}
+}
+
 plugins {
+	id "io.spring.develocity.conventions" version "0.0.26"
 	id "org.gradle.toolchains.foojay-resolver-convention" version "1.0.0"
 }
 
