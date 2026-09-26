@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1018,14 +1018,16 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)}.
+	 * Applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)},
+	 * unless the {@link Runnable} implements {@link UndecoratedRunnable}.
 	 *
 	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler}
-	 * @return decorated {@link Runnable} if any hook is registered, the original otherwise.
+	 * @return decorated {@link Runnable} if any hook is registered and the task is not an
+	 * {@link UndecoratedRunnable}, the original otherwise.
 	 */
 	public static Runnable onSchedule(Runnable runnable) {
 		Function<Runnable, Runnable> hook = onScheduleHook;
-		if (hook != null) {
+		if (hook != null && !(runnable instanceof UndecoratedRunnable)) {
 			return hook.apply(runnable);
 		}
 		else {
