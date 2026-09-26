@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,41 @@ class SinksTest {
 	class MulticastReplayAll {
 
 		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().all();
+
+		@Test
+		void unsafeAllWithBatchSizeReplaysWholeHistory() {
+			Sinks.Many<Integer> sink = Sinks.unsafe().many().replay().all(2);
+			Flux<Integer> flux = sink.asFlux();
+			AssertSubscriber<Integer> early = AssertSubscriber.create();
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			flux.subscribe(early);
+			sink.emitNext(1, FAIL_FAST);
+			sink.emitNext(2, FAIL_FAST);
+			sink.emitNext(3, FAIL_FAST);
+			sink.emitNext(4, FAIL_FAST);
+			sink.emitNext(5, FAIL_FAST);
+			sink.emitComplete(FAIL_FAST);
+			early.assertValues(1, 2, 3, 4, 5)
+			     .assertComplete();
+
+			flux.subscribe(late);
+			late.assertValues(1, 2, 3, 4, 5)
+			    .assertComplete();
+		}
+
+		@Test
+		void allInvalidBatchSizeIsRejected() {
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().all(0));
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.unsafe().many().replay().all(0));
+
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.many().replay().all(Integer.MAX_VALUE));
+			assertThatIllegalArgumentException()
+				.isThrownBy(() -> Sinks.unsafe().many().replay().all(Integer.MAX_VALUE));
+		}
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
