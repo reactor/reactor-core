@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -54,6 +55,28 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	public void requiresPositiveMaxSize(int maxSize) {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(Duration.ofSeconds(1), maxSize, v -> {}));
+	}
+
+	@ParameterizedTestWithName
+	@CsvSource({
+			"1, 1",
+			"1073741823, 1073741823",
+			"1073741824, 1073741823",
+			"2147483647, 1073741823"
+	})
+	public void capsMaxSizeBeforeDoubling(int maxSize, int expectedBufferSize) {
+		FluxOnBackpressureBufferTimeout<Integer> operator = new FluxOnBackpressureBufferTimeout<>(
+				Flux.never(), Duration.ofSeconds(1), Schedulers.immediate(), maxSize, v -> {});
+
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
+		BackpressureBufferTimeoutSubscriber<?> subscriber =
+				(BackpressureBufferTimeoutSubscriber<?>) operator.subscribeOrReturn(actual);
+		try {
+			assertThat(subscriber.bufferSizeDouble).isEqualTo(2 * expectedBufferSize);
+		}
+		finally {
+			subscriber.worker.dispose();
+		}
 	}
 
 	@Test
