@@ -36,6 +36,8 @@ ext {
 			'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 			"reactor.blockhound.*;resolution:=optional",
 			"io.micrometer.*;resolution:=optional",
+			// The Java 8 variant uses sun.misc; Java 11+ replaces it with StackWalker.
+			'${if;${classes;NAMED;reactor.core.publisher.CallSiteSupplierFactory;VERSION;52.*};sun.misc;!sun.misc}',
 			"*"
 		].join(","),
 		"Bundle-Name" : "reactor-core",
