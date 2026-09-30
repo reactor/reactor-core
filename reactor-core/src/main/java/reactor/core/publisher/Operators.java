@@ -2343,6 +2343,19 @@ public abstract class Operators {
 	        Objects.requireNonNull(s);
 
 	        if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+	            if (cancelled) {
+	                // cancel() ran its whole drain between the check above and the acquisition of
+	                // the WIP slot, so it cancelled the previous subscription and saw nothing of
+	                // this one. Nothing else would ever cancel it.
+	                s.cancel();
+
+	                if (WIP.decrementAndGet(this) != 0) {
+	                    drainLoop();
+	                }
+
+	                return;
+	            }
+
 		        Subscription a = subscription;
 
 	            if (a != null && shouldCancelCurrent()) {
