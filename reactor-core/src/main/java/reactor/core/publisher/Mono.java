@@ -3708,11 +3708,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * and cannot leak upstream.
 	 *
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
-	 * and the value that triggered the error.
+	 * and the value that triggered the error, or {@code null} if the error is not associated with a value.
 	 * @return a {@link Mono} that attempts to continue processing on errors.
 	 */
-	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
-		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
+	public final Mono<T> onErrorContinue(BiConsumer<Throwable, @Nullable Object> errorConsumer) {
+		BiConsumer<Throwable, @Nullable Object> genericConsumer = errorConsumer;
 		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
@@ -3752,10 +3752,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param type the {@link Class} of {@link Exception} that are resumed from.
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
-	 * and the value that triggered the error.
+	 * and the value that triggered the error, or {@code null} if the error is not associated with a value.
 	 * @return a {@link Mono} that attempts to continue processing on some errors.
 	 */
-	public final <E extends Throwable> Mono<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
+	public final <E extends Throwable> Mono<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, @Nullable Object> errorConsumer) {
 		return onErrorContinue(type::isInstance, errorConsumer);
 	}
 
@@ -3794,15 +3794,15 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param errorPredicate a {@link Predicate} used to filter which errors should be resumed from.
 	 * This MUST be idempotent, as it can be used several times.
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
-	 * that triggered the error.
+	 * that triggered the error, or {@code null} if the error is not associated with a value.
 	 * @return a {@link Mono} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Mono<T> onErrorContinue(Predicate<E> errorPredicate,
-			BiConsumer<Throwable, Object> errorConsumer) {
+			BiConsumer<Throwable, @Nullable Object> errorConsumer) {
 		//this cast is ok as only T values will be propagated in this sequence
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
-		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
+		BiConsumer<Throwable, @Nullable Object> genericErrorConsumer = errorConsumer;
 		return contextWriteSkippingContextPropagation(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
