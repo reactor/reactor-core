@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,16 +26,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnBackpressureBufferTimeout.BackpressureBufferTimeoutSubscriber;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 
@@ -44,6 +48,35 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	@Override
 	public void accept(Object t) {
 		evicted.add(t);
+	}
+
+	@ParameterizedTestWithName
+	@ValueSource(ints = {-1, 0})
+	public void requiresPositiveMaxSize(int maxSize) {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Flux.just("foo").onBackpressureBuffer(Duration.ofSeconds(1), maxSize, v -> {}));
+	}
+
+	@ParameterizedTestWithName
+	@CsvSource({
+			"1, 1",
+			"1073741823, 1073741823",
+			"1073741824, 1073741823",
+			"2147483647, 1073741823"
+	})
+	public void capsMaxSizeBeforeDoubling(int maxSize, int expectedBufferSize) {
+		FluxOnBackpressureBufferTimeout<Integer> operator = new FluxOnBackpressureBufferTimeout<>(
+				Flux.never(), Duration.ofSeconds(1), Schedulers.immediate(), maxSize, v -> {});
+
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
+		BackpressureBufferTimeoutSubscriber<?> subscriber =
+				(BackpressureBufferTimeoutSubscriber<?>) operator.subscribeOrReturn(actual);
+		try {
+			assertThat(subscriber.bufferSizeDouble).isEqualTo(2 * expectedBufferSize);
+		}
+		finally {
+			subscriber.worker.dispose();
+		}
 	}
 
 	@Test
