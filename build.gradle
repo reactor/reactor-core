@@ -16,14 +16,6 @@
 
 import java.text.SimpleDateFormat
 
-buildscript {
-	repositories {
-		mavenCentral()
-		maven { url = "https://repo.spring.io/plugins-release" }
-	}
-}
-
-
 plugins {
 	alias(libs.plugins.artifactory)
 	alias(libs.plugins.shadow)
@@ -149,7 +141,6 @@ configure(subprojects) { p ->
 		mavenLocal()
 		if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
 			//do not wait for Maven Central when going back to snapshots and comparing for baseline
-			maven { url = 'https://repo.spring.io/release' }
 			maven { url = 'https://repo.spring.io/snapshot' }
 		}
 		// Spring Milestone repository is required for io.projectreactor:jsr166:1.0.0.RELEASE
