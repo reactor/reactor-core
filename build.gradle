@@ -102,7 +102,7 @@ spotless {
 	}
 	else if (isCiServer) {
 		println "[Spotless] CI detected without explicit branch, not enforcing check"
-		enforceCheck false
+		enforceCheck = false
 	}
 	else {
 		String spotlessBranch = "origin/main"
@@ -120,9 +120,12 @@ spotless {
 }
 
 configure(subprojects) { p ->
-	apply plugin: 'java'
+	apply plugin: 'java-library'
 	apply plugin: 'jacoco'
 	apply plugin: "net.ltgt.errorprone"
+	// applied before setup.gradle: the Java compiler is configured in afterEvaluate and must be set
+	// before the artifactoryPublish configuration (also in afterEvaluate) reads the Java component
+	apply plugin: "io.reactor.gradle.java-conventions"
 	apply from: "${rootDir}/gradle/setup.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
@@ -148,8 +151,8 @@ configure(subprojects) { p ->
 	}
 
 	dependencies {
-		errorprone libs.nullaway
-		errorprone libs.errorprone
+		errorprone rootProject.libs.nullaway
+		errorprone rootProject.libs.errorprone
 	}
 
 	p.tasks.withType(JavaCompile).configureEach { task ->
@@ -200,7 +203,7 @@ configure(subprojects) { p ->
 		jvmArgs = ["-XX:MaxGCPauseMillis=20"]
 
 		systemProperty("java.awt.headless", "true")
-		systemProperty("testGroups", p.properties.get("testGroups"))
+		systemProperty("testGroups", p.findProperty("testGroups"))
 		scanForTestClasses = false
 		exclude '**/*Abstract*.*'
 		exclude '**/*OperatorTest*.*'
@@ -257,6 +260,5 @@ configure(subprojects) { p ->
 
 configure(subprojects) { p ->
 	// these apply once the above configure is done, but before project-specific build.gradle have applied
-	apply plugin: "io.reactor.gradle.java-conventions"
 	apply from: "${rootDir}/gradle/javadoc.gradle"
 }
