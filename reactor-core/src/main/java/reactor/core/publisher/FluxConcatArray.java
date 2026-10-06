@@ -138,7 +138,11 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		long produced;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s is
-		Subscription s;
+		volatile Subscription s;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ConcatArraySubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ConcatArraySubscriber.class,
+						Subscription.class, "s");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -156,24 +160,32 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		@SuppressWarnings("DataFlowIssue")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (this.cancelled) {
-				this.remove();
-				s.cancel();
+			for (;;) {
+				final Subscription previousSubscription = this.s;
+
+				if (previousSubscription == Operators.cancelledSubscription()) {
+					this.remove();
+					s.cancel();
+					return;
+				}
+
+				// installing a subscription and cancelling are exclusive: a cancel landing here
+				// either loses the compareAndSet, and is cancelled below, or wins it and cancels
+				// this subscription itself
+				if (!S.compareAndSet(this, previousSubscription, s)) {
+					continue;
+				}
+
+				if (previousSubscription == null) {
+					this.actual.onSubscribe(this);
+					return;
+				}
+
+				final long actualRequested = activateAndGetRequested(REQUESTED, this);
+				if (actualRequested > 0) {
+					s.request(actualRequested);
+				}
 				return;
-			}
-
-			final Subscription previousSubscription = this.s;
-
-			this.s = s;
-
-			if (previousSubscription == null) {
-				this.actual.onSubscribe(this);
-				return;
-			}
-
-			final long actualRequested = activateAndGetRequested(REQUESTED, this);
-			if (actualRequested > 0) {
-				s.request(actualRequested);
 			}
 		}
 
@@ -266,8 +278,11 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 			this.cancelled = true;
 
-			if ((this.requested & Long.MIN_VALUE) != Long.MIN_VALUE) {
-				this.s.cancel();
+			final Subscription previousSubscription =
+					S.getAndSet(this, Operators.cancelledSubscription());
+			if (previousSubscription != null
+					&& previousSubscription != Operators.cancelledSubscription()) {
+				previousSubscription.cancel();
 			}
 		}
 
@@ -301,7 +316,11 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		long produced;
 
 		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
-		Subscription s;
+		volatile Subscription s;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ConcatArrayDelayErrorSubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class,
+						Subscription.class, "s");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -325,24 +344,32 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		@SuppressWarnings("DataFlowIssue")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (this.cancelled) {
-				this.remove();
-				s.cancel();
+			for (;;) {
+				final Subscription previousSubscription = this.s;
+
+				if (previousSubscription == Operators.cancelledSubscription()) {
+					this.remove();
+					s.cancel();
+					return;
+				}
+
+				// installing a subscription and cancelling are exclusive: a cancel landing here
+				// either loses the compareAndSet, and is cancelled below, or wins it and cancels
+				// this subscription itself
+				if (!S.compareAndSet(this, previousSubscription, s)) {
+					continue;
+				}
+
+				if (previousSubscription == null) {
+					this.actual.onSubscribe(this);
+					return;
+				}
+
+				final long actualRequested = activateAndGetRequested(REQUESTED, this);
+				if (actualRequested > 0) {
+					s.request(actualRequested);
+				}
 				return;
-			}
-
-			final Subscription previousSubscription = this.s;
-
-			this.s = s;
-
-			if (previousSubscription == null) {
-				this.actual.onSubscribe(this);
-				return;
-			}
-
-			final long actualRequested = activateAndGetRequested(REQUESTED, this);
-			if (actualRequested > 0) {
-				s.request(actualRequested);
 			}
 		}
 
@@ -457,8 +484,11 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 			this.cancelled = true;
 
-			if ((this.requested & Long.MIN_VALUE) != Long.MIN_VALUE) {
-				this.s.cancel();
+			final Subscription previousSubscription =
+					S.getAndSet(this, Operators.cancelledSubscription());
+			if (previousSubscription != null
+					&& previousSubscription != Operators.cancelledSubscription()) {
+				previousSubscription.cancel();
 			}
 
 			final Throwable throwable = Exceptions.terminate(ERROR, this);
