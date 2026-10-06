@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ ext {
 	bndOptions = [
 		"Export-Package": [
 			"!*internal*",
-			"reactor.core.observability.micrometer*;version=$osgiVersion;-noimport:=true"
+			"reactor.core.observability.micrometer*;version=${rootProject.osgiVersion};-noimport:=true"
 		].join(","),
 		"Import-Package": [
 			"!javax.annotation",
@@ -33,7 +33,7 @@ ext {
 		].join(","),
 		"Bundle-Name" : "reactor-core-micrometer",
 		"Bundle-SymbolicName" : "io.projectreactor.reactor-core-micrometer",
-		"Bundle-Version" : "$osgiVersion",
+		"Bundle-Version" : "${rootProject.osgiVersion}",
 		"-noextraheaders" : "true"
 	]
 }

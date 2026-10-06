@@ -118,11 +118,14 @@ jar {
 
 shadow {
     addShadowVariantIntoJavaComponent = false
+    addTargetJvmVersionAttribute = false
 }
 
 shadowJar {
     enableAutoRelocation = true
     relocationPrefix = "reactor.tools.shaded"
+    // META-INF/** of the dependencies is excluded below, so there are no versioned entries
+    addMultiReleaseAttribute = false
     archiveClassifier.set('')
 
     dependsOn(project.tasks.jar)

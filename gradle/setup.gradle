@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-if (project.name == 'benchmarks')
+// the docs project is not published on its own, its docsZip is attached to the reactor-core publication
+if (project.name == 'benchmarks' || project.name == 'docs')
 	return
 
 apply plugin: 'maven-publish'
@@ -90,8 +91,8 @@ task qualifyVersionGha() {
 		//we ensure that if at least _one_ submodule version is BAD, we only output versionType=BAD + job fails
 		if (versionType == "BAD") {
 			outputToGha(versionType, version)
-			println "::error ::Unable to parse $version to a VersionNumber with recognizable qualifier"
-			throw new TaskExecutionException(tasks.getByName("qualifyVersionGha"), new IllegalArgumentException("Unable to parse $version to a VersionNumber with recognizable qualifier"))
+			println "::error ::Unable to parse $version with recognizable qualifier"
+			throw new TaskExecutionException(tasks.getByName("qualifyVersionGha"), new IllegalArgumentException("Unable to parse $version with recognizable qualifier"))
 		}
 		println "Recognized $version as $versionType"
 
@@ -106,15 +107,15 @@ publishing {
 	repositories {
 		maven {
 			name = "mock"
-			url = "${rootProject.layout.buildDirectory.get().asFile.toString()}/repo"
+			url = rootProject.layout.buildDirectory.dir("mockRepo").get().asFile.toURI().toString()
 		}
 		if (qualifyVersion("$version") in ["RELEASE", "MILESTONE"]) {
 			maven {
 				name = "sonatype"
 				url = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
 				credentials {
-					username findProperty("sonatypeUsername")
-					password findProperty("sonatypePassword")
+					username = findProperty("sonatypeUsername")
+					password = findProperty("sonatypePassword")
 				}
 			}
 		}
@@ -204,8 +205,10 @@ publishing {
 if (rootProject.hasProperty("artifactory_publish_password")) {
 	apply plugin: "com.jfrog.artifactory"
 
-	artifactoryPublish {
-		publications(publishing.publications.mavenJava)
+	afterEvaluate {
+		artifactoryPublish {
+			publications(publishing.publications.mavenJava)
+		}
 	}
 }
 
