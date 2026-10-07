@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -273,7 +273,8 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 		}
 		return new SinkManyReplayProcessor<>(new FluxReplay.SizeAndTimeBoundReplayBuffer<>(size,
 				maxAge.toNanos(),
-				scheduler));
+				scheduler,
+				true));
 	}
 
 	final FluxReplay.ReplayBuffer<T> buffer;
