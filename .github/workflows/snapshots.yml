@@ -11,11 +11,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ main ]
+        branch: [ 3.8.x, main ]
         test-type:
           - type: core
             arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
-          - type: other # includes java21Test and java9Test for 3.6+ / java11Test for 3.7+
+          - type: other # includes java21Test and java11Test for 3.7+
             arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress -DuseSnapshotMicrometerVersion=true --no-daemon"
     name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
     steps:
@@ -29,19 +29,19 @@ jobs:
           distribution: 'temurin'
           java-version: 8
       - name: Setup Java 11
-        if: contains('main 3.7.x', matrix.branch)
+        if: contains('main 3.8.x', matrix.branch)
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # tag=v6.0.1
         with:
           distribution: 'temurin'
           java-version: 11
       - name: Setup Java 25
-        if: contains('main', matrix.branch)
+        if: contains('main 3.8.x', matrix.branch)
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # tag=v6.0.1
         with:
           distribution: 'temurin'
           java-version: 25
       - name: Setup Java 21
-        if: contains('main 3.7.x', matrix.branch)
+        if: contains('main 3.8.x', matrix.branch)
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # tag=v6.0.1
         with:
           distribution: 'temurin'
