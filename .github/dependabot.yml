@@ -7,9 +7,8 @@ updates:
     labels:
       - "type/dependency-upgrade"
       - "status/need-triage"
-    reviewers:
-      - "reactor/core-team"
-    target-branch: "main"
+    # Updates in the oldest maintenance branch. We'll forward-merge up to main
+    target-branch: "3.8.x"
     open-pull-requests-limit: 10
     ignore:
       # JSR166 backport is fixed
@@ -18,12 +17,9 @@ updates:
       - dependency-name: "com.google.code.findbugs:jsr305"
       # Micrometer is updated manually
       - dependency-name: "io.micrometer:*"
-      # Reactor-Core-Micrometer is updated manually
+      # Benchmark baselines (reactor-core, reactor-core-micrometer) are updated manually on release
+      - dependency-name: "io.projectreactor:reactor-core"
       - dependency-name: "io.projectreactor:reactor-core-micrometer"
-      # Kotlin: stay on 1.8 to allow support for 1.3 target
-      - dependency-name: "org.jetbrains.kotlin*"
-        versions:
-        - ">= 1.9.a"
       # SLF4J: don't upgrade to v2
       - dependency-name: "org.slf4j:slf4j-api"
         versions:
@@ -58,9 +54,8 @@ updates:
       interval: "weekly"
     labels:
       - "type/dependency-upgrade"
-    reviewers:
-      - "reactor/core-team"
-    target-branch: "main"
+    # Updates in the oldest maintenance branch. We'll forward-merge up to main
+    target-branch: "3.8.x"
     open-pull-requests-limit: 10
   - package-ecosystem: "npm"
     directory: "/docs"
@@ -68,7 +63,10 @@ updates:
       interval: "daily"
     labels:
       - "type/dependency-upgrade"
-    reviewers:
-      - "reactor/core-team"
-    target-branch: "main"
+    # Updates in the oldest maintenance branch. We'll forward-merge up to main
+    target-branch: "3.8.x"
     open-pull-requests-limit: 10
+    groups:
+      docs:
+        patterns:
+          - "*"
