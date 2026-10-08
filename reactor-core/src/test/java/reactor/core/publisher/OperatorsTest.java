@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,14 @@ public class OperatorsTest {
 		assertThat(Operators.addCap(1, 2)).isEqualTo(3);
 		assertThat(Operators.addCap(1, Long.MAX_VALUE)).isEqualTo(Long.MAX_VALUE);
 		assertThat(Operators.addCap(0, -1)).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void multiplyCap() {
+		assertThat(Operators.multiplyCap(0, 1L << 31)).isZero();
+		assertThat(Operators.multiplyCap(1L << 31, 0)).isZero();
+		assertThat(Operators.multiplyCap(2, 3)).isEqualTo(6);
+		assertThat(Operators.multiplyCap(Long.MAX_VALUE, 2)).isEqualTo(Long.MAX_VALUE);
 	}
 
 	@Test
