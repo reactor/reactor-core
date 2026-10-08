@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,6 +116,32 @@ public class SchedulersHooksTest {
 	public void onScheduleIgnoresUnknownRemovals() {
 		assertThatCode(() -> Schedulers.resetOnScheduleHook("k1"))
 				.doesNotThrowAnyException();
+	}
+
+	@Test
+	public void onScheduleReturnsUndecoratedRunnableAsIs() {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
+
+		Runnable plain = () -> { };
+		UndecoratedRunnable undecorated = () -> { };
+
+		assertThat(Schedulers.onSchedule(plain)).as("plain task decorated").isNotSameAs(plain);
+		assertThat(Schedulers.onSchedule(undecorated)).as("undecorated task returned as-is").isSameAs(undecorated);
+	}
+
+	@ParameterizedTestWithName
+	@MethodSource("schedulers")
+	public void onScheduleSkipsUndecoratedRunnable(Supplier<Scheduler> schedulerType) throws Exception {
+		AtomicInteger tracker = new AtomicInteger();
+		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
+
+		CountDownLatch latch = new CountDownLatch(1);
+		UndecoratedRunnable task = latch::countDown;
+		afterTest.autoDispose(schedulerType.get()).schedule(task);
+		latch.await(5, TimeUnit.SECONDS);
+
+		assertThat(tracker).as("hook not applied to UndecoratedRunnable").hasValue(0);
 	}
 
 	@ParameterizedTestWithName
