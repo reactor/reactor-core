@@ -199,7 +199,15 @@ task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
-	src "${repositories.mavenCentral().url}io/projectreactor/reactor-core/${libs.versions.baseline.core.api.get()}/reactor-core-${libs.versions.baseline.core.api.get()}.jar"
+	// Do not use repositories.mavenCentral().url, it adds Maven Central to the repositories of the project
+	def baselineRepositoryUrl = org.gradle.api.artifacts.ArtifactRepositoryContainer.MAVEN_CENTRAL_URL
+	// On CI use only USW1 (proxies Maven Central) to avoid 429 from Maven Central
+	if (rootProject.isCiServer && System.getenv("GITHUB_ACTOR") != "dependabot[bot]") {
+		baselineRepositoryUrl = "https://usw1.packages.broadcom.com/artifactory/spring-maven-virtual/"
+		username System.getenv("COMMERCIAL_REPO_USERNAME")
+		password System.getenv("COMMERCIAL_REPO_PASSWORD")
+	}
+	src "${baselineRepositoryUrl}io/projectreactor/reactor-core/${libs.versions.baseline.core.api.get()}/reactor-core-${libs.versions.baseline.core.api.get()}.jar"
 	dest layout.buildDirectory.file("baselineLibs/reactor-core-${libs.versions.baseline.core.api.get()}.jar").get().asFile
 }
 

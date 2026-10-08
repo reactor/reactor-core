@@ -16,7 +16,20 @@
 
 buildscript {
 	repositories {
-		mavenCentral()
+		// On CI use only USW1 (proxies Maven Central) to avoid 429 from Maven Central
+		if (System.getenv("GITHUB_ACTION") != null && System.getenv("GITHUB_ACTOR") != "dependabot[bot]") {
+			maven {
+				name = "usw1-spring-maven-virtual"
+				url = "https://usw1.packages.broadcom.com/artifactory/spring-maven-virtual"
+				credentials {
+					username = System.getenv("COMMERCIAL_REPO_USERNAME")
+					password = System.getenv("COMMERCIAL_REPO_PASSWORD")
+				}
+			}
+		}
+		else {
+			mavenCentral()
+		}
 	}
 	dependencies {
 		//the plugin feature only works with the -original jar !!
@@ -35,7 +48,20 @@ plugins {
 apply plugin: "net.bytebuddy.byte-buddy-gradle-plugin"
 
 repositories {
-	mavenCentral()
+	// On CI use only USW1 (proxies Maven Central) to avoid 429 from Maven Central
+	if (System.getenv("GITHUB_ACTION") != null && System.getenv("GITHUB_ACTOR") != "dependabot[bot]") {
+		maven {
+			name = "usw1-spring-maven-virtual"
+			url = "https://usw1.packages.broadcom.com/artifactory/spring-maven-virtual"
+			credentials {
+				username = System.getenv("COMMERCIAL_REPO_USERNAME")
+				password = System.getenv("COMMERCIAL_REPO_PASSWORD")
+			}
+		}
+	}
+	else {
+		mavenCentral()
+	}
 }
 
 ext {
