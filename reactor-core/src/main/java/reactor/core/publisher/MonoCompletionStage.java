@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ final class MonoCompletionStage<T> extends Mono<T>
             if (this.cancelled) {
                 //nobody is interested in the Mono anymore, don't risk dropping errors
                 final Context ctx = actual.currentContext();
-                if (e == null || e instanceof CancellationException) {
+                if (e == null || isCancellation(e)) {
                     //we discard any potential value and ignore Future cancellations
                     Operators.onDiscard(value, ctx);
                 }
@@ -130,6 +130,13 @@ final class MonoCompletionStage<T> extends Mono<T>
                 throw Exceptions.bubble(e1);
             }
             return null;
+        }
+
+        //a cancellation can also surface wrapped, e.g. from a dependent stage or a Future
+        //that propagates cancel() to a source it depends on
+        static boolean isCancellation(Throwable e) {
+            Throwable cause = e instanceof CompletionException ? e.getCause() : e;
+            return cause instanceof CancellationException;
         }
 
         @Override
