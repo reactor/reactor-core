@@ -4,7 +4,7 @@ on:
     branches:
       # For branches, better to list them explicitly than regexp include.
       # Older branches are triggered using workflows present there
-      - 3.8.x
+      - main
 permissions: {}
 
 jobs:
