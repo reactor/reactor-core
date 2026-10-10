@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -484,5 +484,41 @@ public class FluxRefCountTest {
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel+onComplete").isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel+onComplete").isFalse();
+	}
+
+	@Test
+	public void cancelInOnSubscribeDecrementsRefCount() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {
+		}, null, Subscription::cancel);
+		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10)
+																   .publish(), 1);
+		FluxRefCount.RefCountMonitor<Integer> connection = new FluxRefCount.RefCountMonitor<>(main);
+		connection.subscribers = 1;
+		connection.connected = true;
+
+		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual);
+		test.onSubscribe(Operators.emptySubscription());
+		test.setRefCountMonitor(connection);
+
+		assertThat(connection.subscribers).as("refCount subscribers").isZero();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
+	}
+
+	@Test
+	public void cancelInOnSubscribeDisconnectsSource() {
+		AtomicLong subscriptionCount = new AtomicLong();
+		AtomicReference<SignalType> termination = new AtomicReference<>();
+
+		Flux<Integer> refCounted = Flux.<Integer>never()
+		                               .doOnSubscribe(s -> subscriptionCount.incrementAndGet())
+		                               .doFinally(termination::set)
+		                               .publish()
+		                               .refCount(1);
+
+		refCounted.subscribe(new LambdaSubscriber<>(null, e -> {
+		}, null, Subscription::cancel));
+
+		assertThat(subscriptionCount).as("source subscriptions").hasValue(0);
+		assertThat(termination).as("source termination").hasValue(null);
 	}
 }

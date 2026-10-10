@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -517,6 +518,22 @@ public class FluxRefCountGraceTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void cancelInOnSubscribeDecrementsRefCount() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, Subscription::cancel);
+		FluxRefCountGrace<Integer> parent = new FluxRefCountGrace<>(Flux.just(10).publish(), 1, Duration.ZERO, Schedulers.single());
+		FluxRefCountGrace.RefConnection connection = new FluxRefCountGrace.RefConnection(parent);
+		connection.subscriberCount = 1;
+		connection.connected = true;
+
+		FluxRefCountGrace.RefCountInner<Integer> test = new FluxRefCountGrace.RefCountInner<>(actual, parent);
+		test.onSubscribe(Operators.emptySubscription());
+		test.setRefConnection(connection);
+
+		assertThat(connection.subscriberCount).as("refCount subscribers").isZero();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
 	}
 
 }
