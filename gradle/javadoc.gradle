@@ -55,4 +55,17 @@ javadoc {
 	destinationDir = project.layout.buildDirectory.dir("docs/javadoc").get().asFile
 
 	options.addStringOption("Xdoclint:none", "-quiet")
+
+	doLast {
+		// JDK 9+ generates element-list, while JDK 8 Javadoc and older
+		// documentation tools still require package-list.
+		def elementList = new File(destinationDir, "element-list")
+		if (elementList.exists()) {
+			copy {
+				from elementList
+				into destinationDir
+				rename { "package-list" }
+			}
+		}
+	}
 }
