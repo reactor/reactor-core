@@ -236,8 +236,12 @@ public final class Sinks {
 
 		@Override
 		public boolean onEmitFailure(SignalType signalType, EmitResult emitResult) {
-			return emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED)
+			boolean shouldRetry = emitResult.equals(Sinks.EmitResult.FAIL_NON_SERIALIZED)
 					&& deadline - System.nanoTime() > 0; // difference is used to tackle a numeric overflow
+			if (shouldRetry) {
+				Thread.yield();
+			}
+			return shouldRetry;
 		}
 	}
 
@@ -262,8 +266,10 @@ public final class Sinks {
 		EmitFailureHandler FAIL_FAST = (signalType, emission) -> false;
 
 		/**
-		 * Create an {@link EmitFailureHandler} which will busy loop in case of concurrent use
+		 * Create an {@link EmitFailureHandler} which will loop and yield in case of concurrent use
 		 * of the sink ({@link EmitResult#FAIL_NON_SERIALIZED}, up to a deadline.
+		 * Yielding prevents the retry loop from monopolizing a platform thread or a virtual
+		 * thread's carrier thread while another thread completes an emission.
 		 * The deadline is computed immediately from the current time (construction time)
 		 * + provided {@link Duration}.
 		 * <p>
