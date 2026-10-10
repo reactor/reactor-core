@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -802,6 +802,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued from
+	 * either source upon cancellation, error or when the sequences are detected to differ.
+	 *
 	 * @param source1 the first Publisher to compare
 	 * @param source2 the second Publisher to compare
 	 * @param <T> the type of items emitted by each Publisher
@@ -817,6 +820,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * equality function.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued from
+	 * either source upon cancellation, error or when the sequences are detected to differ.
 	 *
 	 * @param source1 the first Publisher to compare
 	 * @param source2 the second Publisher to compare
@@ -836,6 +842,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * equality function.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
+	 *
+	 * <p><strong>Discard Support:</strong> This operator discards elements it internally queued from
+	 * either source upon cancellation, error or when the sequences are detected to differ.
 	 *
 	 * @param source1 the first Publisher to compare
 	 * @param source2 the second Publisher to compare
