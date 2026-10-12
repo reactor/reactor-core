@@ -51,6 +51,9 @@ javadoc {
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
 					 "implNote:a:Implementation Note:" ]
 
+	// Report javadoc errors (e.g. unreachable external links) without failing the build
+	failOnError = false
+
 	maxMemory = "1024m"
 	destinationDir = project.layout.buildDirectory.dir("docs/javadoc").get().asFile
 
