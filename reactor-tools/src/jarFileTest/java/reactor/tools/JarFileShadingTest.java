@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,13 @@ public class JarFileShadingTest extends AbstractJarFileTest {
 	public void testMetaInf() throws Exception {
 		assertThatFileList(root.resolve("META-INF")).containsOnly(
 				"MANIFEST.MF",
-				"LICENSE"
+				"LICENSE",
+				"licenses"
+		);
+
+		assertThatFileList(root.resolve("META-INF/licenses/byte-buddy")).containsOnly(
+				"NOTICE",
+				"ASM"
 		);
 	}
 

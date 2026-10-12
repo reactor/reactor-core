@@ -124,7 +124,8 @@ shadow {
 shadowJar {
     enableAutoRelocation = true
     relocationPrefix = "reactor.tools.shaded"
-    // META-INF/** of the dependencies is excluded below, so there are no versioned entries
+    // Byte Buddy's versioned (Java 24+ Class-File API) classes are excluded below: we use its
+    // bundled ASM directly and never go through that code path
     addMultiReleaseAttribute = false
     archiveClassifier.set('')
 
@@ -155,9 +156,18 @@ shadowJar {
             }
         }
     }
-    exclude 'META-INF/**'
-    // TODO discuss with ByteBuddy folks how to shade it
-    exclude 'win32-x86*/**'
+    // Drop the dependencies' metadata, but keep the Byte Buddy and bundled ASM notices
+    exclude {
+        it.path.startsWith('META-INF/') && !(it.path in ['META-INF/NOTICE', 'META-INF/licenses/ASM'])
+    }
+    filesMatching(['META-INF/NOTICE', 'META-INF/licenses/ASM']) {
+        path = "META-INF/licenses/byte-buddy/${name}"
+    }
+    // byte-buddy and byte-buddy-agent ship the same NOTICE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // Native attach libraries JNA loads from fixed root paths, so they can't be relocated.
+    // Only used by Byte Buddy's emulated attach on Windows, which needs JNA (not bundled).
+    exclude 'win32-*/**'
 }
 
 project.tasks.build.dependsOn(shadowJar)
