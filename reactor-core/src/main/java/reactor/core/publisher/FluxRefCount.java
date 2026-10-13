@@ -88,10 +88,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		if (connect) {
 			if (RefCountInner.isCancelled(inner.state)) {
-				// cancel() always calls innerCancelled() regardless of MONITOR_SET_FLAG, so
-				// the count may already be decremented. Check whether all subscribers are gone
-				// (DISCONNECT disposed) before skipping source.connect — if other subscribers
-				// are still waiting we must connect on their behalf.
+				// cancel() fired synchronously inside onSubscribe (before MONITOR_SET_FLAG).
+				// innerCancelled() → parent.cancel() already ran and, when the last
+				// subscriber left, wrote a disposed sentinel into DISCONNECT via getAndSet.
+				// Reading that volatile field tells us whether to skip source.connect:
+				// if disposed, all subscribers are gone and connecting would leak the source.
 				Disposable d = RefCountMonitor.DISCONNECT.get(conn);
 				if (d != null && d.isDisposed()) {
 					return;
