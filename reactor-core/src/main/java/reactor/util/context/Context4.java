@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 final class Context4 implements CoreContext {
 
 	/**
@@ -146,6 +148,24 @@ final class Context4 implements CoreContext {
 			return (T)this.value4;
 		}
 		throw new NoSuchElementException("Context does not contain key: "+key);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T> @Nullable T getOrDefault(Object key, @Nullable T defaultValue) {
+		if (this.key1.equals(key)) {
+			return (T) this.value1;
+		}
+		if (this.key2.equals(key)) {
+			return (T) this.value2;
+		}
+		if (this.key3.equals(key)) {
+			return (T) this.value3;
+		}
+		if (this.key4.equals(key)) {
+			return (T) this.value4;
+		}
+		return defaultValue;
 	}
 
 	@Override
