@@ -140,6 +140,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Nullable InnerWindow<T> window;
 
+		// Access is serialized through the parent drain loop.
+		long deferredRequest;
+
 		WindowTimeoutWithBackpressureSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int maxSize,
 				long timespan,
@@ -485,9 +488,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 								return;
 							}
 
-							final long nextRequest = InnerWindow.received(previousInnerWindowState);
-							if (nextRequest > 0) {
-								this.s.request(nextRequest);
+							this.deferredRequest += InnerWindow.received(previousInnerWindowState);
+							if (!shouldBeUnsent) {
+								requestDeferred();
 							}
 
 
@@ -495,6 +498,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 								return;
 							}
 						} else {
+							requestDeferred();
+
 							previousState = commitSent(this, expectedState);
 							expectedState = (previousState &~ HAS_UNSENT_WINDOW) ^ (expectedState == previousState ? HAS_WORK_IN_PROGRESS : 0);
 							previousState &= ~HAS_UNSENT_WINDOW;
@@ -585,9 +590,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 							nextRequest = InnerWindow.received(previousActiveWindowState);
 						}
 
-						if (nextRequest > 0) {
-							this.s.request(nextRequest);
-						}
+						this.deferredRequest += nextRequest;
+						requestDeferred();
 
 						if (!hasWorkInProgress(expectedState)) {
 							return;
@@ -640,9 +644,9 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					long previousActiveWindowState = previousWindow.sendComplete();
 					final long nextRequest = InnerWindow.received(previousActiveWindowState);
 
-					if (nextRequest > 0) {
-						this.s.request(nextRequest);
-					}
+					// Keep the replenishment pending while the next window cannot be
+					// delivered. It is requested once downstream asks for that window.
+					this.deferredRequest += nextRequest;
 
 					if (!hasWorkInProgress(expectedState)) {
 						return;
@@ -679,6 +683,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						return;
 					}
 				}
+			}
+		}
+
+		void requestDeferred() {
+			final long n = this.deferredRequest;
+			if (n > 0) {
+				this.deferredRequest = 0;
+				this.s.request(n);
 			}
 		}
 
