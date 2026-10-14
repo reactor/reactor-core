@@ -37,12 +37,12 @@ javadoc {
 
 	if (project.name == "reactor-core") {
 		options.links([rootProject.jdkJavadoc,
-					   "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
+					   "https://www.reactive-streams.org/reactive-streams-1.0.4-javadoc/",
 					   "https://jspecify.dev/docs/api/"] as String[])
 	}
 	else {
 		options.links([rootProject.jdkJavadoc,
-					   "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
+					   "https://www.reactive-streams.org/reactive-streams-1.0.4-javadoc/",
 					   "https://projectreactor.io/docs/core/release/api/",
 					   "https://jspecify.dev/docs/api/"] as String[]);
 		//TODO add micrometer javadocs here
