@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1011,4 +1011,34 @@ public class OperatorsTest {
 	void emptySubscriberNotScannableStepName() {
 		assertThat(Scannable.from(Operators.emptySubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
 	}
+
+	@Test
+	public void multiSubscriptionSetAlwaysCancelsWhenRacingWithCancel() {
+		for (int i = 0; i < 100_000; i++) {
+			MultiSubscriptionSubscriber<Integer, Integer> arbiter =
+					new MultiSubscriptionSubscriber<Integer, Integer>(AssertSubscriber.create()) {
+						@Override
+						public void onNext(Integer t) {
+						}
+					};
+			arbiter.onSubscribe(Operators.emptySubscription());
+
+			AtomicBoolean cancelled = new AtomicBoolean();
+			Subscription next = new Subscription() {
+				@Override
+				public void request(long n) {
+				}
+
+				@Override
+				public void cancel() {
+					cancelled.set(true);
+				}
+			};
+
+			RaceTestUtils.race(arbiter::cancel, () -> arbiter.set(next));
+
+			assertThat(cancelled).as("subscription cancelled, iteration %d", i).isTrue();
+		}
+	}
+
 }
