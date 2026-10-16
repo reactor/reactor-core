@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,58 @@ public class SinkManyReplayProcessorTest {
 	@AfterEach
 	public void teardownVirtualTime() {
 		VirtualTimeScheduler.reset();
+	}
+
+	@Test
+	public void elementsExpiredBeforeCompletionAreNotReplayed() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.get();
+		Sinks.Many<String> sink = Sinks.many().replay().limit(Duration.ofSeconds(1));
+
+		sink.tryEmitNext("old").orThrow();
+		vts.advanceTimeBy(Duration.ofSeconds(2));
+		sink.tryEmitComplete().orThrow();
+
+		assertLateSubscribersReceive(sink);
+	}
+
+	@Test
+	public void elementsExpiredAfterCompletionAreNotReplayed() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.get();
+		Sinks.Many<String> sink = Sinks.many().replay().limit(Duration.ofSeconds(1));
+
+		sink.tryEmitNext("old").orThrow();
+		sink.tryEmitComplete().orThrow();
+		vts.advanceTimeBy(Duration.ofSeconds(2));
+
+		assertLateSubscribersReceive(sink);
+	}
+
+	@Test
+	public void elementsNotYetExpiredAreReplayedAfterCompletion() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.get();
+		Sinks.Many<String> sink = Sinks.many().replay().limit(Duration.ofSeconds(1));
+
+		sink.tryEmitNext("old").orThrow();
+		vts.advanceTimeBy(Duration.ofMillis(600));
+		sink.tryEmitNext("fresh").orThrow();
+		sink.tryEmitComplete().orThrow();
+		vts.advanceTimeBy(Duration.ofMillis(600));
+
+		assertLateSubscribersReceive(sink, "fresh");
+	}
+
+	private static void assertLateSubscribersReceive(Sinks.Many<String> sink, String... expected) {
+		AssertSubscriber<String> normal = AssertSubscriber.create();
+		sink.asFlux().subscribe(normal);
+		normal.assertValues(expected)
+		      .assertComplete();
+
+		AssertSubscriber<String> fused = AssertSubscriber.create();
+		fused.requestedFusionMode(Fuseable.ASYNC);
+		sink.asFlux().subscribe(fused);
+		fused.assertFusionMode(Fuseable.ASYNC)
+		     .assertValues(expected)
+		     .assertComplete();
 	}
 
 	@Test
