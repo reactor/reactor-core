@@ -98,6 +98,14 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		inner.setRefConnection(conn);
 
 		if (connect) {
+			if (RefCountInner.isCancelled(inner.state)) {
+				// Cancelled in onSubscribe: skip connecting only if that cancel already
+				// disposed the connection (count hit 0), otherwise peers are still waiting.
+				Disposable d = RefConnection.SOURCE_DISCONNECTOR.get(conn);
+				if (d != null && d.isDisposed()) {
+					return;
+				}
+			}
 			source.connect(conn);
 		}
 	}
@@ -306,15 +314,20 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		public void cancel() {
 			s.cancel();
 
-			int previousState = this.state;
+			for (;;) {
+				int previousState = this.state;
 
-			if (isTerminated(previousState) || isCancelled(previousState)) {
-				return;
-			}
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
 
-			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
-				assert connection != null : "connection must not be null when cancelling";
-				parent.cancel(connection);
+				if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+					// connection is written before actual.onSubscribe in setRefConnection,
+					// so it is visible to whoever received the subscription and cancels.
+					assert connection != null : "connection must not be null when cancelling";
+					parent.cancel(connection);
+					return;
+				}
 			}
 		}
 
