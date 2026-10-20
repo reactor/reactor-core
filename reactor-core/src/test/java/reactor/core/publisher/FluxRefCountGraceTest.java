@@ -576,9 +576,8 @@ public class FluxRefCountGraceTest {
 	}
 
 	// When a subscriber cancels in onSubscribe but a peer subscriber (n=2) is still
-	// waiting, cancel() decrements the count to 1 (not 0), so SOURCE_DISCONNECTOR is
-	// not disposed. The subscribe() guard must detect this and still call source.connect
-	// on behalf of the waiting peer — otherwise the peer hangs forever.
+	// waiting, the count only drops to 1 and the connection stays. subscribe() must
+	// still connect the source on behalf of the waiting peer, otherwise it hangs forever.
 	@Test
 	public void cancelDuringOnSubscribeWithPeerStillConnects() {
 		AtomicInteger sourceSubscriptions = new AtomicInteger();
@@ -607,6 +606,37 @@ public class FluxRefCountGraceTest {
 		assertThat(peerReceived)
 				.as("peer subscriber must receive the element")
 				.hasValue(1);
+	}
+
+	// A late subscriber joins the already connected source, receives a queued value as
+	// soon as it requests in onSubscribe and cancels from onNext (like take(1) or next()),
+	// all before subscribe() has finished registering it. That cancel must still count.
+	@Test
+	public void cancelFromOnNextDuringOnSubscribeOfLateSubscriber() {
+		TestPublisher<Integer> source = TestPublisher.createCold();
+		Flux<Integer> shared = source.flux().publish().refCount(1, Duration.ZERO, Schedulers.immediate());
+
+		Disposable first = shared.subscribe();
+		source.assertSubscribers(1);
+
+		shared.subscribe(new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				// publish() queues the value, as this subscriber has no demand yet
+				source.next(1);
+				request(1);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				cancel();
+			}
+		});
+
+		first.dispose();
+
+		source.assertCancelled();
+		source.assertNoSubscribers();
 	}
 
 }

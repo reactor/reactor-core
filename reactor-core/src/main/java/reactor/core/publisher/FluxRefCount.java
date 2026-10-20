@@ -87,15 +87,31 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		inner.setRefCountMonitor(conn);
 
 		if (connect) {
-			if (RefCountInner.isCancelled(inner.state)) {
-				// Cancelled in onSubscribe: skip connecting only if that cancel already
-				// disposed the connection (count hit 0), otherwise peers are still waiting.
-				Disposable d = RefCountMonitor.DISCONNECT.get(conn);
-				if (d != null && d.isDisposed()) {
-					return;
-				}
+			// Until source.connect() hands over the Disposable that disconnects the source,
+			// DISCONNECT holds this placeholder. If all subscribers leave in the
+			// meantime, disconnecting can only dispose the placeholder.
+			Disposable.Swap connecting = Disposables.swap();
+			if (!RefCountMonitor.DISCONNECT.compareAndSet(conn, null, connecting)) {
+				// all subscribers left before connecting (e.g. cancelled inside onSubscribe),
+				// so the source is not connected at all
+				return;
 			}
 			source.connect(conn);
+			// d is what accept() stored. Handing it to the placeholder means:
+			// - no disconnect happened: nothing else uses the placeholder, so this does
+			//   nothing, a later disconnect disposes d directly
+			// - a disconnect happened after accept(): it already disposed the source and d is
+			//   only the marker it left behind, so this does nothing
+			// - a disconnect disposed the placeholder before accept(): this disposes d now
+			// - a disconnect took the placeholder but hasn't disposed it yet: d is kept in the
+			//   placeholder and gets disposed together with it
+			// This is not done in accept() because connect() calls it before subscribing to
+			// the source, and disconnecting that early would fail other subscribers already
+			// attached to the source.
+			Disposable d = RefCountMonitor.DISCONNECT.get(conn);
+			if (d != connecting) {
+				connecting.replace(d);
+			}
 		}
 	}
 
