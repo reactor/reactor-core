@@ -369,7 +369,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		PeriodicDirectTask periodicTask = new PeriodicDirectTask(task);
 
-		directWorker.schedulePeriodically(periodicTask, initialDelay, period, unit);
+		replace(periodicTask, directWorker.schedulePeriodically(periodicTask, initialDelay, period, unit));
 
 		return periodicTask;
 	}
@@ -532,7 +532,11 @@ public class VirtualTimeScheduler implements Scheduler {
 					firstNowNanoseconds,
 					periodInNanoseconds);
 
-			replace(periodicTask, schedule(periodicTask, initialDelay, unit));
+			Disposable firstRun = schedule(periodicTask, initialDelay, unit);
+			// the first run may already have happened and rescheduled the task: don't overwrite that
+			if (!periodicTask.compareAndSet(EMPTY, firstRun) && periodicTask.get() == CANCELLED) {
+				firstRun.dispose();
+			}
 			return periodicTask;
 		}
 
@@ -598,6 +602,11 @@ public class VirtualTimeScheduler implements Scheduler {
 			public void dispose() {
 				getAndSet(CANCELLED).dispose();
 			}
+
+			@Override
+			public boolean isDisposed() {
+				return get() == CANCELLED;
+			}
 		}
 	}
 
@@ -617,7 +626,8 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static class PeriodicDirectTask implements Runnable, Disposable {
+	static class PeriodicDirectTask extends AtomicReference<Disposable>
+			implements Runnable, Disposable {
 
 		final Runnable run;
 
@@ -625,6 +635,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		PeriodicDirectTask(Runnable run) {
 			this.run = run;
+			lazySet(EMPTY);
 		}
 
 		@Override
@@ -643,6 +654,12 @@ public class VirtualTimeScheduler implements Scheduler {
 		@Override
 		public void dispose() {
 			disposed = true;
+			getAndSet(CANCELLED).dispose();
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return disposed;
 		}
 	}
 
