@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,7 +186,7 @@ class DefaultTestSubscriber<T> implements TestSubscriber<T> {
 		else if (fusionRequirement == FusionRequirement.FUSEABLE) {
 			subscriptionFail("TestSubscriber configured to require QueueSubscription, got " + s);
 		}
-		else if (this.initialRequest > 0L) {
+		else {
 			long rPre = REQUESTED_PRE_SUBSCRIPTION.getAndSet(this, -1L);
 			if (rPre > 0L) {
 				upstreamRequest(s, rPre);
