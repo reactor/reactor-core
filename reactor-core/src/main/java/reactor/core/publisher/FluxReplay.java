@@ -152,6 +152,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		final int       indexUpdateLimit;
 		final long      maxAge;
 		final Scheduler scheduler;
+		// false for FluxReplay: it replaces a terminated buffer whole once isExpired(), so it
+		// replays all of it until then; sinks keep a terminated buffer forever
+		final boolean   expireAfterTermination;
 		int size;
 
 		volatile TimedNode<T> head;
@@ -168,11 +171,13 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@SuppressWarnings("DataFlowIssue")
 		SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
-				Scheduler scheduler) {
+				Scheduler scheduler,
+				boolean expireAfterTermination) {
 			this.limit = limit;
 			this.indexUpdateLimit = Operators.unboundedOrLimit(limit);
 			this.maxAge = maxAge;
 			this.scheduler = scheduler;
+			this.expireAfterTermination = expireAfterTermination;
 			TimedNode<T> h = new TimedNode<>(-1, null, 0L);
 			this.tail = h;
 			this.head = h;
@@ -182,6 +187,15 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		public boolean isExpired() {
 			long done = this.done;
 			return done != NOT_DONE && scheduler.now(TimeUnit.NANOSECONDS) - maxAge > done;
+		}
+
+		// elements timestamped at or before this are skipped by the fused path,
+		// under the same condition replayNormal checks
+		long expiryLimit() {
+			if (!expireAfterTermination && done != NOT_DONE) {
+				return Long.MIN_VALUE;
+			}
+			return scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -194,7 +208,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 						(TimedNode<T>) rs.node();
 				if (node == null) {
 					node = head;
-					if (done == NOT_DONE) {
+					if (expireAfterTermination || done == NOT_DONE) {
 						// skip old entries
 						long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 						TimedNode<T> next = node;
@@ -343,7 +357,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@SuppressWarnings("unchecked")
 		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
-			long now = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
+			long now = expiryLimit();
 
 			TimedNode<T> h = (TimedNode<T>) rs.node();
 			if (h == null) {
@@ -363,7 +377,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		public @Nullable T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
-			long now = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
+			long now = expiryLimit();
 			while ((next = node.get()) != null) {
 				if (next.time > now) {
 					node = next;
@@ -1109,7 +1123,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		if (scheduler != null) {
 			return new ReplaySubscriber<>(new SizeAndTimeBoundReplayBuffer<>(history,
 					ttl,
-					scheduler), this, history);
+					scheduler,
+					false), this, history);
 		}
 		if (history != Integer.MAX_VALUE) {
 			return new ReplaySubscriber<>(new SizeBoundReplayBuffer<>(history),
