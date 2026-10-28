@@ -129,6 +129,7 @@
  <path id="line1330" d="M147 275l1 58" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.00000002,6" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
  <ellipse id="ellipse1332" ry="20" rx="21" cy="373" cx="148" fill="#6cb33e" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
  <path id="path1334" d="M138 363h19l1 1v18h-21v-18z" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="pathSeedSquare" d="M90 363h19l1 1v18h-21v-18z" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
  <path id="rect1104" stroke-miterlimit="4" d="M45 211h450v58H45z" opacity="1" fill="#fff" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-dashoffset="1" stroke-opacity="1"/>
  <ellipse id="ellipse1337" ry="26" rx="27" cy="240" cx="408" fill="#6f6f6f" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
  <circle cx="296" cy="240" id="ellipse1195" r="14" fill="#6f6f6f" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
@@ -156,4 +157,5 @@
   <tspan font-size="24" font-weight="400" y="247" id="tspan1369" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c"> <tspan id="tspan1367" font-weight="700">)</tspan> </tspan>
  </text>
  <path d="M330 241h39" id="path94917" fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-6)"/>
+ <path id="lineSeed" d="M100 275v67" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.00000002,6" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
 </svg>
