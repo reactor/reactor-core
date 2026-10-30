@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.AbstractQueue;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -46,6 +51,78 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class FluxGroupByTest extends
                              FluxOperatorTest<String, GroupedFlux<Integer, String>> {
+
+	@Test
+	@Timeout(10)
+	// see https://github.com/reactor/reactor-core/issues/2352
+	void valuePolledWhenGroupCancelledIsRegrouped() throws InterruptedException {
+		BlockingPollQueue<Integer> groupQueue = new BlockingPollQueue<>();
+		AtomicInteger suppliedQueues = new AtomicInteger();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> groupSubscriber = AssertSubscriber.create();
+		FluxGroupBy.GroupByMain<Integer, Integer, Integer> main = new FluxGroupBy.GroupByMain<>(
+				groupSubscriber,
+				Queues.<GroupedFlux<Integer, Integer>>unbounded().get(),
+				() -> suppliedQueues.getAndIncrement() == 0 ? groupQueue : Queues.<Integer>unbounded().get(),
+				Queues.SMALL_BUFFER_SIZE,
+				ignored -> 0,
+				Function.identity());
+		main.onSubscribe(Operators.emptySubscription());
+
+		main.onNext(1);
+
+		FluxGroupBy.UnicastGroupedFlux<Integer, Integer> group =
+				(FluxGroupBy.UnicastGroupedFlux<Integer, Integer>) groupSubscriber.values().get(0);
+		AssertSubscriber<Integer> valueSubscriber = AssertSubscriber.create(0);
+		group.subscribe(valueSubscriber);
+
+		Thread request = new Thread(() -> valueSubscriber.request(1));
+		try {
+			request.start();
+			assertThat(groupQueue.pollStarted.await(5, TimeUnit.SECONDS)).isTrue();
+			group.cancel();
+		}
+		finally {
+			groupQueue.continuePoll.countDown();
+			request.join();
+		}
+
+		valueSubscriber.assertNoValues();
+		groupSubscriber.assertValueCount(2);
+
+		AssertSubscriber<Integer> replacementSubscriber = AssertSubscriber.create();
+		groupSubscriber.values().get(1).subscribe(replacementSubscriber);
+		replacementSubscriber.assertValues(1);
+	}
+
+	@Test
+	void gh2352SimplifiedReproducer() {
+		Long count = Flux.range(0, 100)
+		                 .groupBy(i -> (i / 2) * 2, 42)
+		                 .flatMap(group -> group.take(1), 2)
+		                 .publishOn(Schedulers.parallel(), 2)
+		                 .count()
+		                 .block(Duration.ofSeconds(5));
+
+		assertThat(count).isEqualTo(100);
+	}
+
+	@Test
+	@Timeout(10)
+	void gh2352TimedGroupCancellation() {
+		AtomicLong nextValue = new AtomicLong();
+		AtomicLong upstream = new AtomicLong();
+		AtomicLong downstream = new AtomicLong();
+
+		Flux.<Long>generate(sink -> sink.next(nextValue.getAndIncrement()))
+		    .take(Duration.ofMillis(500))
+		    .doOnNext(ignored -> upstream.incrementAndGet())
+		    .groupBy(value -> value % 8)
+		    .flatMap(group -> group.take(Duration.ofMillis(5)), 8)
+		    .doOnNext(ignored -> downstream.incrementAndGet())
+		    .blockLast(Duration.ofSeconds(5));
+
+		assertThat(downstream).hasValue(upstream.get());
+	}
 
 	@Test
 	// see https://github.com/reactor/reactor-core/issues/3554
@@ -1007,5 +1084,53 @@ public class FluxGroupByTest extends
 				)
 				.then()
 				.block();
+	}
+
+	static final class BlockingPollQueue<T> extends AbstractQueue<T> {
+
+		final Queue<T> delegate = Queues.<T>unbounded().get();
+		final CountDownLatch pollStarted = new CountDownLatch(1);
+		final CountDownLatch continuePoll = new CountDownLatch(1);
+
+		@Override
+		public boolean offer(T value) {
+			return delegate.offer(value);
+		}
+
+		@Override
+		public T poll() {
+			T value = delegate.poll();
+			if (value != null) {
+				pollStarted.countDown();
+				try {
+					continuePoll.await();
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException(e);
+				}
+			}
+			return value;
+		}
+
+		@Override
+		public T peek() {
+			return delegate.peek();
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			return delegate.iterator();
+		}
+
+		@Override
+		public int size() {
+			return delegate.size();
+		}
+
+		@Override
+		public void clear() {
+			delegate.clear();
+		}
 	}
 }
