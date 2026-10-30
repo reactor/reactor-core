@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,13 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.TestLoggerExtension;
 import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -112,6 +114,116 @@ public class FluxFlatMapTest {
 				throw droppedRef.get();
 			}
 			assertThat(terminalState).withFailMessage(failMessage, terminalState, round).hasValue(10);
+		}
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/4443
+	//an element that went through onNext belongs to the subscriber: even if a concurrent
+	//cancel() races with the emission, it must not reach the discard hook
+	@Test
+	void mergeDoesNotDiscardElementDeliveredBeforeCancellation() {
+		final int ROUNDS = 10_000;
+		final int TIMEOUT = 5; //change to something greater like 120 if step-debugging
+		Scheduler scheduler = Schedulers.newParallel("race", 2);
+		try {
+			for (int round = 0; round < ROUNDS; round++) {
+				RacedItem item = new RacedItem();
+				TestPublisher<RacedItem> source = TestPublisher.create();
+				AtomicReference<Disposable> subscription = new AtomicReference<>();
+
+				subscription.set(
+						Flux.merge(source.flux(), Mono.<RacedItem>never())
+								.doOnDiscard(RacedItem.class, RacedItem::discarded)
+								.subscribe(value -> {
+									value.delivered();
+									//hold the emission until the racing thread has cancelled
+									while (!value.cancelling) {
+										Thread.yield();
+									}
+								}));
+
+				RaceTestUtils.race(TIMEOUT, scheduler,
+						() -> source.next(item),
+						() -> {
+							while (!item.delivered) {
+								Thread.yield();
+							}
+							item.cancelling();
+							subscription.get().dispose();
+						});
+
+				assertThat(item.discarded)
+						.withFailMessage("round %s: element was delivered then discarded", round)
+						.isFalse();
+			}
+		}
+		finally {
+			scheduler.dispose();
+		}
+	}
+
+	//same race as above, but routed through the Callable fast path of the mapper,
+	//which uses tryEmitScalar instead of tryEmit
+	@Test
+	void scalarEmitDoesNotDiscardElementDeliveredBeforeCancellation() {
+		final int ROUNDS = 10_000;
+		final int TIMEOUT = 5; //change to something greater like 120 if step-debugging
+		Scheduler scheduler = Schedulers.newParallel("raceScalar", 2);
+		try {
+			for (int round = 0; round < ROUNDS; round++) {
+				RacedItem item = new RacedItem();
+				TestPublisher<Integer> source = TestPublisher.create();
+				AtomicReference<Disposable> subscription = new AtomicReference<>();
+
+				subscription.set(
+						source.flux()
+								.flatMap(ignored -> Mono.just(item))
+								.doOnDiscard(RacedItem.class, RacedItem::discarded)
+								.subscribe(value -> {
+									value.delivered();
+									//hold the emission until the racing thread has cancelled
+									while (!value.cancelling) {
+										Thread.yield();
+									}
+								}));
+
+				RaceTestUtils.race(TIMEOUT, scheduler,
+						() -> source.next(1),
+						() -> {
+							while (!item.delivered) {
+								Thread.yield();
+							}
+							item.cancelling();
+							subscription.get().dispose();
+						});
+
+				assertThat(item.discarded)
+						.withFailMessage("round %s: element was delivered then discarded", round)
+						.isFalse();
+			}
+		}
+		finally {
+			scheduler.dispose();
+		}
+	}
+
+	//tracks the three transitions a raced element goes through
+	static final class RacedItem {
+
+		volatile boolean delivered;
+		volatile boolean cancelling;
+		volatile boolean discarded;
+
+		void delivered() {
+			this.delivered = true;
+		}
+
+		void cancelling() {
+			this.cancelling = true;
+		}
+
+		void discarded() {
+			this.discarded = true;
 		}
 	}
 
