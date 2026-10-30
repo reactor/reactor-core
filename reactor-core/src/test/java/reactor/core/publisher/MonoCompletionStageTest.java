@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -129,6 +131,80 @@ MonoCompletionStageTest {
 		            .thenCancel()//already cancelled but need to get to verification
 		            .verifyThenAssertThat()
 		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	//https://github.com/reactor/reactor-core/issues/4415
+	@Test
+	public void cancelThenDependentStageCancelledIsNotDropped() {
+		ArrayList<Throwable> droppedErrors = new ArrayList<>();
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			CompletableFuture<Integer> source = new CompletableFuture<>();
+			CompletableFuture<Integer> dependent = source.thenApply(Function.identity());
+
+			Mono.fromFuture(dependent, true)
+			    .subscribe()
+			    .dispose();
+			source.cancel(true);
+
+			assertThat(dependent).isCompletedExceptionally();
+			assertThat(droppedErrors).isEmpty();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	//https://github.com/reactor/reactor-core/issues/4415
+	@Test
+	public void cancelPropagatedUpstreamWithWrappedCancellationIsNotDropped() {
+		ArrayList<Throwable> droppedErrors = new ArrayList<>();
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			CompletableFuture<Integer> upstream = new CompletableFuture<>();
+			CompletableFuture<Integer> future = new CompletableFuture<Integer>() {
+				@Override
+				public boolean cancel(boolean mayInterruptIfRunning) {
+					upstream.cancel(mayInterruptIfRunning);
+					return super.cancel(mayInterruptIfRunning);
+				}
+			};
+			upstream.whenComplete((v, e) -> {
+				if (e != null) {
+					future.completeExceptionally(new CompletionException(e));
+				}
+			});
+
+			Mono.fromFuture(future)
+			    .subscribe()
+			    .dispose();
+
+			assertThat(upstream).isCancelled();
+			assertThat(droppedErrors).isEmpty();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test
+	public void cancelThenFutureFailsWithWrappedErrorIsDropped() {
+		ArrayList<Throwable> droppedErrors = new ArrayList<>();
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			CompletableFuture<Integer> future = new CompletableFuture<>();
+			CompletionException error = new CompletionException(new IllegalStateException("boom"));
+
+			Mono.fromFuture(future, true)
+			    .subscribe()
+			    .dispose();
+			future.completeExceptionally(error);
+
+			assertThat(droppedErrors).containsExactly(error);
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
 	}
 
 	@Test
