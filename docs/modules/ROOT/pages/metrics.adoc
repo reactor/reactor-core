@@ -53,6 +53,8 @@ One way to do it would be to manually push the values to your metrics backend of
 provided to the `tap` operator.
 
 An out-of-the-box implementation is actually provided by the `reactor-core-micrometer` module, via `Micrometer#metrics` APIs.
+The listener created by `Micrometer.metrics()` discovers the sequence name and tags that are defined upstream of the `tap` operator.
+It uses the value from the `name` operator as the meter-name prefix and adds the key-value pairs from the `tag` operators to the generated meters.
 Consider the following pipeline:
 [source,java]
 [%unbreakable]
@@ -117,6 +119,10 @@ listenToEvents()
 
 Please note that depending on the monitoring system you're using, using a name can be considered mandatory when using tags, since it would otherwise result in a different set of tags between two default-named sequences.
 Some systems like Prometheus might also require to have the exact same set of tags for each metric with the same name.
+
+WARNING: Use values with low cardinality for both `name` and `tag`.
+Using unbounded or highly variable values, such as a user ID, a timestamp, or a request ID, can create a large number of meter names or tag combinations.
+This can significantly increase the memory used by the `MeterRegistry` and the amount of data sent to your monitoring system.
 
 [[observation]]
 === Observation
