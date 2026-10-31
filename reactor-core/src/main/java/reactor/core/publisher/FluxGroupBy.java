@@ -65,9 +65,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			Supplier<? extends Queue<V>> groupQueueSupplier,
 			int prefetch) {
 		super(source);
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
-		}
+		Operators.validateQueuePrefetch(prefetch);
 		this.keySelector = Objects.requireNonNull(keySelector, "keySelector");
 		this.valueSelector = Objects.requireNonNull(valueSelector, "valueSelector");
 		this.mainQueueSupplier =
