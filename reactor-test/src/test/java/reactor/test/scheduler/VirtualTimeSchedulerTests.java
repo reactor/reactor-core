@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -450,6 +450,44 @@ public class VirtualTimeSchedulerTests {
 
 		vtScheduler.advanceTimeBy(scheduleDelayDuration);
 		assertThat(scheduledDisposable.isDisposed()).isTrue();
+	}
+
+	@Test
+	void periodicTaskShouldNotBeRescheduledIfDisposed() {
+		VirtualTimeScheduler vtScheduler = VirtualTimeScheduler.create();
+		AtomicInteger executions = new AtomicInteger();
+
+		Disposable periodicDisposable = vtScheduler.schedulePeriodically(executions::incrementAndGet,
+				0, 10, TimeUnit.SECONDS);
+		vtScheduler.advanceTimeBy(Duration.ofSeconds(25));
+		assertThat(executions).hasValue(3);
+
+		periodicDisposable.dispose();
+		assertThat(periodicDisposable.isDisposed()).isTrue();
+		long scheduledTaskCount = vtScheduler.getScheduledTaskCount();
+
+		vtScheduler.advanceTimeBy(Duration.ofSeconds(100));
+		assertThat(executions).hasValue(3);
+		assertThat(vtScheduler.getScheduledTaskCount())
+				.as("no task scheduled after dispose")
+				.isEqualTo(scheduledTaskCount);
+	}
+
+	@Test
+	void workerPeriodicTaskShouldNotBeExecutedIfDisposed() {
+		VirtualTimeScheduler vtScheduler = VirtualTimeScheduler.create();
+		Scheduler.Worker worker = vtScheduler.createWorker();
+		AtomicInteger executions = new AtomicInteger();
+
+		Disposable periodicDisposable = worker.schedulePeriodically(executions::incrementAndGet,
+				0, 10, TimeUnit.SECONDS);
+		assertThat(executions).as("initial execution").hasValue(1);
+
+		periodicDisposable.dispose();
+		assertThat(periodicDisposable.isDisposed()).isTrue();
+
+		vtScheduler.advanceTimeBy(Duration.ofSeconds(100));
+		assertThat(executions).hasValue(1);
 	}
 
 	@SuppressWarnings("unchecked")
