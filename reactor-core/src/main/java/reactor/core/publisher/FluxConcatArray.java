@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.jspecify.annotations.Nullable;
@@ -125,11 +124,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		return new FluxConcatArray<>(delayError, newArray);
 	}
 
-	interface SubscriptionAware {
-		Subscription upstream();
-	}
-	
-	static final class ConcatArraySubscriber<T> extends ThreadLocal<Object> implements InnerOperator<T, T>, SubscriptionAware {
+	static final class ConcatArraySubscriber<T> extends ThreadLocal<Object> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Publisher<? extends T>[] sources;
@@ -137,13 +132,10 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		int index;
 		long produced;
 
-		@SuppressWarnings("NotNullFieldNotInitialized") // s is
-		Subscription s;
-
+		// Requested demand and the current subscription are updated together under this monitor.
+		volatile @Nullable Subscription s;
 		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ConcatArraySubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ConcatArraySubscriber.class, "requested");
+		boolean once;
 
 		volatile boolean cancelled;
 
@@ -152,27 +144,30 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			this.sources = sources;
 		}
 
-		// null check upon first call - subsequent calls happen for consecutive sources
-		@SuppressWarnings("DataFlowIssue")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (this.cancelled) {
+			boolean first = false;
+			long actualRequested = 0L;
+			boolean shouldCancel;
+			synchronized (this) {
+				shouldCancel = this.cancelled;
+				if (!shouldCancel) {
+					this.s = s;
+					first = !this.once;
+					this.once = true;
+					actualRequested = this.requested;
+				}
+			}
+
+			if (shouldCancel) {
 				this.remove();
 				s.cancel();
 				return;
 			}
-
-			final Subscription previousSubscription = this.s;
-
-			this.s = s;
-
-			if (previousSubscription == null) {
+			if (first) {
 				this.actual.onSubscribe(this);
-				return;
 			}
-
-			final long actualRequested = activateAndGetRequested(REQUESTED, this);
-			if (actualRequested > 0) {
+			else if (actualRequested != 0L) {
 				s.request(actualRequested);
 			}
 		}
@@ -228,9 +223,12 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				}
 
 				long c = this.produced;
-				if (c != 0L) {
-					this.produced = 0L;
-					deactivateAndProduce(c, REQUESTED, this);
+				this.produced = 0L;
+				synchronized (this) {
+					this.s = null;
+					if (this.requested != Long.MAX_VALUE) {
+						this.requested -= c;
+					}
 				}
 
 				this.index = ++i;
@@ -251,29 +249,41 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void request(long n) {
-			final Subscription subscription = addCapAndGetSubscription(n, REQUESTED, this);
-
-			if (subscription == null) {
+			if (!Operators.validate(n)) {
 				return;
 			}
 
-			subscription.request(n);
+			Subscription subscription;
+			synchronized (this) {
+				if (this.cancelled) {
+					return;
+				}
+				this.requested = Operators.addCap(this.requested, n);
+				subscription = this.s;
+			}
+
+			if (subscription != null) {
+				subscription.request(n);
+			}
 		}
 
 		@Override
 		public void cancel() {
 			this.remove();
 
-			this.cancelled = true;
-
-			if ((this.requested & Long.MIN_VALUE) != Long.MIN_VALUE) {
-				this.s.cancel();
+			Subscription subscription;
+			synchronized (this) {
+				if (this.cancelled) {
+					return;
+				}
+				this.cancelled = true;
+				subscription = this.s;
+				this.s = null;
 			}
-		}
 
-		@Override
-		public Subscription upstream() {
-			return this.s;
+			if (subscription != null) {
+				subscription.cancel();
+			}
 		}
 
 		@Override
@@ -292,7 +302,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 	}
 
-	static final class ConcatArrayDelayErrorSubscriber<T> extends ThreadLocal<Object> implements InnerOperator<T, T>, SubscriptionAware {
+	static final class ConcatArrayDelayErrorSubscriber<T> extends ThreadLocal<Object> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Publisher<? extends T>[] sources;
@@ -300,13 +310,10 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		int index;
 		long produced;
 
-		@SuppressWarnings("NotNullFieldNotInitialized") // s is initialized in onSubscribe
-		Subscription s;
-
+		// Requested demand and the current subscription are updated together under this monitor.
+		volatile @Nullable Subscription s;
 		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ConcatArrayDelayErrorSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, "requested");
+		boolean once;
 
 		volatile @Nullable Throwable error;
 
@@ -321,27 +328,30 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			this.sources = sources;
 		}
 
-		// null check upon first call - subsequent calls happen for consecutive sources
-		@SuppressWarnings("DataFlowIssue")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (this.cancelled) {
+			boolean first = false;
+			long actualRequested = 0L;
+			boolean shouldCancel;
+			synchronized (this) {
+				shouldCancel = this.cancelled;
+				if (!shouldCancel) {
+					this.s = s;
+					first = !this.once;
+					this.once = true;
+					actualRequested = this.requested;
+				}
+			}
+
+			if (shouldCancel) {
 				this.remove();
 				s.cancel();
 				return;
 			}
-
-			final Subscription previousSubscription = this.s;
-
-			this.s = s;
-
-			if (previousSubscription == null) {
+			if (first) {
 				this.actual.onSubscribe(this);
-				return;
 			}
-
-			final long actualRequested = activateAndGetRequested(REQUESTED, this);
-			if (actualRequested > 0) {
+			else if (actualRequested != 0L) {
 				s.request(actualRequested);
 			}
 		}
@@ -418,9 +428,12 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				}
 
 				long c = this.produced;
-				if (c != 0L) {
-					this.produced = 0L;
-					deactivateAndProduce(c, REQUESTED, this);
+				this.produced = 0L;
+				synchronized (this) {
+					this.s = null;
+					if (this.requested != Long.MAX_VALUE) {
+						this.requested -= c;
+					}
 				}
 
 				this.index = ++i;
@@ -442,34 +455,46 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void request(long n) {
-			final Subscription subscription = addCapAndGetSubscription(n, REQUESTED, this);
-
-			if (subscription == null) {
+			if (!Operators.validate(n)) {
 				return;
 			}
 
-			subscription.request(n);
+			Subscription subscription;
+			synchronized (this) {
+				if (this.cancelled) {
+					return;
+				}
+				this.requested = Operators.addCap(this.requested, n);
+				subscription = this.s;
+			}
+
+			if (subscription != null) {
+				subscription.request(n);
+			}
 		}
 
 		@Override
 		public void cancel() {
 			this.remove();
 
-			this.cancelled = true;
+			Subscription subscription;
+			synchronized (this) {
+				if (this.cancelled) {
+					return;
+				}
+				this.cancelled = true;
+				subscription = this.s;
+				this.s = null;
+			}
 
-			if ((this.requested & Long.MIN_VALUE) != Long.MIN_VALUE) {
-				this.s.cancel();
+			if (subscription != null) {
+				subscription.cancel();
 			}
 
 			final Throwable throwable = Exceptions.terminate(ERROR, this);
 			if (throwable != null) {
 				Operators.onErrorDropped(throwable, this.actual.currentContext());
 			}
-		}
-
-		@Override
-		public Subscription upstream() {
-			return this.s;
 		}
 
 		@Override
@@ -491,45 +516,5 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		}
 	}
 
-	static <T> long activateAndGetRequested(AtomicLongFieldUpdater<T> updater, T instance) {
-		for (;;) {
-			final long deactivatedRequested = updater.get(instance);
-			final long actualRequested = deactivatedRequested & Long.MAX_VALUE;
-
-			if (updater.compareAndSet(instance, deactivatedRequested, actualRequested)) {
-				return actualRequested;
-			}
-		}
-	}
-
-	static <T> void deactivateAndProduce(long produced, AtomicLongFieldUpdater<T> updater, T instance) {
-		for (;;) {
-			final long actualRequested = updater.get(instance);
-			final long deactivatedRequested = actualRequested == Long.MAX_VALUE
-					? Long.MAX_VALUE | Long.MIN_VALUE
-					: (actualRequested - produced) | Long.MIN_VALUE;
-
-			if (updater.compareAndSet(instance, actualRequested, deactivatedRequested)) {
-				return;
-			}
-		}
-	}
-
-	static <T extends SubscriptionAware> @Nullable Subscription addCapAndGetSubscription(long n, AtomicLongFieldUpdater<T> updater, T instance) {
-		for (;;) {
-			final long state = updater.get(instance);
-			final Subscription s = instance.upstream();
-			final long actualRequested = state & Long.MAX_VALUE;
-			final long status = state & Long.MIN_VALUE;
-
-			if (actualRequested == Long.MAX_VALUE) {
-				return status == Long.MIN_VALUE ? null : s;
-			}
-
-			if (updater.compareAndSet(instance, state, Operators.addCap(actualRequested , n) | status)) {
-				return status == Long.MIN_VALUE ? null : s;
-			}
-		}
-	}
 
 }
