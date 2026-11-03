@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -332,6 +333,39 @@ public class FluxConcatArrayTest {
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void subscriptionSetWhileCancellingIsCancelled() {
+		for (int i = 0; i < 50_000; i++) {
+			AssertSubscriber<String> ts = AssertSubscriber.create(0);
+			@SuppressWarnings("unchecked")
+			Publisher<String>[] sources = new Publisher[]{Flux.never(), Flux.never()};
+			FluxConcatArray.ConcatArraySubscriber<String> sub =
+					new FluxConcatArray.ConcatArraySubscriber<>(ts, sources);
+
+			sub.onSubscribe(Operators.emptySubscription());
+			sub.request(1);
+			// the state between two inner sources: the previous one has completed and the next
+			// subscription has not arrived yet
+			FluxConcatArray.deactivateAndProduce(0L, FluxConcatArray.ConcatArraySubscriber.REQUESTED, sub);
+
+			AtomicBoolean cancelled = new AtomicBoolean();
+			Subscription next = new Subscription() {
+				@Override
+				public void request(long n) {
+				}
+
+				@Override
+				public void cancel() {
+					cancelled.set(true);
+				}
+			};
+
+			RaceTestUtils.race(() -> sub.onSubscribe(next), sub::cancel);
+
+			assertThat(cancelled).as("subscription cancelled, iteration %d", i).isTrue();
+		}
 	}
 
 }
