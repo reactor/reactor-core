@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
@@ -55,6 +56,23 @@ class FluxConcatMapNoPrefetchTest extends AbstractFluxConcatMapTest {
 				assertThat(Scannable.from(pub).scan(Scannable.Attr.PREFETCH)).as("scanned PREFETCH").isZero();
 				assertThat(pub.getPrefetch()).as("getPrefetch()").isZero();
 			});
+	}
+
+	@Test
+	void weakScalarSubscriptionConcurrentRequest() {
+		for (int i = 0; i < 10_000; i++) {
+			AtomicLong onNext = new AtomicLong();
+			AtomicLong onComplete = new AtomicLong();
+			CoreSubscriber<Integer> actual = new LambdaSubscriber<>(v -> onNext.incrementAndGet(), null,
+					onComplete::incrementAndGet, null);
+			FluxConcatMap.WeakScalarSubscription<Integer> subscription =
+					new FluxConcatMap.WeakScalarSubscription<>(1, actual);
+
+			RaceTestUtils.race(() -> subscription.request(1), () -> subscription.request(1));
+
+			assertThat(onNext).as("onNext count in round %s", i).hasValue(1);
+			assertThat(onComplete).as("onComplete count in round %s", i).hasValue(1);
+		}
 	}
 
 	@Test
