@@ -489,8 +489,11 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				long r = requested;
 
 				Queue<R> q = scalarQueue;
+				boolean emitted = false;
 				if (r != 0L && (q == null || q.isEmpty())) {
 					actual.onNext(v);
+					//the value was handed over to the subscriber, which owns it from now on
+					emitted = true;
 
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
@@ -519,7 +522,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					}
 				}
 				if (WIP.decrementAndGet(this) == 0) {
-					if (cancelled) {
+					//a value that went through onNext belongs to the subscriber, so it must
+					//not reach the discard hook even if cancellation raced with the emission
+					if (cancelled && !emitted) {
 						Operators.onDiscard(v, actual.currentContext());
 					}
 					return;
@@ -544,8 +549,11 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				long r = requested;
 
 				Queue<R> q = inner.queue;
+				boolean emitted = false;
 				if (r != 0 && (q == null || q.isEmpty())) {
 					actual.onNext(v);
+					//the value was handed over to the subscriber, which owns it from now on
+					emitted = true;
 
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
@@ -565,7 +573,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					}
 				}
 				if (WIP.decrementAndGet(this) == 0) {
-					if (cancelled) {
+					//a value that went through onNext belongs to the subscriber, so it must
+					//not reach the discard hook even if cancellation raced with the emission
+					if (cancelled && !emitted) {
 						Operators.onDiscard(v, actual.currentContext());
 					}
 					return;
