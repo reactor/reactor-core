@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2021-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -608,6 +608,20 @@ class DefaultTestSubscriberTest {
 
 		assertThat(subscriber.getReceivedOnNext())
 				.as("receivedOnNext after request")
+				.containsExactly(1, 2, 3);
+		assertThat(subscriber.isTerminatedOrCancelled()).as("isDone").isFalse();
+	}
+
+	@Test
+	void requestZeroInitiallyThenSmallRequestBeforeSubscribe() {
+		Flux<Integer> source = Flux.range(1, 100).hide();
+		TestSubscriber<Integer> subscriber = TestSubscriber.builder().initialRequest(0L).build();
+
+		subscriber.request(3L);
+		source.subscribe(subscriber);
+
+		assertThat(subscriber.getReceivedOnNext())
+				.as("receivedOnNext after subscribe")
 				.containsExactly(1, 2, 3);
 		assertThat(subscriber.isTerminatedOrCancelled()).as("isDone").isFalse();
 	}
