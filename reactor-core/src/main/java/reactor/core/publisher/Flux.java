@@ -3742,7 +3742,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
-	public final <R, A> Mono<R> collect(Collector<? super T, A, ? extends R> collector) {
+	public final <R, A extends @Nullable Object> Mono<R> collect(Collector<? super T, A, ? extends R> collector) {
 		return Mono.onAssembly(new MonoStreamCollector<>(this, collector));
 	}
 
