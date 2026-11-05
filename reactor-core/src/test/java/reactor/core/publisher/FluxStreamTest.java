@@ -564,4 +564,20 @@ public class FluxStreamTest {
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
+
+	@Test
+	public void streamClosedOnSpliteratorFailure() {
+		AtomicInteger closeCount = new AtomicInteger();
+		Flux<Integer> flux = Flux.fromStream(() -> {
+			Stream<Integer> stream = source.stream().onClose(closeCount::incrementAndGet);
+			stream.spliterator(); // consume the stream
+			return stream; // FluxStream.subscribe will call spliterator() again, which throws
+		});
+
+		StepVerifier.create(flux)
+		            .expectError(IllegalStateException.class)
+		            .verify();
+
+		assertThat(closeCount.get()).as("stream close count").isEqualTo(1);
+	}
 }
