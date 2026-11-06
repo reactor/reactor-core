@@ -62,10 +62,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 			Supplier<? extends Queue<Object>> queueSupplier,
 			int prefetch) {
 		super(source);
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " +
-					prefetch);
-		}
+		Operators.validateQueuePrefetch(prefetch);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
