@@ -121,6 +121,8 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				AtomicLongFieldUpdater.newUpdater(GroupByMain.class, "requested");
 
 		volatile boolean done;
+		volatile boolean completing;
+		volatile boolean terminated;
 
 		volatile @Nullable Throwable error;
 
@@ -194,24 +196,58 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				return;
 			}
 
-			UnicastGroupedFlux<K, V> g = groupMap.get(key);
+			onNext(key, value, false);
+		}
 
-			if (g == null) {
-				// if the main is cancelled, don't create new groups
-				if (cancelled == 0) {
-					Queue<V> q = groupQueueSupplier.get();
+		void onNext(K key, V value, boolean allowAfterSourceComplete) {
+			for (;;) {
+				UnicastGroupedFlux<K, V> g = groupMap.get(key);
 
-					GROUP_COUNT.getAndIncrement(this);
-					g = new UnicastGroupedFlux<>(key, q, this, prefetch);
-					g.onNext(value);
-					groupMap.put(key, g);
+				if (g == null) {
+					boolean newGroup = false;
+					synchronized (groupMap) {
+						g = groupMap.get(key);
+						// if the main is cancelled or terminated, don't create new groups
+						if (g == null && cancelled == 0 &&
+								(!done || allowAfterSourceComplete && !terminated)) {
+							Queue<V> q = groupQueueSupplier.get();
 
-					queue.offer(g);
-					drain();
+							GROUP_COUNT.getAndIncrement(this);
+							g = new UnicastGroupedFlux<>(key, q, this, prefetch);
+							g.onNext(value);
+							groupMap.put(key, g);
+
+							queue.offer(g);
+							if (done) {
+								g.onComplete();
+							}
+							newGroup = true;
+						}
+					}
+					if (newGroup) {
+						drain();
+						break;
+					}
+					if (g == null) {
+						break;
+					}
 				}
+				if (g.onNext(value)) {
+					break;
+				}
+
+				// cancellation won before the value was accepted, retry with a new group
+				groupMap.remove(key, g);
 			}
-			else {
-				g.onNext(value);
+		}
+
+		void onGroupCancelled(K key, @Nullable V value, Queue<V> groupQueue) {
+			if (value != null) {
+				onNext(key, value, true);
+			}
+			V queuedValue;
+			while ((queuedValue = groupQueue.poll()) != null) {
+				onNext(key, queuedValue, true);
 			}
 		}
 
@@ -231,11 +267,12 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			if(done){
 				return;
 			}
+			done = true;
+			completing = true;
 			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
 				g.onComplete();
 			}
-			groupMap.clear();
-			done = true;
+			completing = false;
 			drain();
 		}
 
@@ -267,6 +304,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
 				g.onError(e);
 			}
+			terminated = true;
 			actual.onError(e);
 			groupMap.clear();
 		}
@@ -303,20 +341,41 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			}
 		}
 
-		void groupTerminated(K key) {
+		void groupTerminated(K key, UnicastGroupedFlux<K, V> group) {
 			if (groupCount == 0) {
 				return;
 			}
-			groupMap.remove(key);
+			groupMap.remove(key, group);
 			int groupRemaining = GROUP_COUNT.decrementAndGet(this);
 			if (groupRemaining == 0) {
 				s.cancel();
 			}
-			else if (groupRemaining == 1) {
+			else if (groupRemaining == 1 && !done) {
 				//there is an "extra" group count for the global cancellation, so the operator as a whole is still active
 				//we want at least one more group
 				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
+			if (done) {
+				drain();
+			}
+		}
+
+		boolean hasActiveGroups() {
+			for (UnicastGroupedFlux<K, V> group : groupMap.values()) {
+				if (group.actual != null) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void signalComplete(Subscriber<?> a) {
+			terminated = true;
+			for (UnicastGroupedFlux<K, V> group : groupMap.values()) {
+				group.doTerminate();
+			}
+			groupMap.clear();
+			a.onComplete();
 		}
 
 		void drain() {
@@ -349,13 +408,13 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 				a.onNext(null);
 
-				if (d) {
+				if (d && !completing && !hasActiveGroups()) {
 					Throwable ex = error;
 					if (ex != null) {
 						signalAsyncError();
 					}
 					else {
-						a.onComplete();
+						signalComplete(a);
 					}
 					return;
 				}
@@ -422,15 +481,15 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				boolean empty,
 				Subscriber<?> a,
 				Queue<GroupedFlux<K, V>> q) {
-			if (d) {
+			if (d && !completing) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
 					q.clear();
 					signalAsyncError();
 					return true;
 				}
-				else if (empty) {
-					a.onComplete();
+				else if (empty && !hasActiveGroups()) {
+					signalComplete(a);
 					return true;
 				}
 			}
@@ -485,7 +544,6 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		final Queue<V> queue;
 
 		volatile @Nullable GroupByMain<?, K, V> parent;
-
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, @Nullable GroupByMain> PARENT =
 				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
@@ -540,7 +598,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		void doTerminate() {
 			GroupByMain<?, K, V> r = parent;
 			if (r != null && PARENT.compareAndSet(this, r, null)) {
-				r.groupTerminated(key);
+				r.groupTerminated(key, this);
 			}
 		}
 
@@ -560,22 +618,26 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 					V t = q.poll();
 					boolean empty = t == null;
 
-					if (checkTerminated(d, empty, a, q)) {
-						return;
-					}
+					synchronized (this) {
+						if (checkTerminated(d, empty, t, a, q)) {
+							return;
+						}
 
-					if (empty) {
-						break;
-					}
+						if (empty) {
+							break;
+						}
 
-					a.onNext(t);
+						a.onNext(t);
+					}
 
 					e++;
 				}
 
 				if (r == e) {
-					if (checkTerminated(done, q.isEmpty(), a, q)) {
-						return;
+					synchronized (this) {
+						if (checkTerminated(done, q.isEmpty(), null, a, q)) {
+							return;
+						}
 					}
 				}
 
@@ -611,28 +673,30 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			final Queue<V> q = queue;
 
 			for (; ; ) {
-
-				if (cancelled) {
-					q.clear();
-					actual = null;
-					return;
-				}
-
-				boolean d = done;
-
-				a.onNext(null);
-
-				if (d) {
-					actual = null;
-
-					Throwable ex = error;
-					if (ex != null) {
-						a.onError(ex);
+				synchronized (this) {
+					if (cancelled) {
+						handoffCancelledValues(null, q);
+						actual = null;
+						return;
 					}
-					else {
-						a.onComplete();
+
+					boolean d = done;
+
+					a.onNext(null);
+
+					if (d) {
+						actual = null;
+
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						doTerminate();
+						return;
 					}
-					return;
 				}
 
 				missed = WIP.addAndGet(this, -missed);
@@ -658,9 +722,13 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
+		boolean checkTerminated(boolean d,
+				boolean empty,
+				@Nullable V value,
+				Subscriber<?> a,
+				Queue<?> q) {
 			if (cancelled) {
-				q.clear();
+				handoffCancelledValues(value, queue);
 				actual = null;
 				return true;
 			}
@@ -673,6 +741,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				else {
 					a.onComplete();
 				}
+				doTerminate();
 				return true;
 			}
 
@@ -680,27 +749,31 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		@SuppressWarnings("DataFlowIssue") // fusion passes nulls via onNext
-		public void onNext(V t) {
-			CoreSubscriber<? super V> a = actual;
+		public boolean onNext(V t) {
+			CoreSubscriber<? super V> a;
+			boolean offered;
+			synchronized (this) {
+				if (cancelled || done) {
+					return false;
+				}
 
-			if (!queue.offer(t)) {
+				a = actual;
+				offered = queue.offer(t);
+			}
+			if (!offered) {
 				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
 						a != null ? a.currentContext() : Context.empty()));
-				return;
+				return true;
 			}
-			if (outputFused) {
-				if (a != null) {
-					a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
-				}
-			}
-			else {
-				drain();
-			}
+			drain();
+			return true;
 		}
 
 		public void onError(Throwable t) {
-			error = t;
-			done = true;
+			synchronized (this) {
+				error = t;
+				done = true;
+			}
 
 			doTerminate();
 
@@ -708,10 +781,9 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 		}
 
 		public void onComplete() {
-			done = true;
-
-			doTerminate();
-
+			synchronized (this) {
+				done = true;
+			}
 			drain();
 		}
 
@@ -738,18 +810,27 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		@Override
 		public void cancel() {
-			if (cancelled) {
-				return;
-			}
-			cancelled = true;
-
-			doTerminate();
-
-			if (!outputFused) {
-				if (WIP.getAndIncrement(this) == 0) {
-					queue.clear();
+			synchronized (this) {
+				if (cancelled) {
+					return;
 				}
+				cancelled = true;
 			}
+
+			if (WIP.getAndIncrement(this) == 0) {
+				handoffCancelledValues(null, queue);
+			}
+		}
+
+		void handoffCancelledValues(@Nullable V value, Queue<V> q) {
+			GroupByMain<?, K, V> main = parent;
+			if (main != null) {
+				main.onGroupCancelled(key, value, q);
+			}
+			else {
+				q.clear();
+			}
+			doTerminate();
 		}
 
 		@Override
