@@ -360,6 +360,9 @@ public abstract class Operators {
 	 * @return Product result or Long.MAX_VALUE if overflow
 	 */
 	public static long multiplyCap(long a, long b) {
+		if (a == 0 || b == 0) {
+			return 0;
+		}
 		long u = a * b;
 		if (((a | b) >>> 31) != 0) {
 			if (u / a != b) {
