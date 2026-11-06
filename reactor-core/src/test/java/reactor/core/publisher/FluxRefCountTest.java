@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -484,5 +484,28 @@ public class FluxRefCountTest {
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel+onComplete").isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel+onComplete").isFalse();
+	}
+
+	@Test
+	public void refCountDisconnectsWhenSubscriberCancelsDuringOnSubscribe() {
+		Sinks.Many<Integer> source = Sinks.many().replay().latest();
+		source.emitNext(42, FAIL_FAST);
+
+		Flux<Integer> shared = source.asFlux()
+									 .replay(1)
+									 .refCount(1);
+
+		Disposable holder = shared.subscribe();
+		assertThat(source.currentSubscriberCount()).as("source connected").isPositive();
+
+		// replay(1) already holds 42, so next() receives it and cancels synchronously
+		// from inside setRefCountMonitor, before MONITOR_SET_FLAG has been set.
+		assertThat(shared.next().block()).isEqualTo(42);
+
+		holder.dispose();
+
+		assertThat(source.currentSubscriberCount())
+				.as("source disconnected once the ref count dropped to zero")
+				.isZero();
 	}
 }
