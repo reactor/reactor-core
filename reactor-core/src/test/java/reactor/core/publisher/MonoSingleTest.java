@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,17 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.*;
@@ -443,6 +446,28 @@ public class MonoSingleTest {
 		                        .hide()
 		                        .singleOrEmpty())
 		            .verifyError(IndexOutOfBoundsException.class);
+	}
+
+	@Test
+	public void emptyCompletionAfterCancellationIsIgnored() {
+		TestPublisher<Integer> source =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION);
+		AtomicBoolean fallbackSubscribed = new AtomicBoolean();
+
+		Disposable subscription =
+				source.flux()
+				      .singleOrEmpty()
+				      .switchIfEmpty(
+						      Mono.defer(() -> {
+							      fallbackSubscribed.set(true);
+							      return Mono.empty();
+						      }))
+				      .subscribe();
+
+		subscription.dispose();
+		source.complete();
+
+		assertThat(fallbackSubscribed).isFalse();
 	}
 
 	@Test
