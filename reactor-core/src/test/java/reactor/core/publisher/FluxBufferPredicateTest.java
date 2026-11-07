@@ -1198,7 +1198,7 @@ public class FluxBufferPredicateTest {
 				RaceTestUtils.race(() -> subscriber.onNext(value2), subscriber::cancel);
 			}
 
-			Assertions.assertThat(value2).as("trigger value not discarded").hasValue(-2);
+			Assertions.assertThat(value2).as("trigger value should be discarded").hasValue(-1);
 
 			Assertions.assertThat(received.get() + (value1.get() + 1))
 					.as("received %d, val1 state %d", received.get(), value1.get())
