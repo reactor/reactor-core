@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -64,6 +66,55 @@ public class FluxMergeSequentialTest {
 	public void before() {
 		ts = new AssertSubscriber<>();
 		tsBp = new AssertSubscriber<>(0L);
+	}
+
+	@Test
+	public void discardQueuedElementsOnCancel() {
+		List<Object> discarded = new CopyOnWriteArrayList<>();
+		List<Object> received = new ArrayList<>();
+		AtomicReference<Subscription> subscription = new AtomicReference<>();
+
+		Flux.mergeSequential(Flux.just(1, 2), Flux.just(3, 4))
+		    .doOnDiscard(Object.class, discarded::add)
+		    .subscribe(new CoreSubscriber<Integer>() {
+			    @Override
+			    public void onSubscribe(Subscription s) {
+				    subscription.set(s);
+				    s.request(1);
+			    }
+
+			    @Override
+			    public void onNext(Integer i) {
+				    received.add(i);
+			    }
+
+			    @Override
+			    public void onError(Throwable t) {
+			    }
+
+			    @Override
+			    public void onComplete() {
+			    }
+		    });
+
+		assertThat(received).containsExactly(1);
+
+		// elements 2 (in the current inner) and 3, 4 (in the queued-up second
+		// inner) are still buffered at this point
+		subscription.get().cancel();
+
+		assertThat(discarded).containsExactly(2, 3, 4);
+	}
+
+	@Test
+	public void discardQueuedElementsOnError() {
+		StepVerifier.create(Flux.mergeSequential(
+				            Flux.just(1, 2),
+				            Flux.just(3, 4).concatWith(Mono.error(new IllegalStateException("boom")))), 1)
+		            .expectNext(1)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(2, 3, 4);
 	}
 
 	@Test
