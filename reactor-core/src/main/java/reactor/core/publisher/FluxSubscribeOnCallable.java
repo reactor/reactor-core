@@ -87,7 +87,15 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 				AtomicIntegerFieldUpdater.newUpdater(CallableSubscribeOnSubscription.class,
 						"state");
 
-		@Nullable T value;
+		volatile @Nullable T value;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, @Nullable Object>
+				VALUE = AtomicReferenceFieldUpdater.newUpdater(
+				CallableSubscribeOnSubscription.class,
+				Object.class,
+				"value");
+
 		static final int NO_REQUEST_HAS_VALUE  = 1;
 		static final int HAS_REQUEST_NO_VALUE  = 2;
 		static final int HAS_REQUEST_HAS_VALUE = 3;
@@ -158,12 +166,30 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 					a.dispose();
 				}
 			}
+			discardValue();
+		}
+
+		/**
+		 * Take the value the callable produced, if it is still held here, and discard it. The
+		 * getAndSet makes this exclusive with {@link #run()}, {@link #emitValue()} and
+		 * {@link #poll()}, so the value is either emitted or discarded, never both.
+		 */
+		void discardValue() {
+			T v = takeValue();
+			if (v != null) {
+				Operators.onDiscard(v, actual.currentContext());
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		@Nullable T takeValue() {
+			return (T) VALUE.getAndSet(this, null);
 		}
 
 		@Override
 		public void clear() {
-			value = null;
 			fusionState = COMPLETE;
+			discardValue();
 		}
 
 		@Override
@@ -175,7 +201,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 		public @Nullable T poll() {
 			if (fusionState == HAS_VALUE) {
 				fusionState = COMPLETE;
-				return value;
+				return takeValue();
 			}
 			return null;
 		}
@@ -239,9 +265,18 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 				return;
 			}
 
+			boolean stored = false;
 			for (; ; ) {
 				int s = state;
 				if (s == HAS_CANCELLED || s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
+					// the value will not be emitted: discard it, unless cancel() already did
+					T pending = takeValue();
+					if (pending != null) {
+						Operators.onDiscard(pending, actual.currentContext());
+					}
+					else if (!stored) {
+						Operators.onDiscard(v, actual.currentContext());
+					}
 					return;
 				}
 				if (s == HAS_REQUEST_NO_VALUE) {
@@ -256,6 +291,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 					return;
 				}
 				this.value = v;
+				stored = true;
 				if (STATE.compareAndSet(this, s, NO_REQUEST_HAS_VALUE)) {
 					return;
 				}
@@ -294,8 +330,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 			if (fusionState == NO_VALUE) {
 				this.fusionState = HAS_VALUE;
 			}
-			T v = value;
-			clear();
+			T v = takeValue();
+			fusionState = COMPLETE;
 			if (v != null) {
 				actual.onNext(v);
 			}
