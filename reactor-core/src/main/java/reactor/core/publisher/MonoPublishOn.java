@@ -118,6 +118,10 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 		public void onNext(T t) {
 			value = t;
 			trySchedule(this, null, t);
+			if (OperatorDisposables.isDisposed(future)) {
+				// cancelled before or while the value was stored: no task will emit or clear it
+				discardPending();
+			}
 		}
 
 		@Override
@@ -164,9 +168,20 @@ final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 				if (c != null && !OperatorDisposables.isDisposed(c)) {
 					c.dispose();
 				}
-				value = null;
+				discardPending();
 			}
 			s.cancel();
+		}
+
+		/**
+		 * Take the pending value, if any, and discard it. The getAndSet makes this exclusive
+		 * with {@link #run()}, so the value is either emitted or discarded, never both.
+		 */
+		void discardPending() {
+			Object toDiscard = VALUE.getAndSet(this, null);
+			if (toDiscard != null) {
+				Operators.onDiscard(toDiscard, actual.currentContext());
+			}
 		}
 
 		@Override

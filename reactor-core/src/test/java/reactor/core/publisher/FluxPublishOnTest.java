@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,9 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import org.awaitility.Awaitility;
 import reactor.test.MockUtils;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -1506,4 +1508,46 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		runOnScannable.parents().forEach(System.out::println);
 		System.out.println(runOnScannable.scan(Scannable.Attr.BUFFERED));
 	}
+
+	@Test
+	public void discardsQueuedElementsWhenCancelDropsThePendingDrain() throws InterruptedException {
+		List<Object> discarded = Collections.synchronizedList(new ArrayList<>());
+		Scheduler scheduler = Schedulers.newSingle("publishOnDiscard");
+		CountDownLatch occupied = new CountDownLatch(1);
+		CountDownLatch release = new CountDownLatch(1);
+		try {
+			// occupy the only worker thread: the drain task can be scheduled, but not run
+			scheduler.schedule(() -> {
+				occupied.countDown();
+				try {
+					release.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			});
+			assertThat(occupied.await(10, TimeUnit.SECONDS)).isTrue();
+
+			TestPublisher<Integer> source = TestPublisher.create();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create(Long.MAX_VALUE);
+			source.flux()
+			      .publishOn(scheduler, 16)
+			      .doOnDiscard(Object.class, discarded::add)
+			      .subscribe(ts);
+
+			source.next(1, 2, 3, 4, 5);
+			ts.cancel();
+			release.countDown();
+
+			Awaitility.await()
+			          .atMost(Duration.ofSeconds(5))
+			          .untilAsserted(() -> assertThat(discarded).as("discarded")
+			                                                   .containsExactly(1, 2, 3, 4, 5));
+		}
+		finally {
+			release.countDown();
+			scheduler.dispose();
+		}
+	}
+
 }
