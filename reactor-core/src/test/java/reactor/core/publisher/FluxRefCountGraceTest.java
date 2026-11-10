@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -517,6 +518,125 @@ public class FluxRefCountGraceTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void cancelDuringOnSubscribeSkipsSourceConnect() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger sourceCancellations = new AtomicInteger();
+
+		Flux<Integer> source = Flux.<Integer>never()
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+				.doOnCancel(sourceCancellations::incrementAndGet);
+
+		Flux<Integer> shared = source.publish().refCount(1, Duration.ZERO, Schedulers.immediate());
+
+		shared.subscribe(new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				cancel();
+			}
+		});
+
+		assertThat(sourceSubscriptions)
+				.as("source must not be subscribed to when the only subscriber cancelled during onSubscribe")
+				.hasValue(0);
+		assertThat(sourceCancellations)
+				.as("source was never subscribed so it cannot be cancelled")
+				.hasValue(0);
+	}
+
+	@Test
+	public void cancelDuringOnSubscribeThenNewSubscriberConnectsAndDisconnects() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger sourceCancellations = new AtomicInteger();
+
+		Flux<Integer> source = Flux.<Integer>never()
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet())
+				.doOnCancel(sourceCancellations::incrementAndGet);
+
+		Flux<Integer> shared = source.publish().refCount(1, Duration.ZERO, Schedulers.immediate());
+
+		shared.subscribe(new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				cancel();
+			}
+		});
+
+		Disposable second = shared.subscribe();
+		second.dispose();
+
+		assertThat(sourceSubscriptions)
+				.as("source must be subscribed exactly once for the second subscriber")
+				.hasValue(1);
+		assertThat(sourceCancellations)
+				.as("source must be disconnected exactly once when the second subscriber disposes")
+				.hasValue(1);
+	}
+
+	// When a subscriber cancels in onSubscribe but a peer subscriber (n=2) is still
+	// waiting, the count only drops to 1 and the connection stays. subscribe() must
+	// still connect the source on behalf of the waiting peer, otherwise it hangs forever.
+	@Test
+	public void cancelDuringOnSubscribeWithPeerStillConnects() {
+		AtomicInteger sourceSubscriptions = new AtomicInteger();
+		AtomicInteger peerReceived = new AtomicInteger();
+
+		Flux<Integer> source = Flux.just(1)
+				.doOnSubscribe(s -> sourceSubscriptions.incrementAndGet());
+
+		// n=2: peer (A) subscribes first (connect=false), early-cancel (B) subscribes
+		// second (connect=true). B cancels in hookOnSubscribe; count drops 2→1.
+		// subscribe() must still call source.connect so A receives the element.
+		Flux<Integer> shared = source.publish().refCount(2, Duration.ZERO, Schedulers.immediate());
+
+		shared.subscribe(__ -> peerReceived.incrementAndGet()); // subscriber A
+
+		shared.subscribe(new BaseSubscriber<Integer>() {        // subscriber B
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				cancel();
+			}
+		});
+
+		assertThat(sourceSubscriptions)
+				.as("source must connect once on behalf of the waiting peer")
+				.hasValue(1);
+		assertThat(peerReceived)
+				.as("peer subscriber must receive the element")
+				.hasValue(1);
+	}
+
+	// A late subscriber joins the already connected source, receives a queued value as
+	// soon as it requests in onSubscribe and cancels from onNext (like take(1) or next()),
+	// all before subscribe() has finished registering it. That cancel must still count.
+	@Test
+	public void cancelFromOnNextDuringOnSubscribeOfLateSubscriber() {
+		TestPublisher<Integer> source = TestPublisher.createCold();
+		Flux<Integer> shared = source.flux().publish().refCount(1, Duration.ZERO, Schedulers.immediate());
+
+		Disposable first = shared.subscribe();
+		source.assertSubscribers(1);
+
+		shared.subscribe(new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				// publish() queues the value, as this subscriber has no demand yet
+				source.next(1);
+				request(1);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				cancel();
+			}
+		});
+
+		first.dispose();
+
+		source.assertCancelled();
+		source.assertNoSubscribers();
 	}
 
 }
