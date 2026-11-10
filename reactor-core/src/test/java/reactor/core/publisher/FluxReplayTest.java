@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,6 +225,35 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(flow)
 		            .expectNextCount(1001 * 5)
 		            .verifyComplete();
+	}
+
+	@Test
+	@Tag("VirtualTime")
+	void timedCacheReplaysWholeHistoryUntilItExpires() {
+		assertThat(vts).isNotNull();
+		AtomicInteger subscriptions = new AtomicInteger();
+		// the element is older than the completion, so it expires before the cache does
+		Flux<Integer> cached = Flux.just(1)
+		                           .concatWith(Mono.delay(Duration.ofMillis(500)).then(Mono.empty()))
+		                           .doOnSubscribe(s -> subscriptions.incrementAndGet())
+		                           .cache(Duration.ofSeconds(1));
+
+		cached.subscribe();
+		vts.advanceTimeBy(Duration.ofMillis(1200));
+
+		AssertSubscriber<Integer> normal = AssertSubscriber.create();
+		cached.subscribe(normal);
+		normal.assertValues(1)
+		      .assertComplete();
+
+		AssertSubscriber<Integer> fused = AssertSubscriber.create();
+		fused.requestedFusionMode(Fuseable.ASYNC);
+		cached.subscribe(fused);
+		fused.assertFusionMode(Fuseable.ASYNC)
+		     .assertValues(1)
+		     .assertComplete();
+
+		assertThat(subscriptions).hasValue(1);
 	}
 
 	private Flux<Integer> getSource2() {
