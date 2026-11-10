@@ -60,6 +60,7 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 			Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
 			int bufferSize) {
 		super(source);
+		Operators.validateBufferSize(bufferSize);
 		this.asyncPredicate = asyncPredicate;
 		this.bufferSize = bufferSize;
 	}
