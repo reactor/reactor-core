@@ -21,13 +21,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -504,5 +510,37 @@ public class FluxFilterWhenTest {
 		            .verifyComplete();
 
 		assertThat(calls[0]).isEqualTo(1000);
+	}
+
+	@Test
+	@Tag("slow")
+	public void innerResultRacingWithRequestDoesNotDropElements() {
+		for (int i = 0; i < 100_000; i++) {
+			TestPublisher<Boolean> firstPredicate = TestPublisher.create();
+			Publisher<Boolean> alwaysTrue = Mono.just(true).hide();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create(1);
+
+			Flux.range(0, 2)
+			    .filterWhen(v -> v == 0 ? firstPredicate : alwaysTrue)
+			    .subscribe(ts);
+			RaceTestUtils.race(() -> firstPredicate.next(true), () -> ts.request(1));
+
+			ts.assertValues(0, 1).assertComplete();
+		}
+	}
+
+	@RepeatedTest(200)
+	public void filterWhenShouldNotDropElements() {
+		Flux.range(0, 100)
+		    .filterWhen(i -> justTrueOnScheduler())
+		    .filterWhen(i -> justTrueOnScheduler())
+		    .as(StepVerifier::create)
+		    .expectNextCount(100)
+		    .verifyComplete();
+	}
+
+	private static Mono<Boolean> justTrueOnScheduler() {
+		return Mono.just(true)
+		           .subscribeOn(Schedulers.boundedElastic());
 	}
 }
