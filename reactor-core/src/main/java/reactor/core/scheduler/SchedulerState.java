@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -64,11 +65,22 @@ final class SchedulerState<T> {
 
 		static final ScheduledExecutorService TRANSITION_AWAIT_POOL;
 
+		static final AtomicLong TRANSITION_AWAIT_COUNTER = new AtomicLong();
+
 		static {
 			ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(0);
 			executor.setKeepAliveTime(10, TimeUnit.SECONDS);
 			executor.allowCoreThreadTimeOut(true);
 			executor.setMaximumPoolSize(Schedulers.DEFAULT_POOL_SIZE);
+			//Daemon threads: the pool is only used to await scheduler disposal,
+			//and a non-daemon thread would keep the JVM alive for the 10s
+			//keep-alive after disposeGracefully() has completed.
+			executor.setThreadFactory(r -> {
+				Thread t = new Thread(r, "reactor-transition-await-" +
+						TRANSITION_AWAIT_COUNTER.incrementAndGet());
+				t.setDaemon(true);
+				return t;
+			});
 			TRANSITION_AWAIT_POOL = executor;
 		}
 
